@@ -102,6 +102,11 @@ pub struct Map {
     queue: Vec<u32>,
     pub starts: [(usize, usize); 4],
     pub seed: u32,
+    /// Territory id of every tile, and the point each territory grew from.
+    pub terr: Vec<u8>,
+    pub tseeds: Vec<(f32, f32)>,
+    /// Terrain elevation at tile corners, `(N + 1)^2` values, for the 3D view.
+    pub hm: Vec<f32>,
 }
 
 #[inline]
@@ -130,6 +135,9 @@ impl Map {
             queue: Vec::with_capacity(NN),
             starts: [(s0, s0), (s1, s1), (s1, s0), (s0, s1)],
             seed,
+            terr: vec![0; NN],
+            tseeds: Vec::new(),
+            hm: vec![0.0; (N + 1) * (N + 1)],
         };
         let mut seed = seed;
         for attempt in 0..24 {
@@ -148,7 +156,77 @@ impl Map {
             m.upd_pass(i);
             m.recolor(i);
         }
+        m.gen_territories();
+        m.gen_heights();
         m
+    }
+
+    /// Voronoi regions around the four corner starts plus a jittered grid of extra seeds.
+    fn gen_territories(&mut self) {
+        let mut rng = Rng(self.seed ^ 0x51ed_270b | 1);
+        let mut seeds: Vec<(f32, f32)> = self.starts.iter().map(|s| (s.0 as f32, s.1 as f32)).collect();
+        for gy in 0..5 {
+            for gx in 0..5 {
+                let x = (gx as f32 + 0.25 + rng.f() * 0.5) * N as f32 / 5.0;
+                let y = (gy as f32 + 0.25 + rng.f() * 0.5) * N as f32 / 5.0;
+                if seeds.iter().all(|s| (s.0 - x).powi(2) + (s.1 - y).powi(2) > 38.0 * 38.0) {
+                    seeds.push((x, y));
+                }
+            }
+        }
+        for i in 0..NN {
+            let (x, y) = ((i % N) as f32 + 0.5, (i / N) as f32 + 0.5);
+            let mut best = 0;
+            let mut bd = f32::MAX;
+            for (k, s) in seeds.iter().enumerate() {
+                let d = (s.0 - x).powi(2) + (s.1 - y).powi(2);
+                if d < bd {
+                    bd = d;
+                    best = k;
+                }
+            }
+            self.terr[i] = best as u8;
+        }
+        self.tseeds = seeds;
+    }
+
+    fn elev(&self, i: usize) -> f32 {
+        let h = self.h[i];
+        match self.ter[i] {
+            T_DEEP | T_SHALLOW => ((h - 0.455) * 7.0).clamp(-1.6, -0.08),
+            T_ROCK => 1.5 + (h - 0.83) * 6.0,
+            _ => ((h - 0.455) * 3.0).clamp(0.04, 1.3),
+        }
+    }
+
+    fn gen_heights(&mut self) {
+        let hn = N + 1;
+        for vy in 0..hn {
+            for vx in 0..hn {
+                let (mut sum, mut n) = (0.0, 0.0);
+                for (ox, oy) in [(0i32, 0i32), (-1, 0), (0, -1), (-1, -1)] {
+                    let (tx, ty) = (vx as i32 + ox, vy as i32 + oy);
+                    if tx >= 0 && ty >= 0 && tx < N as i32 && ty < N as i32 {
+                        sum += self.elev(ty as usize * N + tx as usize);
+                        n += 1.0;
+                    }
+                }
+                self.hm[vy * hn + vx] = sum / n;
+            }
+        }
+    }
+
+    /// Bilinear terrain elevation at a world position.
+    pub fn height(&self, x: f32, y: f32) -> f32 {
+        let hn = N + 1;
+        let x = x.clamp(0.0, N as f32 - 0.001);
+        let y = y.clamp(0.0, N as f32 - 0.001);
+        let (xi, yi) = (x as usize, y as usize);
+        let (fx, fy) = (x - xi as f32, y - yi as f32);
+        let i = yi * hn + xi;
+        let a = self.hm[i] + (self.hm[i + 1] - self.hm[i]) * fx;
+        let b = self.hm[i + hn] + (self.hm[i + hn + 1] - self.hm[i + hn]) * fx;
+        a + (b - a) * fy
     }
 
     fn gen_terrain(&mut self, seed: u32, players: usize) {

@@ -52,6 +52,11 @@
   #menu select, #menu input { background:#0b0f13; color:var(--text); border:1px solid var(--line); border-radius:6px; padding:7px 9px; font:inherit; }
   #menu button { background:var(--acc); color:#04121f; border:0; border-radius:7px; padding:10px 18px; font:600 15px system-ui; cursor:pointer; }
   #menu button.alt { background:#26323e; color:var(--text); border:1px solid var(--line); }
+  #mp { display:none; border:1px solid var(--line); border-radius:8px; padding:4px 14px 8px; margin:8px 0; }
+  #mp textarea { width:100%; background:#0b0f13; color:var(--text); border:1px solid var(--line); border-radius:6px; padding:6px; font:11px ui-monospace, monospace; resize:vertical; word-break:break-all; }
+  #mpstatus { color:var(--dim); font-size:13px; margin:6px 0; }
+  #menu button.alt { padding:8px 14px; font-size:14px; }
+  .dim { color:var(--dim); }
   #menu table { border-collapse:collapse; font-size:13px; color:var(--dim); margin-top:10px; }
   #menu td { padding:2px 14px 2px 0; vertical-align:top; }
   #menu td:first-child { color:var(--text); white-space:nowrap; }
@@ -69,9 +74,12 @@
   <span class="r"><i class="dot" style="background:#aeb8c4"></i>Metal <b id="r2">0</b></span>
   <span class="r">Pop <b id="pop">0/0</b></span>
   <span class="r"><b id="epoch">Stone Age</b></span>
+  <span class="r" title="Territories you hold. Build a Town Center in a free territory to claim it.">Territories <b id="terr">1</b></span>
   <button id="idle" title="Select next idle worker (F)">Idle workers: 0</button>
   <span class="sp"></span>
   <span id="perf"></span>
+  <button id="mute" title="Toggle sound (M)">Sound on</button>
+  <button id="save" title="Save game (Ctrl+S). The game also saves itself every few minutes.">Save</button>
   <button id="speed" title="Game speed (+ / -)">1×</button>
   <button id="pause" title="Pause (P)">Pause</button>
   <button id="quit">Menu</button>
@@ -90,10 +98,19 @@
 <div id="menu">
   <div class="card">
     <h1>Open<span>Epoch</span></h1>
-    <p>A free real-time strategy game across six epochs — from clubmen to nuclear submarines. Rust + WebAssembly simulation, WebGL2 rendering, zero downloads.</p>
+    <p>A free real-time strategy game across six epochs — from clubmen to nuclear submarines. Rust + WebAssembly simulation, 3D WebGL2 rendering, zero downloads.</p>
     <div class="row"><label>Opponents</label><select id="nai"><option>1</option><option>2</option><option>3</option></select>
       <label style="width:auto;margin-left:14px">Map seed</label><input id="seed" size="8" placeholder="random"></div>
-    <div class="row"><button id="play">Start game</button></div>
+    <div class="row"><button id="play">Start game</button><button id="continue" class="alt" style="display:none">Continue</button><button id="mpopen" class="alt">Multiplayer…</button></div>
+    <div id="mp">
+      <div class="row"><button id="mphost" class="alt">Host a game</button><button id="mpjoin" class="alt">Join a game</button>
+        <label style="width:auto;margin-left:10px">AI opponents</label><select id="mpai"><option>0</option><option>1</option><option>2</option></select></div>
+      <div id="mpstatus">1 vs 1, directly between two browsers — no server. The host creates an invite code, the guest answers with a reply code (send them by chat or mail).</div>
+      <textarea id="mpin" rows="3" placeholder="Choose Host or Join first" spellcheck="false"></textarea>
+      <div class="row"><button id="mpgo" class="alt">Connect</button></div>
+      <textarea id="mpout" rows="3" readonly placeholder="Your code will appear here" spellcheck="false"></textarea>
+      <div class="row"><button id="mpcopy" class="alt">Copy code</button></div>
+    </div>
     <div class="row"><label>Stress test</label>
       <button class="alt" data-bench="1000">2 000 units</button>
       <button class="alt" data-bench="2000">4 000 units</button>
@@ -106,7 +123,9 @@
       <tr><td>Q W E R T / Z X C V B</td><td>command buttons &nbsp; <b>Esc</b> cancel</td></tr>
       <tr><td>Ctrl+1…9 / 1…9</td><td>set / recall control group (tap twice to jump)</td></tr>
       <tr><td>F &nbsp; H &nbsp; Space</td><td>idle worker · home · jump to selection</td></tr>
-      <tr><td>P &nbsp; + &nbsp; −</td><td>pause · game speed</td></tr>
+      <tr><td>U</td><td>unload transport ships (or right-click a shore)</td></tr>
+      <tr><td>P &nbsp; + &nbsp; − &nbsp; M</td><td>pause · game speed · sound</td></tr>
+      <tr><td>Ctrl+S</td><td>save (single player; also saved automatically)</td></tr>
     </table>
     <p style="margin-top:14px;font-size:12px">Original code and procedurally drawn art, MIT licensed. <a href="https://github.com/lukashold/openepoch">Source on GitHub</a>.</p>
   </div>

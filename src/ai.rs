@@ -12,7 +12,7 @@ impl Game {
             return false;
         }
         let s = d.size as i32;
-        let (r0, r1) = if def == DOCK { (4, 48) } else { (5, 26) };
+        let (r0, r1) = if def == DOCK { (4, 48) } else if def == TC { (0, 16) } else { (5, 26) };
         let start = self.rng.range(8) as i32;
         for r in r0..r1 {
             for k in (-r..=r).step_by(2) {
@@ -64,6 +64,7 @@ impl Game {
         let mut workers: Vec<usize> = Vec::new();
         let mut army: Vec<usize> = Vec::new();
         let mut prod: Vec<usize> = Vec::new();
+        let mut finished: Vec<usize> = Vec::new();
         let mut farms: Vec<(usize, u32)> = Vec::new();
         let mut unfinished: Vec<usize> = Vec::new();
         let mut gath = [0u32; 4];
@@ -80,6 +81,7 @@ impl Game {
                 if e.built < 1.0 {
                     unfinished.push(i);
                 } else {
+                    finished.push(i);
                     match e.def {
                         TC => tc = i,
                         FARM => farms.push((i, 0)),
@@ -177,15 +179,36 @@ impl Game {
                 Some(AIRFIELD)
             } else if ep >= 2 && c(BARRACKS) < 2 {
                 Some(BARRACKS)
+            } else if ep >= 2 && c(TC) < 1 + ep as u32 / 2 && !p.ai_noexp {
+                Some(TC)
             } else if ep >= 4 && c(WORKSHOP) < 2 {
                 Some(WORKSHOP)
             } else {
                 None
             };
             if let Some(def) = choice {
-                let ok = self.ai_build(team, def, bxi, byi, &crew);
-                if !ok && def == DOCK && self.afford(team, &DEFS[DOCK as usize].cost) {
-                    self.players[ti].ai_nodock = true; // landlocked
+                // a new town center goes into the nearest unclaimed territory
+                let mut at = (bxi, byi);
+                if def == TC {
+                    let mut bd = f32::MAX;
+                    for (k, s) in self.map.tseeds.iter().enumerate() {
+                        let dd = (s.0 - bx).powi(2) + (s.1 - by).powi(2);
+                        if self.towner[k] == 255 && self.map.pass[0][tile_of(s.0, s.1)] && dd < bd {
+                            bd = dd;
+                            at = (s.0 as i32, s.1 as i32);
+                        }
+                    }
+                    if bd == f32::MAX {
+                        self.players[ti].ai_noexp = true;
+                    }
+                }
+                let ok = self.ai_build(team, def, at.0, at.1, &crew);
+                if !ok && self.afford(team, &DEFS[def as usize].cost) {
+                    match def {
+                        DOCK => self.players[ti].ai_nodock = true, // landlocked
+                        TC => self.players[ti].ai_noexp = true,
+                        _ => {}
+                    }
                 }
             }
         }
@@ -207,7 +230,7 @@ impl Game {
                 let mut pick = 0u8;
                 let mut seen = 0;
                 for (k, d) in DEFS.iter().enumerate() {
-                    if d.made_at == bdef && d.epoch <= ep && d.until > ep {
+                    if d.made_at == bdef && d.epoch <= ep && d.until > ep && d.armed() {
                         seen += 1;
                         if self.rng.range(seen) == 0 {
                             pick = k as u8;
@@ -216,6 +239,20 @@ impl Game {
                 }
                 if pick != 0 {
                     self.train(b, pick);
+                }
+            }
+        }
+
+        // ---- technologies: buy them once there is money to spare
+        if !saving {
+            for (k, t) in TECHS.iter().enumerate() {
+                let r = self.players[ti].res;
+                let rich = (0..3).all(|c| r[c] >= t.cost[c] as f32 * 1.6 + 100.0);
+                if rich && t.epoch <= ep && (self.players[ti].tech | self.players[ti].tech_busy) >> k & 1 == 0 {
+                    if let Some(&b) = finished.iter().find(|&&b| self.ents[b].def == t.at && self.ents[b].qn < 2) {
+                        self.train(b, TECH0 + k as u8);
+                        break;
+                    }
                 }
             }
         }

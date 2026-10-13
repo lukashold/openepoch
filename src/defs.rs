@@ -12,6 +12,8 @@ pub const F_WORKER: u16 = 1;
 pub const F_DETECT: u16 = 2;
 pub const F_STEALTH: u16 = 4;
 pub const F_PLANE: u16 = 8;
+pub const F_TRANSPORT: u16 = 16;
+pub const CARGO_MAX: usize = 10;
 
 // Weapon kinds.
 pub const W_MELEE: u8 = 0;
@@ -194,4 +196,67 @@ pub const DEFS: &[Def] = &[
     unit("Jet Fighter", 5, 99, AIR, AIRFIELD, [100, 0, 500], 18.0, 2, 380.0, 11.0, A_AIR, 1.6, F_PLANE, w(8.0, 70.0, 1.2, W_MISSILE, AIR, 0.0), w(5.0, 16.0, 0.2, W_BULLET, G, 0.0)),
     unit("Stealth Bomber", 5, 99, AIR, AIRFIELD, [200, 0, 900], 26.0, 3, 600.0, 7.5, A_AIR, 2.3, F_PLANE | F_STEALTH, w(1.6, 500.0, 4.5, W_BOMB, G, 2.4), NOW),
     unit("Gunship", 5, 99, AIR, AIRFIELD, [100, 0, 450], 20.0, 2, 450.0, 5.0, A_AIR, 1.6, F_DETECT, w(7.0, 60.0, 1.6, W_MISSILE, G, 0.5), w(4.5, 90.0, 2.5, W_TORP, SUB, 0.0)),
+    // ---- appended later (ids are stable: saves and sprites index into this table) ----
+    unit("Transport Ship", 1, 99, SEA, DOCK, [0, 150, 30], 16.0, 2, 500.0, 3.0, A_SHIP, 2.2, F_TRANSPORT, NOW, NOW),
+];
+
+// ---------------------------------------------------------------- technologies
+
+pub const T_ATK: u8 = 0;
+pub const T_DEF: u8 = 1;
+pub const T_GATHER: u8 = 2;
+// unit classes that technologies apply to
+pub const C_INF: usize = 0;
+pub const C_VEH: usize = 1;
+pub const C_SHIP: usize = 2;
+pub const C_AIR: usize = 3;
+pub const C_BLD: usize = 4;
+
+#[inline]
+pub fn class_of(d: &Def) -> usize {
+    if d.building {
+        return C_BLD;
+    }
+    match d.armor {
+        A_INF => C_INF,
+        A_SHIP => C_SHIP,
+        A_AIR => C_AIR,
+        _ => C_VEH,
+    }
+}
+
+pub struct Tech {
+    pub name: &'static str,
+    pub desc: &'static str,
+    pub at: u8,
+    pub epoch: u8,
+    pub cost: [u16; 3],
+    pub time: f32,
+    pub kind: u8,
+    pub class: usize,
+    /// Multiplier applied to damage dealt / damage taken / gather rate.
+    pub amount: f32,
+}
+
+/// Queue ids `TECH0 + index` stand for researching `TECHS[index]`.
+pub const TECH0: u8 = 200;
+
+#[allow(clippy::too_many_arguments)]
+const fn tech(name: &'static str, desc: &'static str, at: u8, epoch: u8, cost: [u16; 3], time: f32, kind: u8, class: usize, amount: f32) -> Tech {
+    Tech { name, desc, at, epoch, cost, time, kind, class, amount }
+}
+
+pub const TECHS: &[Tech] = &[
+    tech("Stone Tools", "Workers gather 20% faster", TC, 0, [100, 100, 0], 25.0, T_GATHER, 0, 1.2),
+    tech("Masonry", "Buildings take 20% less damage", TC, 1, [0, 250, 100], 30.0, T_DEF, C_BLD, 0.8),
+    tech("Forged Blades", "Infantry deal 15% more damage", BARRACKS, 1, [150, 0, 100], 30.0, T_ATK, C_INF, 1.15),
+    tech("Crop Rotation", "Workers gather another 20% faster", TC, 2, [250, 250, 0], 35.0, T_GATHER, 0, 1.2),
+    tech("Body Armour", "Infantry take 15% less damage", BARRACKS, 2, [200, 0, 200], 35.0, T_DEF, C_INF, 0.85),
+    tech("Engineering", "Cavalry and vehicles deal 15% more damage", WORKSHOP, 2, [0, 250, 250], 35.0, T_ATK, C_VEH, 1.15),
+    tech("Navigation", "Ships deal 15% more damage", DOCK, 2, [0, 300, 200], 35.0, T_ATK, C_SHIP, 1.15),
+    tech("Mechanisation", "Workers gather another 20% faster", TC, 3, [400, 400, 300], 40.0, T_GATHER, 0, 1.2),
+    tech("Sloped Armour", "Cavalry and vehicles take 15% less damage", WORKSHOP, 3, [0, 300, 500], 40.0, T_DEF, C_VEH, 0.85),
+    tech("Steel Hulls", "Ships take 20% less damage", DOCK, 4, [0, 200, 700], 45.0, T_DEF, C_SHIP, 0.8),
+    tech("Radar Gunsights", "Aircraft deal 20% more damage", AIRFIELD, 4, [200, 0, 600], 45.0, T_ATK, C_AIR, 1.2),
+    tech("Composite Airframes", "Aircraft take 20% less damage", AIRFIELD, 5, [300, 0, 900], 50.0, T_DEF, C_AIR, 0.8),
 ];

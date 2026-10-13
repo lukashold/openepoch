@@ -284,7 +284,7 @@ const P = {
 };
 function flag(c) { ell(c, -20, 44, 14, 6, 'rgba(0,0,0,.3)'); line(c, -20, 44, -20, -48, 6, '#e9ecef'); poly(c, [[-17, -48], [40, -32], [-17, -14]], M, OUT); }
 
-/** Sprite id → drawing. Ids 0..=41 match the unit/building table in src/defs.rs. */
+/** Sprite id → drawing (HUD icons). Ids 0..=42 match the unit/building table in src/defs.rs. */
 const SPRITES = {
   0: B.tc, 1: B.house, 2: B.farm, 3: B.barracks, 4: B.workshop, 5: B.dock, 6: B.airfield, 7: B.tower,
   8: c => inf(c, { w: 'tool', head: '#d9c074' }),
@@ -321,6 +321,7 @@ const SPRITES = {
   39: jet,
   40: stealth,
   41: heli,
+  42: c => { ship(c, { L: 104, W: 40, hull: '#6b5a45', deck: '#8a7a5a', bridge: [-44, 24] }); rr(c, -14, -12, 50, 24, 3, '#4d555e', OUT); },
   100: c => tree(c, false), 101: c => tree(c, true), 102: ore, 103: berry,
   104: P.arrow, 105: P.bullet, 106: P.shell, 107: P.torp, 108: P.missile, 109: P.bomb, 110: flag,
 };

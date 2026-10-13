@@ -18,11 +18,16 @@ pub const O_AMOVE: u8 = 2;
 pub const O_ATTACK: u8 = 3;
 pub const O_GATHER: u8 = 4;
 pub const O_BUILD: u8 = 5;
+pub const O_BOARD: u8 = 6;
+pub const O_UNLOAD: u8 = 7;
+/// Marker in `Ent::stuck`: the unit walked onto a transport, remove it without an explosion.
+const BOARDED: u8 = 255;
 
 pub const RESEARCH: u8 = 255;
 const GC: usize = 64; // grid cells per axis
 const CELL: f32 = 4.0;
 
+#[repr(C)]
 #[derive(Clone, Copy)]
 pub struct Ent {
     pub alive: bool,
@@ -64,14 +69,19 @@ pub struct Ent {
     pub flash: f32,
     /// Workers: resource kind they were gathering before being pulled off to build.
     pub prev: u8,
+    /// Transports: unit type and health (percent) of each passenger.
+    pub cargo: [u8; CARGO_MAX],
+    pub cargo_hp: [u8; CARGO_MAX],
+    pub ncargo: u8,
 }
 
 const E0: Ent = Ent {
     alive: false, def: 0, team: 0, gen: 0, x: 0.0, y: 0.0, px: 0.0, py: 0.0, vx: 0.0, vy: 0.0, rot: 0.0, prot: 0.0, hp: 0.0, cd: 0.0,
     order: O_IDLE, ox: 0.0, oy: 0.0, otgt: NONE, otile: 0, tgt: NONE, fkey: 0, fslot: u16::MAX, sel: false, built: 1.0, q: [0; 5], qn: 0,
-    qt: 0.0, rx: -1.0, ry: -1.0, revealed: 0, reveal_t: 0.0, stuck: 0, carry: 0.0, flash: 0.0, prev: 0,
+    qt: 0.0, rx: -1.0, ry: -1.0, revealed: 0, reveal_t: 0.0, stuck: 0, carry: 0.0, flash: 0.0, prev: 0, cargo: [0; CARGO_MAX], cargo_hp: [0; CARGO_MAX], ncargo: 0,
 };
 
+#[repr(C)]
 #[derive(Clone, Copy, Default)]
 pub struct Player {
     pub res: [f32; 3],
@@ -83,7 +93,33 @@ pub struct Player {
     pub ai: bool,
     pub ai_next_attack: u32,
     pub ai_nodock: bool,
+    pub ai_noexp: bool,
     pub buildings: u32,
+    /// Bit per researched technology / per technology currently in a queue.
+    pub tech: u32,
+    pub tech_busy: u32,
+    pub atk: [f32; 5],
+    pub dfn: [f32; 5],
+    pub gather: f32,
+    pub terr: u32,
+}
+
+impl Player {
+    /// Rebuild the multipliers from the technology bits.
+    pub fn recompute(&mut self) {
+        self.atk = [1.0; 5];
+        self.dfn = [1.0; 5];
+        self.gather = 1.0;
+        for (k, t) in TECHS.iter().enumerate() {
+            if self.tech >> k & 1 == 1 {
+                match t.kind {
+                    T_ATK => self.atk[t.class] *= t.amount,
+                    T_DEF => self.dfn[t.class] *= t.amount,
+                    _ => self.gather *= t.amount,
+                }
+            }
+        }
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -101,6 +137,8 @@ pub struct Proj {
     pub team: u8,
     pub splash: f32,
     pub targets: u8,
+    /// Distance at launch, so the renderer can draw an arc.
+    pub d0: f32,
 }
 
 #[derive(Clone, Copy)]
@@ -159,11 +197,33 @@ pub struct Game {
     pub push: Vec<(f32, f32)>,
     pub scratch: Vec<usize>,
     pub sim_units: u32,
+    // ---- not part of the deterministic simulation state ----
+    /// Which player this client controls and sees through.
+    pub local: u8,
+    /// Lockstep multiplayer: commands go to `outbox` instead of being applied at once.
+    pub net: bool,
+    pub seed0: u32,
+    pub n_ai: u32,
+    #[allow(dead_code)]
+    pub humans: u32,
+    pub towner: [u8; 32],
+    pub terr_rgba: Vec<u8>,
+    pub terr_dirty: bool,
+    /// Sound cues for the page: (kind, x, y) triples.
+    pub events: Vec<f32>,
+    pub outbox: Vec<u8>,
+    pub inbox: Vec<u8>,
+    pub savebuf: Vec<u8>,
+    pub tmp: Vec<f32>,
+    pub ranges: Vec<u32>,
+    /// Camera position (x, height, y) for picking; height 0 = top-down, no parallax.
+    pub eye: [f32; 3],
 }
 
 impl Game {
-    pub fn new(seed: u32, n_ai: u32, bench: u32) -> Game {
-        let nplayers = (1 + n_ai.clamp(1, 3)) as usize;
+    pub fn new(seed: u32, n_ai: u32, bench: u32, humans: u32, local: u32) -> Game {
+        let humans = humans.clamp(1, 2);
+        let nplayers = ((humans + n_ai) as usize).clamp(2, 4);
         let map = Map::new(seed.max(1), nplayers);
         let mut g = Game {
             map,
@@ -187,10 +247,26 @@ impl Game {
             push: vec![(0.0, 0.0); MAXE],
             scratch: Vec::with_capacity(256),
             sim_units: 0,
+            local: (local as usize).min(nplayers - 1) as u8,
+            net: humans > 1,
+            seed0: seed,
+            n_ai,
+            humans,
+            towner: [255; 32],
+            terr_rgba: vec![0; NN * 4],
+            terr_dirty: true,
+            events: Vec::with_capacity(256),
+            outbox: Vec::with_capacity(1024),
+            inbox: Vec::new(),
+            savebuf: Vec::new(),
+            tmp: Vec::with_capacity(12 * 16384),
+            ranges: vec![0; 512],
+            eye: [0.0; 3],
         };
         for p in 0..nplayers {
             let (sx, sy) = g.map.starts[p];
-            g.players[p] = Player { res: [400.0, 400.0, 200.0], cap: 15, alive: true, ai: p > 0, ai_next_attack: 20 * 240, ..Player::default() };
+            g.players[p] = Player { res: [400.0, 400.0, 200.0], cap: 15, alive: true, ai: p >= humans as usize, ai_next_attack: 20 * 240, ..Player::default() };
+            g.players[p].recompute();
             g.spawn(TC, p as u8, sx as f32, sy as f32);
             for k in 0..5 {
                 let a = k as f32 * 1.256;
@@ -207,6 +283,7 @@ impl Game {
                 *v = 255;
             }
         }
+        g.build_grid();
         g.update_fog();
         g
     }
@@ -223,7 +300,8 @@ impl Game {
             return None;
         }
         let i = (h & 0xffff) as usize;
-        let e = &self.ents[i];
+        // handles can come off the network, so never index blindly
+        let e = self.ents.get(i)?;
         if e.alive && e.gen as u32 == h >> 16 { Some(i) } else { None }
     }
 
@@ -264,12 +342,19 @@ impl Game {
         let d = &DEFS[e.def as usize];
         if d.building {
             self.block(i, false);
-            if e.qn > 0 && e.q[..e.qn as usize].contains(&RESEARCH) {
-                self.players[e.team as usize].researching = false;
+            for &q in &e.q[..e.qn as usize] {
+                if q == RESEARCH {
+                    self.players[e.team as usize].researching = false;
+                } else if q >= TECH0 {
+                    self.players[e.team as usize].tech_busy &= !(1 << (q - TECH0));
+                }
             }
         }
-        if self.fx.len() < 1000 {
-            self.fx.push(Fx { x: e.x, y: e.y, size: d.size * if d.building { 1.6 } else { 1.3 }, age: 0.0, life: 0.6 });
+        if d.building || e.stuck != BOARDED {
+            if self.fx.len() < 1000 {
+                self.fx.push(Fx { x: e.x, y: e.y, size: d.size * if d.building { 1.6 } else { 1.3 }, age: 0.0, life: 0.6 });
+            }
+            self.ev(if d.building { 11.0 } else { 10.0 }, e.x, e.y);
         }
         let s = &mut self.ents[i];
         s.alive = false;
@@ -290,12 +375,12 @@ impl Game {
     /// Is entity `j` currently visible to the human player (fog + stealth)?
     pub fn visible(&self, j: usize) -> bool {
         let t = &self.ents[j];
-        if t.team == 0 {
+        if t.team == self.local {
             return true;
         }
         let v = self.vis[tile_of(t.x, t.y)];
         let need = if DEFS[t.def as usize].building { 128 } else { 255 };
-        v >= need && self.can_see(0, j)
+        v >= need && self.can_see(self.local, j)
     }
 
     // ------------------------------------------------------------------ economy
@@ -317,10 +402,15 @@ impl Game {
         if tx < 2 || ty < 2 || tx + s > N as i32 - 2 || ty + s > N as i32 - 2 {
             return false;
         }
+        // territories: a town center claims a free one, everything else needs our own
+        let owner = self.towner[self.map.terr[(ty + s / 2) as usize * N + (tx + s / 2) as usize] as usize];
+        if owner != team && !(def == TC && owner == 255) {
+            return false;
+        }
         for y in ty..ty + s {
             for x in tx..tx + s {
                 let t = y as usize * N + x as usize;
-                if self.map.blocked[t] || self.map.res[t] != R_NONE || (team == 0 && self.vis[t] == 0) {
+                if self.map.blocked[t] || self.map.res[t] != R_NONE {
                     return false;
                 }
                 let ok = if def == DOCK { self.map.ter[t] <= T_SHALLOW } else { self.map.pass[0][t] };
@@ -344,6 +434,9 @@ impl Game {
     }
 
     pub fn place(&mut self, def: u8, tx: i32, ty: i32, team: u8) -> usize {
+        if def as usize >= DEFS.len() {
+            return NOIDX;
+        }
         let d = &DEFS[def as usize];
         if !d.building || d.epoch > self.players[team as usize].epoch || !self.afford(team, &d.cost) || !self.can_place(def, tx, ty, team) {
             return NOIDX;
@@ -357,25 +450,37 @@ impl Game {
         i
     }
 
-    pub fn train(&mut self, b: usize, def: u8) -> bool {
-        let e = self.ents[b];
-        let team = e.team;
-        if e.built < 1.0 || e.qn >= 5 {
+    /// Would `train(b, def)` succeed right now?
+    pub fn can_train(&self, b: usize, def: u8) -> bool {
+        let e = &self.ents[b];
+        let p = &self.players[e.team as usize];
+        if !DEFS[e.def as usize].building || e.built < 1.0 || e.qn >= 5 {
             return false;
         }
         if def == RESEARCH {
-            let p = self.players[team as usize];
-            if e.def != TC || p.researching || p.epoch >= MAX_EPOCH || !self.afford(team, &EPOCH_COST[p.epoch as usize + 1]) {
-                return false;
-            }
-            self.pay(team, &EPOCH_COST[p.epoch as usize + 1], 1.0);
-            self.players[team as usize].researching = true;
+            e.def == TC && !p.researching && p.epoch < MAX_EPOCH && self.afford(e.team, &EPOCH_COST[p.epoch as usize + 1])
+        } else if def >= TECH0 {
+            let k = (def - TECH0) as usize;
+            k < TECHS.len() && TECHS[k].at == e.def && TECHS[k].epoch <= p.epoch && (p.tech | p.tech_busy) >> k & 1 == 0 && self.afford(e.team, &TECHS[k].cost)
         } else {
-            let d = &DEFS[def as usize];
-            if d.made_at != e.def || d.epoch > self.players[team as usize].epoch || !self.afford(team, &d.cost) {
-                return false;
-            }
-            self.pay(team, &d.cost, 1.0);
+            (def as usize) < DEFS.len() && DEFS[def as usize].made_at == e.def && DEFS[def as usize].epoch <= p.epoch && self.afford(e.team, &DEFS[def as usize].cost)
+        }
+    }
+
+    pub fn train(&mut self, b: usize, def: u8) -> bool {
+        if !self.can_train(b, def) {
+            return false;
+        }
+        let team = self.ents[b].team;
+        if def == RESEARCH {
+            let ep = self.players[team as usize].epoch as usize;
+            self.pay(team, &EPOCH_COST[ep + 1], 1.0);
+            self.players[team as usize].researching = true;
+        } else if def >= TECH0 {
+            self.pay(team, &TECHS[(def - TECH0) as usize].cost, 1.0);
+            self.players[team as usize].tech_busy |= 1 << (def - TECH0);
+        } else {
+            self.pay(team, &DEFS[def as usize].cost, 1.0);
         }
         let e = &mut self.ents[b];
         e.q[e.qn as usize] = def;
@@ -393,6 +498,9 @@ impl Game {
             let ep = self.players[e.team as usize].epoch as usize;
             self.pay(e.team, &EPOCH_COST[ep + 1], -1.0);
             self.players[e.team as usize].researching = false;
+        } else if item >= TECH0 {
+            self.pay(e.team, &TECHS[(item - TECH0) as usize].cost, -1.0);
+            self.players[e.team as usize].tech_busy &= !(1 << (item - TECH0));
         } else {
             self.pay(e.team, &DEFS[item as usize].cost, -1.0);
         }
@@ -517,6 +625,133 @@ impl Game {
         }
     }
 
+    /// Land units walk to a transport ship and climb aboard.
+    pub fn order_board(&mut self, ids: &[usize], tj: usize) {
+        let t = self.ents[tj];
+        if !DEFS[t.def as usize].has(F_TRANSPORT) {
+            return;
+        }
+        let h = self.h(tj);
+        let key = self.key_for(LAND, t.x, t.y);
+        let mut first = None;
+        for &i in ids {
+            let e = &mut self.ents[i];
+            let d = &DEFS[e.def as usize];
+            if d.building || d.dom != LAND || e.team != t.team {
+                continue;
+            }
+            e.order = O_BOARD;
+            e.otgt = h;
+            e.tgt = NONE;
+            e.fkey = key;
+            e.stuck = 0;
+            first.get_or_insert((e.x, e.y));
+        }
+        // an idle ship comes to the beach to pick them up
+        if let (Some((x, y)), O_IDLE) = (first, t.order) {
+            self.order_move(&[tj], x, y, false);
+        }
+    }
+
+    /// Transports sail to the shore nearest `(x, y)` and put everyone ashore.
+    pub fn order_unload(&mut self, ids: &[usize], x: f32, y: f32) {
+        let key = self.key_for(SEA, x.clamp(1.0, N as f32 - 1.0), y.clamp(1.0, N as f32 - 1.0));
+        let t = (key & 0xffff) as usize;
+        for &i in ids {
+            let e = &mut self.ents[i];
+            if !DEFS[e.def as usize].has(F_TRANSPORT) {
+                continue;
+            }
+            e.order = O_UNLOAD;
+            e.ox = (t % N) as f32 + 0.5;
+            e.oy = (t / N) as f32 + 0.5;
+            e.tgt = NONE;
+            e.otgt = NONE;
+            e.fkey = key;
+            e.stuck = 0;
+        }
+    }
+
+    fn unload(&mut self, e: &mut Ent) {
+        let lt = self.map.snap(e.x, e.y, 0);
+        let (lx, ly) = ((lt % N) as f32 + 0.5, (lt / N) as f32 + 0.5);
+        if (lx - e.x).powi(2) + (ly - e.y).powi(2) > 20.0 {
+            return; // no beach within reach: keep everyone aboard
+        }
+        for k in 0..e.ncargo as usize {
+            let (a, r) = (k as f32 * 2.4, 0.45 * (k as f32).sqrt());
+            let (mut x, mut y) = (lx + a.cos() * r, ly + a.sin() * r);
+            if !self.map.pass[0][tile_of(x, y)] {
+                x = lx;
+                y = ly;
+            }
+            let u = self.spawn(e.cargo[k], e.team, x, y);
+            if u != NOIDX {
+                self.ents[u].hp = DEFS[e.cargo[k] as usize].hp * (e.cargo_hp[k] as f32 / 100.0).min(1.0);
+            }
+        }
+        e.ncargo = 0;
+    }
+
+    fn do_board(&mut self, i: usize, e: &mut Ent, d: &Def, want: &mut (f32, f32), moving: &mut bool) {
+        let j = match self.get(e.otgt) {
+            Some(j) if self.ents[j].team == e.team => j,
+            _ => {
+                Self::set_idle(e);
+                return;
+            }
+        };
+        let t = self.ents[j];
+        if (t.x - e.x).powi(2) + (t.y - e.y).powi(2) < 2.8 * 2.8 {
+            if (t.ncargo as usize) < CARGO_MAX {
+                let tr = &mut self.ents[j];
+                tr.cargo[tr.ncargo as usize] = e.def;
+                tr.cargo_hp[tr.ncargo as usize] = (e.hp / d.hp * 100.0).clamp(1.0, 100.0) as u8;
+                tr.ncargo += 1;
+                e.hp = 0.0;
+                e.stuck = BOARDED;
+            } else {
+                Self::set_idle(e);
+            }
+            return;
+        }
+        if (self.tick + i as u32) % 32 == 0 {
+            e.fkey = self.key_for(LAND, t.x, t.y);
+        }
+        *want = self.steer(e, d, t.x, t.y);
+        *moving = true;
+    }
+
+    /// Sound cue for the page; only things the local player can currently see.
+    pub fn ev(&mut self, kind: f32, x: f32, y: f32) {
+        if self.events.len() < 3 * 64 && self.vis[tile_of(x, y)] == 255 {
+            self.events.extend_from_slice(&[kind, x, y]);
+        }
+    }
+
+    /// Fingerprint of the simulation state, compared between multiplayer peers to catch desyncs.
+    pub fn state_hash(&self) -> u32 {
+        let mut h = 2_166_136_261u32;
+        let mut mix = |v: u32| h = (h ^ v).wrapping_mul(16_777_619);
+        mix(self.tick);
+        mix(self.rng.0);
+        for p in &self.players[..self.nplayers] {
+            for r in p.res {
+                mix(r.to_bits());
+            }
+            mix(p.epoch as u32 | p.tech << 8);
+        }
+        for e in &self.ents[..self.high] {
+            if e.alive {
+                mix(e.def as u32 | (e.team as u32) << 8 | (e.order as u32) << 16 | (e.ncargo as u32) << 24);
+                mix(e.x.to_bits());
+                mix(e.y.to_bits());
+                mix(e.hp.to_bits());
+            }
+        }
+        h
+    }
+
     pub fn order_stop(&mut self, ids: &[usize]) {
         for &i in ids {
             let e = &mut self.ents[i];
@@ -565,7 +800,7 @@ impl Game {
                 self.bench_step();
             }
         } else {
-            for t in 1..self.nplayers {
+            for t in 0..self.nplayers {
                 if self.players[t].ai && (self.tick + t as u32 * 7) % 24 == 0 {
                     self.ai_step(t as u8);
                 }
@@ -574,9 +809,10 @@ impl Game {
                 for p in 0..self.nplayers {
                     self.players[p].alive = self.players[p].buildings > 0;
                 }
-                if !self.players[0].alive {
+                let me = self.local as usize;
+                if !self.players[me].alive {
                     self.winner = 2;
-                } else if (1..self.nplayers).all(|p| !self.players[p].alive) {
+                } else if (0..self.nplayers).all(|p| p == me || !self.players[p].alive) {
                     self.winner = 1;
                 }
             }
@@ -584,7 +820,7 @@ impl Game {
     }
 
     /// Counting-sort every live entity into a uniform grid; also recount population.
-    fn build_grid(&mut self) {
+    pub fn build_grid(&mut self) {
         let g = &mut self.grid;
         for c in g.start.iter_mut() {
             *c = 0;
@@ -592,6 +828,7 @@ impl Game {
         let mut pop = [0u32; 4];
         let mut cap = [0u32; 4];
         let mut bld = [0u32; 4];
+        let mut own = [255u8; 32];
         let mut n = 0;
         for e in &self.ents[..self.high] {
             if !e.alive {
@@ -602,8 +839,17 @@ impl Game {
             let d = &DEFS[e.def as usize];
             let t = e.team as usize;
             pop[t] += d.pop as u32;
+            for &c in &e.cargo[..e.ncargo as usize] {
+                pop[t] += DEFS[c as usize].pop as u32;
+            }
             if d.building {
                 bld[t] += 1;
+                if e.def == TC {
+                    let k = self.map.terr[tile_of(e.x, e.y)] as usize;
+                    if own[k] == 255 {
+                        own[k] = e.team;
+                    }
+                }
                 if e.built >= 1.0 {
                     cap[t] += match e.def {
                         TC => 15,
@@ -612,7 +858,7 @@ impl Game {
                     };
                 }
                 for &q in &e.q[..e.qn as usize] {
-                    if q != RESEARCH {
+                    if q < TECH0 {
                         pop[t] += DEFS[q as usize].pop as u32;
                     }
                 }
@@ -636,6 +882,11 @@ impl Game {
             self.players[t].pop = pop[t];
             self.players[t].cap = cap[t].min(250);
             self.players[t].buildings = bld[t];
+            self.players[t].terr = own.iter().filter(|&&o| o as usize == t).count() as u32;
+        }
+        if own != self.towner {
+            self.towner = own;
+            self.terr_dirty = true;
         }
     }
 
@@ -702,27 +953,33 @@ impl Game {
 
     fn fire(&mut self, e: &mut Ent, w: &Wpn, tj: usize) {
         e.cd = w.cd * (0.9 + 0.2 * self.rng.f());
-        if DEFS[e.def as usize].has(F_STEALTH) {
+        let d = &DEFS[e.def as usize];
+        if d.has(F_STEALTH) {
             e.reveal_t = 3.0;
         }
-        if w.kind == W_MELEE {
-            self.damage(tj, w.dmg, W_MELEE);
-            return;
-        }
-        if self.projs.len() >= 4000 {
-            self.damage(tj, w.dmg, w.kind);
+        let dmg = w.dmg * self.players[e.team as usize].atk[class_of(d)];
+        self.ev(if w.kind == W_MELEE { 7.0 } else { w.kind as f32 }, e.x, e.y);
+        if w.kind == W_MELEE || self.projs.len() >= 4000 {
+            self.damage(tj, dmg, w.kind);
             return;
         }
         let t = &self.ents[tj];
+        let d0 = ((t.x - e.x).powi(2) + (t.y - e.y).powi(2)).sqrt().max(0.1);
         const SPEED: [f32; 7] = [0.0, 14.0, 34.0, 15.0, 6.5, 13.0, 7.0];
-        self.projs.push(Proj { x: e.x, y: e.y, px: e.x, py: e.y, tx: t.x, ty: t.y, tgt: self.h(tj), speed: SPEED[w.kind as usize], dmg: w.dmg, kind: w.kind, team: e.team, splash: w.splash, targets: w.targets });
+        self.projs.push(Proj { x: e.x, y: e.y, px: e.x, py: e.y, tx: t.x, ty: t.y, tgt: self.h(tj), speed: SPEED[w.kind as usize], dmg, kind: w.kind, team: e.team, splash: w.splash, targets: w.targets, d0 });
     }
 
     #[inline]
     fn damage(&mut self, j: usize, dmg: f32, kind: u8) {
+        let (team, td) = (self.ents[j].team, &DEFS[self.ents[j].def as usize]);
+        let m = MULT[kind as usize][td.armor as usize] * self.players[team as usize].dfn[class_of(td)];
         let t = &mut self.ents[j];
-        t.hp -= dmg * MULT[kind as usize][DEFS[t.def as usize].armor as usize];
+        t.hp -= dmg * m;
         t.flash = 0.12;
+        if team == self.local && m > 0.0 && self.tick % 8 == 0 {
+            let (x, y) = (t.x, t.y);
+            self.ev(15.0, x, y);
+        }
     }
 
     fn update_projs(&mut self) {
@@ -860,6 +1117,16 @@ impl Game {
                     self.players[team].researching = false;
                     done = true;
                 }
+            } else if item >= TECH0 {
+                e.qt += DT;
+                let k = item - TECH0;
+                if e.qt >= TECHS[k as usize].time {
+                    let p = &mut self.players[team];
+                    p.tech |= 1 << k;
+                    p.tech_busy &= !(1 << k);
+                    p.recompute();
+                    done = true;
+                }
             } else {
                 let ud = &DEFS[item as usize];
                 if e.qt < ud.time {
@@ -881,6 +1148,9 @@ impl Game {
                 }
             }
             if done {
+                if e.team == self.local {
+                    self.ev(if item >= TECH0 { 13.0 } else { 12.0 }, e.x, e.y);
+                }
                 e.q.copy_within(1.., 0);
                 e.qn -= 1;
                 e.qt = 0.0;
@@ -1064,6 +1334,18 @@ impl Game {
                         moving = true;
                     }
                 }
+                O_UNLOAD => {
+                    let dist = ((e.ox - e.x).powi(2) + (e.oy - e.y).powi(2)).sqrt();
+                    if dist < 1.3 || e.stuck > 20 {
+                        self.unload(&mut e);
+                        Self::set_idle(&mut e);
+                    } else {
+                        let (ox, oy) = (e.ox, e.oy);
+                        want = self.steer(&mut e, d, ox, oy);
+                        moving = true;
+                    }
+                }
+                O_BOARD => self.do_board(i, &mut e, d, &mut want, &mut moving),
                 O_GATHER => self.do_gather(&mut e, d, &mut want, &mut moving),
                 O_BUILD => self.do_build(&mut e, d, &mut want, &mut moving),
                 _ => {}
@@ -1112,7 +1394,7 @@ impl Game {
                     }
                 }
             }
-            if moving && (e.order == O_MOVE || e.order == O_AMOVE) && !engaged {
+            if moving && (e.order == O_MOVE || e.order == O_AMOVE || e.order == O_UNLOAD) && !engaged {
                 let moved = ((e.x - e.px).powi(2) + (e.y - e.py).powi(2)).sqrt();
                 let near = (e.ox - e.x).powi(2) + (e.oy - e.y).powi(2) < 36.0;
                 if moved < d.speed * DT * 0.25 && near {
@@ -1161,7 +1443,7 @@ impl Game {
             return;
         }
         let p = &mut self.players[e.team as usize];
-        let amount = 0.55 * (1.0 + 0.1 * p.epoch as f32) * DT;
+        let amount = 0.55 * (1.0 + 0.1 * p.epoch as f32) * p.gather * DT;
         if farm != NOIDX {
             // a farm supports four workers; extras wait their turn
             if self.ents[farm].carry < 4.0 {
@@ -1221,6 +1503,9 @@ impl Game {
         let t = &mut self.ents[j];
         t.built = (t.built + step).min(1.0);
         t.hp = (t.hp + bd.hp * 0.9 * step).min(bd.hp);
+        if t.built >= 1.0 && t.team == self.local {
+            self.ev(14.0, b.x, b.y);
+        }
     }
 
     /// Soft collision: overlapping units in the same layer push each other apart.
@@ -1304,7 +1589,7 @@ impl Game {
             }
         }
         for e in &self.ents[..self.high] {
-            if !e.alive || e.team != 0 {
+            if !e.alive || e.team != self.local {
                 continue;
             }
             let r = DEFS[e.def as usize].sight;
