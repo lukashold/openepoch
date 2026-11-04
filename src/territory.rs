@@ -969,6 +969,8 @@ mod tests {
         let bytes=crate::city_ground::split_save(&bytes).unwrap().0.to_vec();
         let ter = bytes.len() - TERR_BYTES;
         let dip = ter - crate::diplomacy::DIP_BYTES;
+        #[cfg(feature="ee2-up15")]
+        {assert!(Game::load(&bytes[..ter]).is_none());return;}
         let legacy = Game::load(&bytes[..ter]).unwrap();
         assert_eq!(legacy.relation(0, 1), crate::diplomacy::NEUTRAL);
         assert!(!legacy.territory.offers[1].active);

@@ -1,0 +1,304 @@
+{
+  "status": "passed",
+  "format": "ee2-native-farm-and-undertexture-evidence-v1",
+  "build": "water-farm3",
+  "engineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+  "uiLaunched": false,
+  "sourceHashes": {
+    "db.zip!db/Units/farm.ddf": "629e5dec7df3dfc1e0b53861718be7b27345140c96ef6c778f85b2a689e88abc",
+    "db.zip!db/Visuals/visual_decals.ddf": "751f01e955927a5566179bd6bd894685f7684d63838c3b91ce002d47129f7328",
+    "hdrs.zip!DbHdrs/DbUnitDefs.h": "afde5529ed266cc3995dfa3c48eecc3fd17f2eac7db65c880d077ac277cd26c3",
+    "hdrs.zip!DbHdrs/DBVisualDefs.h": "fb9d472d986e009045caab4aa29fdd02a0c64c275fc3e2ec39e2058c12ce8f1f"
+  },
+  "ghidraExports": {
+    "native-farm-decal-angle.c": {
+      "sha256": "f2d5fd176cb5c0cc2887d2e93559da62613e91fa38943f5aaf28fa99f1980560",
+      "bytes": 3748
+    },
+    "native-farm-decal-extent.c": {
+      "sha256": "4b1ae446be7e42d89e7a1e6233aebc90803768e090be8152708f835312ca63c7",
+      "bytes": 12080
+    },
+    "native-farm-decal-offset.c": {
+      "sha256": "9038ff6ff0d5e1b24734cad4b0da2b18908e7c956d04425d41d610abe5e1a784",
+      "bytes": 3190
+    },
+    "native-farm-factory-size.c": {
+      "sha256": "0b97191fe19ee66e6419983f02bf09f875be826f4be7e0063e6a1a8e407eb4dc",
+      "bytes": 9882
+    },
+    "native-farm-footprint-defaults.c": {
+      "sha256": "648b16f3f307b9c7b998c397b6aa564eb500456b0ed7fd19ef2886e5535877b8",
+      "bytes": 945
+    },
+    "native-farm-footprint-properties.c": {
+      "sha256": "eb00f158b1be6134e10835bfae8c01e0f9d8fb4b4360a3c41dd2da373f3978cc",
+      "bytes": 50422
+    },
+    "native-farm-layout-binding.c": {
+      "sha256": "c99d0f1e33267bfb97326aad188ff31127f64fa0ba7933456500b3fe0e3c8249",
+      "bytes": 7767
+    },
+    "native-farm-layout-runtime.c": {
+      "sha256": "e0dfb8ca4630ef74342a2f279c697bb2cf0e77f716e717726c8bfebee2b04e0a",
+      "bytes": 5741
+    },
+    "native-farm-local-defaults.c": {
+      "sha256": "e9d6ca9017401e52c12c07fe1a78a1ccfba9b4d878f2227a4c9c752b1efa4959",
+      "bytes": 15631
+    },
+    "native-farm-size-events.c": {
+      "sha256": "a864a1e477ded0e2cc7e0334e0cc6dbb9d2583e02ae0c4e663a54495e70ee176",
+      "bytes": 90779
+    },
+    "native-farm-size-handlers.c": {
+      "sha256": "4644e6dd3758022e04cbe90c180d543476f8d9783f118a18f9b075e36f9fefc5",
+      "bytes": 20873
+    },
+    "native-farm-size-producer.c": {
+      "sha256": "b263be13a8f6da2a20733059b290d3c5407037153c94a3a8154cfb3091414fed",
+      "bytes": 12028
+    },
+    "native-farm-world-transform.c": {
+      "sha256": "ed3c20d94ad66879b45e33b5c34b9f84a014d56bfffba9a6661d7bc66c2feadf",
+      "bytes": 12398
+    }
+  },
+  "nativeFarm": {
+    "factories": {
+      "CompositeModel": "00602860",
+      "FarmPlotModel": "0061D380; registered by0061D260",
+      "baseVisualConstructor": "006079F0; transform initializer008EDFA0"
+    },
+    "defaultValueProof": "DbUnitDefs.h explicitly documents that the DB reader initializes ALL dataclass data to zero. DBVisualDefs.h places kScaleIdentity first. This closes the previously unresolved absent inner CompositeModel.ScaleType; enum order or a missing token alone was insufficient.",
+    "scaleChain": {
+      "classGetter": "005F8040",
+      "parentPropagation": "00609310",
+      "parentAssignment": "00608A90",
+      "matrixVector": "008E6970",
+      "vectorScale": "005F9C00",
+      "vectorAdd": "005F7850",
+      "values": {
+        "building": 0.03999999910593033,
+        "conversion": 0.7071067690849304,
+        "rootLocal": 0.02828427031636238,
+        "plotsCompositeLocal": 0.7071067690849304,
+        "plotLocal": 1,
+        "world": 0.019999999552965164
+      },
+      "normalizedMeshScale": 0.01,
+      "worldScaleForNormalizedMesh": 1.9999999552965164
+    },
+    "plots": {
+      "nativeOffsets": [
+        [
+          -25.0,
+          -25.0,
+          0.0
+        ],
+        [
+          25.0,
+          -25.0,
+          0.0
+        ],
+        [
+          25.0,
+          25.0,
+          0.0
+        ],
+        [
+          -25.0,
+          25.0,
+          0.0
+        ]
+      ],
+      "worldCentersXZ": [
+        [
+          -0.5,
+          0.5
+        ],
+        [
+          0.5,
+          0.5
+        ],
+        [
+          0.5,
+          -0.5
+        ],
+        [
+          -0.5,
+          -0.5
+        ]
+      ],
+      "combinedNativeWidth": 2.0,
+      "sourceBoundsMeaning": "Single original plot NIF bounds remain sourceBounds; new compositeBounds names the complete four-plot geometry."
+    },
+    "stateBindings": "All three DDF crop families have four independent plot StateDatabases, each defaulting to Harvest_3_N. Import all12 family/state source meshes; activate only source default FarmWheat Harvest_3 for the existing simulation Farm archetype. No BASE DDF/CSV references Farm8.",
+    "terrain": "FarmPlotSM vtable00B4706C slot6=0061D4C0 queries0070FB00 at each plot world center and changes translation Z only. Production VS follows that behavior using the current terrain b-c triangle mesh. Normal/slope rotation is not invented.",
+    "lod": "All imported crop source NIFs have an empty native LOD selection. No substitute crop LOD or arbitrary distance threshold is added."
+  },
+  "nativeUndertexture": {
+    "unitFactory": "0053A8D0",
+    "sizePayloadPublisher": "005DA540; other native publishers00773E00/00842F90",
+    "subscription": "00603DA0; channel00CDCDB4",
+    "selector": "00603A60",
+    "fieldSlots": {
+      "bodySize": [
+        "+58",
+        "+5C"
+      ],
+      "centerOffset": [
+        "+60",
+        "+64"
+      ],
+      "footprintSize": [
+        "+68",
+        "+6C"
+      ],
+      "undertextureSize": [
+        "+70",
+        "+74"
+      ],
+      "undertextureOffset": [
+        "+78",
+        "+7C"
+      ]
+    },
+    "conversion": {
+      "sqrt2Address": "00B43910",
+      "sqrt2Float32": 1.4142135381698608,
+      "epsilonAddress": "00B4390C",
+      "epsilonFloat32": 1.1920928955078125e-07
+    },
+    "factoryRule": "Non-ellipse body sizes, all footprint sizes, both explicit undertexture sizes and offsets, and center offsets are multiplied by source sqrt2 and stored as floats. Missing footprint falls back to raw body size before conversion.",
+    "selectorRule": "If either explicit undertexture size is zero: use converted footprint dimensions, optional Decal.Scale, centerOffset-(footprint-body)/2. Otherwise: width=storedUnderY, depth=storedUnderX, direct stored offsets.",
+    "axisRule": "006037B0 gets Euler from local parent matrix008E7D00, rotates offsets by(-ownYaw-pi/2) via00A20800 and SUBTRACTS them via004A05C0. Getter00603640 then adds pi/2 to the quad angle. In the existing Y-up basis, quad yaw remains ownYaw and local offset=(-nativeOffsetY,-nativeOffsetX).",
+    "extentRule": "00714CF0 uses full width/depth and multiplies by0.5 for clipping-plane half extents; no later sqrt2 cancellation exists.",
+    "underFarm": {
+      "rawSize": [
+        1.5,
+        1.5
+      ],
+      "width": 2.1213202476501465,
+      "offset": [
+        0,
+        0
+      ],
+      "sourceDecal": "UnderFarm; identical original under_farm Rural/Urban sprites in all three epoch slots"
+    },
+    "affectedBindings": [
+      {
+        "id": 0,
+        "decal": "UnderCityCenter",
+        "width": 4.242640495300293,
+        "depth": 5.656854152679443,
+        "offsetX": -0.0,
+        "offsetY": 0.3535533845424652
+      },
+      {
+        "id": 1,
+        "decal": "UnderHouse",
+        "width": 2.1213202476501465,
+        "depth": 2.1213202476501465,
+        "offsetX": -0.0,
+        "offsetY": -0.0
+      },
+      {
+        "id": 2,
+        "decal": "UnderFarm",
+        "width": 2.1213202476501465,
+        "depth": 2.1213202476501465,
+        "offsetX": -0.0,
+        "offsetY": -0.0
+      },
+      {
+        "id": 3,
+        "decal": "UnderBarracks",
+        "width": 2.8284270763397217,
+        "depth": 4.242640495300293,
+        "offsetX": -0.0,
+        "offsetY": 0.7071067690849304
+      },
+      {
+        "id": 4,
+        "decal": "UnderMill",
+        "width": 3.535533905029297,
+        "depth": 3.535533905029297,
+        "offsetX": -0.3535533845424652,
+        "offsetY": -0.0
+      },
+      {
+        "id": 6,
+        "decal": "UnderAirport",
+        "width": 4.242640495300293,
+        "depth": 7.071067810058594,
+        "offsetX": -0.0,
+        "offsetY": -0.0
+      },
+      {
+        "id": 47,
+        "decal": "UnderUniversity",
+        "width": 4.242640495300293,
+        "depth": 4.242640495300293,
+        "offsetX": -0.0,
+        "offsetY": -0.0
+      },
+      {
+        "id": 48,
+        "decal": "UnderMill",
+        "width": 3.535533905029297,
+        "depth": 3.535533905029297,
+        "offsetX": -0.3535533845424652,
+        "offsetY": -0.0
+      },
+      {
+        "id": 49,
+        "decal": "UnderStable",
+        "width": 2.8284270763397217,
+        "depth": 4.242640495300293,
+        "offsetX": -0.0,
+        "offsetY": 0.7071067690849304
+      },
+      {
+        "id": 50,
+        "decal": "UnderMarket",
+        "width": 2.8284270763397217,
+        "depth": 2.8284270763397217,
+        "offsetX": -0.0,
+        "offsetY": -0.0
+      },
+      {
+        "id": 51,
+        "decal": "UnderTemple",
+        "width": 3.535533905029297,
+        "depth": 3.535533905029297,
+        "offsetX": -0.0,
+        "offsetY": -0.0
+      },
+      {
+        "id": 52,
+        "decal": "UnderWarehouse",
+        "width": 1.4142135381698608,
+        "depth": 2.8284270763397217,
+        "offsetX": -0.0,
+        "offsetY": -0.0
+      },
+      {
+        "id": 55,
+        "decal": "UnderMill",
+        "width": 3.535533905029297,
+        "depth": 3.535533905029297,
+        "offsetX": -0.3535533845424652,
+        "offsetY": -0.0
+      },
+      {
+        "id": 56,
+        "decal": "UnderFortress",
+        "width": 4.242640495300293,
+        "depth": 4.242640495300293,
+        "offsetX": -0.0,
+        "offsetY": -0.0
+      }
+    ]
+  }
+}

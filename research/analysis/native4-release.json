@@ -1,0 +1,128 @@
+{
+  "format": "openepoch-native4-release-v1",
+  "status": "passed",
+  "build": "native-ui4",
+  "createdUTC": "2026-11-04T11:24:34.736767+00:00",
+  "networkProtocol": 9,
+  "scope": "Native HUD/source sprites, native water, Farm composites and corrected ground, with isolated installed-UP numeric profile as the EE2 default.",
+  "profiles": [
+    {
+      "id": "own",
+      "ruleset": 0,
+      "wasm": {
+        "file": "openepoch.wasm",
+        "bytes": 268821,
+        "sha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a"
+      },
+      "database": "openepoch-v2"
+    },
+    {
+      "id": "base",
+      "ruleset": 1,
+      "wasm": {
+        "file": "openepoch-ee2.wasm",
+        "bytes": 430146,
+        "sha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18"
+      },
+      "database": "openepoch-ee2-reference-v2"
+    },
+    {
+      "id": "up15",
+      "ruleset": 2,
+      "wasm": {
+        "file": "openepoch-ee2-up15.wasm",
+        "bytes": 435415,
+        "sha256": "f9ce07f4aa1105fb0bb9472be6e88fc070cc06046eb8db17a01b4956920fe2c3"
+      },
+      "database": "openepoch-ee2-up15-v1"
+    }
+  ],
+  "package": {
+    "file": "OpenEpoch-Mac-Komplett.zip",
+    "zipBytes": 1172866193,
+    "sha256": "c59458bd093ae4ab3f1bb1cfb0a091a0ea80b7244c8b1c11d6531e8574f59082",
+    "zipEntries": 4531,
+    "manifestFilesVerified": 4529,
+    "mediaFiles": 4466,
+    "mediaBytes": 1272968897,
+    "launcherMode": "0755",
+    "launcherLineEndings": "LF",
+    "pythonMinimum": "3.8"
+  },
+  "validation": {
+    "profileUiSaveNetworkChecks": 1364,
+    "hudDomMathChecks": 6029,
+    "gpuWorldChecks": 324,
+    "reflectionControls": 106,
+    "portableSelfTests": 20,
+    "portableReferences": 19653,
+    "exactCaseTargets": 4403,
+    "sourceHttpTests": 12,
+    "extractedHttpTests": 12,
+    "liveFilesCompared": 27,
+    "hudRegeneratedByteIdenticalFiles": 130
+  },
+  "evidenceReports": {
+    "native4-profile-integration.json": "1f383aa3befcb91b4f1cc1348e2da468257c1b48831f47ed3c02960b80588e23",
+    "native4-hud-integration.json": "0e5f09f7a83498b7237132765074ffd1b8c9f26bc6d4e8c57ba4063fc13747e7",
+    "native4-hud-tests.json": "a418fa99ef1db0a3229c0941b91c7e5c208954b92ab1e3755817638ddbc354cd",
+    "native4-hud-regeneration.json": "d287047009d729750a7daec23b7a68ca00f60ba84f998ca3b9ed3dbc8118b5fd",
+    "native4-package-extraction.json": "3eb9ff7b41b53fe5fff0dfb686d5d74a387922c89560e22202ac99da1708b857",
+    "native4-package-portable-assets.json": "3adfe58961c26bc3c5733dffe69a75fdad88c247a744b0301141d2ab707ced43",
+    "native4-http-tests.json": "1b117711b8f6c096c1339a116c5a4de701193fb8f4badab4f48e70dadc8c49fb",
+    "native4-live-http.json": "1101a157e79db55dd64d5f752ed8355347f72db7e64c44c41070962cb5c071ed",
+    "native4-importer-cli-tests.json": "132c3d3edfed08b2f049aebef59491838e942e5bc946de84db39d49ef1c89d17",
+    "native4-water-importer-cli-tests.json": "0c683738edd1491e158c9e0c4b41dbdb45495ce2b22f801570038f67aed4915e",
+    "native4-visual-scale-importer-cli-tests.json": "89222361fae7822f5de03a2d57423cbe6425f5e8aa4079ebebcd35e3b9aa1a13",
+    "native3-farm-ground-integration.json": "6368cbea53b93331e8ee07f9028f67499f43facec278bdede3ac4e271f642fb6",
+    "native3-water-implementation.json": "c2fdc62ae26008a1251df7d7c3abc118920f7eb32332b2262191963689266ecd",
+    "native-up15-profile-regression-tests.json": "ab7482351b3ce13389f04612f9cd97f1e11af61388464196e5a488d0b2e158f6"
+  },
+  "currentRuntimeFiles": {
+    "main.js": "aad23801c9320d00103de22a74c771cae1bcc48067252247108c98e72041747d",
+    "index.html": "7bf27bdd149e1f62fd85e94c2a774fc37058fb8f3d63476ecc08cda954ca6cf2",
+    "rules-profile.js": "007f15eadbfd7632b8179801e25631c1654847f3791c39517a144a7b0433f3e1",
+    "season-session.js": "2ba54f8c2c55b87034abd6ae79f730d816e0a98505ce4582c3c3b1111eaf7e07",
+    "original-terrain.js": "647091f06fcc8e0831a695927b6290e5b5c57eaffa03432787d20b4101b4a090",
+    "original-water.js": "4692e5e0031d5bd31b08ba7a28c7402c7cd01fd59fe0e7120eecd849ed6bd268",
+    "original-ground.js": "9902abc52e4dec444cc72aa4dcc1a15a6099d5433cd9aff78a01542930c47ec5",
+    "original-ground-native.js": "cc92743ca43a227527e58cb75c87905457961c8eb3067cc5ec7f8bf1ae331093",
+    "original-scale.js": "4651e04fd4a0a61b8a47f2c4b8fb56df83bfd7864796011cf2648df6b992a947",
+    "original-renderer.js": "c1789590b9b356f1d6289b0305429a8c0a82162597b4723a503499b283242553",
+    "original-model-seasons.js": "c8fab385c06dbe93dd7f29fa80959d48dadd031801f6b315e9d7b9a77f3863a6",
+    "original-camera.js": "ffc6ecdcebcace98b73918a15e9cc5e90af6685e724708b82c2a46247eab1954",
+    "original-seasons.js": "fb4001470974e86ed297465309933305bef3bd8c54c8c603f6e39d18b2e63492",
+    "original-reflection.js": "f3506a9b55e880b5b17b63bb329f28a80eaf2ff47cfa7b9abea4f51842b6c131",
+    "original-hud.js": "b777e9a3f56a50fc04389a010368830f75098861796704bac658748b95339f15",
+    "original-hud-layout.js": "dd7c84000e04cfa0708539b426d365872845ff26f8b2e322de4438f23ad762b5",
+    "local-original/terrain-native/manifest.json": "c7cf660ff198a5f3e7b9c0aa2391b27f38ec7afb116b9541fa09019223c0359a",
+    "local-original/water-native/manifest.json": "1739c08538f09c0279dd4ecdef44019e9b2fed4e9e0149e60a04ad4b88d50bc7",
+    "local-original/ground-decals.json": "eb407c403f1e22b997215f85b8f02e9cc62ae44facf31b7068c4312f8c8454f4",
+    "local-original/models/manifest.json": "f681e82a0676d78c05590f3f1d736be665d7cb533346c73cc49dbe317d083d53",
+    "local-original/model-seasons.json": "17e4869e547f12eed82ea79a693677f4afebcd804dd1ea9a295d8d3079531e3c",
+    "local-original/farm-composites.json": "d85f3e229280734a583f6089ffe97c2df02e4104d7fae95aff60d1b9300f00bb",
+    "local-original/hud-native/manifest.json": "2b5c66a91b27cf7c3833d00db063a74c0b8e8dfedc2d0a67504d3bd6b4d6db6a",
+    "local-original/season-model-textures/team/manifest.json": "269bd404054013b2431d32ec308d0056aa43a51055a68502f4c387d942be3113",
+    "local-original/team-textures/manifest.json": "e9d618ca90a3cc583bc95d911b887a4a15f468fc398516b0b269130d6fb4a5df",
+    "reference.html": "dba3d19143c143e975b62c0d6bbaf08640a5712b2aa8e3442fa7e0dd35f15462",
+    "catalog.html": "d2cf2c7610e38538150b05ce15c41a3194c6c70a7b458e52f6695a669909073d"
+  },
+  "liveUrl": "http://127.0.0.1:8125/?rules=ee2&build=native-ui4",
+  "github": {
+    "currentCheckpointPublished": false,
+    "previousCommit": "f545f2faa336426d70055f56ededb599f4064520",
+    "originalMediaIncluded": false
+  },
+  "fullOriginalParity": false,
+  "limits": [
+    "Complete visual/gameplay1:1 parity is not achieved; development continues.",
+    "UP data project onto55 of57 role slots with14 explicit role adapters; two unresolved slots remain locked.",
+    "Complete roster, civilizations, skirmish AI, native terrain generation, weather, lighting and full native UI remain incomplete.",
+    "82 research factors and additional weapon/target/timing/latent/pack/turret behavior remain open.",
+    "All12 farm states are included, but worker-dependent crop/family transitions and seeding playback are not yet reproduced.",
+    "Native reflection culling, UV defaults and full native transparency/sky ordering remain incomplete.",
+    "Multiplayer currently connects two browser peers; complete original multiplayer scope and Internet/WebRTC connectivity were not validated here.",
+    "DOM/IndexedDB transport adapters and headless GLES validate the stated source slices; no original-game same-scene comparison, browser interaction or physical macOS execution is claimed.",
+    "All imported original media are in the local portable ZIP; original media stay outside GitHub source publication."
+  ]
+}

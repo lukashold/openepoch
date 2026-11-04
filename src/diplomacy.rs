@@ -893,6 +893,8 @@ mod tests {
         bad[start + 21] = 3;
         assert!(Game::load(&bad).is_none());
         let old = &bytes[..start];
+        #[cfg(feature="ee2-up15")]
+        {assert!(Game::load(old).is_none());return;}
         let legacy = Game::load(old).unwrap();
         assert!(legacy.hostile(0, 1));
         assert_eq!(legacy.diplomacy.visibility, 0);

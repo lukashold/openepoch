@@ -10,6 +10,7 @@ crate-type = ["cdylib"]
 
 [features]
 ee2-reference = []
+ee2-up15 = ["ee2-reference"]
 
 [profile.release]
 opt-level = 3

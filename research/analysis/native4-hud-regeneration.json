@@ -1,0 +1,8 @@
+{
+  "format": "ee2-native-hud-regeneration-v1",
+  "status": "passed",
+  "files": 130,
+  "allFilesByteIdentical": true,
+  "manifestSha256": "2b5c66a91b27cf7c3833d00db063a74c0b8e8dfedc2d0a67504d3bd6b4d6db6a",
+  "importerSha256": "e0b97b2fd93af7ffe98752b529fd44abd74d9ba4d3d01139e2ed19b0f5627d61"
+}

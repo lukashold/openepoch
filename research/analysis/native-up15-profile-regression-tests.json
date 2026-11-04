@@ -1,0 +1,272 @@
+{
+  "format": "ee2-up15-profile-regression-tests-v1",
+  "status": "PASS",
+  "activation": {
+    "status": "complete active optional-feature handoff; Rust/Cargo ownership returned to parent",
+    "utc": "2026-11-04T10:26:43.340893+00:00",
+    "files": [
+      {
+        "path": "src/city_ground_tests.rs",
+        "bytes": 9116,
+        "sha256": "2e75f6e46851b2a23bb6131de0d8c56c2a081e4c148ab6bb7855056fd94996bc",
+        "expected_active_baseline_sha256": "60eb5460b99ada0de2f769cd080bb4c1a10011bfd548c2c25f938c86c9471506"
+      },
+      {
+        "path": "src/claim_tests.rs",
+        "bytes": 5219,
+        "sha256": "845d229bc0d005f97cfba1b17dd0300fdd5bb90d741ca6945bcbc35ef4e8966f",
+        "expected_active_baseline_sha256": "7f924ac05e049c1fecc54e2d413bc8ad188db952fe4ee6f6de9af12352b5a4d8"
+      },
+      {
+        "path": "src/diplomacy.rs",
+        "bytes": 36394,
+        "sha256": "792fb35972384e131dae7cb6099862334b0880f6b209a1b116b62a6f2a6f261a",
+        "expected_active_baseline_sha256": "fd905e5fcaf7e2e1d7b713f74698e28dbd4f917d56ebad8932befc216885041e"
+      },
+      {
+        "path": "src/economy.rs",
+        "bytes": 5269,
+        "sha256": "f6140e3d4f6ffab0b2866d6abc750ac7358119fe19cdd77d0d8f05ec5a8f5cb3",
+        "expected_active_baseline_sha256": "cf223f645805f4a1b3d8b315f0ae8a2c9534ea5b4448acc9dbd6c318cef51a4f"
+      },
+      {
+        "path": "src/ee2_combat_tests.rs",
+        "bytes": 6487,
+        "sha256": "e70669b46b4904f0925bf93050a208e563ca383ee84b1900a46ed145c2bc46e3",
+        "expected_active_baseline_sha256": "1f43ce7e90e998a6486dd67c4cd235d2012ec32cec243736eb132c7df6b99459"
+      },
+      {
+        "path": "src/ee2_up15_combat.rs",
+        "bytes": 45044,
+        "sha256": "5cba9731ba4b1e8cdcdec4226d522e7591eb9f0f9b5f292102102b935524d2e6",
+        "expected_active_baseline_sha256": null
+      },
+      {
+        "path": "src/ee2_up15_economy.rs",
+        "bytes": 22037,
+        "sha256": "21ea1c41e691bdb13d8152ef0f08f537a25ca0deb48c0a8019b61d5cdcabda6a",
+        "expected_active_baseline_sha256": null
+      },
+      {
+        "path": "src/ee2_up15_oracle_tests.rs",
+        "bytes": 106132,
+        "sha256": "151e0ea7f40279eecdfae624e966489953991ce1924fc8701175951afff8dd9d",
+        "expected_active_baseline_sha256": null
+      },
+      {
+        "path": "src/ee2_up15_profile.rs",
+        "bytes": 9215,
+        "sha256": "781d6a2bbcf9f950416549430726f960555a2f4b40b85dfba3e7d50611832985",
+        "expected_active_baseline_sha256": null
+      },
+      {
+        "path": "src/ee2_up15_research.rs",
+        "bytes": 40417,
+        "sha256": "54310b59d678eb6e42a4b01ef60057ed30b67111833d48fe91fc6002ed631a07",
+        "expected_active_baseline_sha256": null
+      },
+      {
+        "path": "src/ee2_up15_units.rs",
+        "bytes": 282469,
+        "sha256": "c9c2a315a84617259d0ac6eddc99572702f81f1fa8e646a532d4a4f88300bb7b",
+        "expected_active_baseline_sha256": null
+      },
+      {
+        "path": "src/game.rs",
+        "bytes": 85795,
+        "sha256": "84afa78604e456295fb8fa80bf6fa653753cb70aa7c3e3d1e0c449456f39e1b5",
+        "expected_active_baseline_sha256": "7f492f98f5079f55c9581e584cd9a943c655a26949af1de3391191cc7cc9c273"
+      },
+      {
+        "path": "src/lib.rs",
+        "bytes": 31724,
+        "sha256": "1c11d1e9859d0baaf102eb26958df65d79ef7663afbac1fa6abb4a42012e157f",
+        "expected_active_baseline_sha256": "7ec5248d4a7f5c48712d6061f9714f1e63de3c48a2599b89557952eef1493b37"
+      },
+      {
+        "path": "src/research.rs",
+        "bytes": 7308,
+        "sha256": "55bee7a8b99fec4288704a3cac321792547ca79dbe895a18ae588a5adf77a1f3",
+        "expected_active_baseline_sha256": "125c4bd967a0884de5b4fa5766aa17496f03b0cb589cf92d2ee0eb06205de08b"
+      },
+      {
+        "path": "src/save.rs",
+        "bytes": 11921,
+        "sha256": "c904a62d16cf91cfa591e0b65c9c9803a4dca43ca6188dbe5368580fae6f1cf2",
+        "expected_active_baseline_sha256": "3d9da2646d647ac6b8c8ce2119b04736ecc317ae570f418c760462df5daf3c86"
+      },
+      {
+        "path": "src/territory.rs",
+        "bytes": 45186,
+        "sha256": "3673d09a72f2768024c10d2a9292eaa5f8d91d306970aa86d0d83b323f4fecc0",
+        "expected_active_baseline_sha256": "8aae5ef138ef0c231766df06c08ba8820381a887da2876e4761cfe413922072c"
+      },
+      {
+        "path": "Cargo.toml",
+        "bytes": 387,
+        "sha256": "652aafe3ad15c4e318b375d134bb712019f3933e56858071090f7037f173a4b2",
+        "expected_active_baseline_sha256": "23ef10139ffe5e5100e8d06d414b3c5b3421cfb59c1da2ce197a921fcd1dc269"
+      },
+      {
+        "path": "tools/up15_source_database.py",
+        "bytes": 7419,
+        "sha256": "39e3b2f54f43eb093b3f9c81477fe7d2f0b1d934bf868158ba05664cff5e0cc3",
+        "expected_active_baseline_sha256": null
+      },
+      {
+        "path": "tools/up15_research_targets.py",
+        "bytes": 2729,
+        "sha256": "c5f4ec085c0dc2c22fcf01df784cc91650f4b5fa633e9ed8225230047f725fd8",
+        "expected_active_baseline_sha256": null
+      },
+      {
+        "path": "tools/up15_unit_upgrade_refs.py",
+        "bytes": 3924,
+        "sha256": "86f729f7e409f6a48b6969ca9ea604640ea26943753e0429622210e6975e8ca1",
+        "expected_active_baseline_sha256": null
+      },
+      {
+        "path": "tools/import_ee2_up15_units.py",
+        "bytes": 7532,
+        "sha256": "7eb6ce9190a9a1bd279a5826fac2e389aa8cd961f871b7982e97ed1c7b62eaba",
+        "expected_active_baseline_sha256": null
+      },
+      {
+        "path": "tools/import_ee2_up15_combat.py",
+        "bytes": 11834,
+        "sha256": "5ac14a1c25bec08b704f685c87e69d81ec5e74c3168ef5a5ec94b494b9282955",
+        "expected_active_baseline_sha256": null
+      },
+      {
+        "path": "tools/import_ee2_up15_research.py",
+        "bytes": 10523,
+        "sha256": "c5f5eae363240671e65ded7080b19a3cfcf414e71b20a53711733c8990e02bb2",
+        "expected_active_baseline_sha256": null
+      },
+      {
+        "path": "tools/import_ee2_up15_profile.py",
+        "bytes": 3011,
+        "sha256": "2469828d1da0498047b7c88ab84906e7f0e1802a7e7c526a5289ed8ac7752cfe",
+        "expected_active_baseline_sha256": null
+      },
+      {
+        "path": "tools/regenerate_ee2_up15.py",
+        "bytes": 1882,
+        "sha256": "3b6dd9a869a7831cc90d8ee1ffc9d4a543b3389fab5b8b6fb579d6dfefe30288",
+        "expected_active_baseline_sha256": null
+      },
+      {
+        "path": "tools/test_ee2_up15_sources.py",
+        "bytes": 12697,
+        "sha256": "a9edb954d431f245a7f767ed3194eacea77f71328b81ded683f37e9880470325",
+        "expected_active_baseline_sha256": null
+      },
+      {
+        "path": "tools/test_ee2_up15_wasm.mjs",
+        "bytes": 6428,
+        "sha256": "918cdc6012d35e13cd66d5e1bdd571af56c7a470aac1d7400ffa84f08a81d34c",
+        "expected_active_baseline_sha256": null
+      },
+      {
+        "path": "tools/audit_ee2_up15_upgrade_refs.py",
+        "bytes": 5614,
+        "sha256": "c6dbf7806d06a753558822fd59bfbfd6b47d7b5b4760f272485d479e133a247e",
+        "expected_active_baseline_sha256": null
+      },
+      {
+        "path": "tools/up15-combat-oracle.bin",
+        "bytes": 302504,
+        "sha256": "49e72468dadf261b9c2ad724bd0bf67779463016530c00cd8c20debf19a1d8f8",
+        "expected_active_baseline_sha256": null
+      },
+      {
+        "path": "docs/ee2-up15-catalog.json",
+        "bytes": 3060941,
+        "sha256": "cc62a6bbf2621e1f7c7087a3433037f3a7d7c8fa17c4b656f01418afe3cd56b6",
+        "expected_active_baseline_sha256": null
+      },
+      {
+        "path": "docs/ee2-up15-combat.json",
+        "bytes": 1733216,
+        "sha256": "15f253bd79decbf508b86cc166076c825308ba945d184f6fdcf5bbd94734bbd8",
+        "expected_active_baseline_sha256": null
+      },
+      {
+        "path": "docs/ee2-up15-profile.json",
+        "bytes": 23452,
+        "sha256": "6e28990c417f085ef4fda5e20c50b5f30ecaf6cd991ce4ecc9652ba9b03cf68e",
+        "expected_active_baseline_sha256": null
+      },
+      {
+        "path": "docs/ee2-up15-research.json",
+        "bytes": 2301009,
+        "sha256": "f7ff2cff7bc25a158da734eb7347c85be4f85bf30d54845f45f870f84c241ad3",
+        "expected_active_baseline_sha256": null
+      },
+      {
+        "path": "docs/ee2-up15-unit-refs.json",
+        "bytes": 3631811,
+        "sha256": "953b01e2b51871f632306ae78c574037887b98b076c84f42057d1e5ce60dc1dd",
+        "expected_active_baseline_sha256": null
+      },
+      {
+        "path": "docs/ee2-up15-units.json",
+        "bytes": 21482114,
+        "sha256": "134da17953a50a94ce4ff5fbc9f95fdfd10ce0dcb72b6c327a0fe362a97a4883",
+        "expected_active_baseline_sha256": null
+      },
+      {
+        "path": "docs/EE2-UP15-PROFIL.md",
+        "bytes": 2652,
+        "sha256": "61e59795eb9ee893a282174b655131869a077bc0500d4cfc82456a099a90b5e4",
+        "expected_active_baseline_sha256": null
+      }
+    ],
+    "unchanged_wasm": {
+      "openepoch.wasm": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+      "openepoch-ee2.wasm": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18"
+    },
+    "original_media_copied": false,
+    "original_exe_dll_executed": false,
+    "github_writes": false,
+    "up15_wasm": {
+      "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\OpenEpoch\\docs\\openepoch-ee2-up15.wasm",
+      "sha256": "f9ce07f4aa1105fb0bb9472be6e88fc070cc06046eb8db17a01b4956920fe2c3",
+      "bytes": 435415
+    },
+    "active_regeneration_verified": true,
+    "regeneration_files": 12,
+    "validation": {
+      "rust_up15": 76,
+      "rust_base": 32,
+      "rust_ee2_reference": 75,
+      "source_oracles": 92660,
+      "wasm_checks": 318228,
+      "independent_source_checks": 4668,
+      "independent_installed_sources": 161,
+      "independent_wasm_checks": 89
+    },
+    "final_model_manifest_sha256": "f681e82a0676d78c05590f3f1d736be665d7cb533346c73cc49dbe317d083d53",
+    "post_farm_metadata_only": true
+  },
+  "complete_ref_audit": "outputs/OpenEpoch/docs/ee2-up15-unit-refs.json",
+  "scope_audit": "outputs/OpenEpoch/docs/ee2-up15-profile.json",
+  "source_oracle_report": "work/up15-profile-candidate/source-oracle-report.json",
+  "wasm_report": "work/up15-profile-candidate/wasm-validation-report.json",
+  "regeneration_report": "work/up15-profile-candidate/regeneration-report.json",
+  "independent_reports": [
+    "outputs/EE2-Research/analysis/up15-independent-source-review.json",
+    "outputs/EE2-Research/analysis/up15-independent-execution-review.json"
+  ],
+  "limits": [
+    "55/57 source bindings; roles28/43 disabled in UP15 candidate.",
+    "82 specialist research factors remain unsupported.",
+    "913 repeated native ability-field occurrences remain explicit unsupported adapters; 862 reachable ref records, zero unresolved.",
+    "No original EXE/DLL/media or Ghidra database entered source/public paths; no GitHub writes by this agent."
+  ],
+  "post_farm_regeneration": {
+    "model_manifest_sha256": "f681e82a0676d78c05590f3f1d736be665d7cb533346c73cc49dbe317d083d53",
+    "runtime_sources_byte_identical": true,
+    "regeneration_byte_identical": true
+  }
+}

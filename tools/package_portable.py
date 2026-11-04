@@ -37,9 +37,15 @@ def main():
             raise ValueError("Required package file missing: " + name)
         files.append((path, name))
     required = {"docs/index.html", "docs/openepoch.wasm", "docs/openepoch-ee2.wasm",
+                "docs/openepoch-ee2-up15.wasm", "docs/rules-profile.js",
+                "docs/original-hud.js", "docs/original-hud-layout.js",
                 "docs/local-original/models/manifest.json", "docs/local-original/audio/manifest.json",
                 "docs/local-original/textures.json", "docs/local-original/ground-decals.json",
-                "docs/local-original/team-textures/manifest.json"}
+                "docs/local-original/team-textures/manifest.json",
+                "docs/local-original/model-seasons.json", "docs/local-original/model-scales.json",
+                "docs/local-original/farm-composites.json", "docs/local-original/hud-native/manifest.json",
+                "docs/local-original/water-native/manifest.json",
+                "docs/local-original/season-model-textures/team/manifest.json"}
     names = [name for _, name in files]
     if len(names) != len(set(names)) or not required.issubset(names):
         raise ValueError("Incomplete or duplicated game tree")

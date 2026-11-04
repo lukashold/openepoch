@@ -1,0 +1,19 @@
+{
+  "format": "openepoch-native4-package-extraction-v1",
+  "status": "passed",
+  "build": "native-ui4",
+  "createdUTC": "2026-11-04T11:18:00.410506+00:00",
+  "file": "OpenEpoch-Mac-Komplett.zip",
+  "zipBytes": 1172866193,
+  "sha256": "c59458bd093ae4ab3f1bb1cfb0a091a0ea80b7244c8b1c11d6531e8574f59082",
+  "zipEntries": 4531,
+  "manifestFilesVerified": 4529,
+  "allCopiedFilesMatchCurrentSource": true,
+  "mediaFiles": 4466,
+  "mediaBytes": 1272968897,
+  "root": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\Mac Paket Native4 Test\\OpenEpoch",
+  "launcherMode": "0755",
+  "launcherLineEndings": "LF",
+  "pythonMinimum": "3.8",
+  "noMacExecutionClaim": true
+}

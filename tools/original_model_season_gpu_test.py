@@ -54,6 +54,16 @@ def run(shaders,report):
         pairs=[('oak',manifest['sets']['Temperate']['tre_oak01']['urls'][0],manifest['sets']['Temperate']['tre_oak01']['urls'][3]),
             ('pine',manifest['sets']['Temperate']['tre_pine']['urls'][0],manifest['sets']['Temperate']['tre_pine']['urls'][3]),
             ('city',manifest['sets']['Temperate']['bld_citycenter1_we']['urls'][0],manifest['sets']['Temperate']['bld_citycenter1_we']['urls'][3])]
+        farm_path=ROOT/'docs/local-original/farm-composites.json'
+        if farm_path.is_file():
+            # Follow the exact model/node annotation to its source seasonal list;
+            # crop names and seasonal filenames are never matched heuristically.
+            farms=json.loads(farm_path.read_text())
+            for family,definition in farms['families'].items():
+                url=definition['states']['Harvest_3']['url'];nodes=manifest['models'][url]['parts']
+                keys={node['key'].casefold()for node in nodes.values()};assert len(keys)==1
+                sequence=manifest['sets']['Temperate'][list(keys)[0]]['urls']
+                pairs.append((family+' native seasonal skin',sequence[0],sequence[len(sequence)//2]))
         patches=json.loads((ROOT/'docs'/manifest['teamManifest']).read_text())['textures']['bld_citycenter1_we_wi']['variants']
         pairs.append(('winter team A/B',patches['A']['url'],patches['B']['url']))
         for label,first,next in pairs:

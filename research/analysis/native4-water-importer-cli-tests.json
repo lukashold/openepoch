@@ -1,0 +1,9 @@
+{
+  "format": "ee2-native-water-importer-cli-v1",
+  "status": "passed",
+  "filesByteIdentical": 10,
+  "installationOutputRejected": true,
+  "manifestSha256": "1739c08538f09c0279dd4ecdef44019e9b2fed4e9e0149e60a04ad4b88d50bc7",
+  "importerSha256": "14aa95993e9dda2cbd6a51e325ad0a268c9bc73e71cd156302854f18a61c9e31",
+  "noImportTimeWrites": true
+}

@@ -1,0 +1,176 @@
+{
+  "status": "superseded-claims-documented",
+  "format": "ee2-undertexture-source-correction-v1",
+  "build": "water-farm3",
+  "engineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+  "uiLaunched": false,
+  "historicalArtifactsUnmodified": true,
+  "superseded": [
+    {
+      "path": "ground-runtime-implementation.json",
+      "sha256": "6136ba4a065d59630bbc955343e31b5226c0a36caf1a1be1677f441dd073d87e",
+      "bytes": 6524,
+      "affectedClaims": [
+        {
+          "line": 7,
+          "text": "\"Thirteen explicit UndertextureSize/Offset bindings now use their source world dimensions independently of model normalization/gameplay raster size.\","
+        },
+        {
+          "line": 23,
+          "text": "\"dimensions\": \"00603A60 consumes explicit UndertextureSize/Offset packet fields and sends them directly to00714CF0. Model instance size/normalization does not participate in this source path.\","
+        }
+      ]
+    },
+    {
+      "path": "ground-selection-profile.json",
+      "sha256": "0a092f841c4a13905a24ea01d22c4637bc1d3051667a3fafdce23ccf9e0fcbf4",
+      "bytes": 990,
+      "affectedClaims": [
+        {
+          "line": 14,
+          "text": "\"placement\": \"00603A60 supplies explicit UndertextureSize/Offset to00714CF0 without model-size normalization.\","
+        }
+      ]
+    },
+    {
+      "path": "original-parity-audit-combat-season1.json",
+      "sha256": "0b7933fb42761ec6c76ec494e5a5ff8ce516a93112ec3682aee7358f8b85e487",
+      "bytes": 19188,
+      "affectedClaims": [
+        {
+          "line": 62,
+          "text": "\"done\": \"Native UndertextureSize/Offset, epoch slots1-5/6-10/11-15 and global urban predicate use actual WASM state. Completed alive TC radius preserves the native monotonic lifetime maximum through epoch changes and territory gifts; dedicated generation-bound state is hashed and saved with a validated CGD1 tail. Legacy CGDE float-bit collisions are regression-tested and remain loadable.\","
+        }
+      ]
+    },
+    {
+      "path": "original-parity-audit.json",
+      "sha256": "e4a5ceb07178aff087e769149989fa3006ba63dd6285762a3c2c4edfcb88ad8c",
+      "bytes": 28040,
+      "affectedClaims": [
+        {
+          "line": 69,
+          "text": "\"done\": \"Native UndertextureSize/Offset, epoch slots1-5/6-10/11-15 and global urban predicate use actual WASM state. Completed alive TC radius preserves the native monotonic lifetime maximum through epoch changes and territory gifts; dedicated generation-bound state is hashed and saved with a validated CGD1 tail. Legacy CGDE float-bit collisions are regression-tested and remain loadable.\","
+        }
+      ]
+    }
+  ],
+  "finding": "Earlier native-world-undertexture/raw-world-dimension claims only followed00603A60 and missed the0053A8D0 unit-definition producer. Raw DDF UndertextureSize/Offset are NOT final world parameters. Prior V2 artifacts remain historical snapshots, not current dimensional equivalence evidence.",
+  "correction": "Apply source float32 sqrt2 conversion before the payload; preserve explicit axis swap and derived signed offset transform. Native fallback now proves UnderFarm1.5*sqrt2. No artwork is resized or repainted.",
+  "affectedBindings": [
+    {
+      "id": 0,
+      "decal": "UnderCityCenter",
+      "width": 4.242640495300293,
+      "depth": 5.656854152679443,
+      "offsetX": -0.0,
+      "offsetY": 0.3535533845424652
+    },
+    {
+      "id": 1,
+      "decal": "UnderHouse",
+      "width": 2.1213202476501465,
+      "depth": 2.1213202476501465,
+      "offsetX": -0.0,
+      "offsetY": -0.0
+    },
+    {
+      "id": 2,
+      "decal": "UnderFarm",
+      "width": 2.1213202476501465,
+      "depth": 2.1213202476501465,
+      "offsetX": -0.0,
+      "offsetY": -0.0
+    },
+    {
+      "id": 3,
+      "decal": "UnderBarracks",
+      "width": 2.8284270763397217,
+      "depth": 4.242640495300293,
+      "offsetX": -0.0,
+      "offsetY": 0.7071067690849304
+    },
+    {
+      "id": 4,
+      "decal": "UnderMill",
+      "width": 3.535533905029297,
+      "depth": 3.535533905029297,
+      "offsetX": -0.3535533845424652,
+      "offsetY": -0.0
+    },
+    {
+      "id": 6,
+      "decal": "UnderAirport",
+      "width": 4.242640495300293,
+      "depth": 7.071067810058594,
+      "offsetX": -0.0,
+      "offsetY": -0.0
+    },
+    {
+      "id": 47,
+      "decal": "UnderUniversity",
+      "width": 4.242640495300293,
+      "depth": 4.242640495300293,
+      "offsetX": -0.0,
+      "offsetY": -0.0
+    },
+    {
+      "id": 48,
+      "decal": "UnderMill",
+      "width": 3.535533905029297,
+      "depth": 3.535533905029297,
+      "offsetX": -0.3535533845424652,
+      "offsetY": -0.0
+    },
+    {
+      "id": 49,
+      "decal": "UnderStable",
+      "width": 2.8284270763397217,
+      "depth": 4.242640495300293,
+      "offsetX": -0.0,
+      "offsetY": 0.7071067690849304
+    },
+    {
+      "id": 50,
+      "decal": "UnderMarket",
+      "width": 2.8284270763397217,
+      "depth": 2.8284270763397217,
+      "offsetX": -0.0,
+      "offsetY": -0.0
+    },
+    {
+      "id": 51,
+      "decal": "UnderTemple",
+      "width": 3.535533905029297,
+      "depth": 3.535533905029297,
+      "offsetX": -0.0,
+      "offsetY": -0.0
+    },
+    {
+      "id": 52,
+      "decal": "UnderWarehouse",
+      "width": 1.4142135381698608,
+      "depth": 2.8284270763397217,
+      "offsetX": -0.0,
+      "offsetY": -0.0
+    },
+    {
+      "id": 55,
+      "decal": "UnderMill",
+      "width": 3.535533905029297,
+      "depth": 3.535533905029297,
+      "offsetX": -0.3535533845424652,
+      "offsetY": -0.0
+    },
+    {
+      "id": 56,
+      "decal": "UnderFortress",
+      "width": 4.242640495300293,
+      "depth": 4.242640495300293,
+      "offsetX": -0.0,
+      "offsetY": -0.0
+    }
+  ],
+  "currentEvidence": "native3-farm-ground-evidence.json",
+  "currentIntegration": "native3-farm-ground-integration.json"
+}

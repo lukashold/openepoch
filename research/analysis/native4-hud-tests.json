@@ -1,0 +1,6 @@
+{
+  "format": "ee2-native-hud-tests-v1",
+  "status": "passed",
+  "checks": 6029,
+  "scope": "Independent named-corner/integer fixtures for native geometry; exact live DOM identity, command listeners, drawer access, themes and resize. Browser raster and full native widget state are not asserted."
+}

@@ -101,6 +101,8 @@ fn cgd1_roundtrip_is_exact_and_legacy_synthesizes_only_present_profile() {
     assert_eq!(&bytes[bytes.len()-4..],&CITY_END.to_le_bytes());
     let mut loaded=Game::load(&bytes).unwrap();assert_eq!(loaded.city_ground_radius(c),11.0);
     loaded.save();assert_eq!(loaded.savebuf,bytes);
+    #[cfg(feature="ee2-up15")]
+    {assert!(Game::load(&bytes[..offset]).is_none());return;}
     let legacy=Game::load(&bytes[..offset]).unwrap();assert_eq!(legacy.city_ground_radius(c),7.0);
     // Previous 57 and 56 headers have no CGD tail; also exercise noDIP/noTER.
     let core=36+core::mem::size_of::<[Player;4]>()+core::mem::size_of::<Ent>()*g.high+NN*5;
@@ -122,7 +124,7 @@ fn legacy_final_stock_research_and_tech_bits_may_coincidentally_equal_city_foote
         // Another valid resource/research/flag value can also look like a size.
         if prefix>12 {put(&mut old,end-8,20);}
         assert!(city_ground::split_save(&old).unwrap().1.is_none());
-        assert!(Game::load(&old).is_some(),"legacy defs{defs},prefix{prefix}");
+        assert_eq!(Game::load(&old).is_some(),!cfg!(feature="ee2-up15"),"legacy defs{defs},prefix{prefix}");
     }}
 }
 

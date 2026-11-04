@@ -1,0 +1,105 @@
+{
+  "format": "up15-independent-execution-review-v1",
+  "status": "PASS",
+  "checks": 76,
+  "binarySha256": {
+    "base": "a4d51c843217c394b3e12f0e26a4f4cf54361db834e38755681372a4cde76e40",
+    "ee2-reference": "2ea4da0582ebfd793d5246cab78509889c8d5da20457591bc833bf8e38524743",
+    "up15": "f7ea9a86a485ff1d024f3338ad802f0b88b8c79a1d065edebef3b76a98097fe0"
+  },
+  "results": [
+    {
+      "node": "Economic1_1",
+      "compiledIndex": 0,
+      "effects": [
+        {
+          "factor": "Cost",
+          "targets": [
+            0,
+            1
+          ],
+          "value": -10,
+          "method": 0
+        },
+        {
+          "factor": "BuildTime",
+          "targets": [
+            0,
+            1
+          ],
+          "value": -10,
+          "method": 0
+        }
+      ]
+    },
+    {
+      "node": "Military1_1",
+      "compiledIndex": 4,
+      "effects": [
+        {
+          "factor": "HitPoints",
+          "targets": [
+            8
+          ],
+          "value": 20,
+          "method": 0
+        }
+      ]
+    },
+    {
+      "node": "Military1_4",
+      "compiledIndex": 7,
+      "effects": [
+        {
+          "factor": "Speed",
+          "targets": [
+            22,
+            27
+          ],
+          "value": 10,
+          "method": 0
+        }
+      ]
+    },
+    {
+      "node": "Military2_3",
+      "compiledIndex": 18,
+      "effects": [
+        {
+          "factor": "LOS",
+          "targets": [
+            7,
+            56
+          ],
+          "value": 1,
+          "method": 1
+        },
+        {
+          "factor": "Range",
+          "targets": [
+            7,
+            56
+          ],
+          "value": 1,
+          "method": 1
+        }
+      ]
+    },
+    {
+      "node": "Imperial3_1",
+      "compiledIndex": 32,
+      "effects": [
+        {
+          "factor": "PopCap",
+          "targets": [
+            1
+          ],
+          "value": 2,
+          "method": 1
+        }
+      ]
+    }
+  ],
+  "scope": "Three actual WASMs, all nine cross-profile save loads and atomic rejections; actual UP save parser + modifier rebuild for five separately selected native research nodes. Test-only save-copy research bits avoid bypassing or modifying production source. Population effect inclusion is source-only here; exported up15_stat field8 reports raw capacity, not current modifier18.",
+  "snapshotStatus": "Historical review before subsequent CSV UPGRADEREFS/UpgradeAbilities inheritance corrections. Its source and WASM hashes bind only that reviewed candidate; not an approval of later candidate builds."
+}

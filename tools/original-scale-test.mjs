@@ -31,5 +31,6 @@ assert.equal(city.scaleType,'kScaleBuilding');assert.equal(fort.scaleType,'kScal
 close(city.sourceScale,.04*Math.SQRT1_2);close(fort.sourceScale,.04*Math.SQRT1_2);checks+=5;
 const height=b=>b.sourceBounds.max[1]-b.sourceBounds.min[1];
 close(height(fort)*fort.sourceScale/(height(city)*city.sourceScale),1.4152671157249417);checks++;
-assert.ok(checked>100);assert.ok(fallback>0);
+assert.ok(checked>100);assert.equal(fallback,0,'All active variants now include a verified scale; old unbound Farm/Farm8 aliases are removed');
+const farm=manifest.models.filter(row=>row.id===2);assert.equal(farm.length,1);assert.equal(scales.variants['2:0'].scaleType,'nativeFarmComposite');close(scales.variants['2:0'].sourceScale,Math.fround(Math.fround(Math.fround(.04)*Math.fround(Math.SQRT1_2))*Math.fround(Math.SQRT1_2)));
 console.log(JSON.stringify({suite:'native-visual-scale',checks,passed:true,verifiedVariants:checked,fallbackVariants:fallback,sourceScope:scales.scope}));

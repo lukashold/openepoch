@@ -42,7 +42,7 @@ export function groundPlacement(entry,instance){
   if(!entry.nativeSize?.every(n=>Number.isFinite(n)&&n>0)||!(entry.width>0)||!(entry.depth>0))return null;
   // Native UndertextureSize/Offset values are world dimensions independent of
   // NIF/model normalization. Old manifests retain their explicitly sized adapter.
-  const scale=entry.placementProfile==='native-world-undertexture'?1:instance[8]/Math.max(...entry.nativeSize),angle=instance[3];
+  const scale=['native-world-undertexture','native-unit-factory-undertexture'].includes(entry.placementProfile)?1:instance[8]/Math.max(...entry.nativeSize),angle=instance[3];
   const ox=entry.offsetX*scale,oz=entry.offsetY*scale,c=Math.cos(angle),s=Math.sin(angle);
   return [instance[0]+ox*c-oz*s,instance[1]+ox*s+oz*c,angle,entry.width*scale,entry.depth*scale];
 }

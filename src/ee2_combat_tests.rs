@@ -37,11 +37,13 @@ fn native_zero_matchup_blocks_fire_and_damage(){
 #[test]
 fn zero_rps_blocks_acquisition_and_attack_order_despite_weapon_mask(){
  let mut g=game(13,13);let marine=g.spawn(17,0,106.5,110.5);let target=g.spawn(37,1,110.5,110.5);g.build_grid();
+ #[cfg(not(feature="ee2-up15"))]
  assert!(DEFS[17].weapon_vs(AIR).is_some(),"Own role previously has an anti-air weapon");
+ let mut query_definition=DEFS[17];query_definition.w[0].targets|=AIR;
  assert_eq!(native::can_target(17,13,37,13),Some(false));
- assert_eq!(g.acquire(&g.ents[marine],&DEFS[17],20.0),NONE);
+ assert_eq!(g.acquire(&g.ents[marine],&query_definition,20.0),NONE);
  g.order_attack(&[marine],target);assert_ne!(g.ents[marine].order,O_ATTACK);assert_ne!(g.ents[marine].otgt,g.h(target));
- let mut e=g.ents[marine];g.fire(&mut e,&DEFS[17].w[1],target);assert!(g.projs.is_empty());assert_eq!(e.cd,0.0);
+ let mut e=g.ents[marine];g.fire(&mut e,&query_definition.w[0],target);assert!(g.projs.is_empty());assert_eq!(e.cd,0.0);
 }
 #[test]
 fn projectile_keeps_attacker_upgrade_at_launch(){

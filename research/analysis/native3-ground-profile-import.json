@@ -1,0 +1,837 @@
+{
+  "status": "passed",
+  "build": "water-farm3",
+  "format": "ee2-native-undertexture-profile-v1",
+  "entries": 14,
+  "sourceFactor": 1.4142135381698608,
+  "bindings": [
+    {
+      "id": 0,
+      "decal": "UnderCityCenter",
+      "raw": {
+        "size": [
+          3.5,
+          3.0
+        ],
+        "footprint": [
+          5.0,
+          4.5
+        ],
+        "centerOffset": [
+          0,
+          0
+        ],
+        "underSize": [
+          4.0,
+          3.0
+        ],
+        "underOffset": [
+          -0.25,
+          0
+        ],
+        "footprintType": 2
+      },
+      "stored": {
+        "mode": "explicit",
+        "width": 4.242640495300293,
+        "depth": 5.656854152679443,
+        "offsetX": -0.0,
+        "offsetY": 0.3535533845424652,
+        "bodySize": [
+          4.949747562408447,
+          4.242640495300293
+        ],
+        "footprintSize": [
+          7.071067810058594,
+          6.3639607429504395
+        ],
+        "underSize": [
+          5.656854152679443,
+          4.242640495300293
+        ],
+        "nativeOffset": [
+          -0.3535533845424652,
+          0.0
+        ]
+      },
+      "source": {
+        "member": "db/Units/city_center.ddf",
+        "sha256": "4f1cfef27687288b40872426c5d2fd72a0771cfa7b14aa68d90f6976aa58a197"
+      },
+      "footprintTypeSource": {
+        "name": "kFootprintType_Rectangle",
+        "declaredBy": "BareBoneBuilding",
+        "headerSha256": "afde5529ed266cc3995dfa3c48eecc3fd17f2eac7db65c880d077ac277cd26c3"
+      }
+    },
+    {
+      "id": 1,
+      "decal": "UnderHouse",
+      "raw": {
+        "size": [
+          1.5,
+          1.5
+        ],
+        "footprint": [
+          3.0,
+          3.0
+        ],
+        "centerOffset": [
+          0,
+          0
+        ],
+        "underSize": [
+          1.5,
+          1.5
+        ],
+        "underOffset": [
+          0,
+          0
+        ],
+        "footprintType": 2
+      },
+      "stored": {
+        "mode": "explicit",
+        "width": 2.1213202476501465,
+        "depth": 2.1213202476501465,
+        "offsetX": -0.0,
+        "offsetY": -0.0,
+        "bodySize": [
+          2.1213202476501465,
+          2.1213202476501465
+        ],
+        "footprintSize": [
+          4.242640495300293,
+          4.242640495300293
+        ],
+        "underSize": [
+          2.1213202476501465,
+          2.1213202476501465
+        ],
+        "nativeOffset": [
+          0.0,
+          0.0
+        ]
+      },
+      "source": {
+        "member": "db/Units/house.ddf",
+        "sha256": "45f08b9bad02edc2fe94d5e685a6993522bcdedcc810949e1b2a3c1baf429342"
+      },
+      "footprintTypeSource": {
+        "name": "kFootprintType_Rectangle",
+        "declaredBy": "BareBoneBuilding",
+        "headerSha256": "afde5529ed266cc3995dfa3c48eecc3fd17f2eac7db65c880d077ac277cd26c3"
+      }
+    },
+    {
+      "id": 3,
+      "decal": "UnderBarracks",
+      "raw": {
+        "size": [
+          2.0,
+          2.0
+        ],
+        "footprint": [
+          3.5,
+          3.5
+        ],
+        "centerOffset": [
+          0,
+          0
+        ],
+        "underSize": [
+          3.0,
+          2.0
+        ],
+        "underOffset": [
+          -0.5,
+          0
+        ],
+        "footprintType": 2
+      },
+      "stored": {
+        "mode": "explicit",
+        "width": 2.8284270763397217,
+        "depth": 4.242640495300293,
+        "offsetX": -0.0,
+        "offsetY": 0.7071067690849304,
+        "bodySize": [
+          2.8284270763397217,
+          2.8284270763397217
+        ],
+        "footprintSize": [
+          4.949747562408447,
+          4.949747562408447
+        ],
+        "underSize": [
+          4.242640495300293,
+          2.8284270763397217
+        ],
+        "nativeOffset": [
+          -0.7071067690849304,
+          0.0
+        ]
+      },
+      "source": {
+        "member": "db/Units/barracks.ddf",
+        "sha256": "5ea08bf528e786b51d5077e78ca3ae12b1c3de0b62c40c79241da83a8b10904d"
+      },
+      "footprintTypeSource": {
+        "name": "kFootprintType_Rectangle",
+        "declaredBy": "BareBoneBuilding",
+        "headerSha256": "afde5529ed266cc3995dfa3c48eecc3fd17f2eac7db65c880d077ac277cd26c3"
+      }
+    },
+    {
+      "id": 4,
+      "decal": "UnderMill",
+      "raw": {
+        "size": [
+          2.5,
+          2.0
+        ],
+        "footprint": [
+          4.0,
+          3.5
+        ],
+        "centerOffset": [
+          0,
+          0
+        ],
+        "underSize": [
+          2.5,
+          2.5
+        ],
+        "underOffset": [
+          0,
+          0.25
+        ],
+        "footprintType": 2
+      },
+      "stored": {
+        "mode": "explicit",
+        "width": 3.535533905029297,
+        "depth": 3.535533905029297,
+        "offsetX": -0.3535533845424652,
+        "offsetY": -0.0,
+        "bodySize": [
+          3.535533905029297,
+          2.8284270763397217
+        ],
+        "footprintSize": [
+          5.656854152679443,
+          4.949747562408447
+        ],
+        "underSize": [
+          3.535533905029297,
+          3.535533905029297
+        ],
+        "nativeOffset": [
+          0.0,
+          0.3535533845424652
+        ]
+      },
+      "source": {
+        "member": "db/Units/mill.ddf",
+        "sha256": "1d1fe9dfcc9bd9b3c6663885483ba1e01c94bcd324550357ec7b3df0e4b8385d"
+      },
+      "footprintTypeSource": {
+        "name": "kFootprintType_Rectangle",
+        "declaredBy": "BareBoneBuilding",
+        "headerSha256": "afde5529ed266cc3995dfa3c48eecc3fd17f2eac7db65c880d077ac277cd26c3"
+      }
+    },
+    {
+      "id": 6,
+      "decal": "UnderAirport",
+      "raw": {
+        "size": [
+          5.0,
+          3.0
+        ],
+        "footprint": [
+          6.5,
+          4.5
+        ],
+        "centerOffset": [
+          0,
+          0
+        ],
+        "underSize": [
+          5.0,
+          3.0
+        ],
+        "underOffset": [
+          0,
+          0
+        ],
+        "footprintType": 2
+      },
+      "stored": {
+        "mode": "explicit",
+        "width": 4.242640495300293,
+        "depth": 7.071067810058594,
+        "offsetX": -0.0,
+        "offsetY": -0.0,
+        "bodySize": [
+          7.071067810058594,
+          4.242640495300293
+        ],
+        "footprintSize": [
+          9.192387580871582,
+          6.3639607429504395
+        ],
+        "underSize": [
+          7.071067810058594,
+          4.242640495300293
+        ],
+        "nativeOffset": [
+          0.0,
+          0.0
+        ]
+      },
+      "source": {
+        "member": "db/Units/airport.ddf",
+        "sha256": "b1e191f15846635f28c111fd5a9641d876c7fa48033283c7766f82bc1e07c24a"
+      },
+      "footprintTypeSource": {
+        "name": "kFootprintType_Rectangle",
+        "declaredBy": "BareBoneBuilding",
+        "headerSha256": "afde5529ed266cc3995dfa3c48eecc3fd17f2eac7db65c880d077ac277cd26c3"
+      }
+    },
+    {
+      "id": 47,
+      "decal": "UnderUniversity",
+      "raw": {
+        "size": [
+          3.0,
+          3.0
+        ],
+        "footprint": [
+          4.5,
+          4.5
+        ],
+        "centerOffset": [
+          0,
+          0
+        ],
+        "underSize": [
+          3.0,
+          3.0
+        ],
+        "underOffset": [
+          0,
+          0
+        ],
+        "footprintType": 2
+      },
+      "stored": {
+        "mode": "explicit",
+        "width": 4.242640495300293,
+        "depth": 4.242640495300293,
+        "offsetX": -0.0,
+        "offsetY": -0.0,
+        "bodySize": [
+          4.242640495300293,
+          4.242640495300293
+        ],
+        "footprintSize": [
+          6.3639607429504395,
+          6.3639607429504395
+        ],
+        "underSize": [
+          4.242640495300293,
+          4.242640495300293
+        ],
+        "nativeOffset": [
+          0.0,
+          0.0
+        ]
+      },
+      "source": {
+        "member": "db/Units/university.ddf",
+        "sha256": "0834cd1447ac03f9604c4d50c82cc0e3ecba90f9af36ccf1b94146d7e33d4230"
+      },
+      "footprintTypeSource": {
+        "name": "kFootprintType_Rectangle",
+        "declaredBy": "BareBoneBuilding",
+        "headerSha256": "afde5529ed266cc3995dfa3c48eecc3fd17f2eac7db65c880d077ac277cd26c3"
+      }
+    },
+    {
+      "id": 48,
+      "decal": "UnderMill",
+      "raw": {
+        "size": [
+          2.5,
+          2.0
+        ],
+        "footprint": [
+          4.0,
+          3.5
+        ],
+        "centerOffset": [
+          0,
+          0
+        ],
+        "underSize": [
+          2.5,
+          2.5
+        ],
+        "underOffset": [
+          0,
+          0.25
+        ],
+        "footprintType": 2
+      },
+      "stored": {
+        "mode": "explicit",
+        "width": 3.535533905029297,
+        "depth": 3.535533905029297,
+        "offsetX": -0.3535533845424652,
+        "offsetY": -0.0,
+        "bodySize": [
+          3.535533905029297,
+          2.8284270763397217
+        ],
+        "footprintSize": [
+          5.656854152679443,
+          4.949747562408447
+        ],
+        "underSize": [
+          3.535533905029297,
+          3.535533905029297
+        ],
+        "nativeOffset": [
+          0.0,
+          0.3535533845424652
+        ]
+      },
+      "source": {
+        "member": "db/Units/mill.ddf",
+        "sha256": "1d1fe9dfcc9bd9b3c6663885483ba1e01c94bcd324550357ec7b3df0e4b8385d"
+      },
+      "footprintTypeSource": {
+        "name": "kFootprintType_Rectangle",
+        "declaredBy": "BareBoneBuilding",
+        "headerSha256": "afde5529ed266cc3995dfa3c48eecc3fd17f2eac7db65c880d077ac277cd26c3"
+      }
+    },
+    {
+      "id": 49,
+      "decal": "UnderStable",
+      "raw": {
+        "size": [
+          2.0,
+          2.0
+        ],
+        "footprint": [
+          3.5,
+          3.5
+        ],
+        "centerOffset": [
+          0,
+          0
+        ],
+        "underSize": [
+          3.0,
+          2.0
+        ],
+        "underOffset": [
+          -0.5,
+          0
+        ],
+        "footprintType": 2
+      },
+      "stored": {
+        "mode": "explicit",
+        "width": 2.8284270763397217,
+        "depth": 4.242640495300293,
+        "offsetX": -0.0,
+        "offsetY": 0.7071067690849304,
+        "bodySize": [
+          2.8284270763397217,
+          2.8284270763397217
+        ],
+        "footprintSize": [
+          4.949747562408447,
+          4.949747562408447
+        ],
+        "underSize": [
+          4.242640495300293,
+          2.8284270763397217
+        ],
+        "nativeOffset": [
+          -0.7071067690849304,
+          0.0
+        ]
+      },
+      "source": {
+        "member": "db/Units/stable.ddf",
+        "sha256": "fe757b5dc5fd89b2374bb60663d84e0480c1fe6c2d77004c49a56b0e6599e406"
+      },
+      "footprintTypeSource": {
+        "name": "kFootprintType_Rectangle",
+        "declaredBy": "BareBoneBuilding",
+        "headerSha256": "afde5529ed266cc3995dfa3c48eecc3fd17f2eac7db65c880d077ac277cd26c3"
+      }
+    },
+    {
+      "id": 50,
+      "decal": "UnderMarket",
+      "raw": {
+        "size": [
+          2.0,
+          2.0
+        ],
+        "footprint": [
+          3.5,
+          3.5
+        ],
+        "centerOffset": [
+          0,
+          0
+        ],
+        "underSize": [
+          2.0,
+          2.0
+        ],
+        "underOffset": [
+          0,
+          0
+        ],
+        "footprintType": 2
+      },
+      "stored": {
+        "mode": "explicit",
+        "width": 2.8284270763397217,
+        "depth": 2.8284270763397217,
+        "offsetX": -0.0,
+        "offsetY": -0.0,
+        "bodySize": [
+          2.8284270763397217,
+          2.8284270763397217
+        ],
+        "footprintSize": [
+          4.949747562408447,
+          4.949747562408447
+        ],
+        "underSize": [
+          2.8284270763397217,
+          2.8284270763397217
+        ],
+        "nativeOffset": [
+          0.0,
+          0.0
+        ]
+      },
+      "source": {
+        "member": "db/Units/market.ddf",
+        "sha256": "a476f0756ce018c7fd7b875914c6939b15ea4205139646a1e62351ea7f65fb26"
+      },
+      "footprintTypeSource": {
+        "name": "kFootprintType_Rectangle",
+        "declaredBy": "BareBoneBuilding",
+        "headerSha256": "afde5529ed266cc3995dfa3c48eecc3fd17f2eac7db65c880d077ac277cd26c3"
+      }
+    },
+    {
+      "id": 51,
+      "decal": "UnderTemple",
+      "raw": {
+        "size": [
+          2.5,
+          2.5
+        ],
+        "footprint": [
+          4.0,
+          4.0
+        ],
+        "centerOffset": [
+          0,
+          0
+        ],
+        "underSize": [
+          2.5,
+          2.5
+        ],
+        "underOffset": [
+          0,
+          0
+        ],
+        "footprintType": 2
+      },
+      "stored": {
+        "mode": "explicit",
+        "width": 3.535533905029297,
+        "depth": 3.535533905029297,
+        "offsetX": -0.0,
+        "offsetY": -0.0,
+        "bodySize": [
+          3.535533905029297,
+          3.535533905029297
+        ],
+        "footprintSize": [
+          5.656854152679443,
+          5.656854152679443
+        ],
+        "underSize": [
+          3.535533905029297,
+          3.535533905029297
+        ],
+        "nativeOffset": [
+          0.0,
+          0.0
+        ]
+      },
+      "source": {
+        "member": "db/Units/temple.ddf",
+        "sha256": "e0f38d0f4f453d52793c8452ad638c27aa9ca619b73e2e6f6783827847743e9a"
+      },
+      "footprintTypeSource": {
+        "name": "kFootprintType_Rectangle",
+        "declaredBy": "BareBoneBuilding",
+        "headerSha256": "afde5529ed266cc3995dfa3c48eecc3fd17f2eac7db65c880d077ac277cd26c3"
+      }
+    },
+    {
+      "id": 52,
+      "decal": "UnderWarehouse",
+      "raw": {
+        "size": [
+          2.0,
+          1.0
+        ],
+        "footprint": [
+          0,
+          0
+        ],
+        "centerOffset": [
+          0,
+          0
+        ],
+        "underSize": [
+          2.0,
+          1.0
+        ],
+        "underOffset": [
+          0,
+          0
+        ],
+        "footprintType": 2
+      },
+      "stored": {
+        "mode": "explicit",
+        "width": 1.4142135381698608,
+        "depth": 2.8284270763397217,
+        "offsetX": -0.0,
+        "offsetY": -0.0,
+        "bodySize": [
+          2.8284270763397217,
+          1.4142135381698608
+        ],
+        "footprintSize": [
+          2.8284270763397217,
+          1.4142135381698608
+        ],
+        "underSize": [
+          2.8284270763397217,
+          1.4142135381698608
+        ],
+        "nativeOffset": [
+          0.0,
+          0.0
+        ]
+      },
+      "source": {
+        "member": "db/Units/warehouse.ddf",
+        "sha256": "572d9e9c197938e7b6a62979c0a9a1b5ab62949b2ec52ce5f3f167b8c53561a2"
+      },
+      "footprintTypeSource": {
+        "name": "kFootprintType_Rectangle",
+        "declaredBy": "BareBoneBuilding",
+        "headerSha256": "afde5529ed266cc3995dfa3c48eecc3fd17f2eac7db65c880d077ac277cd26c3"
+      }
+    },
+    {
+      "id": 55,
+      "decal": "UnderMill",
+      "raw": {
+        "size": [
+          2.5,
+          2.0
+        ],
+        "footprint": [
+          4.0,
+          3.5
+        ],
+        "centerOffset": [
+          0,
+          0
+        ],
+        "underSize": [
+          2.5,
+          2.5
+        ],
+        "underOffset": [
+          0,
+          0.25
+        ],
+        "footprintType": 2
+      },
+      "stored": {
+        "mode": "explicit",
+        "width": 3.535533905029297,
+        "depth": 3.535533905029297,
+        "offsetX": -0.3535533845424652,
+        "offsetY": -0.0,
+        "bodySize": [
+          3.535533905029297,
+          2.8284270763397217
+        ],
+        "footprintSize": [
+          5.656854152679443,
+          4.949747562408447
+        ],
+        "underSize": [
+          3.535533905029297,
+          3.535533905029297
+        ],
+        "nativeOffset": [
+          0.0,
+          0.3535533845424652
+        ]
+      },
+      "source": {
+        "member": "db/Units/HERC_Facility.ddf",
+        "sha256": "17d1e89479ef3a1273aa7ddc5b1a94c38fe3c0a5ec11ab2895034923f910deac"
+      },
+      "footprintTypeSource": {
+        "name": "kFootprintType_Rectangle",
+        "declaredBy": "BareBoneBuilding",
+        "headerSha256": "afde5529ed266cc3995dfa3c48eecc3fd17f2eac7db65c880d077ac277cd26c3"
+      }
+    },
+    {
+      "id": 56,
+      "decal": "UnderFortress",
+      "raw": {
+        "size": [
+          3.0,
+          3.0
+        ],
+        "footprint": [
+          4.5,
+          4.5
+        ],
+        "centerOffset": [
+          0,
+          0
+        ],
+        "underSize": [
+          3.0,
+          3.0
+        ],
+        "underOffset": [
+          0,
+          0
+        ],
+        "footprintType": 2
+      },
+      "stored": {
+        "mode": "explicit",
+        "width": 4.242640495300293,
+        "depth": 4.242640495300293,
+        "offsetX": -0.0,
+        "offsetY": -0.0,
+        "bodySize": [
+          4.242640495300293,
+          4.242640495300293
+        ],
+        "footprintSize": [
+          6.3639607429504395,
+          6.3639607429504395
+        ],
+        "underSize": [
+          4.242640495300293,
+          4.242640495300293
+        ],
+        "nativeOffset": [
+          0.0,
+          0.0
+        ]
+      },
+      "source": {
+        "member": "db/Units/fortress.ddf",
+        "sha256": "b61868f3787350e33d36f97dc58b16285ebbc5db74f9ac36d06ab7db1f709d33"
+      },
+      "footprintTypeSource": {
+        "name": "kFootprintType_Rectangle",
+        "declaredBy": "BareBoneBuilding",
+        "headerSha256": "afde5529ed266cc3995dfa3c48eecc3fd17f2eac7db65c880d077ac277cd26c3"
+      }
+    },
+    {
+      "id": 2,
+      "decal": "UnderFarm",
+      "raw": {
+        "size": [
+          1.5,
+          1.5
+        ],
+        "footprint": [
+          0,
+          0
+        ],
+        "centerOffset": [
+          0,
+          0
+        ],
+        "underSize": [
+          0,
+          0
+        ],
+        "underOffset": [
+          0,
+          0
+        ],
+        "footprintType": 2
+      },
+      "stored": {
+        "mode": "footprint",
+        "width": 2.1213202476501465,
+        "depth": 2.1213202476501465,
+        "offsetX": -0.0,
+        "offsetY": -0.0,
+        "bodySize": [
+          2.1213202476501465,
+          2.1213202476501465
+        ],
+        "footprintSize": [
+          2.1213202476501465,
+          2.1213202476501465
+        ],
+        "underSize": [
+          0.0,
+          0.0
+        ],
+        "nativeOffset": [
+          0.0,
+          0.0
+        ]
+      },
+      "source": {
+        "member": "db/Units/farm.ddf",
+        "sha256": "629e5dec7df3dfc1e0b53861718be7b27345140c96ef6c778f85b2a689e88abc"
+      },
+      "footprintTypeSource": {
+        "name": "kFootprintType_Rectangle",
+        "declaredBy": "Farm",
+        "headerSha256": "afde5529ed266cc3995dfa3c48eecc3fd17f2eac7db65c880d077ac277cd26c3"
+      }
+    }
+  ],
+  "manifestSha256": "eb407c403f1e22b997215f85b8f02e9cc62ae44facf31b7068c4312f8c8454f4",
+  "runtimeDocsEdited": true
+}

@@ -4,7 +4,7 @@ GitHub enthält Quellcode, fertige WASM-Builds, Tests und Importwerkzeuge.
 Originalmedien im ignorierten Ordner `docs/local-original/` werden lokal importiert
 oder aus dem separaten vollständigen Spielpaket übernommen.
 
-Arbeitsstand 04.11.2026 · visual-seasons2. Das lokale EE2-Profil verbindet die eigene Rust-/WASM-Simulation
+Arbeitsstand 04.11.2026 · native-ui4. Das lokale EE2-Profil verbindet die eigene Rust-/WASM-Simulation
 mit Originalgrafiken, Originalton und quellbelegten Wirtschafts- und Einheitenwerten.
 Der aktuelle Ausbau ist weiterhin kein vollständiges, regelgleiches Empire Earth II.
 
@@ -23,8 +23,50 @@ an 127.0.0.1, bevorzugt Port8125 und behandelt belegte Ports. Das Paket wird nac
 dem Entpacken separat auf vollständige Medien und exakt geschriebene Pfade geprüft.
 Eine tatsächliche macOS-Ausführung wurde hier nicht getestet.
 
-Das bisherige `OpenEpoch-Scharmuetzel.zip` ist weiterhin ein kleines Quellpaket
+`OpenEpoch-Scharmuetzel.zip` ist das separate Quellpaket
 ohne Originalmedien. Für den Mac-Transfer das neue **Komplettpaket** verwenden.
+
+## Originales Bedienfeld, Farmen, Wasser und UP-Regeln · native-ui4
+
+Das Bedienfeld verwendet51 originale Widgetdefinitionen und129 hochauflösende
+Originalgrafiken. Minikarte, Befehlsraster, Einheiteninfo, Rohstoffe und Epochenleiste
+folgen den rekonstruierten Ankern. Stein, Pergament und Metall wechseln nach den
+originalen Epochenbereichen1–5,6–10 und11–15. Die Schaltflächen für Forschung und
+Diplomatie stehen links unten; das Menüsymbol rechts neben der Epochenleiste
+öffnet Speichern, Ton, Vollbild und Hauptmenü. Die Browserdarstellung der Schrift,
+das Befehlsangebot und Teile des Menüverhaltens bleiben angepasste Oberflächen.
+
+Farmen verwenden vier originale Teilfelder. Alle zwölf Zustände der drei
+originalen Feldfamilien sind importiert; aktiv ist der belegte Standardzustand
+der Weizenfarm. Die Teilfelder folgen jeweils ihrer Geländehöhe. Gebäudeböden
+verwenden nun die aus Ghidra belegten Größen, Achsen und Versätze einschließlich
+des Faktors√2. Die frühere Behauptung, rohe DDF-Maße seien bereits endgültige
+Weltmaße, ist damit korrigiert.
+
+Wasser nutzt die originalen Skin1/2/4-Texturen, die nativen Farb-/Alphakanäle
+und einen getrennten Reflexionspass. Die gespiegelte Szene wird mit dem
+quellbelegten Anteil überlagert. UV-Maßstäbe, Zuordnung der eigenen Kartenklassen
+und die separate native Sichtauswahl werden weiter rekonstruiert.
+
+`?rules=ee2` startet jetzt die rekonstruierten numerischen Regeln der installierten
+UP-Version.55 von57 bisherigen Rollen sind gebunden; zwei unaufgelöste Rollen
+werden gesperrt. Echte Upgrade-Verweise bestimmen Werte und Epochenfortschritte.
+Das ist weiterhin ein kleineres Einheitenangebot mit offenen Fähigkeiten und
+Forschungsfaktoren. Im Menü **Regelversion** bleibt **EE2 · Basisdaten** verfügbar;
+die vorhandenen Spielstände dieses Profils bleiben dort erhalten. Die unabhängigen
+OpenEpoch-Regeln und ihre Spielstände bleiben ebenfalls getrennt.
+
+Die drei Profile haben eigene WASM-Dateien und Speicherbereiche. Multiplayer
+weist verschiedene Regelversionen vor Spielbeginn ab. Die beiden bisherigen
+WASM-Dateien sind unverändert; die UP-Datei ist zusätzlich enthalten. Alle neuen
+Bilder, Farmzustände und Wassermedien liegen im Komplettpaket. Die Quellen und
+Prüfungen sind unter [UP-Profil](docs/EE2-UP15-PROFIL.md),
+[Profil-/Spielstandprüfung](research/analysis/native4-profile-integration.json),
+[Farm und Gebäudeböden](research/analysis/native3-farm-ground-integration.json)
+und [Wasser](research/analysis/native3-water-implementation.json) dokumentiert.
+
+Die folgenden Abschnitte dokumentieren frühere Ausbaustände; maßgeblich ist
+der oben beschriebene Stand native-ui4.
 
 ## Saisonale Modelle, Wasserreflexionen und Kameradrehung · visual-seasons2
 

@@ -248,7 +248,7 @@ def replay(source, destination, report_path=None):
             'colorHistogramBins':variations,'scope':payload['scope'],'uiLaunched':False,
             'reflectionTargets':reflection_outputs,
             'limitation':'GPU replay of captured production world passes; not a browser/full HUD interaction test or a claim of original-game visual equality.'}
-        for name in ('sourceHashes','season','ground','epochs','reflection','modelSeason'):
+        for name in ('sourceHashes','season','ground','epochs','reflection','modelSeason','nativeWater','farmFixture','rulesProfile'):
             if name in payload:
                 report[name]=payload[name]
     if report_path:

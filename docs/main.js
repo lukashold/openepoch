@@ -8,12 +8,15 @@ import { diplomacyPanel } from './diplomacy.js?v=fortress1';
 import {territoryClaimMessage} from './territory-help.js?v=fortress1';
 import * as sfx from './audio.js?v=graphics2';
 import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=fortress1';
-import {loadOriginalModels} from './original-renderer.js?v=visual-seasons2';
-import {loadOriginalGround} from './original-ground.js?v=combat-season1';
+import {loadNativeHud} from './original-hud.js?v=native-ui4';
+import {loadOriginalModels} from './original-renderer.js?v=native-ui4';
+import {loadOriginalGround} from './original-ground.js?v=native-ui4';
 import {loadOriginalTerrain} from './original-terrain.js?v=visual-seasons2';
+import {loadOriginalWater} from './original-water.js?v=water-farm3';
 import {createOriginalReflection} from './original-reflection.js?v=visual-seasons2';
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=profile1';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=combat-season1';
 import {createFullscreenController} from './fullscreen.js?v=building2';
@@ -30,11 +33,20 @@ const FOV = 35 * Math.PI / 180, PITCH = 55 * Math.PI / 180, TANF = Math.tan(FOV 
 const TEAM = [[0.27, 0.59, 1.0], [0.94, 0.27, 0.24], [0.31, 0.86, 0.39], [0.96, 0.82, 0.27], [1, 1, 1], [1, 1, 1], [1, 1, 1], [0.3, 0.75, 1]];
 
 // ---------------------------------------------------------------- wasm
-const referenceMode = new URLSearchParams(location.search).get('rules') === 'ee2';
-const qaMode = new URLSearchParams(location.search).has('qa');
+const profileSelect=$('rules-profile');
+for(const option of profileSelect.options)if(option.value==='up15')option.disabled=!UP15_PROFILE_ENABLED;
+profileSelect.onchange=()=>location.assign(rulesProfileURL(location.href,profileSelect.value).href);
+function rulesLoadFailure(error){
+ $('rules-note').textContent=error.message;
+ for(const id of ['play','mpopen','continue','previous-save'])$(id).disabled=true;
+ $('play').textContent='Regelversion konnte nicht geladen werden';
+}
+let rulesProfile;
+try{rulesProfile=resolveRulesProfile(location.href);}catch(error){rulesLoadFailure(error);throw error;}
+profileSelect.value=rulesProfile.id;
+const referenceMode=rulesProfile.reference,qaMode=rulesProfile.qa;
 try { const preference=localStorage.getItem('openepoch-map-visibility');if(['0','1','2'].includes(preference))$('map-visibility').value=preference; } catch { /* preferences are optional */ }
 $('map-visibility').onchange=()=>{try{localStorage.setItem('openepoch-map-visibility',$('map-visibility').value);}catch{/* private storage */}};
-const wasmUrl = new URL(referenceMode ? 'openepoch-ee2.wasm?v=combat-season1' : 'openepoch.wasm?v=combat-season1', import.meta.url);
 function menuSeasonSettings(){
   return normalizeSeasonSettings({cycle:$('season-cycle').checked,startMonth:+$('season-start').value,minutesPerSeason:+$('season-length').value});
 }
@@ -60,11 +72,7 @@ if (referenceMode) {
   // Both multiplayer peers must explicitly match this ruleset.
 }
 let wasm;
-try {
-  wasm = (await WebAssembly.instantiateStreaming(fetch(wasmUrl), {})).instance.exports;
-} catch {
-  wasm = (await WebAssembly.instantiate(await (await fetch(wasmUrl)).arrayBuffer(), {})).instance.exports;
-}
+try{wasm=await loadRulesWasm(rulesProfile,import.meta.url);}catch(error){rulesLoadFailure(error);throw error;}
 // Always take the pointer BEFORE touching memory.buffer: the call may grow (and detach) the memory.
 const u8 = (ptr, len) => new Uint8Array(wasm.memory.buffer, ptr, len);
 const f32 = (ptr, len) => new Float32Array(wasm.memory.buffer, ptr, len);
@@ -371,6 +379,7 @@ function uploadTerrain() {
 function uploadOriginalTerrainClasses(){
   const types=wasm.terrain_types_ptr&&wasm.terrain_types_len?.()===MAP*MAP?u8(wasm.terrain_types_ptr(),MAP*MAP).slice():undefined;
   originalTerrain.updateMap({heights,types});
+  originalWater.updateMap({heights,types});
 }
 const groundAt = (x, y) => {
   x = Math.min(MAP - 0.001, Math.max(0, x)); y = Math.min(MAP - 0.001, Math.max(0, y));
@@ -423,6 +432,7 @@ const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,to
 });
 const originalGround=await loadOriginalGround(gl,originalEnabled);
 const originalTerrain=await loadOriginalTerrain(gl,originalEnabled,TEAM);
+const originalWater=await loadOriginalWater(gl,originalEnabled);
 const seasonSession=createSeasonSession(wasm,originalTerrain,originalGround,originalModels);
 const originalReflection=createOriginalReflection(gl);
 let reflectionError=null;
@@ -435,9 +445,11 @@ if(qaMode){
   canvas.dataset.originalEpochIcons=String([...originalAssets.epochIcons.values()].reduce((n,list)=>n+list.filter(row=>row.nativeExact).length,0));
   canvas.dataset.originalTerrainPolicy=originalTerrain.policy;
   canvas.dataset.originalTerrainErrors=JSON.stringify(originalTerrain.errors);
+  canvas.dataset.originalWaterErrors=JSON.stringify(originalWater.errors);
 }
 applyOriginalInterface(originalAssets);
 const economyBar=createEconomyBar(originalAssets,referenceMode);
+const nativeHud=await loadNativeHud(originalAssets,referenceMode);
 for(const pr of [terrain,water]){
   gl.useProgram(pr.p);gl.uniform1i(pr.u.uOriginalTerrain,4);gl.uniform1i(pr.u.uOriginal,originalAssets.enabled?1:0);
 }
@@ -605,7 +617,7 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
 }
 
 const db = () => new Promise((res, rej) => {
-  const r = indexedDB.open((referenceMode ? 'openepoch-ee2-reference-v2' : 'openepoch-v2')+(qaMode?'-qa':''), 1);
+  const r = indexedDB.open(rulesProfile.database, 1);
   r.onupgradeneeded = () => r.result.createObjectStore('saves');
   r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
 });
@@ -615,7 +627,7 @@ async function saveGame(silent) {
   if (!running || bench || net) { if (!silent) toast('Saving is only available in single-player games'); return; }
   const ptr = wasm.save(), bytes = u8(ptr, wasm.save_len()).slice();
   try {
-    const record={bytes,cam:{...cam},when:Date.now(),epoch:ui?ui.ename:'',session:saveSession,seasons:seasonSession.settings};
+    const record={bytes,cam:{...cam},when:Date.now(),epoch:ui?ui.ename:'',session:saveSession,seasons:seasonSession.settings,rules:rulesProfile.ruleset,profile:rulesProfile.id};
     const d=await db();
     await new Promise((resolve,reject)=>{
       const tx=d.transaction('saves','readwrite'),store=tx.objectStore('saves'),old=store.get('slot1');
@@ -629,10 +641,11 @@ async function saveGame(silent) {
 async function loadGame(slot='slot1') {
   const s = await dbDo('readonly', st => st.get(slot)).catch(() => null);
   if (!s) return toast('No saved game found');
+  if(!savedRulesProfileMatches(s,rulesProfile))return toast('Dieser Spielstand gehört zu einer anderen Regelversion. Wähle im Menü die passende Regelversion.');
   let seasons;try{seasons=savedSeasonSettings(s);}catch{return toast('Die Jahreszeiteneinstellungen des Spielstands sind ungültig.');}
   const ptr = wasm.load_alloc(s.bytes.length);
   u8(ptr, s.bytes.length).set(s.bytes);
-  if (!wasm.load_apply()) return toast('That save is from an older version and cannot be loaded');
+  if (!wasm.load_apply()) return toast('Dieser Spielstand ist mit dieser Regelversion nicht kompatibel.');
   net = null; bench = 0; Object.assign(cam, s.cam);
   cam.heading=normalizeOriginalHeading(s.cam?.heading??0);
   seasonSession.configure(seasons);setSeasonControls(seasons);
@@ -641,10 +654,10 @@ async function loadGame(slot='slot1') {
 }
 async function refreshContinue() {
   const s = await dbDo('readonly', st => st.get('slot1')).catch(() => null);
-  $('continue').style.display = s ? '' : 'none';
+  $('continue').style.display = savedRulesProfileMatches(s,rulesProfile) ? '' : 'none';
   if (s) $('continue').textContent = `Fortsetzen (${s.epoch || 'Spielstand'}, ${new Date(s.when).toLocaleString()})`;
   const previous=await dbDo('readonly',st=>st.get('previous')).catch(()=>null);
-  $('previous-save').style.display=previous?'':'none';
+  $('previous-save').style.display=savedRulesProfileMatches(previous,rulesProfile)?'':'none';
   if(previous)$('previous-save').textContent=`Vorheriger Spielstand (${previous.epoch||'Scharmützel'})`;
 }
 $('previous-save').onclick=()=>loadGame('previous');
@@ -807,9 +820,12 @@ function frame(now) {
     originalModels.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,vp:view.vp,epochs:renderEpochs,zoom:cam.zoom,eye:view.eye});
   }
 
-  // translucent water over the sea bed and anything submerged
+  // Native base-water depth/alpha followed by the separate reflection overlay.
   gl.enable(gl.BLEND); gl.depthMask(false);
-  if(originalTerrain.enabled){
+  if(originalWater.enabled){
+    originalWater.drawWater({vp:view.vp,time:now/1000,fogTexture,reflectionTexture:reflection?.texture,reflectionVP:reflection?.vp});
+    if(qaMode)canvas.dataset.originalWater=JSON.stringify(originalWater.metrics);
+  }else if(originalTerrain.enabled){
     originalTerrain.drawWater({vao:vaoW,vp:view.vp,time:now/1000,eye:view.eye,fogTexture,reflectionTexture:reflection?.texture,reflectionVP:reflection?.vp});
   }else{
     bindTexture(1,mapTexture);bindTexture(4,originalAssets.terrainTexture,gl.TEXTURE_2D_ARRAY);
@@ -916,6 +932,7 @@ function updateUi(drawn, now) {
   sciencePanel.refresh(ui);
   diplomacy.refresh(ui);
   $('diplomacy-button').disabled=!!bench;
+  nativeHud.update(ui,seasonSession.settings);
 
   if (ui.win && !bench && $('end').style.display !== 'flex') {
     diplomacy.close();
@@ -1213,6 +1230,6 @@ else if (qs.has('seed')) start(+qs.get('ai') || 1, +qs.get('seed') || 1, 0);
 // ?warm=600 fast-forwards that many ticks; ?zoom= ?x= ?y= place the camera
 for (let i = +qs.get('warm') || 0; i > 0 && running; i--) wasm.tick();
 for (const k of ['zoom', 'x', 'y']) if (qs.has(k)) cam[k] = +qs.get(k);
-window.openepoch = { wasm, cam, gl, frame, start, saveGame, loadGame, toWorld, channel, seasonSession, get net() { return net; } };
+window.openepoch = { wasm, rulesProfile, cam, gl, frame, start, saveGame, loadGame, toWorld, channel, seasonSession, get net() { return net; } };
 const loop = now => { requestAnimationFrame(loop); frame(now); };
 requestAnimationFrame(loop);

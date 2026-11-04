@@ -1,0 +1,142 @@
+{
+  "format": "up15-independent-execution-review-v1",
+  "status": "PASS",
+  "checks": 89,
+  "binarySha256": {
+    "base": "a4d51c843217c394b3e12f0e26a4f4cf54361db834e38755681372a4cde76e40",
+    "ee2-reference": "2ea4da0582ebfd793d5246cab78509889c8d5da20457591bc833bf8e38524743",
+    "up15": "f9ce07f4aa1105fb0bb9472be6e88fc070cc06046eb8db17a01b4956920fe2c3"
+  },
+  "results": [
+    {
+      "node": "Economic1_1",
+      "compiledIndex": 0,
+      "effects": [
+        {
+          "factor": "Cost",
+          "targets": [
+            0,
+            1
+          ],
+          "value": -10,
+          "method": 0
+        },
+        {
+          "factor": "BuildTime",
+          "targets": [
+            0,
+            1
+          ],
+          "value": -10,
+          "method": 0
+        }
+      ]
+    },
+    {
+      "node": "Military1_1",
+      "compiledIndex": 4,
+      "effects": [
+        {
+          "factor": "HitPoints",
+          "targets": [
+            8
+          ],
+          "value": 20,
+          "method": 0
+        }
+      ]
+    },
+    {
+      "node": "Military1_4",
+      "compiledIndex": 7,
+      "effects": [
+        {
+          "factor": "Speed",
+          "targets": [
+            22,
+            27
+          ],
+          "value": 10,
+          "method": 0
+        }
+      ]
+    },
+    {
+      "node": "Military2_3",
+      "compiledIndex": 18,
+      "effects": [
+        {
+          "factor": "LOS",
+          "targets": [
+            7,
+            56
+          ],
+          "value": 1,
+          "method": 1
+        },
+        {
+          "factor": "Range",
+          "targets": [
+            7,
+            56
+          ],
+          "value": 1,
+          "method": 1
+        }
+      ]
+    },
+    {
+      "node": "Imperial3_1",
+      "compiledIndex": 32,
+      "effects": [
+        {
+          "factor": "PopCap",
+          "targets": [
+            1
+          ],
+          "value": 2,
+          "method": 1
+        }
+      ]
+    }
+  ],
+  "refChecks": [
+    {
+      "epoch": 15,
+      "role": 26,
+      "field": "speed",
+      "expected": 2.3
+    },
+    {
+      "epoch": 1,
+      "role": 8,
+      "field": "damage",
+      "expected": 5
+    },
+    {
+      "epoch": 4,
+      "role": 8,
+      "field": "damage",
+      "expected": 6
+    },
+    {
+      "epoch": 7,
+      "role": 8,
+      "field": "damage",
+      "expected": 7
+    },
+    {
+      "epoch": 10,
+      "role": 8,
+      "field": "damage",
+      "expected": 8
+    },
+    {
+      "epoch": 13,
+      "role": 8,
+      "field": "damage",
+      "expected": 9
+    }
+  ],
+  "scope": "Three actual WASMs, all nine cross-profile save loads and atomic rejections; actual UP save parser + modifier rebuild for five native research nodes including true PopCap field8. Test-only save-copy research bits avoid modifying production source. HeavyMounted1 E15 movement and five Citizen damage stages independently queried after CSV UPGRADEREFS correction."
+}

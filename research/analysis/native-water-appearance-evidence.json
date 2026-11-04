@@ -1,0 +1,616 @@
+{
+  "format": "ee2-native-water-appearance-evidence-v1",
+  "date": "2026-11-04",
+  "status": "source-proof-complete-for-listed-slices-no-runtime-change",
+  "engineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+  "checks": [
+    "Exact analyzed engine SHA",
+    "PE float00B41938=2.0",
+    "PE float00B552E4=-255.0",
+    "PE float00B416AC=5.0",
+    "PE float00B47158=0.3499999940395355",
+    "PE float00B5302C=0.029999999329447746",
+    "PE float00B41928=0.25",
+    "PE float00B552E0=0.07692307978868484",
+    "PE float00B552E8=0.03030303120613098",
+    "PE float00B552EC=0.03448275849223137",
+    "Static native tableWater_LOD_LOW->00D02348",
+    "Static native tableWater_LOD_MEDIUM->00D02350",
+    "Static native tableWater_LOD_HIGH->00D02358",
+    "Static native tableSkin_1.tga->00D0230C",
+    "Static native tableSkin_2.tga->00D022F4",
+    "Static native tableSkin_4.tga->00D022DC",
+    "Native compatibility replacementSkin_5.tga->00D02304",
+    "Native compatibility replacementSkin_5.tga->00D022F4",
+    "Native compatibility replacementSkin_6.tga->00D022DC",
+    "Exact active native high-water PS instruction sequence; commented alternative excluded",
+    "Base water disables fixed-function lighting and writes depth",
+    "Reflection overlay keeps depth writes off",
+    "Native vertex blue becomes secondary color, full color becomes primary",
+    "13-tap full-color filter is exported",
+    "33- and29-weight filter divisors are exported",
+    "Alpha index uses native negative255 factor before signed pointer subtraction",
+    "Reflection mesh factory initializes white RGB and supplied alpha",
+    "Both reflection factory mode callers supply native0.32 alpha operand",
+    "Native Skin_1 stays512-square",
+    "Native Skin_2 stays512-square",
+    "Native Skin_3 stays512-square",
+    "Native Skin_4 stays512-square",
+    "Native Skin_5 stays512-square",
+    "Native Skin_6 stays512-square",
+    "Exact256-entry native palette",
+    "Native terrain movement types5coast/6river/7ocean from HDR"
+  ],
+  "scope": "Read-only installed PE operands, targeted Ghidra exports, original NSF/VSH/PSH and BASE texture/DB/HDR inspection. No GUI, native executable, browser, simulation, runtime modules or portable assets changed.",
+  "baseShader": {
+    "activeInstructionSha256": "41960dfe4b6ab25c09c3a50bfa7dd1857a2e3d11611c8be5f0ed96ab1cb85ee5",
+    "formula": "A=sampleStage2(uv0)*sampleStage3(uv1); B=sampleStage4(uv0)*sampleStage5(uv1); M=lerp(B,A,vertex.g); rgb=M.rgb*vertex.r; alpha=M.a*vertex.a; rgb.gb+=vertex.b.",
+    "stageRoles": {
+      "2": "NTM_Dark",
+      "3": "NTM_Detail",
+      "4": "NTM_Gloss",
+      "5": "NTM_Gloss"
+    },
+    "stageCoordinates": "uv0=baseUV+(c13.x*.0155,c13.y*.02); uv1=baseUV+(c13.x*-.015,c13.y*.01). Full native CM_Defined time-vector population remains separate; reflection VS explicitly broadcasts c13.x.",
+    "states": "Lighting=false; depth testLessEqual; depth writes=true; SrcAlpha/InvSrcAlpha.",
+    "qualification": "No Fresnel/Phong expression occurs in this active PS. This does not prove that no CPU-side/native alternate path ever changes reflection alpha."
+  },
+  "nativeTextureProfile": {
+    "tableStrideBytes": 8,
+    "qualityOrder": [
+      "Water_LOD_LOW",
+      "Water_LOD_MEDIUM",
+      "Water_LOD_HIGH"
+    ],
+    "high": {
+      "darkSlot1": "Skin_1.tga",
+      "detailSlot2": "Skin_2.tga",
+      "glossSlot3": "Skin_4.tga"
+    },
+    "fallbackReplacements": {
+      "mediumDark": "Skin_5.tga",
+      "highDetail": "Skin_5.tga",
+      "highGloss": "Skin_6.tga"
+    },
+    "proof": "Shader/material global arrays in008895D0 feed0088B2D0 four material slots; direct original PE PUSH/MOV ECX/CALL constructor operands prove string assignments independently of labels.",
+    "assignments": [
+      {
+        "file": "Skin_1.tga",
+        "instruction": "008890AF",
+        "global": "00D0231C",
+        "method": "00A18440",
+        "bytes": "68d0ddc600b91c23d000e882f31800"
+      },
+      {
+        "file": "Skin_1.tga",
+        "instruction": "0088912E",
+        "global": "00D0230C",
+        "method": "00A18440",
+        "bytes": "68d0ddc600b90c23d000e803f31800"
+      },
+      {
+        "file": "Skin_2.tga",
+        "instruction": "0088911F",
+        "global": "00D02304",
+        "method": "00A18440",
+        "bytes": "68e8ddc600b90423d000e812f31800"
+      },
+      {
+        "file": "Skin_2.tga",
+        "instruction": "0088919E",
+        "global": "00D022F4",
+        "method": "00A18440",
+        "bytes": "68e8ddc600b9f422d000e893f21800"
+      },
+      {
+        "file": "Skin_3.tga",
+        "instruction": "008890A0",
+        "global": "00D02314",
+        "method": "00A18440",
+        "bytes": "68dcddc600b91423d000e891f31800"
+      },
+      {
+        "file": "Skin_4.tga",
+        "instruction": "0088920E",
+        "global": "00D022DC",
+        "method": "00A18440",
+        "bytes": "68f4ddc600b9dc22d000e823f21800"
+      },
+      {
+        "file": "Skin_5.tga",
+        "instruction": "00889368",
+        "global": "00D02304",
+        "method": "00A184A0",
+        "bytes": "6824dec600b90423d000e829f11800"
+      },
+      {
+        "file": "Skin_5.tga",
+        "instruction": "00889377",
+        "global": "00D022F4",
+        "method": "00A184A0",
+        "bytes": "6824dec600b9f422d000e81af11800"
+      },
+      {
+        "file": "Skin_6.tga",
+        "instruction": "00889386",
+        "global": "00D022DC",
+        "method": "00A184A0",
+        "bytes": "6818dec600b9dc22d000e80bf11800"
+      },
+      {
+        "file": "Water_LOD_LOW",
+        "instruction": "00888FF0",
+        "global": "00D02348",
+        "method": "00A18440",
+        "bytes": "68bc3dc300b94823d000e841f41800"
+      },
+      {
+        "file": "Water_LOD_MEDIUM",
+        "instruction": "00888FFF",
+        "global": "00D02350",
+        "method": "00A18440",
+        "bytes": "68a83dc300b95023d000e832f41800"
+      },
+      {
+        "file": "Water_LOD_HIGH",
+        "instruction": "0088900E",
+        "global": "00D02358",
+        "method": "00A18440",
+        "bytes": "68983dc300b95823d000e823f41800"
+      }
+    ],
+    "currentMismatch": "The current adapter imports waterLayer1/2 and mixes them. They are different256-square images; the actual proven high-water inputs are the512-square Skin1/2/4 profiles above."
+  },
+  "vertexChannels": {
+    "redIntensity": "0088CC80 selects Ocean/River/Coast RGB lookup triplets; nonnegative ground overrides to Coast.0088C8C0 averages13 points: center, eight radius1 neighbors, four axis radius2 neighbors.0088B2D0 subsequently overwrites G/B, so R carries averaged native intensity.",
+    "alpha": "0088CC80 uses palette alpha indexed by ground depth relative to water height over2 units. Above water reads entry0; below2 uses last entry. Within range, signed trunc(-255*depth/2) and pointer subtraction address the nonnegative palette index.0088C8C0 averages alpha over the same13 points.",
+    "green": "0088CE40 maps native movement type7Ocean->1,5Coast->.5,else->0.0088CED0 uniformly averages center and eight axial/diagonal points at each radius1..4:33 samples.",
+    "blue": "0088D6D0 returns.5 for nonnegative ground,.35 for submerged Coast,0 otherwise.0088D780 averages center weight5, eight radius1 neighbors weight2, eight radius2 neighbors weight1, divided by29. The active PS adds this channel to G/B; the old VS comment saying subtract is superseded by its active ADD instruction.",
+    "lookupPixelsRGBA": [
+      [
+        192,
+        192,
+        192,
+        255
+      ],
+      [
+        192,
+        192,
+        192,
+        255
+      ],
+      [
+        105,
+        105,
+        105,
+        255
+      ],
+      [
+        245,
+        245,
+        245,
+        255
+      ]
+    ],
+    "paletteSourceSha256": "b1d0bd19afc22ba435032bfe3ff097b096db0aea122990d2452f8db2454a82a3",
+    "lookupSourceSha256": "61167e822ea904fe38232a9c841e7aedd12463610a15912e2dc48871b913a4c4",
+    "alphaExamples": [
+      {
+        "depth": 0,
+        "paletteIndex": 0,
+        "alphaByteBefore13TapAverage": 0
+      },
+      {
+        "depth": 0.1,
+        "paletteIndex": 12,
+        "alphaByteBefore13TapAverage": 0
+      },
+      {
+        "depth": 0.25,
+        "paletteIndex": 31,
+        "alphaByteBefore13TapAverage": 67
+      },
+      {
+        "depth": 0.5,
+        "paletteIndex": 63,
+        "alphaByteBefore13TapAverage": 197
+      },
+      {
+        "depth": 1,
+        "paletteIndex": 127,
+        "alphaByteBefore13TapAverage": 197
+      },
+      {
+        "depth": 1.5,
+        "paletteIndex": 191,
+        "alphaByteBefore13TapAverage": 201
+      },
+      {
+        "depth": 2,
+        "paletteIndex": 255,
+        "alphaByteBefore13TapAverage": 216
+      },
+      {
+        "depth": 3,
+        "paletteIndex": 255,
+        "alphaByteBefore13TapAverage": 216
+      }
+    ],
+    "mapAdapterCaution": "Our map has six own terrain classes, not native terrain33/movement8 classes. A future rendering-only mapping must remain explicit; shallow ocean/coast versus river cannot be inferred solely from a generic minimap color."
+  },
+  "reflectionOverlay": {
+    "formula": "sample mirrored scene at source averaged normal offset, multiply by vertexRGBA; alpha blend over base water, no depth write.",
+    "factoryEvidence": "00AB2B00 initializes every reflection-mesh vertex RGB to1 and alpha to param7;0088DBE0 supplies float0.32 in both material mode branches.",
+    "qualification": "Initial alpha0.32 is proven. Complete later CPU update/quality/overlay-order behavior is not exhausted here; do not claim a universal Fresnel absence."
+  },
+  "atmosphere": {
+    "facts": "Climate DDF binds time-of-day sun vectors, skybox and general atmospheric Sun/Ambient/Specular/Fog records. Those records declare no independent WaterColor/Fresnel field. Base high-water shader has Lighting=false, so adding a general atmosphere multiplier to its pixel formula is unsupported by this evidence. Reflected scene appearance can still depend on its lighting/sky.",
+    "temperateNormalRows": [
+      [
+        "Atm_Temperate_Morn_normal",
+        "[70 52 32 25]",
+        "[38 33 36 25]",
+        "[81 66 50 25]",
+        "[255 255 255 0]",
+        "1",
+        "FALSE",
+        "1"
+      ],
+      [
+        "Atm_Temperate_Aft_normal",
+        "[49 44 37 25]",
+        "[35 30 39 25]",
+        "[55 55 55 25]",
+        "[255 255 255 0]",
+        "1",
+        "FALSE",
+        "1"
+      ],
+      [
+        "Atm_Temperate_Eve_normal",
+        "[68 39 17 25]",
+        "[23 22 31 25]",
+        "[75 32 0 25]",
+        "[255 255 255 0]",
+        "1",
+        "FALSE",
+        "1"
+      ],
+      [
+        "Atm_Temperate_Nght_normal",
+        "[50 52 70 25]",
+        "[19 19 26 25]",
+        "[43 45 63 25]",
+        "[255 255 255 0]",
+        "1",
+        "FALSE",
+        "1"
+      ]
+    ],
+    "sources": [
+      {
+        "file": "db/Terrain/dbclimate.ddf",
+        "sha256": "f2199462c639eda040c81ad7298c73a00b01212be97a18cb94e46a12d0bc515c"
+      },
+      {
+        "file": "db/Terrain/dbclimate_atmosphere.csv",
+        "sha256": "3936616b14fb3dc5e1e28170851fe561cdb144089afdb3b0c78288cbdf9dc2e4"
+      },
+      {
+        "file": "DbHdrs/DbTerrainDefs.h",
+        "sha256": "19fc7b1e07b6aca24cfe5e3605b600d976f1a1b3a95eac0a6a4de9a1b626c2b2"
+      },
+      {
+        "file": "DbHdrs/DbClimateDefs.h",
+        "sha256": "69d3fc6585039ee9b1fd712966ac7b64b5dc19b6e709073ff815fc0f62ada536"
+      }
+    ],
+    "unresolved": "Exact selected time of day/weather, source atmosphere parser normalization, skybox draw and interaction with other water/material quality paths."
+  },
+  "constants": {
+    "00B41938": {
+      "bytes": "00000040",
+      "f32": 2.0
+    },
+    "00B552E4": {
+      "bytes": "00007fc3",
+      "f32": -255.0
+    },
+    "00B416AC": {
+      "bytes": "0000a040",
+      "f32": 5.0
+    },
+    "00B47158": {
+      "bytes": "3333b33e",
+      "f32": 0.3499999940395355
+    },
+    "00B5302C": {
+      "bytes": "8fc2f53c",
+      "f32": 0.029999999329447746
+    },
+    "00B41928": {
+      "bytes": "0000803e",
+      "f32": 0.25
+    },
+    "00B552E0": {
+      "bytes": "d9899d3d",
+      "f32": 0.07692307978868484
+    },
+    "00B552E8": {
+      "bytes": "103ef83c",
+      "f32": 0.03030303120613098
+    },
+    "00B552EC": {
+      "bytes": "cb3d0d3d",
+      "f32": 0.03448275849223137
+    }
+  },
+  "sourceAssets": [
+    {
+      "member": "cache/texcache/Skin_1.texcache",
+      "sha256": "204a2232d8f395f56f330a287750572016341c0123d5c7eba62a96df13bd53ac",
+      "format": "DXT3",
+      "width": 512,
+      "height": 512,
+      "mipmaps_in_source": 10,
+      "pixel_payload_bytes": 349552,
+      "top_mip_bytes": 262144,
+      "transformation": "Original top mip decoded to RGBA PNG; no rescaling or repainting",
+      "meanRGBA": [
+        193.66541290283203,
+        212.81557083129883,
+        225.38440704345703,
+        255.0
+      ],
+      "extremaRGBA": [
+        [
+          82,
+          239
+        ],
+        [
+          97,
+          255
+        ],
+        [
+          107,
+          255
+        ],
+        [
+          255,
+          255
+        ]
+      ]
+    },
+    {
+      "member": "cache/texcache/Skin_2.texcache",
+      "sha256": "40ec4ed750e84a6e594150d0a6c7160ced1686bcf742e1f2ea87b77904a7500a",
+      "format": "DXT3",
+      "width": 512,
+      "height": 512,
+      "mipmaps_in_source": 10,
+      "pixel_payload_bytes": 349552,
+      "top_mip_bytes": 262144,
+      "transformation": "Original top mip decoded to RGBA PNG; no rescaling or repainting",
+      "meanRGBA": [
+        70.21237182617188,
+        88.78442764282227,
+        85.92136001586914,
+        255.0
+      ],
+      "extremaRGBA": [
+        [
+          0,
+          255
+        ],
+        [
+          16,
+          255
+        ],
+        [
+          8,
+          255
+        ],
+        [
+          255,
+          255
+        ]
+      ]
+    },
+    {
+      "member": "cache/texcache/Skin_3.texcache",
+      "sha256": "34057ec9dc974f079ee28f554cadb3f745ebb9743c5e02ab942dc3bd985394fa",
+      "format": "DXT3",
+      "width": 512,
+      "height": 512,
+      "mipmaps_in_source": 10,
+      "pixel_payload_bytes": 349552,
+      "top_mip_bytes": 262144,
+      "transformation": "Original top mip decoded to RGBA PNG; no rescaling or repainting",
+      "meanRGBA": [
+        43.70669937133789,
+        89.42057037353516,
+        109.61448287963867,
+        255.0
+      ],
+      "extremaRGBA": [
+        [
+          0,
+          140
+        ],
+        [
+          28,
+          146
+        ],
+        [
+          24,
+          165
+        ],
+        [
+          255,
+          255
+        ]
+      ]
+    },
+    {
+      "member": "cache/texcache/Skin_4.texcache",
+      "sha256": "03fa8b75e2c71d8765f6b25f03d09fb16389c8b79830d901781b06e805cf4b6f",
+      "format": "DXT3",
+      "width": 512,
+      "height": 512,
+      "mipmaps_in_source": 10,
+      "pixel_payload_bytes": 349552,
+      "top_mip_bytes": 262144,
+      "transformation": "Original top mip decoded to RGBA PNG; no rescaling or repainting",
+      "meanRGBA": [
+        101.51068115234375,
+        126.78764724731445,
+        139.54993057250977,
+        255.0
+      ],
+      "extremaRGBA": [
+        [
+          0,
+          198
+        ],
+        [
+          32,
+          211
+        ],
+        [
+          41,
+          214
+        ],
+        [
+          255,
+          255
+        ]
+      ]
+    },
+    {
+      "member": "cache/texcache/Skin_5.texcache",
+      "sha256": "4f8ff392b629f58aaae0ee6b7e6dd99e7692ff938525b7a389212fcf62fd93ce",
+      "format": "DXT3",
+      "width": 512,
+      "height": 512,
+      "mipmaps_in_source": 10,
+      "pixel_payload_bytes": 349552,
+      "top_mip_bytes": 262144,
+      "transformation": "Original top mip decoded to RGBA PNG; no rescaling or repainting",
+      "meanRGBA": [
+        155.9740333557129,
+        173.49727249145508,
+        171.8522834777832,
+        255.0
+      ],
+      "extremaRGBA": [
+        [
+          74,
+          255
+        ],
+        [
+          101,
+          255
+        ],
+        [
+          99,
+          255
+        ],
+        [
+          255,
+          255
+        ]
+      ]
+    },
+    {
+      "member": "cache/texcache/Skin_6.texcache",
+      "sha256": "46e3187f88ec20a83592cffe9583a37150f164ad3c2103a7b676a68727e3926f",
+      "format": "DXT3",
+      "width": 512,
+      "height": 512,
+      "mipmaps_in_source": 10,
+      "pixel_payload_bytes": 349552,
+      "top_mip_bytes": 262144,
+      "transformation": "Original top mip decoded to RGBA PNG; no rescaling or repainting",
+      "meanRGBA": [
+        153.07632064819336,
+        177.69475555419922,
+        191.30299377441406,
+        255.0
+      ],
+      "extremaRGBA": [
+        [
+          41,
+          247
+        ],
+        [
+          85,
+          255
+        ],
+        [
+          90,
+          255
+        ],
+        [
+          255,
+          255
+        ]
+      ]
+    }
+  ],
+  "shaderFiles": [
+    {
+      "file": "shaders/Water_LOD_HIGH.NSF",
+      "sha256": "02d42ac877a2a866004a2f0b41b3c3eced2184810641a6730dfbe535ac4492e4"
+    },
+    {
+      "file": "shaders/vsh_psh/Water_LOD_HIGH.vsh",
+      "sha256": "1443b05ba5c27274f79bdba41e4dda5303be228074600ad997ffd0bdceeea212"
+    },
+    {
+      "file": "shaders/vsh_psh/Water_LOD_HIGH.psh",
+      "sha256": "a4685999818780cf28b25ca9ec780ad08ee7bd69ef4145f689ceb5faea893d3a"
+    },
+    {
+      "file": "shaders/WaterReflection_LOD_HIGH.NSF",
+      "sha256": "59411ce30c9d2881e0a0503f274255706f83d7508567dd624e38eee714e5c77e"
+    },
+    {
+      "file": "shaders/vsh_psh/WaterReflection_LOD_HIGH.psh",
+      "sha256": "65fc08cd17a71ad2000b0e2007c681bd8040ffe3fa6eb932d221ec9e8d9dfc82"
+    }
+  ],
+  "exports": [
+    {
+      "file": "native-water-appearance-colors.c",
+      "sha256": "716ddeee9d3317ed3bdf2c873934b58981ccdd2de5956ec2e266fa4665c45582"
+    },
+    {
+      "file": "native-water-appearance-bindings.c",
+      "sha256": "cc2b08e09c540a145f6875d1cc6e55b078dea89bd40456f6ec416b8681f29e67"
+    },
+    {
+      "file": "native-water-appearance-profile.c",
+      "sha256": "7d2a566136db12b1c9e172e43930b97e5641a442b015b15f68e10b310390130e"
+    },
+    {
+      "file": "native-water-static-profile.c",
+      "sha256": "495bdb55d546cabdba6ad0c9011c954d003ab6468cd3f1908f4d2d2ea75d15ca"
+    }
+  ],
+  "implementationReadiness": {
+    "closed": [
+      "Actual native high-water texture families instead of filename guesses",
+      "Native high PS multiply/lerp/channel formula",
+      "Depth-to-palette alpha and13/33/29 vertex filters",
+      "Native reflection initial whiteRGB/alpha0.32",
+      "Native base-vs-reflection depth-write states"
+    ],
+    "stillOpen": [
+      "Default texture UV scales in00D0232C table and native grid density/plane relation to our generated map",
+      "Complete mode-setting lifecycle and quality/UI selection",
+      "Any later reflection vertex-alpha updates and complete pass ordering",
+      "Native skybox/atmospheric rendering and exact original-map classes"
+    ],
+    "gate": "Research only. Runtime color/alpha/texture changes wait for Root release-freeze handoff; do not repaint/recolor textures or choose constants by visual taste."
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "format": "native4-hud-portability-validation-v1",
+  "build": "native-ui4",
+  "status": "PASS",
+  "selfTests": 20,
+  "counts": {
+    "hudWidgets": 51,
+    "hudSprites": 129,
+    "hudSourceTextures": 34,
+    "hudArtBindings": 22
+  },
+  "files": {
+    "tools/portable-assets-test.py": "1bc77bd2e4806ac6e9a163e2855759da79a1fd0831af010334ed76118570f98a",
+    "docs/original-hud.js": "b777e9a3f56a50fc04389a010368830f75098861796704bac658748b95339f15",
+    "docs/original-hud-layout.js": "dd7c84000e04cfa0708539b426d365872845ff26f8b2e322de4438f23ad762b5",
+    "docs/local-original/hud-native/manifest.json": "2b5c66a91b27cf7c3833d00db063a74c0b8e8dfedc2d0a67504d3bd6b4d6db6a"
+  },
+  "portableReport": {
+    "path": "native4-portable-assets-check.json",
+    "sha256": "da404795f11fb0b4f0a3c4f91f3ea70aebc9d1acf8dc1b6eb277a632c2fe99d5",
+    "fileCount": 4522,
+    "runtimeReferenceCount": 19653,
+    "uniqueRuntimeTargets": 4403,
+    "errors": 0
+  },
+  "validated": [
+    "All129 PNG paths use exact case and remain relative to docs/local-original/hud-native.",
+    "All129 whole-file SHA256 hashes and IHDR dimensions match the declared original crops.",
+    "All logical sprite dimensions are exactly physical dimensions divided by sourceResolutionScale4.",
+    "All source crop rectangles fit their declared source textures; packed rotations restore width/height correctly.",
+    "All51 native widget names, parent/anchor references, anchor enums and dependency cycles checked.",
+    "All actively drawn art bindings agree with widget SPRITE and resolve native meta-epoch suffix or explicit base fallback.",
+    "Dormant CSV widget sprites outside art are source metadata, not fabricated runtime dependencies."
+  ],
+  "scope": "Filesystem/source-graph verification without GUI, browser, original executable or Mac device. Layout/interaction is independently covered by root native HUD DOM tests; full native widget lifecycle, bitmap font raster and the complete original HUD are not claimed.",
+  "numericalRuleProfileBinaries": 3
+}

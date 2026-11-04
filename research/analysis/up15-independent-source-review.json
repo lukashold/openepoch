@@ -1,0 +1,1980 @@
+{
+  "format": "up15-independent-raw-source-review-v1",
+  "status": "PASS",
+  "checks": 4668,
+  "runtimeEffects": 188,
+  "unsupportedFactors": 82,
+  "manifestSha256": "eabf590cacef634646eb4e8e47eb58e29a44ca8a6ac1d914a012e1b91b9f87f3",
+  "origins": {
+    "db/visuals/ammo_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Visuals/ammo_15.ddf",
+      "bytes": 44157,
+      "sha256": "5c627c6de9e546c553f80d193145592b48e3085de25a2050170cf25e71553aa3",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1785898698
+    },
+    "db/visuals/fire.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Visuals/fire.ddf",
+      "bytes": 4564,
+      "sha256": "14bda4d37c0aeed284050fea05102c1315e7e7e6e8b233a77bd0b9a9603ad54e",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900914
+    },
+    "db/visuals/visual_explosion.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Visuals/visual_explosion.ddf",
+      "bytes": 5852,
+      "sha256": "65b4950e4272460d44c88bd4ffdce774e77c84f4d331945dfa7f01e1c5ac7348",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900914
+    },
+    "db/visuals/visual_expl_ammo.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Visuals/visual_expl_ammo.ddf",
+      "bytes": 24951,
+      "sha256": "06863a90598e2761dba797b1153721bc1ee71d98a9c11fe1922ec95a9137004e",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900914
+    },
+    "db/visuals/visual_expl_ammo_nuke_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Visuals/visual_expl_ammo_nuke_15.ddf",
+      "bytes": 382874,
+      "sha256": "9525dcaa232d9cffc015efaf895c6902cc8fe5717485ae642bcde52e6f6e5026",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1627863192
+    },
+    "db/visuals/visual_expl_ammo_emp.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Visuals/visual_expl_ammo_emp.ddf",
+      "bytes": 6136,
+      "sha256": "a1285ecef5bd24ec05cd8d92da0bc1b517d2e095b31700ba3c5d8620489bd411",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900914
+    },
+    "db/visuals/visual_expl_building.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Visuals/visual_expl_building.ddf",
+      "bytes": 40729,
+      "sha256": "edf045c60a06fee722102808486226c94d6f9055ebe9b8e71cc8e920be9e77e7",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900914
+    },
+    "db/visuals/visual_expl_herc.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Visuals/visual_expl_herc.ddf",
+      "bytes": 9400,
+      "sha256": "1632d988f8b6e4a7df07c2cf7c628363eaca2dab712ff16b2958ec3432c86ddf",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900914
+    },
+    "db/visuals/visual_expl_naval.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Visuals/visual_expl_naval.ddf",
+      "bytes": 64269,
+      "sha256": "a7ac188c6a6f6bacc31a9da0c90ab17f1e1cca37e3d8653f133972a7ae0f74c0",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900914
+    },
+    "db/visuals/visual_expl_organic.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Visuals/visual_expl_organic.ddf",
+      "bytes": 3229,
+      "sha256": "3563b342520513c0a3b4314b1e29a67b59156c501960abfb7d5ae64927f130bc",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900914
+    },
+    "db/visuals/visual_expl_tank.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Visuals/visual_expl_tank.ddf",
+      "bytes": 76296,
+      "sha256": "779f2ec7d46f27c023f0b14badea6cd3e0f8023aed296ec32f3b77f0e59c3ae4",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900914
+    },
+    "db/visuals/visual_expl_aircraft.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Visuals/visual_expl_aircraft.ddf",
+      "bytes": 92265,
+      "sha256": "5ec64e18e2e32726cdd6bda6051a4efcadd6f81f422f9253b41382f85948b2da",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900914
+    },
+    "db/visuals/visual_decals.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Visuals/visual_decals.ddf",
+      "bytes": 22737,
+      "sha256": "751f01e955927a5566179bd6bd894685f7684d63838c3b91ce002d47129f7328",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900914
+    },
+    "db/visuals/visual_fx_expl.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Visuals/visual_fx_expl.ddf",
+      "bytes": 248279,
+      "sha256": "9a0a21c6db0a924b22aab824c536d4190b531e9720da81fb25d1734dec72d599",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900914
+    },
+    "db/visuals/visual_fx_misc.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Visuals/visual_fx_misc.ddf",
+      "bytes": 5861,
+      "sha256": "6404f4b4ca22c4d4b14348b405972f2f7aabf948ef74916f5e7587f48b1c67ba",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900914
+    },
+    "db/visuals/visual_fx_streaks.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Visuals/visual_fx_streaks.ddf",
+      "bytes": 6796,
+      "sha256": "1fb955879aee62c4c4fa67d321f281a3be415db6273f7b7ea347468bc384daf5",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900914
+    },
+    "db/visuals/visual_fx_trails_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Visuals/visual_fx_trails_15.ddf",
+      "bytes": 20026,
+      "sha256": "9f1444f9d60b45317743fcbfcf062a6f97c381fce8f1af95f6cc619e4e2ed8e9",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1785899596
+    },
+    "db/visuals/visual_fx_ui.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Visuals/visual_fx_UI.ddf",
+      "bytes": 9477,
+      "sha256": "7e0b5f3b6c7d8568c9904175926704360c7ed4138f4a2bda5c8a4cc11843cfee",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900914
+    },
+    "db/visuals/visual_fx_weapon_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Visuals/visual_fx_weapon_15.ddf",
+      "bytes": 6827,
+      "sha256": "cf8cba42debf73bd0d7eeb06944accdcd98348b9e9c94201abe0ad23f230f727",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1662241808
+    },
+    "db/visuals/visual_fx_weather.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Visuals/visual_fx_weather.ddf",
+      "bytes": 1861,
+      "sha256": "070176d75d8430e9dc4def9ee12e470f0318901f10c3e0bb9dce31e5ab41b324",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900914
+    },
+    "db/visuals/effects_visual_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Visuals/effects_visual_15.ddf",
+      "bytes": 49707,
+      "sha256": "39454afb7b87bf421c8d0e49b6c1cd308d540bfe84d996009a70909240304e7f",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1703595042
+    },
+    "db/units/unit_upgrades.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/unit_upgrades.ddf",
+      "bytes": 10553,
+      "sha256": "a9af215ced6006ddabc49f281f1c702dbcb6d78bc50018146508ce553423598d",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/ambients.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/ambients.ddf",
+      "bytes": 40577,
+      "sha256": "db9b4d2afb968fa0a1c953b5fcee00a7e1b5a7d7184a1e7cc4873243bcdaa860",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900908
+    },
+    "db/units/building_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/building_15.ddf",
+      "bytes": 4647,
+      "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1701955086
+    },
+    "db/units/helicopter.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/helicopter.ddf",
+      "bytes": 1423,
+      "sha256": "baafaf9ca792745b3a5d72ba02de3bc269181e25fa7499f4fa934c2d2edf8805",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/wonders.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/wonders.ddf",
+      "bytes": 11671,
+      "sha256": "00076de311cbe23b97d7297c080ddd6fe4d3b880885684a76e2c6ba090ae7671",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900914
+    },
+    "db/units/wall.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/wall.ddf",
+      "bytes": 13974,
+      "sha256": "c9482f9a8e7e59e7b9125c06d0e05db00d95c6ed63a1436400ba91137edaf326",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/wall_gate_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/wall_gate_15.ddf",
+      "bytes": 5296,
+      "sha256": "896ba2d67918aa3eeaa01d022d62c4c1da66ab2b18ae573317ca0c0dacf01a85",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1433160584
+    },
+    "db/units/wall_tower_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/wall_tower_15.ddf",
+      "bytes": 7617,
+      "sha256": "46ad81115eed6303530723f14a01803872e021ea1db63974a4f1d5fe38999fd9",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1662176202
+    },
+    "db/units/naval_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/naval_15.ddf",
+      "bytes": 3114,
+      "sha256": "ec0559174e74e83c6a5b9d905e3b15cc7f8ea5d845e61cda50beaf40b0dc0c75",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1785977060
+    },
+    "db/units/human.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/human.ddf",
+      "bytes": 2047,
+      "sha256": "bae4a4f9245463838ac1d4f6995fc57d21b083a6134a18e9d835ef9073694cdf",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/airunit.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/airunit.ddf",
+      "bytes": 558,
+      "sha256": "85a7b79ac31b1b670453314fb2a34a7b2f490c73a2e7dd02dff5843fd9ca52b6",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900908
+    },
+    "db/units/aircraft.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/aircraft.ddf",
+      "bytes": 1124,
+      "sha256": "5bad00f0ae653100217f90edfb80c6bf745c2a4860243a45d0aa06baf359efe7",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900908
+    },
+    "db/units/mounted.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/mounted.ddf",
+      "bytes": 1741,
+      "sha256": "a3996306c12566b2b51ffd9e17784f2239ef6f9f82469b0f4c894819115a3a49",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/barracks_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/barracks_15.ddf",
+      "bytes": 5376,
+      "sha256": "ec703cf4c8e2846ecc97a6294656159ff043c789b314c6a4401493396faa8264",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1701256988
+    },
+    "db/units/road.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/road.ddf",
+      "bytes": 14435,
+      "sha256": "6f334253bae540521d246ea91b8d8decc24c388ff0126d422d04b01d9e8f2293",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/path_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/path_15.ddf",
+      "bytes": 3895,
+      "sha256": "2a387d1f7b9491bdeba9783cf1ee0f0eb3c56d1b74b7cd49f4be299ccf24ed45",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1404453194
+    },
+    "db/units/leader.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/leader.ddf",
+      "bytes": 617,
+      "sha256": "1c7641963b64a8a092a512344a49491c01958db997cc01938a83e658e617564d",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/leaders_military.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/leaders_military.ddf",
+      "bytes": 6326,
+      "sha256": "acb1aa689397d57cb43fd95155835cf2c8e92d75037adf096af5e142d1d61068",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/leaders_economic.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/leaders_economic.ddf",
+      "bytes": 5873,
+      "sha256": "7f6ce29748499e9676298832774c4dcd97e32c4deca7c7d058d5a8e206c864b6",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/leaders_imperial.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/leaders_imperial.ddf",
+      "bytes": 5804,
+      "sha256": "20d62b85598b5118250df98898817f1e0c3a1eb5809d54a5e6d3e8b6c0434cab",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/light_infantry.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/light_infantry.ddf",
+      "bytes": 21472,
+      "sha256": "2a165451e57059e818306399e3e5cc74c53522393ddf477136a4ca926d93d410",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/galleon.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/galleon.ddf",
+      "bytes": 4697,
+      "sha256": "6ae3933dbe7e20dd152a7fa7cc96f1d87f6d4ed430a783591d8dc406231e7d05",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/merchant_ship.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/merchant_ship.ddf",
+      "bytes": 4350,
+      "sha256": "7034e24ba27bc57fd2467dae55ea5e51693554cb122732db5535ee9675954624",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/frigate.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/frigate.ddf",
+      "bytes": 4503,
+      "sha256": "9d1827fa854e5e4da693e2e589f493180530fd1541f12720d7611b10dc52316b",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/cargo_ship.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/cargo_ship.ddf",
+      "bytes": 2329,
+      "sha256": "292973e7ab9d2169eac50d34f18d195fac86151b87a79dc692f8f565f32fd0f2",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/fishing_ship_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/fishing_ship_15.ddf",
+      "bytes": 3101,
+      "sha256": "0d209a493f938400b55ca1a2dd309322cd09ae4a806347da19754fc5595dd100",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1405567300
+    },
+    "db/units/fighting_sail.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/fighting_sail.ddf",
+      "bytes": 5309,
+      "sha256": "77e0f8fd0aa59b5b7fa5afb2defc5aaefbe15d4c3fc991e288ad5dd8786e7d73",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/priest.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/priest.ddf",
+      "bytes": 7736,
+      "sha256": "7c36f3b1844e4b339d69501e3e13b011cc057cf30cc88e7495584cd50b5a5221",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/air_defense_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/air_defense_15.ddf",
+      "bytes": 3682,
+      "sha256": "b1fa5637d7cca8f6fb390b57f2ad71085c402b9d0fecb18cce86e326a1eebeaa",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1729702860
+    },
+    "db/units/spy.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/spy.ddf",
+      "bytes": 6762,
+      "sha256": "4e7f7498176ce7cad8ba30145a64858be9e0f680390c2f061c181fefb1ccca12",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/citizen_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/citizen_15.ddf",
+      "bytes": 20661,
+      "sha256": "383976e9e3bd0f2d8a13317eef99d081ee50aa1deefb94698ce3b44e6e3d49c9",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1680902166
+    },
+    "db/units/fighter_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/fighter_15.ddf",
+      "bytes": 12925,
+      "sha256": "ddf329d32f3cce39c308c93901b621a7671b49138703f636c870a19cb1b111e7",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1431376468
+    },
+    "db/units/fighter_bomber_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/fighter_bomber_15.ddf",
+      "bytes": 13558,
+      "sha256": "343ea51cbd5a3f66c98a9b537170cff9c6504d49dfdb656d82918c8ce4ad29de",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1420638818
+    },
+    "db/units/bomber_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/bomber_15.ddf",
+      "bytes": 12589,
+      "sha256": "cbc404dc6819f399cb4ece501c938b7af24a18434b2536ee603bb09d4c4abd8a",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1406779534
+    },
+    "db/units/non_combat_air1_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/non_combat_air1_15.ddf",
+      "bytes": 2995,
+      "sha256": "e59a046f6331b06eda1e310a032d1548954f84e087b9e80e172611f0145e6faa",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1402372014
+    },
+    "db/units/non_combat_air2_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/non_combat_air2_15.ddf",
+      "bytes": 5673,
+      "sha256": "09db8e60326961a02319bfc0aa974bdbfbe0f7fb178fb2f3d1d17ba7871e8c61",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1680965138
+    },
+    "db/units/non_combat_air3_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/non_combat_air3_15.ddf",
+      "bytes": 3114,
+      "sha256": "6d5f4853bdaccffd7c5d9d100e00983b2e73b90897f9ad53f740eebb2cc8770c",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1680721200
+    },
+    "db/units/trade_cart.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/trade_cart.ddf",
+      "bytes": 5671,
+      "sha256": "606db426a7c6c82822cca9fa4c8513ae74f938bc15ec668967b7281fcf5ad337",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/airport_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/airport_15.ddf",
+      "bytes": 2235,
+      "sha256": "337a2bd68841688447bb07bfee01626dff17ffe1d11298cbbff71c30bfb14a56",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1417478674
+    },
+    "db/units/airport2_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/airport2_15.ddf",
+      "bytes": 2463,
+      "sha256": "0ee9d991df49bdaf3c84e02f8171b1e0e8b7d7c4deec4d5a0888ad1c82aa3a88",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1421438482
+    },
+    "db/units/resources.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/resources.ddf",
+      "bytes": 42300,
+      "sha256": "35ec70b4cf8a5c2f0471db86586cb70376e68bf103c43535811c7ac30a7e8347",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/medic.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/medic.ddf",
+      "bytes": 3868,
+      "sha256": "90cf68b036421045e289da17f27d00a5ed5940a58779530c2b6dad1d3b667e09",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/heavy_infantry1.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/heavy_infantry1.ddf",
+      "bytes": 18469,
+      "sha256": "296ecd7d2bd841ce6b2251e260597105280cee15f8d3787a672b8f25dd3c04c0",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/heavy_infantry2.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/heavy_infantry2.ddf",
+      "bytes": 11495,
+      "sha256": "71d756ce4a7423ec877191620ea4fdd286e2ea79cc6285bfbceeb90b3632f213",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/warehouse_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/warehouse_15.ddf",
+      "bytes": 9258,
+      "sha256": "3126cd30b9a64f640e9424de675c631b39622fb10e1c74989d9da81b3e5a133c",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1674722864
+    },
+    "db/units/coastal_defense.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/coastal_defense.ddf",
+      "bytes": 7141,
+      "sha256": "ae3ee9795834a5f0cb14713482782bc1f7dd99ee9d04f26ba272f37f35051409",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/temple_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/temple_15.ddf",
+      "bytes": 7937,
+      "sha256": "391bf6ee0934c5cba4c1e2222f4546da496fc05b1d614bc94325f7e3ad893bb4",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1697246294
+    },
+    "db/units/university_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/university_15.ddf",
+      "bytes": 8062,
+      "sha256": "17219dad95afeb46a52c1e14630ac1d7fc70f0f1e347430c782e1e72828d8301",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1405085002
+    },
+    "db/units/city_center_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/city_center_15.ddf",
+      "bytes": 9280,
+      "sha256": "b07b06852a7cd6d1f513794dc089fa4fe4ebf0011257a7b9c39813ceb5b85ec7",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1515754852
+    },
+    "db/units/market.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/market.ddf",
+      "bytes": 5664,
+      "sha256": "a476f0756ce018c7fd7b875914c6939b15ea4205139646a1e62351ea7f65fb26",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/submarine.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/submarine.ddf",
+      "bytes": 6281,
+      "sha256": "6b6ac1eaeaac9f8729ddd5ddaab02b9ce6d487e7776a438c000d6fe5d20eb610",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/house_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/house_15.ddf",
+      "bytes": 10696,
+      "sha256": "dd5e5471bcd28021f8ea6aa22156fa5817e7c6b2bf8b96600112d05352e92ad5",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1406267934
+    },
+    "db/units/farm_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/farm_15.ddf",
+      "bytes": 12086,
+      "sha256": "965e29e08f9b1e939feb7c3ee8478c9e324a726d4d8d260040f3dc36a84b61ab",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1480020906
+    },
+    "db/units/fortress.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/fortress.ddf",
+      "bytes": 12619,
+      "sha256": "b61868f3787350e33d36f97dc58b16285ebbc5db74f9ac36d06ab7db1f709d33",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/bridge.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/bridge.ddf",
+      "bytes": 4867,
+      "sha256": "2ee50d2b076534877d8e8a056ba6341dd70b57074216075875a167d4568141c4",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/herc_facility.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/HERC_Facility.ddf",
+      "bytes": 1540,
+      "sha256": "17d1e89479ef3a1273aa7ddc5b1a94c38fe3c0a5ec11ab2895034923f910deac",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/aircraft_carrier.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/aircraft_carrier.ddf",
+      "bytes": 4120,
+      "sha256": "0c7904645ac8cb2b82d73532488368769d55bee71dc123d820560aed75e21328",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900908
+    },
+    "db/units/heavy_mounted.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/heavy_mounted.ddf",
+      "bytes": 2184,
+      "sha256": "fef787a86ed4e8d95880e48a44f85f5f0f91ad9a8c3ea53990eb4739d34c9b0a",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/heavytank.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/HeavyTank.ddf",
+      "bytes": 797,
+      "sha256": "6aa64fd6e465da4fe28e8b2c854be76d9b0cd3cbca0f2cad1f90c81ca4681280",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/tank.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/tank.ddf",
+      "bytes": 781,
+      "sha256": "82184d66532e11752a6994b231520043ffdfeab2dc724bd78aff34fac5930837",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/light_mounted1.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/light_mounted1.ddf",
+      "bytes": 18302,
+      "sha256": "ade1e0b3115282e43c3daaf4e9923dd42fd6ae03a34a1b4f66ea550b604556eb",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/light_mounted2_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/light_mounted2_15.ddf",
+      "bytes": 6563,
+      "sha256": "1bea625530ea072ee0271cac93ad38811baa6a56bfc6b3c62711404a0152c3ab",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1404942208
+    },
+    "db/units/light_mounted3_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/light_mounted3_15.ddf",
+      "bytes": 3475,
+      "sha256": "c3c5724097c4f062e785d89a181e8579334a665c3e03592dc2cd77c1a2817af0",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1697246662
+    },
+    "db/units/heavy_mounted1.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/heavy_mounted1.ddf",
+      "bytes": 18231,
+      "sha256": "b06004878a6b489efa7ccda68c229cbf6be5472e01abdd20a9b451f8c2e527b0",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/heavy_mounted2_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/heavy_mounted2_15.ddf",
+      "bytes": 5214,
+      "sha256": "462a856027f7f4eccb202664a099f06d37481b7d3480c3f1a819903c3e4d0e41",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1402371796
+    },
+    "db/units/heavy_mounted3_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/heavy_mounted3_15.ddf",
+      "bytes": 3752,
+      "sha256": "4829b8956e461cde2df69c6050b002040619bc3aa96a4038919b28dcf43c0297",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1667994178
+    },
+    "db/units/ram.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/ram.ddf",
+      "bytes": 4829,
+      "sha256": "bd4d274106a3ece223fb0c8e0e635c5fe5c189e28141ac9a9f7a8329170ae9ac",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1128549224
+    },
+    "db/units/siege_tower.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/siege_tower.ddf",
+      "bytes": 5553,
+      "sha256": "8ec38930505a26b02e59db8beb3c4ae9dc3c9b77dc8637e80d5101c6f5f3ecfe",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/herc.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/herc.ddf",
+      "bytes": 507,
+      "sha256": "19ddb17b0fefc7c077106bd2dcb8e065e6b015e81d740e52f61b21feb8604323",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/transport_helicopter_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/transport_helicopter_15.ddf",
+      "bytes": 4558,
+      "sha256": "caeda5563c8c923d3b1696715062264c3134213c81b2837b43832d97d1a33a9b",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1406781908
+    },
+    "db/units/mill_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/mill_15.ddf",
+      "bytes": 5179,
+      "sha256": "aa6413f6d444782ba26e34eaa4c7b1087a546d53c0c721b3c5927a33100a3f07",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1701256164
+    },
+    "db/units/destroyer.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/destroyer.ddf",
+      "bytes": 5808,
+      "sha256": "b083fc3bf1154c043df76795ecf3e187c12d10deed23ff1f545184dc8063d90e",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/battleship.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/battleship.ddf",
+      "bytes": 6219,
+      "sha256": "3382a7dca12c3109ec7d3680fdf8a8a710177cd72568c2b44b550eeb1038eaaa",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/outpost_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/outpost_15.ddf",
+      "bytes": 9417,
+      "sha256": "ebbaca5c9048487c54d231c0a0ba10e11e97250cb2f3b9548c8d54cd8705570a",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1421244124
+    },
+    "db/units/outpost2.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/outpost2.ddf",
+      "bytes": 3612,
+      "sha256": "f86f9f38b6a6c095fabf96e94b6cf2328cfd24ef256df47aa4eb2c637a7e52c7",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/dock_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/dock_15.ddf",
+      "bytes": 4273,
+      "sha256": "6f1b0dcc109bcfc58de2350ba500954dd44c7fcd63289b3f573392d4cd4f79fa",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1405087078
+    },
+    "db/units/palisade.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/palisade.ddf",
+      "bytes": 15094,
+      "sha256": "80820550df25755a3762a1634500e456457d1c21374a85db75d2b7aee5077578",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/palisade_gate.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/palisade_gate.ddf",
+      "bytes": 5315,
+      "sha256": "d0c248efafc3b713bee550719f8e01da2b8d9d455bf64daa96bf67cca58eea86",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/concertina_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/concertina_15.ddf",
+      "bytes": 4528,
+      "sha256": "2fb8e0389446e7e3ae6d8bcbcedd517847ecaff52eac5a9b3c554d7d69184f52",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1408963102
+    },
+    "db/units/tankbarrier.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/tankbarrier.ddf",
+      "bytes": 1629,
+      "sha256": "7b03545e2379da743b716a12328f3856926260e67dbb3ed89bfdab0eef6d7b29",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/war_galley.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/war_galley.ddf",
+      "bytes": 6129,
+      "sha256": "d2a6f5cfafd4985c1cb4d3d2a7a5a32ede7c85f515de6ec0d46bfd54dbea53a4",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900914
+    },
+    "db/units/artillery.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/artillery.ddf",
+      "bytes": 1337,
+      "sha256": "dcc34667faaa868dd052ef1b219062adc24d4ca2647cfb51d013688b2bb01791",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/heavy_artillery.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/heavy_artillery.ddf",
+      "bytes": 18753,
+      "sha256": "9f7925fab8a78802ae7cb8b6a94e3a77227ad8348333761830fe84d543665e4a",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/light_artillery1.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/light_artillery1.ddf",
+      "bytes": 20848,
+      "sha256": "7319e80db837024816befe526653c728b5f2edd4bf239069a5101d2c9fc77571",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/light_artillery2_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/light_artillery2_15.ddf",
+      "bytes": 7194,
+      "sha256": "dbc4d56df45ad1d72ade446e10d6ed17e4d8d2943b30323669eb2203ec138122",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1612902118
+    },
+    "db/units/stable_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/stable_15.ddf",
+      "bytes": 4913,
+      "sha256": "357e2a3da38c2e9b0b3696929ae44ab2dd3ef6ad3d8189c0f63a448ec3634304",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1543699636
+    },
+    "db/units/animals_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/animals_15.ddf",
+      "bytes": 31081,
+      "sha256": "5444f71898958b3920532b30ab0408575e61a5800b3962ea8f91aedda68f2c7f",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1422856474
+    },
+    "db/units/city_plaza.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/city_plaza.ddf",
+      "bytes": 4309,
+      "sha256": "b8b7c355e02de76780afaf71fd83d6306139a4ed4be206514c55014541dade8a",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/unique_american_gi.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/Unique_American_GI.ddf",
+      "bytes": 2608,
+      "sha256": "04a16fa8c0244e298c710ce6fd487d6f1fa1d46fb4da8260528f0b6ce7f8bf54",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/korean_campaign_units.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/korean_campaign_units.ddf",
+      "bytes": 2875,
+      "sha256": "bb97c837a14c64d70c03c75d9f0880426b036471139d9311aab6f2f925170066",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/scout_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/scout_15.ddf",
+      "bytes": 6066,
+      "sha256": "9bb0212ba6ac3f01505ac565e505a604cc7bf3118d94bf3fb219c6c34af69f07",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1687098332
+    },
+    "db/units/lighttank.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/LightTank.ddf",
+      "bytes": 743,
+      "sha256": "3c97857b4b02bab450af804c4b974f967220f3c280177242c778d04ea2142ef9",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/missile_silo_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/missile_silo_15.ddf",
+      "bytes": 2423,
+      "sha256": "262c557aed21036bae605b3d218770a4612a8bdcd20cb980d95d0c4fb6441ad4",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1578355940
+    },
+    "db/units/herc_noncombat_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/herc_noncombat_15.ddf",
+      "bytes": 9891,
+      "sha256": "a46d1dc5389f2c0577bbc8956ab40b8fdc47d62d6558f4a39e4ef80507947470",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1662240682
+    },
+    "db/units/ambients_campaign.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/ambients_campaign.ddf",
+      "bytes": 20106,
+      "sha256": "637f1c4a96186c473c2ba5d849fe880d0316d1215ea11bcbfcebc638b3f015e2",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900908
+    },
+    "db/techtree/regionpower_upgrades.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/TechTree/regionpower_upgrades.ddf",
+      "bytes": 4914,
+      "sha256": "8b8a28954607dbcd735a31d2ff393b1bf17793cc15cc11e466bdf45a68ed2feb",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900902
+    },
+    "db/units/uniqueunit_greek.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/UniqueUnit_Greek.ddf",
+      "bytes": 8000,
+      "sha256": "82d2139d91b49377821c17a5d4c73f60cd5c7368577e72574743cc2e37efa926",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/uniqueunit_roman.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/UniqueUnit_Roman.ddf",
+      "bytes": 7847,
+      "sha256": "dc11b101fb9f76d8f94c92e51d46e7236e23218caaa496b84684f72a2efb229c",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/uniqueunit_english.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/UniqueUnit_English.ddf",
+      "bytes": 6961,
+      "sha256": "1319673513e224367a33db04d24070bec84aeaf97424657be3ca504159fed168",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/uniqueunit_american_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/UniqueUnit_American_15.ddf",
+      "bytes": 6871,
+      "sha256": "266f0f89b6ee197ced8f541621e96096b7d992d044443b6a6dc1312f5a92b1d1",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1603206782
+    },
+    "db/units/uniqueunit_german.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/UniqueUnit_German.ddf",
+      "bytes": 7564,
+      "sha256": "72b2f20980a912e07f1e53186634002c08e19f128e8ca91919e4e1c2bc782de2",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/uniqueunit_egyptian.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/UniqueUnit_Egyptian.ddf",
+      "bytes": 6706,
+      "sha256": "117fa8468de8a756f2a0197e62cf586c416d1b3e22d7bb1978c2ad0f650372a4",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/uniqueunit_turkish.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/UniqueUnit_Turkish.ddf",
+      "bytes": 8551,
+      "sha256": "f5480811b030518d20d1ffafe3d204da1f0b8e29638adcaad965a3b18da2d000",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/uniqueunit_babylonian.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/UniqueUnit_Babylonian.ddf",
+      "bytes": 7891,
+      "sha256": "5d5aca99f6605bd33de9fde3c946aca80780b9ed86881b4dcc874788baa41549",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/uniqueunit_chinese.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/UniqueUnit_Chinese.ddf",
+      "bytes": 9016,
+      "sha256": "711f049b1c157d52a672d8f0ef14172ee763aec2ea51f7483f1ed1e9b47babb5",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/uniqueunit_japanese_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/UniqueUnit_Japanese_15.ddf",
+      "bytes": 8358,
+      "sha256": "ae8e7062b704cd35c1b27b8428a260441b91732c88e063edaf25e73764012911",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1406779936
+    },
+    "db/units/uniqueunit_korean.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/UniqueUnit_Korean.ddf",
+      "bytes": 9343,
+      "sha256": "cf3166fc8f234cf0d6ee3ba49ac8e571d3e989032d52540656ef3e42f2a9b815",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/uniqueunit_inca_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/UniqueUnit_Inca_15.ddf",
+      "bytes": 7492,
+      "sha256": "9e9fa1367f2a31f6a5eec667cd0cd42a218721069a5191b89cbc8954e2050c1f",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1694964650
+    },
+    "db/units/uniqueunit_aztec.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/UniqueUnit_Aztec.ddf",
+      "bytes": 7764,
+      "sha256": "21d53c616e27e0c97db9839ceed1ac80b6456846a44043a90da5e3b101867b8f",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/uniqueunit_mayan.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/UniqueUnit_Mayan.ddf",
+      "bytes": 7767,
+      "sha256": "de0e8811ae80f454f2c25cf83a9ef2769c20ded458a53064d24a584a66ecefd8",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900912
+    },
+    "db/units/german_campaign_units.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/german_campaign_units.ddf",
+      "bytes": 9331,
+      "sha256": "1a5e3ae7cef00a711f81b800d3c22379fa7b7dc4cb1b9da182c45f8fb1296799",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/diversion_units_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/diversion_units_15.ddf",
+      "bytes": 9198,
+      "sha256": "a758628781b415560b708e8e6750e8035ded163df02f2f837f65a630374d5c42",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1598236710
+    },
+    "db/units/nuclear_bomber_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/nuclear_bomber_15.ddf",
+      "bytes": 4698,
+      "sha256": "0bcf4b6a391c66b4973a0682cbeb11932f2b187627566b1836f381824b387b53",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1406779856
+    },
+    "db/techtree/territory_upgrades.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/TechTree/territory_upgrades.ddf",
+      "bytes": 2750,
+      "sha256": "4c854065090fe9550c0944e8264d9dc1b2a4c9498960e7395b52e81a9a8fd73e",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900902
+    },
+    "db/units/american_campaign_units.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/american_campaign_units.ddf",
+      "bytes": 15834,
+      "sha256": "2dcea2b4146e7a37002e752ca65987a5524cbaf9ec0cd8af42768fe100fb1546",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900908
+    },
+    "db/units/unofficial_patch_units.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/unofficial_patch_units.ddf",
+      "bytes": 308692,
+      "sha256": "a5605f94e833b6f7c23e975f2f4c0e4a9d98178a5764c8c67517d2369a1657c4",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1791150192
+    },
+    "db/units/loew_ambient_pack_15_2.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/loew_ambient_pack_15_2.ddf",
+      "bytes": 302612,
+      "sha256": "9553cfe4861494cad2ae08ef242bd929ea52f42a26c61fe140d9228e7aa158ed",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1703750080
+    },
+    "db/units/loew_ambient_pack_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/loew_ambient_pack_15.ddf",
+      "bytes": 450439,
+      "sha256": "3cc1e5e970e7db86413d289b7c060da240a49b0a1d6d1aeded1832f101fd0d5a",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1675089538
+    },
+    "db/units/loew_ambient_pack2_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Units/loew_ambient_pack2_15.ddf",
+      "bytes": 232933,
+      "sha256": "e70ce0281fbe04f68da704d91de42b4c5abf0fbd74ac3fc338dc0d9e15968113",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1676475338
+    },
+    "db/units/king_of_the_hill.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/king_of_the_hill.ddf",
+      "bytes": 1464,
+      "sha256": "fcd3f093994f5e8f97c16aef45fc4f003b03ce57bcccea0acd5e84be72b72f24",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/units/king_regicide.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Units/king_regicide.ddf",
+      "bytes": 5459,
+      "sha256": "988a687c9e48f6e76d51b7c52a37c8c02c123b8bc2a2edbfe4bd72e684c968e0",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900910
+    },
+    "db/techtree/epoch1_upgrades_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/TechTree/epoch1_upgrades_15.ddf",
+      "bytes": 3149,
+      "sha256": "fba431fbfbabe1c7536d96a896570856c15768225231874c0b35d61dedd411da",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1552543758
+    },
+    "db/techtree/epoch2_upgrades.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/TechTree/epoch2_upgrades.ddf",
+      "bytes": 2669,
+      "sha256": "02594fc4b6e45448348ccd08979e2b60f442eb1f62d846c1b9f1c51c71ef46d9",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900902
+    },
+    "db/techtree/epoch3_upgrades.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/TechTree/epoch3_upgrades.ddf",
+      "bytes": 2816,
+      "sha256": "6778691eb281933928b5e2aef8b601f33dd66670c7c0a2c0621c03a0314fe621",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900902
+    },
+    "db/techtree/epoch4_upgrades_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/TechTree/epoch4_upgrades_15.ddf",
+      "bytes": 3249,
+      "sha256": "3eedb96e41448808ef027077d6fcd92af9d006406574f54c30623fdc24a047cb",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1552544006
+    },
+    "db/techtree/epoch5_upgrades_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/TechTree/epoch5_upgrades_15.ddf",
+      "bytes": 3066,
+      "sha256": "cd89ac25bde89d1064d25c64bd4e2aa6ca7f719e8c17ae60d12ac3a7abe5584d",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1421377374
+    },
+    "db/techtree/epoch6_upgrades_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/TechTree/epoch6_upgrades_15.ddf",
+      "bytes": 5065,
+      "sha256": "0bb98d92998eac6a8efea773339b555a08009a1409f209eee4e23c8433a18c75",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1421689884
+    },
+    "db/techtree/epoch7_upgrades.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/TechTree/epoch7_upgrades.ddf",
+      "bytes": 3814,
+      "sha256": "4e7d5e9ccdf461390c779b1a129c389bb339ed8859fb83b645c9dddfd0adffbb",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900902
+    },
+    "db/techtree/epoch8_upgrades.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/TechTree/epoch8_upgrades.ddf",
+      "bytes": 3550,
+      "sha256": "3ebc36d898be0c6908ed0b1d99f2f255614dee053b8a21e2fa00aad827d628d8",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900902
+    },
+    "db/techtree/epoch9_upgrades.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/TechTree/epoch9_upgrades.ddf",
+      "bytes": 3013,
+      "sha256": "5425dcff47e85e1a74ad9f8e270f026471695ed05f1854d1da31c4893144ad81",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900902
+    },
+    "db/techtree/epoch10_upgrades_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/TechTree/epoch10_upgrades_15.ddf",
+      "bytes": 3609,
+      "sha256": "a91f36cbca2f09db30493848c04df01f184208cd99f19c4e0d505de527c10414",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1421375372
+    },
+    "db/techtree/epoch11_upgrades_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/TechTree/epoch11_upgrades_15.ddf",
+      "bytes": 5967,
+      "sha256": "20a7dd2e4cc64f433b777b58372b15b29bc70d573a81ff4c76d416c8b58cc11a",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1421689896
+    },
+    "db/techtree/epoch12_upgrades_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/TechTree/epoch12_upgrades_15.ddf",
+      "bytes": 3060,
+      "sha256": "801074bcb7b70438d08234e754d6914fa1149a2e84f58e7446dc73a6b8b0289c",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1404482204
+    },
+    "db/techtree/epoch13_upgrades_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/TechTree/epoch13_upgrades_15.ddf",
+      "bytes": 4320,
+      "sha256": "f745fd7fbed2a7eb2835f862e2da0e1ccfabd7762d74ecfeca9a16b79d8742f3",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1729369282
+    },
+    "db/techtree/epoch14_upgrades_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/TechTree/epoch14_upgrades_15.ddf",
+      "bytes": 3729,
+      "sha256": "0f5545089b9a3bfd1ebcf421e2b421451c119f577f54293d0e2b49b4c5464f38",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1421428512
+    },
+    "db/techtree/epoch15_upgrades_15.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/TechTree/epoch15_upgrades_15.ddf",
+      "bytes": 3506,
+      "sha256": "c00eafc6f157b0c5abe30f46778f5b32b1779ede2b391464053563a52b5012d8",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1674717964
+    },
+    "db/techtree/civ_reg_bonus_upgrades.ddf": {
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/TechTree/civ_reg_bonus_upgrades.ddf",
+      "bytes": 5141,
+      "sha256": "f7ef2d799e5dca42133977d08ba3d5431e1a281bbe9f109c95635363f503a3bb",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900902
+    },
+    "zips/dbunittypeattributes.ddf": {
+      "kind": "loose",
+      "physical": "zips/dbunittypeattributes.ddf",
+      "bytes": 45024,
+      "sha256": "40e3e9721e32108aee15a9677cd5d67565aafd0e525d2a67a049031e8994b53e"
+    },
+    "db/techtree/upgrade_factorse5.csv": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/TechTree/upgrade_factorse5.csv",
+      "bytes": 31040,
+      "sha256": "82e1f1f5f71b71a1b7b2e785bdef4dd31c6b24a22f2aaa2eabe8200a7144910f",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1729364028
+    },
+    "db/techtree/upgrade_unittype5.csv": {
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/TechTree/upgrade_unittype5.csv",
+      "bytes": 145672,
+      "sha256": "225b9e7c8e34fcf2969e166207997d349aeed642b371f5fc08911911ce575ffb",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1791150192
+    }
+  },
+  "samples": [
+    {
+      "node": "Economic1_1",
+      "factor": "EconomicTechUpgrade_E1_Slot1a",
+      "field": "Cost",
+      "value": -10.0,
+      "method": "AddPermMul",
+      "selector": {
+        "UnitTypeFamilies": [
+          "CityCenter",
+          "House"
+        ]
+      },
+      "targets": [
+        0,
+        1
+      ],
+      "mask": 3
+    },
+    {
+      "node": "Economic1_1",
+      "factor": "EconomicTechUpgrade_E1_Slot1b",
+      "field": "BuildTime",
+      "value": -10.0,
+      "method": "AddPermMul",
+      "selector": {
+        "UnitTypeFamilies": [
+          "CityCenter",
+          "House"
+        ]
+      },
+      "targets": [
+        0,
+        1
+      ],
+      "mask": 3
+    },
+    {
+      "node": "Economic1_3",
+      "factor": "EconomicTechUpgrade_E1_Slot3a",
+      "field": "Cost",
+      "value": -10.0,
+      "method": "AddPermMul",
+      "selector": {
+        "RPSMask": [
+          "LightInfantry"
+        ]
+      },
+      "targets": [
+        10,
+        12,
+        14
+      ],
+      "mask": 21504
+    },
+    {
+      "node": "Economic1_3",
+      "factor": "EconomicTechUpgrade_E1_Slot3b",
+      "field": "BuildTime",
+      "value": -10.0,
+      "method": "AddPermMul",
+      "selector": {
+        "RPSMask": [
+          "LightInfantry"
+        ]
+      },
+      "targets": [
+        10,
+        12,
+        14
+      ],
+      "mask": 21504
+    },
+    {
+      "node": "Military1_1",
+      "factor": "MilitaryTechUpgrade_E1_Slot1a",
+      "field": "HitPoints",
+      "value": 20.0,
+      "method": "AddPermMul",
+      "selector": {
+        "UnitTypeFamilies": [
+          "Citizen"
+        ]
+      },
+      "targets": [
+        8
+      ],
+      "mask": 256
+    },
+    {
+      "node": "Military1_4",
+      "factor": "MilitaryTechUpgrade_E1_Slot4a",
+      "field": "Speed",
+      "value": 10.0,
+      "method": "AddPermMul",
+      "selector": {
+        "UnitTypeFamilies": [
+          "LightArtillery1"
+        ]
+      },
+      "targets": [
+        22,
+        27
+      ],
+      "mask": 138412032
+    },
+    {
+      "node": "Imperial15_3",
+      "factor": "ImperialTechUpgrade_E15_Slot3a",
+      "field": "HitPoints",
+      "value": 10.0,
+      "method": "AddPermMul",
+      "selector": {
+        "UnitTypeFamilies": [
+          "HeavyTank"
+        ]
+      },
+      "targets": [
+        26,
+        46
+      ],
+      "mask": 70368811286528
+    },
+    {
+      "node": "Imperial15_4",
+      "factor": "ImperialTechUpgrade_E15_Slot4a",
+      "field": "HitPoints",
+      "value": 10.0,
+      "method": "AddPermMul",
+      "selector": {
+        "MovementMask": [
+          "NavalShallow",
+          "NavalDeep"
+        ]
+      },
+      "targets": [
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        42,
+        45
+      ],
+      "mask": 39719320682496
+    }
+  ],
+  "upgradeRefSamples": [
+    {
+      "role": 8,
+      "epoch": 1,
+      "field": "damage",
+      "nativeSet": "IntCitizenUpgradeEpoch1",
+      "expected": 5.0
+    },
+    {
+      "role": 8,
+      "epoch": 4,
+      "field": "damage",
+      "nativeSet": "IntCitizenUpgradeEpoch4",
+      "expected": 6.0
+    },
+    {
+      "role": 8,
+      "epoch": 7,
+      "field": "damage",
+      "nativeSet": "IntCitizenUpgradeEpoch7",
+      "expected": 7.0
+    },
+    {
+      "role": 8,
+      "epoch": 10,
+      "field": "damage",
+      "nativeSet": "IntCitizenUpgradeEpoch10",
+      "expected": 8.0
+    },
+    {
+      "role": 8,
+      "epoch": 13,
+      "field": "damage",
+      "nativeSet": "IntCitizenUpgradeEpoch13",
+      "expected": 9.0
+    },
+    {
+      "role": 26,
+      "epoch": 15,
+      "field": "speed",
+      "nativeUpgrade": "HeavyMounted1Epoch15Move",
+      "expected": 2.3
+    }
+  ],
+  "scope": "All 188 compiled research effect field/method/value/mask definitions checked against installed hash-verified raw CSV5 and independently parsed active CFG5 DDF ancestry; additionally direct Citizen UpgradeSet Damage Set and HeavyMounted1 E15 CSV UPGRADEREFS VehicleMove bindings. Projection onto 57 role aliases, not full native roster parity.",
+  "candidateSourceHashes": {
+    "src/lib.rs": "1c11d1e9859d0baaf102eb26958df65d79ef7663afbac1fa6abb4a42012e157f",
+    "src/save.rs": "c904a62d16cf91cfa591e0b65c9c9803a4dca43ca6188dbe5368580fae6f1cf2",
+    "src/research.rs": "55bee7a8b99fec4288704a3cac321792547ca79dbe895a18ae588a5adf77a1f3",
+    "src/ee2_up15_profile.rs": "781d6a2bbcf9f950416549430726f960555a2f4b40b85dfba3e7d50611832985",
+    "src/ee2_up15_research.rs": "54310b59d678eb6e42a4b01ef60057ed30b67111833d48fe91fc6002ed631a07",
+    "docs/ee2-up15-research.json": "f7ff2cff7bc25a158da734eb7347c85be4f85bf30d54845f45f870f84c241ad3",
+    "tools/up15_research_targets.py": "c5f4ec085c0dc2c22fcf01df784cc91650f4b5fa633e9ed8225230047f725fd8"
+  }
+}

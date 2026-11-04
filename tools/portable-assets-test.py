@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 import hashlib
 from html.parser import HTMLParser
 import json
+import math
 from pathlib import Path
 import posixpath
 import re
@@ -158,7 +159,8 @@ class AssetAudit:
                 # auxiliary scan, so this audit also fits smaller Mac machines.
                 self.json_cache[name]={'format':model.get('format'),'source':model.get('source'),
                                        'sourceTextures':model.get('sourceTextures',[]),
-                                       'parts':[{key:part.get(key) for key in ('sourceNode','name','textureSource','textureUrl')} for part in model.get('parts',[])]}
+                                       'nativeFarmComposite':model.get('nativeFarmComposite'),
+                                       'parts':[{key:part.get(key) for key in ('sourceNode','name','textureSource','textureUrl','farmPlot','farmPlotOffset')} for part in model.get('parts',[])]}
         self.stats['uniqueBoundModelJSON']=len(loaded)
         for i,row in enumerate(manifest.get('epochIconBindings',[])):
             self.hash_ref(row,f'{manifest_name}.epochIconBindings[{i}]','epoch-icon')
@@ -245,6 +247,113 @@ class AssetAudit:
         self.stats['modelSeasonPhysicalTextures']=len(texture_urls)
         self.stats['modelSeasonUnresolvedBindings']=len(data.get('unresolvedBindings',[]))
 
+    def check_water(self):
+        name='local-original/water-native/manifest.json';base='local-original/water-native'
+        self.ref(name,'original-water.js','native-water-manifest');data=self.read_json(name)
+        if data.get('format')!='ee2-native-water-v1':self.error('water-manifest-format',name);return
+        images=data.get('images',{});required={*(f'skin{i}' for i in range(1,7)),'normal','palette','lookup'}
+        if not required.issubset(images):self.error('water-missing-native-images',sorted(required-set(images)),name)
+        for key,record in images.items():
+            target=self.ref(record.get('url'),f'{name}.images.{key}','native-water-image',base)
+            if target and record.get('pngSha256')!=self.digest(target):self.error('water-png-hash-mismatch',target,name)
+        for profile in ('high','fallback'):
+            row=data.get('profiles',{}).get(profile,{})
+            for role in ('dark','detail','gloss'):
+                if row.get(role) not in images:self.error('water-invalid-material-binding',f'{profile}/{role}',name)
+        alpha=data.get('paletteAlphaBytes',[])
+        if len(alpha)!=256 or any(type(value)!=int or not 0<=value<=255 for value in alpha):self.error('water-invalid-palette-alpha',name)
+        lookup=data.get('lookupRGBBytes',[])
+        if len(lookup)<3 or any(not isinstance(rgb,list) or len(rgb)!=3 or any(type(value)!=int or not 0<=value<=255 for value in rgb) for rgb in lookup):self.error('water-invalid-lookup-rgb',name)
+        self.stats['nativeWaterImages']=len(images)
+        self.stats['nativeWaterProfiles']=len(data.get('profiles',{}))
+
+    def check_farms(self):
+        name='local-original/farm-composites.json'
+        self.ref(name,'original-renderer.js','farm-manifest');data=self.read_json(name)
+        if data.get('format')!='ee2-native-farm-composites-v1':self.error('farm-manifest-format',name);return
+        families=data.get('families',{});expected={'FarmWheat','FarmSugarCane','FarmYam'}
+        if set(families)!=expected:self.error('farm-family-list',sorted(families),name)
+        loaded=set();images=set()
+        for family,row in families.items():
+            states=row.get('states',{})
+            if set(states)!={'Seeding','Harvest_1','Harvest_2','Harvest_3'}:self.error('farm-state-list',family,name)
+            if row.get('defaultState') not in states:self.error('farm-default-state',family,name)
+            for state,record in states.items():
+                target=self.ref(record.get('url'),f'{name}.{family}.{state}','farm-state-model')
+                if not target:continue
+                model=self.read_json(target);loaded.add(target)
+                if model.get('source')!=record.get('source'):self.error('farm-model-source-mismatch',target,name)
+                native=model.get('nativeFarmComposite',{})
+                if native.get('family')!=family or native.get('state')!=state:self.error('farm-model-state-mismatch',target,name)
+                parts=model.get('parts',[])
+                if {part.get('farmPlot') for part in parts}!={1,2,3,4}:self.error('farm-plot-list',target,name)
+                for i,part in enumerate(parts):
+                    offset=part.get('farmPlotOffset',[])
+                    if not isinstance(offset,list) or len(offset)!=3 or any(type(v) not in (int,float) or not math.isfinite(v) for v in offset):self.error('farm-invalid-plot-offset',f'{target}.parts[{i}]',name)
+                    url=part.get('textureUrl') or part.get('texture')
+                    if url:
+                        image=self.ref(url,f'{target}.parts[{i}].material','farm-material')
+                        if image:images.add(image)
+                    elif part.get('textureSource'):self.error('farm-unbound-native-material',f'{target}.parts[{i}]',name)
+                self.local_urls(model.get('sourceTextures',[]),target+'.sourceTextures','farm-texture-audit')
+                # Retain source/mesh metadata for the seasonal graph, not large
+                # animation/geometry arrays irrelevant to portable URL checks.
+                self.json_cache[target]={'format':model.get('format'),'source':model.get('source'),
+                    'sourceTextures':model.get('sourceTextures',[]),'parts':[{key:part.get(key) for key in ('sourceNode','name','textureSource','textureUrl')} for part in parts]}
+        self.stats['farmFamilies']=len(families);self.stats['farmStateModels']=len(loaded);self.stats['farmMaterialImages']=len(images)
+
+    def check_hud(self):
+        name='local-original/hud-native/manifest.json';base='local-original/hud-native'
+        self.ref(name,'original-hud.js','hud-manifest');data=self.read_json(name)
+        if data.get('format')!='ee2-native-hud-v1':self.error('hud-manifest-format',name);return
+        scale=data.get('sourceResolutionScale')
+        if scale!=4:self.error('hud-source-resolution-scale',scale,name)
+        if data.get('coordinateReference')!=[1600,1200]:self.error('hud-coordinate-reference',data.get('coordinateReference'),name)
+        sprites=data.get('sprites',{});textures=data.get('textures',{});widgets=data.get('widgets',{})
+        for key,row in sprites.items():
+            target=self.ref(row.get('file'),f'{name}.sprites.{key}.file','hud-sprite-png',base)
+            if target:
+                if self.digest(target)!=row.get('sha256'):self.error('hud-png-hash-mismatch',target,name)
+                header=self.files[target].read_bytes()[:24]
+                if len(header)!=24 or header[:8]!=b'\x89PNG\r\n\x1a\n' or header[8:16]!=b'\x00\x00\x00\rIHDR':self.error('hud-invalid-png-header',target,name)
+                elif [int.from_bytes(header[16:20],'big'),int.from_bytes(header[20:24],'big')]!=[row.get('width'),row.get('height')]:self.error('hud-png-dimension-mismatch',target,name)
+            for physical,logical in [('width','logicalWidth'),('height','logicalHeight')]:
+                value=row.get(logical);dimension=row.get(physical)
+                if type(value) not in (int,float) or not math.isfinite(value) or value<=0 or type(dimension)!=int or dimension<=0 or value*4!=dimension:self.error('hud-logical-scale-mismatch',f'{key}/{logical}',name)
+            texture=textures.get(row.get('sourceTexture'))
+            rect=row.get('sourceSprite',{}).get('rect',[])
+            if not texture:self.error('hud-missing-source-texture',row.get('sourceTexture'),name)
+            elif not isinstance(rect,list) or len(rect)!=4 or any(type(v)!=int or v<0 for v in rect) or rect[2]<=0 or rect[3]<=0 or rect[0]+rect[2]>texture.get('width',0) or rect[1]+rect[3]>texture.get('height',0):self.error('hud-source-crop-outside-texture',key,name)
+            else:
+                expected=[rect[3],rect[2]] if row.get('restoredPackedRotation') else rect[2:4]
+                if expected!=[row.get('width'),row.get('height')]:self.error('hud-restored-crop-dimension-mismatch',key,name)
+        for key,row in widgets.items():
+            if row.get('NAME')!=key:self.error('hud-widget-name-mismatch',key,name)
+            for field in ('PARENT','ANCHORNAME1','ANCHORNAME2'):
+                if row.get(field) and row[field] not in widgets:self.error('hud-missing-widget-anchor',f'{key}/{field}/{row[field]}',name)
+            for field in ('ANCHORTYPE1','ANCHORTYPE2'):
+                value=row.get(field,'')
+                if value not in ('','NoAnchor') and not re.fullmatch(r'Source(?:UL|LL|UR|LR)Target(?:UL|LL|UR|LR)',value):self.error('hud-invalid-anchor-type',f'{key}/{field}/{value}',name)
+        done=set();visiting=set()
+        def visit(key):
+            if key in visiting:self.error('hud-widget-anchor-cycle',key,name);return
+            if key in done:return
+            visiting.add(key)
+            for field in ('PARENT','ANCHORNAME1','ANCHORNAME2'):
+                parent=widgets[key].get(field)
+                if parent in widgets:visit(parent)
+            visiting.remove(key);done.add(key)
+        for key in widgets:visit(key)
+        for widget,sprite in data.get('art',{}).items():
+            if widget not in widgets:self.error('hud-art-missing-widget',widget,name)
+            elif widgets[widget].get('SPRITE')!=sprite:self.error('hud-art-widget-sprite-mismatch',widget,name)
+            if sprite not in sprites:self.error('hud-art-missing-sprite',sprite,name)
+            # Match the runtime's explicit meta variant -> base fallback.
+            for meta in (2,3):
+                chosen=f'{sprite}_e{meta}' if f'{sprite}_e{meta}' in sprites else sprite
+                if chosen not in sprites:self.error('hud-art-missing-meta-sprite',f'{widget}/e{meta}',name)
+        self.stats['hudWidgets']=len(widgets);self.stats['hudSprites']=len(sprites);self.stats['hudSourceTextures']=len(textures);self.stats['hudArtBindings']=len(data.get('art',{}))
+
     def check_audio(self):
         name='local-original/audio/manifest.json';base='local-original/audio'
         self.ref(name,'original-audio.js','audio-manifest');data=self.read_json(name)
@@ -269,6 +378,15 @@ class AssetAudit:
         if ambient.get('loop'):clip(ambient['loop'],'audio.ambient.loop')
         for i,file in enumerate(ambient.get('birds',[])):clip(file,f'audio.ambient.birds[{i}]')
         self.stats['audioAssets']=len(assets)
+
+    def check_rule_profiles(self):
+        name='rules-profile.js';source=self.files[name].read_text(encoding='utf8')
+        enabled=re.search(r'^export\s+const\s+UP15_PROFILE_ENABLED\s*=\s*(true|false)\s*;',source,re.M)
+        if not enabled:self.error('missing-explicit-runtime-profile-switch',name);return
+        files=['openepoch.wasm','openepoch-ee2.wasm']
+        if enabled[1]=='true':files.append('openepoch-ee2-up15.wasm')
+        for file in files:self.ref(file,name,'numerical-profile-wasm')
+        self.stats['numericalRuleProfileBinaries']=len(files)
 
     def check_static_runtime(self):
         audit=self
@@ -316,6 +434,10 @@ class AssetAudit:
 
     def run(self,compare=None):
         self.check_models();self.check_textures_and_ground();self.check_teams();self.check_model_seasons();self.check_audio();self.check_static_runtime()
+        if 'original-water.js' in self.files:self.check_water()
+        if 'local-original/farm-composites.json' in self.files:self.check_farms()
+        if 'original-hud.js' in self.files:self.check_hud()
+        if 'rules-profile.js' in self.files:self.check_rule_profiles()
         # All local-original JSONs carry auxiliary provenance/preview references;
         # validate those too without interpreting source .tga/.nif/cache paths.
         for name in self.files:
@@ -389,6 +511,78 @@ class PathPolicyTests(unittest.TestCase):
     def test_model_season_graph_rejects_missing_declared_array_member(self):
         data=self.seasonal_fixture();data['sets']['Temperate']['oak']['urls'].pop()
         self.assertIn('season-source-list-length-mismatch',[e['kind'] for e in self.seasonal_audit(data).errors])
+    def water_fixture(self):
+        directory=self.root/'local-original/water-native';directory.mkdir(parents=True,exist_ok=True)
+        images={}
+        for key in [*(f'skin{i}' for i in range(1,7)),'normal','palette','lookup']:
+            target=directory/(key+'.png');target.write_bytes(b'original-pixel-fixture');images[key]={'url':target.name,'pngSha256':sha(target)}
+        return {'format':'ee2-native-water-v1','images':images,'profiles':{'high':{'dark':'skin1','detail':'skin2','gloss':'skin4'},'fallback':{'dark':'skin1','detail':'skin5','gloss':'skin6'}},'paletteAlphaBytes':[0]*256,'lookupRGBBytes':[[192]*3,[192]*3,[105]*3]}
+    def water_audit(self,data):
+        (self.root/'local-original/water-native/manifest.json').write_text(json.dumps(data),encoding='utf8')
+        a=AssetAudit(self.root);a.check_water();return a
+    def test_native_water_checks_relative_image_graph_and_hashes(self):
+        a=self.water_audit(self.water_fixture());self.assertFalse(a.errors);self.assertEqual(a.stats['nativeWaterImages'],9)
+    def test_native_water_rejects_case_hash_profile_and_palette_errors(self):
+        for mutation,expected in [
+            (lambda data:data['images']['skin1'].update(url='Skin1.png'),'case-mismatch'),
+            (lambda data:data['images']['skin1'].update(pngSha256='0'*64),'water-png-hash-mismatch'),
+            (lambda data:data['profiles']['high'].update(gloss='missing'),'water-invalid-material-binding'),
+            (lambda data:data['paletteAlphaBytes'].pop(),'water-invalid-palette-alpha')]:
+            data=self.water_fixture();mutation(data);self.assertIn(expected,[e['kind'] for e in self.water_audit(data).errors])
+    def farm_fixture(self):
+        families={};source={'archive':'graphics.zip','entry':'farm.nifcache','sha256':'1'*64}
+        for family in ('FarmWheat','FarmSugarCane','FarmYam'):
+            states={}
+            for state in ('Seeding','Harvest_1','Harvest_2','Harvest_3'):
+                url=f'local-original/models/{family}-{state}.json';target=self.root/url;target.parent.mkdir(parents=True,exist_ok=True)
+                model={'format':'ee2-original-mesh-v1','source':source,'nativeFarmComposite':{'family':family,'state':state},
+                    'parts':[{'farmPlot':i,'farmPlotOffset':[0,0,0],'textureUrl':'Icons/Tree.png'} for i in (1,2,3,4)]}
+                target.write_text(json.dumps(model),encoding='utf8');states[state]={'url':url,'source':source}
+            families[family]={'states':states,'defaultState':'Harvest_3'}
+        target=self.root/'local-original/farm-composites.json';target.write_text(json.dumps({'format':'ee2-native-farm-composites-v1','families':families}),encoding='utf8')
+        return self.root/'local-original/models/FarmYam-Harvest_3.json'
+    def test_farm_graph_checks_every_state_material(self):
+        self.farm_fixture();manifest=self.root/'local-original/models/manifest.json';manifest.write_text(json.dumps({'models':[{'url':'local-original/models/FarmWheat-Harvest_3.json'}]}));audit=AssetAudit(self.root);audit.check_models();audit.check_farms();self.assertFalse(audit.errors);self.assertEqual(audit.stats['farmStateModels'],12)
+    def test_farm_graph_rejects_hidden_state_material_case_and_missing_file(self):
+        target=self.farm_fixture();data=json.loads(target.read_text());data['parts'][0]['textureUrl']='icons/tree.png';target.write_text(json.dumps(data));audit=AssetAudit(self.root);audit.check_farms();self.assertIn('case-mismatch',[e['kind'] for e in audit.errors])
+        data['parts'][0]['textureUrl']='Icons/Missing.png';target.write_text(json.dumps(data));audit=AssetAudit(self.root);audit.check_farms();self.assertIn('missing-runtime-file',[e['kind'] for e in audit.errors])
+    def test_farm_graph_rejects_stale_source_state_and_invalid_offsets(self):
+        target=self.farm_fixture();data=json.loads(target.read_text());data['source']['sha256']='2'*64;data['nativeFarmComposite']['state']='Seeding';data['parts'][0]['farmPlotOffset']=[float('nan'),0,0];target.write_text(json.dumps(data));audit=AssetAudit(self.root);audit.check_farms();kinds={e['kind'] for e in audit.errors};self.assertTrue({'farm-model-source-mismatch','farm-model-state-mismatch','farm-invalid-plot-offset'}<=kinds)
+    def hud_fixture(self):
+        import struct,zlib
+        folder=self.root/'local-original/hud-native';folder.mkdir(parents=True,exist_ok=True)
+        def chunk(kind,data):return struct.pack('>I',len(data))+kind+data+struct.pack('>I',zlib.crc32(kind+data))
+        png=b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('>IIBBBBB',4,4,8,6,0,0,0))+chunk(b'IDAT',zlib.compress((b'\0'+b'\xff'*16)*4))+chunk(b'IEND',b'')
+        (folder/'Panel.png').write_bytes(png)
+        return {'format':'ee2-native-hud-v1','sourceResolutionScale':4,'coordinateReference':[1600,1200],
+            'sprites':{'panel':{'file':'Panel.png','sha256':sha(folder/'Panel.png'),'width':4,'height':4,'logicalWidth':1,'logicalHeight':1,'sourceTexture':'native.texcache','sourceSprite':{'rect':[0,0,4,4]}}},
+            'textures':{'native.texcache':{'width':4,'height':4}},
+            'widgets':{'root':{'NAME':'root','PARENT':'','SPRITE':'panel'},'panel':{'NAME':'panel','PARENT':'root','SPRITE':'panel','ANCHORTYPE1':'SourceLRTargetLR'}},'art':{'panel':'panel'}}
+    def hud_audit(self,data):
+        (self.root/'local-original/hud-native/manifest.json').write_text(json.dumps(data),encoding='utf8');audit=AssetAudit(self.root);audit.check_hud();return audit
+    def test_hud_graph_checks_native_png_hash_dimensions_and_logical_scale(self):
+        a=self.hud_audit(self.hud_fixture());self.assertFalse(a.errors);self.assertEqual(a.stats['hudSprites'],1)
+    def test_hud_graph_rejects_case_hash_dimensions_logical_scale_and_crop(self):
+        for mutate,expected in [(lambda d:d['sprites']['panel'].update(file='panel.png'),'case-mismatch'),
+            (lambda d:d['sprites']['panel'].update(sha256='0'*64),'hud-png-hash-mismatch'),
+            (lambda d:d['sprites']['panel'].update(width=8),'hud-png-dimension-mismatch'),
+            (lambda d:d['sprites']['panel'].update(logicalWidth=2),'hud-logical-scale-mismatch'),
+            (lambda d:d['sprites']['panel']['sourceSprite'].update(rect=[2,0,4,4]),'hud-source-crop-outside-texture')]:
+            data=self.hud_fixture();mutate(data);self.assertIn(expected,[e['kind'] for e in self.hud_audit(data).errors])
+    def test_hud_graph_rejects_missing_and_cyclic_anchors_and_sprite_bindings(self):
+        for mutate,expected in [(lambda d:d['widgets']['panel'].update(ANCHORNAME1='missing'),'hud-missing-widget-anchor'),
+            (lambda d:d['widgets']['root'].update(PARENT='panel'),'hud-widget-anchor-cycle'),
+            (lambda d:d['art'].update(panel='missing'),'hud-art-missing-sprite'),
+            (lambda d:d['widgets']['panel'].update(SPRITE='wrong'),'hud-art-widget-sprite-mismatch')]:
+            data=self.hud_fixture();mutate(data);self.assertIn(expected,[e['kind'] for e in self.hud_audit(data).errors])
+    def test_rule_profile_release_requires_the_third_binary_without_base_fallback(self):
+        for file in ('openepoch.wasm','openepoch-ee2.wasm'):(self.root/file).write_bytes(b'wasm-fixture')
+        (self.root/'rules-profile.js').write_text('export const UP15_PROFILE_ENABLED=true;',encoding='utf8')
+        audit=AssetAudit(self.root);audit.check_rule_profiles();self.assertEqual(audit.stats['numericalRuleProfileBinaries'],3);self.assertIn('missing-runtime-file',[e['kind'] for e in audit.errors])
+        (self.root/'openepoch-ee2-up15.wasm').write_bytes(b'up-wasm-fixture');audit=AssetAudit(self.root);audit.check_rule_profiles();self.assertFalse(audit.errors)
+    def test_rule_profile_draft_does_not_implicitly_enable_an_absent_up_binary(self):
+        for file in ('openepoch.wasm','openepoch-ee2.wasm'):(self.root/file).write_bytes(b'wasm-fixture')
+        (self.root/'rules-profile.js').write_text('export const UP15_PROFILE_ENABLED=false;',encoding='utf8');audit=AssetAudit(self.root);audit.check_rule_profiles();self.assertFalse(audit.errors);self.assertEqual(audit.stats['numericalRuleProfileBinaries'],2)
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)

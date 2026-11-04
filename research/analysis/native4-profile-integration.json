@@ -1,0 +1,198 @@
+{
+  "format": "native4-three-profile-integration-v1",
+  "build": "native-ui4",
+  "status": "PASS",
+  "createdUTC": "2026-11-04T11:03:49.665092+00:00",
+  "behavior": {
+    "defaultEE2": "?rules=ee2 -> installed UP profile2",
+    "explicitBASE": "?rules=ee2&profile=base -> retained EE2 reference1",
+    "independent": "Without rules=ee2 -> independent profile0",
+    "selector": "Visible Regelversion menu reloads the explicit chosen URL and preserves QA/seed/epoch/hash parameters.",
+    "loader": "One explicitly selected file, strict exported wasm.ruleset ID. Missing/corrupt/mismatched UP file displays a launch error; never falls back to BASE. MIME decoding fallback reuses only the same response bytes.",
+    "saveIsolation": "Three database names, each with a distinct -qa namespace. New records carry exact rules/profile metadata; the WASM magic additionally rejects relabeled foreign bytes. Legacy own/BASE records stay compatible in their original namespaces. No legacy implicit UP import.",
+    "multiplayer": "Production protocol9 hello/start rejects other numerical rulesets. Same-profile real player commands remain deterministic through the actual production Lockstep."
+  },
+  "profiles": [
+    {
+      "id": "own",
+      "ruleset": 0,
+      "wasm": {
+        "file": "openepoch.wasm",
+        "bytes": 268821,
+        "sha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a"
+      },
+      "database": "openepoch-v2"
+    },
+    {
+      "id": "base",
+      "ruleset": 1,
+      "wasm": {
+        "file": "openepoch-ee2.wasm",
+        "bytes": 430146,
+        "sha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18"
+      },
+      "database": "openepoch-ee2-reference-v2"
+    },
+    {
+      "id": "up15",
+      "ruleset": 2,
+      "wasm": {
+        "file": "openepoch-ee2-up15.wasm",
+        "bytes": 435415,
+        "sha256": "f9ce07f4aa1105fb0bb9472be6e88fc070cc06046eb8db17a01b4956920fe2c3"
+      },
+      "database": "openepoch-ee2-up15-v1"
+    }
+  ],
+  "validation": {
+    "profileLoaderSelectorIndexedDBSaveContinueNetworkChecks": 1364,
+    "existingSeasonSessionChecks": 425,
+    "existingCameraControlSaveChecks": 73,
+    "independentRawSourceChecks": 4668,
+    "independentCandidateWasmChecks": 89,
+    "gpuWorldChecks": 324,
+    "gpuWorldScenes": 7,
+    "gpuReflectionPixelControls": 106,
+    "portableSelfTests": 20,
+    "standaloneServerHttpCases": 12,
+    "portable": {
+      "fileCount": 4522,
+      "localOriginalFileCount": 4466,
+      "runtimeReferenceCount": 19653,
+      "uniqueRuntimeTargets": 4403
+    },
+    "actualNamespaces": [
+      "openepoch-v2",
+      "openepoch-ee2-reference-v2",
+      "openepoch-ee2-up15-v1",
+      "openepoch-v2-qa",
+      "openepoch-ee2-reference-v2-qa",
+      "openepoch-ee2-up15-v1-qa"
+    ],
+    "network": [
+      {
+        "profile": "own",
+        "ruleset": 0,
+        "ticks": 180,
+        "packets": 183,
+        "commandPackets": 2,
+        "stateHash": 1244788054
+      },
+      {
+        "profile": "base",
+        "ruleset": 1,
+        "ticks": 180,
+        "packets": 183,
+        "commandPackets": 2,
+        "stateHash": 4286825450
+      },
+      {
+        "profile": "up15",
+        "ruleset": 2,
+        "ticks": 180,
+        "packets": 183,
+        "commandPackets": 2,
+        "stateHash": 4236590185
+      }
+    ]
+  },
+  "sourceFiles": {
+    "main.js": "aad23801c9320d00103de22a74c771cae1bcc48067252247108c98e72041747d",
+    "index.html": "7bf27bdd149e1f62fd85e94c2a774fc37058fb8f3d63476ecc08cda954ca6cf2",
+    "rules-profile.js": "007f15eadbfd7632b8179801e25631c1654847f3791c39517a144a7b0433f3e1",
+    "season-session.js": "2ba54f8c2c55b87034abd6ae79f730d816e0a98505ce4582c3c3b1111eaf7e07",
+    "original-terrain.js": "647091f06fcc8e0831a695927b6290e5b5c57eaffa03432787d20b4101b4a090",
+    "original-water.js": "4692e5e0031d5bd31b08ba7a28c7402c7cd01fd59fe0e7120eecd849ed6bd268",
+    "original-ground.js": "9902abc52e4dec444cc72aa4dcc1a15a6099d5433cd9aff78a01542930c47ec5",
+    "original-ground-native.js": "cc92743ca43a227527e58cb75c87905457961c8eb3067cc5ec7f8bf1ae331093",
+    "original-scale.js": "4651e04fd4a0a61b8a47f2c4b8fb56df83bfd7864796011cf2648df6b992a947",
+    "original-renderer.js": "c1789590b9b356f1d6289b0305429a8c0a82162597b4723a503499b283242553",
+    "original-model-seasons.js": "c8fab385c06dbe93dd7f29fa80959d48dadd031801f6b315e9d7b9a77f3863a6",
+    "original-camera.js": "ffc6ecdcebcace98b73918a15e9cc5e90af6685e724708b82c2a46247eab1954",
+    "original-seasons.js": "fb4001470974e86ed297465309933305bef3bd8c54c8c603f6e39d18b2e63492",
+    "original-reflection.js": "f3506a9b55e880b5b17b63bb329f28a80eaf2ff47cfa7b9abea4f51842b6c131",
+    "original-hud.js": "b777e9a3f56a50fc04389a010368830f75098861796704bac658748b95339f15",
+    "original-hud-layout.js": "dd7c84000e04cfa0708539b426d365872845ff26f8b2e322de4438f23ad762b5",
+    "local-original/terrain-native/manifest.json": "c7cf660ff198a5f3e7b9c0aa2391b27f38ec7afb116b9541fa09019223c0359a",
+    "local-original/water-native/manifest.json": "1739c08538f09c0279dd4ecdef44019e9b2fed4e9e0149e60a04ad4b88d50bc7",
+    "local-original/ground-decals.json": "eb407c403f1e22b997215f85b8f02e9cc62ae44facf31b7068c4312f8c8454f4",
+    "local-original/models/manifest.json": "f681e82a0676d78c05590f3f1d736be665d7cb533346c73cc49dbe317d083d53",
+    "local-original/model-seasons.json": "17e4869e547f12eed82ea79a693677f4afebcd804dd1ea9a295d8d3079531e3c",
+    "local-original/farm-composites.json": "d85f3e229280734a583f6089ffe97c2df02e4104d7fae95aff60d1b9300f00bb",
+    "local-original/hud-native/manifest.json": "2b5c66a91b27cf7c3833d00db063a74c0b8e8dfedc2d0a67504d3bd6b4d6db6a",
+    "local-original/season-model-textures/team/manifest.json": "269bd404054013b2431d32ec308d0056aa43a51055a68502f4c387d942be3113",
+    "local-original/team-textures/manifest.json": "e9d618ca90a3cc583bc95d911b887a4a15f468fc398516b0b269130d6fb4a5df",
+    "reference.html": "dba3d19143c143e975b62c0d6bbaf08640a5712b2aa8e3442fa7e0dd35f15462",
+    "catalog.html": "d2cf2c7610e38538150b05ce15c41a3194c6c70a7b458e52f6695a669909073d"
+  },
+  "wasmHashes": {
+    "own": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+    "base": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+    "up15": "f9ce07f4aa1105fb0bb9472be6e88fc070cc06046eb8db17a01b4956920fe2c3"
+  },
+  "portableServer": {
+    "version": 2,
+    "statusField": "wasmSha256ByFile includes all three numerical profiles; legacy wasmSha256 remains BASE-reference1.",
+    "reuse": "Exact application/version/rootToken/legacy hash/three-profile hashes; equal current server reuses, old or changed-UP server does not.",
+    "startup": "UP binary is mandatory because installed UP is the default EE2 profile. Build URL uses native-ui4.",
+    "report": "native4-portable-server-tests.json"
+  },
+  "reports": {
+    "native4-rules-profile-tests.json": {
+      "path": "native4-rules-profile-tests.json",
+      "sha256": "8951c2163ad34c851b8de8fc3689b0c93a0f86d8667cbd97723d3ae62fec3652"
+    },
+    "native4-season-session-tests.json": {
+      "path": "native4-season-session-tests.json",
+      "sha256": "17ccbd4ecc70b50bce95881dd59e6a121636b0e5db3e46a7828aeb24cd077602"
+    },
+    "native4-visual-controls-tests.json": {
+      "path": "native4-visual-controls-tests.json",
+      "sha256": "aa19a68fd91bc407c4b57cd1ece24768ded89cb8088cfe2b8f61b9d00cdc04b3"
+    },
+    "native4-world-qa.json": {
+      "path": "native4-world-qa.json",
+      "sha256": "38f3d7151363ba485f2f4f7cb94627e9b430c59dd1cbd8ad08192bdf0b105a62"
+    },
+    "native4-reflection-world-pixel-tests.json": {
+      "path": "native4-reflection-world-pixel-tests.json",
+      "sha256": "8d833867ea90608ca66f60cdbb710a9e42c7084d7d68576b74b946c48a4f7472"
+    },
+    "native4-portable-assets-check.json": {
+      "path": "native4-portable-assets-check.json",
+      "sha256": "da404795f11fb0b4f0a3c4f91f3ea70aebc9d1acf8dc1b6eb277a632c2fe99d5"
+    },
+    "up15-independent-source-review.json": {
+      "path": "up15-independent-source-review.json",
+      "sha256": "f3b5cc97bc58235518da3a0ad4da6b526551199adeb3424db0f35bc6e54dfbf4"
+    },
+    "up15-independent-execution-review.json": {
+      "path": "up15-independent-execution-review.json",
+      "sha256": "0ec78a320e3f5d8084fb56de6ac3abce1e5acde5b39b8449e9cabcb9d9fde55e"
+    },
+    "native4-portable-server-tests.json": {
+      "path": "native4-portable-server-tests.json",
+      "sha256": "c096e3ca3137766c543aa2fdcb5b7cc80be28e5a2e7261e8363ada3a3d4f262f"
+    }
+  },
+  "toolHashes": {
+    "rules-profile-test.mjs": "facd258a9fe2700362fdefa793202807451435be3268e01ef30f4287111d3b96",
+    "headless-world-capture.mjs": "0a891d62d48c291f106145a6b570272fb58f2514a44cb043b38fb1ac96763e24",
+    "native4-world-qa.mjs": "14beaecfbce6c8687badb6825d6eea6c6adabac81fc57c50b725de050c084388",
+    "native4_reflection_world_gpu_test.py": "02138ed404e43d6b2b6e495a80e16a5c943a9eb91cb685939daa0e09e4f8aea5",
+    "replay_world_gles.py": "da0793c3a8bd47a543282b36e0ad91d1a8c4f27101ac537e0398eb4b508253c3",
+    "portable-assets-test.py": "1bc77bd2e4806ac6e9a163e2855759da79a1fd0831af010334ed76118570f98a",
+    "serve_game.py": "e9a48fe72be557fe2d6d9abdda264eee656c60d2c4832dbba26fa5a470100049",
+    "portable-server-test.py": "6ed7d1007bdf2f6f4126cd910d8bc350ec2025dc039f124b17854949ea7cb28f",
+    "report_native4_profile.py": "020351318831fbd077902139bff859fe1c8464c72c8d95ddaa1209a378297c84"
+  },
+  "scope": "Production JS profile loading and actual main startup selector/start/IndexedDB/save/load/Continue/channel execution in VM; real0/1/2 WASMs and six Lockstep peers. Actual ANGLE GLES FBO world rendering for UP2, BASE1 control and reflection pixel controls. DOM/IndexedDB event transport and queued network are substituted; no GUI, browser, WebRTC socket or original executable is launched.",
+  "explicitLimits": [
+    "UP CSV5/CFG5 numerical imports project onto the existing57 role aliases; this is not the complete original roster or native simulation.",
+    "Original graphics retain the declared visual adapters; numerical UP activation does not imply a newly reconstructed UP visual roster.",
+    "Original map generator, native separate reflection culling, UV defaults/time-vector population, atmosphere/weather and complete special abilities remain outside this change.",
+    "In-memory IndexedDB event adapter proves production namespace/transaction selection; physical browser disk persistence and Mac/Safari execution require separate device checks.",
+    "Static reference/catalog pages retain the BASE source dataset; they do not become a UP data catalog through this runtime profile switch."
+  ],
+  "parityClaim": "Functioning isolated numerical rule profiles and validated source slices; no1:1 or finished-original claim."
+}

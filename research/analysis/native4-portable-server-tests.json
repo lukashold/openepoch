@@ -1,0 +1,21 @@
+{
+  "format": "native4-portable-server-tests-v2",
+  "passed": true,
+  "platform": "win32",
+  "pythonVersion": "3.14.10",
+  "serverVersion": 2,
+  "testsRun": 12,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "sourceHashes": {
+    "tools/serve_game.py": "e9a48fe72be557fe2d6d9abdda264eee656c60d2c4832dbba26fa5a470100049",
+    "tools/portable-server-test.py": "6ed7d1007bdf2f6f4126cd910d8bc350ec2025dc039f124b17854949ea7cb28f"
+  },
+  "wasmSha256ByFile": {
+    "openepoch.wasm": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+    "openepoch-ee2.wasm": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+    "openepoch-ee2-up15.wasm": "f9ce07f4aa1105fb0bb9472be6e88fc070cc06046eb8db17a01b4956920fe2c3"
+  },
+  "scope": "Real loopback HTTP subprocess tests, fixture roots and production media. No browser, original game executable or macOS device launch. Checks current/old/changed-UP listener reuse, missing-UP startup rejection, all three WASM HTTP/HEAD bytes and media MIME, local bind, traversal/Host restrictions and shutdown."
+}

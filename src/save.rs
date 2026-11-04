@@ -9,7 +9,7 @@ use crate::game::*;
 use crate::map::*;
 use core::mem::size_of;
 
-const MAGIC: u32 = if cfg!(feature = "ee2-reference") { 0x3252_454f } else { 0x3250_454f };
+const MAGIC: u32 = if cfg!(feature="ee2-up15") {0x3555_454f} else if cfg!(feature = "ee2-reference") { 0x3252_454f } else { 0x3250_454f };
 
 /// View a slice of plain `#[repr(C)]` values as bytes.
 fn raw<T: Copy>(s: &[T]) -> &[u8] {
@@ -77,6 +77,8 @@ impl Game {
         if u(0) != MAGIC || u(1) as usize != size_of::<Ent>() || u(2) as usize != size_of::<Player>() || (u(3) as usize != DEFS.len() && u(3)!=47 && !(cfg!(feature="ee2-reference")&&(u(3)==53||u(3)==55||u(3)==56))) || ![0,12,132,236].contains(&trailer) {
             return None;
         }
+        #[cfg(feature="ee2-up15")]
+        if u(3)!=57 || trailer!=236 || !has_diplomacy || !has_territory || city_chunk.is_none(){return None;}
         if u(5)>3{return None;}
         #[cfg(feature="ee2-reference")]
         if city_chunk.is_some() && (trailer!=236 || !has_diplomacy || !has_territory || u(3) as usize!=DEFS.len()) {return None;}
@@ -169,7 +171,7 @@ impl Game {
             if DEFS[e.def as usize].building && e.q[..e.qn as usize].iter().any(|&q| q!=RESEARCH && !original_research(q) && q as usize>=DEFS.len() && (q<TECH0 || (q-TECH0) as usize>=TECHS.len())) {return None;}
         }
         for t in 0..g.nplayers {g.rebuild_modifiers(t as u8,false);}
-        #[cfg(feature="ee2-reference")]
+        #[cfg(all(feature="ee2-reference",not(feature="ee2-up15")))]
         if trailer<236&&(u(3)==47||u(3)==53){
             let old=crate::ee2_profile::legacy(crate::defs::prototype_defs());
             for e in &mut g.ents[..high]{

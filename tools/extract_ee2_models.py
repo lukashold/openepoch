@@ -205,7 +205,7 @@ def convert(raw,entry,archive,texture_archive,kind='building',pose=None,animatio
         result['animationSampling']={'omitStaticParts':True,'omittedSourceNodes':omitted,'policy':'48 uniform original-duration samples for fast native propellers/rotors; unchanged complete parts remain static.','interpolationLimit':'Existing source-key interpolation is linear/slerp; native quadratic tangents and animation events are not reproduced.'}
     return result
 
-INITIAL=[(0,0,'bld_citycenter1_we','building'),(1,0,'bld_house1_we','building'),(2,0,'bld_farm_wheat','building'),(3,0,'bld_barracks1','building'),
+INITIAL=[(0,0,'bld_citycenter1_we','building'),(1,0,'bld_house1_we','building'),(3,0,'bld_barracks1','building'),
  (4,0,'bld_mill1','building'),(5,0,'bld_dock1','building'),(7,0,'bld_outpost1','building'),(47,0,'bld_university1','building'),(48,0,'bld_mill1','building'),
  (49,0,'bld_stable2','building'),(50,0,'bld_market2','building'),(51,0,'bld_temple1_we','building'),(52,0,'bld_warehouse1','building'),
  (100,0,'tre_oak1','prop'),(101,0,'tre_pine','prop'),(102,0,'res_iron','prop'),(103,0,'res_foragepatch','prop'),(8,0,'LSF1_citizen_m_we','human'),
@@ -215,7 +215,7 @@ INITIAL=[(0,0,'bld_citycenter1_we','building'),(1,0,'bld_house1_we','building'),
 BUILDING_STAGES={
  0:[(4,'bld_citycenter4_we'),(7,'bld_citycenter7_we'),(10,'bld_citycenter10_we'),(13,'bld_citycenter13_we')],
  1:[(3,'bld_house3_we'),(5,'bld_house5_we'),(7,'bld_house7_we'),(9,'bld_house9_we'),(11,'bld_house11_we'),(13,'bld_house13')],
- 2:[(8,'bld_farm8')],3:[(e,f'bld_barracks{e}') for e in [4,7,10,13]],
+ 3:[(e,f'bld_barracks{e}') for e in [4,7,10,13]],
  4:[(e,f'bld_mill{e}') for e in [5,9,12,15]],5:[(e,f'bld_dock{e}') for e in [4,7,10,13]],
  6:[(11,'bld_airport11'),(13,'bld_airport13')],7:[(e,f'bld_outpost{e}') for e in [4,7,10,13]],
  47:[(e,f'bld_university{e}') for e in [4,7,10,13]],48:[(e,f'bld_mill{e}') for e in [5,9,12,15]],
@@ -389,7 +389,7 @@ def bind_epoch_visuals(manifest,installation):
     finally:db.close()
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--install',type=pathlib.Path,default=INSTALL);ap.add_argument('--only',help='Comma-separated simulation ids to update');args=ap.parse_args();archive=args.install/'zips/graphics.zip'
+    ap=argparse.ArgumentParser();ap.add_argument('--install',type=pathlib.Path,default=INSTALL);ap.add_argument('--only',help='Comma-separated simulation ids to update');ap.add_argument('--defer-farm',action='store_true',help='Import Farm composites after the native visual scale profile is generated');args=ap.parse_args();archive=args.install/'zips/graphics.zip'
     only=set(map(int,args.only.split(','))) if args.only else None
     resource_bindings=resource_visual_bindings(args.install)
     building_bindings={55:building_profile_binding(args.install,'HercFacility',14,'db/Units/HERC_Facility.ddf')}
@@ -475,5 +475,11 @@ def main():
         if row['id']<len(DEF_NAMES):row['definitionName']=DEF_NAMES[row['id']]
     manifest=bind_epoch_visuals(manifest,args.install)
     dest=OUT/'models/manifest.json';tmp=dest.with_suffix('.tmp');tmp.write_text(json.dumps(manifest,indent=2),encoding='utf8');tmp.replace(dest)
+    if not args.defer_farm and (only is None or 2 in only):
+        # Farm is a source CompositeModel of four independent FarmPlotModels,
+        # not the old single seeding mesh or an unbound Farm8 epoch alias.
+        from import_ee2_farm_composites import build
+        build(ROOT/'docs',args.install)
+        manifest=json.loads(dest.read_text(encoding='utf8'))
     print(len(manifest['models']),'models',len(manifest['errors']),'errors')
 if __name__=='__main__':main()

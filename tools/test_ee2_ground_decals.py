@@ -2,7 +2,7 @@
 
 The original archives are read-only test inputs. No image fixture is bundled.
 Checks follow the DDF/sprite/seasonal/pixel chain independently of the importer,
-and deliberately keep missing physical dimensions out of renderable bindings.
+and verifies the compiled UnitType field conversion before using dimensions.
 """
 import csv
 import hashlib
@@ -10,6 +10,7 @@ import io
 import json
 from pathlib import Path, PurePosixPath, PureWindowsPath
 import re
+import struct
 import unittest
 import zipfile
 
@@ -46,14 +47,14 @@ class OriginalGroundDecalTests(unittest.TestCase):
         self.assertEqual(len(self.texture_manifest['hud']),31)
         self.assertEqual(self.texture_manifest['errors'],[])
         ids={e['id'] for e in self.compact['entries']}
-        self.assertEqual(ids,{0,1,3,4,6,47,48,49,50,51,52,55,56})
-        self.assertEqual([e['id'] for e in self.compact['unresolvedBindings']],[2])
-        farm=self.compact['unresolvedBindings'][0]
-        self.assertIsNone(farm['width']);self.assertIsNone(farm['depth'])
+        self.assertEqual(ids,{0,1,2,3,4,6,47,48,49,50,51,52,55,56})
+        self.assertEqual(self.compact['unresolvedBindings'],[])
+        farm=next(e for e in self.compact['entries']if e['id']==2)
+        self.assertEqual(farm['width'],struct.unpack('<f',struct.pack('<f',1.5*1.4142135381698608))[0]);self.assertEqual(farm['width'],farm['depth'])
         self.assertEqual(farm['rural'][0]['sprite'],'under_farm')
         # No generic foundation silently assigned to Dock/Outpost/Rig/Mine.
         self.assertTrue(ids.isdisjoint({5,7,53,54}))
-        self.assertEqual(self.compact['selection']['epochSlotPolicy'],'unresolved')
+        self.assertEqual(self.compact['runtimeSelection']['nativeEpochFirst'],[1,6,11])
 
     def test_native_dimensions_offsets_and_real_model_children(self):
         expected={0:([3.5,3],4,3,-.25,0),1:([1.5,1.5],1.5,1.5,0,0),
@@ -61,7 +62,8 @@ class OriginalGroundDecalTests(unittest.TestCase):
                   52:([2,1],2,1,0,0),56:([3,3],3,3,0,0)}
         for e in self.compact['entries']:
             if e['id'] in expected:
-                self.assertEqual((e['nativeSize'],e['width'],e['depth'],e['offsetX'],e['offsetY']),expected[e['id']])
+                native,x,y,ox,oy=expected[e['id']];f=lambda value:struct.unpack('<f',struct.pack('<f',value*1.4142135381698608))[0]
+                self.assertEqual((e['nativeSize'],e['width'],e['depth'],e['offsetX'],e['offsetY']),(native,f(y),f(x),f(-oy),f(-ox)))
         compact={e['id']:e for e in self.compact['entries']}
         for a in self.audit['entries']:
             e=compact[a['id']]
@@ -71,11 +73,11 @@ class OriginalGroundDecalTests(unittest.TestCase):
             body=block(text,'UnitType',a['originalUnit'])
             native={k:float(v) for k,v in re.findall(r'\b(Size[XY]|UndertextureSize[XY]|UndertextureOffset[XY])\s*=\s*([-+\d.]+)',body,re.I)}
             self.assertEqual(e['nativeSize'],[native['SizeX'],native['SizeY']])
-            self.assertEqual([e['width'],e['depth']],[native['UndertextureSizeX'],native['UndertextureSizeY']])
+            self.assertEqual(e['nativeUnitSizing']['raw']['underSize'],[native['UndertextureSizeX'],native['UndertextureSizeY']])
             for axis in ('X','Y'):
                 present='UndertextureOffset'+axis in native
                 self.assertEqual(axis.lower() in e['offsetDefaults'],not present)
-                self.assertEqual(e['offset'+axis],native.get('UndertextureOffset'+axis,0))
+                self.assertEqual(e['nativeUnitSizing']['raw']['underOffset']['XY'.index(axis)],native.get('UndertextureOffset'+axis,0))
             model=block(text,'UnitModel',a['originalUnit'])
             children=re.search(r'ChildNames\s*=\s*\[([^]]*)\]',model)[1].split()
             self.assertIn(a['decal'],children)

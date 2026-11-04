@@ -184,6 +184,8 @@
 
     <p id="rules-note">Lokaler Nachbau mit Scharmützeln von der Steinzeit bis in die Zukunft.</p>
     <p>Scharmützel von der Steinzeit bis in die Zukunft.</p>
+    <div class="row"><label for="rules-profile">Regelversion</label><select id="rules-profile"><option value="up15">EE2 · installierte UP-Regeln</option><option value="base">EE2 · Basisdaten</option><option value="own">OpenEpoch-Regeln</option></select></div>
+    <p class="dim" style="font-size:12px;margin:0 0 10px">Jede Regelversion hat eigene Spielstände. Bisherige EE2-Spielstände bleiben unter Basisdaten erhalten. Für Multiplayer wählen beide dieselbe Version.</p>
     <div class="row"><label>KI-Gegner</label><select id="nai"><option>1</option><option>2</option><option>3</option></select>
       <label style="width:auto;margin-left:14px">Kartenschlüssel</label><input id="seed" size="8" placeholder="zufällig"></div>
     <div class="row"><label>Bevölkerung</label><select id="pop-limit"><option value="250">250 pro Spieler</option><option value="500" selected>500 pro Spieler</option><option value="1000">1 000 pro Spieler</option></select></div>
@@ -193,7 +195,7 @@
     <div id="season-options" hidden>
       <div class="row"><label for="season-start">Startmonat</label><select id="season-start"><option value="0">Januar · Winter</option><option value="1">Februar</option><option value="2">März · Frühling</option><option value="3">April</option><option value="4">Mai</option><option value="5">Juni · Sommer</option><option value="6" selected>Juli</option><option value="7">August</option><option value="8">September · Herbst</option><option value="9">Oktober</option><option value="10">November</option><option value="11">Dezember · Winter</option></select></div>
       <div class="row"><label for="season-cycle">Jahreszeitenwechsel</label><input id="season-cycle" type="checkbox" checked><label for="season-length" style="width:auto">Dauer pro Jahreszeit</label><select id="season-length"><option value="1">1 Minute</option><option value="5" selected>5 Minuten</option><option value="10">10 Minuten</option><option value="20">20 Minuten</option><option value="30">30 Minuten</option></select></div>
-      <p class="dim" style="font-size:12px;margin:0 0 10px">Gelände und Gebäudeböden wechseln allmählich zwischen den Monaten. Der Gastgeber bestimmt die Einstellungen im Multiplayer.</p>
+      <p class="dim" style="font-size:12px;margin:0 0 10px">Gelände, Bäume und Gebäudeböden wechseln allmählich zwischen den Monaten. Der Gastgeber bestimmt die Einstellungen im Multiplayer.</p>
     </div>
     <div class="row"><label>Auflösung</label><select id="quality"><option value="1">Standard · 1×</option><option value="1.5">Hoch · bis 1,5×</option><option value="2" selected>Sehr hoch · bis 2×</option></select></div>
     <div class="row"><button id="play">Scharmützel starten</button><button id="continue" class="alt" style="display:none">Continue</button><button id="mpopen" class="alt">Multiplayer…</button><button id="menu-fullscreen" class="alt" aria-pressed="false">Vollbild</button></div>
@@ -228,7 +230,7 @@
       <tr><td>P &nbsp; + &nbsp; − &nbsp; M</td><td>pause · game speed · sound</td></tr>
       <tr><td>Ctrl+S</td><td>save (single player; also saved automatically)</td></tr>
     </table>
-    <p><a href="reference.html">Originalwerte und Quellen</a> · <a href="catalog.html">Originaldatenbank</a> · <a href="?">OpenEpoch-Regeln</a></p>
+    <p><a href="reference.html">Basiswerte</a> · <a href="catalog.html">Basis-Technologiebaum</a> · <a href="?">OpenEpoch-Regeln</a></p>
     </details>
     <p style="margin-top:14px;font-size:12px">Eigenständiger Nachbau mit OpenEpoch-Code. Originalgrafiken und Klänge sind im vollständigen Spielpaket enthalten. <a href="https://github.com/lukashold/openepoch">Source on GitHub</a>.</p>
   </div>
@@ -239,6 +241,6 @@
   <p id="building-status" role="status" aria-live="polite"></p>
   <small>Strg / R / Komma / Punkt: 90° · mit Umschalt: 45° · Umschalt+Mausrad: 45° · Esc: abbrechen</small>
 </aside>
-<script type="module" src="main.js?v=visual-seasons2"></script>
+<script type="module" src="main.js?v=native-ui4"></script>
 </body>
 </html>

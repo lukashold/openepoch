@@ -22,9 +22,11 @@ class GroundRuntime(unittest.TestCase):
     def test_native_selection_and_world_dimension_profile(self):
         selection=self.compact['runtimeSelection'];self.assertEqual(selection['nativeEpochFirst'],[1,6,11])
         self.assertEqual(selection['cityRadiusFactor'],struct.unpack('<f',struct.pack('<f',2**.5))[0])
-        self.assertEqual({e['id'] for e in self.compact['entries'] if e.get('placementProfile')=='native-world-undertexture'},
-                         {0,1,3,4,6,47,48,49,50,51,52,55,56})
-        self.assertEqual([e['id'] for e in self.compact['unresolvedBindings']],[2],'unproved farm footprint remains excluded')
+        self.assertEqual({e['id'] for e in self.compact['entries'] if e.get('placementProfile')=='native-unit-factory-undertexture'},
+                         {0,1,2,3,4,6,47,48,49,50,51,52,55,56})
+        self.assertEqual(self.compact['unresolvedBindings'],[],'Native size payload now proves Farm fallback dimensions')
+        farm=next(e for e in self.compact['entries']if e['id']==2)
+        self.assertEqual(farm['width'],struct.unpack('<f',struct.pack('<f',1.5*selection['cityRadiusFactor']))[0])
 
     def test_metadata_upgrade_changes_no_physical_original_png(self):
         for url,row in self.audit['textures'].items():

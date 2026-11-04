@@ -60,10 +60,14 @@ def inherited_sets(reader):
     for root in reader.footer.get('Roots',[0]):visit(root,None,[])
     return result
 
-def run(installation=INSTALL):
+def run(installation=INSTALL,report_path=None):
     installation=pathlib.Path(installation);docs=ROOT/'docs';output=docs/'local-original/season-model-textures'
     manifest_path=docs/'local-original/models/manifest.json';manifest=json.loads(manifest_path.read_text(encoding='utf8'))
     urls={r['url']for r in manifest['models']}|{r['lodFarUrl']for r in manifest['models']if r.get('lodFarUrl')}
+    farm_path=docs/'local-original/farm-composites.json'
+    if farm_path.is_file():
+        farms=json.loads(farm_path.read_text(encoding='utf8'))
+        urls.update(state['url']for family in farms['families'].values()for state in family['states'].values())
     models={};source_groups={};before={};base_textures={}
     # Retain metadata only, not huge vertex/animation arrays, between source files.
     for url in sorted(urls):
@@ -150,9 +154,9 @@ def run(installation=INSTALL):
         'physicalTextureCount':len(assets),'newNeutralTextures':len(winter_stems),'newTeamTextureSets':len(team_manifest['textures']),
         'teamErrors':team_manifest['errors'],'manifestSha256':sha(target.read_bytes()),'teamManifestSha256':sha(team_path.read_bytes()),
         'unchangedModelHashes':before,'source':result['source']}
-    dest=ROOT.parent/'EE2-Research/analysis/native-model-season-import.json';dest.write_text(json.dumps(report,indent=2)+'\n',encoding='utf8')
+    dest=pathlib.Path(report_path)if report_path else ROOT.parent/'EE2-Research/analysis/native-model-season-import.json';dest.write_text(json.dumps(report,indent=2)+'\n',encoding='utf8')
     print(json.dumps({k:v for k,v in report.items()if k not in ('unchangedModelHashes','source')}),flush=True)
     return result
 
 if __name__=='__main__':
-    ap=argparse.ArgumentParser();ap.add_argument('--install',type=pathlib.Path,default=INSTALL);args=ap.parse_args();run(args.install)
+    ap=argparse.ArgumentParser();ap.add_argument('--install',type=pathlib.Path,default=INSTALL);ap.add_argument('--report',type=pathlib.Path);args=ap.parse_args();run(args.install,args.report)

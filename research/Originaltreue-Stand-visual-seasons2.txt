@@ -1,0 +1,447 @@
+Aktueller Originaltreue-Abgleich — 04.11.2026 — visual-seasons2
+
+Das vollständige, identische EE2 ist weiterhin nicht erreicht. Die aktuelle
+quellbelegte Umsetzung und ihre Grenzen stehen in analysis/original-parity-audit.json.
+Die Übergabe combat-season1 vom03.11 bleibt darunter vollständig historisch erhalten.
+
+NEU: Das Wasser spiegelt jetzt tatsächlich Terrain und native Modelle aus einem
+separaten Szenenbild. Die belegte horizontale Clipplane verhindert Unterwasser-
+geometrie im Bild; Kamera und Zielbindungen werden für den Hauptpass zurückgesetzt.
+Original-Waterbump und die belegte Zwei-Normalen-Verzerrung lesen dieses Bild.
+Die native separate View-Cullingpolitik ist noch offen: aktuell teilen Reflexion
+und Hauptpass denselben sichtbaren Instanzsatz. Hohe Objekte außerhalb dieses
+Ausschnitts können fehlen. Native Zusatzprojektion/Near-Clamp und vollständige
+RTT-Qualitäts-/Zeit-/Wasser-Materialpolitik bleiben teilweise Adapter.
+
+NEU: Explizite AnimatedTextureSetName-Einträge in nativen Modellen und ihren Eltern
+steuern jetzt106 Modelle mit248 Meshbindungen, davon83 geerbte Bindungen.115 Sets
+je Klima in drei Klimata behalten ihre originalen Listen, Wiederholungen und
+Längen1/8/11/12/13.232 Originaltexturen und geprüfte Spielerfarben liegen lokal.
+Terrain, Gebäudeböden und deklarierte Modellskins lesen gemeinsam denselben
+gespeicherten Simulationstick. Zwei Stalltür-Near/Far-Bindungen mit fehlendem
+Original-CSV-Key behalten das Original-Basismaterial. Wind/Wetter-RNG, Regen/Schnee-
+Ereignisse, Wetter-Spielregeln und komplette Atmosphäre sind weiterhin offen.
+
+NEU: Die belegte Kamerarichtung dreht jetzt Auge, Basis, Picking und Geländehöhen-
+korrektur gemeinsam. Nordausgabe bleibt in288 Fällen bitgleich; mathematische und
+reale GLES-Proben decken weitere Richtungen ab. Eingaberate/-schritt, vollständiges
+Picture-in-Picture und Live-Launcher-Hooks sind dadurch nicht originalgleich belegt.
+
+Aktuelle Prüfungen: fünf kombinierte echte GLES-Welten mit169 Checks für Sommer,
+Winter, Halbblend bei echtem Tick1000, Zukunft und90° Kameradrehung;105 Reflexions-
+Pixelchecks und423 Matrix-/Zustandschecks. Die Kontrollen weisen29430 echte native
+Objektpixel im Ziel,542000 vom Clip betroffene Pixel und14987 sichtbar veränderte
+Wasserpixel nach.33687 Modell-Saison-Laderchecks bestehen. Der Frontend-Protokoll9-
+Test mit zwei echten WASMs/Locksteps wurde auf aktueller main.js mit425 Checks
+erneuert. Diese Kopfzeile ersetzt keine separate GUI-/Mac-/Internet-Abnahme.
+Der unabhängige Produktions-VM-Test prüft Start, Kameraeingaben und Speichern/Laden
+zusätzlich mit73 Checks; sourcegebundener Bericht: analysis/visual-controls-tests.json.
+
+Die Engine bleibt unverändert zum finalen combat-season1-Kern:
+EE2 SHA256 d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18
+BASE SHA256230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a
+75 EE2-/32 BASE-Rusttests und21692 Kalenderchecks gehören zu diesem unveränderten
+Kern. Aktuelle Runtime-/Shader-/Assethashes stehen in den Berichten, nicht in alten
+Freigabezahlen. Neue Belege: Wasserreflexion.txt und analysis/native-reflection-*.json,
+native-model-season-*.json, native-camera-heading-*.json, native-season-world-qa.json.
+
+Weiter offen bleiben insbesondere konfigurierte UP5-/VFS-Profildaten gegenüber
+unseren expliziten BASE-Regeln, vollständiger Inhalt/Kampfsonderregeln/KI, genaue
+native Terrain-/Beleuchtungs-/Schattenpipeline und die zuvor belegten Teilgrenzen.
+Die neue Grafik beweist keine1:1-Bildgleichheit: kein aktueller kontrollierter
+Originalvergleich, kein physischer MacBook- und kein Browser-/Internettest in dieser
+Headless-QA. Weitere Rekonstruktion bleibt erforderlich.
+
+=========== HISTORISCHE ÜBERGABE combat-season1, 03.11.2026 ===========
+
+Aktueller Originaltreue-Abgleich — 03.11.2026 — combat-season1
+
+Das vollständige, identische EE2 ist weiterhin nicht erreicht. Dieser Stand trennt
+quellbelegte Teilumsetzungen von eigenen Adaptern und noch ungeprüften Bereichen.
+Kompakter, mit Dateihashes gebundener Audit: analysis/original-parity-audit.json.
+
+Aktueller EE2-Build: 430146 Bytes
+SHA256: d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18
+BASE: 268821 Bytes
+SHA256: 230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a
+
+Neu quellbelegt umgesetzt sind die 35x35-RPS-/Upgrade-Kampfregeln im BASE-Profil,
+native Kamera-/Skalenparameter, Materialdaten und native Terrain-/Wasserbilder.
+154 von156 Modellskalierungen sind belegt; zwei Farm-Bindungen bleiben Fallbacks.
+216 Terrain-/Wasserbilder behalten ihre originalen Pixel und native Auflösung.
+Die Originaldaten ersetzen keine vollständige Rekonstruktion der Renderpipeline.
+
+Der Kalender verwendet belegte Jahres-/Saisondauern und gleichmäßige jährliche
+Bildinterpolation. Terrain und Gebäudeböden wechseln fließend nach gespeichertem
+Simulationstick. Host, Gast, Pause und Laden verwenden dieselben Einstellungen.
+Sommer als Startmonat ist eine eigene Vorgabe; der native Konstruktor startet im
+Monat0. Saisonale Baum-/Gebäude-Skins und echte Wetterereignisse fehlen weiterhin.
+
+Gebäudeböden nutzen originale Größen/Offsets, Epochenintervalle und native globale
+Stadtnähe. Der Radius eines fertigen, lebenden Stadtzentrums behält jetzt sein
+quellbelegtes Maximum während seiner Lebensdauer, auch nach Gebietsgeschenken an
+eine niedrigere Epoche. Die Historie wird gehasht und im CGD1-Zusatz gespeichert.
+Sondermodifikatoren, weitere Stadt-Erzeuger und vollständige CityManager-Eigentums-
+und Zeitprioritäten sind damit nicht nachgebaut. Alte Spielstände können bereits
+verlorene Radiusmaxima nicht zurückgewinnen. Der finale Parser unterscheidet echte
+CGD-Endstücke von zufällig gleichen Float-Bits in alten ECO1-Spielständen.
+
+Auf diesem finalen WASM frisch bestanden: 75 EE2-/32 BASE-Rusttests laut City-Report,
+425 integrierte Frontend-/Protokoll9-Checks mit zwei echten WASMs/Locksteps,
+21692 Kalenderchecks und71 Prüfungen an vier echten GLES-Weltbildern: Sommer,
+Winter, Halbblend bei echtem Tick1000 und Zukunft/Epoche15. Quell-/Shader-/WASM-
+Hashes stehen in den Berichten. Diese QA startete keine GUI und kein Originalspiel.
+Berichte: season-session-tests.json; native-season-clock-tests.json;
+native-season-world-qa.json; native-city-ground-integration.json, jeweils in analysis/.
+
+Wesentliche offene Originalparität:
+- Das installierte Profil ist auf UP-Inhalte und DX9 konfiguriert; unsere Zahlen
+  stammen ausdrücklich aus BASE db.zip/hdrs.zip. Die Engine nennt UP5-Kampftabellen.
+  Launcher-Verzweigung, effektive VFS-Daten und Live-Hooks wurden nicht ausgeführt.
+  Die vier Engine-Kandidaten haben zwar identischen .text-Code, aber daraus folgt
+  keine Gleichheit aller Daten. Beleg: analysis/installed-launch-target.json.
+- Wetter-RNG/-Ereignisse/-Effekte, saisonale Vegetation/Gebäude-Skins und Atmosphäre.
+- Vollständige Einheiten-/Gebäudeliste, Fähigkeiten, Kampfsonderregeln, Kulturen,
+  KI und alle Diplomatie-/Gebietsregeln über die jeweils belegten Teilstücke hinaus.
+- Native Terrain-Generierung und exakte Übergangs-/UV-/Detailregeln. Die sechs
+  Kartentypen, acht Renderrollen und Übergangsgewichte sind eigene Adapter.
+- Vollständige native Beleuchtung, Shaderstufen, Transparenz und Schatten. Aktuelle
+  Materialbeleuchtung und projizierte Schatten sind eigene Renderumsetzungen.
+- Wasser-Renderzielreflexion ist im Hauptspiel noch nicht angebunden; Farbe,
+  Fresnel/Deckkraft und Teile der Animation bleiben Adapter. Caustic-/Palettepfade
+  und originale Material-/Zeitbindung sind unvollständig.
+- Farm-Unterbodenmaße, vollständiger Todes-/Decal-Lebenszyklus, weitere Kamera-
+  Bedienweisen und Live-Launcher-Eingriffe sind nicht abschließend rekonstruiert.
+
+Es gibt keinen aktuellen identischen Vergleichsaufbau mit laufendem Original,
+keinen physischen MacBook-Test und in dieser QA keinen Internet-/WebRTC- oder
+Browser-IndexedDB-Test. Echte GPU-Ausgabe und korrekte Originalasset-Pixel allein
+belegen keine1:1-Bildgleichheit oder vollständigen Spielumfang.
+
+Frühere Berichte behalten ihre damaligen Build-Hashes. Insbesondere native-render1
+und native-combat-integration sind historische Ausführungsstände; aktuelle Freigaben
+stehen in den oben genannten Berichten. Veraltete Regeln und Testzahlen im folgenden
+Archiv sind keine Aussage zum heutigen Spiel. Die alte Aussage „TC-Baustelle claimt
+sofort“ ist überholt: aktuell gilt das später belegte fertige-TC-/Nachbar-/Festungsmodell.
+
+================ HISTORISCHES ARCHIV ================
+
+Aktueller Abgleich zum gewünschten vollständigen EE2-Spiel — Übergabe 31.10.2026
+
+Neuester Stand: building2 / Engine7E.
+Vollbild im Menü und Spiel sowie F11 sind im echten Browser geprüft.
+Strg/R/Komma/Punkt drehen die Bauvorschau um90°, Umschalt zusätzlich um45°.
+Das Original belegt90° bei neuer Strg-Flanke;45° und zusätzliche Tasten sind
+eigene Bedienoptionen. Häfen richten sich zunächst an der Küste aus; manuelle
+Korrektur und Rückkehr zur Automatik sind möglich.
+
+Der Baufehler auf aufgedeckten Karten ist behoben: Baugelände gilt bei Modus1/2
+als bekannt, ohne die echte Kampfsicht der KI zu erweitern. Ein Stadtzentrum auf
+freiem, zu Fuß erreichbarem Land funktioniert; maximal ein TC pro Gebiet.
+Eigene ausgewählte Bürger, Baukante, Ressourcen, Epoche und Limit werden geprüft.
+Reguläre neutrale Gebäude benötigen die belegte doppelte Bauzeit; TC ist ausgenommen.
+Die Claimregel bleibt ein Adapter: sofort bei TC-Baustelle, ohne vollständige
+originale Nachbarschaft-/Festungsregel. Fremde Grenzrechte bleiben unvollständig.
+Auch Dock-Wasserklassen, exakte Höhenprüfung und Küstennormale sind nicht vollständig
+mit dem Original gleichgesetzt. Neue Dokumente:
+Stadtzentren-und-Gebaeuderotation.txt; analysis/building-placement-evidence.json;
+analysis/placement-rotation-tests.json; analysis/building-regression-tests.json;
+analysis/building-browser-check.json.
+
+EE2-WASM:7E359577AA251607126BCD8D8CA4DCB89BB8D38F1A4B6358E38706804CC4D30E
+Basis-WASM:F42D32397D576437FAFF4DE9E0D6AD0B3D14E4F516287B4C68D9B39A0E6027C0
+36/36 EE2-Rusttests und32/32 Basistests;5023 Placement-/Rotationchecks sowie
+18 betroffene Regressionstestsuiten sind bestanden. Netzwerkprotokoll ist7,
+Save-/Entlayout unverändert. Nachfolgende6E-/Grafikbelege sind der vorherige Stand.
+
+Dieser Stand ersetzt die früheren Aussagen über drei Rohstoffe und ausschließlich
+eigene Modelle/Sprachklänge. Neun Konten, Originalassets und native Klassenwerte
+sind jetzt eingebunden. Der vollständige, identische Originalspielumfang ist
+weiterhin nicht erreicht. Die bisherigen Wirtschafts-/Assetprüfungen sind bestanden;
+Skinning-Korrekturen sind daten-/quellgeprüft; Industrie-Bürger sind nun auch
+in Near/Far im echten Browser geprüft. Dies ist keine Gesamtfreigabe aller Typen/Posen.
+
+Kartensicht und Diplomatie — neuer Ausbau
+Beide Profile bieten vor Spielstart drei Kartenmodi: unerforscht mit Kriegsnebel,
+erkundet mit Kriegsnebel und vollständig aufgedeckt ohne Kriegsnebel. Erkundet
+zeigt Terrain, aber keine dauerhafte Gegnerposition. Der Modus bleibt im
+Spielstand erhalten; der Host übermittelt ihn per Mehrspielerprotokoll 6.
+Nach Ende gemeinsamer Sicht verschwinden bewegliche Partnereinheiten außerhalb
+der eigenen Sicht; gelerntes Terrain bleibt erkundet. Bekannte Gebäude verwenden unter Nebel noch den aktuellen
+Zustand statt eingefrorener Geometrie-/HP-Werte der letzten Beobachtung.
+
+F4 oder der Diplomatiebutton öffnet die Beziehungen. Krieg/Neutralität sind
+gerichtet, die andere Haltung bleibt sichtbar. Friedensangebote und beidseitige
+Allianzen benötigen Annahme; Ablehnung und Zurückziehen sind möglich. Bündnisse
+bieten gegenseitige volle Sicht oder keine gemeinsame Sicht, zunächst volle
+Sicht entsprechend dem belegten Termkonstruktor. Sichtänderungen werden ebenfalls
+angeboten und erst nach Annahme für beide wirksam. Freie Bündnisse geben keinen
+automatischen Teamsieg. Im EE2-Profil lassen sich Geschenke aus den neun Konten
+übertragen, im Dialog werden die zur Epoche aktiven Ressourcen angeboten;
+das Basisprofil behält seine drei Konten. Die KI-Antwortlogik ist eine eigene
+Umsetzung, keine Original-KI-Rekonstruktion.
+
+Originale Gebäude-/Mobil-Sichtstufen, Zeitverträge, Grenzrechte, Zölle,
+separate Einheitengeschenke und vollständige Diplomatiemodi bleiben offen.
+Quellbelege: Diplomatie-und-Sicht.txt und analysis/diplomacy-visibility-evidence.json
+im EE2-Research-Ordner. Die bestätigten Diplomatie-/Kartensichtbelege unten
+gehören zum vorherigen Stand. Neue WASM-Prüfungen und gezielte Browserabnahme sind bestanden.
+
+Territorien — implementierter und gezielt geprüfter Teilumfang
+Der Diplomatiereiter „Territorien“ bietet direkte Geschenke mit Bestätigung
+und gegenseitig angenommene Tauschangebote, Gebietslisten, Kartenvorschau und
+Kamerafokus. Im Gebiet wechseln eigene Gebäude und Feld-/Luft-/Seeeinheiten;
+Drittobjekte bleiben. Das letzte Gebiet darf mit Verlust-/Bündniswarnung abgegeben
+werden, auch im Krieg. Tausch benötigt friedliche Beziehungen und Zustimmung.
+Eigentum wird bei Angebot und Vollzug erneut geprüft.
+
+Cargo-Mitgabe, Abbruch/Rückzahlung aller Aufträge an den alten Besitzer,
+Erhalt von Baustellenfortschritt/HP-Anteil, Empfängerwerte, Zielreset und atomare
+Zweirichtungs-Snapshots sind eigene Adapter. Forschung/Epoche/Rohstoffbanken
+gehen nicht mit. Überzählige Besatzung bleibt ausquartierbar.
+
+Geschenkte Fördergebäude umgehen keine Epochenfreischaltung: Ölbohrturm und
+Uranmine behalten ihre Besatzung, fördern aber nur einen beim Empfänger aktiven
+Rohstoff. Universität, Ablieferbonus und Förderung nutzen höchstens das aktuelle
+Besatzungslimit des Empfängers; überschüssige Insassen bleiben ausquartierbar.
+Auch Produktion und Forschung folgen weiterhin seinen Voraussetzungen. Eine
+getragene Bürgerladung bleibt nur erhalten, wenn ihr Rohstoff beim Empfänger
+nutzbar ist. Inaktive oder abgelaufene Ladung wird wie bei der normalen
+Rückgabe verworfen, ohne Gutschrift auf ein Rohstoffkonto. Das sind die eigenen
+Abwicklungsregeln des Nachbaus, keine zusätzlich behaupteten Originalregeln.
+
+Die eigene KI antwortet nach vier Simulationssekunden mit kostenbasierter Wertprüfung
+(verbündet mindestens 1,0; sonst 1,1 des geforderten Werts), keine Original-KI.
+Protokoll 6 synchronisiert die neuen Befehle; TER1 hat 524 Bytes hinter DIP1.
+Originalnachweise: Territorien-und-Diplomatie.txt und analysis/territory-evidence.json.
+Build-/WASM- und Browserbelege stehen unten. Die 991E-Belege unten
+gehören zum vorherigen Diplomatie-/Kartensichtstand.
+
+Wirtschaft und Epochen
+Neun natürliche Ressourcen: Nahrung, Holz, Stein, Gold, Zinn, Eisen, Salpeter,
+Öl und Uran. Im Interface erscheinen fünf oder sechs aktive Konten.
+Belegte Ghidra-Grenzen: Zinn1–6, Eisen 4–9, Salpeter 7–12, Öl 10–15, Uran 13–15.
+Die vier Grundrohstoffe bleiben aktiv. Alle Vorräte sind auf 0..999.999 begrenzt.
+Quellen: docs/ee2-economy.json und analysis/economy-findings.txt.
+
+Bürger sammeln regulär 0,85 Einheiten/s, an Farmen 4,37, tragen 15 und liefern
+zum Stadtzentrum/Lagerhaus. Neue Karten setzen 1.277 Holz pro Baum und 1.000
+Einheiten je anderem natürlichen Knoten. Neue Belegungsgrenzen: drei Bürger
+je Baum, sechs je anderem direkt sammelbaren Knoten, einer je Farm.
+Tests vor/nach dem Bau sind bestanden; Farm 1 gilt nur im EE2-Profil.
+Stadtzentrum/Lagerhaus haben fünf Besatzungsplätze und je Bürger 2 % Ablieferbonus.
+OilRig (53) ab E10 und UraniumMine (54) ab E13 benötigen passende Lagerstätten und
+haben sechs Plätze mit je 0,75 Einheiten/s. Gutschrift erfolgt ganzzahlig,
+der Rest bleibt erhalten. Die fünf quellbelegten Startpresets Low, Defensive,
+Standard, High und DeathMatch verwenden die Epoch-1-Zeilen der Original-CSV.
+Alle 15 Startepochen sind im Menü wählbar; Standard ist Steinzeit.
+Die Startepochen-API gilt symmetrisch für bis zu vier Spieler, nur solo vor dem ersten Tick.
+Eine Endepoche ist noch nicht einstellbar. Die Kartenverteilung und alle Original-Scharmützelparameter sind damit nicht kopiert.
+
+Einheiten und Produktion
+56 bestehende Definitionen, 111 strikte Visualrecords und 262 Klassenrecords.
+Klassenwerte liefern aktuelle Originalkosten in neun Slots, HP, Bauzeit, Sicht,
+Bevölkerungskapazität und Garrisons auch über Lücken des kleineren Modellkatalogs.
+Abweichende Quellvisuals und eigene Archetypen bleiben als Rollenadapter markiert.
+Native Weltgröße und Bewegungsraten werden ohne bestätigte Skalierung nicht
+blind übernommen. Der Importer dokumentiert Quellen und None-Fallbacks je Feld.
+
+Native Hosts: CityCenter (0), Barracks (3), Mill (48), Stable (49), Dock (5), Airport (6) und
+HercFacility (55). Die neue HERC-Anlage ist ein Originalgebäude ab Epoche 14;
+eine unbelegte allgemeine Factory wird nicht als Originalklasse ausgegeben.
+Tanks gehören laut Basisquelle nach Stable, Artillerie nach Mill.
+Workshop (4) bleibt als älterer Rollenadapter für bestehende Spielstände.
+Ein kompletter Produktions-/Fähigkeitskatalog ist damit nicht rekonstruiert.
+Quelle: docs/ee2-units.json; Details: Einheiten-und-Kosten.txt.
+
+Forschung
+15 Epochen, 180 Haupttechnologien mit unveränderten IDs, originale Forschungsorte,
+Uni-Garrison mit drei Bürgern und je 0,03 TP/s, KI-Forschung und Speichermigration.
+187 Runtimeeffekte sind auf den kleineren Katalog zugeordnet; 82 Faktoren bleiben
+offen. Sechs reine Tooltipfaktoren erzeugen keine weitere Wirkung.
+Neun getrennte Ressourcenfelder verhindern die alte Vermischung von Stein/Gold
+mit Eisen. Drei Haus-Technologien geben je +2 Bevölkerungskapazität.
+Ghidra- und Quellbelege: Forschung-und-Universitaet.txt.
+
+Der Basisimport enthält 641 Baumknoten, 396 Einheiten-Upgrade-Zeilen und 438 aktive
+UnitType-Deklarationen. Darin liegen Hilfsobjekte;438 ist keine Zahl spielbarer
+Kampfeinheiten. Die wirksame Patch-/VFS-Reihenfolge ist weiterhin nicht vollständig
+bestätigt. db_155.zip enthält abweichende Technologiebaumtabellen; aus deren
+Vorhandensein wird keine automatische Laufzeitpriorität gefolgert.
+
+Originalassets und lokaler Import
+149 Modellbindings auf 118 Nahdateien decken 56 Definitionen und 11 Requisitentypen ab.
+63 echte Fernmodelle für 85 Bindungen behalten die Near-Normalisierung.
+72 originale KF-Quellen, darunter sieben Bürgeraktionen samt Arbeitswerkzeugen.
+265 Original-Texturquellen, 54 Basis-Icons, 66 Varianten, 31 HUD-Bilder+31 Crops.
+113 neue Gebäudebodentexturen liefern zwölf belegte Flächenzuordnungen.
+Native Epoch-/Urban-Auswahl bleibt ungeklärt: ausdrücklich eigener Rural0-Adapter.
+26 zusätzliche, quellgleiche Modellübergänge haben 26 passende Originalsymbole
+und 26 originale Epochen-Sprachintervalle. Der volle Katalog ist damit nicht erreicht.
+137/262 betrachtete native Klassen-/Epochenvisuals belegt,125 noch unverifiziert.
+Keine Vollständigkeitsprozentzahl für das ganze Spiel daraus ableiten.
+Modelle referenzieren 172 Material-URLs; 146 Teamfamilien enthalten 1.606 PNGs.
+194 bytegetreue Original-Audiodateien plus eine PCM-Ableitung=195 Audioassets.
+39 mobile Basis-Sprachsets und26 native Epochenintervalle. Im Browser194/194
+aktive Wiedergabedateien dekodiert; neue Auswahl-/Move-/Angriffsquellen abgespielt.
+OilRig/UraniumMine bleiben mangels belegter Auswahl-
+Zuordnung offen; ihre Arbeitsloops wurden nicht umgedeutet.
+
+Import-EE2-Assets.ps1 liest graphics.zip, textures.zip, sounds.zip, db.zip und
+originale Musik aus der Installation nach docs/local-original/. Originaldateien,
+EXE und Spielstände bleiben unverändert. Quellpfade und SHA256 sind erhalten.
+Das Quell-ZIP enthält keine Originalmedien oder konvertierten Ableitungen.
+Nach dem lokalen Modell-/Assetimport regeneriert tools/import_ee2_units.py
+die überprüften Zahlen; ohne Modellmanifest bricht der Quellenabgleich ab.
+Details: Originalgrafiken-und-Sound.txt und Originale-Spielerfarben.txt.
+
+Speichern, Mehrspieler und aktueller Prüfstand
+Die neun Konten, Forschung, Garrison und Bruchteile sind versioniert.
+47-/53-/55-Definitionen-Spielstände werden migriert. Die neueste HP-Migration
+skaliert den Gesundheitsanteil auf native Maxima. Die Altformate 47/53/55
+sind mit beschädigten und vollen Einheiten sowie Forschungs-/Vorratserhalt geprüft.
+Mehrspielerprotokoll 6 synchronisiert neun Konten, Kartensicht und Diplomatie-/Territorienbefehle. Tests zwischen tatsächlichen
+Rechnern und unterschiedlichen NATs bleiben offen.
+
+Aktueller Territorienbuild, SHA256:
+EE2: 6E133AE7DC456FF196D0A6EA98EEB0848688DC4CD9BEDB1126899BA37D860724
+Basis: 73383515FBF8D83277F1B1CE69EB90AC1C18C76F2D5C4F7240E64185A0A106FF
+Die finalen Quellen bestehen 29 Rust-Tests im EE2-Profil und 25 im Basisprofil.
+Der finale 6E-Build besteht 3.682 Territorienchecks mit 618 Lockstep-Runden und
+3.177 Diplomatiechecks mit 632 Runden. Geprüft sind Gebietsbesitz und Baugrenzen,
+Geschenk/Tausch, Drittobjekte, eigene Cargo-/Queue-Adapter, Empfängerwerte und
+Freischaltungen, letzte Gebiete, Angebots-/Eigentumsrennen, Sichtinformationen,
+ungültige Netzbefehle, Speicherstände und alte 991E/DIP1-Spielstände.
+
+Die vorherige 5C-Fassung bestand alle bisherigen Kernregressionen und die
+20-/10-Minuten-KI-Stressfixtures ohne Warnungen/Progressionsfehler. Danach änderte
+sich die Reihenfolge der UI-Loganzeige. Zehn repräsentative echte WASM-Fälle
+mit 877 Prüfungen bestätigen für 5C→6E gleiche Simulation und bytegleiche
+Speicherstände trotz unterschiedlicher UI-Leserate; die korrigierte Chronologie
+wurde separat geprüft. Der lange Soak wurde nicht als neuer 6E-Lauf ausgegeben.
+Belege: analysis/territory-tests.json, analysis/diplomacy-tests.json,
+analysis/territory-logsort-equivalence.json und analysis/economy-ai-soak.json
+im EE2-Research-Ordner.
+
+Die gezielte echte Browserabnahme ist bestanden. Zwei lokale Browserclients
+verbanden sich über die echte WebRTC-Einladungs-/Antwortoberfläche mit Protokoll 6
+auf dem 5C-Vorstand: Frieden wurde bilateral angenommen, Territorium 1 gegen 2
+getauscht; beide hatten danach ein Gebiet und 5/40 Bevölkerung. Nach gerichteter
+Kriegserklärung gab der Host sein letztes Gebiet mit Bestätigung ab: 0 Gebiete/
+0 Bevölkerung beim Schenker, 2 Gebiete und 10/80 beim Empfänger. Kein Desyncstatus;
+Kamerafokus und H zeigten nach dem Tausch das neue eigene südöstliche Gebiet.
+
+Der finale 6E-Build mit UI territory2 wurde zusätzlich ohne Cheats im Einzelspieler
+bedient: fünf Bürger erkundeten und bauten ein zweites Stadtzentrum für 300 Holz
+und 300 Stein. Danach 2 Gebiete und 5/80 Bevölkerung. Ein Geschenk von Territorium 13
+zeigte ein Stadtzentrum/fünf Bürger; Abbrechen bewirkte keine Übergabe. Erst
+Bestätigen gab das Paket an die KI: ein eigenes Gebiet und 0/40 Bevölkerung.
+Speichern, vollständiges Neuladen und Fortsetzen erhielten Besitz, Paket und
+Geschenklog sowie 800 Nahrung, 500 Holz, 500 Stein, 800 Gold und 400 Zinn.
+Die Verlustwarnung erschien nur beim letzten Gebiet; Auswahl, Objektzahlen,
+Kriegssperre für Tausch, Karten-/Kamerafokus und kompakte Oberfläche wurden
+geprüft. Die Browserwarnungs-/Fehlerprotokolle blieben leer. WebRTC wurde auf
+demselben Rechner geprüft; verschiedene Rechner/NATs bleiben offen. Eine
+vollständige Originalpartie oder Bildratenabnahme wird damit nicht behauptet.
+Der frische normale Start unter ?rules=ee2&build=territory2 ist fertig geladen:
+Startschaltfläche aktiv, volle Karte ausgewählt, alte normale Spielstände
+unverändert sichtbar und keine Browserwarnungen/-fehler.
+
+Belegbilder: ../OpenEpoch/territory-diplomacy-preview.jpg und
+../OpenEpoch/territory-swap-preview.jpg. Browserbericht: analysis/territory-browser-check.json
+
+Vorheriger Diplomatie-/Kartensicht-Build vor Gebietsübergaben, SHA256:
+EE2: 991E4736D420A14BC853D81B99C6D5EE6F9B0884809E4314051AA294739A3D75
+Basis: E03C2F14E1F4DE06295CA014142416968977049E1CEC4FDBFB9A13FF71AF4516
+
+Die damalige gezielte Diplomatieprüfung bestand 3.174 Assertions und 632 tatsächliche
+Lockstep-Runden. Sie umfasst gerichtete Haltung, angenommene Sichtverträge,
+alle neun Geschenkkonten, ungültige Netzbefehle, laufende Geschosse bei
+Beziehungswechsel, drei Kartenmodi, KI-Antworten und Speicherstände. Beide
+Profile bestehen je zehn Rust-Tests. Auch die bisherigen Kernregressionen sind
+bestanden, einschließlich echter älterer 47-/53-/56-Definitionen-Spielstände,
+43 Forschungswirkungsszenarien und des Forschungsdurchlaufs180/15.
+Beleg: analysis/diplomacy-tests.json im EE2-Research-Ordner.
+
+Die Vier-KI-CPU-Stressfixtures wurden mit genau diesem vorherigen EE2-Build erneut
+20 Simulationsminuten ab Steinzeit und zehn ab Epoche 10 ausgeführt: keine
+Warnungen oder Progressionsfehler. Kampfwellen-Fristen sind in diesen
+Stressfixtures verschoben; das ist keine vollständige Partie-/Bildratenabnahme.
+Beleg: analysis/economy-ai-soak.json. Der historische Vergleich BAE9→2A12 ist
+mit portablen eigenen WASM-Fixtures erneut bestätigt; er ist kein Nachweis,
+dass der neue Diplomatiestand dieselben Zustände wie jener Altbuild erzeugt.
+
+Der Browser dieses vorherigen Builds bestätigte F4, Geschenk von 200 Nahrung mit Vorrat 800→600,
+angenommenen Frieden und anschließend eine Allianz mit gegenseitiger voller
+Sicht. Die übrigen Gegner blieben feindlich; es gab keinen voreiligen Teamsieg.
+Full→None→Full wurde jeweils angeboten und erst nach KI-Annahme wirksam;
+während des Angebots blieb die vorige Sicht bestehen. Pausehinweis und
+„Spiel fortsetzen“ funktionieren im Dialog. Nach Speichern, Neuladen und
+Fortsetzen blieben Vertrag, Sicht, Vorrat 600 und Ereignislog erhalten, auch
+wenn der neue Spielstart im Menü eine andere Kartenoption ausgewählt hatte.
+
+Modus 2 zeigt die volle Karte ohne Nebel. Eine neue Partie in Modus 1 zeigte das
+gesamte Terrain, entfernte Gebiete blieben aber abgedunkelt und ohne entfernte
+Gegneranzeigen. Beziehungen und Log waren für die neue Partie zurückgesetzt.
+Die abschließende Dialogdarstellung ist opak/lesbar, ohne gekachelte Rahmen;
+Bedienung und Kartenoptionen passen bei 1280×720. Keine Browserwarnungen/-fehler
+wurden nach diesen Prüfungen gemeldet. Das belegt diese UI-Fälle, keine
+vollständige Originalpartie, Bildrate oder physische Mehrspieler-/NAT-Abnahme.
+Ein frisch geladener normaler Start zeigt die aktive Startschaltfläche und die
+volle Kartenoption. Vorhandene normale Spielstände bleiben sichtbar und
+unverändert; der frühere Spieltab wurde erhalten.
+
+Belegbilder: ../OpenEpoch/diplomacy-preview.jpg,
+../OpenEpoch/revealed-map-preview.jpg, ../OpenEpoch/explored-map-preview.jpg
+und ../OpenEpoch/map-settings-preview.jpg.
+Browserbericht: analysis/diplomacy-browser-check.json
+
+Historische EE2-WASM vor Diplomatie/Kartensicht, SHA256:
+2A127D17ED05E27DDAFA54BF78F0DFA61E202BBFC8F099644843D073DDA59B47
+Nach Metadatenregeneration sind 30 Laufzeitfälle gegenüber BAE9 unverändert.
+Dieser vorherige Abschlussstand besteht die Wirtschafts-, Legacy-,
+Startmenü-/Epochen-, Personen-/Werkzeug-, Basis-Scharmützel-, Cheat- und
+Referenzprüfungen mit 2.000 Einheiten. 43 gezielte WASM-Szenarien prüfen die neuen
+Ressourcen- und Kapazitätswirkungen; Forschungsdurchlauf 180/15 und 2.650 Lockstep-Runden sind grün.
+Gesundheitsbeispiele: 40→30, 48→36 mit Weberei, Stadtzentrum 2.400→8.000; Schadensquoten bleiben.
+
+Zwei Vier-KI-CPU-Stressfixtures ohne externe Kampffrist: 20 Minuten Steinzeit und
+zehn Minuten ab Epoche 10, keine Progressionsfehler oder Warnungen. Alle frühen
+KIs erreichten Epoche 2, 24 Armeeeinheiten, Universität und 19–20 freie Bürger;
+spät Ölbohrturm/Universität mit 16–19 freien Bürgern. Reserve-/Besatzungslogik
+ist angepasst. Das belegt die eigene Wirtschaft/KI unter diesen Voraussetzungen,
+keine exakte Original-KI, vollständige Partieabnahme oder Bildrate.
+
+Der Browserlauf des vorherigen Wirtschaftsabschlusses zeigt Steinzeit mit fünf aktiven Rohstoffen,
+Industriezeit mit sechs,30/50 Bürger-HP und Transport. Holzhauen bis zur vollen
+15er Ladung und deren Vorratsgutschrift sind beobachtet. Ölbohrturmbau kostet
+100 Holz; 1/6 Besatzung produziert 0,75 Öl/s und erhöhte den Ölstand von 400 auf
+über 640. Nach Ausquartieren sind 0/6, +0,00 Förderung und konstant 671 Öl über mehrere
+fortschreitende Messungen bestätigt. Der Original-HERC-Klick ist hörbar;
+alle 15/15 Audio-Prüfdateien dekodiert.
+
+Die bei der Nachprüfung entdeckten Skinningfehler sind nach belegter Matrix-
+konvention korrigiert; unabhängiger Modelltest und vier Original-NIF/KF-Posen-
+prüfungen bestanden. Industrie-Bürger 50/50 HP am Stadtzentrum sind in Near/Far
+im Browser geprüft; bei Nahzoom 80 stimmen Körperproportionen, Füße und
+Auswahlring. Belegbilder liegen unter ../OpenEpoch/economy-industry-preview.jpg
+und ../OpenEpoch/economy-citizen-preview.jpg. Diese konkreten Ansichten
+ersetzen keine systematische Sichtprüfung aller 56 Typen und sämtlicher Posen.
+Ein frischer normaler Start mit allen 15 Startepochen und Originalgrafiken
+wurde abschließend ohne Browserwarnungen oder -fehler geladen.
+Aktuelle FPS und eine vollständige visuelle Endabnahme werden nicht behauptet.
+
+Weiterhin wesentlich offen
+- Voller produktiver Einheiten-/Gebäudekatalog und exakte Produktionsbedingungen.
+- Kampfmatrix, Gegenklassen und alle Spezialfähigkeiten; 82 offene Forschungsfaktoren.
+- Zivilisationen, Veteran/Elite, Handel, vollständige Diplomatieverträge/Siegmodi,
+  Kronen und Wetter/Jahreszeiten.
+- Weitere Scharmützeloptionen, Modi und systematische Original-Vergleichspartien.
+- Vollständige Animationsereignisse, Effekte und Musik-/Soundregie.
+- Physische Mehrspieler-/NAT-Abnahme und umfassende visuelle Prüfung.
+
+Die eigene Simulation übernimmt keine dekompilierten Original-Codepassagen.
+MIT-Upstream-Attribution und GPL-3.0-Hinweise zur reduzierten niftools/nifxml-
+Parsingmetadatei bleiben erhalten. Originalmedien werden nicht unter diese
+Quellcodelizenzen umetikettiert. Quellenimport und einzelne Prüfungen sind kein
+Nachweis eines vollständig identischen oder fertigen EE2-Spiels.

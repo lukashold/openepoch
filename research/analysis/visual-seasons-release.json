@@ -213,7 +213,9 @@
   },
   "liveUrl": "http://127.0.0.1:8125/?rules=ee2&build=visual-seasons2",
   "github": {
-    "checkpointPublished": false,
+    "checkpointPublished": true,
+    "commit": "f545f2faa336426d70055f56ededb599f4064520",
+    "tree": "13f432de18ad85bde89c28b44deeb2a859fad963",
     "previousCommit": "7346720e5cab2c809c529a8091e6836cf60236f9",
     "originalMediaIncluded": false
   },

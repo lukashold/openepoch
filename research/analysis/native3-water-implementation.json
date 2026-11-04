@@ -1,0 +1,177 @@
+{
+  "format": "openepoch-native3-water-implementation-v1",
+  "build": "water-farm3",
+  "date": "2026-11-04T10:07:47.310150+00:00",
+  "status": "PASS",
+  "previousBuild": "visual-seasons2; its reports and source/package freeze remain historical snapshots.",
+  "originalEngineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+  "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+  "simulationChanges": "None. Active EE2 simulation remains the frozen d69f6d38 build; all changes in this slice are original-media import or presentation.",
+  "production": {
+    "module": "docs/original-water.js",
+    "api": [
+      "loadOriginalWater(gl, enabled, {manifestURL?})",
+      "updateMap({heights, types, movement?, size?, waterHeight?})",
+      "drawWater({vp, time, fogTexture, reflectionTexture, reflectionVP})",
+      "drawBase(...)",
+      "drawReflection(...)",
+      "dispose()"
+    ],
+    "mainIntegration": "Own water map receives actual WASM height/class arrays at startup/map dirty. Native water draws after the terrain/model scene and samples the actual planar reflection target. Legacy water is retained only as loader-unavailable fallback.",
+    "assets": {
+      "manifest": "docs/local-original/water-native/manifest.json",
+      "images": 9,
+      "pngBytes": 2521966,
+      "resolution": "Six native Skin images and native normal stay512x512; native palette256x1 and lookup4x1. No generated/repainted media."
+    }
+  },
+  "sourceBacked": [
+    {
+      "part": "Material binding",
+      "behavior": "High profile Skin1 Dark / Skin2 Detail / Skin4 Gloss; compatibility fallback Skin1 / Skin5 / Skin6. Skin3 retained as source low-profile media."
+    },
+    {
+      "part": "Vertex channels",
+      "behavior": "Native 13-point red/alpha,33-point green and29-weight blue filters; native depth/2 palette index and original alpha bytes; movement-class lookup color and source blue coastal/land secondary color."
+    },
+    {
+      "part": "Base pixel shader",
+      "behavior": "Dark*Detail and Gloss*Gloss mixed by vertex green; red modulates RGB, vertex alpha modulates alpha, secondary blue adds to green/blue. No fabricated Phong/Fresnel in this native high base."
+    },
+    {
+      "part": "Base states",
+      "behavior": "Lighting disabled, depth test/write on, LessEqual, SrcAlpha/InvSrcAlpha; source NSF UV velocities and native vertex cosine warp."
+    },
+    {
+      "part": "Reflection overlay",
+      "behavior": "Separate normal-distorted render-target sample multiplied by white vertex RGB and factory initial alpha f32(0.32); depth writes off, LessEqual and source alpha blend. This does not claim no later native CPU alpha update exists."
+    }
+  ],
+  "explicitAdapters": [
+    "Own six archipelago terrain classes map to eight source movement IDs via[7,5,0,0,4,3]. Native River is available only with explicit movement IDs; no claim of original map generation.",
+    "Native default UV table00D0232C remains unresolved; base scale1/12 and normal scale1/8 remain labeled renderer adapters.",
+    "Native CM time-vector population is not closed; base uses[time,time] from the existing deterministic presentation clock.",
+    "Own corner grid, edge clamping, wet-triangle selection, projection into the planar target and fog policy adapt source shader equations to the independent map/renderer.",
+    "Reflection currently reuses main visible native instances. Native separate reflected-view culling, exact RTT sizing and full atmosphere/sky remain open.",
+    "Farm visual uses native explicit default Harvest_3 with four source plots and source UnderFarm. Simulation-linked harvest state progression remains unimplemented; no timer was invented."
+  ],
+  "validation": {
+    "sourceEvidenceChecks": 36,
+    "loaderAndStateChecks": 44,
+    "independentCpuVsGlesChecks": 1758,
+    "fixedInputPixelProbes": 294,
+    "maximumChannelErrorBytes": 1,
+    "combinedWorldChecks": 274,
+    "worldScenes": [
+      "summer",
+      "winter",
+      "halfblend-tick1000",
+      "future",
+      "heading90-coast",
+      "actual-production-Farm-tick1"
+    ],
+    "reflectionPixelControls": 106,
+    "portableSelfTests": 15,
+    "portable": {
+      "fileCount": 4381,
+      "localOriginalFileCount": 4336,
+      "runtimeReferenceCount": 19517,
+      "uniqueRuntimeTargets": 4269
+    },
+    "farmGraph": {
+      "farmFamilies": 3,
+      "farmStateModels": 12,
+      "farmMaterialImages": 3
+    },
+    "worldPngs": {
+      "summer": {
+        "path": "native3-world-summer.png",
+        "sha256": "b0ee4fd9ccd5c3245e04821d5d8f915e680a18b40c7fc49e7f2c56943f6ffc4c"
+      },
+      "winter": {
+        "path": "native3-world-winter.png",
+        "sha256": "220c63455f10de7a62880c8b2235ed8ba42917f1840d2a50451719a4c7b2b753"
+      },
+      "halfblend": {
+        "path": "native3-world-halfblend.png",
+        "sha256": "bf463a77609c1adaa60d0a03684df8da686ae8087a457f6c71baa217dd752848"
+      },
+      "future": {
+        "path": "native3-world-future.png",
+        "sha256": "badca9d7897a78c7b66cc7fa3cdeae2aeeda881fbbe419092153c72fa6e07234"
+      },
+      "heading90": {
+        "path": "native3-world-heading90.png",
+        "sha256": "f0c74cf32838aeb335a1d7eda2eb4d2a556ff7d3ec7cd4761913b6216563ba4b"
+      },
+      "farm": {
+        "path": "native3-world-farm.png",
+        "sha256": "14cfb45ab65b640a2b5ab51d5ec7cb318ced97b94bbca0358e264cfe91e3d6d2"
+      }
+    },
+    "noUiOrNativeExeLaunched": true
+  },
+  "sourceFiles": {
+    "main.js": "177ec3370d566aeb6161d996f1c6ba720bb8b9c8b04f51879c70c17fe5395419",
+    "index.html": "eb2b47b5b6384e3e9f150b7db8e4dfcdef3c15c192436c624f226140a6513868",
+    "season-session.js": "2ba54f8c2c55b87034abd6ae79f730d816e0a98505ce4582c3c3b1111eaf7e07",
+    "original-terrain.js": "647091f06fcc8e0831a695927b6290e5b5c57eaffa03432787d20b4101b4a090",
+    "original-water.js": "4692e5e0031d5bd31b08ba7a28c7402c7cd01fd59fe0e7120eecd849ed6bd268",
+    "original-ground.js": "9902abc52e4dec444cc72aa4dcc1a15a6099d5433cd9aff78a01542930c47ec5",
+    "original-renderer.js": "c1789590b9b356f1d6289b0305429a8c0a82162597b4723a503499b283242553",
+    "original-model-seasons.js": "c8fab385c06dbe93dd7f29fa80959d48dadd031801f6b315e9d7b9a77f3863a6",
+    "original-camera.js": "ffc6ecdcebcace98b73918a15e9cc5e90af6685e724708b82c2a46247eab1954",
+    "original-seasons.js": "fb4001470974e86ed297465309933305bef3bd8c54c8c603f6e39d18b2e63492",
+    "original-reflection.js": "f3506a9b55e880b5b17b63bb329f28a80eaf2ff47cfa7b9abea4f51842b6c131",
+    "local-original/terrain-native/manifest.json": "c7cf660ff198a5f3e7b9c0aa2391b27f38ec7afb116b9541fa09019223c0359a",
+    "local-original/water-native/manifest.json": "1739c08538f09c0279dd4ecdef44019e9b2fed4e9e0149e60a04ad4b88d50bc7",
+    "local-original/ground-decals.json": "eb407c403f1e22b997215f85b8f02e9cc62ae44facf31b7068c4312f8c8454f4",
+    "local-original/models/manifest.json": "26f2d3fab7eff33b3197da006956dd6ff9374201eaf57bdab41f27ffccd72301",
+    "local-original/model-seasons.json": "ee5ae41bda51c2eda532a6fb61059522ef4b8528c61f60480fce210f050c76d4",
+    "local-original/farm-composites.json": "d85f3e229280734a583f6089ffe97c2df02e4104d7fae95aff60d1b9300f00bb",
+    "local-original/season-model-textures/team/manifest.json": "269bd404054013b2431d32ec308d0056aa43a51055a68502f4c387d942be3113",
+    "local-original/team-textures/manifest.json": "e9d618ca90a3cc583bc95d911b887a4a15f468fc398516b0b269130d6fb4a5df"
+  },
+  "tools": {
+    "import_ee2_native_water.py": "b1a34f63a790be0ac0f85fa22d13d3d2531bdc20fe23cee8d874d211ee647637",
+    "native-water-test.mjs": "63bff4503c97d76b60cd54dd365140b4f021ac653f1e567b34a7831e15a1c01d",
+    "native_water_gpu_test.py": "8cff0cdd4bb00497135c0f62b9845027c12e830a8357f182acc57c0f337e0a98",
+    "headless-world-capture.mjs": "42db3e8f7979de5c9abaf2244cefa13e23081f63a3ad8e543c5adc0c8bfd5a29",
+    "native3-world-qa.mjs": "da4eace8449a12d9a78be4578aa45a0e14c8e261e864610c5dc7306bb18c3063",
+    "native3_reflection_world_gpu_test.py": "aeb758f4600f5e55116a34f8ea2b6ac01a94a34803fa1044cf5bc051aed17849",
+    "replay_world_gles.py": "82e84fca9f7684fd6d79b716073e49be8dd2c01cf925f6e88ca33ca477408be0",
+    "portable-assets-test.py": "07e6c9a1ec961a5529cb097499e85762beb255328cfc83bc7c276a3e13c68e57",
+    "report_native3_water.py": "92cc3fff28ac29a2ff65a762f31375bbf8f94d5d1e04a8437716288d387a0c1f"
+  },
+  "reports": {
+    "native-water-appearance-evidence.json": {
+      "sha256": "7eafc38486e9e740eb2940594a7c21a2da5ec67c05a32d5996a57080903e8223",
+      "path": "native-water-appearance-evidence.json"
+    },
+    "native3-water-contract-tests.json": {
+      "sha256": "a48e17680acf9b2192d0dc9db464dcd547bf91235a33b7543d7e089030dea576",
+      "path": "native3-water-contract-tests.json"
+    },
+    "native3-water-gpu-tests.json": {
+      "sha256": "f22f07208a0902925428c0e8e3f1b666dd21dd748a9640b1ae3020b60ae5282e",
+      "path": "native3-water-gpu-tests.json"
+    },
+    "native3-world-qa.json": {
+      "sha256": "ccf2af5c2cc22910f7ba7a5fefeb4693de49cb7778b44cede397e0e56ddb4c91",
+      "path": "native3-world-qa.json"
+    },
+    "native3-reflection-world-pixel-tests.json": {
+      "sha256": "dccd6d174fcbf9cdd94d6402b229448942a31e8aa65b70b6b8f3ec64a66b5c9f",
+      "path": "native3-reflection-world-pixel-tests.json"
+    },
+    "native3-portable-assets-check.json": {
+      "sha256": "d9014fe053de8b67e4b56615f4dbb148a7b4660a0f0227165d23c3a353112de1",
+      "path": "native3-portable-assets-check.json"
+    }
+  },
+  "reviewImages": [
+    "../../OpenEpoch/native3-reflection-coast.png",
+    "../../OpenEpoch/native3-world-farm.png"
+  ],
+  "parityClaim": "Validated source slices and a functioning production presentation path, not1:1 game parity or an original-executable visual comparison."
+}

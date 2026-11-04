@@ -101,7 +101,8 @@ impl Game {
                 if let Some(v)=row.hp{m[i][0]=v;}if let Some(v)=row.buildtime{m[i][3]=v;}
                 if let Some(v)=row.sight{m[i][5]=v;}if let Some(v)=row.garrison_slots{m[i][11]=v as f32;}
                 if let Some(v)=row.damage{if d.w[0].dmg>0.0{m[i][1]=v/d.w[0].dmg;}}
-                if i==FORTRESS as usize {if let Some(v)=row.range {m[i][6]=v-d.w[0].range;}}
+                if cfg!(feature="ee2-up15") {if let Some(v)=row.raw_speed {m[i][2]=v;}}
+                if cfg!(feature="ee2-up15")||i==FORTRESS as usize {if let Some(v)=row.range {m[i][6]=v-d.w[0].range;}}
             }
         }
         let baseline=m;
@@ -118,7 +119,7 @@ impl Game {
             }
         }
         for row in &mut m {
-            for f in [0,1,2,3,4,5,7,8,9,10,12,13,14,15,16,17] { row[f]=row[f].max(if f==2||f==1 {0.0} else {0.05}); }
+            for f in [0,1,2,3,4,5,7,8,9,10,12,13,14,15,16,17] { row[f]=row[f].max(if f==2||f==1||(cfg!(feature="ee2-up15")&&f==5) {0.0} else {0.05}); }
         }
         if adjust_health {
             for e in &mut self.ents[..self.high] {

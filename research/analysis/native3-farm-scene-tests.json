@@ -1,0 +1,60 @@
+{
+  "format": "openepoch-production-world-gles-replay-v1",
+  "passed": true,
+  "context": {
+    "egl": [
+      1,
+      5
+    ],
+    "vendor": "Google Inc. (AMD)",
+    "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11-31.0.21924.61)",
+    "version": "OpenGL ES 3.0 (ANGLE 2.1 git hash: unknown hash)",
+    "libraryDirectory": "C:\\Program Files\\Mozilla Firefox",
+    "surface": [
+      512,
+      512
+    ],
+    "uiLaunched": false,
+    "framebuffer": "RGBA8 texture + DEPTH24_STENCIL8 renderbuffer"
+  },
+  "capture": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\farm-reconstruction\\production\\farm-scene.json",
+  "captureSha256": "037fcc8353ff92cfec0272af60446c7bd9ad97e01273fa8a51eb3ea64d7c8bf7",
+  "sourceEpoch": 2,
+  "scene": "native-four-plot-farm-slope",
+  "wasmInstances": 1,
+  "size": [
+    512,
+    512
+  ],
+  "stats": {
+    "drawCalls": 5,
+    "instancedCalls": 0,
+    "drawnInstances": 5,
+    "triangles": 2400,
+    "bufferBytes": 59084,
+    "textureBytes": 1314828
+  },
+  "compiledPrograms": [
+    {
+      "id": "1",
+      "compiled": true,
+      "linked": true,
+      "vertexSha256": "e5e642d78df2920593608747e608f013805ab52001fb2ecade2912388fd8bccb",
+      "fragmentSha256": "4f6305cab3f4805a53e9a2b8d9b19aa177a03fd9cf89f378df42bcb928e10a30"
+    },
+    {
+      "id": "146",
+      "compiled": true,
+      "linked": true,
+      "vertexSha256": "9535f328c82af94214709f53f614a30577e270b714d52a2465e1fe37b76ca9c0",
+      "fragmentSha256": "846d396c976f2420073fb76bce272341fc4bc95664f3d52fdc135633c134ee13"
+    }
+  ],
+  "output": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\farm-reconstruction\\production\\farm-scene.png",
+  "pngSha256": "9ff786015038aef571c7e16b96680999e9915dddfdc26a0f00ec88b3572754fb",
+  "colorHistogramBins": 624,
+  "scope": "Actual source model/material/UnderFarm through production loaders, synthetic slope; no original screenshot comparison",
+  "uiLaunched": false,
+  "reflectionTargets": [],
+  "limitation": "GPU replay of captured production world passes; not a browser/full HUD interaction test or a claim of original-game visual equality."
+}

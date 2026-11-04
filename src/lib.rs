@@ -8,16 +8,30 @@ mod ai;
 mod cmd;
 mod defs;
 mod economy;
+#[cfg(feature="ee2-up15")]
+mod ee2_up15_economy;
 mod diplomacy;
 mod territory;
 mod placement;
-#[cfg(feature = "ee2-reference")]
+#[cfg(all(feature = "ee2-reference",not(feature="ee2-up15")))]
 mod ee2_profile;
-#[cfg(feature = "ee2-reference")]
+#[cfg(feature="ee2-up15")]
+#[path="ee2_up15_profile.rs"]
+mod ee2_profile;
+#[cfg(all(feature = "ee2-reference",not(feature="ee2-up15")))]
 mod ee2_research;
-#[cfg(feature = "ee2-reference")]
+#[cfg(feature="ee2-up15")]
+#[path="ee2_up15_research.rs"]
+mod ee2_research;
+#[cfg(all(feature = "ee2-reference",not(feature="ee2-up15")))]
 mod ee2_units;
-#[cfg(feature = "ee2-reference")]
+#[cfg(feature="ee2-up15")]
+#[path="ee2_up15_units.rs"]
+mod ee2_units;
+#[cfg(all(feature = "ee2-reference",not(feature="ee2-up15")))]
+mod ee2_combat;
+#[cfg(feature="ee2-up15")]
+#[path="ee2_up15_combat.rs"]
 mod ee2_combat;
 mod research;
 mod game;
@@ -40,7 +54,7 @@ static mut LOADBUF: Vec<u8> = Vec::new();
 
 /// Distinguishes incompatible rulesets in tests and clients.
 #[no_mangle]
-pub extern "C" fn ruleset() -> u32 { if cfg!(feature = "ee2-reference") { 1 } else { 0 } }
+pub extern "C" fn ruleset() -> u32 { if cfg!(feature="ee2-up15") {2} else if cfg!(feature = "ee2-reference") { 1 } else { 0 } }
 
 /// Public read-only diagnostics for validating imported definitions.
 #[no_mangle]
@@ -793,3 +807,26 @@ pub extern "C" fn territory_claim_stat(team:u32,id:u32,field:u32)->f32 {
 pub extern "C" fn territory_stat(id:u32,field:u32)->f32{let game=g();if id>=game.map.tseeds.len() as u32{return -1.0;}let id=id as usize;let owner=game.towner[id];let counts=game.territory_counts(id,owner);match field{0=>owner as f32,1=>game.map.tseeds[id].0,2=>game.map.tseeds[id].1,3=>counts[0] as f32,4=>counts[1] as f32,5=>counts[2] as f32,_=>-1.0}}
 #[no_mangle]
 pub extern "C" fn territory_offer_stat(from:u32,to:u32,field:u32)->u32{let game=g();if from>=game.nplayers as u32||to>=game.nplayers as u32{return u32::MAX;}let o=game.territory.offers[from as usize*4+to as usize];match field{0=>o.active as u32,1=>if o.active{o.give as u32}else{u32::MAX},2=>if o.active{o.want as u32}else{u32::MAX},3=>if o.active{1200-game.tick.saturating_sub(o.tick).min(1200)}else{0},4=>o.cooldown.saturating_sub(game.tick),5=>o.tick,_=>u32::MAX}}
+
+#[cfg(all(test,feature="ee2-up15"))]
+mod ee2_up15_oracle_tests;
+
+/// Candidate-only read-only diagnostics for source-oracle verification.
+#[cfg(feature="ee2-up15")]
+#[no_mangle]
+pub extern "C" fn up15_stat(team:u32,id:u32,field:u32)->f32{
+    let game=g();if team as usize>=game.nplayers||id>=57{return -1.0;}
+    let epoch=game.players[team as usize].epoch;
+    let Some(row)=ee2_units::lookup_class(id as u8,epoch) else{return -1.0;};
+    let d=&DEFS[id as usize];let m=game.modifiers[team as usize][id as usize];
+    match field{
+        0=>game.max_hp(team as u8,id as u8),1=>game.production_time(team as u8,id as u8),
+        2=>m[5],3=>m[2],4=>d.w[0].range+m[6],5=>row.reload.unwrap_or(-1.0),
+        6=>d.w[0].dmg*m[1],7=>economy::population(id as u8,epoch) as f32,
+        8=>m[18],9=>game.cargo_capacity(team as u8,id as u8) as f32,
+        10=>row.generation.unwrap_or(-1.0),11=>row.farm_rate.unwrap_or(-1.0),
+        12=>row.carry.unwrap_or(-1.0),13=>row.farm_carry.unwrap_or(-1.0),
+        14=>ee2_up15_economy::lookup(id as u8,epoch).and_then(|r|r.dropoff_bonus).unwrap_or(-1.0),
+        20..=28=>row.gather.map(|v|v[(field-20)as usize]).unwrap_or(-1.0),_=>-1.0,
+    }
+}

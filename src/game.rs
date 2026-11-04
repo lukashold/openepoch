@@ -992,7 +992,11 @@ impl Game {
                 if let Some(reload)=row.reload {w.cd=reload;}
             }
         }
-        e.cd = if e.def==FORTRESS {w.cd} else {w.cd * (0.9 + 0.2 * self.rng.f())};
+        #[cfg(feature="ee2-up15")]
+        if let Some(row)=crate::ee2_units::lookup_class(e.def,self.players[e.team as usize].epoch){
+            if let Some(reload)=row.reload {w.cd=reload;}
+        }
+        e.cd = if cfg!(feature="ee2-up15")||e.def==FORTRESS {w.cd} else {w.cd * (0.9 + 0.2 * self.rng.f())};
         let d = &DEFS[e.def as usize];
         if d.has(F_STEALTH) {
             e.reveal_t = 3.0;
@@ -1192,7 +1196,7 @@ impl Game {
         }else if e.def==FORTRESS {e.carry=0.0;}
         if d.has(F_RESEARCH) {
             // Ghidra 007e7cf0: accumulate per building, floor, then credit the owner's bank.
-            e.carry += UNIVERSITY_RATE * (e.ncargo as usize).min(self.cargo_capacity(e.team,e.def)) as f32 * DT * self.modifiers[e.team as usize][e.def as usize][7];
+            e.carry += (if cfg!(feature="ee2-up15"){self.native_generation(e.def,e.team,9)}else{UNIVERSITY_RATE}) * (e.ncargo as usize).min(self.cargo_capacity(e.team,e.def)) as f32 * DT * self.modifiers[e.team as usize][e.def as usize][7];
             let points=e.carry.floor();
             if points>=1.0 {self.research_points[e.team as usize]+=points;e.carry-=points;}
         }
@@ -1201,7 +1205,7 @@ impl Game {
             // Gifts do not unlock a recipient's future or obsolete resource.
             // Keep every crew member; inactive deposits do not accumulate work.
             if self.resource_unlocked(e.team,kind){
-                e.carry+=0.75*(e.ncargo as usize).min(self.cargo_capacity(e.team,e.def)) as f32*DT*self.modifiers[e.team as usize][e.def as usize][crate::economy::gather_modifier(kind)];
+                e.carry+=(if cfg!(feature="ee2-up15"){self.native_generation(e.def,e.team,kind-1)}else{0.75})*(e.ncargo as usize).min(self.cargo_capacity(e.team,e.def)) as f32*DT*self.modifiers[e.team as usize][e.def as usize][crate::economy::gather_modifier(kind)];
                 let whole=e.carry.floor();if whole>=1.0{self.add_resource(e.team,kind as usize-1,whole);e.carry-=whole;}
             }else{e.carry=0.0;}
         }
@@ -1477,7 +1481,10 @@ impl Game {
         // ---- integrate
         if plane {
             #[cfg(feature = "ee2-reference")]
-            let angular_speed = crate::ee2_profile::turn_rate(e.def);
+            let angular_speed = {
+                #[cfg(feature="ee2-up15")] {crate::ee2_profile::turn_rate_at(e.def,self.players[e.team as usize].epoch)}
+                #[cfg(not(feature="ee2-up15"))] {crate::ee2_profile::turn_rate(e.def)}
+            };
             #[cfg(not(feature = "ee2-reference"))]
             let angular_speed = 2.4;
             let rate = angular_speed * DT;
@@ -1573,7 +1580,10 @@ impl Game {
         }
         let p = self.players[e.team as usize];
         let resource_mod=self.modifiers[e.team as usize][e.def as usize][crate::economy::gather_modifier(kind)];
+        #[cfg(not(feature="ee2-up15"))]
         let rate=if cfg!(feature="ee2-reference"){if farm!=NOIDX{4.37}else{0.85}}else{0.55*(1.0+0.1*p.epoch as f32)};
+        #[cfg(feature="ee2-up15")]
+        let rate=crate::ee2_units::lookup_class(e.def,p.epoch).map(|r|if farm!=NOIDX{r.farm_rate.unwrap_or(0.0)}else{r.gather.and_then(|v|v.get(kind as usize-1).copied()).unwrap_or(0.0)}).unwrap_or(0.0);
         let amount = rate * p.gather * resource_mod * DT;
         if cfg!(feature="ee2-reference"){
             if farm==NOIDX {
@@ -1584,13 +1594,17 @@ impl Game {
             if farm!=NOIDX {
                 if self.ents[farm].carry>=1.0{return;}self.ents[farm].carry+=1.0;
             }
-            let previous=e.carry.floor();e.carry=(e.carry+amount).min(15.0);e.q[2]=kind;
+            let carry_limit={
+                #[cfg(feature="ee2-up15")] {crate::ee2_units::lookup_class(e.def,p.epoch).and_then(|r|if farm!=NOIDX{r.farm_carry}else{r.carry}).unwrap_or(0.0)}
+                #[cfg(not(feature="ee2-up15"))] {15.0}
+            };
+            let previous=e.carry.floor();e.carry=(e.carry+amount).min(carry_limit);e.q[2]=kind;
             if farm==NOIDX {
                 let t=e.otile as usize;let removed=(e.carry.floor()-previous) as u16;
                 self.map.amt[t]=self.map.amt[t].saturating_sub(removed);
                 if self.map.amt[t]==0 {self.map.res[t]=R_NONE;if self.map.ter[t]==T_FOREST{self.map.ter[t]=T_GRASS;}self.map.recolor(t);e.q[1]=1;}
             }
-            if e.carry>=15.0 {e.q[1]=1;}
+            if e.carry>=carry_limit {e.q[1]=1;}
             return;
         }
         if farm != NOIDX {

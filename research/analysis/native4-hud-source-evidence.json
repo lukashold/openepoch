@@ -1,0 +1,112 @@
+{
+  "format": "ee2-native-hud-source-evidence-v1",
+  "status": "passed",
+  "checks": 131,
+  "engineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+  "sourceExports": {
+    "native-hud-widget-init.c": "271c3daa17f3cc8e96ee544fd01ecbd483f8036cfd0b45891707be7d315093d3",
+    "native-hud-factory.c": "420bd4240e37c73a8480e4ba0e02ea692f7c9381b557302fb37bcc6b76080a5f",
+    "native-hud-rect.c": "6da0e4fe0d192729e338bd67d59270160222530a7bfe9fb04421039237258cb8",
+    "native-hud-screen-scale.c": "ace812a97d4a53d7813db4effe1ce24ff12afff5ef3bd94689ec35a69fd8c544",
+    "native-hud-screen-runtime.c": "aff93a19fbefdad5ac122128dab363e9552736a65bd87048d2d2542def1117b8",
+    "native-combat-loader.c": "b7f96471c20c1b651eaa5491845afefab3eb70b76835f8cd11a62718e4987373"
+  },
+  "nativeUIRequests": [
+    "db/ui/dbwidget_share5.csv",
+    "db/ui/dbwidget_ingam5.csv",
+    "db/ui/dbwidget_f5.csv",
+    "db/ui/dbwidget_scenedi5.csv",
+    "db/ui/dbwidget_progressScree5.csv",
+    "db/ui/dbwidget_ee5.csv",
+    "db/ui/dbwidget_debu5.csv",
+    "db/ui/dbwidget_endscreen5.csv"
+  ],
+  "nativeUIDimensions": [
+    [
+      800,
+      600
+    ],
+    [
+      1366,
+      768
+    ],
+    [
+      1600,
+      900
+    ],
+    [
+      1920,
+      1080
+    ],
+    [
+      2048,
+      1152
+    ],
+    [
+      2560,
+      1440
+    ]
+  ],
+  "selectedWidgetLayoutsIdenticalAcrossBase5And7": 51,
+  "orientationControls": [
+    {
+      "sprite": "spr_game_dash_res_pop",
+      "canonicalMeanDifferenceRGBA": [
+        4.008433125316242,
+        4.00556586270872,
+        4.020070838252656,
+        0.0
+      ],
+      "wrongRotationMeanDifferenceRGBA": [
+        91.04941811435317,
+        92.32534997470063,
+        90.49603643110136,
+        112.20172035756451
+      ]
+    },
+    {
+      "sprite": "spr_game_dash_res_pop_e2",
+      "canonicalMeanDifferenceRGBA": [
+        3.4859166807218753,
+        2.846517119244392,
+        2.150109630629111,
+        0.0
+      ],
+      "wrongRotationMeanDifferenceRGBA": [
+        140.72255017709563,
+        115.14471243042672,
+        52.9178613594198,
+        156.12244897959184
+      ]
+    },
+    {
+      "sprite": "spr_game_dash_res_pop_e3",
+      "canonicalMeanDifferenceRGBA": [
+        2.2794737729802663,
+        1.9792545117220441,
+        2.310507674144038,
+        0.0
+      ],
+      "wrongRotationMeanDifferenceRGBA": [
+        139.94585933546972,
+        141.32619328723226,
+        146.35739585090235,
+        156.12244897959184
+      ]
+    }
+  ],
+  "sourceBacked": [
+    "Integer/truncated1600x1200 offset and dimension scaling, implicit negative NoAnchor corner flags, and two-anchor extent rules.",
+    "Declared native widget positions, source sprite rectangles, and meta epochs1-5/6-10/11-15."
+  ],
+  "adapters": [
+    "Browser CSS/DOM raster and arbitrary viewport policy; native full widget lifecycle/fonts/templates are not identical.",
+    "Enhanced7 sprites are explicitly selected for image quality. Their active installed loader branch is not claimed.",
+    "Current command menu, resource-row order, game options drawer and player metadata remain OpenEpoch UI adapters."
+  ],
+  "noOriginalExecutableOrGuiLaunched": true,
+  "additionalFrameProof": {
+    "native4-hud-frame-inset.c": "af52bf8ca954ff9e3ca6636cec830e5c3b6829ff823fc7fbe176d746ddec1f5a",
+    "native4-hud-anchor-source.c": "4792aa4327fed851766a06e0cb28639e255437a2b104ea5e036781bb5c7b81fb"
+  }
+}

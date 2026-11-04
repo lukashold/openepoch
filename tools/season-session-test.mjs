@@ -150,6 +150,8 @@ try{
   actualNetworkTick:target,actualSaveTick:saveTick,legacyFixedSummer:true,sourceSaveLoadPhaseStable:true,
   scope:'Actual main.js channel, controls, seed, pause and advance functions evaluated in vm; two real WASMs and two production Net.Locksteps. Production calendar and terrain/ground session methods execute. DOM/status/begin/camera surfaces and queued transport are substituted; no browser, WebRTC sockets, original executable or GUI is launched.',
   limitations:['Actual WASM serializer and production season metadata helpers are tested; IndexedDB/browser save-dialog interaction is not.','Queued transport validates channel protocol and lockstep behavior, not Internet/WebRTC connectivity.','Rendering modules use the recording GL adapter here; separate native GLES world/pixel tests cover actual GPU rendering.']};
- await fs.writeFile(new URL('season-session-tests.json',analysis),JSON.stringify(report,null,2)+'\n');
+ const reportName=process.argv.find(arg=>arg.startsWith('--report='))?.slice(9)||'season-session-tests.json';
+ if(!/^[a-z0-9-]+\.json$/i.test(reportName))throw Error('Invalid report filename');
+ await fs.writeFile(new URL(reportName,analysis),JSON.stringify(report,null,2)+'\n');
  console.log(JSON.stringify(report,null,2));
 }finally{globalThis.fetch=oldFetch;globalThis.createImageBitmap=oldBitmap;if(oldWindow===undefined)delete globalThis.window;else globalThis.window=oldWindow;}

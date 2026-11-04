@@ -1,0 +1,11 @@
+{
+  "format": "native4-visual-scale-importer-cli-v1",
+  "status": "passed",
+  "defaultAndExplicitByteIdentical": true,
+  "activeParsedManifestIdentical": true,
+  "activeManifestNotWritten": true,
+  "note": "JSON property order differs in the temporary scale-only output; the complete farm import preserves its existing scale metadata ordering. Values and source provenance match.",
+  "variants": 155,
+  "manifestSha256": "890394b80f99684b7bf571bd9426e191c9f97e8f90db891d74dd81a49d94961b",
+  "newImporterSha256": "7bb0de5108a3cc0736c2adabba32b87734231d25169826ed830f59752fd52597"
+}

@@ -1,4 +1,4 @@
-OpenEpoch – vollständiges Spielpaket mit lokal importierten Originalmedien
+OpenEpoch – Spielordner mit sämtlichen importierten Originalmedien
 
 Auf dem Mac starten
 1. Das ZIP vollständig entpacken. Den gesamten Ordner OpenEpoch zusammenlassen.
@@ -43,6 +43,10 @@ getrennten lokalen Speicher. Eine bereits laufende Instanz desselben Ordners
 wird wiederverwendet.
 
 Bedienung
+Das Menüsymbol rechts neben der Epochenleiste öffnet Speichern, Musik, Stimmen,
+Vollbild und Hauptmenü. Forschung und Diplomatie stehen links unten neben der
+Minikarte. Die Rahmen wechseln mit den Epochen zwischen Stein, Pergament und Metall.
+
 Strg+Pfeil links/rechts: Kamera drehen, mit Umschalt schneller. Die drei
 Kameraknöpfe rechts oben drehen45° oder richten die Ansicht nach Norden aus.
 Schieben, Auswahl und Spielstände berücksichtigen die Ausrichtung.
@@ -54,6 +58,14 @@ Spielstände behalten diese Einstellungen; alte Spielstände zeigen festen Somme
 Im Mehrspieler bestimmt der Gastgeber die Jahreszeiten. Beide Spieler benötigen
 denselben Regelstand mit Netzwerkprotokoll9.
 
+Regelversion und vorhandene Spielstände
+Standard ist das rekonstruierte Profil der installierten UP-Version. Im
+Scharmützelmenü lässt sich unter „Regelversion“ auch „EE2 · Basisdaten“ wählen.
+Vorhandene EE2-Spielstände sind dort weiterhin verfügbar. Die unabhängigen
+OpenEpoch-Regeln haben ebenfalls einen eigenen Spielstandbereich. Ein Wechsel
+der Regelversion lädt das passende Menü neu; Spielstände werden getrennt gehalten.
+Beide Multiplayer-Spieler müssen dieselbe Regelversion wählen.
+
 Linksklick/Ziehen: auswählen. Rechtsklick/Zweifingerklick: Auftrag.
 Mausrad: Zoom. Pfeiltasten/Screenrand: Kamera. Mittlere Maustaste: schieben.
 R/Strg/Komma/Punkt während der Bauvorschau:90° drehen; mit Umschalt45°.
@@ -62,12 +74,13 @@ F4: Diplomatie. F: freie Bürger. H: Heimat. P: Pause. Cmd+S/Ctrl+S: speichern.
 Enter: Cheatdialog. icheat aktiviert Cheats; loot, sea monkeys und give tech
 sind im Einzelspieler vorhanden.
 
-Neuer Grafikausbau: native-render1
+Neuer Grafikausbau: native-ui4
 Die Kamera verwendet nun die aus Ghidra belegte Zoom-/Winkelkurve. Originale
 Modellmaßstäbe und Ursprünge, zusätzliche Materialwerte, höhenabhängige Schatten,
-Originalgelände und Wasserbilder sind eingebunden. Alle neuen Bilder und
-Zuordnungen sind ebenfalls im Spielordner enthalten. Der aktuelle Start zeigt
-Sommer; die vollständige originale Wetter- und Shadersteuerung ist noch offen.
+Originalgelände und Wassermaterialien sind eingebunden. Farmen bestehen aus
+vier originalen Teilfeldern; alle importierten Feldzustände liegen im Ordner.
+Alle neuen Bilder und Zuordnungen sind enthalten. Der Startmonat ist wählbar;
+die vollständige originale Wetter- und Beleuchtungssteuerung wird weiter ergänzt.
 Die Grafik wurde ohne geöffneten Browser auf einem lokalen GLES-Framebuffer
 geprüft. Diese Prüfung ersetzt keinen tatsächlichen Mac-Start.
 

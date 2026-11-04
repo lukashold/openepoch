@@ -1,15 +1,15 @@
 {
-  "format": "openepoch-mac-portable-package-v5",
+  "format": "openepoch-mac-portable-package-v6",
   "status": "passed",
-  "build": "visual-seasons2",
-  "createdUTC": "2026-11-04T09:31:42.565153+00:00",
+  "build": "native-ui4",
+  "createdUTC": "2026-11-04T11:24:34.736767+00:00",
   "file": "OpenEpoch-Mac-Komplett.zip",
-  "zipBytes": 1133680896,
-  "sha256": "507a58fb0dfe9d8bd8053709594b1f18920bbb00d40e1dd9da01cf2565f12f13",
-  "zipEntries": 4357,
-  "manifestFilesVerified": 4355,
-  "mediaFiles": 4305,
-  "mediaBytes": 1232318090,
+  "zipBytes": 1172866193,
+  "sha256": "c59458bd093ae4ab3f1bb1cfb0a091a0ea80b7244c8b1c11d6531e8574f59082",
+  "zipEntries": 4531,
+  "manifestFilesVerified": 4529,
+  "mediaFiles": 4466,
+  "mediaBytes": 1272968897,
   "launcherMode": "0755",
   "launcherLineEndings": "LF",
   "pythonMinimum": "3.8",
@@ -24,46 +24,91 @@
     "ghidraRequiredToPlay": false,
     "rustCompilerRequiredToPlay": false
   },
-  "validationReport": "visual-seasons-release.json",
+  "validationReport": "native4-release.json",
   "browserTestThisBuild": false,
-  "worldGpuReports": [
-    "native-season-world-qa.json",
-    "native-reflection-world-coast.json"
-  ],
+  "physicalMacTest": false,
   "currentHttpTests": {
-    "format": "openepoch-visual-seasons-http-tests-v1",
+    "format": "openepoch-native4-http-tests-v1",
     "status": "passed",
-    "build": "visual-seasons2",
-    "createdUTC": "2026-11-04T09:18:10.752618+00:00",
+    "build": "native-ui4",
+    "createdUTC": "2026-11-04T11:19:47.727449+00:00",
     "runs": [
       {
         "label": "source",
-        "passed": 9,
-        "seconds": 8.408,
-        "serverSha256": "0cc2e3ef8a1f7eb6cb2692f353c25f556054bfa8c85e5b9f7b93c4fb3bc45c83",
-        "testSha256": "10d0ac8ad65561c69c74a132892e5b8ddd43c8580c5ca69fe71fa751f51a3c2d",
+        "passed": 12,
+        "seconds": 11.194,
+        "serverSha256": "e9a48fe72be557fe2d6d9abdda264eee656c60d2c4832dbba26fa5a470100049",
+        "testSha256": "6ed7d1007bdf2f6f4126cd910d8bc350ec2025dc039f124b17854949ea7cb28f",
         "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
-        "logSha256": "d66bfa8817c600768f5e054c1ac7451af789c7999060ac37076ac86184634649"
+        "wasmSha256ByFile": {
+          "openepoch.wasm": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+          "openepoch-ee2.wasm": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+          "openepoch-ee2-up15.wasm": "f9ce07f4aa1105fb0bb9472be6e88fc070cc06046eb8db17a01b4956920fe2c3"
+        },
+        "logSha256": "79302141a11a1a64fadf1ddbf9895e214a4c8a16a426d96fdef5d63e70de81ed"
       },
       {
         "label": "extracted",
-        "passed": 9,
-        "seconds": 8.6,
-        "serverSha256": "0cc2e3ef8a1f7eb6cb2692f353c25f556054bfa8c85e5b9f7b93c4fb3bc45c83",
-        "testSha256": "10d0ac8ad65561c69c74a132892e5b8ddd43c8580c5ca69fe71fa751f51a3c2d",
+        "passed": 12,
+        "seconds": 11.434,
+        "serverSha256": "e9a48fe72be557fe2d6d9abdda264eee656c60d2c4832dbba26fa5a470100049",
+        "testSha256": "6ed7d1007bdf2f6f4126cd910d8bc350ec2025dc039f124b17854949ea7cb28f",
         "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
-        "logSha256": "3f10f243e1f29de10af871c5636393b7631e3a965d22ab44bda3d5923e5ab797"
+        "wasmSha256ByFile": {
+          "openepoch.wasm": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+          "openepoch-ee2.wasm": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+          "openepoch-ee2-up15.wasm": "f9ce07f4aa1105fb0bb9472be6e88fc070cc06046eb8db17a01b4956920fe2c3"
+        },
+        "logSha256": "c893eeef2f700fb2a800d59d676d08df7dde2fc143ed2e896487e48f2c394000"
       }
     ],
     "scope": "Actual local HTTP/process tests on Windows for current source and freshly extracted complete package. No browser, external network, original executable or physical macOS test."
   },
+  "worldGpuReports": [
+    "native4-world-qa.json",
+    "native4-reflection-world-pixel-tests.json"
+  ],
+  "profiles": [
+    {
+      "id": "own",
+      "ruleset": 0,
+      "wasm": {
+        "file": "openepoch.wasm",
+        "bytes": 268821,
+        "sha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a"
+      },
+      "database": "openepoch-v2"
+    },
+    {
+      "id": "base",
+      "ruleset": 1,
+      "wasm": {
+        "file": "openepoch-ee2.wasm",
+        "bytes": 430146,
+        "sha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18"
+      },
+      "database": "openepoch-ee2-reference-v2"
+    },
+    {
+      "id": "up15",
+      "ruleset": 2,
+      "wasm": {
+        "file": "openepoch-ee2-up15.wasm",
+        "bytes": 435415,
+        "sha256": "f9ce07f4aa1105fb0bb9472be6e88fc070cc06046eb8db17a01b4956920fe2c3"
+      },
+      "database": "openepoch-ee2-up15-v1"
+    }
+  ],
   "limits": [
-    "A complete gameplay or visual 1:1 recreation is not achieved; this is an intermediate checkpoint.",
-    "Current simulation still uses consistent BASE data. A separate installed-UP15 profile is being reconstructed outside this checkpoint.",
-    "Complete native roster, AI, civilizations, weather, lighting, terrain generation and special abilities remain incomplete.",
-    "Native water base material, separate reflection visibility and full transparent/shadow ordering remain incomplete.",
-    "Newer Ghidra evidence proves native Undertexture sizes multiply DDF sizes by sqrt(2). The raw-size ground adapter in this checkpoint is superseded evidence, pending the next correction.",
-    "No browser interaction, Internet multiplayer or physical macOS execution was tested for this checkpoint.",
-    "Imported media are local-only in the portable package and excluded from the GitHub source payload."
+    "Complete visual/gameplay1:1 parity is not achieved; development continues.",
+    "UP data project onto55 of57 role slots with14 explicit role adapters; two unresolved slots remain locked.",
+    "Complete roster, civilizations, skirmish AI, native terrain generation, weather, lighting and full native UI remain incomplete.",
+    "82 research factors and additional weapon/target/timing/latent/pack/turret behavior remain open.",
+    "All12 farm states are included, but worker-dependent crop/family transitions and seeding playback are not yet reproduced.",
+    "Native reflection culling, UV defaults and full native transparency/sky ordering remain incomplete.",
+    "Multiplayer currently connects two browser peers; complete original multiplayer scope and Internet/WebRTC connectivity were not validated here.",
+    "DOM/IndexedDB transport adapters and headless GLES validate the stated source slices; no original-game same-scene comparison, browser interaction or physical macOS execution is claimed.",
+    "All imported original media are in the local portable ZIP; original media stay outside GitHub source publication."
   ]
 }

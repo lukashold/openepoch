@@ -22,7 +22,8 @@ import webbrowser
 
 HOST = "127.0.0.1"
 STATUS_PATH = "/__openepoch__/status"
-SERVER_VERSION = 1
+SERVER_VERSION = 2
+WASM_FILES = ("openepoch.wasm", "openepoch-ee2.wasm", "openepoch-ee2-up15.wasm")
 
 
 class GameServer(ThreadingHTTPServer):
@@ -91,11 +92,14 @@ class GameHandler(SimpleHTTPRequestHandler):
 
 
 def game_identity(root):
+    hashes = {name: hashlib.sha256((root / name).read_bytes()).hexdigest() for name in WASM_FILES}
     return {
         "application": "openepoch",
         "serverVersion": SERVER_VERSION,
         "rootToken": hashlib.sha256(str(root).encode("utf-8")).hexdigest()[:16],
-        "wasmSha256": hashlib.sha256((root / "openepoch-ee2.wasm").read_bytes()).hexdigest(),
+        # Preserve the previous BASE-reference status field for existing tools.
+        "wasmSha256": hashes["openepoch-ee2.wasm"],
+        "wasmSha256ByFile": hashes,
         "originalAssets": (root / "local-original/models/manifest.json").is_file(),
     }
 
@@ -104,7 +108,7 @@ def same_server(port, identity):
     try:
         with urlopen(f"http://{HOST}:{port}{STATUS_PATH}", timeout=0.35) as response:
             data = json.loads(response.read(8192))
-        return all(data.get(key) == identity[key] for key in ("application", "serverVersion", "rootToken", "wasmSha256"))
+        return all(data.get(key) == identity[key] for key in ("application", "serverVersion", "rootToken", "wasmSha256", "wasmSha256ByFile"))
     except (OSError, URLError, ValueError, AttributeError):
         return False
 
@@ -151,7 +155,7 @@ def main(argv=None):
     if not 0 <= args.port <= 65535:
         parser.error("Port muss zwischen0 und65535 liegen")
     root = args.root.expanduser().resolve()
-    for name in ("index.html", "openepoch.wasm", "openepoch-ee2.wasm"):
+    for name in ("index.html", *WASM_FILES):
         if not (root / name).is_file():
             print("Spielpaket unvollstaendig: " + str(root / name), file=sys.stderr)
             return 2
@@ -160,7 +164,7 @@ def main(argv=None):
     except OSError as error:
         print("Lokaler Spielserver konnte nicht starten: " + str(error), file=sys.stderr)
         return 2
-    url = f"http://{HOST}:{port}/?rules=ee2&build=visual-seasons2"
+    url = f"http://{HOST}:{port}/?rules=ee2&build=native-ui4"
     print("READY " + json.dumps({"url": url, "host": HOST, "port": port, "reused": reused}), flush=True)
     if port != args.port and args.port:
         print(f"Port{args.port} war belegt. Dieses Mal wird Port{port} verwendet; gespeicherte Spiele im Browser sind an den Port gebunden.", flush=True)

@@ -67,6 +67,8 @@ fn pending_isolated_claim_roundtrips_and_old56_city_rights_migrate() {
     g.save();let modern=Game::load(&g.savebuf).unwrap();assert_eq!(modern.towner[id],255);
     // A genuine pre-CGD save has no future extension attached to its old header.
     let mut old=crate::city_ground::split_save(&g.savebuf).unwrap().0.to_vec();old[12..16].copy_from_slice(&56u32.to_le_bytes());
+    #[cfg(feature="ee2-up15")]
+    {assert!(Game::load(&old).is_none());return;}
     let mut migrated=Game::load(&old).unwrap();assert_eq!(migrated.towner[id],0);
     migrated.save();assert_eq!(u32::from_le_bytes(migrated.savebuf[12..16].try_into().unwrap()),57);
     assert_eq!(Game::load(&migrated.savebuf).unwrap().towner[id],0);

@@ -1,0 +1,60 @@
+{
+  "format": "native3-water-source-gpu-tests-v1",
+  "passed": true,
+  "checks": 1758,
+  "jsContractChecks": 44,
+  "cases": [
+    {
+      "case": "ocean",
+      "probes": 49,
+      "maximumChannelError": 1,
+      "gpuReport": "gpu-ocean.json",
+      "png": "gpu-ocean.png"
+    },
+    {
+      "case": "river",
+      "probes": 49,
+      "maximumChannelError": 1,
+      "gpuReport": "gpu-river.json",
+      "png": "gpu-river.png"
+    },
+    {
+      "case": "coast",
+      "probes": 49,
+      "maximumChannelError": 1,
+      "gpuReport": "gpu-coast.json",
+      "png": "gpu-coast.png"
+    },
+    {
+      "case": "shore",
+      "probes": 49,
+      "maximumChannelError": 1,
+      "gpuReport": "gpu-shore.json",
+      "png": "gpu-shore.png"
+    },
+    {
+      "case": "fallback",
+      "probes": 49,
+      "maximumChannelError": 1,
+      "gpuReport": "gpu-fallback.json",
+      "png": "gpu-fallback.png"
+    },
+    {
+      "case": "reflection",
+      "probes": 49,
+      "maximumChannelError": 1,
+      "gpuReport": "gpu-reflection.json",
+      "png": "gpu-reflection.png"
+    }
+  ],
+  "sourceSha256": "4692e5e0031d5bd31b08ba7a28c7402c7cd01fd59fe0e7120eecd849ed6bd268",
+  "manifestSha256": "1739c08538f09c0279dd4ecdef44019e9b2fed4e9e0149e60a04ad4b88d50bc7",
+  "oracle": "Independent Python diamond/ring filters and source active high PS multiply/lerp/channel formula, original PNG bilinear sampler, source palette depth/2 and source reflection32percent overlay.",
+  "scope": "Production water-native3. Real ANGLE EGL/GLES images from actual JS loader/passes; fixed native movement/height input. No original executable/browser/UI and no image-equality claim.",
+  "adapters": [
+    "Own six-class mapping when explicit movement is absent",
+    "UV/normal scale until native defaults are recovered",
+    "Current fog-of-war adapter and reflected projection/clamp behavior",
+    "Float32 output with source constants, not asserted byte-identical native x87 intermediate rounding."
+  ]
+}

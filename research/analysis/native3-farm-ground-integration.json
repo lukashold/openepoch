@@ -1,0 +1,315 @@
+{
+  "status": "passed",
+  "format": "ee2-native-farm-ground-integration-v1",
+  "build": "water-farm3",
+  "engineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+  "uiLaunched": false,
+  "scope": "Four source crop plots, native hierarchy scale/offsets and center-height conformance; source-backed building undertexture size/offset conversion. Runtime visual layer only.",
+  "wasm": {
+    "ee2": {
+      "sha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+      "bytes": 430146
+    },
+    "base": {
+      "sha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+      "bytes": 268821
+    }
+  },
+  "runtimeHashes": {
+    "original-renderer.js": {
+      "sha256": "c1789590b9b356f1d6289b0305429a8c0a82162597b4723a503499b283242553",
+      "bytes": 30842
+    },
+    "original-ground.js": {
+      "sha256": "9902abc52e4dec444cc72aa4dcc1a15a6099d5433cd9aff78a01542930c47ec5",
+      "bytes": 14938
+    },
+    "original-ground-native.js": {
+      "sha256": "cc92743ca43a227527e58cb75c87905457961c8eb3067cc5ec7f8bf1ae331093",
+      "bytes": 1560
+    },
+    "original-scale.js": {
+      "sha256": "4651e04fd4a0a61b8a47f2c4b8fb56df83bfd7864796011cf2648df6b992a947",
+      "bytes": 756
+    },
+    "original-model-seasons.js": {
+      "sha256": "c8fab385c06dbe93dd7f29fa80959d48dadd031801f6b315e9d7b9a77f3863a6",
+      "bytes": 1254
+    },
+    "local-original/models/manifest.json": {
+      "sha256": "f681e82a0676d78c05590f3f1d736be665d7cb533346c73cc49dbe317d083d53",
+      "bytes": 178469
+    },
+    "local-original/farm-composites.json": {
+      "sha256": "d85f3e229280734a583f6089ffe97c2df02e4104d7fae95aff60d1b9300f00bb",
+      "bytes": 7969
+    },
+    "local-original/ground-decals.json": {
+      "sha256": "eb407c403f1e22b997215f85b8f02e9cc62ae44facf31b7068c4312f8c8454f4",
+      "bytes": 160509
+    },
+    "local-original/model-scales.json": {
+      "sha256": "890394b80f99684b7bf571bd9426e191c9f97e8f90db891d74dd81a49d94961b",
+      "bytes": 267233
+    },
+    "local-original/model-seasons.json": {
+      "sha256": "17e4869e547f12eed82ea79a693677f4afebcd804dd1ea9a295d8d3079531e3c",
+      "bytes": 551914
+    }
+  },
+  "toolHashes": {
+    "import_ee2_farm_composites.py": {
+      "sha256": "c62d97c075af8108f8c85b3bf7149181c5fd7028213b167b98a2500e077d652a",
+      "bytes": 10497
+    },
+    "import_ee2_ground_profile.py": {
+      "sha256": "b26c345366f4b55c9b0d9f39cd5324e4bc72ddd7ca1ffcb9761f98b04e581a13",
+      "bytes": 8358
+    },
+    "import_ee2_visual_scales.py": {
+      "sha256": "436cedb1dbb5014ff9147b31a5aff37cfd488cf52d7da88f757ccad394338874",
+      "bytes": 11554
+    },
+    "import_ee2_model_seasons.py": {
+      "sha256": "4a33ba0318a1d1c291b4388c2be1ca0e3363dd842f5fc9fb36dd34dc9f837a42",
+      "bytes": 11397
+    },
+    "extract_ee2_models.py": {
+      "sha256": "205587f59b72c5050658e3ff718eea5cb35d8b5a7224a3700e551a671612e89a",
+      "bytes": 40839
+    },
+    "test_ee2_farm_layout.py": {
+      "sha256": "15b1aa885880f229c0ab98cf5594b40e5dd9b70d1b6650fc76b64b6ec2d1078a",
+      "bytes": 3375
+    },
+    "test_ee2_farm_reconstruction.py": {
+      "sha256": "0c736490fc32b051f2a9969af8adede525bd4aa8a7db7f8d3addfce7f55bd9d8",
+      "bytes": 7929
+    },
+    "test_ee2_ground_decals.py": {
+      "sha256": "81cf4e0607846d4360a4cd559278b551318027a53e18f3d9faacf5df18933d3b",
+      "bytes": 9422
+    },
+    "test_ee2_ground_runtime.py": {
+      "sha256": "7c272ddf2f36ef1d5b5248e870942c53723911430285d2dfdefc1ab1c0530f2f",
+      "bytes": 2666
+    },
+    "test_ee2_model_seasons.py": {
+      "sha256": "8bcd321248119b9fd7de82c3b977a7b2fe408656533ce086d4cc43648b11bcf8",
+      "bytes": 9063
+    },
+    "native-ground-sizing-test.mjs": {
+      "sha256": "7a0e9a8d9e9fa3005b7c6b5906e642277f464085fb5329a1be309f4895514bc5",
+      "bytes": 2465
+    },
+    "original-scale-test.mjs": {
+      "sha256": "91ac35c2253d545eb2a3c8455a3dd7d3706e71eabc188b4d9616986feb448498",
+      "bytes": 2906
+    },
+    "original-renderer-test.mjs": {
+      "sha256": "ef4d5c3bb58b1d95bbf1fa39345062fde2f139baaeea0ca24f4e4154bcf5df55",
+      "bytes": 22386
+    },
+    "original-material-test.mjs": {
+      "sha256": "71c5ba1e825a553a60cffbf472c855f97859ec7f0c4358c0bc9c3c809fed4e28",
+      "bytes": 3056
+    },
+    "original-ground-test.mjs": {
+      "sha256": "3708bce4f1f712fd2b0aa71b7d595ff8755109822cf02e45b0b62fc802fc0776",
+      "bytes": 21616
+    },
+    "original-model-seasons-test.mjs": {
+      "sha256": "fff4d1111921c459fd288d1b1cd79ad3c8ae615420bb46f658b7177ba624976c",
+      "bytes": 7271
+    },
+    "original_farm_gpu_test.py": {
+      "sha256": "f18f271e5e8f2054bc2b41db60776b97582b3730eb7dbed8538c81058bc85e5d",
+      "bytes": 6029
+    },
+    "original_material_gpu_test.py": {
+      "sha256": "0d81738690d6781bfe862dc38b42e8d1e35694d53575033691e66d665db07445",
+      "bytes": 10341
+    },
+    "original_model_season_gpu_test.py": {
+      "sha256": "9b3c0aa4fe1912eb08236330fc22e77ff417ab6f2fdbde74a29692b198f6b5c0",
+      "bytes": 9491
+    },
+    "export_original_farm_fixture.mjs": {
+      "sha256": "285e9181257520326a9f741e94d549d5d6c2f04faa32fa4210b10b7cbb8e58cd",
+      "bytes": 4031
+    }
+  },
+  "assetHashes": {
+    "local-original/models/native-farmwheat-seeding.json": {
+      "sha256": "010385184f4d1b9a7efb3bfaaba0ddb5709b6dffd67e89bd32b841fd5082612d",
+      "bytes": 123394
+    },
+    "local-original/models/native-farmwheat-harvest_1.json": {
+      "sha256": "86d801dd39adeef98b92a29f45631c5a3fbeac1f603e76fdcf7b4c70b8421b2e",
+      "bytes": 107832
+    },
+    "local-original/models/native-farmwheat-harvest_2.json": {
+      "sha256": "213bf6bde1bb08e63b7af7d6fd51bbe6d453d38554d75dc5da0380a5862087d2",
+      "bytes": 82400
+    },
+    "local-original/models/native-farmwheat-harvest_3.json": {
+      "sha256": "8d602f500a72b2366d72ce7d0f04bb66d4e00c40d8d465dd80fbd96633d45a20",
+      "bytes": 54223
+    },
+    "local-original/models/native-farmsugarcane-seeding.json": {
+      "sha256": "db64d789d4b1a8effffd980f4d48006f3e3227112533eddcde64ec99dbe603e9",
+      "bytes": 756700
+    },
+    "local-original/models/native-farmsugarcane-harvest_1.json": {
+      "sha256": "608e05091b43b06dd9a527b185a67e928a2792c760d6978371ed13e42bfec012",
+      "bytes": 737898
+    },
+    "local-original/models/native-farmsugarcane-harvest_2.json": {
+      "sha256": "7ee2d8eb51e8b46a618908e703ac089e55460442bf33d0b0b7a8fd5396897b86",
+      "bytes": 446020
+    },
+    "local-original/models/native-farmsugarcane-harvest_3.json": {
+      "sha256": "e9a8c5bac4e7424122123ce670d98d742a1d4cf5bdb8a63fabde4ff6a5c4e5d9",
+      "bytes": 225699
+    },
+    "local-original/models/native-farmyam-seeding.json": {
+      "sha256": "f48fd7e00e1c6b22908296e0bcfd6cc558d1c8ee0ebb3c26ef653e07662be40c",
+      "bytes": 222839
+    },
+    "local-original/models/native-farmyam-harvest_1.json": {
+      "sha256": "8da0b8665f3c46d7ebdd5dd9242c767cba80fdb66819b4a4f9e401f465056f80",
+      "bytes": 224326
+    },
+    "local-original/models/native-farmyam-harvest_2.json": {
+      "sha256": "cf0d1de50a1dae7c479bd154889a5d7b5b632fc3ab9dd1b56bbb968f27cd2b0c",
+      "bytes": 188184
+    },
+    "local-original/models/native-farmyam-harvest_3.json": {
+      "sha256": "4b10c0f530e6415f8dec26aa505906fd2cc953a89c7dffa38c19a564ef30c812",
+      "bytes": 68383
+    },
+    "local-original/farm-textures/bld_farm_sugar.png": {
+      "sha256": "df5cd771eecf3cc4868e2ef10c6d57f5109b60926ccd9c45bc5dd34056d186af",
+      "bytes": 76387
+    },
+    "local-original/farm-textures/bld_farm_sugar_wi.png": {
+      "sha256": "b7a2718ff5800c205f8de0786a35e1a9b0994e6dd3771d7c4240180f694b2a8c",
+      "bytes": 108773
+    },
+    "local-original/farm-textures/bld_farm_wheat.png": {
+      "sha256": "35ca68729ba330762ed31a5c804dd697ece0456d9f600d27cb27d37e2bc29ca6",
+      "bytes": 155732
+    },
+    "local-original/farm-textures/bld_farm_wheat_wi.png": {
+      "sha256": "8bacd6ce21aa6c013e364de03e43da29d3229b48a188ac4e34c871c40019ec50",
+      "bytes": 223124
+    },
+    "local-original/farm-textures/bld_farm_yam1.png": {
+      "sha256": "c49a0481b480f1768543038179ea0a8f399fa928ed530487a50894623ee505be",
+      "bytes": 604504
+    },
+    "local-original/farm-textures/bld_farm_yam1_wi.png": {
+      "sha256": "1c8829952f1a2d7d96815f39d1065a06723d8c42960acd1c227697198bca4edc",
+      "bytes": 411162
+    }
+  },
+  "preservation": {
+    "oldModelPayloadsByteIdentical": 191,
+    "allNonFarmManifestRowsIdentical": true,
+    "mainEdited": false,
+    "rustEdited": false,
+    "oldGeometryRenormalized": false,
+    "newSourceMeshStates": 12,
+    "newSourceCropPngFiles": 6,
+    "activeModelVariants": 155,
+    "verifiedScaleVariants": 155,
+    "groundBindings": 14,
+    "frozenV2ReportsRewritten": false
+  },
+  "tests": {
+    "farmSourceUnittests": 12,
+    "groundSourceUnittests": 10,
+    "seasonSourceUnittests": 9,
+    "nativeSizingAssertions": 361,
+    "scaleAssertions": 2109,
+    "seasonLoaderAssertions": 34269,
+    "farmGpuTransformFeedback": 66,
+    "materialGpuPixels": 11,
+    "seasonGpuPixelsIncludingAllCropFamilies": 43,
+    "farmSlopeSourceSceneDraws": 5,
+    "heightConformanceChangedPixels": 18708,
+    "unchangedPathRegressions": [
+      "renderer animation/LOD/team/picking/state",
+      "source material alpha/depth/specular/emissive",
+      "ground epoch/urban/season/terrain/GL restoration"
+    ]
+  },
+  "reports": {
+    "native3-ground-profile-import.json": {
+      "sha256": "34baf12f3be39ee110fadc6ba92c93388977c2adb8ea200df21130f7bececec2",
+      "bytes": 19595,
+      "status": "passed"
+    },
+    "native3-model-season-import.json": {
+      "sha256": "66789792732d022b7387187e237af445ce996120f4242b3724350e62996f1d01",
+      "bytes": 28222,
+      "status": "passed"
+    },
+    "native3-model-season-loader-tests.json": {
+      "sha256": "0722bdb974fb4e06003f8d10605497a7b3433ec72a8f1f77fb979c617e432c41",
+      "bytes": 589,
+      "status": "passed"
+    },
+    "native3-farm-gpu-tests.json": {
+      "sha256": "76a79bfbe2befe2673bd1dbc2b488b5066aeb542093da5d36dc423c18aa0dd20",
+      "bytes": 30904,
+      "status": "passed"
+    },
+    "native3-model-material-gpu-tests.json": {
+      "sha256": "d8e539538b21d4477dfb4e2c1670ead0e95ca522211e592d374fb1c56133c055",
+      "bytes": 3691,
+      "status": 11
+    },
+    "native3-model-season-gpu-tests.json": {
+      "sha256": "a23343c81449f14f10df9a82293fb5a529b83044613ac5cf2254660222ea8c58",
+      "bytes": 14041,
+      "status": "passed"
+    },
+    "native3-farm-scene-tests.json": {
+      "sha256": "4aae706ea5476bae84b23d7317b083816ed03e4337733285ba1b51c40179d4c5",
+      "bytes": 2223,
+      "status": true
+    },
+    "native3-farm-scene-control-tests.json": {
+      "sha256": "c35ae878f7858d083d200075776fedeba0ca8eb1c13f2d8ca1b3fb63711eb38b",
+      "bytes": 2180,
+      "status": true
+    }
+  },
+  "evidence": {
+    "native3-farm-ground-evidence.json": {
+      "sha256": "e59929cb80415b726c6abfa063c370670f83b7edf42526ae8281dd95f1fbb0cf",
+      "bytes": 10180
+    },
+    "native-undertexture-correction-findings.json": {
+      "sha256": "37862d298c3e9220e6c5f7ec31164edaa040f5c822375fba5a3749cfa9a29d39",
+      "bytes": 6043
+    }
+  },
+  "reproduce": [
+    "python tools/import_ee2_farm_composites.py",
+    "python tools/import_ee2_visual_scales.py",
+    "python tools/import_ee2_ground_profile.py",
+    "python tools/import_ee2_model_seasons.py --report <new-build-season-import.json>",
+    "node tools/export_original_farm_fixture.mjs <absolute-output-directory>",
+    "python tools/original_farm_gpu_test.py <output-directory>/farm-shaders.json --report <new-report.json>"
+  ],
+  "limits": [
+    "Current simulation Farm explicitly selects original FarmWheat Harvest_3, the native source default. Native worker/crop state transitions, per-plot lifecycle, climate/random crop-family choice and Seeding KF playback remain separate; no automatic visual harvest loop is invented. All three families and four states are imported as explicit future bindings.",
+    "Native crop NIFs have no LOD nodes; current renderer keeps source geometry rather than fabricating a far shape.",
+    "Farm GPU conformance follows native per-plot vertical center placement, adapted to the current terrain triangle sampler. Full native terrain generation and0070FB00 interpolation equivalence are not claimed.",
+    "Crop source scene uses a synthetic slope and one source instance, not a WASM world. The generic replay field wasmInstances is a format label; combined actual WASM Farm scene is independently tested by native3-world-qa.",
+    "Lighting, complete native terrain/CityManager/dead-decal history, UI and simulation equality remain outside this bounded visual fix. Source Farm health/selection visual children use existing separate game overlays.",
+    "No physical macOS or original-game screenshot comparison was run; no1:1 visual parity is claimed."
+  ]
+}

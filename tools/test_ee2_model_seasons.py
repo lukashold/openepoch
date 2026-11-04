@@ -74,8 +74,16 @@ class OriginalSeasonSources(unittest.TestCase):
         base=ROOT/'work/season-model-baseline';hashes=json.loads((base/'model-hashes.json').read_text())
         self.assertEqual(len(hashes),191)
         for url,digest in hashes.items():self.assertEqual(sha((DOCS/url).read_bytes()),digest,url)
-        for path in ['docs/local-original/models/manifest.json','docs/local-original/team-textures/manifest.json']:
-            self.assertEqual((base/path).read_bytes(),(ROOT/'outputs/OpenEpoch'/path).read_bytes())
+        path='docs/local-original/team-textures/manifest.json'
+        self.assertEqual((base/path).read_bytes(),(ROOT/'outputs/OpenEpoch'/path).read_bytes())
+        path='docs/local-original/models/manifest.json'
+        before=json.loads((base/path).read_bytes());after=json.loads((ROOT/'outputs/OpenEpoch'/path).read_bytes())
+        # Native Farm activation intentionally replaces the two old Farm visual
+        # adapters. Every other source/LOD/animation/provenance row stays exact.
+        rows=lambda data:{(r['id'],r.get('epoch',0)):r for r in data['models']if r['id']!=2}
+        self.assertEqual(rows(before),rows(after))
+        self.assertEqual([r for r in before['models']if r['id']!=2],[r for r in after['models']if r['id']!=2],'Existing draw order is preserved as well as every binding value')
+        self.assertEqual({k:v for k,v in before.items()if k not in ['models','errors']},{k:v for k,v in after.items()if k not in ['models','errors']})
     def test_native_parser_uses_explicit_field_and_current_seasonal_database(self):
         pe=PE((ROOT/'work/EE2-engine.exe').read_bytes())
         self.assertEqual(pe.read(0xc32614,23),b'AnimatedTextureSetName\0')

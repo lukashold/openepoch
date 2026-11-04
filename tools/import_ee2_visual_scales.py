@@ -1,4 +1,5 @@
 """Bind current visual variants to native class scaling; never edits geometry."""
+import argparse
 import collections
 import hashlib
 import json
@@ -10,7 +11,7 @@ from import_ee2_units import Database, scalar, model_stem, clean_comments, decla
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 INSTALL=pathlib.Path(r'C:\Program Files (x86)\GOG.com\Empire Earth II')
 WORKSPACE=ROOT.parents[1]
-ENGINE=WORKSPACE/'work/EE2-engine.exe'
+ENGINE=INSTALL/'Unofficial Patch Files/EnabledUP15Units/EE2.exe'
 # Exact float literals pushed by the native static initializers005f6a60..b40.
 SPECS={
  'kScaleUnit':('g_UnitScale',0x005f6a60,0x3e428f5c),
@@ -23,8 +24,8 @@ SPECS={
  'kScaleAmmo':('g_AmmoScale',0x005f6b40,0x3e333333),
 }
 
-def binary_literal_proofs():
- raw=ENGINE.read_bytes();pe=struct.unpack_from('<I',raw,0x3c)[0]
+def binary_literal_proofs(engine=ENGINE):
+ raw=pathlib.Path(engine).read_bytes();pe=struct.unpack_from('<I',raw,0x3c)[0]
  base=struct.unpack_from('<I',raw,pe+24+28)[0];sections=[]
  for n in range(struct.unpack_from('<H',raw,pe+6)[0]):
   p=pe+24+struct.unpack_from('<H',raw,pe+20)[0]+40*n
@@ -48,12 +49,14 @@ def binary_literal_proofs():
    'initializerBytes':code.hex(),'source':'native PE initializer; Ghidra native-scale-defaults.c'}
  return raw,proofs,conversion
 
-def run():
- raw,defaults,conversion=binary_literal_proofs()
+def run(installation=INSTALL,engine=None,output_path=None):
+ installation=pathlib.Path(installation)
+ engine=pathlib.Path(engine) if engine else installation/'Unofficial Patch Files/EnabledUP15Units/EE2.exe'
+ raw,defaults,conversion=binary_literal_proofs(engine)
  f32=lambda value:struct.unpack('<f',struct.pack('<f',value))[0]
  config_refs=[]
  for name in ['config.cfg','bldconfig.cfg','myconfig_sim.cfg','myconfig.cfg']:
-  path=INSTALL/name
+  path=installation/name
   if not path.exists():continue
   data=path.read_bytes();text=clean_comments(data.decode('cp1252'))
   for enum,spec in SPECS.items():
@@ -63,7 +66,7 @@ def run():
     ref={'file':name,'sha256':hashlib.sha256(data).hexdigest(),'line':text.count('\n',0,match.start())+1,'global':spec[0],'value':value}
     config_refs.append(ref);defaults[enum]['configOverride']=ref
  for definition in defaults.values():definition['selectedValue']=definition.get('configOverride',{}).get('value',definition['compiledDefault'])
- db=Database(INSTALL/'zips/db.zip')
+ db=Database(installation/'zips/db.zip')
  try:
   # Resources use CompositeModel→StateDatabase and explicit model lists.
   # Farms' multi-child plot placement is deliberately not flattened here.
@@ -113,6 +116,24 @@ def run():
   variants={};counts=collections.Counter();used_sources={}
   for row in manifest['models']:
    model=json.loads((ROOT/'docs'/row['url']).read_text(encoding='utf8'));stem=model_stem(model['source']['entry']);names=candidates.get(stem,[])
+   if row.get('nativeFarmComposite'):
+    # Native CompositeModel layers multiply (00609310). The unannotated
+    # inner plot composite is zero-initialized kScaleIdentity, whose native
+    # getter005F8040 still returns the common conversion, not1.
+    import zipfile
+    composite=model['nativeFarmComposite'];family=composite['family'];source=composite['source']
+    declaration=db.block('CompositeModel',family);inner=db.block('CompositeModel',family+'CompositePlots')
+    assert declaration and inner and scalar(declaration['body'],'ScaleType')=='kScaleBuilding'
+    assert scalar(inner['body'],'ScaleType') is None and scalar(inner['body'],'ForceScale') is None
+    assert hashlib.sha256(db.zip.read(source['entry'])).hexdigest()==source['sha256']
+    with zipfile.ZipFile(installation/'zips/hdrs.zip')as hdrs:
+     header=hdrs.read('DbHdrs/DbUnitDefs.h');assert b'will initialize all dataclass data to 0'in header
+     assert hashlib.sha256(header).hexdigest()==source['zeroDefaultHeaderSha256']
+    layers={'building':f32(defaults['kScaleBuilding']['selectedValue']),'conversion':conversion,'rootLocal':f32(f32(defaults['kScaleBuilding']['selectedValue'])*conversion),'plotsCompositeLocal':conversion,'plotLocal':1}
+    layers['world']=f32(layers['rootLocal']*layers['plotsCompositeLocal']);assert layers==composite['scale']
+    key=f"{row['id']}:{row.get('epoch',0)}"
+    variants[key]={'url':row['url'],'sourceSha256':model['source']['sha256'],'sourceEntry':model['source']['entry'],'verified':True,'scaleType':'nativeFarmComposite','sourceScale':layers['world'],'scaleLayers':layers,'compositeProof':source,'normalization':model['normalization'],'sourceBounds':model['sourceBounds'],'selection':'Exact source four-plot composite with native parent-scale multiplication and documented zero dataclass default'}
+    used_sources[source['entry']]=source['sha256'];counts['nativeFarmComposite']+=1;continue
    named=[]
    for binding in [row.get(k,{}) for k in ['databaseVisualBinding','aircraftVisualBinding','resourceVisualBinding','nativeMotionBinding','progressionBinding']]:
     name=binding.get('visualDefinition') or binding.get('sourceVisual')
@@ -148,9 +169,10 @@ def run():
    'scope':'Native compiled category defaults, common renderer conversion005f8040/00602210/00602860, active assignments in the four startup config files, BASE UnitModel ScaleType inheritance, and CompositeModel/StateDatabase or DefaultModelList bindings. ForceScale is the current visual declaration only. Later launcher hooks, per-state scale and procedural nonuniform variation remain outside this profile.',
    'unitConversion':{'address':'00b41800','value':conversion,'classGetter':'005f8040','overrideApplication':'00602210'},
    'classDefaults':defaults,'configAssignments':config_refs,'databaseSources':used_sources,'counts':dict(counts),'variants':variants}
-  path=ROOT/'docs/local-original/model-scales.json';temporary=path.with_suffix('.json.tmp')
+  path=pathlib.Path(output_path) if output_path else ROOT/'docs/local-original/model-scales.json';path.parent.mkdir(parents=True,exist_ok=True);temporary=path.with_suffix('.json.tmp')
   temporary.write_text(json.dumps(output,indent=2)+'\n',encoding='utf8');temporary.replace(path)
   print(json.dumps({'path':str(path),'counts':dict(counts),'variants':len(variants),'configAssignments':len(config_refs)},indent=2))
  finally:db.close()
 
-if __name__=='__main__':run()
+if __name__=='__main__':
+ ap=argparse.ArgumentParser();ap.add_argument('--install',type=pathlib.Path,default=INSTALL);ap.add_argument('--engine',type=pathlib.Path);ap.add_argument('--out',type=pathlib.Path);args=ap.parse_args();run(args.install,args.engine,args.out)

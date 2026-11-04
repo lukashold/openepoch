@@ -1,9 +1,9 @@
 <!doctype html><html lang="de"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>EE2 · Originaldaten</title>
+<title>EE2 · Basiswerte</title>
 <style>body{background:#101b26;color:#e0e9ef;font:16px system-ui;margin:0;padding:5vw}a{color:#77ced0}h1{font-size:42px;margin:12px 0}p{max-width:980px;line-height:1.65;color:#afc0cc}input,select{background:#1e3041;border:1px solid #456072;color:white;padding:12px;border-radius:7px;margin:8px 10px 20px 0}table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:12px;text-align:left;border-bottom:1px solid #2a3b4b}th{color:#e6c17b}tr:hover{background:#1a2c3b}small{color:#94aabb}.wrap{overflow:auto}#meta{word-break:break-word}</style>
-<a href="index.html?rules=ee2">← Zum Spiel</a> · <a href="catalog.html">Vollständiger Basis-Technologiebaum</a><h1>Empire Earth II · Datenreferenz</h1>
+<a href="index.html?rules=ee2">← Zum Spiel</a> · <a href="catalog.html">Basis-Technologiebaum</a><h1>Empire Earth II · Basiswerte</h1>
 <p>Direkt aus deiner lokalen Basisdatenbank <b>db.zip</b>. Die Tabelle zeigt deklarierte Upgrade-Werte, keine vollständig aufgelöste Simulation. Patch-Überlagerungen, Fähigkeiten, Zivilisationsboni und Veteranen-Upgrades können sie verändern.</p>
-<p>Das spielbare Vergleichsprofil übernimmt acht Varianten. OpenEpoch verwendet weiterhin acht Epochen, drei Rohstoffe und seine eigene Kampf- und Bewegungslogik. Eine identische EE2-Partie ist damit noch nicht möglich.</p>
+<p>Die spielbaren EE2-Regelprofile bieten 15 Epochen und neun Rohstoffe. Im Spielmenü wählst du zwischen Basisdaten und dem getrennten Profil der installierten UP-Version. Dessen statische Ladereihenfolge und CSV5-/CFG5-Auswahl sind quellenbasiert rekonstruiert. Diese Tabelle bleibt eine Ansicht der <b>Basisdaten</b>; sie zeigt keine aufgelösten UP-Werte. Einheitenangebot und Spezialfähigkeiten sind noch nicht vollständig nachgebaut.</p>
 <input id="q" placeholder="Einheit suchen, z. B. Submarine" aria-label="Einheit suchen"><select id="epoch" aria-label="Epoche"><option value="">Alle 15 Epochen</option></select><span id="count"></span>
 <div class="wrap"><table><thead><tr><th>Einheit</th><th>Epoche</th><th>HP</th><th>Sicht</th><th>Schaden</th><th>Reichweite</th><th>Nachladen</th><th>Bauzeit</th><th>Rohstoffe</th><th>Quelle</th></tr></thead><tbody id="rows"></tbody></table></div><p id="meta"></p>
 <script type="module">

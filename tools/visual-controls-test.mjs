@@ -6,6 +6,7 @@ import {createHash} from 'node:crypto';
 import {updateOriginalCamera,originalCameraRay,originalFractionForZoom,normalizeOriginalHeading,rotateOriginalCameraHeading} from '../docs/original-camera.js';
 import {createSeasonSession,savedSeasonSettings} from '../docs/season-session.js';
 import {normalizeSeasonSettings} from '../docs/original-seasons.js';
+import {resolveRulesProfile,savedRulesProfileMatches} from '../docs/rules-profile.js';
 
 const main=await fs.readFile(new URL('../docs/main.js',import.meta.url),'utf8');
 const bytes=await fs.readFile(new URL('../docs/openepoch-ee2.wasm',import.meta.url));
@@ -34,7 +35,7 @@ const phaseCalls={terrain:[],ground:[],models:[]};
 const renderer=name=>({setSeasonPhase:phase=>phaseCalls[name].push(phase)});
 const seasonSession=createSeasonSession(wasm,renderer('terrain'),renderer('ground'),renderer('models'));
 let begins=0,selectionJumps=0;
-const context=vm.createContext({wasm,$,db,seasonSession,savedSeasonSettings,normalizeSeasonSettings,
+const context=vm.createContext({wasm,$,db,seasonSession,savedSeasonSettings,normalizeSeasonSettings,rulesProfile:resolveRulesProfile('http://localhost/?rules=ee2&profile=base'),savedRulesProfileMatches,
  updateOriginalCamera,originalCameraRay,originalFractionForZoom,normalizeOriginalHeading,rotateOriginalCameraHeading,
  innerWidth:1280,innerHeight:720,referenceMode:true,MAP:256,PITCH:55*Math.PI/180,TANF:Math.tan(35*Math.PI/360),
  groundAt:()=>0,performance,queueMicrotask,
@@ -99,5 +100,7 @@ const sha=value=>createHash('sha256').update(value).digest('hex');
 const report={format:'openepoch-visual-controls-tests-v1',passed:true,checks,wasmSha256:sha(bytes),mainSha256:sha(main),
  cameraSha256:sha(await fs.readFile(new URL('../docs/original-camera.js',import.meta.url))),
  scope:'Exact production main camera, keyboard, mouse, start, save and load functions in vm; real WASM and serializer. DOM, IndexedDB transaction transport and begin UI hook are substituted. No browser/native app launched.'};
-await fs.writeFile(new URL('../../EE2-Research/analysis/visual-controls-tests.json',import.meta.url),JSON.stringify(report,null,2)+'\n');
+const reportName=process.argv.find(arg=>arg.startsWith('--report='))?.slice(9)||'visual-controls-tests.json';
+if(!/^[a-z0-9-]+\.json$/i.test(reportName))throw Error('Invalid report filename');
+await fs.writeFile(new URL('../../EE2-Research/analysis/'+reportName,import.meta.url),JSON.stringify(report,null,2)+'\n');
 console.log(JSON.stringify(report));

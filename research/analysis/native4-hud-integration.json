@@ -1,0 +1,56 @@
+{
+  "format": "ee2-native-hud-integration-v1",
+  "status": "passed",
+  "build": "native-ui4",
+  "createdUTC": "2026-11-04T11:04:50.364515+00:00",
+  "result": "Original high-resolution HUD art and source anchor/frame geometry replace the generic bottom strip. Existing live controls, command listeners and minicanvas are retained.",
+  "media": {
+    "widgetDefinitions": 51,
+    "sourceSprites": 129,
+    "sourceTextures": 34,
+    "resolutionScale": 4,
+    "pngBytes": 32502953,
+    "profile": "Declared BASE geometry; explicit enhanced7 source sprites",
+    "sourceGeometryIdenticalAcrossBase5And7": true
+  },
+  "sourceBacked": [
+    "GWidget00A70B00 signed/truncated1600x1200 offsets and two-anchor constraints.",
+    "GWidget00A91E40 frame extent plus00A74D10 ancestor selection: ancestor inner bounds and sibling outer bounds.",
+    "Original decoded sprite pixels, declared packed rotations and original meta-epoch ranges1\u20135,6\u201310,11\u201315."
+  ],
+  "behavior": [
+    "Original panel positions, original options icon, four-column commands and live existing control identities.",
+    "The options drawer retains save, sound, fullscreen and main menu; Escape closes before game commands.",
+    "Source-defined cursor-blocking regions stop commands passing through the dashboard.",
+    "Game clock follows actual simulation ticks; month follows the same saved or multiplayer season settings as terrain/model rendering."
+  ],
+  "validation": {
+    "sourceEvidenceChecks": 131,
+    "frameAndAncestorSourceAssertions": 5,
+    "productionDomAndMathChecks": 6029,
+    "byteIdenticalRegeneratedFiles": 130,
+    "sourceEvidenceReportSha256": "1ca3d6dc2775538bb4e0f6b4317e3242ccc78b153dc5c0e3a28c6326f5ffe6eb",
+    "testReportSha256": "a418fa99ef1db0a3229c0941b91c7e5c208954b92ab1e3755817638ddbc354cd",
+    "regenerationReportSha256": "d287047009d729750a7daec23b7a68ca00f60ba84f998ca3b9ed3dbc8118b5fd"
+  },
+  "currentFiles": {
+    "docs/original-hud.js": "b777e9a3f56a50fc04389a010368830f75098861796704bac658748b95339f15",
+    "docs/original-hud-layout.js": "dd7c84000e04cfa0708539b426d365872845ff26f8b2e322de4438f23ad762b5",
+    "docs/original-seasons.js": "fb4001470974e86ed297465309933305bef3bd8c54c8c603f6e39d18b2e63492",
+    "docs/main.js": "aad23801c9320d00103de22a74c771cae1bcc48067252247108c98e72041747d",
+    "docs/index.html": "7bf27bdd149e1f62fd85e94c2a774fc37058fb8f3d63476ecc08cda954ca6cf2",
+    "docs/local-original/hud-native/manifest.json": "2b5c66a91b27cf7c3833d00db063a74c0b8e8dfedc2d0a67504d3bd6b4d6db6a",
+    "tools/extract_ee2_hud.py": "e0b97b2fd93af7ffe98752b529fd44abd74d9ba4d3d01139e2ed19b0f5627d61",
+    "tools/original-hud-test.mjs": "aca48d99a63505d635010ec1e0013f095d857982c608be60d90a2bc66247082e"
+  },
+  "ghidraFrameProof": {
+    "native4-hud-frame-inset.c": "af52bf8ca954ff9e3ca6636cec830e5c3b6829ff823fc7fbe176d746ddec1f5a",
+    "native4-hud-anchor-source.c": "4792aa4327fed851766a06e0cb28639e255437a2b104ea5e036781bb5c7b81fb"
+  },
+  "limits": [
+    "Arbitrary browser viewport policy, CSS frame painting and system-font raster are adapters; complete native widget lifecycle is not reproduced.",
+    "Command/resource ordering, player metadata and the options drawer adapt the existing game UI.",
+    "Source-enhanced7 images are selected explicitly for quality; no claim that the installed native loader always selects7.",
+    "No original-game same-scene screenshot comparison, browser interaction or physical macOS execution is claimed."
+  ]
+}

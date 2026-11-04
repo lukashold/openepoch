@@ -22,6 +22,10 @@ pub fn population_capacity(def:u8,epoch:u8)->u32{
     match def{TC=>15,HOUSE=>10,_=>0}
 }
 impl Game {
+    pub fn native_generation(&self,def:u8,team:u8,resource:u8)->f32{
+        #[cfg(feature="ee2-up15")] {crate::ee2_up15_economy::generation(def,self.players[team as usize].epoch,resource)}
+        #[cfg(not(feature="ee2-up15"))] {let _=(def,team,resource);0.0}
+    }
     pub fn resource(&self,team:u8,slot:usize)->f32 {
         if slot<3 {self.players[team as usize].res[slot]}else{self.extra_resources[team as usize][slot-3]}
     }
@@ -45,7 +49,11 @@ impl Game {
             e.fkey=self.key_for(LAND,b.x,b.y);*want=self.steer(e,d,b.x,b.y);*moving=true;return;
         }
         // Native Dropoff bonus: CityCenter/Warehouse, 2% per garrisoned citizen.
-        let bonus=if DEFS[b.def as usize].has(F_DROPOFF){1.0+0.02*(b.ncargo as usize).min(self.cargo_capacity(b.team,b.def)) as f32}else{1.0};
+        let per_slot={
+            #[cfg(feature="ee2-up15")] {crate::ee2_up15_economy::lookup(b.def,self.players[b.team as usize].epoch).and_then(|r|r.dropoff_bonus).unwrap_or(0.0)}
+            #[cfg(not(feature="ee2-up15"))] {0.02}
+        };
+        let bonus=if DEFS[b.def as usize].has(F_DROPOFF){1.0+per_slot*(b.ncargo as usize).min(self.cargo_capacity(b.team,b.def)) as f32}else{1.0};
         self.add_resource(e.team,kind as usize-1,e.carry*bonus);e.carry=0.0;e.q[1]=0;e.q[2]=0;
         let (x,y)=if let Some(f)=self.get(e.otgt){(self.ents[f].x,self.ents[f].y)}else{((e.otile as usize%N) as f32+0.5,(e.otile as usize/N) as f32+0.5)};
         e.fkey=self.key_for(LAND,x,y);

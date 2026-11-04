@@ -10,11 +10,18 @@ layout(location=6) in vec4 aColor;
 uniform mat4 uVP;uniform highp int uShadow;uniform bool uAnimated;uniform float uYOffset;uniform vec3 uOriginOffset;
 uniform highp sampler2DArray uFrames;uniform int uFrameWidth;uniform int uFrameCount;
 uniform highp sampler2D uTerrain;uniform int uTerrainSize;uniform bool uTerrainEnabled;uniform vec3 uSunDirection;
+uniform bool uFarmPlotConform;uniform vec3 uFarmPlotCenter;
 out vec3 vNormal;out vec2 vUV;out vec2 vWorld;out vec3 vPosition;out vec4 vColor;out float vY;flat out vec4 vInfo;
 float terrainAt(vec2 p){
  vec2 sampleAt=clamp(p,vec2(0.),vec2(float(uTerrainSize-1)));ivec2 a=ivec2(floor(sampleAt));ivec2 b=min(a+1,ivec2(uTerrainSize-1));vec2 f=fract(sampleAt);
  float lo=mix(texelFetch(uTerrain,a,0).r,texelFetch(uTerrain,ivec2(b.x,a.y),0).r,f.x);
  float hi=mix(texelFetch(uTerrain,ivec2(a.x,b.y),0).r,texelFetch(uTerrain,b,0).r,f.x);return mix(lo,hi,f.y);
+}
+float plotGround(vec2 p){
+ vec2 q=clamp(p,vec2(0.),vec2(float(uTerrainSize-1)-.0001));ivec2 i=ivec2(floor(q));vec2 f=fract(q);
+ float a=texelFetch(uTerrain,i,0).r,b=texelFetch(uTerrain,i+ivec2(1,0),0).r;
+ float c=texelFetch(uTerrain,i+ivec2(0,1),0).r,d=texelFetch(uTerrain,i+ivec2(1,1),0).r;
+ return f.x+f.y<=1.?a+(b-a)*f.x+(c-a)*f.y:d+(c-d)*(1.-f.x)+(b-d)*(1.-f.y);
 }
 void main(){
  vec3 local=aPosition,normal=aNormal;
@@ -29,6 +36,13 @@ void main(){
  float constructionY=local.y;local+=uOriginOffset;
  float c=cos(iA.w),s=sin(iA.w);vec3 p=local*iC.x;
  vec3 world=vec3(iA.x+p.x*c-p.z*s,iA.z+p.y,iA.y+p.x*s+p.z*c);
+ if(uFarmPlotConform && uTerrainEnabled && uTerrainSize>1){
+  vec3 center=(uFarmPlotCenter+uOriginOffset)*iC.x;
+  vec2 at=vec2(iA.x+center.x*c-center.z*s,iA.y+center.x*s+center.z*c);
+  //FarmPlotSM0061D4C0 samples each plot center and translates Z only.
+  //The triangle interpolation here follows this game's actual terrain mesh.
+  world.y+=plotGround(at)-iA.z-center.y;
+ }
  if(uShadow==1){
   vec3 source=world;vec2 direction=uSunDirection.xz/max(.1,uSunDirection.y);
   if(uTerrainEnabled){
@@ -112,7 +126,7 @@ function program(gl){
   gl.attachShader(p,s);gl.deleteShader(s);
  }
  gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));
- const u={};for(const name of ['uVP','uShadow','uAnimated','uYOffset','uOriginOffset','uDiffuse','uDiffuseNext','uModelSeasonBlend','uFog','uColor','uHasAlpha','uCutoff','uModelHeight','uTeam','uFrames','uFrameWidth','uFrameCount','uTerrain','uTerrainSize','uTerrainEnabled','uSunDirection','uAmbientMaterial','uSpecularMaterial','uEmissiveMaterial','uGlossiness','uSpecularEnabled','uVertexMode','uLightingMode','uAmbientLight','uSunColor','uEye','uAlphaFunction','uClipEnabled','uClipPlane'])u[name]=gl.getUniformLocation(p,name);
+ const u={};for(const name of ['uVP','uShadow','uAnimated','uYOffset','uOriginOffset','uDiffuse','uDiffuseNext','uModelSeasonBlend','uFog','uColor','uHasAlpha','uCutoff','uModelHeight','uTeam','uFrames','uFrameWidth','uFrameCount','uTerrain','uTerrainSize','uTerrainEnabled','uSunDirection','uAmbientMaterial','uSpecularMaterial','uEmissiveMaterial','uGlossiness','uSpecularEnabled','uVertexMode','uLightingMode','uAmbientLight','uSunColor','uEye','uAlphaFunction','uClipEnabled','uClipPlane','uFarmPlotConform','uFarmPlotCenter'])u[name]=gl.getUniformLocation(p,name);
  return {p,u};
 }
 const absolute=url=>new URL(url,import.meta.url);
@@ -211,7 +225,7 @@ function gpuPart(gl,part,instanceBuffer,materialTexture,keepPickingGeometry=fals
  };
  // Only static resource archetypes retain CPU indices for click tests.
  const pickGeometry=keepPickingGeometry?{positions,indices:part.indices,bounds:geometryBounds(positions)}:null;
- return {vao,pose,animations:part.animations,activities:part.activities,count:part.indices.length,texture:materialTexture,material:modelMaterial(part),alpha:alphaState(part),depth:depthState(part),height:maxY,pickGeometry};
+ return {vao,pose,animations:part.animations,activities:part.activities,count:part.indices.length,texture:materialTexture,material:modelMaterial(part),alpha:alphaState(part),depth:depthState(part),height:maxY,pickGeometry,farmPlotOffset:part.farmPlotOffset||null};
 }
 
 export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{}){
@@ -384,6 +398,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{}){
     gl.bindBuffer(gl.ARRAY_BUFFER,instances);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(list),gl.STREAM_DRAW);
     for(const part of variant.parts){
      if(part.activities&&!part.activities.includes(activity))continue;
+     gl.uniform1i(shader.u.uFarmPlotConform,part.farmPlotOffset?1:0);gl.uniform3fv(shader.u.uFarmPlotCenter,part.farmPlotOffset||[0,0,0]);
      const pose=part.pose(clip);gl.uniform1i(shader.u.uAnimated,pose?1:0);
      gl.activeTexture(gl.TEXTURE5);gl.bindTexture(gl.TEXTURE_2D_ARRAY,pose?.texture||emptyFrames);
      gl.uniform1i(shader.u.uFrameWidth,pose?.width||1);gl.uniform1i(shader.u.uFrameCount,pose?.count||1);
