@@ -1,0 +1,356 @@
+{
+  "format": "ee2-installed-launch-target-v1",
+  "date": "2026-11-03",
+  "scope": "Read-only installed config, Shell Link bytes and launcher/engine file inspection. No executable or GUI launched; no registry/installation changes.",
+  "launcher": {
+    "file": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\EE2.exe",
+    "sha256": "a17252980223e405b56849d3f5fe8d833193956bc6f718e3e41e74611b1f0872",
+    "bytes": 10945712
+  },
+  "configuration": {
+    "file": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\UnofficialVersionConfig.txt",
+    "sha256": "e650237c203fde5d27b86b9dd431271f118b5e44d24a4d6539f3c0ddfa791e99",
+    "selectedKeys": {
+      "EnableDirectX9Support": {
+        "value": 1,
+        "line": 2
+      },
+      "AlwaysShowLauncherWindow": {
+        "value": 1,
+        "line": 7
+      },
+      "DisableUP1.5Units": {
+        "value": 0,
+        "line": 16
+      }
+    },
+    "declaredMeaning": {
+      "DisableUP1.5Units0": "UP units, buildings, models, sounds and camera enabled, according to this same local configuration documentation.",
+      "EnableDirectX9Support1": "Experimental DirectX9 enabled, according to this same local configuration documentation."
+    }
+  },
+  "shortcuts": [
+    {
+      "file": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Empire Earth II ver. 1.6.lnk",
+      "sha256": "172594d2a4732e546e2db91827cfea9d0ee23a7d16190382cdbdc6870ec9a09a",
+      "bytes": 2177,
+      "flags": 16603,
+      "parsed": {
+        "localBasePath": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\EE2.exe",
+        "localBasePathByteOffset": 598,
+        "relativePath": "..\\..\\..\\..\\..\\Program Files (x86)\\GOG.com\\Empire Earth II\\EE2.exe",
+        "workingDirectory": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\",
+        "iconLocation": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\EE2.exe"
+      },
+      "readOnly": true
+    },
+    {
+      "file": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\GOG.com\\Empire Earth II Gold Edition\\Empire Earth II.lnk",
+      "sha256": "c675b2b0e509a20ca2c51f5c39f8962dd85579095dc322409b599cad60a09f3e",
+      "bytes": 2154,
+      "flags": 16603,
+      "parsed": {
+        "localBasePath": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\EE2.exe",
+        "localBasePathByteOffset": 598,
+        "relativePath": "..\\..\\..\\..\\..\\..\\..\\Program Files (x86)\\GOG.com\\Empire Earth II\\EE2.exe",
+        "workingDirectory": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\",
+        "iconLocation": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\gfw_high.ico"
+      },
+      "readOnly": true
+    },
+    {
+      "file": "C:\\Users\\Admin\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Empire Earth 2 ver. 1.6.lnk",
+      "sha256": "59df488beadb9fb056ca002f37cf5bc4e07d42dc7d9d41fa78d247888b5b05dc",
+      "bytes": 1241,
+      "flags": 139,
+      "parsed": {
+        "localBasePath": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\EE2.exe",
+        "localBasePathByteOffset": 598,
+        "relativePath": "..\\..\\..\\..\\..\\..\\..\\..\\Program Files (x86)\\GOG.com\\Empire Earth II\\EE2.exe"
+      },
+      "readOnly": true
+    }
+  ],
+  "engineCandidates": [
+    {
+      "relativePath": "Unofficial Patch Files\\EnabledUP15Units\\EE2.exe",
+      "present": true,
+      "literalInLauncherOffset": 7269572,
+      "sha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+      "bytes": 11804672,
+      "imageBase": "00400000",
+      "textSectionSha256": "341a72c3ff27a12a044c1adf5d0e7644c354ce2d4a549bf38961ce8939cce486",
+      "textSectionRva": "00001000",
+      "textSectionBytes": 7593984,
+      "combatFilenameLiterals": [
+        {
+          "offset": 8460580,
+          "text": ".?AV?$LDatabaseTyped@VDbCombatDef@@@@"
+        },
+        {
+          "offset": 8460628,
+          "text": ".?AVDbCombatTable@@"
+        },
+        {
+          "offset": 8460648,
+          "text": "DbCombat"
+        },
+        {
+          "offset": 8460660,
+          "text": "DbCombatDef"
+        },
+        {
+          "offset": 8461028,
+          "text": ".?AV?$LDatabaseTyped@VDbCombatUnitTypeAdjustDef@@@@"
+        },
+        {
+          "offset": 8461088,
+          "text": ".?AVDbCombatUnitTypeAdjustTable@@"
+        },
+        {
+          "offset": 8461124,
+          "text": "DbCombatUnitTypeAdjust"
+        },
+        {
+          "offset": 8461148,
+          "text": "DbCombatUnitTypeAdjustDef"
+        },
+        {
+          "offset": 8463216,
+          "text": "DbCombatDefs.h"
+        },
+        {
+          "offset": 8480712,
+          "text": "/bdb/dbcombatunittypeadjust.bdb"
+        },
+        {
+          "offset": 8480864,
+          "text": "/bdb/dbcombat.bdb"
+        },
+        {
+          "offset": 8482664,
+          "text": "db/simulation/dbcombat_unittypeadjus5.csv"
+        },
+        {
+          "offset": 8482904,
+          "text": "db/simulation/dbcomba5.csv"
+        }
+      ]
+    },
+    {
+      "relativePath": "Unofficial Patch Files\\EnabledUP15UnitsDX9\\EE2.exe",
+      "present": true,
+      "literalInLauncherOffset": 7270008,
+      "sha256": "b1c24aa57806abaef6e42f2c428a4f11b12e092254a3600c815507515514a8fa",
+      "bytes": 11804672,
+      "imageBase": "00400000",
+      "textSectionSha256": "341a72c3ff27a12a044c1adf5d0e7644c354ce2d4a549bf38961ce8939cce486",
+      "textSectionRva": "00001000",
+      "textSectionBytes": 7593984,
+      "combatFilenameLiterals": [
+        {
+          "offset": 8460580,
+          "text": ".?AV?$LDatabaseTyped@VDbCombatDef@@@@"
+        },
+        {
+          "offset": 8460628,
+          "text": ".?AVDbCombatTable@@"
+        },
+        {
+          "offset": 8460648,
+          "text": "DbCombat"
+        },
+        {
+          "offset": 8460660,
+          "text": "DbCombatDef"
+        },
+        {
+          "offset": 8461028,
+          "text": ".?AV?$LDatabaseTyped@VDbCombatUnitTypeAdjustDef@@@@"
+        },
+        {
+          "offset": 8461088,
+          "text": ".?AVDbCombatUnitTypeAdjustTable@@"
+        },
+        {
+          "offset": 8461124,
+          "text": "DbCombatUnitTypeAdjust"
+        },
+        {
+          "offset": 8461148,
+          "text": "DbCombatUnitTypeAdjustDef"
+        },
+        {
+          "offset": 8463216,
+          "text": "DbCombatDefs.h"
+        },
+        {
+          "offset": 8480712,
+          "text": "/bdb/dbcombatunittypeadjust.bdb"
+        },
+        {
+          "offset": 8480864,
+          "text": "/bdb/dbcombat.bdb"
+        },
+        {
+          "offset": 8482664,
+          "text": "db/simulation/dbcombat_unittypeadjus5.csv"
+        },
+        {
+          "offset": 8482904,
+          "text": "db/simulation/dbcomba5.csv"
+        }
+      ]
+    },
+    {
+      "relativePath": "Unofficial Patch Files\\DisabledUP15Units\\EE2.exe",
+      "present": true,
+      "literalInLauncherOffset": 7269904,
+      "sha256": "421f1b68445c9746fc20b2469751cadb85f46c6681afc7095b0e444f265ea7e7",
+      "bytes": 11804672,
+      "imageBase": "00400000",
+      "textSectionSha256": "341a72c3ff27a12a044c1adf5d0e7644c354ce2d4a549bf38961ce8939cce486",
+      "textSectionRva": "00001000",
+      "textSectionBytes": 7593984,
+      "combatFilenameLiterals": [
+        {
+          "offset": 8460580,
+          "text": ".?AV?$LDatabaseTyped@VDbCombatDef@@@@"
+        },
+        {
+          "offset": 8460628,
+          "text": ".?AVDbCombatTable@@"
+        },
+        {
+          "offset": 8460648,
+          "text": "DbCombat"
+        },
+        {
+          "offset": 8460660,
+          "text": "DbCombatDef"
+        },
+        {
+          "offset": 8461028,
+          "text": ".?AV?$LDatabaseTyped@VDbCombatUnitTypeAdjustDef@@@@"
+        },
+        {
+          "offset": 8461088,
+          "text": ".?AVDbCombatUnitTypeAdjustTable@@"
+        },
+        {
+          "offset": 8461124,
+          "text": "DbCombatUnitTypeAdjust"
+        },
+        {
+          "offset": 8461148,
+          "text": "DbCombatUnitTypeAdjustDef"
+        },
+        {
+          "offset": 8463216,
+          "text": "DbCombatDefs.h"
+        },
+        {
+          "offset": 8480712,
+          "text": "/bdb/dbcombatunittypeadjust.bdb"
+        },
+        {
+          "offset": 8480864,
+          "text": "/bdb/dbcombat.bdb"
+        },
+        {
+          "offset": 8482664,
+          "text": "db/simulation/dbcombat_unittypeadjus5.csv"
+        },
+        {
+          "offset": 8482904,
+          "text": "db/simulation/dbcomba5.csv"
+        }
+      ]
+    },
+    {
+      "relativePath": "Unofficial Patch Files\\DisabledUP15UnitsDX9\\EE2.exe",
+      "present": true,
+      "literalInLauncherOffset": 7269956,
+      "sha256": "a873099b6c04c6b82a84c1fee771099a8111e1657180ee52f261de323d85aeb0",
+      "bytes": 11804672,
+      "imageBase": "00400000",
+      "textSectionSha256": "341a72c3ff27a12a044c1adf5d0e7644c354ce2d4a549bf38961ce8939cce486",
+      "textSectionRva": "00001000",
+      "textSectionBytes": 7593984,
+      "combatFilenameLiterals": [
+        {
+          "offset": 8460580,
+          "text": ".?AV?$LDatabaseTyped@VDbCombatDef@@@@"
+        },
+        {
+          "offset": 8460628,
+          "text": ".?AVDbCombatTable@@"
+        },
+        {
+          "offset": 8460648,
+          "text": "DbCombat"
+        },
+        {
+          "offset": 8460660,
+          "text": "DbCombatDef"
+        },
+        {
+          "offset": 8461028,
+          "text": ".?AV?$LDatabaseTyped@VDbCombatUnitTypeAdjustDef@@@@"
+        },
+        {
+          "offset": 8461088,
+          "text": ".?AVDbCombatUnitTypeAdjustTable@@"
+        },
+        {
+          "offset": 8461124,
+          "text": "DbCombatUnitTypeAdjust"
+        },
+        {
+          "offset": 8461148,
+          "text": "DbCombatUnitTypeAdjustDef"
+        },
+        {
+          "offset": 8463216,
+          "text": "DbCombatDefs.h"
+        },
+        {
+          "offset": 8480712,
+          "text": "/bdb/dbcombatunittypeadjust.bdb"
+        },
+        {
+          "offset": 8480864,
+          "text": "/bdb/dbcombat.bdb"
+        },
+        {
+          "offset": 8482664,
+          "text": "db/simulation/dbcombat_unittypeadjus5.csv"
+        },
+        {
+          "offset": 8482904,
+          "text": "db/simulation/dbcomba5.csv"
+        }
+      ]
+    }
+  ],
+  "codeSectionComparison": {
+    "allFourPresent": true,
+    "identicalTextBytes": true,
+    "sameImageBaseAndTextRva": true,
+    "meaning": "The same .text bytes and placement support reuse of code-address/body evidence. Full-file/data identity, configured resource selection and live hooks are not implied."
+  },
+  "assessment": {
+    "configuredContentFamily": "UP-enabled, not BASE-only",
+    "configuredRendererFamily": "DirectX9 requested",
+    "inferredCandidate": "Unofficial Patch Files\\EnabledUP15UnitsDX9\\EE2.exe",
+    "confidence": "Configuration meaning and candidate paths/files are directly proved. Candidate selection is an inference from those settings, not a decompiled launcher branch or observed process launch.",
+    "analyzedEngine": "Unofficial Patch Files\\EnabledUP15Units\\EE2.exe",
+    "open": [
+      "Exact launcher conditional/call that selects the candidate was not decompiled.",
+      "AlwaysShowLauncherWindow1 permits a user selection before launch.",
+      "Command-line overrides, live injected hooks, generated executable replacement and final archive/VFS precedence were not observed.",
+      "ROOT launcher filename is not proof that ROOT EE2.exe is the actual simulation engine."
+    ]
+  },
+  "profileImpact": "The reconstruction currently uses explicit BASE db.zip/hdrs.zip numerical data; the configured installed content enables UP. BASE equality must not be described as equality to every currently configured installed UP5 value."
+}

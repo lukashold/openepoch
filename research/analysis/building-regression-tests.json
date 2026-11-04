@@ -1,0 +1,230 @@
+{
+  "format": "building-regression-tests-v1",
+  "status": "passed",
+  "createdUTC": "2026-10-31T10:42:40.162804+00:00",
+  "wasmSha256": "7e359577aa251607126bcd8d8ca4dcb89bb8d38f1a4b6358e38706804cc4d30e",
+  "baseWasmSha256": "f42d32397d576437faff4de9e0d6ad0b3d14e4f516287b4c68d9b39a0e6027c0",
+  "scope": "Independent current-WASM placement and affected Core regressions. No Rust, production renderer, frontend or WASM changes by this test agent. Root browser checks are a separate report.",
+  "verification": {
+    "suiteCount": 18,
+    "explicitAssertionCounts": {
+      "placementRotation": 5023,
+      "diplomacy": 3177,
+      "territory": 3679
+    },
+    "allListedSuitesPassed": true,
+    "sameBuildThroughout": true
+  },
+  "suites": [
+    {
+      "tool": "OpenEpoch/tools/placement-rotation-test.mjs",
+      "status": "passed",
+      "checkCount": 5023,
+      "scope": "Eight optional45-degree turns, conservative BBoxes, actual construction/rotation, native NIF draw payload and Ground, dock coasts, visibility, authenticated commands, saves and two-peer lockstep.",
+      "sourceSha256": "562eeb01cfd6bee8f9d875858a447c77758629c4c3b692f1b629909f4cfbac99"
+    },
+    {
+      "tool": "OpenEpoch/tools/economy-test.mjs",
+      "status": "passed",
+      "checkCount": null,
+      "scope": "Nine accounts, original costs/epochs, hauling/dropoff, oil/uranium generation, caps/hash/save/legacy and multiplayer.",
+      "sourceSha256": "6b994f2c619107ce942067c8046e77125142132b7d1b255705bfb2cdf4d15231"
+    },
+    {
+      "tool": "OpenEpoch/tools/diplomacy-test.mjs",
+      "status": "passed",
+      "checkCount": 3177,
+      "scope": "Offers/treaties/vision, tribute, hostile combat/projectiles, natural versus display sight, AI, old saves and lockstep.",
+      "sourceSha256": "6a8fea6637abff6bf0b8432e181fe30fdc4e2903e539912d256b1f8358bfe1a9"
+    },
+    {
+      "tool": "OpenEpoch/tools/territory-diplomacy-test.mjs",
+      "status": "passed",
+      "checkCount": 3679,
+      "scope": "Gift/swap ownership, actors/cargo/queues, recipient values, claims/generations, malformed records, legacy saves and lockstep.",
+      "sourceSha256": "45f545a9f6d47e27c2a05b867baa9828c06c6c0336624f7e942eccb8e48da598"
+    },
+    {
+      "tool": "OpenEpoch/tools/research-test.mjs",
+      "status": "passed",
+      "checkCount": null,
+      "scope": "All180 technologies across15 epochs, source HP/hosts, university garrison/generation/unload, source gates and saves.",
+      "sourceSha256": "7a937b43f2fd02b3dd63f6dd74a0870e26244b3e76cb7a6d1bbc7e7ff6027fa1"
+    },
+    {
+      "tool": "OpenEpoch/tools/research-network-test.mjs",
+      "status": "passed",
+      "checkCount": null,
+      "scope": "Both actual clients build universities, garrison/research/ungarrison with identical hashes across2650 turns.",
+      "sourceSha256": "35f80ac600102c774fd56a61622b0e9f692dd531f63d1de2576dbaf5f9f1fab7"
+    },
+    {
+      "tool": "OpenEpoch/tools/economy-research-effects-test.mjs",
+      "status": "passed",
+      "checkCount": null,
+      "scope": "43 actual WASM research-effect scenarios, native modifiers, cargo/resource fields and exact epoch/build gates.",
+      "sourceSha256": "7a87fef554b055d8ecd84765190fa0fb01471751c7279111f7641445c1b8c343"
+    },
+    {
+      "tool": "OpenEpoch/tools/economy-worker-limits-test.mjs",
+      "status": "passed",
+      "checkCount": null,
+      "scope": "Wood3, forage6, iron6, farm1 native worker caps and carried production.",
+      "sourceSha256": "497498c353e4bc76f22674ae3c75ccc8943e0886e8b0666c4d1dd6a009b3b0b6"
+    },
+    {
+      "tool": "OpenEpoch/tools/legacy-save-test.mjs",
+      "status": "passed",
+      "checkCount": null,
+      "scope": "Genuine historic save migration: epoch, incompatible queue refund, population/map and research credit.",
+      "sourceSha256": "cf2350370a1cb3e2e5742f29eaf3373cc8f936a8626c21f45ee10d85671b2fb4"
+    },
+    {
+      "tool": "OpenEpoch/tools/economy-legacy-health-test.mjs",
+      "status": "passed",
+      "checkCount": null,
+      "scope": "Genuine53-definition health migration and full/partial native HP, banks/research/carry and roundtrip.",
+      "sourceSha256": "db3b17b7ffceeaaaddb0ab2900a7eeeecd52d428a80286ab0034556e92158c89"
+    },
+    {
+      "tool": "OpenEpoch/tools/people-test.mjs",
+      "status": "passed",
+      "checkCount": null,
+      "scope": "Both profiles: human articulation, all four tools, walk/gather/build state and rendering determinism.",
+      "sourceSha256": "6caabc618c0d4da1b23b18e1fe53ab0847c0028ddf135514a455e3427ddd3cca"
+    },
+    {
+      "tool": "OpenEpoch/tools/cheats-test.mjs",
+      "status": "passed",
+      "checkCount": null,
+      "scope": "Base profile: cheat gate, loot/research/instant toggles, saves and multiplayer exclusion.",
+      "sourceSha256": "ed4010c38343a7ffc8d65028e5844211d154e1237c514e0d667fe9c9d41bee9c"
+    },
+    {
+      "tool": "OpenEpoch/tools/skirmish-test.mjs",
+      "status": "passed",
+      "checkCount": null,
+      "scope": "Base profile: all eight epochs, symmetric settings, future production and save roundtrip.",
+      "sourceSha256": "b413d0dea284d6865abd8a81d1fa4a053fd450bc7a5aec1cc43a2c8de23b81dc"
+    },
+    {
+      "tool": "OpenEpoch/tools/reference-test.mjs",
+      "status": "passed",
+      "checkCount": null,
+      "scope": "Source scalar baselines, legacy movement adapters, Ghidra angles, nuclear-sub secondary, matrix convention, distinct rules/saves and deterministic2000-unit run.",
+      "sourceSha256": "5c9ca666a1daf71afce2748330c311b4c86d47c19c2f2119642a03fca1ce7b91"
+    },
+    {
+      "tool": "OpenEpoch/tools/economy-start-epoch-test.mjs",
+      "status": "passed",
+      "checkCount": null,
+      "scope": "All15 native start epochs, four-player symmetry/HP and invalid/late/network/benchmark setting guards.",
+      "sourceSha256": "806ff79323a650e09420b55fdac633c166c4cd3d3f477870d6c1cc3f5c42115e"
+    },
+    {
+      "tool": "OpenEpoch/tools/transport.mjs",
+      "status": "passed",
+      "checkCount": null,
+      "scope": "Actual dock and transport production, five citizens board/unload, identities/population retained.",
+      "sourceSha256": "87219f3c92a01817ee34ae0f36d99cd82214e10285fc8bcb55e6a51b144a1a36"
+    },
+    {
+      "tool": "OpenEpoch/tools/economy-ai-soak-test.mjs",
+      "status": "passed",
+      "checkCount": null,
+      "scope": "Four-player20-minute early and10-minute industrial economic stress fixtures; bounded finite resources/state and zero warnings.",
+      "sourceSha256": "d606a2247630fd12ff02a5bea124ed394967e02ef94e64588ac3b605dcb7745f"
+    },
+    {
+      "tool": "OpenEpoch/tools/smoke.mjs",
+      "status": "passed",
+      "checkCount": null,
+      "scope": "Base30-minute AI expansion/research, building/research/saves,3330 lockstep turns and up to6982-entity simulation benchmark.",
+      "sourceSha256": "ed595eac06d2124655cf3ba6f93937c77183cb658852352fb5c5607acac039a3"
+    }
+  ],
+  "fixtureAdaptations": [
+    {
+      "files": [
+        "territory-diplomacy-test.mjs"
+      ],
+      "reason": "New1-TC-per-province placement rule invalidates creating a second TC by command. The claim-generation scenario now explicitly relocates an existing TC in a legacy-save fixture and resets its TER1 anchors; old multiple-city saves remain loadable. All owner/claim-loss/generation/save assertions remain. Build probes select the real mobile citizen group so a reachable citizen can satisfy the new path gate."
+    },
+    {
+      "files": [
+        "diplomacy-test.mjs"
+      ],
+      "reason": "Modes1/2 intentionally know building terrain now. A foreign-TC probe consequently fails territory2 rather than unknown3; mode0 stays unknown3. The complete natural team-fog invariant and combat/AI/stealth checks remain."
+    },
+    {
+      "files": [
+        "research-network-test.mjs",
+        "economy-test.mjs",
+        "economy-research-effects-test.mjs",
+        "economy-worker-limits-test.mjs",
+        "transport.mjs"
+      ],
+      "reason": "Placement preview now validates actual selected own citizens. Existing citizen selection occurs before site search, instead of relying on the former builder-free preview/placement behavior."
+    },
+    {
+      "files": [
+        "research-test.mjs"
+      ],
+      "reason": "The research-only controlled coast is now genuine mixed land/water with an outside water outlet and sufficient land, rather than an enclosed all-water puddle. Research host foundations keep walkable separation instead of encircling the selected citizen during instant setup. All180 technologies/15 epochs and source-backed gates remain."
+    },
+    {
+      "files": [
+        "economy-research-effects-test.mjs"
+      ],
+      "reason": "A premature native extractor now has exact preview error8 and returns0 before payment; the former optimistic-acknowledgement fixture is replaced by this stronger result while preserving actual no-entity/no-payment checks."
+    }
+  ],
+  "naturalBrowserFixture": {
+    "seed": 1,
+    "ai": 1,
+    "startEpoch": 0,
+    "supplies": "high",
+    "visibility": 2,
+    "footprintTopLeft": [
+      65,
+      61
+    ],
+    "center": [
+      67,
+      63
+    ],
+    "territory": 6,
+    "mutation": "none; actual public start/placement/tick APIs only",
+    "completedWithoutCheats": true
+  },
+  "sourceAndAdapterBoundary": {
+    "originalInput": "Executable audit supplied by the source researcher identifies90-degree CTRL transitions (0x7783EE) and dock automatic orientation plus pi/2 (0x860A10). Header rotate45degrees alone is not proof of original keyboard behavior.",
+    "originalRule": "The original manual evidence supplied to this task limits new TC construction to one per province; legacy multiple-TC saves remain accepted.",
+    "sourceScalars": "TC/house costs and construction times are cross-checked against verified entries in docs/ee2-units.json.",
+    "explicitAdapters": [
+      "Eight45-degree API orientations beyond the original90-degree input",
+      "Conservative square tile BBoxes and cardinal grid shoreline auto-orientation",
+      "Neutral foundation claiming and selected-citizen reachability validation",
+      "Own native-NIF normalization and Ground scale, without claiming native world units"
+    ],
+    "noNaturalSightCheat": "Map modes1/2 affect construction terrain knowledge; tests preserve the genuine team exploration maps and retain combat/AI/stealth checks."
+  },
+  "reproducibility": {
+    "workingDirectory": "OpenEpoch",
+    "command": "node tools/placement-rotation-test.mjs",
+    "historicWorkSnapshotRequired": false,
+    "localOriginalImportRequired": "Import-EE2-Assets.ps1 must be run against the local EE2 installation before the native Warehouse NIF/Ground checks; original media remain excluded from the source ZIP.",
+    "paths": "Test inputs and output locations resolve from import.meta.url, not caller CWD."
+  },
+  "limits": [
+    "FakeWebGL checks native-loader draw payloads and cannot execute or visually verify GPU shaders.",
+    "The economic soak uses explicit stress fixtures, not a complete original-game match or FPS benchmark.",
+    "Browser and physical WebRTC/keyboard/fullscreen acceptance are reported separately by Root."
+  ],
+  "relatedReports": [
+    "placement-rotation-tests.json",
+    "diplomacy-tests.json",
+    "territory-tests.json",
+    "economy-ai-soak.json"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "format": "openepoch-live-http-check-v1",
+  "status": "passed",
+  "build": "combat-season1",
+  "createdUTC": "2026-11-03T16:01:55.458040+00:00",
+  "url": "http://127.0.0.1:8125/?rules=ee2&build=combat-season1",
+  "files": {
+    "index.html": "fbd3c36353b755e50c094ad8e792beb3a3a51f3dbabd36e3f02ce7f6c8c84bf3",
+    "main.js": "9f8d7ce30e74480933cfa8328eaf47893fa9704f3f6fe2dbf6ca6d76bb7c4995",
+    "season-session.js": "bcf6048713e00485eb9a639a2d5d779dc57e5da05abb4a740d093a8891307c2e",
+    "original-seasons.js": "fb4001470974e86ed297465309933305bef3bd8c54c8c603f6e39d18b2e63492",
+    "net.js": "4c0c1ae51b386a80e0785fef32c212799ca99ae0c2e7af9c44d65de81f3a992f",
+    "openepoch-ee2.wasm": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+    "local-original/ground-decals.json": "394dc17695378752eab77d37defde85e6ff225b33d12a65a162893c05ef49a5d"
+  },
+  "originalAssets": true,
+  "browserOrNativeAppOpened": false
+}

@@ -1,0 +1,162 @@
+Forschung, Universität und Wirtschaft — Ausbau vom 30.10.2026
+
+Historische Untersuchungsgrundlage
+Installiertes EE2-Engine-PE aus Unofficial Patch Files/EnabledUP15Units/EE2.exe,
+SHA-256 d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f.
+Ghidra 12.2, bestehendes Projekt EE2-Engine. Neue Läufe verarbeiteten dasselbe
+Programm mit -noanalysis und -readOnly. Für verifizierte vtable-Ziele wurden
+in der temporären Analyse zusätzliche Funktionsgrenzen erzeugt; diese Änderungen
+wurden anschließend verworfen. Fehlende Funktionen wurden nicht als Befund gezählt.
+
+Neue Prüfskripte
+scripts/ExportTechnologyRuntime.java -> analysis/technology-runtime.c
+scripts/ExportGarrisonRuntime.java -> analysis/garrison-runtime.c
+scripts/ExportGarrisonVtable.java -> analysis/garrison-vtable.c
+scripts/ExportUniversityGeneration.java -> analysis/university-generation.c
+
+Tragende Befunde
+1. Der Konstruktor 007e55d0 bindet die Garrison-Fähigkeit und deren vtable
+   00b53554. Die exportierte Tabelle erlaubt die Zuordnung der weiteren Methoden.
+2. 007e5730 serialisiert Garrison-Daten einschließlich m_fResourceGenerationProgress,
+   garrisonedUnits, CoveredResourceID und GarrisonedPop.
+3. 007e5ab0 prüft belegte Garrison-Kapazität gegen den Kapazitätswert und trägt
+   eingelassene Einheiten in die Gebäudeliste ein. Nicht jede beliebige Einheit
+   ist automatisch zulässig; weitere Zulässigkeitsprüfungen existieren.
+4. 007e7120 erreicht beim Ereignistyp 8 die Funktion 007e7cf0.
+5. 007e7cf0 multipliziert einen Generationsfaktor mit der Zahl einquartierter
+   Einheiten und einem weiteren Fähigkeits-/Zeitfaktor. Der Fortschritt wird je
+   Gebäude akkumuliert; floor bestimmt die ganzen gutzuschreibenden Punkte.
+   Der Rest bleibt im Gebäudefortschritt. Ressourcentyp 9 hat einen zusätzlichen
+   Multiplikator. Bei anderen Ressourcen gibt es weitere Besitz-/Abgaberegeln.
+   Alle Faktoren, Zivilisationsboni und Steuern sind damit noch nicht vollständig
+   semantisch rekonstruiert.
+6. Basisdaten db.zip!db/Units/university.ddf: Die Basis-Garrison-Angabe 2 Plätze
+   und 0,08 wird bereits durch UniversityEpoch1Garrison mit 3 Plätzen und 0,03
+   für Tech ersetzt. Weitere dort deklarierte Epoch-Upgrades behalten 3/0,03.
+   Der Nachbau verwendet diese Epoch-1-Angabe, nicht versehentlich den Basiswert.
+7. Vorherige Prüfungen 005367a0/00536b00 und 00536d30: Epochenaufstieg vergleicht
+   erforschte Knoten der vorigen Epochenliste mit dem initialen Grenzwert 6 bei
+   00c13d40. Die Zählfunktion berücksichtigt Typen 2 bis 4 und Statusbit 2.
+   Weitere Zivilisations-/Knotenbedingungen und mögliche Laufzeitänderungen des
+   Grenzwerts sind nicht komplett geprüft.
+
+Aktueller Implementierungsstand
+Der frühere Forschungsbericht mit drei Rohstoffen, eigenen Gebäudekosten und
+ausschließlich eigener Geometrie/Sprachsynthese ist überholt. Heute sind neun
+Ressourcenkonten, lokale Originalgrafiken/-klänge und quellbelegte Klassenwerte
+eingebunden. Die Engine-Abschlussprüfungen sind bestanden. Regenerierte
+Skinning-Korrekturen sind daten-/quellgeprüft; ihre Browser-Endprüfung steht aus.
+Die obigen Ghidra-Adressen bleiben konkrete historische Befunde; die Prüfung
+dieser Funktionen allein ist keine vollständige Rekonstruktion aller Regeln.
+
+Forschung und Universität
+- 15 Epochen mit Namen und Aufstiegskosten aus der expliziten Basis db.zip.
+- 180 Haupttechnologien, je Epoche vier Wirtschaft, vier Militär und vier Reich.
+  IDs, Reihenfolge, Quellkeys, Hosts und Labels blieben im neuesten Import erhalten.
+- Original-Forschungsort, Technologiepunktpreis und 15-Sekunden-Dauer dieser Knoten;
+  sechs Technologien der aktuellen Epoche als Aufstiegsbedingung.
+- Universität: drei Bürger, je 0,03 TP/s, eigene Bruchteilfortschritte pro Gebäude,
+  ganzzahlige Gutschrift und Populationserhalt bei Ein-/Ausquartieren.
+- 187 Runtimeeffekte statt früher 166. Neu sind 15 Spezialrohstoffeffekte in drei
+  Fünfergruppen, drei Haus-PopCap-Faktoren mit je +2 und drei wieder getrennte
+  Stein-/Gold-Boni. Die bisherige Vermischung mit einem Metal-Feld ist entfernt.
+- 82 referenzierte Faktoren bleiben offen. Sechs reine Tooltipfaktoren sind
+  gesondert auditiert und bewirken keinen zusätzlichen Sammelbonus.
+- Nahrung, Holz, Eisen, Stein, Gold, Zinn, Salpeter, Öl und Uran haben getrennte
+  Forschungsfelder. Ölboni adressieren OilRig (53), Uranboni UraniumMine (54).
+- give tech schreibt 50 reguläre Punkte gut; KI-Forschung und Forschungs-Saves
+  bleiben Teil der eigenen deterministischen Simulation.
+
+Wirtschaft und native Klassen
+Ghidra-/Header-/DDF-Belege zu Ressourcen stehen in docs/ee2-economy.json und
+analysis/economy-findings.txt. Die neun Konten zeigen im HUD fünf oder sechs
+aktive Ressourcen. Zinn gilt E1–6, Eisen 4–9, Salpeter 7–12, Öl 10–15, Uran 13–15;
+Nahrung/Holz/Stein/Gold bleiben aktiv.
+
+Bürger sammeln 0,85 Einheiten/s, an Farmen 4,37, tragen 15 und liefern zum
+Stadtzentrum/Lagerhaus. Neue Karten haben 1.277 Holz je Baum und 1.000 je anderem
+natürlichen Knoten. Drei Bürger am Baum, sechs an anderen direkt sammelbaren
+Knoten und einer je Farm sind geprüft, einschließlich Belegung vor/nach dem Bau.
+Die Farmgrenze von einem Bürger gilt ausschließlich im EE2-Profil.
+
+OilRig (53) ab E10 und UraniumMine (54) ab E13 benötigen passende Lagerstätten.
+Je sechs Bürger generieren 0,75 Einheiten/s; floor schreibt ganze Einheiten gut,
+der Bruchteil bleibt. Stadtzentrum/Lagerhaus bieten fünf Garrisonplätze und 2 %
+Ablieferbonus je Bürger. Vorräte werden auf 0..999.999 begrenzt.
+Low, Defensive, Standard, High und DeathMatch sind die fünf Original-Startpresets;
+aktuell werden deren Epoch-1-Zeilen aus dbresourcelevels.csv verwendet.
+Alle 15 Startepochen sind im Menü wählbar, Steinzeit ist Standard. Die symmetrische
+API für vier Spieler ist nur solo vor dem ersten Tick zulässig; Gates sind geprüft.
+Die Endepoche ist weiterhin nicht konfigurierbar.
+
+262 Klassenrecords und 111 Visualrecords für 56 bestehende Definitionen liefern
+native Kosten in neun Slots, HP, Bauzeit, Sicht, Population und Garrison. Quellen, Felder,
+VISUAL-Abgleich und None-Fallbacks sind in docs/ee2-units.json dokumentiert.
+Mill (48) produziert Artillerie, Stable (49) die originalen Tankklassen, HercFacility (55)
+ab Epoche 14 die HERCs. Workshop (4) bleibt ein historischer Rollenadapter.
+Native Weltgrößen und Bewegungswerte werden ohne bestätigte Skalierung nicht
+übernommen. Originale Zahlenwerte eines Klassenadapters beweisen weder dessen
+Namensgleichheit noch einen vollständigen Produktions-/Fähigkeitskatalog.
+
+Assets, Import und Speicher
+123 Modellbindungen/118 Nahmodelle decken 56 Definitionen und 11 Naturtypen ab.
+63 native Fernmodelle, 61 KF-Quellen, 146 Texturquellen und 51 Basis-Icons sind
+lokal importiert; 146 Original-Audiodateien plus eine dokumentierte PCM-Ableitung.
+Originalgrafiken-und-Sound.txt führt Formate, Spielerfarben und Herkunft aus.
+
+Import-EE2-Assets.ps1 liest die lokale Installation, ohne deren EXE/Archive oder
+Spielstände zu ändern. Das Quell-ZIP enthält keine Originalmedien. Erst nach
+dem lokalen Modellimport darf import_ee2_units.py den VISUAL-Abgleich regenerieren.
+Fehlendes Modellmanifest erzeugt einen klaren Abbruch statt erfundener Kampfwerte.
+
+Alte 47-/53-/55-Definitionen-Saves werden in das neun Konten umfassende Format
+überführt. Inkompatible alte Forschungsaufträge werden erstattet; frühere
+Sekunden-Cheatguthaben werden als Technologiepunkte behandelt.
+Die jüngste HP-Migration erhält den Gesundheitsprozentsatz auf neuen nativen
+Maxima. Migration 47/53/55 mit beschädigten und vollen Einheiten, Forschung und
+Vorräten ist geprüft: 40→30, 48→36 mit Weberei undStadtzentrum 2.400→8.000 behalten ihre Quote.
+Voriges Spiel wird vor dem ersten
+Überschreiben gesichert; qa=1 hält Browserprüfungen getrennt.
+WebRTC verwendet Protokoll 4; keine physische Rechner-/NAT-Abnahme wird behauptet.
+
+Bestandene Engineprüfungen und offene Grafikabnahme
+Der Engine-Abschlussstand BAE9 ist eingefroren.
+- Sieben Forschungsdatentests; 180 IDs/Quellkeys/Hosts stabil, 19 Felder geprüft.
+- Zwölf Einheitenimporttests; Quellhashes, Klassenkosten, Gates und HercFacility.
+- 43 echte WASM-Szenarien zu Hauskapazität, Sammel-/Fördererträgen, Era-/Baugates,
+  additiven Boni, Tooltiptrennung und unveränderten Fremdmasken/Spielern.
+- Vollständiger Forschungsdurchlauf über 180 Knoten/15 Epochen und 2.650
+  Forschungs-Lockstep-Runden bestanden.
+- Wirtschaft mit neun Konten, allen Ressourcenspalten, Zahlungen/Rückzahlungen,
+  Transport 15, Ablieferbonus und Förder-Garrison 6 bestanden.
+- Belegungsgrenzen 3/6/6/Farm 1 vor/nach dem Bau; Lebensquoten-Migration 47/53/55
+  einschließlich Ressourcen-/Forschungserhalt bestanden.
+- Alle 15 Startepochen symmetrisch für vier Spieler samt Tick-/Netz-/Baugates.
+- Beide Profile: Personen/Werkzeuge, Scharmützel und Cheats; Referenzprüfung
+  mit 2.000 Einheiten bestanden.
+
+CPU-Stressfixtures mit vier KIs ohne externe Kampffrist liefen 20 Minuten ab
+Steinzeit und zehn Minuten ab Epoche 10 ohne Progressionsfehler oder Warnungen.
+Früh erreichten alle Epoche 2 mit 24 Armeeeinheiten, Uni und 19–20 freien Bürgern;
+spät Ölbohrturm/Uni mit 16–19 freien Bürgern. Reserve-/Besatzungslogik wurde für
+die neun Rohstoffe angepasst. Das ist eigene KI-Logik unter isolierten
+Prüfbedingungen, keine behauptete Original-KI oder vollständige Balanceprüfung.
+
+Frühere Browserbelege bestätigten Universität/Forschung und 14/14 native
+Audiodekodierungen. Aktuell sichtbar geprüft sind Steinzeit mit fünf aktiven
+Ressourcen, Industriezeit mit sechs, 30/50 Bürger-HP und Transport.
+Bei einer Assetnachprüfung wurden falsche Skinning-Exporte später Bürger und
+sechs weiterer Skins erkannt. Die belegte Matrixkorrektur ist exportiert.
+Der unabhängige Modelltest und vier Original-NIF/KF-Posenregressionen sind erneut
+bestanden; die abschließende Browserprüfung der neuen Posen steht noch aus.
+Format-/Quellhashprüfungen und FakeWebGL-API-Prüfungen ersetzen diese Sichtprüfung
+nicht. Hier werden keine aktuelle FPS-Zahl oder vollständige visuelle Freigabe
+behauptet.
+
+Verbleibender Abnahmemaßstab
+Das vollständig gewünschte Originalspiel ist noch nicht fertig. Offen bleiben
+Vollkatalog und Produktionsbedingungen, Kampfmatrix/Gegenklassen, 82 Forschungs-
+faktoren, Spezialfähigkeiten, Zivilisationen/Veteran/Elite, Patch-/VFS-Auswahl,
+Handel, Diplomatie, Kronen, Wetter und weitere Scharmützeloptionen.
+Originalassets allein schließen diese Lücken nicht. Die eigene Simulation
+übernimmt keine dekompilierten Original-Codepassagen.

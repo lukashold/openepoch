@@ -1,0 +1,200 @@
+{
+  "checkedAt": "2026-10-31 09:49:38 UTC",
+  "release": "graphics2",
+  "environment": "Local in-app browser, WebGL2 / WebAudio. UI actions and rendered screenshots; qa=1 uses separate save storage.",
+  "freshGame": {
+    "url": "http://127.0.0.1:8125/?rules=ee2&qa=1&seed=7&build=graphics2",
+    "started": true,
+    "modelBindings": 149,
+    "exactEpochIcons": 26,
+    "groundBindings": 12,
+    "groundInstancesAtStart": 1,
+    "groundErrors": [],
+    "consoleWarningsOrErrors": [],
+    "screenshot": "../../OpenEpoch/original-ground-graphics2.jpg"
+  },
+  "buildingIntegration": {
+    "earlierQaBuild": "graphics1",
+    "townCenterVisible": true,
+    "houseBuiltThroughUi": true,
+    "groundInstancesBeforeCompletion": 1,
+    "groundInstancesAfterCompletion": 2,
+    "populationCapBefore": 40,
+    "populationCapAfter": 45,
+    "scope": "Actual skirmish build plus the unchanged ground pass; final graphics2 start independently rechecked."
+  },
+  "graphicsFixture": {
+    "url": "http://127.0.0.1:8125/original-graphics-check.html",
+    "loadedBindings": 149,
+    "loadedIds": 67,
+    "groundBindings": 12,
+    "gpu": "NO_ERROR",
+    "errors": 0,
+    "scope": "Isolated graphics fixtures use the production renderer, not a playable match.",
+    "observations": [
+      {
+        "ids": [
+          37,
+          38,
+          41
+        ],
+        "clips": [
+          "idle",
+          "walk",
+          "combat"
+        ],
+        "movingPartsFrames": 48,
+        "constantBomberPartsFrames": 1,
+        "near": true,
+        "bomberNativeFarLoaded": true,
+        "biplaneAndHelicopterKeepNearWithoutReducedNativeLod": true
+      },
+      {
+        "ids": [
+          0,
+          1
+        ],
+        "scene": "Sloped triangulated terrain",
+        "groundDraws": 2,
+        "gpu": "NO_ERROR"
+      },
+      {
+        "id": 9,
+        "epoch": 3,
+        "clip": "walk",
+        "sourceTransitionDisplayed": true
+      },
+      {
+        "id": 43,
+        "clip": "walk",
+        "frames": 24,
+        "phase0And6of48Captured": true,
+        "gpu": "NO_ERROR"
+      },
+      {
+        "id": 44,
+        "requestedActivity": "combat",
+        "renderedClip": "idle",
+        "static": true,
+        "reason": "Native KF pose sources are constant; no motion is invented.",
+        "gpu": "NO_ERROR"
+      },
+      {
+        "id": 46,
+        "clip": "walk",
+        "frames": 48,
+        "zoom12KeepsNear": true,
+        "reason": "No native reduced far binding for this 496-triangle mesh.",
+        "gpu": "NO_ERROR"
+      }
+    ]
+  },
+  "renderedMotionPixelCheck": {
+    "method": "Fixed camera/scene, RGB max-channel absolute difference >18 within stated model ROI. Confirms rendered changes, not physical interpolation equivalence.",
+    "aircraft": {
+      "frame0": "../../OpenEpoch/original-aircraft-frame0.jpg",
+      "frame3": "../../OpenEpoch/original-aircraft-frame3.jpg",
+      "rois": {
+        "biplane": [
+          70,
+          310,
+          350,
+          600
+        ],
+        "bomber": [
+          450,
+          310,
+          800,
+          600
+        ],
+        "helicopter": [
+          900,
+          310,
+          1220,
+          600
+        ]
+      },
+      "changedPixels": {
+        "biplane": 1002,
+        "bomber": 186,
+        "helicopter": 9033
+      }
+    },
+    "mech": {
+      "frame0": "../../OpenEpoch/original-mech-frame0.jpg",
+      "frame6": "../../OpenEpoch/original-mech-frame6.jpg",
+      "roi": [
+        380,
+        240,
+        860,
+        620
+      ],
+      "changedPixels": 21818
+    }
+  },
+  "audio": {
+    "activeCodecUrls": 194,
+    "decoded": 194,
+    "failed": 0,
+    "manifestAssets": 195,
+    "exactOriginalFiles": 194,
+    "pcmDerivatives": 1,
+    "buffersReady": 189,
+    "sourceFailures": [],
+    "baseAttackPlaybackVerified": [
+      41,
+      43
+    ],
+    "epochPlayback": [
+      {
+        "id": 9,
+        "epoch": 3,
+        "action": "attack",
+        "sourceVisual": "HeavyInfantry1_03",
+        "upgradeCsvLine": 11,
+        "played": true
+      },
+      {
+        "id": 9,
+        "epoch": 7,
+        "action": "order",
+        "sourceVisual": "HeavyInfantry1_07",
+        "upgradeCsvLine": 13,
+        "played": true
+      },
+      {
+        "id": 26,
+        "epoch": 15,
+        "action": "attack",
+        "sourceVisual": "HeavyMounted1_15",
+        "upgradeCsvLine": 66,
+        "played": true
+      }
+    ],
+    "epochVoicePlays": 3,
+    "screenshot": "../../OpenEpoch/original-audio-graphics2.jpg"
+  },
+  "baseProfile": {
+    "started": true,
+    "groundBindings": 0,
+    "consoleWarningsOrErrors": [],
+    "pauseControlWorked": true
+  },
+  "delivery": {
+    "url": "http://127.0.0.1:8125/?rules=ee2&build=graphics2",
+    "playButtonReady": true,
+    "markedDeliverable": true,
+    "oldUserTab": "Initially showed three resources and Defeat. Reloaded safely while ended; later no longer existed. A fresh final normal game tab was opened."
+  },
+  "wasm": {
+    "ee2Sha256": "6e133ae7dc456ff196d0a6ea98eeb0848688dc4cd9bedb1126899ba37d860724",
+    "baseSha256": "73383515fbf8d83277f1b1ce69eb90ac1c18c76f2d5c4f7240e64185a0a106ff",
+    "unchanged": true
+  },
+  "limits": [
+    "No FPS/performance claim from background browser measurements.",
+    "No exhaustive comparison of all units, epochs, actions, cultures or original-game scenes.",
+    "Native ground epoch-slot and Rural/Urban predicates remain unresolved; renderer explicitly uses first rural slot.",
+    "Complete gameplay, production roster, special abilities, cultural variants, death/takeoff/landing/FX and physical cross-NAT multiplayer acceptance remain incomplete."
+  ]
+}

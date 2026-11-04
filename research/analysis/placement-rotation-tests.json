@@ -1,0 +1,41 @@
+{
+  "format": "placement-rotation-tests-v1",
+  "status": "passed",
+  "scope": "Real WASM town-center expansion with native completed-city/adjacent acquisition, eight45-degree orientations as an explicit extra option (original CTRL rotates90), conservative square-BBox/builder-reachability adapters, actual citizen movement/construction, rendering/source costs, strict authenticated bytes, save compatibility and two-peer lockstep. No claim of complete original placement/pathfinding equivalence.",
+  "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+  "baseWasmSha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+  "sourceAuditSha256": "c79ba14cb511042c0255fe24c03a5b8f850e94e72ef9293ff0ed880c54eb62ef",
+  "checks": 5027,
+  "completed": [
+    "eight45-degree choices; positive/square odd-angle tile BBoxes; invalid IDs/turns",
+    "neutral TC claim, native9-slot cost, actual citizen movement/source-time build, persistent ownership, same-province and foreign limits",
+    "untouched generated seed1: reachable neutral TC completes from actual start citizen, native costs and mode2, without fixture/map edits or cheats",
+    "no/wrong builder, invalid definitions/turns/map coordinates, exact-cost failure, deposits/water and disconnected selected-worker land path",
+    "map modes0/1/2 building knowledge, unchanged genuine per-team fog, full diagonal-BBox scouting",
+    "non-TC neutral terrain: equal source cost, no territory claim and measured2x build-time rule with actual adjacent citizen",
+    "actual mixed-land/water dock BBoxes, all8 manual directions, cardinal shore adapter, real builder completion/save and missing-land/missing-sea/rock/deposit rejection",
+    "ee2: all8 real construction/save/render/Ground rotations; diagonal occupancy; old cmd_place default0",
+    "base: all8 real construction/save/render/Ground rotations; diagonal occupancy; old cmd_place default0",
+    "C_PLACE_ROTATED16 strict integer coordinates/bit packing/own-builder authentication, malformed records and legacy C_PLACE10",
+    "two actual seats queue exact18-byte rotated commands, execute on identical turns and finish construction without hash divergence"
+  ],
+  "naturalBrowserFixture": {
+    "seed": 1,
+    "ai": 1,
+    "startEpoch": 0,
+    "supplies": "high",
+    "visibility": 2,
+    "footprintTopLeft": [
+      65,
+      61
+    ],
+    "center": [
+      67,
+      63
+    ],
+    "territory": 6,
+    "mutation": "none; actual public start/placement/tick APIs only",
+    "completedWithoutCheats": true
+  },
+  "lockstepTurns": 905
+}

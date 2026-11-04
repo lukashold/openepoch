@@ -1,0 +1,116 @@
+Empire Earth II: gezielte Untersuchung der Originalwirtschaft
+Stand: 30.10.2026. Profil: ausdrücklich Basis db.zip und hdrs.zip.
+
+Die neun natürlichen Ressourcen haben diese Original-IDs:
+
+ID  Name       Deutsch    aufgedeckt ab   sammelfähige Originalepochen
+0   Food       Nahrung    1               1–15
+1   Wood       Holz       1               1–15
+2   Stone      Stein      1               1–15
+3   Gold       Gold       1               1–15
+4   Tin        Zinn       1               1–6
+5   Iron       Eisen      4               4–9
+6   Saltpeter  Salpeter   7               7–12
+7   Oil        Öl         10              10–15
+8   Uranium    Uran       13              13–15
+
+Der Ressourcenheader benennt TechPoints=9 und PopCap=10 ausdrücklich als keine
+natürlichen Rohstoffe. Quelle: hdrs.zip!DbHdrs/DbResourceDefs.h, eResourceType.
+Die Aufdeck-Upgrades für Eisen, Salpeter, Öl und Uran werden in den tatsächlichen
+epoch4/7/10/13_upgrades.ddf-Dateien referenziert; zuvor benutzen diese Vorkommen
+Resource*Unrevealed mit res_rock_1/2/3.nif.
+
+Die oberen Grenzen stehen nicht in diesen Aufdeck-Upgrades. Ghidra-Funktion
+00884710 prüft den Originaltyp und die Spielerepoche gegen die Tabelle ab VA
+00b5526c. Rückgabe ist UI-Sonderplatz 1 oder 2, außerhalb des Fensters -1.
+Tin beginnt bei1 und endet exklusiv7; Iron4..10; Saltpeter7..13; Oil10..1000;
+Uranium13..1000. 1000 ist der Code-Sentinel, das Basisspiel hat15 Epochen.
+Dies ergibt Tin, Tin+Iron, Iron+Saltpeter, Saltpeter+Oil und Oil+Uranium als
+die fünf aufeinanderfolgenden Ressourcenfenster. Es ist keine Typumwandlung.
+Die Helferaufrufe sind in Gather007eedd0 und Deposit007ef6a0 nachgewiesen.
+
+FullCitizen/GatherFarm in db.zip!db/Units/citizen.ddf, Zeilen25–59:
+foodRate, woodRate, stoneRate, goldRate, tinRate, ironRate, saltpeterRate jeweils
+0.85. Konfiguriert sind auch oilRate=3.4 und uraniumRate=3.4. Diese beiden Werte
+belegen keine erlaubte direkte Förderung: ihre Ressourcenknoten haben explizit
+maxNumOfWorkers=0. carryLimit=15, farmCarryLimit=15, farmRate=4.37.
+treeCuttingRange=0.9, otherRange=0.8 und dropoffRange=0.7.
+
+Farm besitzt eine eigene resourceFarm-Fähigkeit in db/Units/farm.ddf Zeile23:
+type=Food, amount=100, maxNumOfWorkers=1. Ein Farmgebäude unterstützt genau
+einen Bürger mit farmRate4.37/s. Der Quellkommentar besagt, dass es weiter
+produziert, solange jemand darauf arbeitet; die Zahl100 ist keine belegte
+endliche Lebenszeiternte des Feldes.
+
+Die Quelle enthält elf Ressourcenklassen: Tree(Wood1277,3Arbeiter),
+ForageTree(Food1000,6), ResourceForagePatch(Food2000,6), die sieben Stein-/Erz-/
+Sondervorkommen mit amount1000, sowie ResourceFish(Food2000,6).
+Bei Öl/Uran ist die Arbeitergrenze0, sonst bei Erz/Stein6.
+Tree, ForagePatch und Fish setzen alwaysExhaustible=1; die übrigen genannten
+Knoten setzen dieses Flag nicht. Die globale Endlichkeitsoption und deren
+Standard wurden hier nicht rekonstruiert. amount ist daher kein Beleg, dass
+sämtliche Vorkommen standardmäßig nach1000 Einheiten verschwinden.
+Ghidra007f86b0 initialisiert den tatsächlichen Knotenvorrat als float aus amount.
+
+Öl und Uran benötigen Fördergebäude, beide aus db/Units/resources.ddf:
+
+OilRig (Originalname, nicht OilDerrick): placementType=OnOil, bld_OilRig.NIF.
+UraniumMine: placementType=OnUranium, res_uranium_mine.NIF.
+Beide haben HP1000, Größe1.5×1.5, LOS4 und6 Garrisonplätze des Typs
+UniWarehouseOilDerrickCityCenter; rightClickToGarrison=1.
+gatherRate=0.75 pro belegtem Platz und Sekunde, gatherType=Oil oder Uranium.
+Sechs Bürger ergeben4.5 Einheiten/s vor Modifikatoren. Der DDF-Kommentar
+„1 tech point every second“ ist hier widersprüchlich kopiert; maßgeblich sind
+die numerische0.75, der tatsächliche gatherType und der Code.
+db/TechTree/dbtechtreenode.csv Zeile354 bzw508 belegt Epoche10/13,
+HOST=Citizen, Bauzeit45s und100Holz; alle übrigen Rohstoffkosten sind0.
+
+Ghidra007e7cf0 ist die gemeinsame Garrison-Gutschrift: Rate×belegteSlots wird
+mit einem Ressourceneffektfaktor multipliziert und in einem Bruchteilkonto
+gesammelt. floor(Akkumulator) wird gutgeschrieben, der Rest bleibt erhalten.
+Tech9 erhält einen zusätzlichen TechGather-Modifikator. Öl/Uran benutzen
+denselben Ablauf ohne Transportfahrt des Bürgers. Der untersuchte Tick zeigt
+keinen Abzug vom amount des darunter liegenden Ressourcenknotens.
+
+Transportierte Ressourcen werden dagegen in007ef6a0 erst nach Erreichen eines
+geeigneten Dropoff gutgeschrieben. FUN00857080 liefert die typabhängigen Boni;
+FUN007f8aa0 addiert belegte Garrisonplätze×resourceBonus zum Basiseffektfaktor.
+CityCenter und Warehouse akzeptieren AllNaturalResource, haben5 Plätze und
+resourceBonus=0.02. Damit ergeben fünf Bürger ohne andere Effekte10% Bonus.
+Dock akzeptiert nurFood. Nach der Abgabe wird der getragene Vorrat auf0 gesetzt.
+Der Bürgerzustand serialisiert Typ, resourceGathered(float), farmPlotWorkTime
+und isGathering; diese Felder sind in007f01a0 identifiziert.
+
+Beide Gutschriftpfade klemmen Player-Rohstoffkonten auf0..999999. Die Grenze
+ist float999999.0 bei VA00b413a4 (Bytes f0237449). Das Stockarray liegt im
+analysierten Player bei+0x9c+4*OriginalResourceID. Dies ist ein Codebefund,
+keine aus einer Anzeige geratene Höchstzahl.
+
+db/Simulation/dbresourcelevels.csv enthält25 Startpresets. Standard_1 sowie
+Standard_4/7/10/13 konfigurieren Food/Wood/Stone/Gold jeweils400 und alle fünf
+Sonderressourcen jeweils200. Die Tabelle enthält auch Bestände künftig noch
+nicht verfügbarer Ressourcen; Verfügbarkeit und Kontostand sind getrennt.
+Low, Defensive, High und DeathMatch sind vollständig im JSON erhalten.
+
+Reproduzierbarkeit und Grenzen:
+tools/extract_ee2_economy.py erzeugt docs/ee2-economy.json mit Archivhashes,
+Eintragshashes, Quellzeilen, Original-ID-Reihenfolge und Laufzeitbelegen.
+tools/test_ee2_economy.py prüft sechs Gruppen einschließlich tatsächlicher
+Original-ZIP- und Ghidra-Ausgabehashes. Alle sechs bestehen.
+
+Ghidra12.2 wurde viermal mit -process EE2-engine.exe -readOnly -noanalysis und
+ExportResourceTargets.java ausgeführt; insgesamt29 gezielte Funktionsadressen,
+keine allgemeine Neuanalyse oder Komplettdekompilation. Fehlende, durch Vtable
+belegte Funktionen wurden nur im Arbeitsspeicher angelegt; Ghidra verwirft sie
+beim Ende des readOnly-Laufs. Installation und Simulationscode blieben unberührt.
+
+Codeausgaben: resource-initial.c, resource-gather-runtime.c,
+resource-special-runtime.c und resource-limits-runtime.c in diesem Ordner.
+Analysierte EXE-SHA256:
+d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f
+Sie stammt aus der installierten Unofficial Patch Files/EnabledUP15Units/EE2.exe
+und liegt unverändert als work/EE2-engine.exe vor. Ihre Gleichheit mit jeder
+ungepatchten Handelsversion wird nicht behauptet. Die Datenwahl bleibt explizit
+db.zip; eine Priorität der vorhandenen db_150/db_155/sonstigen Patches wurde
+nicht geraten. Steuer-/Diplomatie-/Technologieeffekte und eine Bereinigung
+alter Sonderressourcenbestände beim Epochwechsel sind nicht vollständig geklärt.

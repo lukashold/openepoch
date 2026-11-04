@@ -1,0 +1,93 @@
+{
+  "format": "native-combat-source-tests-v2",
+  "status": "passed",
+  "validation": {
+    "sourceImportTests": {
+      "command": "C:/Python314/python.exe outputs/OpenEpoch/tools/test_ee2_combat_import.py",
+      "passed": 6,
+      "failed": 0,
+      "observed": "Actual unittest invocation completed OK; every raw CSV cell and named adjustment compared, source hashes and269 profile/source-line bindings checked."
+    },
+    "standaloneRustTests": {
+      "command": "rustc --test outputs/OpenEpoch/src/ee2_combat.rs -o work/ee2_combat_module_tests.exe; run executable",
+      "passed": 5,
+      "failed": 0,
+      "observed": "Actual compiled Rust tests passed: asymmetric class matchups, unknown fallback, upgrade factor, squared splash golden vectors, all269\u00b2 bounded profile matchups."
+    },
+    "engineFixtures": {
+      "file": "src/ee2_combat_tests.rs",
+      "count": 11,
+      "status": "passed",
+      "combatCases": 9,
+      "cityCases": 2
+    },
+    "wasmOracle": {
+      "format": "native-combat-wasm-tests-v1",
+      "status": "passed",
+      "wasmSha256": "1c1507d527c6c24ffefb728616b5e2ad007a5b57ba1f4e0fbfaf99e294d5dc53",
+      "combatAuditSha256": "ee39309d94b4586b9466d952eb20c424fcf51dca1cca305f62c0a19379e9bb94",
+      "checks": 290363,
+      "profiles": 269,
+      "profilePairChecks": 72361
+    },
+    "integratedRust": [
+      {
+        "profile": "ee2-reference",
+        "passed": 64,
+        "failed": 0,
+        "log": "native-combat-ee2-rust-tests.log",
+        "logSha256": "8d99a614a5bfe49335d41f33f4962638d9add70afbb853067dacacc06fbb8fa6"
+      },
+      {
+        "profile": "base",
+        "passed": 32,
+        "failed": 0,
+        "log": "native-combat-base-rust-tests.log",
+        "logSha256": "497fd598b08819905fd38418c8289ee14617da5448cb523e52ec818ef318c2c5"
+      }
+    ]
+  },
+  "files": [
+    {
+      "file": "src/game.rs",
+      "sha256": "5e10e7e42578603eb86ba824d0fd6f21d0fab69a9330b8e561f1529f9534aecf",
+      "bytes": 82446
+    },
+    {
+      "file": "src/lib.rs",
+      "sha256": "563bc98627ba3626fde4b95579b36bdeee11cf47e11372972497ccca3057cf39",
+      "bytes": 29154
+    },
+    {
+      "file": "src/ee2_combat.rs",
+      "sha256": "b58fddf7b8c83cd85134b83da42d4e6e48fa5eb0d7f59b7c6d3c4388af8b2ac0",
+      "bytes": 40744
+    },
+    {
+      "file": "src/ee2_combat_tests.rs",
+      "sha256": "1f43ce7e90e998a6486dd67c4cd235d2012ec32cec243736eb132c7df6b99459",
+      "bytes": 6260
+    },
+    {
+      "file": "tools/ee2-combat-test.mjs",
+      "sha256": "569712bb521704d523a2dab8387f678284004f421955e61ebbd3a961dbb64344",
+      "bytes": 4210
+    },
+    {
+      "file": "tools/combat-network-test.mjs",
+      "sha256": "6d5f2e131e4239faf8307216447d72c615fa2dbda33b3c67995ee4b0ca10062a",
+      "bytes": 1465
+    },
+    {
+      "file": "tools/import_ee2_combat.py",
+      "sha256": "2efb73cba79cf7b6a257c729c9895282dcff458924302c521cafdfd57df6f741",
+      "bytes": 11595
+    },
+    {
+      "file": "docs/ee2-combat.json",
+      "sha256": "ee39309d94b4586b9466d952eb20c424fcf51dca1cca305f62c0a19379e9bb94",
+      "bytes": 370789
+    }
+  ],
+  "integrationReport": "native-combat-integration.json"
+}

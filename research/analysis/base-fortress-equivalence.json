@@ -1,0 +1,105 @@
+{
+  "format": "base-fortress-equivalence-v1",
+  "status": "passed",
+  "beforeSha256": "f42d32397d576437faff4de9e0d6ad0b3d14e4f516287b4c68d9b39a0e6027c0",
+  "afterSha256": "26cdb7342ec868b94127df99c2f3d77304915bfc46e9f5d9ac947a6578c1670e",
+  "scope": "Unchanged base profile simulation: two seeds x8 epochs x1200 ticks, own worker production command, all four players, hashes and3 resource banks. No EE2 equality claim.",
+  "cases": [
+    {
+      "seed": 7,
+      "epoch": 1,
+      "ticks": 1200,
+      "hash": 3101603283
+    },
+    {
+      "seed": 7,
+      "epoch": 2,
+      "ticks": 1200,
+      "hash": 2773929217
+    },
+    {
+      "seed": 7,
+      "epoch": 3,
+      "ticks": 1200,
+      "hash": 2068653157
+    },
+    {
+      "seed": 7,
+      "epoch": 4,
+      "ticks": 1200,
+      "hash": 3206186268
+    },
+    {
+      "seed": 7,
+      "epoch": 5,
+      "ticks": 1200,
+      "hash": 970633251
+    },
+    {
+      "seed": 7,
+      "epoch": 6,
+      "ticks": 1200,
+      "hash": 2079852974
+    },
+    {
+      "seed": 7,
+      "epoch": 7,
+      "ticks": 1200,
+      "hash": 2635584968
+    },
+    {
+      "seed": 7,
+      "epoch": 8,
+      "ticks": 1200,
+      "hash": 48121363
+    },
+    {
+      "seed": 41,
+      "epoch": 1,
+      "ticks": 1200,
+      "hash": 627569710
+    },
+    {
+      "seed": 41,
+      "epoch": 2,
+      "ticks": 1200,
+      "hash": 1126902472
+    },
+    {
+      "seed": 41,
+      "epoch": 3,
+      "ticks": 1200,
+      "hash": 3292250622
+    },
+    {
+      "seed": 41,
+      "epoch": 4,
+      "ticks": 1200,
+      "hash": 2021859386
+    },
+    {
+      "seed": 41,
+      "epoch": 5,
+      "ticks": 1200,
+      "hash": 3057910663
+    },
+    {
+      "seed": 41,
+      "epoch": 6,
+      "ticks": 1200,
+      "hash": 1329771386
+    },
+    {
+      "seed": 41,
+      "epoch": 7,
+      "ticks": 1200,
+      "hash": 2779376180
+    },
+    {
+      "seed": 41,
+      "epoch": 8,
+      "ticks": 1200,
+      "hash": 536414707
+    }
+  ]
+}

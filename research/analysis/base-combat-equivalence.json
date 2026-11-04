@@ -1,0 +1,121 @@
+{
+  "format": "base-combat-equivalence-v1",
+  "status": "passed",
+  "beforeSha256": "fee97bec031288416fdafbbad83ce838d3c00e9971efc399ed908f57f12bed4d",
+  "afterSha256": "c10a7e0f1eff9176c7ff9f0b85e832b6965cebe6dd9a7bb9fd54f56fc7cdd751",
+  "checkpoints": 112,
+  "scope": "Base53 simulation remains identical across2seeds×8epochs×1200ticks, production command, all4players and all3resource banks. New read-only clock/urban exports do not change simulation. Also2real mixed-army battle cases at400units per team,1200ticks each, hashed every20ticks.",
+  "cases": [
+    {
+      "seed": 7,
+      "epoch": 1,
+      "ticks": 1200,
+      "hash": 3101603283
+    },
+    {
+      "seed": 7,
+      "epoch": 2,
+      "ticks": 1200,
+      "hash": 2773929217
+    },
+    {
+      "seed": 7,
+      "epoch": 3,
+      "ticks": 1200,
+      "hash": 2068653157
+    },
+    {
+      "seed": 7,
+      "epoch": 4,
+      "ticks": 1200,
+      "hash": 3206186268
+    },
+    {
+      "seed": 7,
+      "epoch": 5,
+      "ticks": 1200,
+      "hash": 970633251
+    },
+    {
+      "seed": 7,
+      "epoch": 6,
+      "ticks": 1200,
+      "hash": 2079852974
+    },
+    {
+      "seed": 7,
+      "epoch": 7,
+      "ticks": 1200,
+      "hash": 2635584968
+    },
+    {
+      "seed": 7,
+      "epoch": 8,
+      "ticks": 1200,
+      "hash": 48121363
+    },
+    {
+      "seed": 41,
+      "epoch": 1,
+      "ticks": 1200,
+      "hash": 627569710
+    },
+    {
+      "seed": 41,
+      "epoch": 2,
+      "ticks": 1200,
+      "hash": 1126902472
+    },
+    {
+      "seed": 41,
+      "epoch": 3,
+      "ticks": 1200,
+      "hash": 3292250622
+    },
+    {
+      "seed": 41,
+      "epoch": 4,
+      "ticks": 1200,
+      "hash": 2021859386
+    },
+    {
+      "seed": 41,
+      "epoch": 5,
+      "ticks": 1200,
+      "hash": 3057910663
+    },
+    {
+      "seed": 41,
+      "epoch": 6,
+      "ticks": 1200,
+      "hash": 1329771386
+    },
+    {
+      "seed": 41,
+      "epoch": 7,
+      "ticks": 1200,
+      "hash": 2779376180
+    },
+    {
+      "seed": 41,
+      "epoch": 8,
+      "ticks": 1200,
+      "hash": 536414707
+    }
+  ],
+  "battleCases": [
+    {
+      "seed": 7,
+      "armyTargetPerTeam": 400,
+      "ticks": 1200,
+      "hash": 982486418
+    },
+    {
+      "seed": 41,
+      "armyTargetPerTeam": 400,
+      "ticks": 1200,
+      "hash": 3405161388
+    }
+  ],
+  "battleCheckpoints": 120
+}

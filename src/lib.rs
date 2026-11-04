@@ -7,10 +7,27 @@
 mod ai;
 mod cmd;
 mod defs;
+mod economy;
+mod diplomacy;
+mod territory;
+mod placement;
+#[cfg(feature = "ee2-reference")]
+mod ee2_profile;
+#[cfg(feature = "ee2-reference")]
+mod ee2_research;
+#[cfg(feature = "ee2-reference")]
+mod ee2_units;
+#[cfg(feature = "ee2-reference")]
+mod ee2_combat;
+mod research;
 mod game;
 mod map;
 mod render;
 mod save;
+#[cfg(feature="ee2-reference")]
+mod city_ground;
+#[cfg(all(test,feature="ee2-reference"))]
+mod claim_tests;
 
 use cmd::*;
 use core::ptr::addr_of_mut;
@@ -20,6 +37,26 @@ use map::*;
 
 static mut GAME: Option<Box<Game>> = None;
 static mut LOADBUF: Vec<u8> = Vec::new();
+
+/// Distinguishes incompatible rulesets in tests and clients.
+#[no_mangle]
+pub extern "C" fn ruleset() -> u32 { if cfg!(feature = "ee2-reference") { 1 } else { 0 } }
+
+/// Public read-only diagnostics for validating imported definitions.
+#[no_mangle]
+pub extern "C" fn unit_stat(id: u32, field: u32) -> f32 {
+    let Some(d) = DEFS.get(id as usize) else { return -1.0; };
+    match field { 0 => d.hp, 1 => d.sight, 2 => d.speed, 3 => d.time,
+        4 => d.w[0].dmg, 5 => d.w[0].range, 6 => d.w[0].cd,
+        7 => d.w[1].dmg,
+        8 => {
+            #[cfg(feature = "ee2-reference")]
+            { crate::ee2_profile::turn_rate(id as u8) }
+            #[cfg(not(feature = "ee2-reference"))]
+            { 2.4 }
+        },
+        _ => -1.0 }
+}
 
 fn g() -> &'static mut Game {
     // SAFETY: wasm32-unknown-unknown is single threaded and `init` runs first.
@@ -39,12 +76,94 @@ pub extern "C" fn tick() {
     g().tick();
 }
 
+/// Simulation time for visual seasons; safe before game initialization.
+#[no_mangle]
+pub extern "C" fn game_tick()->u32 {
+    unsafe { (&*addr_of_mut!(GAME)).as_ref().map_or(0,|game|game.tick) }
+}
+
+/// Completed-TC registration adapter with the native lifetime high-water radius.
+#[no_mangle]
+pub extern "C" fn ground_urban_at(x:f32,y:f32)->u32 {
+    #[cfg(feature="ee2-reference")]
+    unsafe { return (&*addr_of_mut!(GAME)).as_ref().map_or(0,|game|game.original_urban_at(x,y) as u32); }
+    #[cfg(not(feature="ee2-reference"))]
+    { let _=(x,y);0 }
+}
+
+/// Read-only source matchup diagnostics, independent of the active match.
+#[no_mangle]
+pub extern "C" fn combat_stat(attacker:u32,attacker_epoch:u32,defender:u32,defender_epoch:u32,field:u32)->f32 {
+    #[cfg(feature="ee2-reference")]
+    {
+        if attacker>=57||defender>=57||attacker_epoch>=15||defender_epoch>=15{return -1.0;}
+        let a=ee2_combat::profile(attacker as u8,attacker_epoch as u8);
+        let d=ee2_combat::profile(defender as u8,defender_epoch as u8);
+        return match field {
+            0=>ee2_combat::base_percent(a,d).map(|value|value as f32*0.01),
+            1=>ee2_combat::adjustment_percent(a,d).map(|value|value as f32*0.01),
+            2=>ee2_combat::multiplier(a,d),
+            3=>ee2_combat::can_target(attacker as u8,attacker_epoch as u8,defender as u8,defender_epoch as u8).map(|value|value as u8 as f32),
+            _=>None,
+        }.unwrap_or(-1.0);
+    }
+    #[cfg(not(feature="ee2-reference"))]
+    {let _=(attacker,attacker_epoch,defender,defender_epoch,field);-1.0}
+}
+
+/// Apply symmetric skirmish settings only before the first tick, single player.
+#[no_mangle]
+pub extern "C" fn skirmish_setup(pop_limit: u32, resources: u32) -> u32 {
+    let game = g();
+    if game.tick != 0 || game.net || game.bench > 0 { return 0; }
+    let limit = match pop_limit { 250 | 500 | 1000 => pop_limit, _ => return 0 };
+    let supplies = match resources { 0 => [400.0,400.0,200.0], 1 => [800.0,800.0,400.0], 2 if cfg!(feature="ee2-reference")=>[15000.0,15000.0,7500.0],2 => [1600.0,1600.0,800.0],3 if cfg!(feature="ee2-reference")=>[200.0,200.0,0.0],4 if cfg!(feature="ee2-reference")=>[200.0,200.0,0.0], _ => return 0 };
+    for t in 0..game.nplayers {
+        game.players[t].population_limit=limit;game.players[t].res=supplies;
+        if cfg!(feature="ee2-reference") {
+            let common=match resources{2=>10000.0,3=>100.0,4=>100.0,_=>supplies[1]};
+            let stone=if resources==4{500.0}else{common};
+            game.extra_resources[t]=[stone,common,supplies[2],supplies[2],supplies[2],supplies[2]];
+        }
+    }
+    1
+}
+
+#[no_mangle]
+pub extern "C" fn epoch_count() -> u32 { EPOCH_NAMES.len() as u32 }
+#[no_mangle]
+pub extern "C" fn epoch_name_ptr(index:u32)->*const u8 {EPOCH_NAMES.get(index as usize).map_or(core::ptr::null(),|s|s.as_ptr())}
+#[no_mangle]
+pub extern "C" fn epoch_name_len(index:u32)->u32 {EPOCH_NAMES.get(index as usize).map_or(0,|s|s.len() as u32)}
+#[no_mangle]
+pub extern "C" fn skirmish_epoch(epoch:u32)->u32 {
+    let game=g();if epoch>MAX_EPOCH as u32||game.tick!=0||game.net||game.bench>0{return 0;}
+    for t in 0..game.nplayers{game.players[t].epoch=epoch as u8;game.rebuild_modifiers(t as u8,true);}
+    game.build_grid();game.update_fog();1
+}
+#[no_mangle]
+pub extern "C" fn resource_count()->u32 {economy::RESOURCE_COUNT as u32}
+#[no_mangle]
+pub extern "C" fn resource_stat(team:u32,slot:u32)->f32 {if team>=4||slot as usize>=economy::RESOURCE_COUNT{-1.0}else{g().resource(team as u8,slot as usize)}}
+#[no_mangle]
+pub extern "C" fn resource_active(team:u32,slot:u32)->u32 {if team>=4||slot as usize>=economy::RESOURCE_COUNT{0}else{economy::unlocked(slot as usize,g().players[team as usize].epoch) as u32}}
+#[no_mangle]
+pub extern "C" fn unit_cost_stat(team:u32,id:u32,slot:u32)->f32 {if team>=4||id as usize>=DEFS.len()||slot>=9{-1.0}else{g().unit_cost(team as u8,id as u8)[slot as usize] as f32}}
+#[no_mangle]
+pub extern "C" fn resource_kind(tile:u32)->u32 {g().map.res.get(tile as usize).copied().unwrap_or(0) as u32}
+
+#[no_mangle]
+pub extern "C" fn unit_epoch(id: u32) -> u32 { DEFS.get(id as usize).map_or(u32::MAX, |d| d.epoch as u32) }
+
 // ---- frame data -----------------------------------------------------------
 
 #[no_mangle]
 pub extern "C" fn render(alpha: f32, x0: f32, y0: f32, x1: f32, y1: f32, ghost: i32, gx: i32, gy: i32) -> u32 {
     g().render(alpha, x0, y0, x1, y1, ghost, gx, gy)
 }
+#[no_mangle]
+pub extern "C" fn render_rotated(alpha:f32,x0:f32,y0:f32,x1:f32,y1:f32,ghost:i32,gx:i32,gy:i32,turn:u32)->u32{g().render_with_rotation(alpha,x0,y0,x1,y1,ghost,gx,gy,turn)}
+
 #[no_mangle]
 pub extern "C" fn inst_ptr() -> *const f32 {
     g().inst.as_ptr()
@@ -56,6 +175,15 @@ pub extern "C" fn ranges_ptr() -> *const u32 {
 #[no_mangle]
 pub extern "C" fn map_ptr() -> *const u8 {
     g().map.rgba.as_ptr()
+}
+/// Read-only tile classes for rendering; these are independent of minimap colours.
+#[no_mangle]
+pub extern "C" fn terrain_types_ptr() -> *const u8 {
+    g().map.ter.as_ptr()
+}
+#[no_mangle]
+pub extern "C" fn terrain_types_len() -> u32 {
+    g().map.ter.len() as u32
 }
 /// Returns 1 once after the terrain texture changed.
 #[no_mangle]
@@ -174,7 +302,7 @@ pub extern "C" fn inbox_alloc(len: u32) -> *mut u8 {
 /// Apply the commands in the inbox for player `team`.
 #[no_mangle]
 pub extern "C" fn net_apply(team: u32) {
-    g().net_apply(team as u8);
+    let game=g();if team<game.nplayers as u32{game.net_apply(team as u8);}
 }
 #[no_mangle]
 pub extern "C" fn state_hash() -> u32 {
@@ -242,7 +370,7 @@ fn pick(g: &Game, x: f32, y: f32, own: bool) -> usize {
         let d = &DEFS[e.def as usize];
         let (ex, ey) = seen_ent(g, e, d);
         let (dx, dy) = ((ex - x).abs(), (ey - y).abs());
-        let hit = if d.building { dx.max(dy) <= d.size * 0.5 + 0.2 } else { dx * dx + dy * dy <= (d.rad() + 0.45).powi(2) };
+        let hit = if d.building { dx.max(dy) <= Game::building_half(e) + 0.2 } else { dx * dx + dy * dy <= (d.rad() + 0.45).powi(2) };
         // units win over the building they stand next to; aircraft win over everything
         let score = dx * dx + dy * dy + if d.building { 100.0 } else if d.dom == AIR { -50.0 } else { 0.0 };
         if hit && score < bd {
@@ -415,11 +543,11 @@ pub extern "C" fn cmd_context(x: f32, y: f32, attack_move: u32) {
         let td = &DEFS[t.def as usize];
         let th = g.h(j) as i32;
         if t.team != g.local {
-            g.submit(C_ATTACK, x, y, th, &all);
-            return;
+            if g.hostile(g.local,t.team){if g.can_see(g.local,j){g.submit(C_ATTACK,x,y,th,&all);}else{g.submit(C_AMOVE,x,y,0,&all);}}
+            else{g.submit(C_MOVE,x,y,0,&all);}return;
         }
-        if td.has(F_TRANSPORT) {
-            let land = part(g, &|_, d| d.dom == LAND);
+        if td.has(F_TRANSPORT) || (td.has(F_RESEARCH|F_EXTRACT|F_DROPOFF|F_GARRISON) && t.built >= 1.0) {
+            let land = part(g, &|_, d| d.dom == LAND && (!td.has(F_RESEARCH|F_EXTRACT|F_DROPOFF) || d.has(F_WORKER)));
             if !land.is_empty() {
                 g.submit(C_BOARD, x, y, th, &land);
                 return;
@@ -434,7 +562,8 @@ pub extern "C" fn cmd_context(x: f32, y: f32, attack_move: u32) {
         }
     }
     let tile = tile_of(x, y);
-    if g.map.res[tile] != R_NONE && g.vis[tile] > 0 && !workers.is_empty() {
+    if g.map.res[tile] != R_NONE && g.real_fog(g.local,tile) > 0 && !workers.is_empty() {
+        if !g.citizen_can_gather(g.local,g.map.res[tile]){return;}
         g.submit(C_GATHER, x, y, tile as i32, &workers);
         if !others.is_empty() {
             g.submit(C_MOVE, x, y, 0, &others);
@@ -476,38 +605,31 @@ pub extern "C" fn cmd_unload() {
 /// Why a building cannot go here: 0 ok, 1 terrain/blocked, 2 not our territory, 3 unexplored, 4 cost.
 #[no_mangle]
 pub extern "C" fn place_error(def: u32, tx: i32, ty: i32) -> u32 {
-    let g = g();
-    let def = def as u8;
-    if def as usize >= DEFS.len() {
-        return 1;
-    }
-    let s = DEFS[def as usize].size as i32;
-    if !g.afford(g.local, &DEFS[def as usize].cost) {
-        4
-    } else if !g.explored(def, tx, ty) {
-        3
-    } else if g.can_place(def, tx, ty, g.local) {
-        0
-    } else {
-        let owner = g.towner[g.map.terr[tile_of((tx + s / 2) as f32, (ty + s / 2) as f32)] as usize];
-        if owner != g.local && !(def == TC && owner == 255) { 2 } else { 1 }
-    }
+    place_error_rotated(def,tx,ty,0)
 }
-
-/// Place a building (top-left tile) and send the selected workers to build it.
 #[no_mangle]
-pub extern "C" fn cmd_place(def: u32, tx: i32, ty: i32) -> u32 {
-    if place_error(def, tx, ty) != 0 {
-        return 0;
-    }
-    let g = g();
-    let hs = handles(g, &selected(g));
-    g.submit(C_PLACE, tx as f32, ty as f32, def as i32, &hs);
-    1
+pub extern "C" fn place_error_rotated(def:u32,tx:i32,ty:i32,turn:u32)->u32{
+    if def>=DEFS.len()as u32||turn>=placement::ROTATION_STEPS{return 1;}
+    let game=g();let ids=selected(game);game.placement_error_for(game.local,def as u8,tx,ty,turn,&ids,true)
+}
+#[no_mangle]
+pub extern "C" fn footprint_size(def:u32,turn:u32)->u32{if def>=DEFS.len()as u32{return 0;}Game::footprint_side(def as u8,turn)as u32}
+#[no_mangle]
+pub extern "C" fn dock_orientation(tx:i32,ty:i32)->u32{g().dock_auto_turn(tx,ty)}
+#[no_mangle]
+pub extern "C" fn placement_time_multiplier(def:u32,tx:i32,ty:i32,turn:u32)->f32{
+    if def>=DEFS.len()as u32{return 0.0;}let side=Game::footprint_side(def as u8,turn);if side==0||tx<0||ty<0||tx>N as i32-side||ty>N as i32-side{return 0.0;}let game=g();if def==TC as u32{return 1.0;}let owner=game.towner[game.map.terr[(ty+side/2)as usize*N+(tx+side/2)as usize]as usize];if owner==game.local{1.0}else if owner==255{2.0}else{3.0}
+}
+#[no_mangle]
+pub extern "C" fn cmd_place(def:u32,tx:i32,ty:i32)->u32{cmd_place_rotated(def,tx,ty,0)}
+#[no_mangle]
+pub extern "C" fn cmd_place_rotated(def:u32,tx:i32,ty:i32,turn:u32)->u32{
+    if place_error_rotated(def,tx,ty,turn)!=0{return 0;}let game=g();let hs=handles(game,&selected(game));let kind=if turn==0{C_PLACE}else{C_PLACE_ROTATED};game.submit(kind,tx as f32,ty as f32,(def|(turn<<8))as i32,&hs);1
 }
 
 #[no_mangle]
 pub extern "C" fn cmd_train(def: u32) -> u32 {
+    if def>255 {return 0;}
     let g = g();
     let def = def as u8;
     // spread the order over the selected buildings: shortest queue first
@@ -538,14 +660,81 @@ pub extern "C" fn cmd_delete() {
     g.submit(C_DELETE, 0.0, 0.0, 0, &hs);
 }
 
+/// Cheat ids: 0 enable, 1 disable, 2 loot, 3 instant build toggle, 4 technology points.
+/// Results: 0 disabled/invalid, 1 applied, 2 toggle off, 3 multiplayer denied.
+#[no_mangle]
+pub extern "C" fn cheat(code: u32) -> u32 {
+    let game = g();
+    if game.net { return 3; }
+    if code == 0 { game.cheats_enabled = true; return 1; }
+    if code == 1 { game.cheats_enabled = false; game.instant_build = false; return 1; }
+    if !game.cheats_enabled { return 0; }
+    match code {
+        2 => {for r in 0..economy::RESOURCE_COUNT{game.add_resource(game.local,r,10000.0);}1},
+        3 => { game.instant_build = !game.instant_build; if game.instant_build { 1 } else { 2 } },
+        4 => {
+            if cfg!(feature = "ee2-reference") { game.research_points[game.local as usize] += 50.0; }
+            else { game.tech_points = game.tech_points.saturating_add(50); }
+            1
+        },
+        _ => 0,
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn cheat_status(field: u32) -> u32 {
+    let game = g();
+    match field { 0 => game.cheats_enabled as u32, 1 => game.instant_build as u32, 2 => if cfg!(feature = "ee2-reference") {game.research_points[game.local as usize] as u32} else {game.tech_points}, _ => 0 }
+}
+
+/// Research from the full tree: use a selected host, otherwise the first suitable building.
+#[no_mangle]
+pub extern "C" fn cmd_research(k: u32) -> u32 {
+    #[cfg(feature = "ee2-reference")]
+    {
+        if k>=180 { return 0; }
+        let game=g(); let item=ORIGINAL_RESEARCH0+k as u8;
+        let selected=selected(game);
+        let b=selected.iter().copied().chain(0..game.high).find(|&i| game.ents[i].alive && game.ents[i].team==game.local && game.can_train(i,item));
+        if let Some(i)=b { let h=game.h(i);game.submit(C_TRAIN,0.0,0.0,item as i32,&[h]);return 1; }
+    }
+    let _=k; 0
+}
+
+#[no_mangle]
+pub extern "C" fn research_stat(team: u32, field: u32, k: u32) -> f32 {
+    let game=g(); if team as usize>=game.nplayers {return -1.0;}
+    let t=team as usize;
+    match field {
+        0=>game.research_points[t], 1=>game.research_count(team as u8,game.players[t].epoch) as f32,
+        2=>game.has_research(team as u8,k as usize) as u32 as f32,
+        3=>if (k as usize)<DEFS.len() {game.max_hp(team as u8,k as u8)}else{-1.0},
+        _=>-1.0
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn research_tree() -> *const u8 {
+    let game=g(); let mut s=String::from("[");
+    #[cfg(feature = "ee2-reference")]
+    {
+        use std::fmt::Write;
+        for (k,n) in crate::ee2_research::NODES.iter().enumerate() {
+            let researched=game.has_research(game.local,k); let busy=game.research_busy(game.local,k);
+            let host=game.ents[..game.high].iter().any(|e| e.alive && e.team==game.local && e.def==n.host && e.built>=1.0);
+            let can=game.ents[..game.high].iter().enumerate().any(|(i,e)| e.alive && e.team==game.local && game.can_train(i,ORIGINAL_RESEARCH0+k as u8));
+            let _=write!(s,"{}{{\"id\":{},\"name\":\"{}\",\"effect\":\"{}\",\"epoch\":{},\"branch\":{},\"host\":\"{}\",\"cost\":{},\"done\":{},\"busy\":{},\"hostBuilt\":{},\"ok\":{}}}",if k>0 {","}else{""},k,n.name,n.note,n.epoch,n.branch,DEFS[n.host as usize].name,n.cost,researched,busy,host,can);
+        }
+    }
+    s.push(']');game.ui=s;game.ui.as_ptr()
+}
+
 /// Sandbox cheat for single player: grant resources.
 #[no_mangle]
 pub extern "C" fn grant(amount: f32) {
     let g = g();
     if !g.net {
-        for r in g.players[g.local as usize].res.iter_mut() {
-            *r += amount;
-        }
+        for r in 0..economy::RESOURCE_COUNT{g.add_resource(g.local,r,amount);}
     }
 }
 
@@ -564,3 +753,43 @@ pub extern "C" fn stat(team: u32, what: u32) -> f32 {
         _ => p.tech.count_ones() as f32,
     }
 }
+
+/// Start display setting; deterministic shared map config is allowed in MP.
+#[no_mangle]
+pub extern "C" fn skirmish_visibility(mode:u32)->u32 {let game=g();if mode>2||game.tick!=0||game.bench>0{return 0;}game.diplomacy.visibility=mode as u8;game.refresh_display_fog();1}
+#[no_mangle]
+pub extern "C" fn cmd_diplomacy(target:u32,action:u32,resource:u32,amount:f32)->u32 {
+ let game=g();if !game.diplomacy_valid(game.local,target,action,resource,amount){return 0;}
+ let bits=target|(action<<8)|(resource<<16);game.submit(C_DIPLOMACY,amount,0.0,bits as i32,&[]);1
+}
+#[no_mangle]
+pub extern "C" fn diplomacy_stat(from:u32,to:u32,field:u32)->u32 {
+ let game=g();if from>=game.nplayers as u32||to>=game.nplayers as u32{return u32::MAX;}let i=from as usize*4+to as usize;
+ match field{0=>game.diplomacy.relation[i] as u32,1=>game.diplomacy.offers[i] as u32,2=>game.diplomacy.sharing[i] as u32,3=>game.diplomacy.offer_tick[i],4=>game.diplomacy.cooldown[i].saturating_sub(game.tick),5=>game.diplomacy.gifts[i],6=>game.diplomacy.offer_vision[i] as u32,_=>u32::MAX}
+}
+
+/// Territory IDs are zero based; unused give/want must be u32::MAX.
+/// 0 gift, 1 swap offer, 2 accept, 3 reject, 4 withdraw.
+#[no_mangle]
+pub extern "C" fn cmd_territory(target:u32,action:u32,give:u32,want:u32)->u32{
+ let game=g();if !game.territory_valid(game.local,target,action,give,want){return 0;}
+ let enc=|v:u32|if v==u32::MAX{-1.0}else{v as f32};game.submit(C_TERRITORY,enc(give),enc(want),(target|(action<<8)) as i32,&[]);1
+}
+#[no_mangle]
+pub extern "C" fn territory_at(x:f32,y:f32)->u32{if !x.is_finite()||!y.is_finite()||x<0.0||y<0.0||x>=N as f32||y>=N as f32{return u32::MAX;}g().map.terr[tile_of(x,y)] as u32}
+#[no_mangle]
+pub extern "C" fn territory_count()->u32{g().map.tseeds.len() as u32}
+#[no_mangle]
+pub extern "C" fn territory_owner(id:u32)->u32{let game=g();if id>=game.map.tseeds.len() as u32{u32::MAX}else{game.towner[id as usize] as u32}}
+#[no_mangle]
+pub extern "C" fn territory_claim_stat(team:u32,id:u32,field:u32)->f32 {
+    let game=g();
+    if team>=game.nplayers as u32 || id>=game.map.tseeds.len() as u32 || field>5 {return -1.0;}
+    let (team,id)=(team as u8,id as usize);
+    match field {0=>game.territory_claim_status(team,id) as f32,1=>game.territory_adjacent_owned(team,id) as u32 as f32,
+        _=>game.territory_control_counts(team,id)[match field{2=>0,3=>1,4=>2,_=>3}] as f32}
+}
+#[no_mangle]
+pub extern "C" fn territory_stat(id:u32,field:u32)->f32{let game=g();if id>=game.map.tseeds.len() as u32{return -1.0;}let id=id as usize;let owner=game.towner[id];let counts=game.territory_counts(id,owner);match field{0=>owner as f32,1=>game.map.tseeds[id].0,2=>game.map.tseeds[id].1,3=>counts[0] as f32,4=>counts[1] as f32,5=>counts[2] as f32,_=>-1.0}}
+#[no_mangle]
+pub extern "C" fn territory_offer_stat(from:u32,to:u32,field:u32)->u32{let game=g();if from>=game.nplayers as u32||to>=game.nplayers as u32{return u32::MAX;}let o=game.territory.offers[from as usize*4+to as usize];match field{0=>o.active as u32,1=>if o.active{o.give as u32}else{u32::MAX},2=>if o.active{o.want as u32}else{u32::MAX},3=>if o.active{1200-game.tick.saturating_sub(o.tick).min(1200)}else{0},4=>o.cooldown.saturating_sub(game.tick),5=>o.tick,_=>u32::MAX}}

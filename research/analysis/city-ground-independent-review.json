@@ -1,0 +1,157 @@
+{
+  "format": "independent-city-ground-review-v1",
+  "status": "passed",
+  "wasmSha256": {
+    "ee2": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+    "base": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+    "beforeEE2": "1c1507d527c6c24ffefb728616b5e2ad007a5b57ba1f4e0fbfaf99e294d5dc53",
+    "beforeBase": "c10a7e0f1eff9176c7ff9f0b85e832b6965cebe6dd9a7bb9fd54f56fc7cdd751"
+  },
+  "checks": 904,
+  "baseCases": [
+    {
+      "seed": 7,
+      "epoch": 1,
+      "ticks": 1200,
+      "saveSha256": "72804326d6101e2b5d6902a0ab60fdf6576c6a8a394972ac41aa077892cd707a",
+      "stateHash": 3101603283
+    },
+    {
+      "seed": 7,
+      "epoch": 2,
+      "ticks": 1200,
+      "saveSha256": "503568c72911d651a6b397132b0b1ce5e7fdb050323204e0e6c4ff90a40b1ef4",
+      "stateHash": 2773929217
+    },
+    {
+      "seed": 7,
+      "epoch": 3,
+      "ticks": 1200,
+      "saveSha256": "5ad24c716badf7da6acaadd06199cd791d5220b2a45dc89ac0e4ba597d38fbd5",
+      "stateHash": 2068653157
+    },
+    {
+      "seed": 7,
+      "epoch": 4,
+      "ticks": 1200,
+      "saveSha256": "347f9e0a627be32e652b0ff31d395c6723f851e2b145fc8b7dc1d881a7905d8d",
+      "stateHash": 3206186268
+    },
+    {
+      "seed": 7,
+      "epoch": 5,
+      "ticks": 1200,
+      "saveSha256": "bdff38c7cd27196f3e8cc94514342db964b02d92958459bf182e5f1e69385f3f",
+      "stateHash": 970633251
+    },
+    {
+      "seed": 7,
+      "epoch": 6,
+      "ticks": 1200,
+      "saveSha256": "25b9d8ec565610cb9041ff504c3ddac18acebd5ad1764b4538a8dd95cb9d16f8",
+      "stateHash": 2079852974
+    },
+    {
+      "seed": 7,
+      "epoch": 7,
+      "ticks": 1200,
+      "saveSha256": "88c75db531bc4c6cab3c425d335f41983144532a621951235c61de5e81b17feb",
+      "stateHash": 2635584968
+    },
+    {
+      "seed": 7,
+      "epoch": 8,
+      "ticks": 1200,
+      "saveSha256": "fabce15fa3c5c0acca220c161cca16675989a49c972bb9df059d297cb8ed6277",
+      "stateHash": 48121363
+    },
+    {
+      "seed": 41,
+      "epoch": 1,
+      "ticks": 1200,
+      "saveSha256": "de0bf40346373d062c3a1fbc89fe2f3b10e5b7079fb18ac68f38c2174475e4ad",
+      "stateHash": 627569710
+    },
+    {
+      "seed": 41,
+      "epoch": 2,
+      "ticks": 1200,
+      "saveSha256": "1d55cdd79d579dbd39d3ca4eb9c2ba2ddfbf0cfde4c9b9082d88c98406acb7bc",
+      "stateHash": 1126902472
+    },
+    {
+      "seed": 41,
+      "epoch": 3,
+      "ticks": 1200,
+      "saveSha256": "b4f9726b2a82e5433247b573e28acc9cad3108e897386774084f934d9829ba94",
+      "stateHash": 3292250622
+    },
+    {
+      "seed": 41,
+      "epoch": 4,
+      "ticks": 1200,
+      "saveSha256": "e529bdf6b408ead1b05563fa1c819076ffb7e6a34ec40768494e7a96d24ea068",
+      "stateHash": 2021859386
+    },
+    {
+      "seed": 41,
+      "epoch": 5,
+      "ticks": 1200,
+      "saveSha256": "f66d00ee64938d3e5b4d1fd089f5320b8e68cabbfe993ac348fea7c473393991",
+      "stateHash": 3057910663
+    },
+    {
+      "seed": 41,
+      "epoch": 6,
+      "ticks": 1200,
+      "saveSha256": "4b78c3e9996b27038faaa57e2cd3f36a785111d07a8e430f2e1f62f6a3cc474a",
+      "stateHash": 1329771386
+    },
+    {
+      "seed": 41,
+      "epoch": 7,
+      "ticks": 1200,
+      "saveSha256": "2b53fbf67084ccb33836792c6084b2ac20d258cbe8b48c6651ef5aaaeba84d23",
+      "stateHash": 2779376180
+    },
+    {
+      "seed": 41,
+      "epoch": 8,
+      "ticks": 1200,
+      "saveSha256": "069390a80d8dc0d16d0d8e7043a98e34969cdb5fc21a689006868896c1ec1d7b",
+      "stateHash": 536414707
+    }
+  ],
+  "baseCheckpoints": 112,
+  "malformedCases": [
+    "marker",
+    "version",
+    "count-too-large",
+    "count-missing",
+    "footer-zero",
+    "footer-short",
+    "footer-too-big",
+    "footer-magic",
+    "stale-generation",
+    "outside-entity-array",
+    "non-city-handle",
+    "radius-NaN",
+    "radius-Infinity",
+    "radius--Infinity",
+    "radius-0",
+    "radius-6",
+    "radius-7",
+    "radius-7.5",
+    "radius-10",
+    "radius-12",
+    "duplicate-slot",
+    "out-of-order-records"
+  ],
+  "completed": [
+    "BASE: 2 seeds × 8 epochs × 1200 ticks, worker production, 112 full save-byte/state-hash checkpoints against pre-City WASM.",
+    "CGD1 current byte roundtrip; pure queries; invalid marker/version/count/footer/radius/stale/foreign/duplicate/out-of-order records and all truncation/trailing-data cases leave active hash and bytes unchanged.",
+    "Real C15 gift: epoch15 TC to epoch1 recipient retains radius11 immediately, after save/load and after40ticks.",
+    "Save generation recycling: stale old-generation CGD1 rejected atomically; explicit fresh generation receives radius7 and cannot inherit old11.",
+    "Genuine pre-City57 and991E/DIP1 legacy saves migrate; exact old prefix preserved; present-profile synthesis, upgrade idempotence and finite ECO1/CGDE marker collision verified."
+  ]
+}

@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="de">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Originalgrafiken – GPU-Prüfung</title>
+<style>
+  :root{font-family:system-ui,sans-serif;color:#e7ebed;background:#141a20;color-scheme:dark}
+  *{box-sizing:border-box}body{margin:0}header{padding:12px 16px;border-bottom:1px solid #46525c}
+  h1{font-size:19px;margin:0 0 5px}p{font-size:13px;margin:0;color:#b9c7cd}
+  #controls{padding:10px 16px;display:flex;flex-wrap:wrap;align-items:end;gap:9px 14px;background:#202a32}
+  label{display:grid;gap:4px;font-size:12px}select,input,button{font:inherit;padding:5px 7px;min-height:30px}
+  input[type=range]{padding:0;width:135px}input[type=number]{width:85px}button{cursor:pointer}
+  .inline{display:flex;align-items:center;gap:6px;align-self:center}.inline input{min-height:0}
+  #stage{position:relative;height:calc(100vh - 276px);min-height:370px;overflow:hidden;background:#61717b}
+  canvas{width:100%;height:100%;display:block}#labels{position:absolute;inset:0;pointer-events:none}
+  .label{position:absolute;white-space:nowrap;transform:translate(-50%,-100%);font-size:12px;padding:3px 5px;background:#121b22d9;border-radius:3px;color:white}
+  #summary{padding:8px 16px;font:12px ui-monospace,monospace;display:flex;flex-wrap:wrap;gap:5px 22px;border-top:1px solid #46525c}
+  #details{margin:0;padding:0 16px 10px;font:11px/1.45 ui-monospace,monospace;white-space:pre-wrap;max-height:105px;overflow:auto}
+  #errors{color:#ffaca3}#hint{padding:0 16px 8px;font-size:11px;color:#a9b9c1}
+  @media(max-width:800px){#stage{height:440px}#controls{gap:7px}input[type=range]{width:105px}}
+</style>
+<header>
+  <h1>Originalgrafiken – reine GPU-Prüfung</h1>
+  <p>Originalmodelle, Animationen und Gebäudeböden mit den vorhandenen Renderern. Feste Grafikszene; keine Simulation, kein WASM, keine spielbare Partie.</p>
+</header>
+<form id="controls" autocomplete="off">
+  <label>Szene<select id="scene"><option value="aircraft">Flugzeuge 37 + 38 + 41</option><option value="ground">Gebäude 0 + 1 / Bodenneigung</option><option value="single">Einzelmodell</option></select></label>
+  <label>Native Grafik-ID<select id="unit"><option value="37">37 – laden …</option></select></label>
+  <label>Epoche<select id="epoch"></select></label>
+  <label>Aktivität<select id="activity"><option value="0">0 – Idle</option><option value="1">1 – Walk</option><option value="6">6 – Kampf</option></select></label>
+  <label>Spielerfarbe<select id="team"><option value="0">0 – Blau (A)</option><option value="1">1 – Rot (B)</option><option value="2">2 – Grün (C)</option><option value="3">3 – Gelb (G)</option></select></label>
+  <label>Zoom / Pixel je Einheit<input id="zoom" type="range" min="5" max="180" value="65" step="1"><output id="zoom-value">65</output></label>
+  <label>Modelldrehung<input id="yaw" type="range" min="0" max="360" value="25" step="1"></label>
+  <label>Kameraneigung<input id="pitch" type="range" min="15" max="85" value="55" step="1"></label>
+  <label>Frame / 48<input id="frame" type="number" min="0" max="47" value="0" step="1"></label>
+  <button id="previous" type="button">−1 Frame</button><button id="next" type="button">+1 Frame</button>
+  <button id="pause" type="button" aria-pressed="true">Animation starten</button>
+  <label class="inline"><input id="grid" type="checkbox" checked> Terraindreiecke</label>
+  <label class="inline"><input id="show-ground" type="checkbox" checked> Originalboden</label>
+  <button id="near" type="button">Nah: Zoom 110</button><button id="far" type="button">Fern: Zoom 12</button>
+  <button id="copy" type="button">Prüflink kopieren</button>
+</form>
+<div id="stage"><canvas id="gl" aria-label="Originalgrafiken-Prüfszene"></canvas><div id="labels"></div></div>
+<div id="summary" aria-live="polite">
+  <span id="loaded">loaded: 0</span><span id="draws">draws: 0</span><span id="phase">phase: 0</span><span id="gpu">GPU: noch nicht geprüft</span><span id="errors">errors: 0</span>
+</div>
+<pre id="details">Originaldateien werden geladen …</pre>
+<div id="hint">Pause und Frame erlauben reproduzierbare Rotoraufnahmen. Zoom verwendet denselben Near/Far-Schwellwert wie das Spiel; ohne native Ferngeometrie bleibt das Nahmodell. Epochenanzeige 1–15 entspricht intern 0–14. Boden: ausdrücklich Rural-Slot 0, Auswahlregel noch offen.</div>
+<script type="module">
+import {loadOriginalModels} from './original-renderer.js?qa=graphics-check1';
+import {loadOriginalGround,sampleGroundHeight} from './original-ground.js?qa=graphics-check1';
+
+const $=id=>document.getElementById(id),canvas=$('gl');
+const gl=canvas.getContext('webgl2',{alpha:false,antialias:true,preserveDrawingBuffer:true,powerPreference:'high-performance'});
+const pageErrors=[],glErrors=[];
+let models=null,ground=null,fixture=null,manifest=null,ready=false,paused=true,phase=0,previousTime=0,statusTime=0;
+let loadCount=0,loadTotal=0,lastObjects=[],vp=new Float32Array(16);
+const teams=[[.27,.59,1],[.94,.27,.24],[.31,.86,.39],[.96,.82,.27],[1,1,1],[1,1,1],[1,1,1],[.3,.75,1]];
+const params=new URLSearchParams(location.search);
+for(let e=1;e<=15;e++)$('epoch').add(new Option(String(e),String(e-1)));
+for(const key of ['scene','activity','team','zoom','yaw','pitch','epoch']){
+  if(params.has(key))$(key).value=params.get(key);
+}
+if(!$('scene').value)$('scene').value='aircraft';
+if(!$('epoch').value)$('epoch').value='0';
+phase=Math.max(0,Math.min(47,Number(params.get('frame'))||0))/48;
+paused=params.get('play')!=='1';
+$('frame').value=String(Math.round(phase*48));
+$('pause').textContent=paused?'Animation starten':'Pause';$('pause').setAttribute('aria-pressed',String(paused));
+if(params.has('grid'))$('grid').checked=params.get('grid')!=='0';
+if(params.has('ground'))$('show-ground').checked=params.get('ground')!=='0';
+$('controls').addEventListener('submit',e=>e.preventDefault());
+
+function reportError(error){const text=String(error?.message||error);pageErrors.push(text);console.error(error);refreshStatus();}
+window.addEventListener('error',event=>reportError(event.error||event.message));
+window.addEventListener('unhandledrejection',event=>reportError(event.reason));
+function checkGL(stage){
+  if(!gl)return;
+  for(let n=0;n<20;n++){
+    const code=gl.getError();if(code===gl.NO_ERROR)break;
+    const name=({1280:'INVALID_ENUM',1281:'INVALID_VALUE',1282:'INVALID_OPERATION',1285:'OUT_OF_MEMORY',1286:'INVALID_FRAMEBUFFER_OPERATION',37442:'CONTEXT_LOST_WEBGL'})[code]||String(code);
+    glErrors.push(`${stage}: ${name} (0x${code.toString(16)})`);
+  }
+}
+function chosenVariant(id,epoch){
+  const variants=models?.models.get(id)||[];let choice=variants[0];
+  for(const v of variants){if(v.epoch<=epoch)choice=v;else break;}return choice;
+}
+function clipInfo(variant,activity){
+  const requested=({0:'idle',1:'walk',6:'combat'})[activity]||'idle';
+  const clip=variant?.parts.some(p=>p.animations?.[requested])?requested:'idle';
+  const animations=variant?.parts.map(p=>p.animations?.[clip]).filter(Boolean)||[];
+  return {clip,duration:animations[0]?.duration||1,frames:[...new Set(animations.map(a=>a.frames?.length||0))]};
+}
+function visibleVariantLabel(id,epoch,size,zoom){
+  const variant=chosenVariant(id,epoch);if(!variant)return 'nicht geladen';
+  const far=size*zoom<55&&variant.farUrl;
+  return far?(variant.far?'Far geladen':'Far lädt …'):'Near';
+}
+function refreshStatus(){
+  const errors=[...pageErrors,...(models?.errors||[]),...(ground?.errors||[]),...glErrors];
+  $('loaded').textContent=`loaded: ${loadCount}/${loadTotal} Bindungen · ${models?.available.size||0} IDs · Boden ${ground?.entries.size||0}`;
+  $('draws').textContent=`draws: Modelle ${models?.metrics.calls||0} / Boden ${ground?.metrics.calls||0} · Dreiecke ${models?.metrics.triangles||0}`;
+  $('phase').textContent=`phase: ${phase.toFixed(6)} · Frame ${(phase*48).toFixed(3)}/48 · ${paused?'PAUSE':'läuft'}`;
+  $('gpu').textContent=glErrors.length?`GPU: ${glErrors.length} Fehler`:(ready?'GPU: NO_ERROR':'GPU: lädt …');
+  $('errors').textContent=`errors: ${errors.length}`;
+  const epoch=Number($('epoch').value)||0,activity=Number($('activity').value)||0,zoom=Number($('zoom').value)||65;
+  const lines=lastObjects.map(o=>{
+    const v=chosenVariant(o.id,epoch),a=clipInfo(v,activity);
+    return `ID ${o.id} ${o.name}: ${visibleVariantLabel(o.id,epoch,o.size,zoom)}; native binding epoch ${(v?.epoch??0)+1}; clip ${a.clip}; duration ${a.duration.toFixed(6)}s; frames [${a.frames.join(',')||'statisch'}]; size ${o.size}`;
+  });
+  if(errors.length)lines.push(...errors.slice(-12));
+  if(!ready)lines.unshift('Originaldateien werden geladen …');
+  $('details').textContent=lines.join('\n');
+  $('zoom-value').textContent=String(zoom);
+}
+function shareURL(){
+  const q=new URLSearchParams();
+  for(const key of ['scene','unit','epoch','activity','team','zoom','yaw','pitch'])q.set(key,$(key).value);
+  q.set('frame',String(Math.floor(phase*48)%48));q.set('play',paused?'0':'1');
+  q.set('grid',$('grid').checked?'1':'0');q.set('ground',$('show-ground').checked?'1':'0');
+  return `${location.pathname}?${q}`;
+}
+function changed(){history.replaceState(null,'',shareURL());refreshStatus();}
+for(const id of ['scene','epoch','activity','team','zoom','yaw','pitch','grid','show-ground'])$(id).addEventListener('input',changed);
+$('unit').addEventListener('change',()=>{$('scene').value='single';changed();});
+function setFrame(frame){phase=((frame%48)+48)%48/48;paused=true;$('frame').value=String(Math.round(phase*48));$('pause').textContent='Animation starten';$('pause').setAttribute('aria-pressed','true');changed();}
+$('frame').addEventListener('input',()=>setFrame(Math.trunc(Number($('frame').value)||0)));
+$('previous').onclick=()=>setFrame(Math.floor(phase*48)-1);
+$('next').onclick=()=>setFrame(Math.floor(phase*48)+1);
+$('pause').onclick=()=>{paused=!paused;$('pause').textContent=paused?'Animation starten':'Pause';$('pause').setAttribute('aria-pressed',String(paused));changed();};
+$('near').onclick=()=>{$('zoom').value='110';changed();};
+$('far').onclick=()=>{$('zoom').value='12';changed();};
+$('copy').onclick=async()=>{try{await navigator.clipboard.writeText(new URL(shareURL(),location.href).href);$('copy').textContent='Prüflink kopiert';setTimeout(()=>$('copy').textContent='Prüflink kopieren',1500);}catch{history.replaceState(null,'',shareURL());$('copy').textContent='Prüflink in Adressleiste';}};
+canvas.addEventListener('wheel',event=>{event.preventDefault();$('zoom').value=String(Math.max(5,Math.min(180,Number($('zoom').value)*(event.deltaY<0?1.12:1/1.12))));changed();},{passive:false});
+
+// Deliberately small, non-planar terrain fixture. Each world cell uses a–c–b,
+// b–c–d, matching the existing ground renderer's actual triangle interpolation.
+const heights=new Float32Array(257*257);
+for(let z=0;z<=256;z++)for(let x=0;x<=256;x++){
+  const checker=(x+z)%2?.045:0;
+  heights[z*257+x]=1.5+(x-128)*.025+(z-128)*.017+checker;
+}
+const groundAt=(x,z)=>sampleGroundHeight(heights,x,z);
+
+function camera(width,height,targetY){
+  const zoom=Number($('zoom').value)||65,pitch=(Number($('pitch').value)||55)*Math.PI/180;
+  const fov=35*Math.PI/180,tan=Math.tan(fov/2),distance=height/(2*zoom*tan);
+  const eye=[128,targetY+distance*Math.sin(pitch),128+distance*Math.cos(pitch)];
+  const f=[0,-Math.sin(pitch),-Math.cos(pitch)],u=[0,Math.cos(pitch),-Math.sin(pitch)];
+  const near=Math.max(.05,distance*.02),far=distance*4+160,t=1/tan,aspect=width/height;
+  const tx=-eye[0],ty=-(u[1]*eye[1]+u[2]*eye[2]),tz=f[1]*eye[1]+f[2]*eye[2];
+  const A=(far+near)/(near-far),B=2*far*near/(near-far),m=vp;
+  m.set([t/aspect,0,0,0,0,t*u[1],-A*f[1],f[1],0,t*u[2],-A*f[2],f[2],t/aspect*tx,t*ty,A*tz+B,-tz]);
+  return vp;
+}
+function makeProgram(vertex,fragment){
+  const program=gl.createProgram();
+  for(const [type,source]of[[gl.VERTEX_SHADER,vertex],[gl.FRAGMENT_SHADER,fragment]]){
+    const shader=gl.createShader(type);gl.shaderSource(shader,source);gl.compileShader(shader);
+    if(!gl.getShaderParameter(shader,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(shader));
+    gl.attachShader(program,shader);gl.deleteShader(shader);
+  }
+  gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(program));
+  return program;
+}
+function terrain(){
+  const shader=makeProgram(`#version 300 es
+    layout(location=0)in vec3 position;uniform mat4 vp;out vec3 world;
+    void main(){world=position;gl_Position=vp*vec4(position,1.);}`,
+  `#version 300 es
+    precision highp float;uniform sampler2D diffuse;uniform bool grid;in vec3 world;out vec4 color;
+    void main(){
+      vec3 n=normalize(cross(dFdy(world),dFdx(world)));if(n.y<0.)n=-n;
+      vec3 rgb=texture(diffuse,world.xz*.5).rgb*(.67+.35*max(dot(n,normalize(vec3(.42,.82,.39))),0.));
+      vec2 f=fract(world.xz),edge=min(f,1.-f),pixel=fwidth(world.xz);
+      float line=1.-smoothstep(0.,max(pixel.x,pixel.y)*.9,min(min(edge.x,edge.y),abs(f.x+f.y-1.)*.7));
+      if(grid)rgb=mix(rgb,vec3(.1,.17,.19),line*.45);color=vec4(rgb,1.);
+    }`);
+  const vertices=[],indices=[];
+  for(let z=96;z<=160;z++)for(let x=96;x<=160;x++)vertices.push(x,heights[z*257+x],z);
+  for(let z=0;z<64;z++)for(let x=0;x<64;x++){const a=z*65+x,b=a+1,c=a+65,d=c+1;indices.push(a,c,b,b,c,d);}
+  const vao=gl.createVertexArray();gl.bindVertexArray(vao);
+  gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,3,gl.FLOAT,false,12,0);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,new Uint16Array(indices),gl.STATIC_DRAW);
+  const u={vp:gl.getUniformLocation(shader,'vp'),diffuse:gl.getUniformLocation(shader,'diffuse'),grid:gl.getUniformLocation(shader,'grid')};
+  return {shader,vao,u,count:indices.length};
+}
+async function loadImageTexture(url,unit){
+  const response=await fetch(url);if(!response.ok)throw Error(`${url}: ${response.status}`);
+  const image=await createImageBitmap(await response.blob(),{premultiplyAlpha:'none',colorSpaceConversion:'none'});
+  const texture=gl.createTexture();gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,texture);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);image.close();
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT);gl.generateMipmap(gl.TEXTURE_2D);
+  return texture;
+}
+function objects(){
+  const defMap=new Map((fixture?.definitions||[]).map(d=>[d.id,d]));
+  const sourceMap=new Map((manifest?.models||[]).map(d=>[d.id,d]));
+  const scene=$('scene').value,id=Number($('unit').value)||0;
+  const ids=scene==='aircraft'?[37,38,41]:scene==='ground'?[0,1]:[id];
+  return ids.map((id,i)=>{
+    const def=defMap.get(id)||{name:sourceMap.get(id)?.definitionName||`Prop ${id}`,size:1,building:false,domain:'LAND'};
+    const x=scene==='aircraft'?124+i*4:scene==='ground'?125+i*6:128;
+    const z=scene==='ground'?128.15:128;
+    const y=groundAt(x,z)+(def.domain==='AIR'?2.8:0);
+    return {id,...def,x,z,y};
+  });
+}
+function instanceData(items){
+  const data=new Float32Array(items.length*12),ranges=new Uint32Array(512);
+  const epoch=Number($('epoch').value)||0,activity=Number($('activity').value)||0,team=Number($('team').value)||0;
+  const sorted=[...items].sort((a,b)=>a.id-b.id),yaw=Number($('yaw').value)*Math.PI/180;
+  sorted.forEach((o,i)=>{
+    const clip=clipInfo(chosenVariant(o.id,epoch),activity);
+    // Seed1 is also built=1 for buildings; fract(phase+1) preserves a common
+    // exact requested clip phase without per-entity pseudo-random offsets.
+    data.set([o.x,o.z,o.y,yaw,o.id,team,1,o.building?64:0,o.size,0,phase*clip.duration,activity],i*12);
+    ranges[o.id*2]=i;ranges[o.id*2+1]=1;
+  });
+  return {data,ranges};
+}
+function labels(items,width,height){
+  $('labels').replaceChildren(...items.map(o=>{
+    const p=[o.x,o.y+o.size*.6,o.z,1],clip=[0,0,0,0];
+    for(let row=0;row<4;row++)for(let c=0;c<4;c++)clip[row]+=vp[c*4+row]*p[c];
+    const label=document.createElement('span');label.className='label';label.textContent=`${o.id} · ${o.name}`;
+    label.style.left=`${(clip[0]/clip[3]*.5+.5)*width}px`;label.style.top=`${(-clip[1]/clip[3]*.5+.5)*height}px`;return label;
+  }));
+}
+
+async function start(){
+  if(!gl)throw Error('WebGL2 fehlt. Die Prüfseite benötigt einen Browser mit WebGL2.');
+  const getJSON=async path=>{const response=await fetch(path,{cache:'no-store'});if(!response.ok)throw Error(`${path}: ${response.status}`);return response.json();};
+  [fixture,manifest]=await Promise.all([getJSON('./original-graphics-fixture.json'),getJSON('./local-original/models/manifest.json')]);
+  const definitions=new Map(fixture.definitions.map(d=>[d.id,d])),ids=[...new Set(manifest.models.map(m=>m.id))].sort((a,b)=>a-b);
+  $('unit').replaceChildren(...ids.map(id=>new Option(`${id} – ${definitions.get(id)?.name||manifest.models.find(m=>m.id===id)?.definitionName||'Original-Prop'}`,String(id))));
+  $('unit').value=params.has('unit')&&ids.includes(Number(params.get('unit')))?params.get('unit'):'37';
+  const terrainGPU=terrain();checkGL('Terrain shader / buffers');
+  const mappings=await getJSON('./local-original/textures.json');
+  const grass=await loadImageTexture(mappings.terrain.grass,1);checkGL('Terrain texture');
+  // Complete visibility explicitly bound to the renderer contract's unit2.
+  const fog=gl.createTexture();gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,fog);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.R8,256,256,0,gl.RED,gl.UNSIGNED_BYTE,new Uint8Array(256*256).fill(255));
+  for(const key of [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER])gl.texParameteri(gl.TEXTURE_2D,key,gl.LINEAR);
+  for(const key of [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T])gl.texParameteri(gl.TEXTURE_2D,key,gl.CLAMP_TO_EDGE);
+  models=await loadOriginalModels(gl,true,teams,(done,total)=>{loadCount=done;loadTotal=total;refreshStatus();});
+  checkGL('Native model loader');
+  ground=await loadOriginalGround(gl,true);ground.updateTerrain(heights);checkGL('Native ground loader');
+  ready=true;lastObjects=objects();refreshStatus();
+  function draw(now){
+    try{
+      const dt=previousTime?Math.min(.1,(now-previousTime)/1000):0;previousTime=now;
+      if(!paused){phase=(phase+dt)%1;$('frame').value=String(Math.floor(phase*48));}
+      const rect=canvas.getBoundingClientRect(),ratio=Math.min(devicePixelRatio||1,2),width=Math.round(rect.width*ratio),height=Math.round(rect.height*ratio);
+      if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}
+      lastObjects=objects();const air=$('scene').value==='aircraft'||lastObjects[0]?.domain==='AIR';
+      camera(rect.width,rect.height,air?4.6:2.1);
+      const {data,ranges}=instanceData(lastObjects),epoch=Number($('epoch').value)||0,zoom=Number($('zoom').value)||65;
+      gl.viewport(0,0,width,height);gl.clearColor(.34,.42,.47,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+      gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.disable(gl.CULL_FACE);gl.disable(gl.BLEND);gl.depthMask(true);
+      gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,fog);
+      gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,grass);
+      gl.useProgram(terrainGPU.shader);gl.bindVertexArray(terrainGPU.vao);
+      gl.uniformMatrix4fv(terrainGPU.u.vp,false,vp);gl.uniform1i(terrainGPU.u.diffuse,1);gl.uniform1i(terrainGPU.u.grid,$('grid').checked?1:0);
+      gl.drawElements(gl.TRIANGLES,terrainGPU.count,gl.UNSIGNED_SHORT,0);
+      if($('show-ground').checked)ground.draw({data,ranges,vp});
+      else{ground.metrics.calls=0;ground.metrics.instances=0;}
+      gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
+      models.draw({data,ranges,vp,epochs:[epoch,epoch,epoch,epoch],zoom});
+      checkGL('Draw');labels(lastObjects,rect.width,rect.height);
+      if(now-statusTime>200){refreshStatus();statusTime=now;}
+      requestAnimationFrame(draw);
+    }catch(error){reportError(error);}
+  }
+  requestAnimationFrame(draw);
+}
+start().catch(reportError);
+</script>
+</html>

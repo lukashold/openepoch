@@ -1,0 +1,222 @@
+{
+  "format": "ee2-fortress-territory-evidence-v1",
+  "date": "2026-10-31",
+  "scope": "Original installation read only; BASE db/hdrs/manual and targeted existing Ghidra project with -readOnly -noanalysis. No original AI or complete game equivalence claim.",
+  "engine": {
+    "source": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\Unofficial Patch Files\\EnabledUP15Units\\EE2.exe",
+    "sha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+    "baseVsPatchPrecedence": "Not independently established"
+  },
+  "sources": [
+    {
+      "archive": "db.zip",
+      "entry": "db/Simulation/Misc/territory.ddf",
+      "bytes": 3864,
+      "sha256": "13832cfd05c7f1b7ebec01629082e2f4b3ce691c3a4ccce8af366a1ad83bf6f6"
+    },
+    {
+      "archive": "db.zip",
+      "entry": "db/Units/fortress.ddf",
+      "bytes": 12619,
+      "sha256": "b61868f3787350e33d36f97dc58b16285ebbc5db74f9ac36d06ab7db1f709d33"
+    },
+    {
+      "archive": "db.zip",
+      "entry": "db/Units/building.ddf",
+      "bytes": 4339,
+      "sha256": "9ffefc5fb059018d5189451b62b5c2fa0bd178f2b452934bbc95695b07181934"
+    },
+    {
+      "archive": "db.zip",
+      "entry": "db/TechTree/upgrade_unittypes.csv",
+      "bytes": 121504,
+      "sha256": "377cd1a4f02dde5383cbc02bdb4231446452be87b7fd217d13b501a0e302cdac"
+    },
+    {
+      "archive": "db.zip",
+      "entry": "db/Simulation/dbcombat.csv",
+      "bytes": 4728,
+      "sha256": "8c0cf78cd966e3342c3b253c091cb5f83aa9344696e28d29b41279099e6e9680"
+    },
+    {
+      "archive": "hdrs.zip",
+      "entry": "DbHdrs/DbUnitDefs.h",
+      "bytes": 24827,
+      "sha256": "afde5529ed266cc3995dfa3c48eecc3fd17f2eac7db65c880d077ac277cd26c3"
+    }
+  ],
+  "manual": {
+    "file": "manual.pdf",
+    "pages": [
+      10,
+      11
+    ],
+    "note": "PDF page10 printed19: adjacent TC; non-adjacent TC+Fortress. PDF page11 printed20: other/unclaimed-land construction.",
+    "sha256": "c06e78a132b2c200b55d16ec53f959115b0680a4509677986c840fb5dcc51483",
+    "bytes": 1738913
+  },
+  "findings": [
+    {
+      "id": "requirements",
+      "finding": "BASE territory.ddf adjacentReq CityCenter1; nonAdjacentReq CityCenter1+Fortress1; undisputedReq CityCenter1; maximumReq CityCenter1/Fortress2.",
+      "evidence": [
+        "db.zip!db/Simulation/Misc/territory.ddf"
+      ]
+    },
+    {
+      "id": "completion",
+      "finding": "0071DF80 enumerates regular units and ConstructionSite separately. 00718CC0 resolves Construction ability at +17C+10 (index4 proven by 0086A710), obtains target type with 007D4DD0, increments foundation count +C; completed count is +8. 007194B0 compares minimum requirements only with +8. Completed buildings, not foundations, satisfy acquisition requirements.",
+      "evidence": [
+        "0071DF80",
+        "00718CC0",
+        "0086A710",
+        "007D4DD0",
+        "007194B0"
+      ]
+    },
+    {
+      "id": "bootstrap",
+      "finding": "00719280 chooses adjacentReq if own territory list from 0071F070 is empty. A landless player can acquire their first territory using a completed city center without a fortress.",
+      "evidence": [
+        "00719280",
+        "0071F070"
+      ]
+    },
+    {
+      "id": "adjacency",
+      "finding": "00723BA0 builds territory neighbor pairs from horizontally/vertically consecutive grid cells only, not diagonal cells. 007217E0 requires neighbor owner to equal the same player; alliance is insufficient.",
+      "evidence": [
+        "00723BA0",
+        "007217E0"
+      ]
+    },
+    {
+      "id": "retention",
+      "finding": "0071A340 checks current owner using undisputedReq; 0071E520 skips new acquisition while undisputed. Removing a fortress or losing adjacent land therefore does not revoke an existing city-based claim.",
+      "evidence": [
+        "0071A340",
+        "0071E520"
+      ]
+    },
+    {
+      "id": "disputed",
+      "finding": "007196E0/0071A340 set state+60=2 on an existing owner failing undisputedReq while retaining owner+54. The reconstruction currently frees a territory after city-center destruction and has no full original disputed-ownership state.",
+      "evidence": [
+        "007196E0",
+        "0071A340"
+      ]
+    },
+    {
+      "id": "maximum",
+      "finding": "0071B310 sums completed building counts across players plus construction counts belonging to the placing player, then compares maximumReq. The Fortress placement check now follows this distinction; existing city-center foundation exclusion remains a stricter adapter.",
+      "evidence": [
+        "0071B310",
+        "00718F00",
+        "00718F40"
+      ]
+    },
+    {
+      "id": "transfer",
+      "finding": "Previously exported 0071DDB0 directly transfers a territory and eligible owner objects, without calling adjacency/nonAdjacent acquisition gates. Current queue refund, crew and atomic-swap policies remain declared adapters.",
+      "evidence": [
+        "0071DDB0"
+      ]
+    },
+    {
+      "id": "garrison",
+      "finding": "DbUnitDefs.h says attackBonus per occupied SLOT, healPoints per second. Fortress has10slots, .03 attackBonus, heal2/4/6/8/10/12/14 at source epochs1/4/6/8/10/12/14. Eligibility is inherited Garrisonable.garrisonTypes, not inferred from a unit name.",
+      "evidence": [
+        "hdrs.zip!DbHdrs/DbUnitDefs.h:521-537",
+        "db.zip!db/Units/fortress.ddf"
+      ]
+    },
+    {
+      "id": "slotGetter",
+      "finding": "007E63B0 returns1 for UnitTypeAttr Leaders (008574E0; mask D0125C initialized from literal C47CE4 by 00856320), otherwise the DWORD at UnitType+A0. 0053A0F0 registers name/offset pairs: C14970 points to literal popCount at C149DC, C14974 receives its property offset. 0053A8D0 reads this offset at 0053ACDC and writes the inherited value into UnitType+A0 at0053ACFE. Thus the ordinary slot cost is the original popCount. Registration and instructions independently checked against raw PE bytes.",
+      "evidence": [
+        "007E63B0",
+        "008574E0",
+        "00856320",
+        "0053A0F0",
+        "0053A8D0",
+        "0053ACDC",
+        "0053ACFE"
+      ]
+    },
+    {
+      "id": "combat",
+      "finding": "Native BuildingCombat attack column in dbcombat.csv permits land, buildings and surface ships, excludes air/submarines. Full native RPS coefficient application remains outside this change.",
+      "evidence": [
+        "db.zip!db/Simulation/dbcombat.csv"
+      ]
+    }
+  ],
+  "exports": [
+    {
+      "file": "analysis/fortress-adjacency-population.c",
+      "bytes": 18333,
+      "sha256": "8e428bcd5c1b2444af61804df782485240c286b6d13f400fde2b0687fbe285ed"
+    },
+    {
+      "file": "analysis/fortress-claim-counts.c",
+      "bytes": 26760,
+      "sha256": "70e1a2d49b411f9cf69ed5005b675aa9903c748141a5ffe98fc2a325e971129b"
+    },
+    {
+      "file": "analysis/fortress-claim-max.c",
+      "bytes": 4272,
+      "sha256": "5623be9dbfe4a20259d00648632317e4a84570f92ef900765e697e556cbd4bdf"
+    },
+    {
+      "file": "analysis/fortress-claim-requirements.c",
+      "bytes": 26196,
+      "sha256": "12c01a6f6f9689f59eba247ad775941b42fe79af3a29922f1f9fc42d3e621b94"
+    },
+    {
+      "file": "analysis/fortress-claim-runtime.c",
+      "bytes": 33819,
+      "sha256": "d11bac3206d99b03b38e4945667901ffecfe4e060ae1293ca396335b194aec75"
+    },
+    {
+      "file": "analysis/fortress-construction-proof.c",
+      "bytes": 8441,
+      "sha256": "2ba53b72dbedaf483778a2bd6f929863ee6ce4d610624d5c381d6dd71fed9669"
+    },
+    {
+      "file": "analysis/fortress-foundation-slots.c",
+      "bytes": 18610,
+      "sha256": "d5a63d96f37ddb8efb53387c125f0dedeed868b3edeea9158179b4cdfcb20901"
+    },
+    {
+      "file": "analysis/fortress-garrison-size.c",
+      "bytes": 9868,
+      "sha256": "cbcde6285adc201908e2572658ea9f5479c853f5da6f0bae362a34a1398dbbb7"
+    },
+    {
+      "file": "analysis/fortress-population-binding-refs.c",
+      "bytes": 283,
+      "sha256": "d80811e69ed1ffd056d5e03022ff72f93c2dbc1b220258c5b843c244b9b15031"
+    },
+    {
+      "file": "analysis/fortress-population-binding.c",
+      "bytes": 55252,
+      "sha256": "16206f1dc3f9adcd8668dbecfdac62eb27226c1709c71fcb20b4be7e4fa15141"
+    },
+    {
+      "file": "analysis/fortress-slots-final.c",
+      "bytes": 16392,
+      "sha256": "3b780aa2ae590b5f1e1940f0f1a8c9d210e6dc7046d25d8fedbc39d109f40939"
+    },
+    {
+      "file": "analysis/fortress-type-adjacency.c",
+      "bytes": 18010,
+      "sha256": "70d03e695b759dd17edefda92810b7da854c90d8933cc0887cd18eabf938f61e"
+    }
+  ],
+  "open": [
+    "Complete original disputed ownership / simultaneous-player claim ordering / neutral-editor special modes",
+    "Exact patch/VFS precedence and full original combat/AI/placement equivalence"
+  ],
+  "nativePopulationBinding": "analysis/fortress-population-binding.json",
+  "runtimeVerification": "analysis/fortress-territory-tests.json"
+}

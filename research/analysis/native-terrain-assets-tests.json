@@ -1,0 +1,9 @@
+{
+  "format": "openepoch-native-terrain-assets-tests-v1",
+  "tests": 4,
+  "passed": true,
+  "verifiedNativeImages": 216,
+  "manifestSha256": "c7cf660ff198a5f3e7b9c0aa2391b27f38ec7afb116b9541fa09019223c0359a",
+  "nativeFullSize": true,
+  "scope": "Read-only original source hashes and exact decoded RGBA pixels, full terrain/detail/seasonal bindings, original mask alpha and water lookup channels. Native shader flow evidence included; no native map generation or complete water shader equivalence claimed."
+}

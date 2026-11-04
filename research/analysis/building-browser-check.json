@@ -1,0 +1,112 @@
+{
+  "format": "building-browser-check-v1",
+  "status": "passed",
+  "checkedAt": "2026-10-31 10:56:10 UTC",
+  "release": "building2",
+  "wasmSha256": "7e359577aa251607126bcd8d8ca4dcb89bb8d38f1a4b6358e38706804cc4d30e",
+  "baseWasmSha256": "f42d32397d576437faff4de9e0d6ad0b3d14e4f516287b4c68d9b39a0e6027c0",
+  "scope": "Actual UI actions in the local in-app browser, production WebGL2 and WASM. Separate qa=1 save namespace. Natural generated seed1, one AI, Stone Age, rich default supplies, revealed map. No cheats, map edits or saved-scenario injection invoked.",
+  "fullscreen": {
+    "menuButton": true,
+    "inGameButton": true,
+    "actualFullscreenPseudoClassCount": 1,
+    "actualCssViewport": [
+      2560,
+      1440
+    ],
+    "f11ExitPseudoClassCount": 0,
+    "bothButtonsAriaPressed": true,
+    "rejectionAndUnsupportedUnitTests": true,
+    "screenshot": "../../OpenEpoch/fullscreen-building1.jpg"
+  },
+  "townCenter": {
+    "id": 0,
+    "topLeft": [
+      65,
+      61
+    ],
+    "turn": 2,
+    "degrees": 90,
+    "footprint": 4,
+    "previewError": 0,
+    "previewText": "Bauplatz möglich · Linksklick zum Bauen",
+    "neutralTerritory": 6,
+    "territoriesBefore": 1,
+    "territoriesAfter": 2,
+    "sourceCostDeducted": {
+      "wood": 300,
+      "stone": 300
+    },
+    "builtNormally": true,
+    "finalHp": 8000,
+    "finalMaxHp": 8000,
+    "populationCapacityBefore": 40,
+    "populationCapacityAfter": 80,
+    "previewScreenshot": "../../OpenEpoch/building-rotation-preview.jpg",
+    "completionScreenshot": "../../OpenEpoch/town-center-expansion-building2.jpg"
+  },
+  "house": {
+    "id": 1,
+    "topLeft": [
+      70,
+      61
+    ],
+    "shiftButtonTurn": 1,
+    "degrees": 45,
+    "footprint": 3,
+    "previewError": 0,
+    "ctrlKeyResultDegrees": 135,
+    "leftButtonRestoresDegrees": 45,
+    "builtNormally": true,
+    "populationCapacityAfter": 85,
+    "sourceCostDeducted": {
+      "wood": 50,
+      "stone": 50
+    },
+    "screenshot": "../../OpenEpoch/house-45-preview-building2.jpg"
+  },
+  "dock": {
+    "id": 5,
+    "topLeft": [
+      60,
+      67
+    ],
+    "autoTurn": 6,
+    "degrees": 270,
+    "footprint": 3,
+    "previewError": 0,
+    "autoLabel": "Küste: automatisch",
+    "manualRightTurn": 0,
+    "manualError": 0,
+    "manualLabel": "Küste: manuell",
+    "autoRestoredTurn": 6,
+    "builtNormally": true,
+    "finalHp": 1800,
+    "finalMaxHp": 1800,
+    "sourceCostDeducted": {
+      "wood": 175
+    },
+    "screenshot": "../../OpenEpoch/dock-coast-preview-building2.jpg"
+  },
+  "finalScene": {
+    "townCenterComplete": true,
+    "houseComplete": true,
+    "dockComplete": true,
+    "territories": 2,
+    "populationCapacity": 85,
+    "gamePaused": true,
+    "screenshot": "../../OpenEpoch/building-expansion-completed.jpg",
+    "consoleWarningsOrErrors": []
+  },
+  "coverageLinks": [
+    "building-placement-evidence.json",
+    "placement-rotation-tests.json",
+    "building-regression-tests.json"
+  ],
+  "limits": [
+    "Eight45-degree orientations, conservative square grid bounds, additional keys and manual dock override are explicit adapters. Native normal-building CTRL step is90 degrees; native dock uses coast auto orientation.",
+    "Claim still begins at the TC foundation and does not implement the full native non-adjacent Fortress requirement.",
+    "Foreign-territory build rights, exact native dock water-cell classification/maximum-height scale and continuous coast-normal calculation remain incomplete.",
+    "No claim of exhaustive original-game equivalence, all gameplay systems, cross-NAT multiplayer or FPS performance."
+  ]
+}

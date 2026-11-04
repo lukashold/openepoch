@@ -1,0 +1,25 @@
+{
+  "date": "2026-10-31",
+  "profile": "ee2",
+  "uiVersion": "diplomacy5",
+  "wasmSha256": "991e4736d420a14bc853d81b99c6d5ee6f9b0884809e4314051aa294739a3d75",
+  "method": "Actual in-app browser; menu, gifts, proposals, saves and hotkeys operated through the UI. Test games used the separate qa=1 save store.",
+  "checks": {
+    "revealedMap": "Selected mode 2 in the start menu; terrain and entire minimap visibly revealed without fog. Diplomacy reports the active saved mode 2.",
+    "exploredMap": "Selected mode 1 for a new seed-7 skirmish with three AI players; whole terrain/minimap known, current sight remains lit and remote terrain dimmed. No remote enemy markers exposed; diplomacy reports mode 1.",
+    "gift": "Sent 200 food to AI player 2; own food changed from 800 to 600 and the event log recorded the gift.",
+    "peace": "Sent peace proposal; pending state shown, then AI accepted and relation changed from Hostile to Neutral.",
+    "alliance": "Sent an alliance proposal with the default Full sight checkbox checked. AI accepted, relation became Allied, mutual sight was reported; other two AI players remained hostile and no victory occurred.",
+    "sightNegotiation": "Requested sight separation: Full remained active while pending, then changed to None after acceptance. A later Full proposal was accepted and restored mutual sight.",
+    "saveLoad": "Saved, reloaded the page and resumed. Food 600, alliance, mutual sight, event log and active Revealed mode persisted even when the new-game selector was set to Explored.",
+    "controls": "F4 reopened diplomacy. A paused game displayed its pause notice; Spiel fortsetzen resumed it inside the dialog. New skirmish reset relationships and the event log.",
+    "visual": "Final v5 dialog is opaque and readable, with no tiled frame borders; hidden proposal and vision controls remain absent when irrelevant. Diplomacy and map mode controls fit the 1280x720 view.",
+    "console": "No warning/error entries returned after final v5 gameplay checks."
+  },
+  "screenshots": [
+    "OpenEpoch/diplomacy-preview.jpg",
+    "OpenEpoch/revealed-map-preview.jpg",
+    "OpenEpoch/explored-map-preview.jpg"
+  ],
+  "limits": "Focused UI/function checks. Full original treaty terms, rendered FPS, physical multi-machine WebRTC/NAT and a full original-game comparison were not tested here."
+}

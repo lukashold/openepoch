@@ -1,0 +1,691 @@
+//! Shared placement validation. Conservative rotated grid bounds and shoreline
+//! auto-orientation are explicit adapters; native building input rotates 90deg.
+use crate::{defs::*, game::*, map::*};
+pub const ROTATION_STEPS: u32 = 8;
+pub struct PlacementCache {
+    pub key: Option<(u32, i32, i32, i32)>,
+    pub approach: Vec<u32>,
+    pub queue: Vec<u32>,
+}
+impl Default for PlacementCache {
+    fn default() -> Self {
+        Self {
+            key: None,
+            approach: vec![NONE; NN],
+            queue: Vec::with_capacity(NN),
+        }
+    }
+}
+impl Game {
+    pub fn footprint_side(def: u8, turn: u32) -> i32 {
+        let Some(d) = DEFS.get(def as usize) else {
+            return 0;
+        };
+        if !d.building || turn >= ROTATION_STEPS {
+            return 0;
+        }
+        let scale = if turn & 1 == 0 {
+            1.0
+        } else {
+            core::f32::consts::SQRT_2
+        };
+        (d.size * scale - 0.00001).ceil() as i32
+    }
+    pub fn angle_for_turn(turn: u32) -> f32 {
+        turn as f32 * core::f32::consts::FRAC_PI_4
+    }
+    pub fn building_bounds(e: &Ent) -> (i32, i32, i32) {
+        let size = DEFS[e.def as usize].size;
+        let span = size * (e.rot.cos().abs() + e.rot.sin().abs());
+        let x0 = (e.x - span * 0.5 + 0.0001).floor() as i32;
+        let y0 = (e.y - span * 0.5 + 0.0001).floor() as i32;
+        let x1 = (e.x + span * 0.5 - 0.0001).ceil() as i32;
+        let y1 = (e.y + span * 0.5 - 0.0001).ceil() as i32;
+        (x0, y0, (x1 - x0).max(y1 - y0))
+    }
+    pub fn building_half(e: &Ent) -> f32 {
+        Self::building_bounds(e).2 as f32 * 0.5
+    }
+    pub fn entity_radius(&self, e: &Ent) -> f32 {
+        if DEFS[e.def as usize].building {
+            Self::building_half(e)
+        } else {
+            DEFS[e.def as usize].rad()
+        }
+    }
+    pub fn footprint_known(&self, team: u8, def: u8, tx: i32, ty: i32, turn: u32) -> bool {
+        let s = Self::footprint_side(def, turn);
+        if s == 0 || tx < 0 || ty < 0 || tx > N as i32 - s || ty > N as i32 - s {
+            return false;
+        }
+        if self.diplomacy.visibility >= 1 && !self.players[team as usize].ai {
+            return true;
+        }
+        (ty..ty + s)
+            .all(|y| (tx..tx + s).all(|x| self.real_fog(team, y as usize * N + x as usize) > 0))
+    }
+    pub fn placement_geometry_error(&self, team: u8, def: u8, tx: i32, ty: i32, turn: u32) -> u32 {
+        let s = Self::footprint_side(def, turn);
+        if s == 0
+            || team as usize >= self.nplayers
+            || tx < 2
+            || ty < 2
+            || tx > N as i32 - 2 - s
+            || ty > N as i32 - 2 - s
+        {
+            return 1;
+        }
+        let territory = self.map.terr[(ty + s / 2) as usize * N + (tx + s / 2) as usize];
+        let owner = self.towner[territory as usize];
+        if owner != team && owner != 255 {
+            return 2;
+        }
+        if def == TC
+            && self.ents[..self.high].iter().any(|e| {
+                e.alive
+                    && e.hp > 0.0
+                    && e.def == TC
+                    && self.map.terr[tile_of(e.x, e.y)] == territory
+            })
+        {
+            return 5;
+        }
+        if def == FORTRESS && self.ents[..self.high].iter().filter(|e| {
+            e.alive && e.hp > 0.0 && e.def == FORTRESS && (e.built>=1.0 || e.team==team)
+                && self.map.terr[tile_of(e.x,e.y)] == territory
+        }).count() >= 2 {
+            return 10;
+        }
+        let deposit = Self::extractor_kind(def);
+        if deposit != R_NONE
+            && self.map.res[(ty + s / 2) as usize * N + (tx + s / 2) as usize] != deposit
+        {
+            return 1;
+        }
+        let mut water = 0u32;
+        let mut land = 0u32;
+        for y in ty..ty + s {
+            for x in tx..tx + s {
+                let t = y as usize * N + x as usize;
+                if self.map.blocked[t] || (self.map.res[t] != R_NONE && self.map.res[t] != deposit)
+                {
+                    return 1;
+                }
+                if def == DOCK {
+                    if self.map.ter[t] == T_ROCK {
+                        return 1;
+                    }
+                    if self.map.ter[t] <= T_SHALLOW {
+                        water += 1;
+                    } else {
+                        land += 1;
+                    }
+                } else if !self.map.pass[0][t] {
+                    return 1;
+                }
+            }
+        }
+        if def == DOCK {
+            let mut land_access = false;
+            let mut sea_exit = false;
+            for k in -1..=s {
+                for &(x, y) in &[
+                    (tx + k, ty - 1),
+                    (tx + k, ty + s),
+                    (tx - 1, ty + k),
+                    (tx + s, ty + k),
+                ] {
+                    let t = y as usize * N + x as usize;
+                    land_access |= self.map.pass[0][t];
+                    sea_exit |= self.map.pass[1][t];
+                }
+            }
+            let cells = (s * s) as u32;
+            if land * 10 < cells || water * 4 < cells || water < 3 || !land_access || !sea_exit {
+                return 1;
+            }
+        }
+        0
+    }
+    /// Reverse flood from every exterior work tile. It is independent of client
+    /// selection, cached by nav version/site; click revalidates current workers.
+    pub fn prepare_build_routes(&mut self, tx: i32, ty: i32, s: i32) {
+        let key = (self.map.nav_ver, tx, ty, s);
+        if self.placement_cache.key == Some(key) {
+            return;
+        }
+        let cache = &mut self.placement_cache;
+        cache.approach.fill(NONE);
+        cache.queue.clear();
+        let pass = &self.map.pass[0];
+        for y in ty - 1..=ty + s {
+            for x in tx - 1..=tx + s {
+                if x >= tx && x < tx + s && y >= ty && y < ty + s {
+                    continue;
+                }
+                if x < 0 || y < 0 || x >= N as i32 || y >= N as i32 {
+                    continue;
+                }
+                let t = y as usize * N + x as usize;
+                if pass[t] {
+                    cache.approach[t] = t as u32;
+                    cache.queue.push(t as u32);
+                }
+            }
+        }
+        let mut head = 0;
+        while head < cache.queue.len() {
+            let t = cache.queue[head] as usize;
+            head += 1;
+            let (x, y) = ((t % N) as i32, (t / N) as i32);
+            for (k, &(dx, dy)) in DIRS.iter().enumerate() {
+                let (nx, ny) = (x + dx, y + dy);
+                if nx < 0 || ny < 0 || nx >= N as i32 || ny >= N as i32 {
+                    continue;
+                }
+                let q = ny as usize * N + nx as usize;
+                if !pass[q] || cache.approach[q] != NONE {
+                    continue;
+                }
+                if k >= 4
+                    && !(pass[y as usize * N + nx as usize] && pass[ny as usize * N + x as usize])
+                {
+                    continue;
+                }
+                cache.approach[q] = cache.approach[t];
+                cache.queue.push(q as u32);
+            }
+        }
+        cache.key = Some(key);
+    }
+    pub fn valid_builders(&self, team: u8, ids: &[usize]) -> Vec<usize> {
+        ids.iter()
+            .copied()
+            .filter(|&i| {
+                self.ents.get(i).map_or(false, |e| {
+                    e.alive && e.hp > 0.0 && e.team == team && DEFS[e.def as usize].has(F_WORKER)
+                })
+            })
+            .collect()
+    }
+    pub fn placement_error_for(
+        &mut self,
+        team: u8,
+        def: u8,
+        tx: i32,
+        ty: i32,
+        turn: u32,
+        ids: &[usize],
+        check_fog: bool,
+    ) -> u32 {
+        let s = Self::footprint_side(def, turn);
+        if s == 0
+            || team as usize >= self.nplayers
+            || tx < 2
+            || ty < 2
+            || tx > N as i32 - 2 - s
+            || ty > N as i32 - 2 - s
+        {
+            return 1;
+        }
+        if DEFS[def as usize].epoch > self.players[team as usize].epoch {
+            return 8;
+        }
+        if !self.afford(team, &self.unit_cost(team, def)) {
+            return 4;
+        }
+        if check_fog && !self.footprint_known(team, def, tx, ty, turn) {
+            return 3;
+        }
+        let geometry = self.placement_geometry_error(team, def, tx, ty, turn);
+        if geometry != 0 {
+            return geometry;
+        }
+        let builders = self.valid_builders(team, ids);
+        if builders.is_empty() {
+            return 6;
+        }
+        self.prepare_build_routes(tx, ty, s);
+        if !builders.iter().any(|&i| {
+            self.placement_cache.approach[tile_of(self.ents[i].x, self.ents[i].y)] != NONE
+        }) {
+            return 7;
+        }
+        if self.free.is_empty() {
+            return 9;
+        }
+        0
+    }
+    pub fn begin_construction(
+        &mut self,
+        team: u8,
+        def: u8,
+        tx: i32,
+        ty: i32,
+        turn: u32,
+        ids: &[usize],
+        check_fog: bool,
+    ) -> usize {
+        if self.placement_error_for(team, def, tx, ty, turn, ids, check_fog) != 0 {
+            return NOIDX;
+        }
+        let s = Self::footprint_side(def, turn);
+        let builders: Vec<(usize, u32)> = self
+            .valid_builders(team, ids)
+            .into_iter()
+            .filter_map(|i| {
+                let t = self.placement_cache.approach[tile_of(self.ents[i].x, self.ents[i].y)];
+                (t != NONE).then_some((i, t))
+            })
+            .collect();
+        let bi = self.place_with_rotation(def, tx, ty, team, turn);
+        if bi == NOIDX {
+            return bi;
+        }
+        let ids: Vec<usize> = builders.iter().map(|p| p.0).collect();
+        let handle = self.h(bi);
+        for (i, tile) in builders {
+            let e = &mut self.ents[i];
+            e.prev = match e.order {
+                O_GATHER if e.otgt == NONE => e.q[0],
+                O_BUILD => e.prev,
+                _ => 0,
+            };
+            e.order = O_BUILD;
+            e.q[0] = R_FOOD;
+            e.otgt = handle;
+            e.tgt = NONE;
+            e.fkey = tile;
+            e.fslot = u16::MAX;
+            e.stuck = 0;
+        }
+        // Own ground units caught by a new foundation step aside; construction
+        // itself cannot progress until its builders have left the blocked footprint.
+        let mut displaced = Vec::new();
+        for i in 0..self.high {
+            let e = self.ents[i];
+            if !e.alive
+                || e.team != team
+                || DEFS[e.def as usize].building
+                || DEFS[e.def as usize].dom != LAND
+                || ids.contains(&i)
+            {
+                continue;
+            }
+            if e.x >= tx as f32
+                && e.x < (tx + s) as f32
+                && e.y >= ty as f32
+                && e.y < (ty + s) as f32
+            {
+                displaced.push(i);
+            }
+        }
+        for i in displaced {
+            let e = self.ents[i];
+            let tile = self.map.snap(e.x, e.y, 0);
+            self.order_move(
+                &[i],
+                (tile % N) as f32 + 0.5,
+                (tile / N) as f32 + 0.5,
+                false,
+            );
+        }
+        bi
+    }
+    pub fn place_with_rotation(&mut self, def: u8, tx: i32, ty: i32, team: u8, turn: u32) -> usize {
+        if self.placement_geometry_error(team, def, tx, ty, turn) != 0
+            || DEFS[def as usize].epoch > self.players[team as usize].epoch
+        {
+            return NOIDX;
+        }
+        let cost = self.unit_cost(team, def);
+        if !self.afford(team, &cost) {
+            return NOIDX;
+        }
+        let side = Self::footprint_side(def, turn);
+        let i = self.spawn_oriented(
+            def,
+            team,
+            tx as f32 + side as f32 * 0.5,
+            ty as f32 + side as f32 * 0.5,
+            Self::angle_for_turn(turn),
+        );
+        if i != NOIDX {
+            self.pay(team, &cost, 1.0);
+            self.ents[i].built = 0.0;
+            self.ents[i].hp = self.max_hp(team, def) * 0.1;
+            #[cfg(feature="ee2-reference")]
+            self.sync_city_ground_entry(i);
+            if def == TC {
+                self.rebuild_territories();
+            }
+        }
+        i
+    }
+    pub fn construction_multiplier(&self, e: &Ent) -> f32 {
+        if e.def == TC {
+            return 1.0;
+        }
+        let owner = self.towner[self.map.terr[tile_of(e.x, e.y)] as usize];
+        if owner == e.team {
+            1.0
+        } else if owner == 255 {
+            2.0
+        } else {
+            3.0
+        }
+    }
+    /// Cardinal shoreline adapter in this engine's XY plane. The original uses a
+    /// sampled water normal; this grid proxy is intentionally not native math.
+    pub fn dock_auto_turn(&self, tx: i32, ty: i32) -> u32 {
+        self.dock_auto_turn_for(self.local, tx, ty)
+    }
+    pub fn dock_auto_turn_for(&self, team: u8, tx: i32, ty: i32) -> u32 {
+        let s = Self::footprint_side(DOCK, 0);
+        if self.placement_geometry_error(team, DOCK, tx, ty, 0) != 0 {
+            return NONE;
+        }
+        let mut land = [0; 4];
+        let mut water = [0; 4];
+        for k in 0..s {
+            for (side, (x, y)) in [
+                (tx + k, ty - 1),
+                (tx + s, ty + k),
+                (tx + k, ty + s),
+                (tx - 1, ty + k),
+            ]
+            .into_iter()
+            .enumerate()
+            {
+                let t = y as usize * N + x as usize;
+                land[side] += self.map.pass[0][t] as u32;
+                water[side] += self.map.pass[1][t] as u32;
+            }
+        }
+        let mut best = 0;
+        let mut score = i32::MIN;
+        for side in 0..4 {
+            let v =
+                land[side] as i32 * 3 + water[(side + 2) % 4] as i32 - land[(side + 2) % 4] as i32;
+            if v > score {
+                score = v;
+                best = side;
+            }
+        }
+        ((best as u32 * 2) + 4) % 8
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    fn flat() -> Game {
+        let mut g = Game::new(7, 0, 0, 2, 0);
+        for p in &mut g.players[..2] {
+            p.epoch = if cfg!(feature = "ee2-reference") {
+                0
+            } else {
+                1
+            };
+            p.res = [10000.0; 3];
+        }
+        g.extra_resources = [[10000.0; 6]; 4];
+        for t in 0..2 {
+            g.rebuild_modifiers(t, false);
+        }
+        g.map.ter.fill(T_GRASS);
+        g.map.res.fill(R_NONE);
+        g.map.amt.fill(0);
+        g.map.blocked.fill(false);
+        for e in &g.ents[..g.high] {
+            if e.alive && DEFS[e.def as usize].building {
+                let (x, y, s) = Game::building_bounds(e);
+                for yy in y..y + s {
+                    for xx in x..x + s {
+                        g.map.blocked[yy as usize * N + xx as usize] = true;
+                    }
+                }
+            }
+        }
+        for i in 0..NN {
+            g.map.upd_pass(i);
+        }
+        g.map.nav_ver += 1;
+        g.diplomacy.visibility = 2;
+        g.refresh_display_fog();
+        g
+    }
+    fn site(g: &Game, def: u8, turn: u32) -> (i32, i32) {
+        let side = Game::footprint_side(def, turn);
+        let (x, y) = g.map.starts[3];
+        (x as i32 - side / 2, y as i32 - side / 2)
+    }
+    fn worker(g: &mut Game, x: f32, y: f32) {
+        let e = &mut g.ents[1];
+        e.x = x;
+        e.y = y;
+        e.px = x;
+        e.py = y;
+        e.ox = x;
+        e.oy = y;
+        e.sel = true;
+        g.build_grid();
+        g.update_fog();
+    }
+    #[test]
+    fn neutral_city_known_maps_workers_and_one_per_territory() {
+        let mut g = flat();
+        let (x, y) = site(&g, TC, 0);
+        worker(&mut g, x as f32 - 4.5, y as f32 + 2.5);
+        g.diplomacy.visibility = 0;
+        assert_eq!(g.placement_error_for(0, TC, x, y, 0, &[1], true), 3);
+        for mode in [1, 2] {
+            g.diplomacy.visibility = mode;
+            assert_eq!(g.placement_error_for(0, TC, x, y, 0, &[1], true), 0);
+        }
+        let bank = g.resource(0, 1);
+        let cost = g.unit_cost(0, TC);
+        let i = g.begin_construction(0, TC, x, y, 0, &[1], true);
+        assert_ne!(i, NOIDX);
+        assert_eq!(g.resource(0, 1), bank - cost[1] as f32);
+        assert_eq!(g.placement_geometry_error(0, TC, x + 8, y, 0), 5);
+        assert_eq!(g.ents[1].otgt, g.h(i));
+    }
+    #[test]
+    fn no_builder_foreign_stale_nonworker_and_disconnected_land_are_rejected() {
+        let mut g = flat();
+        let (x, y) = site(&g, HOUSE, 0);
+        assert_eq!(g.placement_error_for(0, HOUSE, x, y, 0, &[], true), 6);
+        assert_eq!(g.placement_error_for(0, HOUSE, x, y, 0, &[0, 6], true), 6);
+        let before = g.state_hash();
+        assert_eq!(g.begin_construction(0, HOUSE, x, y, 0, &[], true), NOIDX);
+        assert_eq!(g.state_hash(), before);
+        worker(&mut g, 40.5, 40.5);
+        for yy in 38..=42 {
+            for xx in 38..=42 {
+                if xx == 38 || xx == 42 || yy == 38 || yy == 42 {
+                    let t = yy * N + xx;
+                    g.map.ter[t] = T_DEEP;
+                    g.map.upd_pass(t);
+                }
+            }
+        }
+        g.map.nav_ver += 1;
+        assert_eq!(g.placement_error_for(0, HOUSE, x, y, 0, &[1], true), 7);
+    }
+    #[test]
+    fn all_eight_turns_block_save_and_render_the_same_bounding_box() {
+        for turn in 0..8 {
+            let mut g = flat();
+            let (x, y) = site(&g, HOUSE, turn);
+            worker(&mut g, x as f32 - 4.5, y as f32 + 1.5);
+            let side = Game::footprint_side(HOUSE, turn);
+            assert!(side >= DEFS[HOUSE as usize].size as i32);
+            let i = g.begin_construction(0, HOUSE, x, y, turn, &[1], true);
+            assert_ne!(i, NOIDX);
+            assert_eq!(Game::building_bounds(&g.ents[i]), (x, y, side));
+            assert_eq!(g.ents[i].rot, Game::angle_for_turn(turn));
+            for yy in y..y + side {
+                for xx in x..x + side {
+                    assert!(g.map.blocked[yy as usize * N + xx as usize]);
+                }
+            }
+            g.render_with_rotation(1.0, 0.0, 0.0, 120.0, 120.0, -1, 0, 0, 0);
+            g.render_with_rotation(
+                1.0,
+                x as f32 - 10.0,
+                y as f32 - 10.0,
+                x as f32 + 15.0,
+                y as f32 + 15.0,
+                -1,
+                0,
+                0,
+                0,
+            );
+            let row = g.inst.chunks(12).find(|p| p[4] == HOUSE as f32).unwrap();
+            assert_eq!(row[3], g.ents[i].rot);
+            let scaffold = g
+                .inst
+                .chunks(12)
+                .find(|p| p[4] == crate::render::S_SCAFFOLD)
+                .unwrap();
+            assert_eq!(scaffold[3], g.ents[i].rot);
+            g.save();
+            let h = g.state_hash();
+            let loaded = Game::load(&g.savebuf).unwrap();
+            assert_eq!(loaded.state_hash(), h);
+            assert_eq!(Game::building_bounds(&loaded.ents[i]), (x, y, side));
+            for yy in y..y + side {
+                for xx in x..x + side {
+                    assert!(loaded.map.blocked[yy as usize * N + xx as usize]);
+                }
+            }
+        }
+    }
+    #[test]
+    fn odd_turn_city_finishes_after_real_worker_walk_without_cheats() {
+        let mut g = flat();
+        let (x, y) = site(&g, TC, 1);
+        worker(&mut g, x as f32 - 5.5, y as f32 + 3.5);
+        let start = g.ents[1].x;
+        let i = g.begin_construction(0, TC, x, y, 1, &[1], true);
+        assert_ne!(i, NOIDX);
+        let mut finished = false;
+        for _ in 0..2400 {
+            g.tick();
+            if g.ents[i].built >= 1.0 {
+                finished = true;
+                break;
+            }
+        }
+        assert!(
+            finished,
+            "Worker must reach the outside of the six-tile rotated city and finish building"
+        );
+        assert!(g.ents[1].x > start + 1.0);
+        assert!(!g.instant_build);
+        assert_eq!(g.construction_multiplier(&g.ents[i]), 1.0);
+    }
+    #[test]
+    fn neutral_house_has_double_construction_time_and_builder_inside_steps_out() {
+        let mut g = flat();
+        let (x, y) = site(&g, HOUSE, 1);
+        let side = Game::footprint_side(HOUSE, 1);
+        worker(
+            &mut g,
+            x as f32 + side as f32 * 0.5,
+            y as f32 + side as f32 * 0.5,
+        );
+        let i = g.begin_construction(0, HOUSE, x, y, 1, &[1], true);
+        assert_ne!(i, NOIDX);
+        assert_eq!(g.construction_multiplier(&g.ents[i]), 2.0);
+        let one = (g.production_time(0, HOUSE) / DT).ceil() as u32;
+        for _ in 0..one {
+            g.tick();
+        }
+        assert!(g.ents[i].built < 0.65);
+        assert!(g.ents[i].built > 0.2);
+        for _ in 0..one + 200 {
+            g.tick();
+        }
+        assert_eq!(g.ents[i].built, 1.0);
+        let e = g.ents[1];
+        assert!(
+            e.x < x as f32
+                || e.x >= (x + side) as f32
+                || e.y < y as f32
+                || e.y >= (y + side) as f32
+        );
+    }
+    #[test]
+    fn dock_mixed_shore_and_ocean_exit_work_at_all_turns() {
+        for turn in 0..8 {
+            let mut g = flat();
+            let side = Game::footprint_side(DOCK, turn);
+            let (x, y) = (90, 58);
+            for yy in 50..80 {
+                for xx in 80..115 {
+                    let t = yy * N + xx;
+                    g.map.terr[t] = 0;
+                    g.map.ter[t] = if yy >= 60 { T_DEEP } else { T_GRASS };
+                    g.map.upd_pass(t);
+                }
+            }
+            g.map.nav_ver += 1;
+            worker(&mut g, 88.5, 55.5);
+            assert_eq!(g.placement_error_for(0, DOCK, x, y, turn, &[1], true), 0);
+            let auto = g.dock_auto_turn(x, y);
+            assert!(auto < 8 && auto % 2 == 0);
+            let i = g.begin_construction(0, DOCK, x, y, turn, &[1], true);
+            assert_ne!(i, NOIDX);
+            for _ in 0..2200 {
+                g.tick();
+                if g.ents[i].built >= 1.0 {
+                    break;
+                }
+            }
+            assert_eq!(
+                g.ents[i].built, 1.0,
+                "Dock workers must build from real land outside rotated mask"
+            );
+            assert_eq!(Game::building_bounds(&g.ents[i]).2, side);
+        }
+    }
+    #[test]
+    fn rotated_placement_wire_is_lockstep_and_rejects_fractional_tiles() {
+        let mut a = flat();
+        let mut b = flat();
+        b.local = 1;
+        let (x, y) = site(&a, TC, 1);
+        worker(&mut a, x as f32 - 4.5, y as f32 + 3.5);
+        worker(&mut b, x as f32 - 4.5, y as f32 + 3.5);
+        let h = a.state_hash();
+        a.apply(
+            0,
+            crate::cmd::C_PLACE_ROTATED,
+            x as f32 + 0.5,
+            y as f32,
+            (TC as i32) | (1 << 8),
+            &[a.h(1)],
+        );
+        assert_eq!(a.state_hash(), h);
+        a.submit(
+            crate::cmd::C_PLACE_ROTATED,
+            x as f32,
+            y as f32,
+            (TC as i32) | (1 << 8),
+            &[a.h(1)],
+        );
+        let wire = a.outbox.clone();
+        a.inbox = wire.clone();
+        b.inbox = wire;
+        a.net_apply(0);
+        b.net_apply(0);
+        assert_eq!(a.state_hash(), b.state_hash());
+        for _ in 0..160 {
+            a.tick();
+            b.tick();
+        }
+        assert_eq!(a.state_hash(), b.state_hash());
+    }
+}

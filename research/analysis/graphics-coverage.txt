@@ -1,0 +1,12 @@
+Originalgrafik: tatsaechlicher Stand
+
+156 Modell-/Epochenbindungen fuer 57 vorhandene Spielrollen und 11 Landschaftsrollen; 125 verschiedene Original-NIF-Dateien und 66 echte Fernmodelle.
+28 Modelle mit originalen KF-Clips. Neu: Propeller/Hubschrauberrotoren fuer drei Flugmodelle mit 48 statt 8 Samples; Mech-Gang mit 24 statt 8 Samples; Myrmidon-Radgruppen mit nativen Idle/Walk-Clips. Konstante Teile bleiben kompakt. Zukunftsflugzeug44 hat nur konstante native KF-Posen; bei Manta45 fehlt eine passende externe KF-Datei. Dort wird keine Bewegung erfunden.
+26 belegte spaetere Epochenbindungen verwenden vorhandene identische Originalklassen/-visuals, dazu 26 passende quellenbelegte Original-Icons.
+
+Nicht fertig:
+125 von 269 Klassen-/Epochenzeilen besitzen weiterhin keinen vollstaendig belegten nativen visuellen Wechsel. 16 mobile Modelle sind noch statisch exportiert; bei 8 davon liegen passende externe KF-Dateien vor. Weitere Kulturen, weibliche Buerger, Todes-/Start-/Landeanimationen, Effekte und vollstaendige Originaldarstellung fehlen.
+
+Die Installation enthaelt 1638 NIF-Caches und 1427 KF-Dateien. Diese Dateizahlen sind KEIN Vollstaendigkeitsprozentsatz des Spiels: darunter sind Varianten und Effekte. Das Spiel ist weiterhin ein Ausbau mit Originalassets, kein vollstaendig nachgebautes Empire Earth II.
+
+Alle Einzelquellen, offenen Epochen, Bindungen und Testnachweise stehen in coverage-audit.json. Festung56 ergaenzt sieben belegte Quellenstufen. Die bisherigen Werte aller vorhandenen Felder fuer IDs0..55 sind unveraendert; die erzeugte Rust-Tabelle wurde bewusst erweitert. Ein erforderlicher Engine-/WASM-Neubau wird getrennt geprueft.

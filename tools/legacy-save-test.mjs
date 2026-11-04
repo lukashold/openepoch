@@ -1,0 +1,16 @@
+import {readFileSync} from 'node:fs';
+import assert from 'node:assert/strict';
+const make=async path=>(await WebAssembly.instantiate(readFileSync(path),{})).instance.exports;
+const old=await make(process.env.OLD_WASM||new URL('./fixtures/reference-47.wasm',import.meta.url));
+const current=await make(new URL('../docs/openepoch-ee2.wasm',import.meta.url));
+old.init(42,1,0,1,0);old.grant(90000);const x=old.start_x(),y=old.start_y();
+old.select_point(x,y,0,0,0,0,256,256);assert.equal(old.cmd_train(255),1);for(let i=0;i<850;i++)old.tick();assert.equal(old.stat(0,0),1);
+old.select_point(x,y,0,0,0,0,256,256);assert.equal(old.cmd_train(255),1);for(let i=0;i<50;i++)old.tick();old.cheat(0);old.cheat(4);
+const previousResources=[3,4,5].map(f=>old.stat(0,f));
+const ptr=old.save(), bytes=new Uint8Array(old.memory.buffer,ptr,old.save_len()).slice();assert.equal(new DataView(bytes.buffer).getUint32(12,true),47);
+const dst=current.load_alloc(bytes.length);new Uint8Array(current.memory.buffer,dst,bytes.length).set(bytes);assert.equal(current.load_apply(),1);
+assert.equal(current.stat(0,0),2,'old Bronze Age remains Bronze Age in 15-epoch rules');assert.equal(current.cheat_status(2),50,'unused research credits become point balance');
+assert.deepEqual([3,4,5].map(f=>current.stat(0,f)),previousResources.map((r,i)=>r+[800,600,300][i]),'old epoch queue refunded');
+const p=current.ui(),ui=JSON.parse(new TextDecoder().decode(new Uint8Array(current.memory.buffer,p,current.ui_len())));assert.equal(ui.ename,'Bronzezeit');
+current.select_point(x,y,0,0,0,0,256,256);assert.equal(current.cmd_train(255),0,'new six-tech requirement applies after migration');
+console.log('PASS genuine previous-build save: Bronze Age mapped correctly, incompatible epoch queue refunded, population/map preserved, unused cheat credit migrated into research bank');

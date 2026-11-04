@@ -1,0 +1,312 @@
+{
+  "format": "openepoch-native-render-evidence-v1",
+  "status": "passed",
+  "build": "native-render1",
+  "createdUTC": "2026-11-02T21:57:08.505189+00:00",
+  "scope": "Implemented and tested native camera/class-scale reconstruction, material-state retention and native terrain/water inputs. Original installation read-only; no computer-use, browser or native game launch in this implementation turn.",
+  "originalEngineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+  "camera": {
+    "profileFile": "docs/original-camera.js",
+    "configFile": "myconfig.cfg",
+    "configSha256": "5724b92160ec3b4505fbbb646cc71fd3b124e97ea6256e8f1cb26327950668b8",
+    "parameterParser": "0051d090",
+    "orbitUpdate": "005207f0",
+    "projectionGetter": "0051f9f0",
+    "cameraConstructor": "0051e8a0 -> 0051f810",
+    "distance": "minDistance + fraction * (maxDistance-minDistance)",
+    "pitch": "piecewise linear through minPitch, kneePitch, maxPitch; compiled threshold/divisor is config+0x3c MINPITCH radians, not config+0x44 KNEEDIST",
+    "fov": "minFov + fraction * (maxFov-minFov)",
+    "fovAxis": "horizontal: left/right = +/-tan(FOV*0.5), top/bottom = +/-tan/aspect; half constant is double00b41660=0.5",
+    "near": 1,
+    "far": 300,
+    "clipDefaultsSources": [
+      "00b42f38",
+      "00b42f3c"
+    ],
+    "installedDefaults": {
+      "fraction": 0.2,
+      "distance": 24,
+      "pitchDegreesApprox": 41.79308832,
+      "horizontalFovDegrees": 57
+    },
+    "terrain": "focus elevation weighted by(1-fraction); eye constrained to terrainAtEye+minHeight, pitch corrected after collision as in005207f0",
+    "adapterLimits": [
+      "Fixed north-up mapping to current simulation coordinates; no heading/rotation UI added.",
+      "Browser wheel anchoring/pixel zoom conversion are input adapters, not a reconstruction of all native controls.",
+      "Compiled constructor/config values are proven; later live launcher memory patches are not observed."
+    ]
+  },
+  "scales": {
+    "bindings": 156,
+    "verified": 154,
+    "fallback": [
+      {
+        "key": "2:0",
+        "url": "local-original/models/bld_farm_wheat.json",
+        "reason": "No unambiguous declared UnitModel scale binding; retain current adapter"
+      },
+      {
+        "key": "2:7",
+        "url": "local-original/models/bld_farm8.json",
+        "reason": "No unambiguous declared UnitModel scale binding; retain current adapter"
+      }
+    ],
+    "categoryDefaults": {
+      "kScaleUnit": {
+        "global": "g_UnitScale",
+        "initializer": "005f6a60",
+        "literalBits": "3e428f5c",
+        "compiledDefault": 0.1899999976158142,
+        "initializerBytes": "6a01685c8f423e682425c300686c25c300686025c300e885b5420083c414c3",
+        "source": "native PE initializer; Ghidra native-scale-defaults.c",
+        "selectedValue": 0.1899999976158142
+      },
+      "kScaleLandAnimal": {
+        "global": "g_LandAnimalScale",
+        "initializer": "005f6a80",
+        "literalBits": "3e428f5c",
+        "compiledDefault": 0.1899999976158142,
+        "initializerBytes": "6a01685c8f423e682825c300686c25c300689825c300e865b5420083c414c3",
+        "source": "native PE initializer; Ghidra native-scale-defaults.c",
+        "selectedValue": 0.1899999976158142
+      },
+      "kScaleVehicle": {
+        "global": "g_VehicleScale",
+        "initializer": "005f6aa0",
+        "literalBits": "3dcccccd",
+        "compiledDefault": 0.10000000149011612,
+        "initializerBytes": "6a0168cdcccc3d682c25c300686c25c30068ac25c300e845b5420083c414c3",
+        "source": "native PE initializer; Ghidra native-scale-defaults.c",
+        "selectedValue": 0.10000000149011612
+      },
+      "kScaleMountedUnit": {
+        "global": "g_MountedUnitScale",
+        "initializer": "005f6ac0",
+        "literalBits": "3e4ccccd",
+        "compiledDefault": 0.20000000298023224,
+        "initializerBytes": "6a0168cdcc4c3e683025c300686c25c30068bc25c300e825b5420083c414c3",
+        "source": "native PE initializer; Ghidra native-scale-defaults.c",
+        "selectedValue": 0.20000000298023224
+      },
+      "kScaleBuilding": {
+        "global": "g_BuildingScale",
+        "initializer": "005f6ae0",
+        "literalBits": "3d23d70a",
+        "compiledDefault": 0.03999999910593033,
+        "initializerBytes": "6a01680ad7233d683425c300686c25c30068d025c300e805b5420083c414c3",
+        "source": "native PE initializer; Ghidra native-scale-defaults.c",
+        "selectedValue": 0.03999999910593033
+      },
+      "kScaleWall": {
+        "global": "g_WallScale",
+        "initializer": "005f6b00",
+        "literalBits": "3d23d70a",
+        "compiledDefault": 0.03999999910593033,
+        "initializerBytes": "6a01680ad7233d683825c300686c25c30068e025c300e8e5b4420083c414c3",
+        "source": "native PE initializer; Ghidra native-scale-defaults.c",
+        "selectedValue": 0.03999999910593033
+      },
+      "kScaleTree": {
+        "global": "g_TreeScale",
+        "initializer": "005f6b20",
+        "literalBits": "3d3851ec",
+        "compiledDefault": 0.04500000178813934,
+        "initializerBytes": "6a0168ec51383d683c25c300686c25c30068ec25c300e8c5b4420083c414c3",
+        "source": "native PE initializer; Ghidra native-scale-defaults.c",
+        "selectedValue": 0.04500000178813934
+      },
+      "kScaleAmmo": {
+        "global": "g_AmmoScale",
+        "initializer": "005f6b40",
+        "literalBits": "3e333333",
+        "compiledDefault": 0.17499999701976776,
+        "initializerBytes": "6a01683333333e684025c300686c25c30068f825c300e8a5b4420083c414c3",
+        "source": "native PE initializer; Ghidra native-scale-defaults.c",
+        "selectedValue": 0.17499999701976776
+      }
+    },
+    "commonConversion": {
+      "address": "00b41800",
+      "value": 0.7071067690849304,
+      "classGetter": "005f8040",
+      "overrideApplication": "00602210"
+    },
+    "classGetter": "005f8040: enum1Unit,2LandAnimal,3Building,4Wall,5Vehicle,6Mounted,7Tree,8Ammo; each global multiplied by float00b41800",
+    "inheritance": "005f8ec0 resolves nonzero ScaleType through UnitModel Parent;00602210 uses current UnitModel ForceScale+0xc directly;00602860 does same for CompositeModel ForceScale+0x8",
+    "sourceToWorld": "((convertedVertex - normalizationOffset*normalizationScale) * sourceScale/normalizationScale)",
+    "scope": "Native compiled category defaults, common renderer conversion005f8040/00602210/00602860, active assignments in the four startup config files, BASE UnitModel ScaleType inheritance, and CompositeModel/StateDatabase or DefaultModelList bindings. ForceScale is the current visual declaration only. Later launcher hooks, per-state scale and procedural nonuniform variation remain outside this profile."
+  },
+  "materials": {
+    "nativeSources": 125,
+    "upgradedModelFiles": 191,
+    "nearFarParts": 697,
+    "nativeSpecularEnabledParts": 31,
+    "nativeSpecularEnabledAndNonblackParts": 22,
+    "completeBaselineModelsVerified": 191
+  },
+  "terrain": {
+    "newImages": 216,
+    "terrainTypes": 33,
+    "textureDefinitions": 32,
+    "seasonSets": 32,
+    "initialSeasonSlot": 6,
+    "completeNativeWeatherCycle": false
+  },
+  "validation": {
+    "viewChecks": 3501,
+    "terrainChecks": 3644,
+    "terrainSourceTests": 4,
+    "materialGpuPixelCases": 11,
+    "terrainGpuPixelCases": 13,
+    "productionWorldScenes": 3,
+    "allProductionLoaders": {
+      "format": "openepoch-native-loader-check-v1",
+      "passed": true,
+      "modelBindings": 156,
+      "modelKinds": 68,
+      "groundBindings": 13,
+      "loadedFiles": 342,
+      "errors": 0,
+      "programCount": 4,
+      "textureObjects": 218,
+      "scope": "Complete current production JS loader graph using real local JSON/PNG files and a recording GL contract. Actual native GLES shader/pixel tests are separate; no browser/UI interaction claim.",
+      "sources": {
+        "original-renderer.js": "176896aaa07ebce8c76745337869b1715db7b7e7ff6269fea62b6d45771b0192",
+        "original-camera.js": "56fdd51c6ec1ac099482cb14b101995c18c9d1ed0b3ce12ba4355d9544511575",
+        "original-scale.js": "4651e04fd4a0a61b8a47f2c4b8fb56df83bfd7864796011cf2648df6b992a947",
+        "original-material.js": "2c0b2a0bb290ed78763a3330f43168a46a9c4258234fe590b3c12f794c8ee9c6",
+        "original-terrain.js": "c41c4a67922674022063adf34360c7e49f36968801650c0392a71ee94fcb09bb"
+      }
+    },
+    "unchangedSimulationCases": 12,
+    "unchangedSimulationTicksPerCase": 600,
+    "identicalSerializedSaves": true,
+    "rust": {
+      "ee2": {
+        "passed": 48,
+        "logSha256": "cc17ed8cfcbd3157381c1463a4c63985a22cb2ccd5110e69fe555b7465d90ac0"
+      },
+      "base": {
+        "passed": 32,
+        "logSha256": "78fd5c9e979a7896b1ff6fa7506e36476d563ccfc5966e1b118adc241d481d3a"
+      }
+    },
+    "portableHttpTests": {
+      "passed": 9,
+      "uiLaunched": false,
+      "initialSandboxAttempt": "Loopback socket denied with WinError10013; identical tests passed with loopback permission."
+    }
+  },
+  "worldPreviews": [
+    {
+      "sourceEpoch": 1,
+      "scene": "town",
+      "pngSha256": "48aece67cf66d0b494481ae7eb22138310b31cd79919ba1b3f854fc564fb7153",
+      "stats": {
+        "drawCalls": 25,
+        "instancedCalls": 16,
+        "drawnInstances": 791,
+        "triangles": 306694,
+        "bufferBytes": 3683488,
+        "textureBytes": 11311132
+      },
+      "output": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\OpenEpoch\\native-world-town-preview.png",
+      "captureSha256": "ede9f1e99f2bdfe9e7bb4bac1fcb031f4bf5efcb9d3d0f2273c514db6fa935d4",
+      "uiLaunched": false
+    },
+    {
+      "sourceEpoch": 14,
+      "scene": "town",
+      "pngSha256": "e67580a5940b3bcc96aff7c4238c1f645f2f447b8f769fc63dfa4be1ae9b5391",
+      "stats": {
+        "drawCalls": 35,
+        "instancedCalls": 26,
+        "drawnInstances": 815,
+        "triangles": 309406,
+        "bufferBytes": 3615340,
+        "textureBytes": 12097564
+      },
+      "output": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\OpenEpoch\\native-world-future-preview.png",
+      "captureSha256": "99bcc0d64f983b638618d9c20c4e6baca1097cb0f6a9c9504cc7d5a95ec172da",
+      "uiLaunched": false
+    },
+    {
+      "sourceEpoch": 1,
+      "scene": "coast",
+      "pngSha256": "232da0785f2e5d272f7832264fb6985989cb2275bc070bd98231f2baaf8d4be1",
+      "stats": {
+        "drawCalls": 25,
+        "instancedCalls": 16,
+        "drawnInstances": 841,
+        "triangles": 315220,
+        "bufferBytes": 3685888,
+        "textureBytes": 11311132
+      },
+      "output": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\OpenEpoch\\native-world-coast-preview.png",
+      "captureSha256": "df254283a33e493d8ed442fd2e8daca3c38c4683cdda5b0759d2f416c3cb8f31",
+      "uiLaunched": false
+    }
+  ],
+  "currentFiles": {
+    "docs/main.js": {
+      "sha256": "8009d4022cc41cc1aac5c68098f6ed2c019763407f84ca6e5d70a39a65591c1e",
+      "bytes": 68193
+    },
+    "docs/index.html": {
+      "sha256": "03c3a5e8d87ab5c7e6b141172c5473c03abf446c98f60896f1d3475c516ca92b",
+      "bytes": 20402
+    },
+    "docs/original-camera.js": {
+      "sha256": "56fdd51c6ec1ac099482cb14b101995c18c9d1ed0b3ce12ba4355d9544511575",
+      "bytes": 4206
+    },
+    "docs/original-scale.js": {
+      "sha256": "4651e04fd4a0a61b8a47f2c4b8fb56df83bfd7864796011cf2648df6b992a947",
+      "bytes": 756
+    },
+    "docs/original-renderer.js": {
+      "sha256": "176896aaa07ebce8c76745337869b1715db7b7e7ff6269fea62b6d45771b0192",
+      "bytes": 26749
+    },
+    "docs/original-material.js": {
+      "sha256": "2c0b2a0bb290ed78763a3330f43168a46a9c4258234fe590b3c12f794c8ee9c6",
+      "bytes": 2880
+    },
+    "docs/original-terrain.js": {
+      "sha256": "c41c4a67922674022063adf34360c7e49f36968801650c0392a71ee94fcb09bb",
+      "bytes": 13971
+    },
+    "docs/local-original/model-scales.json": {
+      "sha256": "002897405c29f1c9aeb5f0c32f142ff76c4ad67b62ee08a29c2c6458c1d66577",
+      "bytes": 266327
+    },
+    "docs/local-original/terrain-native/manifest.json": {
+      "sha256": "e09fb9e4be0980e7a47eabc51edc2f997b4060a3810eb8b7e1b6fe043ffc3258",
+      "bytes": 217006
+    },
+    "docs/openepoch-ee2.wasm": {
+      "sha256": "8b5c1a021f2642dbefe9f6fa8bbfb7b0bd273e366b07b63312c6581feccd69fd",
+      "bytes": 415249
+    },
+    "docs/openepoch.wasm": {
+      "sha256": "fee97bec031288416fdafbbad83ce838d3c00e9971efc399ed908f57f12bed4d",
+      "bytes": 268643
+    },
+    "src/lib.rs": {
+      "sha256": "b3ec7911e69a75b53adcb7b7d218db7990e56fa472f31731700d5cdc94cfcac7",
+      "bytes": 27535
+    },
+    "tools/serve_game.py": {
+      "sha256": "4c2675beec070791fdaed67f20b0e778878c5fe50d327a3ab5525e0fd11b7e7e",
+      "bytes": 7787
+    }
+  },
+  "limits": [
+    "Complete EE2 gameplay or visual 1:1 parity is not achieved.",
+    "Full native lighting/shader selection, weather, AI, culture sets, roster, special abilities and RPS remain incomplete.",
+    "Own generated maps, placement/collision grids, input controls and terrain/shadow adapters differ from the original.",
+    "Two Farm visual variants retain the previous composite-layout scale adapter.",
+    "No browser/HUD interaction or physical macOS execution test was performed for this build.",
+    "All current runtime media are included in the portable ZIP; original Windows archives, executables and Ghidra are not runtime dependencies."
+  ]
+}

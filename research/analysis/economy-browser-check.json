@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-31",
+  "profile": "ee2",
+  "wasmSha256": "2a127d17ed05e27ddafa54bf78f0dfa61e202bbfc8f099644843d073dda59b47",
+  "method": "Actual in-app browser, controls operated through the UI; qa=1 uses separate saves.",
+  "checks": {
+    "stoneAge": "Five active resource icons; citizen carrying and delivery observed.",
+    "industry": "Six active resources; native citizen has 50/50 HP; native OilRig built for 100 wood.",
+    "oilCrew": "One citizen gives 1/6 crew and +0.75 oil/second; oil rose from 400 to 671.",
+    "unload": "UI action returned crew to 0/6, free citizens to 5, rate to +0.00 and oil remained 671.",
+    "models": "Corrected industrial citizen Near at zoom 80 and Far at zoom 45 visibly grounded and proportioned; source pose tests passed separately.",
+    "audio": "All 15 diagnostic codec samples decoded; HERC selection produced Originalaufnahme abgespielt, effectPlays=1, failed=[].",
+    "handoff": "Fresh normal start menu loaded with all 15 starting epochs, original assets ready, no warning/error console entries. Existing user game preserved."
+  },
+  "screenshots": [
+    "OpenEpoch/economy-preview.jpg",
+    "OpenEpoch/economy-industry-preview.jpg",
+    "OpenEpoch/economy-citizen-preview.jpg"
+  ],
+  "limits": "Focused visual/function checks, not a full-game acceptance test. No rendered FPS measurement or physical multi-computer/NAT test."
+}

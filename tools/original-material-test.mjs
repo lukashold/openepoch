@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import {modelMaterial,alphaState,depthState,alphaPasses,materialLightReference} from '../docs/original-material.js';
+const close=(a,b)=>assert.ok(Math.abs(a-b)<1e-9,`${a} != ${b}`);
+const source={color:[.6,.7,.8,.9],material:{ambient:[.1,.2,.3],diffuse:[.4,.5,.6],specular:[1,.5,.25],emissive:[.02,.03,.04],glossiness:16,alpha:.75},
+ nativeProperties:{NiAlphaProperty:{Flags:4845,Threshold:125},NiZBufferProperty:{Flags:3,Function:3},NiSpecularProperty:{Flags:1},NiVertexColorProperty:{'Vertex Mode':0,'Lighting Mode':1}}};
+const m=modelMaterial(source);assert.deepEqual(m.ambient,[.1,.2,.3]);assert.equal(m.alpha,.75);assert.equal(m.specularEnabled,true);
+assert.equal(modelMaterial({...source,nativeProperties:{}}).specularEnabled,false,'nonblack material specular is inactive without source enable flag');
+assert.equal(modelMaterial({...source,nativeProperties:{NiSpecularProperty:{Flags:0}}}).specularEnabled,false);
+assert.deepEqual(depthState(source),{test:true,write:true,function:3});assert.deepEqual(depthState({nativeProperties:{NiZBufferProperty:{Flags:1,Function:4}}}),{test:true,write:false,function:4});
+assert.deepEqual(alphaState(source),{flags:4845,blend:true,source:6,destination:7,test:true,testFunction:4,threshold:125/255});
+assert.equal(alphaPasses(125/255,125/255,4),false,'native GREATER rejects the exact threshold');assert.equal(alphaPasses(126/255,125/255,4),true);
+assert.deepEqual([0,1,2,3,4,5,6,7].map(f=>alphaPasses(.5,.5,f)),[true,false,true,true,false,false,true,false]);
+assert.deepEqual([0,1,2,3,4,5,6,7].map(f=>alphaPasses(.4,.5,f)),[true,true,false,true,false,true,false,false]);
+assert.deepEqual([0,1,2,3,4,5,6,7].map(f=>alphaPasses(.6,.5,f)),[true,false,false,false,true,true,true,false]);
+const light={ambient:[.2,.3,.4],sun:[.5,.6,.7],direction:[0,1,0]},texture=[.8,.7,.6,1];
+const lit=materialLightReference(m,texture,[0,1,0],[0,1,0],light);
+for(let i=0;i<3;i++)close(lit[i],texture[i]*(m.emissive[i]+m.ambient[i]*light.ambient[i]+m.diffuse[i]*light.sun[i])+m.specular[i]*light.sun[i]);
+const dark=materialLightReference({...m,specularEnabled:false},texture,[0,-1,0],[0,1,0],light);
+for(let i=0;i<3;i++)close(dark[i],texture[i]*(m.emissive[i]+m.ambient[i]*light.ambient[i]));
+const emissive=materialLightReference({...m,lightingMode:0},texture,[0,1,0],[0,1,0],light);for(let i=0;i<3;i++)close(emissive[i],texture[i]*m.emissive[i]);
+const vertex=[.25,.5,.75,1],coloured=materialLightReference({...m,specularEnabled:false,vertexMode:2},texture,[0,1,0],[0,1,0],light,vertex);
+for(let i=0;i<3;i++)close(coloured[i],texture[i]*(m.emissive[i]+vertex[i]*(light.ambient[i]+light.sun[i])));
+const legacy=modelMaterial({color:[1,1,1,1]}),white=materialLightReference(legacy,[1,1,1,1],[0,1,0],[0,1,0],light);
+assert.deepEqual(white,[.7,.8999999999999999,1.1]);
+console.log('PASS native material contract: source channels/enable flags, 8 alpha comparisons including threshold equality, depth flags, coloured vertex modes, emissive/specular/directional illumination, legacy fallback');

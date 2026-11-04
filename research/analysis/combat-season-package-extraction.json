@@ -1,0 +1,19 @@
+{
+  "format": "openepoch-combat-season-package-extraction-v1",
+  "status": "passed",
+  "build": "combat-season1",
+  "createdUTC": "2026-11-03T16:03:02.739022+00:00",
+  "file": "OpenEpoch-Mac-Komplett.zip",
+  "zipBytes": 686034494,
+  "sha256": "ba57e1f618bf895062bc907a4c97b694810a968ed93daebed5fa2830f68a72fc",
+  "zipEntries": 3135,
+  "manifestFilesVerified": 3133,
+  "allCopiedFilesMatchCurrentSource": true,
+  "mediaFiles": 3085,
+  "mediaBytes": 782002193,
+  "root": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\Mac Paket Combat Test\\OpenEpoch",
+  "launcherMode": "0755",
+  "launcherLineEndings": "LF",
+  "pythonMinimum": "3.8",
+  "noMacExecutionClaim": true
+}

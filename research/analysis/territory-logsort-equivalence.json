@@ -1,0 +1,118 @@
+{
+  "format": "territory-ui-logsort-equivalence-v1",
+  "status": "passed",
+  "beforeSha256": "5c9299b10683a81624b87c51efa1904529c9390e0f4bf0e6beb0990a52e66560",
+  "afterSha256": "6e133ae7dc456ff196d0a6ea98eeb0848688dc4cd9bedb1126899ba37d860724",
+  "scope": "Representative actual WASM simulation and byte-for-byte save equivalence across a UI-only log-order change. Different UI-read frequencies are intentional. A separately controlled mixed DIP/TER chronology checks the displayed fix.",
+  "cases": [
+    {
+      "seed": 7,
+      "epoch": 1,
+      "ticks": 1200,
+      "finalStateHash": 4238765085,
+      "finalSaveSha256": "6358a5767ed57bd3c0d0d6a0548f8c53b6a42dfc5b171c032e26089b6f1eb251"
+    },
+    {
+      "seed": 7,
+      "epoch": 4,
+      "ticks": 1200,
+      "finalStateHash": 2431277709,
+      "finalSaveSha256": "5edf0fb10a710999df96fbc607fcc93fc5354364ab5dc46a7130592fa5652b29"
+    },
+    {
+      "seed": 7,
+      "epoch": 10,
+      "ticks": 1200,
+      "finalStateHash": 2772510039,
+      "finalSaveSha256": "dfd045c842f1b1a75be33cb2a1b3cf7c0964935b839e99c69a6491eca423f5fa"
+    },
+    {
+      "seed": 7,
+      "epoch": 13,
+      "ticks": 1200,
+      "finalStateHash": 6650609,
+      "finalSaveSha256": "d821b9d0a3a3c1417fe0fe82e844727660dfbd628170ad26e498423321d7ad26"
+    },
+    {
+      "seed": 7,
+      "epoch": 15,
+      "ticks": 1200,
+      "finalStateHash": 1458864705,
+      "finalSaveSha256": "2cb222fc1895a5005bf47eebedb34796aab22cacd4416621c341384d9525c6f7"
+    },
+    {
+      "seed": 41,
+      "epoch": 1,
+      "ticks": 1200,
+      "finalStateHash": 2898473494,
+      "finalSaveSha256": "60721e999253e4d062c8c8f2a76e4947f57afa41ff822b8a76f16ceba6ce8f16"
+    },
+    {
+      "seed": 41,
+      "epoch": 4,
+      "ticks": 1200,
+      "finalStateHash": 664901499,
+      "finalSaveSha256": "df8688c1b67947426b699bd91fd4405c1436085a5c2fd0bc6e20639dd977222f"
+    },
+    {
+      "seed": 41,
+      "epoch": 10,
+      "ticks": 1200,
+      "finalStateHash": 2685935150,
+      "finalSaveSha256": "5aacee77f422a102a193596700726a52efde6282e635e1a949647fc569b61777"
+    },
+    {
+      "seed": 41,
+      "epoch": 13,
+      "ticks": 1200,
+      "finalStateHash": 4134267800,
+      "finalSaveSha256": "1283fa9036898eac1084ff99621fe542bfb9320e181f2590861d971b0fe39a44"
+    },
+    {
+      "seed": 41,
+      "epoch": 15,
+      "ticks": 1200,
+      "finalStateHash": 2714147816,
+      "finalSaveSha256": "0c46bb41751870ca64d70ed9885bb230ea3a307012de17ff5056afe255e8fc4e"
+    }
+  ],
+  "checkCount": 877,
+  "priorSoak": {
+    "wasmSha256": "5c9299b10683a81624b87c51efa1904529c9390e0f4bf0e6beb0990a52e66560",
+    "simulatedMinutes": 30,
+    "warningCount": 0,
+    "scope": "The full20+10-minute soak was performed on5C92, not rerun on6E13. Both genuine first-minute traces are replayed below on both builds, in addition to the representative comparisons.",
+    "anchors": [
+      {
+        "seed": 7,
+        "startingEpoch": 1,
+        "ticks": 1200,
+        "recordedStateHash": 797265207,
+        "finalSaveSha256": "98c9d47643b148fd6b394fb2f2351aff168975d6abeaa4c6edf0013808cd18d8"
+      },
+      {
+        "seed": 41,
+        "startingEpoch": 10,
+        "ticks": 1200,
+        "recordedStateHash": 1972957832,
+        "finalSaveSha256": "445a21cb701b9fb45fc3b112a32892727fdef6af335334a36697f7d9c3b3e1ff"
+      }
+    ]
+  },
+  "chronology": {
+    "previous": [
+      "Spieler 1 → Spieler 2: bietet Frieden an",
+      "Spieler 2 → Spieler 1: akzeptiert Frieden",
+      "Spieler 1 → Spieler 2: erklärt Krieg",
+      "Spieler 1 → Spieler 2: bietet einen Gebietstausch an (Territorium 1 gegen 2)",
+      "Spieler 2 → Spieler 1: nimmt den Gebietstausch an (Territorium 1 gegen 2)"
+    ],
+    "final": [
+      "Spieler 1 → Spieler 2: bietet Frieden an",
+      "Spieler 2 → Spieler 1: akzeptiert Frieden",
+      "Spieler 1 → Spieler 2: bietet einen Gebietstausch an (Territorium 1 gegen 2)",
+      "Spieler 2 → Spieler 1: nimmt den Gebietstausch an (Territorium 1 gegen 2)",
+      "Spieler 1 → Spieler 2: erklärt Krieg"
+    ]
+  }
+}

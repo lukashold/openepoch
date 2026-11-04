@@ -6,6 +6,15 @@
 
 use crate::defs::*;
 use crate::map::*;
+#[cfg(all(test,feature="ee2-reference"))]
+#[path="fortress_tests.rs"]
+mod fortress_tests;
+#[cfg(all(test,feature="ee2-reference"))]
+#[path="ee2_combat_tests.rs"]
+mod ee2_combat_tests;
+#[cfg(all(test,feature="ee2-reference"))]
+#[path="city_ground_tests.rs"]
+mod city_ground_tests;
 
 pub const MAXE: usize = 8192;
 pub const DT: f32 = 0.05;
@@ -87,6 +96,7 @@ pub struct Player {
     pub res: [f32; 3],
     pub pop: u32,
     pub cap: u32,
+    pub population_limit: u32,
     pub epoch: u8,
     pub researching: bool,
     pub alive: bool,
@@ -137,6 +147,9 @@ pub struct Proj {
     pub team: u8,
     pub splash: f32,
     pub targets: u8,
+    /// Source class/upgrade snapshot at launch; transient projectiles are not saved.
+    #[cfg(feature="ee2-reference")]
+    pub attacker_profile:u16,
     /// Distance at launch, so the renderer can draw an arc.
     pub d0: f32,
 }
@@ -184,15 +197,29 @@ pub struct Game {
     pub projs: Vec<Proj>,
     pub fx: Vec<Fx>,
     pub players: [Player; 4],
+    // Kept outside Player so existing repr(C) saves retain their layout.
+    pub extra_resources: [[f32;6];4],
     pub nplayers: usize,
     pub tick: u32,
     pub rng: Rng,
     pub vis: Vec<u8>,
+    /// Genuine per-team exploration, independent of local display options.
+    pub team_vis: Vec<u8>,
+    pub diplomacy: crate::diplomacy::Diplomacy,
+    pub territory: crate::territory::TerritoryDiplomacy,
+    #[cfg(feature="ee2-reference")]
+    pub city_ground: Vec<crate::city_ground::CityBand>,
     pub inst: Vec<f32>,
     pub mini: Vec<u8>,
     pub ui: String,
     pub winner: u8,
     pub bench: u32,
+    pub cheats_enabled: bool,
+    pub instant_build: bool,
+    pub tech_points: u32,
+    pub research_points: [f32; 4],
+    pub researched: [[u32; 6]; 4],
+    pub modifiers: [crate::research::Modifiers; 4],
     pub groups: Vec<Vec<u32>>,
     pub push: Vec<(f32, f32)>,
     pub scratch: Vec<usize>,
@@ -218,6 +245,7 @@ pub struct Game {
     pub ranges: Vec<u32>,
     /// Camera position (x, height, y) for picking; height 0 = top-down, no parallax.
     pub eye: [f32; 3],
+    pub placement_cache:crate::placement::PlacementCache,
 }
 
 impl Game {
@@ -234,15 +262,22 @@ impl Game {
             projs: Vec::with_capacity(4096),
             fx: Vec::with_capacity(1024),
             players: [Player::default(); 4],
+            extra_resources: [[0.0;6];4],
             nplayers,
             tick: 0,
             rng: Rng(seed.wrapping_mul(2_654_435_761) | 1),
             vis: vec![0; NN],
+            team_vis: vec![0; 4*NN], diplomacy: crate::diplomacy::Diplomacy::default(),
+            territory: crate::territory::TerritoryDiplomacy::default(),
+            #[cfg(feature="ee2-reference")]
+            city_ground: vec![crate::city_ground::EMPTY; MAXE],
             inst: Vec::with_capacity(8 * 16384),
             mini: vec![0; NN * 4],
             ui: String::with_capacity(4096),
             winner: 0,
             bench,
+            cheats_enabled: false, instant_build: false, tech_points: 0,
+            research_points: [0.0;4], researched: [[0;6];4], modifiers: [[[0.0;19];crate::research::DEF_COUNT];4],
             groups: vec![Vec::new(); 10],
             push: vec![(0.0, 0.0); MAXE],
             scratch: Vec::with_capacity(256),
@@ -262,18 +297,24 @@ impl Game {
             tmp: Vec::with_capacity(12 * 16384),
             ranges: vec![0; 512],
             eye: [0.0; 3],
+            placement_cache:crate::placement::PlacementCache::default(),
         };
         for p in 0..nplayers {
+            g.rebuild_modifiers(p as u8, false);
             let (sx, sy) = g.map.starts[p];
-            g.players[p] = Player { res: [400.0, 400.0, 200.0], cap: 15, alive: true, ai: p >= humans as usize, ai_next_attack: 20 * 240, ..Player::default() };
+            g.players[p] = Player { res: [400.0, 400.0, 200.0], cap: 15, population_limit: 250, alive: true, ai: p >= humans as usize, ai_next_attack: 20 * 240, ..Player::default() };
+            if cfg!(feature="ee2-reference"){g.extra_resources[p]=[400.0,400.0,200.0,200.0,200.0,200.0];}
             g.players[p].recompute();
-            g.spawn(TC, p as u8, sx as f32, sy as f32);
+            let city=g.spawn(TC, p as u8, sx as f32, sy as f32);
+            // Initial territory is a scenario grant, not a new expansion claim.
+            g.territory.claims[g.map.terr[tile_of(sx as f32,sy as f32)] as usize]=g.h(city);
             for k in 0..5 {
                 let a = k as f32 * 1.256;
                 g.spawn(WORKER, p as u8, sx as f32 + a.cos() * 3.4, sy as f32 + a.sin() * 3.4);
             }
         }
         if bench > 0 {
+            g.extra_resources=[[99999.0;6];4];
             for p in g.players.iter_mut().take(nplayers) {
                 p.epoch = MAX_EPOCH;
                 p.ai = false;
@@ -282,6 +323,7 @@ impl Game {
             for v in g.vis.iter_mut() {
                 *v = 255;
             }
+            for t in 0..nplayers{g.rebuild_modifiers(t as u8,true);}
         }
         g.build_grid();
         g.update_fog();
@@ -306,6 +348,9 @@ impl Game {
     }
 
     pub fn spawn(&mut self, def: u8, team: u8, x: f32, y: f32) -> usize {
+        self.spawn_oriented(def,team,x,y,0.0)
+    }
+    pub fn spawn_oriented(&mut self,def:u8,team:u8,x:f32,y:f32,angle:f32)->usize {
         let i = match self.free.pop() {
             Some(i) => i as usize,
             None => return NOIDX,
@@ -315,7 +360,9 @@ impl Game {
         }
         let d = &DEFS[def as usize];
         let gen = self.ents[i].gen;
-        self.ents[i] = Ent { alive: true, def, team, gen, x, y, px: x, py: y, ox: x, oy: y, hp: d.hp, ..E0 };
+        self.ents[i] = Ent { alive: true, def, team, gen, x, y, px: x, py: y, ox: x, oy: y, hp: self.max_hp(team,def), rot:angle,prot:angle,..E0 };
+        #[cfg(feature="ee2-reference")]
+        { self.city_ground[i]=crate::city_ground::EMPTY; self.sync_city_ground_entry(i); }
         if d.building {
             self.block(i, true);
         }
@@ -324,16 +371,8 @@ impl Game {
 
     fn block(&mut self, i: usize, on: bool) {
         let e = &self.ents[i];
-        let s = DEFS[e.def as usize].size as usize;
-        let tx0 = (e.x - s as f32 * 0.5).round() as usize;
-        let ty0 = (e.y - s as f32 * 0.5).round() as usize;
-        for ty in ty0..ty0 + s {
-            for tx in tx0..tx0 + s {
-                let t = ty * N + tx;
-                self.map.blocked[t] = on;
-                self.map.upd_pass(t);
-            }
-        }
+        let (tx0,ty0,s)=Self::building_bounds(e);
+        for ty in ty0.max(0)..(ty0+s).min(N as i32){for tx in tx0.max(0)..(tx0+s).min(N as i32){let t=ty as usize*N+tx as usize;self.map.blocked[t]=on;self.map.upd_pass(t);}}
         self.map.nav_ver += 1;
     }
 
@@ -345,7 +384,7 @@ impl Game {
             for &q in &e.q[..e.qn as usize] {
                 if q == RESEARCH {
                     self.players[e.team as usize].researching = false;
-                } else if q >= TECH0 {
+                } else if !original_research(q) && q >= TECH0 {
                     self.players[e.team as usize].tech_busy &= !(1 << (q - TECH0));
                 }
             }
@@ -360,95 +399,40 @@ impl Game {
         s.alive = false;
         s.sel = false;
         s.gen = s.gen.wrapping_add(1);
+        #[cfg(feature="ee2-reference")]
+        { self.city_ground[i]=crate::city_ground::EMPTY; }
         self.free.push(i as u16);
     }
 
-    #[inline]
-    pub fn can_see(&self, team: u8, j: usize) -> bool {
-        let t = &self.ents[j];
-        if !DEFS[t.def as usize].has(F_STEALTH) {
-            return true;
-        }
-        t.team == team || t.reveal_t > 0.0 || (t.revealed >> team) & 1 == 1
+    /// Detection is separate from terrain sight: even a revealed-map start
+    /// does not expose undetected stealth units.
+    pub fn detected(&self, team:u8, j:usize)->bool {
+        let t=&self.ents[j];if t.team==team||!DEFS[t.def as usize].has(F_STEALTH)||t.reveal_t>0.0||t.revealed>>team&1==1{return true;}
+        (0..self.nplayers).any(|p|self.shares_to(p as u8,team)&&(t.team==p as u8||t.revealed>>p&1==1))
     }
-
-    /// Is entity `j` currently visible to the human player (fog + stealth)?
-    pub fn visible(&self, j: usize) -> bool {
-        let t = &self.ents[j];
-        if t.team == self.local {
-            return true;
-        }
-        let v = self.vis[tile_of(t.x, t.y)];
-        let need = if DEFS[t.def as usize].building { 128 } else { 255 };
-        v >= need && self.can_see(self.local, j)
+    #[inline]
+    pub fn can_see(&self, team:u8, j:usize)->bool {
+        let t=&self.ents[j];t.team==team||(self.real_fog(team,tile_of(t.x,t.y))==255&&self.detected(team,j))
+    }
+    /// Display visibility deliberately differs from combat visibility.
+    pub fn visible(&self,j:usize)->bool {
+        let t=&self.ents[j];if t.team==self.local{return true;}
+        let need=if DEFS[t.def as usize].building{128}else{255};
+        (if self.diplomacy.visibility<2{self.real_fog(self.local,tile_of(t.x,t.y))}else{255})>=need&&self.detected(self.local,j)
     }
 
     // ------------------------------------------------------------------ economy
 
-    pub fn afford(&self, team: u8, c: &[u16; 3]) -> bool {
-        let r = &self.players[team as usize].res;
-        r[0] >= c[0] as f32 && r[1] >= c[1] as f32 && r[2] >= c[2] as f32
+    pub fn afford(&self, team: u8, c: &[u16]) -> bool {
+        c.iter().enumerate().all(|(r,&v)|self.resource(team,r)>=v as f32)
     }
-    pub fn pay(&mut self, team: u8, c: &[u16; 3], sign: f32) {
-        let r = &mut self.players[team as usize].res;
-        for k in 0..3 {
-            r[k] -= c[k] as f32 * sign;
-        }
+    pub fn pay(&mut self, team: u8, c: &[u16], sign: f32) {
+        for (r,&v) in c.iter().enumerate(){self.add_resource(team,r,-(v as f32)*sign);}
     }
 
     /// `tx,ty` is the top-left tile of the footprint.
-    pub fn can_place(&self, def: u8, tx: i32, ty: i32, team: u8) -> bool {
-        let s = DEFS[def as usize].size as i32;
-        if tx < 2 || ty < 2 || tx + s > N as i32 - 2 || ty + s > N as i32 - 2 {
-            return false;
-        }
-        // territories: a town center claims a free one, everything else needs our own
-        let owner = self.towner[self.map.terr[(ty + s / 2) as usize * N + (tx + s / 2) as usize] as usize];
-        if owner != team && !(def == TC && owner == 255) {
-            return false;
-        }
-        for y in ty..ty + s {
-            for x in tx..tx + s {
-                let t = y as usize * N + x as usize;
-                if self.map.blocked[t] || self.map.res[t] != R_NONE {
-                    return false;
-                }
-                let ok = if def == DOCK { self.map.ter[t] <= T_SHALLOW } else { self.map.pass[0][t] };
-                if !ok {
-                    return false;
-                }
-            }
-        }
-        if def == DOCK {
-            // must touch walkable shore so workers can reach it
-            for k in -1..=s {
-                for &(x, y) in &[(tx + k, ty - 1), (tx + k, ty + s), (tx - 1, ty + k), (tx + s, ty + k)] {
-                    if self.map.pass[0][y as usize * N + x as usize] {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-        true
-    }
-
-    pub fn place(&mut self, def: u8, tx: i32, ty: i32, team: u8) -> usize {
-        if def as usize >= DEFS.len() {
-            return NOIDX;
-        }
-        let d = &DEFS[def as usize];
-        if !d.building || d.epoch > self.players[team as usize].epoch || !self.afford(team, &d.cost) || !self.can_place(def, tx, ty, team) {
-            return NOIDX;
-        }
-        let i = self.spawn(def, team, tx as f32 + d.size * 0.5, ty as f32 + d.size * 0.5);
-        if i != NOIDX {
-            self.pay(team, &d.cost, 1.0);
-            self.ents[i].built = 0.0;
-            self.ents[i].hp = d.hp * 0.1;
-        }
-        i
-    }
+    pub fn can_place(&self,def:u8,tx:i32,ty:i32,team:u8)->bool{self.placement_geometry_error(team,def,tx,ty,0)==0}
+    pub fn place(&mut self,def:u8,tx:i32,ty:i32,team:u8)->usize{self.place_with_rotation(def,tx,ty,team,0)}
 
     /// Would `train(b, def)` succeed right now?
     pub fn can_train(&self, b: usize, def: u8) -> bool {
@@ -458,12 +442,17 @@ impl Game {
             return false;
         }
         if def == RESEARCH {
-            e.def == TC && !p.researching && p.epoch < MAX_EPOCH && self.afford(e.team, &EPOCH_COST[p.epoch as usize + 1])
+            e.def == TC && self.can_advance(e.team)
+        } else if original_research(def) {
+            #[cfg(feature = "ee2-reference")]
+            { self.can_original_research(b,def) }
+            #[cfg(not(feature = "ee2-reference"))]
+            { false }
         } else if def >= TECH0 {
             let k = (def - TECH0) as usize;
             k < TECHS.len() && TECHS[k].at == e.def && TECHS[k].epoch <= p.epoch && (p.tech | p.tech_busy) >> k & 1 == 0 && self.afford(e.team, &TECHS[k].cost)
         } else {
-            (def as usize) < DEFS.len() && DEFS[def as usize].made_at == e.def && DEFS[def as usize].epoch <= p.epoch && self.afford(e.team, &DEFS[def as usize].cost)
+            (def as usize) < DEFS.len() && DEFS[def as usize].made_at == e.def && DEFS[def as usize].epoch <= p.epoch && DEFS[def as usize].until > p.epoch && self.afford(e.team, &self.unit_cost(e.team,def)) && p.pop + crate::economy::population(def,p.epoch) <= p.cap
         }
     }
 
@@ -473,14 +462,16 @@ impl Game {
         }
         let team = self.ents[b].team;
         if def == RESEARCH {
-            let ep = self.players[team as usize].epoch as usize;
-            self.pay(team, &EPOCH_COST[ep + 1], 1.0);
+            self.advance_payment(team,1.0);
             self.players[team as usize].researching = true;
+        } else if original_research(def) {
+            #[cfg(feature = "ee2-reference")]
+            { self.research_points[team as usize] -= crate::ee2_research::NODES[(def-ORIGINAL_RESEARCH0) as usize].cost; }
         } else if def >= TECH0 {
             self.pay(team, &TECHS[(def - TECH0) as usize].cost, 1.0);
             self.players[team as usize].tech_busy |= 1 << (def - TECH0);
         } else {
-            self.pay(team, &DEFS[def as usize].cost, 1.0);
+            self.pay(team, &self.unit_cost(team,def), 1.0);
         }
         let e = &mut self.ents[b];
         e.q[e.qn as usize] = def;
@@ -495,14 +486,16 @@ impl Game {
         }
         let item = e.q[e.qn as usize - 1];
         if item == RESEARCH {
-            let ep = self.players[e.team as usize].epoch as usize;
-            self.pay(e.team, &EPOCH_COST[ep + 1], -1.0);
+            self.advance_payment(e.team,-1.0);
             self.players[e.team as usize].researching = false;
+        } else if original_research(item) {
+            #[cfg(feature = "ee2-reference")]
+            { self.research_points[e.team as usize] += crate::ee2_research::NODES[(item-ORIGINAL_RESEARCH0) as usize].cost; }
         } else if item >= TECH0 {
             self.pay(e.team, &TECHS[(item - TECH0) as usize].cost, -1.0);
             self.players[e.team as usize].tech_busy &= !(1 << (item - TECH0));
         } else {
-            self.pay(e.team, &DEFS[item as usize].cost, -1.0);
+            self.pay(e.team, &self.unit_cost(e.team,item), -1.0);
         }
         let e = &mut self.ents[b];
         e.qn -= 1;
@@ -562,11 +555,12 @@ impl Game {
         let td = &DEFS[t.def as usize];
         let h = self.h(tj);
         for &i in ids {
+            if !self.hostile(self.ents[i].team,t.team)||!self.can_see(self.ents[i].team,tj){continue;}
             let d = &DEFS[self.ents[i].def as usize];
             if d.building {
                 continue;
             }
-            if d.weapon_vs(td.dom).is_none() {
+            if d.weapon_vs(td.dom).is_none() || !self.rps_allows(&self.ents[i],&t) {
                 if !d.has(F_WORKER) {
                     self.order_move(&[i], t.x, t.y, false);
                 }
@@ -584,14 +578,17 @@ impl Game {
 
     pub fn order_gather(&mut self, ids: &[usize], tile: usize) {
         let kind = self.map.res[tile];
+        if kind==R_NONE{return;}
+        let ids:Vec<usize>=ids.iter().copied().filter(|&i|self.citizen_can_gather(self.ents[i].team,kind)).collect();
         let (cx, cy) = ((tile % N) as f32 + 0.5, (tile / N) as f32 + 0.5);
         let key = self.key_for(LAND, cx, cy);
-        for &i in ids {
+        for &i in &ids {
             let e = &mut self.ents[i];
             if !DEFS[e.def as usize].has(F_WORKER) {
                 continue;
             }
             e.order = O_GATHER;
+            if cfg!(feature="ee2-reference")&&e.carry>0.0&&e.q[0]!=kind {if e.q[2]==0{e.q[2]=e.q[0];}e.q[1]=1;}
             e.otile = tile as u32;
             e.otgt = NONE;
             e.tgt = NONE;
@@ -605,39 +602,27 @@ impl Game {
     pub fn order_building(&mut self, ids: &[usize], bj: usize) {
         let b = self.ents[bj];
         let h = self.h(bj);
-        let key = self.key_for(LAND, b.x, b.y);
-        for &i in ids {
-            let e = &mut self.ents[i];
-            if !DEFS[e.def as usize].has(F_WORKER) {
-                continue;
-            }
-            e.prev = match e.order {
-                O_GATHER if e.otgt == NONE => e.q[0],
-                O_BUILD => e.prev,
-                _ => 0,
-            };
-            e.order = if b.built < 1.0 { O_BUILD } else { O_GATHER };
-            e.q[0] = R_FOOD;
-            e.otgt = h;
-            e.tgt = NONE;
-            e.fkey = key;
-            e.stuck = 0;
-        }
+        let(tx,ty,side)=Self::building_bounds(&b);self.prepare_build_routes(tx,ty,side);
+        let assignments:Vec<(usize,u32)>=ids.iter().copied().filter_map(|i|{let e=*self.ents.get(i)?;if !e.alive||e.team!=b.team||!DEFS[e.def as usize].has(F_WORKER){return None;}let route=self.placement_cache.approach[tile_of(e.x,e.y)];
+            let route=if route==NONE&&e.x>=tx as f32&&e.x<(tx+side)as f32&&e.y>=ty as f32&&e.y<(ty+side)as f32{self.map.snap(e.x,e.y,0)as u32}else{route};(route!=NONE).then_some((i,route))}).collect();
+        for(i,key)in assignments{let e=&mut self.ents[i];e.prev=match e.order{O_GATHER if e.otgt==NONE=>e.q[0],O_BUILD=>e.prev,_=>0};e.order=if b.built<1.0{O_BUILD}else{O_GATHER};e.q[0]=R_FOOD;e.otgt=h;e.tgt=NONE;e.fkey=key;e.fslot=u16::MAX;e.stuck=0;}
     }
 
     /// Land units walk to a transport ship and climb aboard.
     pub fn order_board(&mut self, ids: &[usize], tj: usize) {
         let t = self.ents[tj];
-        if !DEFS[t.def as usize].has(F_TRANSPORT) {
+        let research = DEFS[t.def as usize].has(F_RESEARCH|F_EXTRACT|F_DROPOFF);
+        if (!DEFS[t.def as usize].has(F_TRANSPORT|F_GARRISON) && !research) || t.built < 1.0 {
             return;
         }
         let h = self.h(tj);
         let key = self.key_for(LAND, t.x, t.y);
         let mut first = None;
         for &i in ids {
+            if t.def==FORTRESS && self.fortress_slot_cost(t.team,self.ents[i].def).is_none() {continue;}
             let e = &mut self.ents[i];
             let d = &DEFS[e.def as usize];
-            if d.building || d.dom != LAND || e.team != t.team {
+            if d.building || d.dom != LAND || e.team != t.team || (research && !d.has(F_WORKER)) {
                 continue;
             }
             e.order = O_BOARD;
@@ -648,8 +633,8 @@ impl Game {
             first.get_or_insert((e.x, e.y));
         }
         // an idle ship comes to the beach to pick them up
-        if let (Some((x, y)), O_IDLE) = (first, t.order) {
-            self.order_move(&[tj], x, y, false);
+        if !research && !DEFS[t.def as usize].building {
+            if let (Some((x, y)), O_IDLE) = (first, t.order) { self.order_move(&[tj], x, y, false); }
         }
     }
 
@@ -658,6 +643,10 @@ impl Game {
         let key = self.key_for(SEA, x.clamp(1.0, N as f32 - 1.0), y.clamp(1.0, N as f32 - 1.0));
         let t = (key & 0xffff) as usize;
         for &i in ids {
+            if DEFS[self.ents[i].def as usize].has(F_RESEARCH|F_EXTRACT|F_DROPOFF|F_GARRISON) {
+                let mut e=self.ents[i]; self.unload(&mut e); self.ents[i]=e;
+                continue;
+            }
             let e = &mut self.ents[i];
             if !DEFS[e.def as usize].has(F_TRANSPORT) {
                 continue;
@@ -675,22 +664,20 @@ impl Game {
     fn unload(&mut self, e: &mut Ent) {
         let lt = self.map.snap(e.x, e.y, 0);
         let (lx, ly) = ((lt % N) as f32 + 0.5, (lt / N) as f32 + 0.5);
-        if (lx - e.x).powi(2) + (ly - e.y).powi(2) > 20.0 {
+        let exit_radius_squared=if DEFS[e.def as usize].building {20.0_f32.max((Self::building_half(e)+1.0).powi(2))}else{20.0};
+        if (lx - e.x).powi(2) + (ly - e.y).powi(2) > exit_radius_squared {
             return; // no beach within reach: keep everyone aboard
         }
-        for k in 0..e.ncargo as usize {
+        let old_count=e.ncargo as usize;let mut remaining=0;
+        for k in 0..old_count {
             let (a, r) = (k as f32 * 2.4, 0.45 * (k as f32).sqrt());
             let (mut x, mut y) = (lx + a.cos() * r, ly + a.sin() * r);
-            if !self.map.pass[0][tile_of(x, y)] {
-                x = lx;
-                y = ly;
-            }
+            if !self.map.pass[0][tile_of(x, y)] { x = lx; y = ly; }
             let u = self.spawn(e.cargo[k], e.team, x, y);
-            if u != NOIDX {
-                self.ents[u].hp = DEFS[e.cargo[k] as usize].hp * (e.cargo_hp[k] as f32 / 100.0).min(1.0);
-            }
+            if u != NOIDX { self.ents[u].hp = self.max_hp(e.team,e.cargo[k]) * (e.cargo_hp[k] as f32 / 100.0).min(1.0); }
+            else {e.cargo[remaining]=e.cargo[k];e.cargo_hp[remaining]=e.cargo_hp[k];remaining+=1;}
         }
-        e.ncargo = 0;
+        e.cargo[remaining..old_count].fill(0);e.cargo_hp[remaining..old_count].fill(0);e.ncargo=remaining as u8;
     }
 
     fn do_board(&mut self, i: usize, e: &mut Ent, d: &Def, want: &mut (f32, f32), moving: &mut bool) {
@@ -702,11 +689,15 @@ impl Game {
             }
         };
         let t = self.ents[j];
-        if (t.x - e.x).powi(2) + (t.y - e.y).powi(2) < 2.8 * 2.8 {
-            if (t.ncargo as usize) < CARGO_MAX {
+        let td=&DEFS[t.def as usize];
+        if t.built < 1.0 || (!td.has(F_TRANSPORT|F_GARRISON) && !td.has(F_RESEARCH|F_EXTRACT|F_DROPOFF)) || (td.has(F_RESEARCH|F_EXTRACT|F_DROPOFF) && !d.has(F_WORKER)) { Self::set_idle(e); return; }
+        let slots=if t.def==FORTRESS {match self.fortress_slot_cost(t.team,e.def){Some(v)=>v,None=>{Self::set_idle(e);return;}}}else{1};
+        if if td.building{(t.x-e.x).abs().max((t.y-e.y).abs())<=Self::building_half(&t)+0.95}else{(t.x-e.x).powi(2)+(t.y-e.y).powi(2)<2.8*2.8}{
+            if (t.ncargo as usize)<CARGO_MAX && self.cargo_slots_used(&t)+slots<=self.cargo_capacity(t.team,t.def) {
+                let maxhp=self.max_hp(e.team,e.def);
                 let tr = &mut self.ents[j];
                 tr.cargo[tr.ncargo as usize] = e.def;
-                tr.cargo_hp[tr.ncargo as usize] = (e.hp / d.hp * 100.0).clamp(1.0, 100.0) as u8;
+                tr.cargo_hp[tr.ncargo as usize] = (e.hp / maxhp * 100.0).clamp(1.0, 100.0) as u8;
                 tr.ncargo += 1;
                 e.hp = 0.0;
                 e.stuck = BOARDED;
@@ -735,11 +726,29 @@ impl Game {
         let mut mix = |v: u32| h = (h ^ v).wrapping_mul(16_777_619);
         mix(self.tick);
         mix(self.rng.0);
+        mix(self.cheats_enabled as u32);
+        mix(self.instant_build as u32);
+        mix(self.tech_points);
+        mix(self.diplomacy.visibility as u32);
+        for a in [&self.diplomacy.relation,&self.diplomacy.offers,&self.diplomacy.offer_vision,&self.diplomacy.sharing]{for &v in a{mix(v as u32);}}
+        for a in [&self.diplomacy.offer_tick,&self.diplomacy.cooldown,&self.diplomacy.gifts,&self.diplomacy.neutral_since,&self.diplomacy.war_tick]{for &v in a{mix(v);}}
+        for h in self.territory.claims{mix(h);}
+        for o in self.territory.offers{mix(o.active as u32|(o.give as u32)<<8|(o.want as u32)<<16);mix(o.tick);mix(o.cooldown);}
+        for e in &self.territory.log{mix(e.tick);mix(e.from as u32|(e.to as u32)<<8|(e.kind as u32)<<16|(e.reason as u32)<<24);mix(e.give);mix(e.want);}
+        for chunk in self.team_vis.chunks_exact(4){mix(u32::from_le_bytes(chunk.try_into().unwrap()));}
+        for e in &self.diplomacy.log{mix(e.tick);mix(e.from as u32|(e.to as u32)<<8|(e.kind as u32)<<16|(e.reason as u32)<<24);mix(e.value);mix(e.resource);}
+
+        for t in 0..self.nplayers {
+            mix(self.research_points[t].to_bits());
+            for b in self.researched[t] { mix(b); }
+            if cfg!(feature="ee2-reference"){for value in self.extra_resources[t]{mix(value.to_bits());}}
+        }
         for p in &self.players[..self.nplayers] {
             for r in p.res {
                 mix(r.to_bits());
             }
             mix(p.epoch as u32 | p.tech << 8);
+            mix(p.population_limit);
         }
         for e in &self.ents[..self.high] {
             if e.alive {
@@ -747,6 +756,21 @@ impl Game {
                 mix(e.x.to_bits());
                 mix(e.y.to_bits());
                 mix(e.hp.to_bits());
+                mix(e.built.to_bits());
+                if DEFS[e.def as usize].building{mix(e.rot.to_bits());}
+                mix(e.carry.to_bits());
+                mix(e.qt.to_bits());
+                mix(e.qn as u32);
+                if DEFS[e.def as usize].building {for q in &e.q[..e.qn as usize] {mix(*q as u32);}}
+                for k in 0..e.ncargo as usize {mix(e.cargo[k] as u32 | (e.cargo_hp[k] as u32)<<8);}
+            }
+        }
+        #[cfg(feature="ee2-reference")]
+        {
+            mix(crate::city_ground::CITY_MAGIC);
+            for i in 0..self.high {
+                let radius=self.city_ground_radius(i);
+                if radius>0.0 {mix(self.h(i));mix(radius.to_bits());}
             }
         }
         h
@@ -765,9 +789,14 @@ impl Game {
     // ------------------------------------------------------------------ tick
 
     pub fn tick(&mut self) {
+        // Reset resource work slots once, before either old or newly trained
+        // citizens run. Resetting inside a building update lets later IDs bypass it.
+        for e in &mut self.ents[..self.high]{if e.alive&&e.def==FARM{e.carry=0.0;}}
         self.tick += 1;
+        if self.bench==0{self.update_diplomacy();}
         self.map.budget = 4;
         self.build_grid();
+        if self.bench==0{self.update_territory_diplomacy();}
         for i in 0..self.high {
             if self.ents[i].alive {
                 self.update_ent(i);
@@ -784,11 +813,14 @@ impl Game {
                 k += 1;
             }
         }
+        let mut deaths=false;let mut city_death=false;
         for i in 0..self.high {
             if self.ents[i].alive && self.ents[i].hp <= 0.0 {
-                self.kill(i);
+                deaths=true;city_death|=self.ents[i].def==TC;self.kill(i);
             }
         }
+        if city_death{self.rebuild_territories();self.void_landless_alliances();}
+        if deaths&&self.bench==0{self.prune_territory_offers();}
         while self.high > 0 && !self.ents[self.high - 1].alive {
             self.high -= 1;
         }
@@ -821,6 +853,8 @@ impl Game {
 
     /// Counting-sort every live entity into a uniform grid; also recount population.
     pub fn build_grid(&mut self) {
+        #[cfg(feature="ee2-reference")]
+        self.sync_city_ground();
         let g = &mut self.grid;
         for c in g.start.iter_mut() {
             *c = 0;
@@ -828,7 +862,6 @@ impl Game {
         let mut pop = [0u32; 4];
         let mut cap = [0u32; 4];
         let mut bld = [0u32; 4];
-        let mut own = [255u8; 32];
         let mut n = 0;
         for e in &self.ents[..self.high] {
             if !e.alive {
@@ -838,28 +871,18 @@ impl Game {
             g.start[cell_of(e.x, e.y) + 1] += 1;
             let d = &DEFS[e.def as usize];
             let t = e.team as usize;
-            pop[t] += d.pop as u32;
+            pop[t] += crate::economy::population(e.def,self.players[t].epoch);
             for &c in &e.cargo[..e.ncargo as usize] {
-                pop[t] += DEFS[c as usize].pop as u32;
+                pop[t] += crate::economy::population(c,self.players[t].epoch);
             }
             if d.building {
                 bld[t] += 1;
-                if e.def == TC {
-                    let k = self.map.terr[tile_of(e.x, e.y)] as usize;
-                    if own[k] == 255 {
-                        own[k] = e.team;
-                    }
-                }
                 if e.built >= 1.0 {
-                    cap[t] += match e.def {
-                        TC => 15,
-                        HOUSE => 10,
-                        _ => 0,
-                    };
+                    cap[t] += self.modifiers[t][e.def as usize][18].round().max(0.0) as u32;
                 }
                 for &q in &e.q[..e.qn as usize] {
-                    if q < TECH0 {
-                        pop[t] += DEFS[q as usize].pop as u32;
+                    if (q as usize) < DEFS.len() {
+                        pop[t] += crate::economy::population(q,self.players[t].epoch);
                     }
                 }
             }
@@ -880,20 +903,24 @@ impl Game {
         }
         for t in 0..4 {
             self.players[t].pop = pop[t];
-            self.players[t].cap = cap[t].min(250);
+            self.players[t].cap = cap[t].min(self.players[t].population_limit);
             self.players[t].buildings = bld[t];
-            self.players[t].terr = own.iter().filter(|&&o| o as usize == t).count() as u32;
         }
-        if own != self.towner {
-            self.towner = own;
-            self.terr_dirty = true;
-        }
+        self.rebuild_territories();
+    }
+
+    #[inline]
+    fn rps_allows(&self,attacker:&Ent,defender:&Ent)->bool {
+        #[cfg(feature="ee2-reference")]
+        {return crate::ee2_combat::can_target(attacker.def,self.players[attacker.team as usize].epoch,defender.def,self.players[defender.team as usize].epoch).unwrap_or(true);}
+        #[cfg(not(feature="ee2-reference"))]
+        {let _=(attacker,defender);true}
     }
 
     /// Nearest hostile that `e` can see and shoot within `r`.
     fn acquire(&self, e: &Ent, d: &Def, r: f32) -> u32 {
         let mask = d.all_targets();
-        let m = r + 2.5;
+        let m = r + 5.0;
         let (cx0, cy0) = (((e.x - m) / CELL).max(0.0) as usize, ((e.y - m) / CELL).max(0.0) as usize);
         let (cx1, cy1) = ((((e.x + m) / CELL) as usize).min(GC - 1), (((e.y + m) / CELL) as usize).min(GC - 1));
         let mut best = NOIDX;
@@ -904,15 +931,16 @@ impl Game {
                 for k in self.grid.start[c]..self.grid.start[c + 1] {
                     let j = self.grid.items[k as usize] as usize;
                     let t = &self.ents[j];
-                    if t.team == e.team {
+                    if !self.hostile(e.team,t.team) {
                         continue;
                     }
                     let td = &DEFS[t.def as usize];
                     if mask & td.dom == 0 {
                         continue;
                     }
+                    if !self.rps_allows(e,t){continue;}
                     let (dx, dy) = (t.x - e.x, t.y - e.y);
-                    let dist = (dx * dx + dy * dy).sqrt() - td.rad();
+                    let dist = (dx * dx + dy * dy).sqrt() - self.entity_radius(t);
                     if dist > r {
                         continue;
                     }
@@ -952,21 +980,39 @@ impl Game {
     }
 
     fn fire(&mut self, e: &mut Ent, w: &Wpn, tj: usize) {
-        e.cd = w.cd * (0.9 + 0.2 * self.rng.f());
+        if !self.hostile(e.team,self.ents[tj].team)||!self.can_see(e.team,tj)||!self.rps_allows(e,&self.ents[tj]){e.tgt=NONE;return;}
+        #[cfg(feature="ee2-reference")]
+        let attacker_profile=crate::ee2_combat::profile(e.def,self.players[e.team as usize].epoch);
+        let mut w=*w;
+        // Both Cannonball and TankShell use our existing shell projectile.
+        #[cfg(feature="ee2-reference")]
+        if e.def==FORTRESS {
+            if let Some(row)=crate::ee2_units::lookup_class(FORTRESS,self.players[e.team as usize].epoch) {
+                if matches!(row.attack_missile,Some("Cannonball"|"TankShell")) {w.kind=W_SHELL;}
+                if let Some(reload)=row.reload {w.cd=reload;}
+            }
+        }
+        e.cd = if e.def==FORTRESS {w.cd} else {w.cd * (0.9 + 0.2 * self.rng.f())};
         let d = &DEFS[e.def as usize];
         if d.has(F_STEALTH) {
             e.reveal_t = 3.0;
         }
-        let dmg = w.dmg * self.players[e.team as usize].atk[class_of(d)];
+        let dmg = w.dmg * self.players[e.team as usize].atk[class_of(d)] * self.modifiers[e.team as usize][e.def as usize][1] * (1.0+self.fortress_attack_bonus(e));
         self.ev(if w.kind == W_MELEE { 7.0 } else { w.kind as f32 }, e.x, e.y);
         if w.kind == W_MELEE || self.projs.len() >= 4000 {
+            #[cfg(feature="ee2-reference")]
+            self.damage_from(tj,dmg,w.kind,attacker_profile);
+            #[cfg(not(feature="ee2-reference"))]
             self.damage(tj, dmg, w.kind);
             return;
         }
         let t = &self.ents[tj];
         let d0 = ((t.x - e.x).powi(2) + (t.y - e.y).powi(2)).sqrt().max(0.1);
         const SPEED: [f32; 7] = [0.0, 14.0, 34.0, 15.0, 6.5, 13.0, 7.0];
-        self.projs.push(Proj { x: e.x, y: e.y, px: e.x, py: e.y, tx: t.x, ty: t.y, tgt: self.h(tj), speed: SPEED[w.kind as usize], dmg, kind: w.kind, team: e.team, splash: w.splash, targets: w.targets, d0 });
+        self.projs.push(Proj { x: e.x, y: e.y, px: e.x, py: e.y, tx: t.x, ty: t.y, tgt: self.h(tj), speed: SPEED[w.kind as usize], dmg, kind: w.kind, team: e.team, splash: w.splash, targets: w.targets,
+            #[cfg(feature="ee2-reference")]
+            attacker_profile,
+            d0 });
     }
 
     #[inline]
@@ -982,6 +1028,17 @@ impl Game {
         }
     }
 
+    #[cfg(feature="ee2-reference")]
+    #[inline]
+    fn damage_from(&mut self,j:usize,dmg:f32,kind:u8,attacker_profile:u16){
+        let (team,def)=(self.ents[j].team,self.ents[j].def);
+        let td=&DEFS[def as usize];
+        let native=crate::ee2_combat::multiplier_from_profile(attacker_profile,def,self.players[team as usize].epoch);
+        let m=native.unwrap_or(MULT[kind as usize][td.armor as usize])*self.players[team as usize].dfn[class_of(td)];
+        let t=&mut self.ents[j];t.hp-=dmg*m;t.flash=0.12;
+        if team==self.local&&m>0.0&&self.tick%8==0 {let(x,y)=(t.x,t.y);self.ev(15.0,x,y);}
+    }
+
     fn update_projs(&mut self) {
         let mut k = 0;
         while k < self.projs.len() {
@@ -990,8 +1047,8 @@ impl Game {
             p.py = p.y;
             if p.kind != W_SHELL && p.kind != W_BOMB {
                 if let Some(j) = self.get(p.tgt) {
-                    p.tx = self.ents[j].x;
-                    p.ty = self.ents[j].y;
+                    if self.hostile(p.team,self.ents[j].team)&&self.can_see(p.team,j){p.tx = self.ents[j].x;
+                    p.ty = self.ents[j].y;}
                 }
             }
             let (dx, dy) = (p.tx - p.x, p.ty - p.y);
@@ -1006,7 +1063,7 @@ impl Game {
             }
             self.projs.swap_remove(k);
             if p.splash > 0.0 {
-                let m = p.splash + 2.5;
+                let m = p.splash + 5.0;
                 let (cx0, cy0) = (((p.tx - m) / CELL).max(0.0) as usize, ((p.ty - m) / CELL).max(0.0) as usize);
                 let (cx1, cy1) = ((((p.tx + m) / CELL) as usize).min(GC - 1), (((p.ty + m) / CELL) as usize).min(GC - 1));
                 for cy in cy0..=cy1 {
@@ -1016,19 +1073,34 @@ impl Game {
                             let j = self.grid.items[q as usize] as usize;
                             let t = &self.ents[j];
                             let td = &DEFS[t.def as usize];
-                            if t.team == p.team || td.dom & p.targets == 0 || !t.alive {
+                            if !self.hostile(p.team,t.team) || td.dom & p.targets == 0 || !t.alive {
                                 continue;
                             }
-                            let d = ((t.x - p.tx).powi(2) + (t.y - p.ty).powi(2)).sqrt() - td.rad();
+                            let center_distance=((t.x-p.tx).powi(2)+(t.y-p.ty).powi(2)).sqrt();
+                            #[cfg(feature="ee2-reference")]
+                            let d=center_distance;
+                            #[cfg(not(feature="ee2-reference"))]
+                            let d=center_distance-self.entity_radius(t);
                             if d <= p.splash {
+                                #[cfg(feature="ee2-reference")]
+                                let f=crate::ee2_combat::splash_factor(d,p.splash,self.h(j)==p.tgt);
+                                #[cfg(not(feature="ee2-reference"))]
                                 let f = 1.0 - 0.5 * (d / p.splash).clamp(0.0, 1.0);
+                                #[cfg(feature="ee2-reference")]
+                                self.damage_from(j,p.dmg*f,p.kind,p.attacker_profile);
+                                #[cfg(not(feature="ee2-reference"))]
                                 self.damage(j, p.dmg * f, p.kind);
                             }
                         }
                     }
                 }
             } else if let Some(j) = self.get(p.tgt) {
-                self.damage(j, p.dmg, p.kind);
+                if self.hostile(p.team,self.ents[j].team){
+                    #[cfg(feature="ee2-reference")]
+                    self.damage_from(j,p.dmg,p.kind,p.attacker_profile);
+                    #[cfg(not(feature="ee2-reference"))]
+                    self.damage(j,p.dmg,p.kind);
+                }
             }
             if p.kind >= W_SHELL && self.fx.len() < 1000 {
                 self.fx.push(Fx { x: p.tx, y: p.ty, size: (p.splash * 2.0).max(0.7), age: 0.0, life: 0.2 + p.splash * 0.14 });
@@ -1037,7 +1109,7 @@ impl Game {
     }
 
     /// Direction to walk toward `(gx, gy)`: shared flow field when far, straight line when close.
-    fn steer(&mut self, e: &mut Ent, d: &Def, gx: f32, gy: f32) -> (f32, f32) {
+    pub(crate) fn steer(&mut self, e: &mut Ent, d: &Def, gx: f32, gy: f32) -> (f32, f32) {
         let (dx, dy) = (gx - e.x, gy - e.y);
         let dist = (dx * dx + dy * dy).sqrt().max(1e-4);
         let direct = (dx / dist, dy / dist);
@@ -1100,11 +1172,38 @@ impl Game {
     }
 
     fn update_building(&mut self, i: usize, e: &mut Ent, d: &Def) {
-        if e.def == FARM {
-            e.carry = 0.0; // worker-slot counter, refilled by gatherers each tick
+        let instant = !self.net && self.cheats_enabled && self.instant_build && e.team == self.local;
+        if e.built < 1.0 && instant { e.built = 1.0; e.hp = self.max_hp(e.team,e.def); }
+        #[cfg(feature="ee2-reference")]
+        self.observe_city_ground(i,*e);
+        if e.built < 1.0 { return; }
+        if e.def==FORTRESS && e.ncargo>0 {
+            let rate=self.fortress_heal_rate(e.team);
+            let before=e.carry;let after=before+DT;
+            // Existing saves store cargo health in whole percent. A shared
+            // healing clock accumulates native HP/sec without losing fractional
+            // work every tick; display/storage precision remains one percent.
+            for k in 0..e.ncargo as usize {
+                let hp=self.max_hp(e.team,e.cargo[k]).max(0.01);
+                let added=((after*rate*100.0/hp).floor()-(before*rate*100.0/hp).floor()).max(0.0) as u32;
+                e.cargo_hp[k]=(e.cargo_hp[k] as u32+added).min(100) as u8;
+            }
+            e.carry=after;
+        }else if e.def==FORTRESS {e.carry=0.0;}
+        if d.has(F_RESEARCH) {
+            // Ghidra 007e7cf0: accumulate per building, floor, then credit the owner's bank.
+            e.carry += UNIVERSITY_RATE * (e.ncargo as usize).min(self.cargo_capacity(e.team,e.def)) as f32 * DT * self.modifiers[e.team as usize][e.def as usize][7];
+            let points=e.carry.floor();
+            if points>=1.0 {self.research_points[e.team as usize]+=points;e.carry-=points;}
         }
-        if e.built < 1.0 {
-            return;
+        if d.has(F_EXTRACT){
+            let kind=Self::extractor_kind(e.def);
+            // Gifts do not unlock a recipient's future or obsolete resource.
+            // Keep every crew member; inactive deposits do not accumulate work.
+            if self.resource_unlocked(e.team,kind){
+                e.carry+=0.75*(e.ncargo as usize).min(self.cargo_capacity(e.team,e.def)) as f32*DT*self.modifiers[e.team as usize][e.def as usize][crate::economy::gather_modifier(kind)];
+                let whole=e.carry.floor();if whole>=1.0{self.add_resource(e.team,kind as usize-1,whole);e.carry-=whole;}
+            }else{e.carry=0.0;}
         }
         if e.qn > 0 {
             let item = e.q[0];
@@ -1115,11 +1214,30 @@ impl Game {
                 if e.qt >= EPOCH_TIME {
                     self.players[team].epoch += 1;
                     self.players[team].researching = false;
+                    let old=self.max_hp(e.team,e.def);self.rebuild_modifiers(e.team,true);e.hp*=self.max_hp(e.team,e.def)/old.max(0.01);
                     done = true;
+                }
+            } else if original_research(item) {
+                #[cfg(feature = "ee2-reference")]
+                {
+                    let k=(item-ORIGINAL_RESEARCH0) as usize;
+                    e.qt += DT;
+                    if e.qt + 0.00001 >= crate::ee2_research::NODES[k].time {
+                        self.researched[team][k/32] |= 1 << (k%32);
+                        let old=self.max_hp(e.team,e.def);
+                        self.rebuild_modifiers(e.team,true);
+                        e.hp *= self.max_hp(e.team,e.def)/old;
+                        done=true;
+                    }
                 }
             } else if item >= TECH0 {
                 e.qt += DT;
                 let k = item - TECH0;
+                if !self.net && self.cheats_enabled && e.team == self.local {
+                    let used = self.tech_points.min((TECHS[k as usize].time - e.qt).max(0.0).ceil() as u32);
+                    e.qt += used as f32;
+                    self.tech_points -= used;
+                }
                 if e.qt >= TECHS[k as usize].time {
                     let p = &mut self.players[team];
                     p.tech |= 1 << k;
@@ -1129,11 +1247,13 @@ impl Game {
                 }
             } else {
                 let ud = &DEFS[item as usize];
-                if e.qt < ud.time {
+                let time=self.production_time(e.team,item);
+                if instant { e.qt = time; }
+                if e.qt < time {
                     e.qt += DT;
                 }
                 // population was already reserved when queued; cap can still drop if houses die
-                if e.qt >= ud.time && (self.players[team].pop <= self.players[team].cap || self.bench > 0) {
+                if e.qt >= time && (self.players[team].pop <= self.players[team].cap || self.bench > 0) {
                     let (sx, sy) = self.spawn_point(e, d, ud);
                     let u = self.spawn(item, e.team, sx, sy);
                     if u != NOIDX && e.rx >= 0.0 {
@@ -1149,7 +1269,7 @@ impl Game {
             }
             if done {
                 if e.team == self.local {
-                    self.ev(if item >= TECH0 { 13.0 } else { 12.0 }, e.x, e.y);
+                    self.ev(if original_research(item) || item >= TECH0 { 13.0 } else { 12.0 }, e.x, e.y);
                 }
                 e.q.copy_within(1.., 0);
                 e.qn -= 1;
@@ -1159,20 +1279,20 @@ impl Game {
         if d.armed() {
             let mut tj = NOIDX;
             if let Some(j) = self.get(e.tgt) {
-                if self.can_see(e.team, j) {
+                if self.hostile(e.team,self.ents[j].team)&&self.can_see(e.team, j)&&self.rps_allows(e,&self.ents[j]) {
                     tj = j;
                 }
             }
             if tj == NOIDX && (self.tick + i as u32) % 8 == 0 {
-                e.tgt = self.acquire(e, d, d.max_range());
+                e.tgt = self.acquire(e, d, d.max_range()+self.modifiers[e.team as usize][e.def as usize][6]);
                 tj = self.get(e.tgt).unwrap_or(NOIDX);
             }
             if tj != NOIDX {
                 let t = self.ents[tj];
                 let td = &DEFS[t.def as usize];
-                let dist = ((t.x - e.x).powi(2) + (t.y - e.y).powi(2)).sqrt() - td.rad();
+                let dist = ((t.x - e.x).powi(2) + (t.y - e.y).powi(2)).sqrt() - self.entity_radius(&t);
                 match d.weapon_vs(td.dom) {
-                    Some(w) if dist <= w.range => {
+                    Some(w) if dist <= w.range+self.modifiers[e.team as usize][e.def as usize][6] => {
                         if e.cd <= 0.0 {
                             let w = *w;
                             self.fire(e, &w, tj);
@@ -1184,14 +1304,14 @@ impl Game {
         }
     }
 
-    fn spawn_point(&self, b: &Ent, bd: &Def, ud: &Def) -> (f32, f32) {
+    fn spawn_point(&self, b: &Ent, _bd: &Def, ud: &Def) -> (f32, f32) {
         if ud.dom == AIR {
             return (b.x, b.y);
         }
         let pass = &self.map.pass[if ud.dom == LAND { 0 } else { 1 }];
         let (cx, cy) = (b.x.floor() as i32, b.y.floor() as i32);
-        let (wx, wy) = if b.rx >= 0.0 { (b.rx, b.ry) } else { (b.x, b.y + 50.0) };
-        let r0 = (bd.size * 0.5) as i32 + 1;
+        let (wx, wy) = if b.rx >= 0.0 { (b.rx, b.ry) } else if b.def==DOCK{(b.x+b.rot.sin()*50.0,b.y-b.rot.cos()*50.0)}else{(b.x-b.rot.sin()*50.0,b.y+b.rot.cos()*50.0)};
+        let r0 = Self::building_half(b) as i32 + 1;
         for r in r0..r0 + 6 {
             let mut best = None;
             let mut bdist = f32::MAX;
@@ -1244,7 +1364,7 @@ impl Game {
         // ---- resolve the current target
         if e.order == O_ATTACK {
             match self.get(e.otgt) {
-                Some(j) if self.can_see(e.team, j) => {
+                Some(j) if self.hostile(e.team,self.ents[j].team)&&self.can_see(e.team, j)&&self.rps_allows(&e,&self.ents[j]) => {
                     e.tgt = e.otgt;
                     if (self.tick + i as u32) % 32 == 0 {
                         e.fkey = self.key_for(d.dom, self.ents[j].x, self.ents[j].y);
@@ -1263,12 +1383,13 @@ impl Game {
         let mut tj = NOIDX;
         if e.tgt != NONE {
             match self.get(e.tgt) {
-                Some(j) if self.can_see(e.team, j) => tj = j,
+                Some(j) if self.hostile(e.team,self.ents[j].team)&&self.can_see(e.team, j)&&self.rps_allows(&e,&self.ents[j]) => tj = j,
                 _ => e.tgt = NONE,
             }
         }
         if tj == NOIDX && stagger && d.armed() && e.order <= O_AMOVE {
-            let r = if e.order == O_MOVE { d.max_range() } else { d.sight.max(d.max_range() + 1.0) };
+            let range=d.max_range()+self.modifiers[e.team as usize][e.def as usize][6];
+            let r = if e.order == O_MOVE { range } else { self.modifiers[e.team as usize][e.def as usize][5].max(range + 1.0) };
             e.tgt = self.acquire(&e, d, r);
             tj = self.get(e.tgt).unwrap_or(NOIDX);
         }
@@ -1287,7 +1408,7 @@ impl Game {
                 let (dx, dy) = (t.x - e.x, t.y - e.y);
                 let dist = (dx * dx + dy * dy).sqrt();
                 let ang = dy.atan2(dx);
-                if dist - td.rad() <= w.range {
+                if dist - self.entity_radius(&t) <= w.range+self.modifiers[e.team as usize][e.def as usize][6] {
                     face = Some(ang);
                     engaged = e.order != O_MOVE;
                     goal = (t.x, t.y);
@@ -1346,19 +1467,24 @@ impl Game {
                     }
                 }
                 O_BOARD => self.do_board(i, &mut e, d, &mut want, &mut moving),
-                O_GATHER => self.do_gather(&mut e, d, &mut want, &mut moving),
+                O_GATHER => self.do_gather(i,&mut e, d, &mut want, &mut moving),
                 O_BUILD => self.do_build(&mut e, d, &mut want, &mut moving),
                 _ => {}
             }
         }
 
+        let speed=self.modifiers[e.team as usize][e.def as usize][2];
         // ---- integrate
         if plane {
-            let rate = 2.4 * DT;
+            #[cfg(feature = "ee2-reference")]
+            let angular_speed = crate::ee2_profile::turn_rate(e.def);
+            #[cfg(not(feature = "ee2-reference"))]
+            let angular_speed = 2.4;
+            let rate = angular_speed * DT;
             let (dx, dy) = (goal.0 - e.x, goal.1 - e.y);
             let dist = (dx * dx + dy * dy).sqrt();
             let diff = angdiff(dy.atan2(dx), e.rot);
-            let rturn = d.speed / 2.4;
+            let rturn = speed / angular_speed.max(0.001);
             if !engaged && e.order == O_IDLE && dist < 4.0 {
                 e.rot += rate * 0.6; // loiter in a lazy circle
             } else {
@@ -1374,12 +1500,12 @@ impl Game {
                 }
             }
             e.rot = angdiff(e.rot, 0.0);
-            e.vx = e.rot.cos() * d.speed;
-            e.vy = e.rot.sin() * d.speed;
+            e.vx = e.rot.cos() * speed;
+            e.vy = e.rot.sin() * speed;
             e.x = (e.x + e.vx * DT).clamp(0.6, N as f32 - 0.6);
             e.y = (e.y + e.vy * DT).clamp(0.6, N as f32 - 0.6);
         } else {
-            let (tvx, tvy) = if moving { (want.0 * d.speed, want.1 * d.speed) } else { (0.0, 0.0) };
+            let (tvx, tvy) = if moving { (want.0 * speed, want.1 * speed) } else { (0.0, 0.0) };
             e.vx += (tvx - e.vx) * 0.4;
             e.vy += (tvy - e.vy) * 0.4;
             if e.vx != 0.0 || e.vy != 0.0 {
@@ -1397,7 +1523,7 @@ impl Game {
             if moving && (e.order == O_MOVE || e.order == O_AMOVE || e.order == O_UNLOAD) && !engaged {
                 let moved = ((e.x - e.px).powi(2) + (e.y - e.py).powi(2)).sqrt();
                 let near = (e.ox - e.x).powi(2) + (e.oy - e.y).powi(2) < 36.0;
-                if moved < d.speed * DT * 0.25 && near {
+                if moved < speed * DT * 0.25 && near {
                     e.stuck += 1;
                     if e.stuck > 24 {
                         Self::set_idle(&mut e); // goal is crowded or walled off: close enough
@@ -1410,11 +1536,14 @@ impl Game {
         self.ents[i] = e;
     }
 
-    fn do_gather(&mut self, e: &mut Ent, d: &Def, want: &mut (f32, f32), moving: &mut bool) {
+    fn do_gather(&mut self, index:usize,e: &mut Ent, d: &Def, want: &mut (f32, f32), moving: &mut bool) {
         let kind = e.q[0];
+        if cfg!(feature="ee2-reference")&&e.carry>0.0&&e.q[2]>0&&e.q[2]!=kind {e.q[1]=1;}
+        if cfg!(feature="ee2-reference")&&e.q[1]==1{self.return_cargo(e,d,want,moving);return;}
+        if !self.citizen_can_gather(e.team,kind){e.carry=0.0;e.q[2]=0;Self::set_idle(e);return;}
         let (cx, cy, reach, farm) = if e.otgt != NONE {
             match self.get(e.otgt) {
-                Some(j) if self.ents[j].built >= 1.0 => (self.ents[j].x, self.ents[j].y, DEFS[self.ents[j].def as usize].size * 0.5 + 0.95, j),
+                Some(j) if self.ents[j].built >= 1.0 && self.ents[j].team==e.team && self.ents[j].def==FARM => (self.ents[j].x, self.ents[j].y, Self::building_half(&self.ents[j]) + 0.95, j),
                 _ => {
                     Self::set_idle(e);
                     return;
@@ -1442,17 +1571,37 @@ impl Game {
             *moving = true;
             return;
         }
-        let p = &mut self.players[e.team as usize];
-        let amount = 0.55 * (1.0 + 0.1 * p.epoch as f32) * p.gather * DT;
+        let p = self.players[e.team as usize];
+        let resource_mod=self.modifiers[e.team as usize][e.def as usize][crate::economy::gather_modifier(kind)];
+        let rate=if cfg!(feature="ee2-reference"){if farm!=NOIDX{4.37}else{0.85}}else{0.55*(1.0+0.1*p.epoch as f32)};
+        let amount = rate * p.gather * resource_mod * DT;
+        if cfg!(feature="ee2-reference"){
+            if farm==NOIDX {
+                let limit=if kind==R_WOOD{3}else{6};
+                let occupying=self.ents[..index].iter().filter(|w|w.alive&&w.def==WORKER&&w.order==O_GATHER&&w.q[1]==0&&w.otgt==NONE&&w.otile==e.otile&&(w.x-cx).abs().max((w.y-cy).abs())<=reach).count();
+                if occupying>=limit{return;}
+            }
+            if farm!=NOIDX {
+                if self.ents[farm].carry>=1.0{return;}self.ents[farm].carry+=1.0;
+            }
+            let previous=e.carry.floor();e.carry=(e.carry+amount).min(15.0);e.q[2]=kind;
+            if farm==NOIDX {
+                let t=e.otile as usize;let removed=(e.carry.floor()-previous) as u16;
+                self.map.amt[t]=self.map.amt[t].saturating_sub(removed);
+                if self.map.amt[t]==0 {self.map.res[t]=R_NONE;if self.map.ter[t]==T_FOREST{self.map.ter[t]=T_GRASS;}self.map.recolor(t);e.q[1]=1;}
+            }
+            if e.carry>=15.0 {e.q[1]=1;}
+            return;
+        }
         if farm != NOIDX {
             // a farm supports four workers; extras wait their turn
             if self.ents[farm].carry < 4.0 {
                 self.ents[farm].carry += 1.0;
-                p.res[0] += amount;
+                self.add_resource(e.team,0,amount);
             }
             return;
         }
-        p.res[kind as usize - 1] += amount;
+        self.add_resource(e.team,kind as usize-1,amount);
         e.carry += amount;
         if e.carry >= 1.0 {
             e.carry -= 1.0;
@@ -1476,10 +1625,16 @@ impl Game {
                 return;
             }
         };
+        if self.ents[j].team!=e.team{Self::set_idle(e);e.otgt=NONE;return;}
         let b = self.ents[j];
-        let bd = &DEFS[b.def as usize];
+        let (bx,by,side)=Self::building_bounds(&b);
+        if b.built<1.0&&e.x>=bx as f32&&e.x<(bx+side)as f32&&e.y>=by as f32&&e.y<(by+side)as f32{
+            let goal=(e.fkey&0xffff)as usize;
+            *want=self.steer(e,d,(goal%N)as f32+0.5,(goal/N)as f32+0.5);*moving=true;return;
+        }
         if b.built >= 1.0 {
-            if b.def == FARM {
+            let farm_staffed=cfg!(feature="ee2-reference")&&self.ents[..self.high].iter().any(|w|w.alive&&w.def==WORKER&&w.order==O_GATHER&&w.otgt==e.otgt);
+            if b.def == FARM&&!farm_staffed {
                 e.order = O_GATHER;
                 e.q[0] = R_FOOD;
             } else if e.prev != R_NONE {
@@ -1494,18 +1649,22 @@ impl Game {
             }
             return;
         }
-        if (b.x - e.x).abs().max((b.y - e.y).abs()) > bd.size * 0.5 + 0.95 {
-            *want = self.steer(e, d, b.x, b.y);
+        if (b.x - e.x).abs().max((b.y - e.y).abs()) > Self::building_half(&b) + 0.95 {
+            let goal=(e.fkey&0xffff)as usize;
+            *want = self.steer(e, d, (goal%N)as f32+0.5, (goal/N)as f32+0.5);
             *moving = true;
             return;
         }
-        let step = DT / bd.time;
+        let maxhp=self.max_hp(e.team,b.def);
+        let step = DT / (self.production_time(e.team,b.def)*self.construction_multiplier(&b));
         let t = &mut self.ents[j];
         t.built = (t.built + step).min(1.0);
-        t.hp = (t.hp + bd.hp * 0.9 * step).min(bd.hp);
+        t.hp = (t.hp + maxhp * 0.9 * step).min(maxhp);
         if t.built >= 1.0 && t.team == self.local {
             self.ev(14.0, b.x, b.y);
         }
+        #[cfg(feature="ee2-reference")]
+        self.sync_city_ground_entry(j);
     }
 
     /// Soft collision: overlapping units in the same layer push each other apart.
@@ -1583,16 +1742,16 @@ impl Game {
         if self.bench > 0 {
             return;
         }
-        for v in self.vis.iter_mut() {
+        for v in self.team_vis.iter_mut() {
             if *v == 255 {
                 *v = 128;
             }
         }
         for e in &self.ents[..self.high] {
-            if !e.alive || e.team != self.local {
+            if !e.alive {
                 continue;
             }
-            let r = DEFS[e.def as usize].sight;
+            let r = self.modifiers[e.team as usize][e.def as usize][5];
             let (cx, cy) = (e.x as i32, e.y as i32);
             let ri = r as i32;
             for dy in -ri..=ri {
@@ -1604,11 +1763,15 @@ impl Game {
                 let x0 = (cx - w).max(0) as usize;
                 let x1 = (cx + w).min(N as i32 - 1) as usize;
                 let row = y as usize * N;
-                for v in &mut self.vis[row + x0..=row + x1] {
+                for v in &mut self.team_vis[e.team as usize*NN+row+x0..=e.team as usize*NN+row+x1] {
                     *v = 255;
                 }
             }
         }
+        // Shared exploration is remembered; current unit sight remains a
+        // live treaty right and disappears when the agreement ends.
+        for donor in 0..self.nplayers{for viewer in 0..self.nplayers{if self.shares_to(donor as u8,viewer as u8){for t in 0..NN{if self.team_vis[donor*NN+t]>0{let v=&mut self.team_vis[viewer*NN+t];*v=(*v).max(128);}}}}}
+        self.refresh_display_fog();
     }
 
     /// Stress test: keep two huge mixed armies topped up and marching at each other.
@@ -1668,4 +1831,82 @@ impl Game {
             }
         }
     }
+}
+
+#[cfg(test)]
+mod diplomacy_combat_tests {
+    use super::*;
+    fn projectile(g:&Game,target:usize,splash:f32)->Proj {
+        let t=g.ents[target];Proj{x:t.x,y:t.y,px:t.x,py:t.y,tx:t.x,ty:t.y,tgt:g.h(target),speed:14.0,dmg:10.0,kind:W_ARROW,team:0,splash,targets:LAND|SEA|SUB|AIR,
+            #[cfg(feature="ee2-reference")]
+            attacker_profile:crate::ee2_combat::UNKNOWN_PROFILE,
+            d0:1.0}
+    }
+    #[test]
+    fn treaty_stops_direct_and_splash_projectiles_already_in_flight(){
+        let mut g=Game::new(7,1,0,2,0);
+        let partner=g.spawn(WORKER,1,100.0,100.0);let opponent=g.spawn(WORKER,2,100.5,100.0);
+        g.build_grid();g.update_fog();let hp=g.ents[partner].hp;let hp_other=g.ents[opponent].hp;
+        g.projs.push(projectile(&g,partner,0.0));g.projs.push(projectile(&g,partner,2.0));
+        assert!(g.apply_diplomacy(0,1,0,0,0.0));assert!(g.apply_diplomacy(1,0,3,0,0.0));
+        g.update_projs();assert!(g.projs.is_empty());assert_eq!(g.ents[partner].hp,hp);assert!(g.ents[opponent].hp<hp_other);
+    }
+    #[test]
+    fn revealed_display_does_not_expose_undetected_stealth(){
+        let mut g=Game::new(7,0,0,2,0);let def=DEFS.iter().position(|d|d.has(F_STEALTH)).unwrap() as u8;
+        let j=g.spawn(def,1,120.0,120.0);g.diplomacy.visibility=2;g.refresh_display_fog();
+        assert!(!g.visible(j));g.ents[j].revealed=1;assert!(g.visible(j));assert!(!g.can_see(0,j));
+    }
+    #[test]
+    fn free_alliance_is_not_a_shared_victory(){
+        let mut g=Game::new(7,0,0,2,0);g.diplomacy.relation[1]=crate::diplomacy::ALLIED;g.diplomacy.relation[4]=crate::diplomacy::ALLIED;
+        for _ in 0..20{g.tick();}assert_eq!(g.winner,0);
+        for e in &mut g.ents[..g.high]{if e.alive&&e.team==1&&DEFS[e.def as usize].building{e.hp=0.0;}}
+        for _ in 0..40{g.tick();}assert_eq!(g.winner,1);
+    }
+}
+
+#[cfg(test)]
+mod territory_cargo_tests{
+ use super::*;
+ #[test]fn unload_at_entity_limit_preserves_unspawned_passengers(){
+  let mut g=Game::new(7,0,0,2,0);let city=g.ents[0];let mut e=city;e.ncargo=3;e.cargo[..3].fill(WORKER);e.cargo_hp[..3].copy_from_slice(&[30,60,90]);
+  g.free.clear();g.unload(&mut e);assert_eq!(e.ncargo,3);assert_eq!(e.cargo_hp[..3],[30,60,90]);
+  let slot=g.high as u16;g.free.push(slot);g.unload(&mut e);assert_eq!(e.ncargo,2);assert_eq!(e.cargo_hp[..2],[60,90]);assert!(g.ents[slot as usize].alive);assert!((g.ents[slot as usize].hp/g.max_hp(0,WORKER)-0.3).abs()<0.0001);
+ }
+ #[test]fn transferred_cargo_keeps_people_but_respects_recipient_work_limit(){
+  let mut g=Game::new(7,0,0,2,0);let (x,y)=g.map.starts[0];let u=g.spawn(UNIVERSITY,0,x as f32+7.0,y as f32);g.ents[u].ncargo=3;g.ents[u].cargo[..3].fill(WORKER);g.ents[u].cargo_hp[..3].fill(100);let id=g.map.terr[tile_of(x as f32,y as f32)];g.modifiers[1][UNIVERSITY as usize][11]=1.0;
+  assert!(g.apply_territory(0,1,0,id as u32,NONE));assert_eq!(g.ents[u].ncargo,3);assert_eq!(g.cargo_capacity(1,UNIVERSITY),1);let before=g.research_points[1];let mut e=g.ents[u];
+  for _ in 0..1000{g.update_building(u,&mut e,&DEFS[UNIVERSITY as usize]);}g.ents[u]=e;let made=g.research_points[1]-before;let max=(1000.0*DT*UNIVERSITY_RATE*g.modifiers[1][UNIVERSITY as usize][7]).ceil();assert!(made<=max);assert!(made>0.0);assert_eq!(g.ents[u].ncargo,3);
+ }
+ #[cfg(feature="ee2-reference")]
+ #[test]fn transferred_extractor_does_not_work_above_recipient_limit(){
+  let mut g=Game::new(7,0,0,2,0);for p in &mut g.players[..2]{p.epoch=MAX_EPOCH;}for t in 0..2{g.rebuild_modifiers(t,false);}let (x,y)=g.map.starts[0];let u=g.spawn(OIL_RIG,0,x as f32+7.0,y as f32);g.ents[u].ncargo=3;g.ents[u].cargo[..3].fill(WORKER);g.ents[u].cargo_hp[..3].fill(100);let id=g.map.terr[tile_of(x as f32,y as f32)];g.modifiers[1][OIL_RIG as usize][11]=1.0;
+  assert!(g.apply_territory(0,1,0,id as u32,NONE));let before=g.resource(1,R_OIL as usize-1);let mut e=g.ents[u];for _ in 0..100{g.update_building(u,&mut e,&DEFS[OIL_RIG as usize]);}let made=g.resource(1,R_OIL as usize-1)-before;let max=(100.0*DT*0.75*g.modifiers[1][OIL_RIG as usize][crate::economy::gather_modifier(R_OIL)]).ceil();assert!(made<=max);assert!(made>0.0);assert_eq!(e.ncargo,3);
+ }
+}
+
+#[cfg(test)]
+mod territory_construction_tests{
+ use super::*;
+ #[test]fn gifted_construction_keeps_progress_and_health_fraction_and_changes_build_rights(){
+  let mut g=Game::new(7,0,0,2,0);let id=g.map.terr[tile_of(g.ents[0].x,g.ents[0].y)];let base=g.ents[0];let house=g.spawn(HOUSE,0,base.x+7.0,base.y);g.ents[house].built=0.4;g.ents[house].hp=g.max_hp(0,HOUSE)*0.37;g.modifiers[1][HOUSE as usize][0]=1000.0;
+  let mut at=None;for y in 4..N as i32-8{for x in 4..N as i32-8{if g.map.terr[tile_of(x as f32+1.0,y as f32+1.0)]==id&&g.can_place(HOUSE,x,y,0){at=Some((x,y));break;}}if at.is_some(){break;}}
+  let(x,y)=at.unwrap();assert!(!g.can_place(HOUSE,x,y,1));assert!(g.apply_territory(0,1,0,id as u32,NONE));assert!(!g.can_place(HOUSE,x,y,0));assert!(g.can_place(HOUSE,x,y,1));assert_eq!(g.ents[house].built,0.4);assert!((g.ents[house].hp-370.0).abs()<0.001);
+ }
+}
+
+#[cfg(all(test,feature="ee2-reference"))]
+mod territory_resource_epoch_tests{
+ use super::*;
+ #[test]fn gifted_extractors_wait_for_recipient_epoch_without_losing_crew(){
+  for def in [OIL_RIG,URANIUM_MINE]{let mut g=Game::new(7,0,0,2,0);g.players[0].epoch=MAX_EPOCH;g.rebuild_modifiers(0,false);let (x,y)=g.map.starts[0];let u=g.spawn(def,0,x as f32+7.0,y as f32);g.ents[u].ncargo=3;g.ents[u].cargo[..3].fill(WORKER);g.ents[u].cargo_hp[..3].fill(100);let id=g.map.terr[tile_of(x as f32,y as f32)];let kind=Game::extractor_kind(def);let bank=g.resource(1,kind as usize-1);
+   assert!(g.apply_territory(0,1,0,id as u32,NONE));let mut e=g.ents[u];for _ in 0..1000{g.update_building(u,&mut e,&DEFS[def as usize]);}assert_eq!(g.resource(1,kind as usize-1),bank);assert_eq!(e.carry,0.0);assert_eq!(e.ncargo,3);
+   g.players[1].epoch=crate::economy::REVEAL_EPOCH[kind as usize-1];g.rebuild_modifiers(1,false);for _ in 0..1000{g.update_building(u,&mut e,&DEFS[def as usize]);}assert!(g.resource(1,kind as usize-1)>bank);assert_eq!(e.ncargo,3);
+  }
+ }
+ #[test]fn gifted_worker_discards_expired_cargo_like_normal_return_cargo(){
+  let mut g=Game::new(7,0,0,2,0);g.players[0].epoch=6;g.players[1].epoch=9;for t in 0..2{g.rebuild_modifiers(t,false);}let id=g.map.terr[tile_of(g.ents[0].x,g.ents[0].y)];let workers:Vec<usize>=g.ents[..g.high].iter().enumerate().filter(|(_,e)|e.alive&&e.team==0&&e.def==WORKER).map(|(i,_)|i).collect();let iron=workers[0];let wood=workers[1];g.ents[iron].carry=12.0;g.ents[iron].q[1]=1;g.ents[iron].q[2]=R_METAL;g.ents[wood].carry=9.0;g.ents[wood].q[1]=1;g.ents[wood].q[2]=R_WOOD;let bank=g.resource(1,R_METAL as usize-1);
+  assert!(g.apply_territory(0,1,0,id as u32,NONE));assert_eq!(g.ents[iron].carry,0.0);assert_eq!(g.ents[iron].q[1],0);assert_eq!(g.ents[iron].q[2],0);assert_eq!(g.resource(1,R_METAL as usize-1),bank);assert_eq!(g.ents[wood].carry,9.0);assert_eq!(g.ents[wood].q[2],R_WOOD);
+ }
 }

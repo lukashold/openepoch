@@ -1,0 +1,344 @@
+{
+  "format": "native-combat-integration-v1",
+  "createdUtc": "2026-11-03T09:21:58.820842+00:00",
+  "status": "passed",
+  "scope": "Integrated BASE EE2 RPS, upgrade adjustments, zero-target eligibility and native squared splash slice. This is not full original combat/game equivalence.",
+  "build": {
+    "script": "outputs/OpenEpoch/Build-All.ps1",
+    "ee2": {
+      "sha256": "1c1507d527c6c24ffefb728616b5e2ad007a5b57ba1f4e0fbfaf99e294d5dc53",
+      "bytes": 425700
+    },
+    "base": {
+      "sha256": "c10a7e0f1eff9176c7ff9f0b85e832b6965cebe6dd9a7bb9fd54f56fc7cdd751",
+      "bytes": 268821
+    },
+    "buildLogSha256": "69ed9461f363feddf3fb2f0bcd115b1d122d3b5c2eb184019ffdb28c10732ed1"
+  },
+  "baseline": {
+    "directory": "work/combat-baseline",
+    "baseSha256": "fee97bec031288416fdafbbad83ce838d3c00e9971efc399ed908f57f12bed4d",
+    "ee2Sha256": "8b5c1a021f2642dbefe9f6fa8bbfb7b0bd273e366b07b63312c6581feccd69fd"
+  },
+  "implementation": {
+    "damage": "Native matchup multiplier replaces own weapon/armor matrix when both profiles are known; existing player defense modifier remains. Unknown profiles preserve fallback.",
+    "targets": "Acquire, manual attack orders, cached-target resolution and firing reject zero native matchups.",
+    "projectiles": "Attacker profile captured at launch; defender current epoch evaluated separately per target at impact, including splash.",
+    "areaDamage": "EE2 uses center distance and squared secondary falloff, retaining full primary-target damage. Base keeps existing radius-adjusted linear falloff.",
+    "saveCompatibility": "Ent/Player/save layouts unchanged; existing saves deliberately discard projectiles. Attacker profile is a transient feature-gated Proj field."
+  },
+  "readOnlyExports": {
+    "game_tick": "Saved simulation tick, safe0 before initialization, both profiles.",
+    "ground_urban_at": "EE2: any alive completed TC regardless of team; BASE city radii7,7,7,8,8,8,9,9,9,10,10,10,11,11,11; float32 L1 sum compared strictly against float64 radius*sqrt2Float. Base profile returns0.",
+    "combat_stat": "Base multiplier, upgrade factor, combined factor, eligibility for explicit attacker/defender id+epoch; invalid/unmapped input returns-1."
+  },
+  "urbanScope": "Completed TCs approximate native registered CityManager records. Capture/shrink radius history, other registered city emitters and city-modifying technologies remain outside this BASE adapter.",
+  "validation": {
+    "rust": [
+      {
+        "profile": "ee2-reference",
+        "passed": 64,
+        "failed": 0,
+        "log": "native-combat-ee2-rust-tests.log",
+        "logSha256": "8d99a614a5bfe49335d41f33f4962638d9add70afbb853067dacacc06fbb8fa6"
+      },
+      {
+        "profile": "base",
+        "passed": 32,
+        "failed": 0,
+        "log": "native-combat-base-rust-tests.log",
+        "logSha256": "497fd598b08819905fd38418c8289ee14617da5448cb523e52ec818ef318c2c5"
+      }
+    ],
+    "wasmOracle": {
+      "format": "native-combat-wasm-tests-v1",
+      "status": "passed",
+      "wasmSha256": "1c1507d527c6c24ffefb728616b5e2ad007a5b57ba1f4e0fbfaf99e294d5dc53",
+      "combatAuditSha256": "ee39309d94b4586b9466d952eb20c424fcf51dca1cca305f62c0a19379e9bb94",
+      "checks": 290363,
+      "profiles": 269,
+      "profilePairChecks": 72361
+    },
+    "baseEquivalence": {
+      "format": "base-combat-equivalence-v1",
+      "status": "passed",
+      "beforeSha256": "fee97bec031288416fdafbbad83ce838d3c00e9971efc399ed908f57f12bed4d",
+      "afterSha256": "c10a7e0f1eff9176c7ff9f0b85e832b6965cebe6dd9a7bb9fd54f56fc7cdd751",
+      "checkpoints": 112,
+      "scope": "Base53 simulation remains identical across2seeds\u00d78epochs\u00d71200ticks, production command, all4players and all3resource banks. New read-only clock/urban exports do not change simulation. Also2real mixed-army battle cases at400units per team,1200ticks each, hashed every20ticks.",
+      "cases": [
+        {
+          "seed": 7,
+          "epoch": 1,
+          "ticks": 1200,
+          "hash": 3101603283
+        },
+        {
+          "seed": 7,
+          "epoch": 2,
+          "ticks": 1200,
+          "hash": 2773929217
+        },
+        {
+          "seed": 7,
+          "epoch": 3,
+          "ticks": 1200,
+          "hash": 2068653157
+        },
+        {
+          "seed": 7,
+          "epoch": 4,
+          "ticks": 1200,
+          "hash": 3206186268
+        },
+        {
+          "seed": 7,
+          "epoch": 5,
+          "ticks": 1200,
+          "hash": 970633251
+        },
+        {
+          "seed": 7,
+          "epoch": 6,
+          "ticks": 1200,
+          "hash": 2079852974
+        },
+        {
+          "seed": 7,
+          "epoch": 7,
+          "ticks": 1200,
+          "hash": 2635584968
+        },
+        {
+          "seed": 7,
+          "epoch": 8,
+          "ticks": 1200,
+          "hash": 48121363
+        },
+        {
+          "seed": 41,
+          "epoch": 1,
+          "ticks": 1200,
+          "hash": 627569710
+        },
+        {
+          "seed": 41,
+          "epoch": 2,
+          "ticks": 1200,
+          "hash": 1126902472
+        },
+        {
+          "seed": 41,
+          "epoch": 3,
+          "ticks": 1200,
+          "hash": 3292250622
+        },
+        {
+          "seed": 41,
+          "epoch": 4,
+          "ticks": 1200,
+          "hash": 2021859386
+        },
+        {
+          "seed": 41,
+          "epoch": 5,
+          "ticks": 1200,
+          "hash": 3057910663
+        },
+        {
+          "seed": 41,
+          "epoch": 6,
+          "ticks": 1200,
+          "hash": 1329771386
+        },
+        {
+          "seed": 41,
+          "epoch": 7,
+          "ticks": 1200,
+          "hash": 2779376180
+        },
+        {
+          "seed": 41,
+          "epoch": 8,
+          "ticks": 1200,
+          "hash": 536414707
+        }
+      ],
+      "battleCases": [
+        {
+          "seed": 7,
+          "armyTargetPerTeam": 400,
+          "ticks": 1200,
+          "hash": 982486418
+        },
+        {
+          "seed": 41,
+          "armyTargetPerTeam": 400,
+          "ticks": 1200,
+          "hash": 3405161388
+        }
+      ],
+      "battleCheckpoints": 120
+    },
+    "combatPeers": {
+      "format": "native-combat-lockstep-v1",
+      "status": "passed",
+      "wasmSha256": "1c1507d527c6c24ffefb728616b5e2ad007a5b57ba1f4e0fbfaf99e294d5dc53",
+      "checkpoints": 120,
+      "cases": [
+        {
+          "seed": 7,
+          "armyTargetPerTeam": 400,
+          "ticks": 1200,
+          "hash": 45696820
+        },
+        {
+          "seed": 41,
+          "armyTargetPerTeam": 400,
+          "ticks": 1200,
+          "hash": 70964428
+        }
+      ],
+      "scope": "Two independent EE2 WASM memories with different local seats and render cadences, real automatic mixed-army combat. This validates engine determinism, not WebRTC signaling or Internet connectivity."
+    },
+    "fortress": {
+      "checks": 1146,
+      "status": "passed",
+      "wasmSha256": "1c1507d527c6c24ffefb728616b5e2ad007a5b57ba1f4e0fbfaf99e294d5dc53"
+    },
+    "economicSoak": {
+      "wasmSha256": "1c1507d527c6c24ffefb728616b5e2ad007a5b57ba1f4e0fbfaf99e294d5dc53",
+      "scope": "Headless simulation only. Four AI controllers; combat-wave deadlines postponed in a save fixture. Native Standard starting stocks. No engine edits, cheats, speed multiplier or rendered-FPS claim.",
+      "cases": 2,
+      "warnings": []
+    },
+    "researchLockstep": {
+      "command": "node outputs/OpenEpoch/tools/research-network-test.mjs",
+      "status": "passed",
+      "turns": 2650,
+      "observed": "Actual successful invocation with both players constructing, garrisoning, researching and unloading."
+    }
+  },
+  "runtimeSources": [
+    {
+      "file": "src/ai.rs",
+      "sha256": "2aa8ea31a77c82d34d8f115367205327d9ad2612b93c68dc2e81fbb5341fe951"
+    },
+    {
+      "file": "src/claim_tests.rs",
+      "sha256": "7b02bae90d1dbd51dd1cab634699b627834003ad6f8f3a76206a79ffa5c2f6c9"
+    },
+    {
+      "file": "src/cmd.rs",
+      "sha256": "fe8bbb271e437edb306ea581f02ccd44fab5edf5bfe1b94317da3a4be62630d1"
+    },
+    {
+      "file": "src/defs.rs",
+      "sha256": "a5095d9cde39817970c3ffabd64afb4964cd884c76be4d46287965d8911b1f5f"
+    },
+    {
+      "file": "src/diplomacy.rs",
+      "sha256": "f4fc44d9568c38e97e178dd9f137a67abd6c5ceeab90f02319de442242896b6e"
+    },
+    {
+      "file": "src/economy.rs",
+      "sha256": "cf223f645805f4a1b3d8b315f0ae8a2c9534ea5b4448acc9dbd6c318cef51a4f"
+    },
+    {
+      "file": "src/ee2_combat.rs",
+      "sha256": "b58fddf7b8c83cd85134b83da42d4e6e48fa5eb0d7f59b7c6d3c4388af8b2ac0"
+    },
+    {
+      "file": "src/ee2_combat_tests.rs",
+      "sha256": "1f43ce7e90e998a6486dd67c4cd235d2012ec32cec243736eb132c7df6b99459"
+    },
+    {
+      "file": "src/ee2_profile.rs",
+      "sha256": "829840326657d93e6469259914bb16835780d725257c2b936ca5367bbefc2e7c"
+    },
+    {
+      "file": "src/ee2_research.rs",
+      "sha256": "e44ae07102e78bfaafbb1d9e1e988345d7ac306c7087b85953077ac8869a6b5d"
+    },
+    {
+      "file": "src/ee2_units.rs",
+      "sha256": "897726b80a02102da3835356e3253048f4baf9301dc71f5fdfc0cb26e173201c"
+    },
+    {
+      "file": "src/fortress_tests.rs",
+      "sha256": "fe8dd6e4814f7bf90e324d13689f5a66f888b3a4d9820672dd48b3e85c66da1a"
+    },
+    {
+      "file": "src/game.rs",
+      "sha256": "5e10e7e42578603eb86ba824d0fd6f21d0fab69a9330b8e561f1529f9534aecf"
+    },
+    {
+      "file": "src/lib.rs",
+      "sha256": "563bc98627ba3626fde4b95579b36bdeee11cf47e11372972497ccca3057cf39"
+    },
+    {
+      "file": "src/map.rs",
+      "sha256": "e4dfc05460cf644f8fd169f935dcb32b09e4a5978fbdeb0ac955fae578fac3a1"
+    },
+    {
+      "file": "src/placement.rs",
+      "sha256": "8f9df79f4b27ef4fc94deb30389a3985c8e548d477b8a9bc9ccc9b3433ab2392"
+    },
+    {
+      "file": "src/render.rs",
+      "sha256": "b97e92833f30ea08cc476ffdf789bea913190891f462d4440909119a27655d25"
+    },
+    {
+      "file": "src/research.rs",
+      "sha256": "73456a59569ccece99fb45f025fe2e38587d923aca20f62829f4105a0eb8cc0a"
+    },
+    {
+      "file": "src/save.rs",
+      "sha256": "fc3d664b89f4acd66bce408326728ac4bef59759a22f33c137686a8de00bea2c"
+    },
+    {
+      "file": "src/territory.rs",
+      "sha256": "0402c80d8c62d67765d827a87d9d4c445a845a6fe64969349ce093d67fa5a4f5"
+    }
+  ],
+  "ownedFiles": [
+    {
+      "file": "src/game.rs",
+      "sha256": "5e10e7e42578603eb86ba824d0fd6f21d0fab69a9330b8e561f1529f9534aecf"
+    },
+    {
+      "file": "src/lib.rs",
+      "sha256": "563bc98627ba3626fde4b95579b36bdeee11cf47e11372972497ccca3057cf39"
+    },
+    {
+      "file": "src/ee2_combat.rs",
+      "sha256": "b58fddf7b8c83cd85134b83da42d4e6e48fa5eb0d7f59b7c6d3c4388af8b2ac0"
+    },
+    {
+      "file": "src/ee2_combat_tests.rs",
+      "sha256": "1f43ce7e90e998a6486dd67c4cd235d2012ec32cec243736eb132c7df6b99459"
+    },
+    {
+      "file": "tools/ee2-combat-test.mjs",
+      "sha256": "569712bb521704d523a2dab8387f678284004f421955e61ebbd3a961dbb64344"
+    },
+    {
+      "file": "tools/combat-network-test.mjs",
+      "sha256": "6d5f2e131e4239faf8307216447d72c615fa2dbda33b3c67995ee4b0ca10062a"
+    },
+    {
+      "file": "tools/import_ee2_combat.py",
+      "sha256": "2efb73cba79cf7b6a257c729c9895282dcff458924302c521cafdfd57df6f741"
+    },
+    {
+      "file": "docs/ee2-combat.json",
+      "sha256": "ee39309d94b4586b9466d952eb20c424fcf51dca1cca305f62c0a19379e9bb94"
+    }
+  ],
+  "limitations": [
+    "Explicit BASE numerical data, not installed Unofficial Patch5 combat tables.",
+    "No GUI/native original game or physical macOS execution used.",
+    "Full attack-ability, armor, accuracy, elevation, civilization and veterancy systems remain separate.",
+    "WebAssembly float32 and projectile-profile lifetime policy are not a full x87/pointer-lifetime emulation."
+  ]
+}

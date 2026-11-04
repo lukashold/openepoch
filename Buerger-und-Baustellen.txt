@@ -1,0 +1,33 @@
+Bürger, Tätigkeiten und Baustellen — 30.10.2026
+
+Neu programmiert
+- Eigene überarbeitete Menschenmodelle für Bürger und Infanterie (IDs 8–17):
+  getrennte Beine, Arme und Kopf, Gesichter, Schuhe, Gürtel, Rucksäcke/Helme.
+- Starre Gelenkanimation aus der Simulationszeit; kein vollständiges Skelett
+  mit gebogenen Knien oder Animationsclips. Haltung und Bewegung sind weiterhin
+  stilisiert. Normale und Schatten folgen der Gelenkrotation.
+- Arbeiter tragen bei der tatsächlichen Arbeit Axt, Spitzhacke, Hammer oder Korb.
+  Lauf-, Sammel-, Bau- und Kampfzustände kommen aus dem Spielzustand. Die
+  Arbeitsbewegung beginnt nur in Reichweite des Ziels. Blickrichtung zum Ziel
+  wird im Renderer bestimmt, ohne Simulationszustand/Saveformat zu ändern.
+- Baustellengerüste in näheren Ansichten; verschwinden bei Fertigstellung.
+- Deutsche Tätigkeitsanzeige und übersetzte grundlegende Gebäude-/Bauaktionen.
+- Eigene kurze Holz-, Bergbau- und Hammergeräusche aus WebAudio; räumlich gedämpft,
+  höchstens ein nahegelegenes Arbeitsgeräusch je Abfrage und begrenzte Rate.
+
+Geprüft
+Beide WASM-Regelprofile neu gebaut. people-test.mjs prüft Gelenke und Werkzeuge,
+reales Hinlaufen/Sammeln aller drei Rohstoffe, Bauen, Gerüst bis zur Fertigstellung
+und unveränderten Simulationshash durch Renderaufrufe. Bestanden.
+Scharmützel-, Originalwerte-/Determinismus-, Cheat-/Speicher- und Audiotests
+bestanden. Browser: bestehende Bronzezeit-Partie geladen, Bürger ausgewählt,
+Erzabbau und Hausbau mit Gerüst/Tätigkeit geprüft; keine gemeldeten Fehler.
+Die kleine Szene mit 63 Einheiten/Gebäuden lief zuletzt mit 60 fps und ungefähr
+0,07 ms Simulation pro Tick. Das ist kein Lasttest für große Armeen.
+
+Spielstand und Vorschau
+Die vorhandene Partie wurde vor dem ersten Grafikwechsel gespeichert. Die
+Browserprüfung arbeitet mit einer geladenen Kopie; die aktive Vorschau ist
+pausiert. Bild: people-and-building-preview.png.
+Der vollständige originalgetreue EE2-Funktionsumfang und das gewünschte endgültige
+Grafikniveau sind weiterhin nicht erreicht.

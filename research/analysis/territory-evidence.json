@@ -1,0 +1,413 @@
+{
+  "format": "ee2-territory-diplomacy-evidence-v1",
+  "date": "2026-10-31",
+  "scope": "Read-only local base db.zip/hdrs.zip, original manual and scripting document, existing Ghidra EnabledUP15Units project. No original runtime playtest, no VFS priority claim, no code implementation from pseudocode.",
+  "previous_own_engine_sha256": "991e4736d420a14bc853d81b99c6d5ee6f9b0884809e4314051aa294739a3d75",
+  "line_numbering": "1-based str.splitlines after utf-8-sig decoding",
+  "archives": {
+    "hdrs.zip": {
+      "path": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\zips\\hdrs.zip",
+      "bytes": 124550,
+      "sha256": "2776d86da7e8fa405e78dd6feee67aff2861dc4165637bfa8db9de84f66f37fc"
+    },
+    "db.zip": {
+      "path": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\zips\\db.zip",
+      "bytes": 1003840,
+      "sha256": "042291d39b8e5362124da5254c718966032533885638e8393d5900e91e9b492e"
+    }
+  },
+  "sources": {
+    "territory_header": {
+      "archive": "hdrs.zip",
+      "entry": "DbHdrs/DBTerritoryDefs.h",
+      "bytes": 2371,
+      "sha256": "7ff9370d3ec6e49d91cff07b9b8144334d89b5298bc0c6651e666c9dcb08074f",
+      "encoding": "utf-8-sig",
+      "line_count": 77,
+      "relevant_lines": [
+        [
+          46,
+          65
+        ]
+      ]
+    },
+    "territory_requirements": {
+      "archive": "db.zip",
+      "entry": "db/Simulation/Misc/territory.ddf",
+      "bytes": 3864,
+      "sha256": "13832cfd05c7f1b7ebec01629082e2f4b3ce691c3a4ccce8af366a1ad83bf6f6",
+      "encoding": "utf-8-sig",
+      "line_count": 112,
+      "relevant_lines": [
+        [
+          28,
+          82
+        ],
+        [
+          94,
+          109
+        ]
+      ]
+    },
+    "encyclopedia": {
+      "archive": "db.zip",
+      "entry": "db/Text/dbtext_eee.utf8",
+      "bytes": 150741,
+      "sha256": "f26be26b5983f7ee5bc1ece05192e311a84981e981aa2c47dc67aff9fa1e060c",
+      "encoding": "utf-8-sig",
+      "line_count": 978,
+      "relevant_lines": [
+        [
+          735,
+          745
+        ],
+        [
+          974,
+          975
+        ]
+      ]
+    },
+    "diplomacy_text": {
+      "archive": "db.zip",
+      "entry": "db/Text/dbtext_ingame_widgets.utf8",
+      "bytes": 19150,
+      "sha256": "e460daf5dd10e61fa91a390417d83e44f92e92b31ce398d8d1262810653f3a6b",
+      "encoding": "utf-8-sig",
+      "line_count": 427,
+      "relevant_lines": [
+        [
+          114,
+          122
+        ],
+        [
+          129,
+          168
+        ]
+      ]
+    },
+    "messages": {
+      "archive": "db.zip",
+      "entry": "db/Text/dbtext_msgingame.utf8",
+      "bytes": 29296,
+      "sha256": "d88c90fb8d2742a38016b8e4f93f4c5dd07f26896f151d07426ea6c10f006e3d",
+      "encoding": "utf-8-sig",
+      "line_count": 359,
+      "relevant_lines": [
+        [
+          145,
+          167
+        ],
+        [
+          188,
+          202
+        ]
+      ]
+    },
+    "widgets": {
+      "archive": "db.zip",
+      "entry": "db/UI/dbwidget_ingame.csv",
+      "bytes": 201871,
+      "sha256": "e981975df0078356efd898d241be8b0a85405ef9752e15187123edee2c2c61a7",
+      "encoding": "utf-8-sig",
+      "line_count": 1591,
+      "relevant_lines": [
+        [
+          606,
+          606
+        ],
+        [
+          666,
+          670
+        ],
+        [
+          774,
+          774
+        ],
+        [
+          815,
+          817
+        ],
+        [
+          934,
+          939
+        ]
+      ]
+    }
+  },
+  "files": {
+    "territory-tribute-runtime.c": {
+      "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\EE2-Research\\analysis\\territory-tribute-runtime.c",
+      "bytes": 14915,
+      "sha256": "45e3e900d57b23957722896f156b2e2f645f2badb443d89361e519c7a52d9d39",
+      "function_entries": [
+        "0048a5d0",
+        "0048a020",
+        "00488fa0",
+        "0054bdc0"
+      ]
+    },
+    "territory-transfer-core.c": {
+      "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\EE2-Research\\analysis\\territory-transfer-core.c",
+      "bytes": 17601,
+      "sha256": "68c69e9d078606d5c543b990f35038abdde345a2bf135e0d73f5e1c23a8618fd",
+      "function_entries": [
+        "00550af0",
+        "00550ba0",
+        "005510c0",
+        "00549650"
+      ]
+    },
+    "territory-owner-ui.c": {
+      "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\EE2-Research\\analysis\\territory-owner-ui.c",
+      "bytes": 13859,
+      "sha256": "5afda62030982580a11be486368e30012f4617355df2add9a66fd682bf174b8c",
+      "function_entries": [
+        "0071ddb0",
+        "00550d10",
+        "00752d30",
+        "00753010"
+      ]
+    },
+    "territory-transfer-filters.c": {
+      "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\EE2-Research\\analysis\\territory-transfer-filters.c",
+      "bytes": 7221,
+      "sha256": "b2c34f9854b0084fb76749a488d92c1786b938db005c8a26c5491d3f11ead596",
+      "function_entries": [
+        "00550f60",
+        "0054fed0",
+        "007524e0"
+      ]
+    },
+    "territory-owner-setter.c": {
+      "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\EE2-Research\\analysis\\territory-owner-setter.c",
+      "bytes": 6001,
+      "sha256": "a84211e762aacfec68aef08bc5eb501fc7d7e8a3354075f0fe7e7c8e7b88a89e",
+      "function_entries": [
+        "008265b0",
+        "0071d9b0"
+      ]
+    },
+    "territory-object-ownership.c": {
+      "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\EE2-Research\\analysis\\territory-object-ownership.c",
+      "bytes": 7655,
+      "sha256": "26502e8cdbbdc01b19cc34755d1d2f3bd5d6a368bed2e4e7fd6e25eddeeec63e",
+      "function_entries": [
+        "00826630",
+        "00849730"
+      ]
+    },
+    "manual": {
+      "path": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\Manual.pdf",
+      "bytes": 1738913,
+      "sha256": "c06e78a132b2c200b55d16ec53f959115b0680a4509677986c840fb5dcc51483"
+    },
+    "scripting_doc": {
+      "path": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\Scripting Docs\\EE2 SCRIPTING.doc",
+      "bytes": 446464,
+      "sha256": "0ee1db31c6bac51e0abed63d7a33fafaedd15de5d0d65386f5bd67c0cb296653"
+    },
+    "original_engine": {
+      "path": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\Unofficial Patch Files\\EnabledUP15Units\\EE2.exe",
+      "bytes": 11804672,
+      "sha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f"
+    },
+    "engine_copy": {
+      "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\EE2-engine.exe",
+      "bytes": 11804672,
+      "sha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f"
+    }
+  },
+  "manual": {
+    "pdf_page": 18,
+    "printed_pages": [
+      34,
+      35
+    ],
+    "previously_rendered_and_visually_checked": true,
+    "claim_limit": "Broad units/resources/territories tribute and accepted alliance terms; no detailed automatic garrison/last-territory rule."
+  },
+  "scripting_doc_read": {
+    "method": "Targeted plain cp1252 text runs in local binary DOC; no visual Word rendering",
+    "verified_symbol": "VerifyProposalTributeTerritory",
+    "byte_offset": 137452,
+    "claim": "Requires proposer current control; FinishVerifyAllianceProposal may counterpropose."
+  },
+  "ghidra": {
+    "version": "12.2",
+    "read_only": true,
+    "no_analysis": true,
+    "target_function_count": 19,
+    "runs": 6,
+    "functions": {
+      "0048a5d0": "territory-tribute-runtime.c",
+      "0048a020": "territory-tribute-runtime.c",
+      "00488fa0": "territory-tribute-runtime.c",
+      "0054bdc0": "territory-tribute-runtime.c",
+      "00550af0": "territory-transfer-core.c",
+      "00550ba0": "territory-transfer-core.c",
+      "005510c0": "territory-transfer-core.c",
+      "00549650": "territory-transfer-core.c",
+      "0071ddb0": "territory-owner-ui.c",
+      "00550d10": "territory-owner-ui.c",
+      "00752d30": "territory-owner-ui.c",
+      "00753010": "territory-owner-ui.c",
+      "00550f60": "territory-transfer-filters.c",
+      "0054fed0": "territory-transfer-filters.c",
+      "007524e0": "territory-transfer-filters.c",
+      "008265b0": "territory-owner-setter.c",
+      "0071d9b0": "territory-owner-setter.c",
+      "00826630": "territory-object-ownership.c",
+      "00849730": "territory-object-ownership.c"
+    },
+    "helper": "scripts/ExportResourceTargets.java",
+    "helper_banner_note": "Generic helper reused; resource-research banner does not identify the subject of these functions."
+  },
+  "claims": {
+    "direct_gift": {
+      "status": "documented_and_static_runtime",
+      "requires_alliance_offer_acceptance": false,
+      "sources": [
+        "encyclopedia:745",
+        "diplomacy_text:120",
+        "widgets:670",
+        "0048a5d0",
+        "0054bdc0"
+      ],
+      "limit": "No complete original UI playthrough; script wrapper proves direct execution path."
+    },
+    "contract_exchange": {
+      "status": "documented_and_static_runtime",
+      "give_and_demand_territories": true,
+      "two_partner_owned_territory_lists": true,
+      "separate_standalone_trade_contract_without_alliance": null,
+      "sources": [
+        "encyclopedia:737-739",
+        "00488fa0",
+        "0048a020",
+        "00549650"
+      ],
+      "calls": [
+        "00549650 -> 0054bdc0 at0054999b",
+        "00549650 -> 0054bdc0 at005499b2"
+      ],
+      "limit": "Both directions are supported; full atomic rollback/stale-owner semantics not proved."
+    },
+    "buildings": {
+      "status": "documented_with_runtime_eligibility_limit",
+      "own_buildings_in_given_territory_included": true,
+      "ordinary_city_center_included_as_building": true,
+      "steal_third_party_objects_by_tile": false,
+      "sources": [
+        "encyclopedia:737",
+        "encyclopedia:745",
+        "0071ddb0",
+        "0054fed0",
+        "00550f60"
+      ],
+      "limit": "Do not interpret all buildings as proof that every wall/wonder/construction/special type bypasses the common tribute filter."
+    },
+    "free_mobile_units": {
+      "status": "static_reconstruction",
+      "building_only_transfer": false,
+      "eligible_donor_objects_in_area_are_considered": true,
+      "sources": [
+        "0071ddb0",
+        "0054fed0",
+        "00550f60",
+        "008265b0",
+        "00826630",
+        "00849730"
+      ],
+      "reason": "Owner object iteration; explicit moving/immobile spatial handling; common tribute eligibility; direct object owner conversion. No building-only branch in inspected chain.",
+      "limit": "Not an empirical original-game replay or exhaustive proof for every special mobile type."
+    },
+    "garrison": {
+      "status": "partial",
+      "individual_unit_gift_has_explicit_container_recursion": true,
+      "territory_path_uses_same_recursive_wrapper": false,
+      "all_territory_garrison_occupants_automatically_transfer": null,
+      "sources": [
+        "encyclopedia:735",
+        "encyclopedia:745",
+        "00550d10",
+        "0071ddb0",
+        "00550f60",
+        "00826630"
+      ],
+      "limit": "Individual gift UI lists stationed units separately. Territory handler relies on owner iteration/general conversion; cannot equate this to unconditional recursive garrison transfer."
+    },
+    "unit_gift_exclusions_documented": {
+      "status": "documented_for_unit_tribute_section",
+      "types": [
+        "leaders",
+        "walls",
+        "wall_towers",
+        "wall_gates",
+        "palisades",
+        "palisade_gates",
+        "wonders",
+        "construction_sites"
+      ],
+      "sources": [
+        "encyclopedia:745",
+        "0054fed0"
+      ],
+      "limit": "General eligibility is reused by territory transfer, but each binary predicate/type mapping and each territory exception were not individually validated."
+    },
+    "last_territory": {
+      "status": "no_prohibition_proved",
+      "gift_prohibited": null,
+      "loss_can_invalidate_alliances_documented": true,
+      "sources": [
+        "messages:165-166",
+        "0071ddb0",
+        "0071d9b0"
+      ],
+      "limit": "Loss consequence is not a ban. No full UI/gamemode proof that last/capital territory can always be given."
+    },
+    "contested": {
+      "status": "definition_documented_ban_unproved",
+      "standard_undisputed_requires_citycenter_count": 1,
+      "gift_prohibited": null,
+      "under_attack_equivalent_to_disputed": false,
+      "sources": [
+        "territory_header:60-62",
+        "territory_requirements:72-82",
+        "encyclopedia:975"
+      ],
+      "limit": "Disputed means missing ownership-control requirements; no generic gift ban from fighting/being attacked proved."
+    },
+    "pending_and_validation": {
+      "status": "partial",
+      "proposal_addition_requires_partner_owned_territory": true,
+      "unit_reservation_warning_documented": true,
+      "territory_reservation_warning_documented": false,
+      "full_commit_revalidation_and_rollback": null,
+      "sources": [
+        "00488fa0",
+        "0048a020",
+        "messages:202",
+        "00549650"
+      ],
+      "limit": "Do not generalize a unit reservation message into a proven territory lock or atomic transaction implementation."
+    },
+    "original_ai": {
+      "status": "unresolved",
+      "territory_valuation_thresholds": null,
+      "sources": [
+        "encyclopedia:738-739",
+        "scripting_doc"
+      ],
+      "limit": "Script verification/counterproposal helpers exist. No complete native AI territory trade acceptance policy recovered."
+    }
+  },
+  "unresolved": [
+    "Complete garrison transfer semantics",
+    "each special type eligibility predicate",
+    "last/capital territory UI/gamemode restrictions",
+    "combat/disputed transition edge cases",
+    "territory proposal reservation/stale owner atomic rollback",
+    "native AI valuation/acceptance",
+    "patch/VFS priority"
+  ]
+}

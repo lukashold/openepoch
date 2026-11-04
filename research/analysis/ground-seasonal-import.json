@@ -1,0 +1,21 @@
+{
+  "format": "ee2-ground-seasonal-import-v1",
+  "spriteBindings": 168,
+  "uniquePhysicalPngs": 125,
+  "sourceArrayLengths": [
+    1,
+    4,
+    5,
+    12
+  ],
+  "sourceAuditSha256": "ae5b682d2a1fc00cca3a0e725c34bd57c4c8c7523c69e049854267ffdf50f4e3",
+  "runtimeManifestSha256": "394dc17695378752eab77d37defde85e6ff225b33d12a65a162893c05ef49a5d",
+  "mediaChanged": false,
+  "scope": {
+    "format": "ee2-ground-seasonal-bindings-v1",
+    "sourceAuditSha256": "ae5b682d2a1fc00cca3a0e725c34bd57c4c8c7523c69e049854267ffdf50f4e3",
+    "arrayRule": "Source order and source array lengths preserved; duplicate entries are meaningful, not deduplicated.",
+    "rendererPhase": "Shared year phase selects floor(phase*N), next modulo N, with linear interpolation.",
+    "sourceNotes": "DbTerrainDefs.h documents uniform annual seasonal interpolation. GDbSpriteDefs.h explicitly marks m_bAnimated as a seasonal texture. Original sprite-manager render-state details remain outside this adapter."
+  }
+}

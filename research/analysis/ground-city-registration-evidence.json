@@ -1,0 +1,116 @@
+{
+  "status": "passed",
+  "build": "combat-season1",
+  "date": "2026-11-03",
+  "wasm": {
+    "ee2": {
+      "sha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+      "bytes": 430146
+    },
+    "base": {
+      "sha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+      "bytes": 268821
+    }
+  },
+  "format": "ee2-native-city-registration-evidence-v2",
+  "engineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+  "scope": "Read-only/noanalysis Ghidra exports plus independent raw-PE and installed DDF/HDR assertions. No original installation edits or original runtime execution.",
+  "exports": {
+    "ground-city-registration.c": "8494d1b22f75545bb0c6003c889a8024e51d4f3e2a403fc2aa873890294d74f6",
+    "ground-city-register-update.c": "641ddca8959e0e33473bc01866cd2c7822748e1c5a2f0c2233ab5c50f548d276",
+    "ground-city-radius-history.c": "1b7a600bed4862d86a7c3374b7c35cee382e923e5761b5e4a11d2a412c0ba109",
+    "ground-city-tick-radius.c": "d29c379c0bdddc88a5312052b1dbfc1007f601441fd512efc5e9fafc78c01027",
+    "ground-city-radius-binding.c": "5c1f2361a0c5d3332d950eb94fd894aebc56e603aedfacb5180855fdeabd8b14",
+    "ground-urban-epoch.c": "103fdfd2bf932fea101276f72673d3773b979a6fbc273c1534f6069bdfbb1422"
+  },
+  "sourceFactor": {
+    "archive": "hdrs.zip",
+    "member": "DbHdrs/DbUpgradeFactorDefs.h",
+    "sha256": "3d4b19c3614c84a6fe229fb9bc5b5bc86333c0945ef6786b8ae38387162ef312",
+    "enum": "kDbUpgradeUnitTypeFactor_CityRadius",
+    "value": 37
+  },
+  "baseRadiusSource": {
+    "archive": "db.zip",
+    "member": "db/Units/city_center.ddf",
+    "sha256": "4f1cfef27687288b40872426c5d2fd72a0771cfa7b14aa68d90f6976aa58a197",
+    "epochRadius": [
+      7,
+      7,
+      7,
+      8,
+      8,
+      8,
+      9,
+      9,
+      9,
+      10,
+      10,
+      10,
+      11,
+      11,
+      11
+    ]
+  },
+  "proved": [
+    {
+      "address": "007D9C90",
+      "file": "ground-city-radius-binding.c",
+      "meaning": "Upgrade factor0x25 (CityRadius) exposes UnitAbilityAreaEffectCity+34 as its mutable native float; getter007D9CC0 returns the same field."
+    },
+    {
+      "address": "007D9D40",
+      "meaning": "Lifecycle eventkind4/subkind0,1,2 with unit+58>0 calls008153F0(unit,ability+34) directly. No extra scale multiplication is present at this call site. Raw event numeric codes are not assigned unproved completion/load names."
+    },
+    {
+      "address": "007D9D40",
+      "meaning": "Eventkind5/subkind!=3 calls00815610(unit); eventkind0xC calls008157E0(unit,eventArgument)."
+    },
+    {
+      "address": "00812C00",
+      "meaning": "CityInfo serializes current m_Radius at+8 and history array+0C/count+10. Each eight-byte pair is explicitly m_GameTime(first float),m_CityRadius(second float). It is not an abstract priority array."
+    },
+    {
+      "address": "00814340",
+      "file": "ground-urban-epoch.c",
+      "meaning": "Global point query checks every stored history radius with strict L1 distance<radius*1.4142135381698608. For overlapping entries it prefers the oldest matching game time and then the lowest center-unit ID. The decal only tests whether the result is nonzero, so tie priority does not affect urban/rural choice."
+    },
+    {
+      "address": "008153F0",
+      "file": "ground-city-register-update.c",
+      "meaning": "New CityInfo stores supplied radius bits unscaled at+8 (0081546D), initializes bounds, and calls00814FA0. Existing record is reused with its stored radius, not overwritten by a smaller registration argument."
+    },
+    {
+      "address": "00814FA0",
+      "file": "ground-city-radius-history.c",
+      "meaning": "Radius setter writes raw new radius to+8 (00814FDF); sqrt2 conversion is for spatial-grid bounds. An empty history receives a pair; otherwise append only if new radius is strictly greater than last historical radius. Pair is game-time float then radius float."
+    },
+    {
+      "address": "00814040",
+      "file": "ground-city-tick-radius.c",
+      "meaning": "Native update obtains abilitytype0x10 and compares ability+34 to CityInfo+8. It invokes00814FA0 only for a strictly larger value. Normal radius updates preserve the lifetime maximum and never shrink."
+    },
+    {
+      "address": "00815610",
+      "file": "ground-city-register-update.c",
+      "meaning": "Removal unlinks hash/grid and pending border work, calls CityInfo cleanup008127F0 at008157C4, then frees record through00A183B0 at008157CA. A new record is a new lifetime."
+    },
+    {
+      "address": "008157E0",
+      "file": "ground-city-register-update.c",
+      "meaning": "Pointer replacement unlinks the old ID bucket, changes only centerUnit pointer+3C, and rehashes under the new unit ID. Stored radius/history/originalOwner remain. This routine is not labeled a generic ownership/capture callback without lifecycle enum proof."
+    }
+  ],
+  "tests": {
+    "command": "python outputs/OpenEpoch/tools/test_ee2_city_evidence.py -v",
+    "passed": 5,
+    "failed": 0
+  },
+  "remainingUnproved": [
+    "Exact symbolic mapping of native lifecycle eventkind/subkind numeric constants, including every city-emitter ability and replacement path.",
+    "Complete native CityManager ownership, timestamp/tie-selected CityInfo and animated border rendering are not reproduced by the boolean completed-TC registration adapter.",
+    "Non-BASE/civilization CityRadius upgrades are not imported into this adapter."
+  ],
+  "conclusion": "Raw world radius, strict native point arithmetic, registration/reuse/removal, retained replacement history and monotone lifetime updates are now proved. A persistent high-water scalar suffices for urbanBool of each currently registered TC; completed-TC registration remains a bounded adapter, not full CityManager equivalence.",
+  "implementationReport": "native-city-ground-integration.json"
+}

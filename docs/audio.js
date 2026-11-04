@@ -1,8 +1,12 @@
-// Sound effects, synthesised with WebAudio at play time: no audio files.
-// Every sound is a short burst of filtered noise and/or a swept oscillator.
+// The EE2 profile uses locally extracted original recordings when available.
+// Procedural sounds and local speech remain the fallback for the standalone game.
+import { createOriginalAudio } from './original-audio.js?v=graphics2';
+const originals=createOriginalAudio();
 
 let ctx = null, master = null, noise = null;
 let muted = false, voices = 0;
+let musicEnabled = true, speechEnabled = true, nextMusic = 0, musicStep = 0, lastSpeech = -999;
+let speechIndex = 0;
 const lastPlayed = new Map();
 
 function ensure() {
@@ -16,12 +20,60 @@ function ensure() {
   noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
   const d = noise.getChannelData(0);
   for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  originals.prepare(ctx,master);
   return true;
 }
 /** Browsers only allow audio after a user gesture; call this from one. */
 export function unlock() { if (ensure() && ctx.state === 'suspended') ctx.resume(); }
-export function setMuted(m) { muted = m; }
+export function setMuted(m) {
+  muted = m;
+  originals.setMuted(m);
+  if (ctx && master) master.gain.setTargetAtTime(m ? 0 : .5, ctx.currentTime, .03);
+  if (m && window.speechSynthesis) window.speechSynthesis.cancel();
+}
+export function setMusicEnabled(value) { musicEnabled = value; nextMusic = 0; originals.setMusicEnabled(value); }
+export function setSpeechEnabled(value) { speechEnabled = value; originals.setSpeechEnabled(value); if (!value && window.speechSynthesis) window.speechSynthesis.cancel(); }
+export const isMusicEnabled = () => musicEnabled;
+export const isSpeechEnabled = () => speechEnabled;
+
+// Original short procedural score. Scheduling is driven by the animation loop;
+// it does not change simulation state and resumes cleanly after leaving the game.
+export function music(active, epoch = 0) {
+  if(originals.music(active&&!muted,epoch,musicEnabled)){nextMusic=0;return;}
+  if (!active || muted || !musicEnabled || !ctx || ctx.state !== 'running') { nextMusic = 0; return; }
+  const now = ctx.currentTime;
+  if (!nextMusic || nextMusic < now - 1) nextMusic = now + .05;
+  const notes = [0,7,12,7,3,10,15,10,5,12,17,12,3,10,14,10];
+  while (nextMusic < now + .25) {
+    const f = 110 * 2 ** (notes[musicStep % notes.length] / 12);
+    tone(nextMusic, .025, -.2, {wave:'triangle',f0:f,attack:.16,decay:1.7});
+    if (musicStep % 4 === 0) tone(nextMusic,.022,.22,{wave:'sine',f0:f/2,attack:.35,decay:3.3});
+    nextMusic += .8; musicStep++;
+  }
+}
+const RESPONSE = {
+  worker: {select:['Bereit.','Ja?','Was gibt es zu tun?'], order:['Ich kümmere mich darum.','Wird erledigt.','Auf dem Weg.'], build:['Ich baue es.','An die Arbeit.']},
+  soldier: {select:['Zu Befehl.','Bereit.','Wir hören.'], order:['Verstanden.','Wird ausgeführt.','Vorwärts.'], build:['Verstanden.']}
+};
+// Use a local German system voice if one is available. Browsers without speech
+// synthesis retain the existing synthesized confirmation sound.
+export function acknowledge(def, action, epoch=0) {
+  if (muted || def < 0) return false;
+  // Buildings use their original selection effect independently of the voice toggle.
+  if(def<8||def>=47)return originals.acknowledge(def,action,epoch);
+  if(!speechEnabled)return false;
+  const now = performance.now(); if (now - lastSpeech < 900) return false;
+  if(originals.acknowledge(def,action,epoch)){window.speechSynthesis?.cancel();lastSpeech=now;return true;}
+  if(def>46||!window.speechSynthesis||!window.SpeechSynthesisUtterance)return false;
+  const voice = window.speechSynthesis.getVoices().find(v => /^de[-_]/i.test(v.lang) && v.localService);
+  if (!voice) return false;
+  const options = RESPONSE[def === 8 ? 'worker' : 'soldier'][action] || RESPONSE.soldier.order;
+  const utterance = new SpeechSynthesisUtterance(options[speechIndex++ % options.length]);
+  utterance.lang = 'de-DE'; utterance.voice = voice; utterance.rate = 1.08; utterance.pitch = def === 8 ? 1 : .85; utterance.volume = .8;
+  window.speechSynthesis.cancel(); window.speechSynthesis.speak(utterance); lastSpeech = now; return true;
+}
 export const isMuted = () => muted;
+export const originalAudioStatus = () => originals.status();
 
 function env(g, t, peak, attack, decay) {
   g.gain.setValueAtTime(0.0001, t);
@@ -55,6 +107,10 @@ function tone(t, vol, pan, { wave = 'sine', f0 = 440, f1 = f0, attack = 0.004, d
 
 // kind -> [minimum gap between plays in seconds, recipe]
 const SOUNDS = {
+  23: [.48, (t,v,p) => { burst(t,v*.14,p,{f0:900,f1:240,decay:.09}); tone(t,v*.08,p,{f0:170,f1:90,decay:.08}); }], // wood stroke
+  24: [.58, (t,v,p) => { tone(t,v*.1,p,{wave:'triangle',f0:1700,f1:720,decay:.13}); burst(t,v*.06,p,{type:'highpass',f0:2100,decay:.035}); }], // pick on ore
+  25: [.42, (t,v,p) => { tone(t,v*.09,p,{f0:370,f1:180,decay:.07}); burst(t,v*.1,p,{f0:1300,f1:460,decay:.05}); }], // hammer
+
   1: [0.05, (t, v, p) => burst(t, v * 0.35, p, { type: 'bandpass', f0: 3200, f1: 900, q: 2, decay: 0.09 })],                 // arrow
   2: [0.035, (t, v, p) => burst(t, v * 0.5, p, { type: 'highpass', f0: 1400, f1: 500, decay: 0.06 })],                        // gunshot
   3: [0.07, (t, v, p) => { burst(t, v * 0.8, p, { f0: 900, f1: 120, decay: 0.28 }); tone(t, v * 0.7, p, { f0: 110, f1: 38, decay: 0.3 }); }], // cannon
@@ -81,5 +137,6 @@ export function play(kind, vol = 1, pan = 0) {
   if (now - (lastPlayed.get(kind) ?? -99) < s[0]) return;   // rate limit per kind
   if (voices > 28 && kind < 12) return;                     // polyphony cap for battle noise
   lastPlayed.set(kind, now);
+  if(originals.effect(kind,Math.min(1,vol),Math.max(-1,Math.min(1,pan))))return;
   s[1](now, Math.min(1, vol), Math.max(-1, Math.min(1, pan)));
 }

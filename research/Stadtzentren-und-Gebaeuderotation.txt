@@ -1,0 +1,106 @@
+Stadtzentren, Küstenbau und Gebäudedrehung - Originalbefund 31.10.2026
+
+Dies ist eine Quellenuntersuchung, keine Behauptung einer vollständigen
+Originalsimulation. Gelesen wurden BASE db.zip/hdrs.zip, das lokale Handbuch und
+gezielte Funktionen des vorhandenen Ghidra-Projekts. Alle Headless-Aufrufe
+verwendeten -readOnly -noanalysis. Keine Engine-, JS-, Asset- oder Originaldatei
+wurde geändert. Quellzeilen, SHA256 und Zieladressen stehen in
+analysis/building-placement-evidence.json. Die C-Dateien sind Ghidra-Pseudocode
+und teils zusätzlich Disassemblierung, kein veröffentlichter Originalquellcode.
+
+Stadtzentrum auf neutralem Land
+Das Original erlaubt den Bau eines Stadtzentrums auf unbeanspruchtem Gebiet.
+Baubarkeit und Gebietserwerb sind getrennt: Für ein an eigenes Land angrenzendes
+unbeanspruchtes oder umstrittenes Gebiet genügt ein Stadtzentrum. Nicht
+angrenzendes Land benötigt Stadtzentrum und Festung. Ein Stadtzentrum erhält den
+Status unbestritten. Pro Territorium ist maximal ein Stadtzentrum vorgesehen.
+Quelle: db/Simulation/Misc/territory.ddf adjacentReq, nonAdjacentReq,
+undisputedReq und maximumReq; Handbuch PDF-Seiten 9-11, gedruckte Seiten 16/19/20.
+
+CityCenter erbt in db/Units/city_center.ddf von PlayerOrWorldBuilding, dieses
+über die Gebäudebasis den Platzierungstyp Building. House verwendet die gleiche
+Building-Platzierung; Dock überschreibt den Typ ausdrücklich mit Dock. Native
+Maße sind unterschiedliche Größen: CityCenter Size 3.5x3, Footprint 5x4.5,
+Offset 0.75/0.75; House Size 1.5x1.5, Footprint 3x3; Dock Size 2x3. Header DbUnitDefs.h
+erklärt Size als unpassierbare Fläche und Footprint als Platzierungsfläche.
+Diese Maße sind nicht ungeprüft der Maßstab des eigenen Spiels.
+
+Auch gewöhnliche Gebäude auf unbeanspruchtem oder fremdem Land sind grundsätzlich
+vorgesehen (Handbuch PDF 11/gedruckt 20). Dafür gelten Bauzeitfaktoren 2 auf
+unbeanspruchtem und 3 auf fremdem/umstrittenem Land. CityCenter ist ausdrücklich
+ausgenommen; das bestätigen dbareaeffects_territory.ddf und die ausgeklammerte
+City-AreaEffect-Abfrage in Ghidra 0x00778080. Kostenmodifikatoren für Rohstoffe
+stehen im gelesenen territory.ddf beide auf 1.0. Deutsche Tooltips in
+db/Text/dbtext_misctips.utf8:139-140 nennen doppelte/dreifache Bauzeit.
+Grenzrechte, Gebietslimits, Kollision, Boden, Unebenheit und anfänglicher
+Waffenstillstand werden zusätzlich geprüft. Ein pauschales Verbot außerhalb
+eigenen Landes bildet diese Quellenregeln nicht ab. Baustellenreservierungen,
+alle Spezialfälle und der vollständige Zeitpunkt des Besitzerwechsels wurden
+im ursprünglichen Untersuchungsstand hier noch offen gelassen. Ergänzung vom
+31.10.2026: Der Bericht Festung-und-Gebietserwerb.txt und
+analysis/fortress-evidence.json belegen inzwischen anhand der getrennten
+Construction-/Fertigzählung, dass erst fertiggestellte Stadtzentren/Festungen
+das Minimum erfüllen. Auch Rasterkanten-Nachbarschaft, eigener Nachbarbesitz,
+Bootstrap ohne eigenes Gebiet und die Erhaltung bestehender Ansprüche wurden
+gezielt nachgewiesen. Der originale umstrittene Eigentumszustand bleibt eine
+ausdrückliche Grenze der aktuellen Nachbildung.
+
+Normale Gebäude drehen
+Die aktuelle belegte Eingabe ist eine neue Strg-Flanke (linke oder rechte
+Strg-Taste) während gültiger Gebäudeplatzierung. Der Winkel wird um 90 Grad
+vermindert und auf 0 bis 2pi normalisiert. Ghidra 0x007783EE lädt yaw aus Objekt +0x34
+und subtrahiert Float 0x00B42604=1.57079637; die Periodenkonstante
+0x00B41414=6.28318548. Anschließend werden Modellvorschau und Platzierungsbounds
+mit dem neuen Winkel aktualisiert. Funktion 0x00A300D0 liest Keyarray 0x00D10CB0
+an den Indizes 29/157; die native Namenstabelle nennt diese LCTRL/RCTRL.
+Die Tastaturabfrage 0x00A2FDB0 bestätigt diese Indexzuordnung.
+
+Der Header DbUnitDefEnums.h:89 enthält zwar den Kommentar rotate45degrees.
+Dieser Kommentar beweist keinen 45-Grad-Bedienschritt; der tatsächliche
+Fortsetzungspfad rechnet mit 90 Grad. Die untersuchte Patch-EXE hängt vor diesen
+Pfad einen Eingabe-Callback 0x0D. Der ursprüngliche Fortsetzungscode bleibt
+sichtbar. Welche Zusatzbelegungen die installierten Patch-DLLs dynamisch
+erlauben, ist daraus nicht vollständig abgeleitet. Zusätzliche Tasten oder
+freie 45-Grad-Drehung im Nachbau sind deshalb eigene Bedienadapter.
+
+Dock: Küstenausrichtung statt normaler Strg-Drehung
+Dock hat in der Platzierungsfactory 0x00784890 einen eigenen Vtable 0x00B4F1EC.
+Dessen Rotationsslot+0x44 ist 0x00784AE0 (sofort RET), während Building dort
+0x007783C0 verwendet. Das Dock benutzt also diesen manuellen Strg-Drehpfad nicht.
+Die Header unterscheiden Dock (Küste überschneiden) ausdrücklich von NearWater
+(nur in Wassernähe, etwa Küstenabwehr).
+
+Der geometrische Pfad 0x00860A10/0x00716490 ermittelt eine Küstennormale:
+0x00716270 sucht auf einem Kreis zwei Terrainhöhenübergänge zwischen >=0 und <0
+und bildet eine normalisierte Tangente. Der dazu senkrechte Vektor wird auf
+beiden Seiten durch Höhenabfrage getestet; gewählt wird die Seite mit Höhe<0,
+also die Wasserseite. Der Aufrufradius beträgt 6 native Einheiten (4*1.5).
+Der Winkel ist wrap(atan2(Wassernormale.y,Wassernormale.x)+pi/2).
+0x00A207E0 bestätigt atan2(y,x) und Normalisierung; NearWater verwendet denselben
+Vektor ohne Zusatz pi/2. Die native Rechtecktransformation 0x00871F30 verwendet
+negativen yaw. Eine Portierung in andere Welt-/Rendererachsen benötigt deshalb
+eine ausdrückliche Achsenanpassung. Ein Acht-Richtungs-Getter ist eine eigene
+Diskretisierung, keine byteidentische Originalformel.
+
+Dockvalidation 0x00862220 Fall 2 verlangt erfolgreiche Küstenausrichtung,
+gültige Bounds und eine zusätzliche Terrainzellenprobe 0x008620C0. Diese zählt
+alle gesampelten Bounds-Zellen: Mindestens 10 Prozent müssen Land (Höhe>=0),
+mindestens 25 Prozent Wasser (Höhe<0) sein. Mindestens 3 Wasserzellen müssen das
+Terrainfeld +0xE=7 besitzen; jede Wasserzelle mit Feld 6 verwirft die Platzierung.
+DbTerrainDefs.h nennt Terrainwert 6 River/flach und 7 Ocean/tief; die vollständige
+Konstruktion dieses Laufzeitfelds ist hier noch nicht als entschlüsselt erklärt.
+Die rohe Zell-/Schwellwertlogik ist unabhängig davon direkt belegt.
+
+Der nachfolgende Höhencheck ruft 0x00715AD0 mit ausschließlich dem Maximum-Ausgang
+auf und verwirft ein Maximum über 1.8 nativen Höheneinheiten. Er ist also kein hier
+nachgewiesenes Max-minus-Min-Gefälle, obwohl die UI den Fehler als uneben meldet.
+Danach folgen Gebietslimit und Kollisionsprüfungen. Eine beliebige any-water-Maske
+oder rein aus Pixelabständen gewählte Küstenposition wäre eine eigene Annäherung.
+
+Provenienzgrenze
+Die analysierte EXE ist Unofficial Patch Files/EnabledUP15Units/EE2.exe,
+SHA256 d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f.
+Sie ist nicht der EE2.exe-Launcher im Installationshauptordner. BASE db.zip und
+hdrs.zip sind eigene belegte Quellschichten. Die vollständige VFS-/Patchpriorität,
+DLL-Hooks und das Verhalten jeder installierten Variante sind noch offen.
+Es fand für diesen Bericht kein zusätzlicher Original-Spieltest statt.

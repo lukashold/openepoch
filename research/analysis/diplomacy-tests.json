@@ -1,0 +1,20 @@
+{
+  "scope": "WASM diplomacy, nine-resource tribute, natural versus display visibility, controlled live-projectile combat, save migration/validation and deterministic lockstep. No Engine edits or assertions about complete original-game equivalence.",
+  "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+  "baseWasmSha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+  "status": "passed",
+  "checkCount": 3177,
+  "completed": [
+    "bilateral offers, stance direction, alliance sight handshake, reject/withdraw/expiry and validation",
+    "all nine tribute slots, exact amounts, affordability, recipient cap and atomic invalid transactions",
+    "malformed/truncated/forged diplomacy wire records and sender authorization",
+    "live direct/splash damage, peaceful third parties, non-hostile context/acquisition and in-flight treaty changes",
+    "all start visibility modes, minimap/render consistency, mode-aware building terrain knowledge without natural-fog changes, stealth and consented bilateral ally sight",
+    "AI rejection/acceptance timing, mature/common-enemy/1v1 alliances, sight negotiation, war response and display-independent AI evolution",
+    "exact ECO1+DIP1 structure, pending treaties/logs/vision roundtrip, atomic malformed-save rejection and genuine 56-definition legacy migration",
+    "two real lockstep peers: queued offers/acceptance, shared sight, tribute, directed war and long-run hashes",
+    "base-profile diplomacy with its unchanged three-resource save prefix"
+  ],
+  "legacyFixtureSha256": "a2ca3848c79262e73ec8df29728a97b41c36176f9b03648bd2cff74e09868eca",
+  "lockstepTurns": 632
+}

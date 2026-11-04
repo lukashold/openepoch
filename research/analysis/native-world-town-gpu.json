@@ -1,0 +1,73 @@
+{
+  "format": "openepoch-production-world-gles-replay-v1",
+  "passed": true,
+  "context": {
+    "egl": [
+      1,
+      5
+    ],
+    "vendor": "Google Inc. (AMD)",
+    "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11-31.0.21924.61)",
+    "version": "OpenGL ES 3.0 (ANGLE 2.1 git hash: unknown hash)",
+    "libraryDirectory": "C:\\Program Files\\Mozilla Firefox",
+    "surface": [
+      1280,
+      1280
+    ],
+    "uiLaunched": false,
+    "framebuffer": "RGBA8 texture + DEPTH24_STENCIL8 renderbuffer"
+  },
+  "capture": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\world-0-town.json",
+  "captureSha256": "50a85903cc824233a0580857b02d7566f7bf38d9c4e0c457a95484b3fea13bcb",
+  "sourceEpoch": 1,
+  "scene": "town",
+  "wasmInstances": 397,
+  "size": [
+    1280,
+    720
+  ],
+  "stats": {
+    "drawCalls": 25,
+    "instancedCalls": 16,
+    "drawnInstances": 791,
+    "triangles": 306694,
+    "bufferBytes": 3683488,
+    "textureBytes": 34379804
+  },
+  "compiledPrograms": [
+    {
+      "id": "1",
+      "compiled": true,
+      "linked": true,
+      "vertexSha256": "9f3482f9446fde6fa07f7ed0ca4219d2e35d92cf798ac9045e65f9a056ca999d",
+      "fragmentSha256": "82312ae9dd2708b8b7a854f87f612a434743768bb59fb8666cd8c377dccd4fc4"
+    },
+    {
+      "id": "4",
+      "compiled": true,
+      "linked": true,
+      "vertexSha256": "b72acea400e56c4c93b4d842cb1d7d7d440adbf2403f967553e9053df55ffd46",
+      "fragmentSha256": "58f6c4401123699a829e791985536515046b27ec6960d615fdceb6e1ebc0cc49"
+    },
+    {
+      "id": "22",
+      "compiled": true,
+      "linked": true,
+      "vertexSha256": "67c10b2db0ad79b591accf1eb2a314d6606795540416d1c85376614e875180c9",
+      "fragmentSha256": "8a5ccc8c6531ed60a08bb6d4b7699269ddae4cc7b9a9789de7c56ae4539ac418"
+    },
+    {
+      "id": "173",
+      "compiled": true,
+      "linked": true,
+      "vertexSha256": "9535f328c82af94214709f53f614a30577e270b714d52a2465e1fe37b76ca9c0",
+      "fragmentSha256": "9828987c8987a86b938c3baef9df4bb20658bd8da95f398bf6d307633e8757f0"
+    }
+  ],
+  "output": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\OpenEpoch\\native-world-town-preview.png",
+  "pngSha256": "48aece67cf66d0b494481ae7eb22138310b31cd79919ba1b3f854fc564fb7153",
+  "colorHistogramBins": 675,
+  "scope": "WASM seed7 world, production camera/loaders/material, building ground, terrain-conforming stencil shadows and terrain/water draw calls. World-only native GLES replay; no HUD, browser, native executable or original-game visual equality claim.",
+  "uiLaunched": false,
+  "limitation": "GPU replay of captured production world passes; not a browser/full HUD interaction test or a claim of original-game visual equality."
+}

@@ -1,0 +1,19 @@
+{
+  "format": "openepoch-native-loader-check-v1",
+  "passed": true,
+  "modelBindings": 156,
+  "modelKinds": 68,
+  "groundBindings": 13,
+  "loadedFiles": 342,
+  "errors": 0,
+  "programCount": 4,
+  "textureObjects": 218,
+  "scope": "Complete current production JS loader graph using real local JSON/PNG files and a recording GL contract. Actual native GLES shader/pixel tests are separate; no browser/UI interaction claim.",
+  "sources": {
+    "original-renderer.js": "176896aaa07ebce8c76745337869b1715db7b7e7ff6269fea62b6d45771b0192",
+    "original-camera.js": "56fdd51c6ec1ac099482cb14b101995c18c9d1ed0b3ce12ba4355d9544511575",
+    "original-scale.js": "4651e04fd4a0a61b8a47f2c4b8fb56df83bfd7864796011cf2648df6b992a947",
+    "original-material.js": "2c0b2a0bb290ed78763a3330f43168a46a9c4258234fe590b3c12f794c8ee9c6",
+    "original-terrain.js": "c41c4a67922674022063adf34360c7e49f36968801650c0392a71ee94fcb09bb"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "status": "passed",
+  "baseline": {
+    "sha256": "c10a7e0f1eff9176c7ff9f0b85e832b6965cebe6dd9a7bb9fd54f56fc7cdd751",
+    "bytes": 268821
+  },
+  "current": {
+    "sha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+    "bytes": 268821
+  },
+  "codeSectionSha256": "defe6c7843defe955957edc87e19d94df05b23d93c9a00ce8038057589ef7ea9",
+  "allOtherSectionsIdentical": true,
+  "dataDifferences": {
+    "changedBytes": 285,
+    "sourceLineRecords": 272,
+    "files": [
+      "src\\game.rs",
+      "src\\lib.rs",
+      "src\\placement.rs",
+      "src\\save.rs",
+      "src\\territory.rs"
+    ]
+  },
+  "limit": "Binary differs only in panic source-line metadata. Executable code and all non-location data are byte-identical.",
+  "build": "combat-season1",
+  "wasm": {
+    "ee2": {
+      "sha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+      "bytes": 430146
+    },
+    "base": {
+      "sha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+      "bytes": 268821
+    }
+  }
+}

@@ -1,0 +1,149 @@
+Empire Earth II: Diplomatie und Kartensicht — Quellenbefund 31.10.2026
+
+Ergebnis
+Das Original unterscheidet gerichtete Haltung und beidseitige Allianz. Die
+gemeinsame Sicht ist ein verhandelbarer Allianzterm mit vier Stufen. Neue
+Vertragstermdaten der untersuchten Engine starten mit Full; das verpflichtet
+nicht jede Allianz unabhängig vom angenommenen Vertrag zu voller Sicht.
+Die Startkarte kennt drei eigenständige Modi: unbekannt mit Kriegsnebel,
+erkundet mit Kriegsnebel und vollständig/dauerhaft sichtbar ohne Kriegsnebel.
+
+Quellen und Reichweite
+Gelesen wurde ausschließlich die vorhandene lokale Installation:
+C:\Program Files (x86)\GOG.com\Empire Earth II
+- zips/hdrs.zip: DbDiplomacyDefs.h, DbGameSettingsDefs.h, DbFrontEndDefs.h,
+  DbVictoryConditionDefs.h unter DbHdrs/.
+- zips/db.zip: deutsche Texttabellen und UI-Widgetdefinitionen.
+- Manual.pdf: PDF-Seite 3 = Druckseiten 4–5, PDF4 = 6–7,
+  PDF18 = 34–35 und PDF19 = 36–37. PDF3 und PDF18 wurden zusätzlich gerendert
+  und bildlich geprüft; die übrigen genannten Seiten wurden als Text gelesen.
+- Vorhandenes Ghidra-12.2-Projekt EE2-Engine, neun gezielte Funktionen in drei
+  Läufen mit -readOnly -noanalysis. Keine allgemeine Neuanalyse/Vollsuche.
+
+Die analysierte Engine ist die installierte Variante
+Unofficial Patch Files/EnabledUP15Units/EE2.exe, unverändert auch als
+work/EE2-engine.exe vorhanden. SHA256:
+d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f
+Die EE2.exe im Installationshauptverzeichnis ist eine andere Datei. Eine
+Gleichheit mit jeder ungepatchten Handelsversion oder eine vollständige
+VFS-/Patchpriorität wird nicht behauptet. Installation und Spielcode blieben
+unverändert. Vollständige Pfade, Archiv-/Eintragshashes, Quellzeilen und
+maschinenlesbare Aussagen: analysis/diplomacy-visibility-evidence.json.
+Quellzeilen sind 1-basiert nach UTF-8-BOM-Dekodierung und splitlines.
+
+Haltungen und Allianz
+DbDiplomacyDefs.h:17–37 definiert eDiplomaticState in dieser Reihenfolge:
+0 Hostile, 1 Neutral, 2 Allied. Feindseligkeit von X gegenüber Y setzt nicht
+automatisch Feindseligkeit von Y gegenüber X. Die UI führt ausdrücklich
+„Ihre Haltung“ und „Seine Haltung“ getrennt (dbtext_ingame_widgets:81–87).
+Bei Hostile werden gegnerische Einheiten je nach Einheitenhaltung automatisch
+Angriffsziele; Neutral hat keinen normalen Angriffscursor, erlaubt aber
+manuellen Angriff und Handel. Der Neutral-Tooltip beschreibt Gegenwehr nach
+einem Angriff (dbtext_widgettips:394–397).
+
+Allied ist ausdrücklich symmetrisch: X verbündet mit Y bedeutet auch
+Y verbündet mit X. Das Headerwort „reflexive“ wird dort im Sinne dieser
+Symmetrie verwendet. Es ist kein Beleg, andere Haltungseinträge zu spiegeln.
+Eine Allianz entsteht erst durch angenommenen Vorschlag, nicht durch einen
+einseitigen Klick (dbtext_widgettips:392–393; Handbuch Druckseiten34–35).
+Kriegserklärung beendet eine vorhandene Allianz. Gesperrte Beziehungen können
+solche Änderungen verhindern; passende Originalfehlermeldungen sind vorhanden.
+
+Gemeinsame Sicht: optionaler, gegenseitiger Vertragsterm
+DbDiplomacyDefs.h:50–64 und dbtext_ingame_widgets:150–153 belegen:
+0 Full         Sicht aller mobilen Einheiten und Gebäude beider Partner
+1 Buildings    ausschließlich Sicht der Gebäude
+2 MobileUnits  ausschließlich Sicht der mobilen Einheiten
+3 None         keine geteilte Sicht
+Der Header beschreibt ausdrücklich die Sicht beider Parteien. Einseitige
+kostenlose Sichtübertragung ist damit kein belegtes allgemeines Allianzmodell.
+Das Widget prop_termsl_los verwendet eAllianceLOSState
+(db/UI/dbwidget_ingame.csv:838–839).
+
+Der Default wurde gezielt im Binärcode geprüft: FUN_00545040 setzt die sechs
+Termfelder auf 0. FUN_00545620 ruft diesen Konstruktor auf; der Vorschlagsdialog
+FUN_007a91d0 konstruiert solche Daten. FUN_007ab9b0 und FUN_007aba70 verbinden
+Termfeld[3] mit prop_termsl_los. Somit ist Full=0 als Initialwert neuer
+Vertragsdaten dieser Engine belegt. Abweichende geladene Profile, Szenarien
+oder sämtliche Locked-Team-Startpfade sind damit nicht geprüft.
+Pseudocode: analysis/diplomacy-{ui,defaults,constructor}-runtime.c.
+Diese Dateien sind Ghidra-Ausgaben, keine originalen C++-Quellen.
+
+Angebote, Tribut und Waffenstillstand
+Originale UI und Meldungen kennen Anbieten/Fordern, Senden, Annehmen, Ablehnen,
+Gegenangebot, Zurückziehen und veraltete Angebote. Tribut kann Ressourcen,
+ausgewählte Einheiten und Territorien umfassen. Tribut an einen feindlichen
+Spieler wird ausdrücklich mit einer Warnung behandelt; Feindseligkeit allein
+verbietet ihn also nicht. Ressourcensteuer und verfügbarer Vorrat sind eigene
+UI-Angaben. Ein Waffenstillstandsangebot hat eine eigene Dauer und
+Annehmen-/Ablehnen-Dialoge und ist nicht einfach der Zustand Allied.
+Quellen: dbtext_ingame_widgets:88–177; dbtext_msgingame:131–167.
+Annahmegewichte oder Antwortzeiten der Original-KI wurden nicht rekonstruiert.
+
+Weitere Vertragsrechte und wichtige Grenze
+- Dauer: UntilWar oder Timed. Das Dialogwidget erlaubt für Timed2–30 Minuten
+  und besitzt den Widgetwert10 (dbwidget_ingame.csv:835–836).
+- Der Headerkommentar beschreibt Timed pauschal als unkündbar. Der konkrete
+  Tooltip präzisiert: Kündigung durch Krieg ist möglich, außer die Startoption
+  „Nicht zu brechende Verträge“ ist aktiv. DbGameSettingsDefs.h:138 hat dafür
+  m_bUnbreakableTreaties. Ein unconditionaler Schutz allein aus Timed wäre
+  daher gegenüber der dokumentierten UI zu stark.
+- Grenzen: Full, Civilian, Trade, None, also alle Einheiten, Bürger,
+  Handelseinheiten oder keine Einheiten. Ungültige Truppenpositionen in
+  fremden Territorien können ein Bündnis verhindern/aufheben.
+- Ressourcentarif:0–99 Prozent, Default0; Zahlung bei tatsächlicher Abgabe,
+  nicht schon beim Sammelschritt (Widget844, Tooltip158, Header91–95).
+- Der Header kennt zusätzlich eAllianceResRight Full/Specified/None und
+  beschreibt einzelne Ressourcenrechte. Das betrachtete konkrete UI bindet
+  Grenzrechte und Tarif; ein separates aktives Rechte-Modus-Widget und die
+  vollständige Runtime dieser älteren Headerbeschreibung sind nicht belegt.
+Quellen: DbDiplomacyDefs.h:39–103; dbtext_ingame_widgets:148–158;
+dbtext_fe_widgettips:153; dbtext_msgingame:163–166.
+
+Kartensicht als Startoption
+DbFrontEndDefs.h:32–36, DbGameSettingsDefs.h:71, dbtext_enums:114–116 und
+dbtext_fe_widgettips:194–196 beschreiben eMapRevealedLevel:
+0 Unrevealed / Nicht aufgedeckt: Terrain noch unbekannt, Kriegsnebel aktiv.
+1 Explored / Erforscht: Terrain bekannt, Kriegsnebel weiterhin aktiv.
+2 Revealed / Aufgedeckt: kein Schleier, kein Kriegsnebel; alles jederzeit sichtbar.
+Das ist ein Startparameter im erweiterten Spielmenü
+(db/UI/dbwidget_fe.csv:1010–1011). Das gleichnamige Replay-Kästchen ist eine
+andere Funktion. Erkunden darf nicht automatisch aktuelle Gegnerpositionen
+sichtbar machen. Der tatsächliche Default eines neuen Original-Scharmützels
+wurde hier nicht belegt; Enum0 allein wäre dafür kein Nachweis.
+
+Teams, gemeinsamer Sieg und verbleibende Widersprüche
+Festgelegte Teams können durch Diplomatie nicht geändert werden. Kooperative
+Teams mit gemeinsamer Kontrolle einer Zivilisation sind eine weitere, getrennte
+Option (dbtext_fe_widgettips:146–147). Laut Handbuch Druckseiten5–7 tragen
+Locked-Team-Mitglieder gemeinsam zur Siegbedingung bei und gewinnen zusammen;
+bei frei veränderlichen Allianzen erfüllt ein einzelner Spieler die Bedingung
+und gewinnt. Eine beliebige dynamische Allianz ist daher keine sichere Basis
+für automatischen gemeinsamen Sieg. Der Conquest-Header nennt Spieler oder
+Spielerteam; das Handbuch präzisiert militärische Einheiten und alle Gebäude,
+die Einheiten produzieren können (DbVictoryConditionDefs.h:23–25; Druckseite4).
+
+„Einziger Überlebender“ kennt ausdrücklich nur einen Sieger. Beim genauen
+Zeitpunkt des erzwungenen Allianzbruchs widersprechen sich lokale Quellen:
+Handbuch Druckseite5 nennt ein verbleibendes Team; der deutsche Frontend-
+Tooltip20 nennt zwei Teams. Ghidra bestätigt Countdown-/Auflösungslogik
+(005b3800,005b39d0,005b3380), klärt den gesamten Triggerpfad hier aber nicht.
+Auch die numerischen Victory-Enum-Labels von Header und UI sind an Index10
+nicht deckungsgleich; sie werden nicht blind als eine Version zusammengeführt.
+
+Folgerung für den eigenen Ausbau
+Quellnah sind drei Kartenmodi, gerichtete Krieg-/Neutralhaltung,
+angenommene symmetrische Allianzen und ein gegenseitiger Sichtvertrag.
+Der eigene Ausbau verwendet Full/None, Ressourcentribut und inzwischen auch
+Territoriengeschenke/-tausch als Teilumfang. Buildings/MobileUnits, separate
+Einheitengeschenke, Zölle, Grenzrechte, Zeitverträge, vollständige Siegmodi und
+Original-KI-Diplomatie bleiben offen. Der Territorienbericht dokumentiert die
+neuen Originalbefunde und die eigenen Abwicklungsadapter. Gezielte WASM- und
+Browserprüfungen dieses Teilumfangs sind bestanden; dies ist keine Laufzeit-
+Abnahme des Originalspiels. Siehe Territorien-und-Diplomatie.txt. Die eigenen
+KI-Antwortfristen, Tribut-/Friedensdauer-Schwellen und Friedensangebote sind
+eigene Spielregeln; sie sind nicht aus Original-KI-Code rekonstruiert. Die
+Full/None-Vertragsbits des eigenen Befehlsschemas sind keine unveränderte
+Übernahme der oben genannten vierstufigen Original-Enumwerte.
+Dieser Befund bestätigt Quellen und Begriffe, keine vollständige
+Original-Diplomatieimplementierung und keine Laufzeitabnahme des Originalspiels.

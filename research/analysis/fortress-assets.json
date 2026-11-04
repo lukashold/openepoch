@@ -1,0 +1,1305 @@
+{
+  "format": "ee2-fortress-import-check-v1",
+  "checkedAtUtc": "2026-10-31T11:55:01.607260+00:00",
+  "scope": "Native Fortress introduced at stable EE2 ID56; base numeric data, model/culture-cache choices, media and slot semantics are explicitly sourced. Import/data verification only, not a complete game or runtime combat/browser acceptance.",
+  "hashes": {
+    "src/ee2_units.rs": "897726b80a02102da3835356e3253048f4baf9301dc71f5fdfc0cb26e173201c",
+    "docs/ee2-units.json": "c79ba14cb511042c0255fe24c03a5b8f850e94e72ef9293ff0ed880c54eb62ef",
+    "src/ee2_research.rs": "e44ae07102e78bfaafbb1d9e1e988345d7ac306c7087b85953077ac8869a6b5d",
+    "docs/research-audit.json": "3b6c99a88adce9a2667a6399bb48fc72a36c00d8397e2e8224c4d3351813f29a",
+    "docs/local-original/models/manifest.json": "ee42afb0d5ad06a65d295c548601d67b48c3c1b7a579174c224c75b3076850c1",
+    "docs/local-original/models/lod-audit.json": "99fb02ee527177cb28de1fd1d40f48f314b8dee79bc7c6639a969886f25cee80",
+    "docs/local-original/textures-manifest.json": "74ab6c6e68caf0025a2062d2c8f7bfcd38d40b42b3a79febfa5cd37c3b56d223",
+    "docs/local-original/ground-decals.json": "0863938374ff3050d9df3b857f71caaf0e13e46b11ac76799d8a486420f9f104",
+    "docs/local-original/ground-decals-manifest.json": "ae5b682d2a1fc00cca3a0e725c34bd57c4c8c7523c69e049854267ffdf50f4e3",
+    "docs/local-original/audio/manifest.json": "ff67ba2de5ca7175449793786f9f95852eb469ed0e7b1a29ce518422b0e1a6ce",
+    "docs/local-original/team-textures/manifest.json": "e9d618ca90a3cc583bc95d911b887a4a15f468fc398516b0b269130d6fb4a5df"
+  },
+  "dataset": {
+    "bindings": 57,
+    "visualRows": 118,
+    "classRows": 269,
+    "priorFieldsCompared": 7460,
+    "priorFieldDifferences": [],
+    "priorProjectionSha256": "fbcfe10cdd8dab8c1d41d2de490600d250496cac1fdad619718fb6adbaa56ad8",
+    "currentPriorProjectionSha256": "fbcfe10cdd8dab8c1d41d2de490600d250496cac1fdad619718fb6adbaa56ad8"
+  },
+  "sourceData": {
+    "archive": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\zips\\db.zip",
+    "sha256": "042291d39b8e5362124da5254c718966032533885638e8393d5900e91e9b492e",
+    "unitType": "Fortress",
+    "databaseEntry": "db/Units/fortress.ddf",
+    "databaseSha256": "b61868f3787350e33d36f97dc58b16285ebbc5db74f9ac36d06ab7db1f709d33",
+    "upgradeCsv": "db/TechTree/upgrade_unittypes.csv",
+    "upgradeLines": [
+      130,
+      131,
+      132,
+      133,
+      134,
+      135,
+      136
+    ],
+    "productionCsv": "db/TechTree/dbtechtreenode.csv",
+    "productionLine": 30,
+    "nativeResourceOrder": [
+      "FOOD",
+      "WOOD",
+      "IRON",
+      "STONE",
+      "GOLD",
+      "TIN",
+      "SALTPETER",
+      "OIL",
+      "URANIUM"
+    ]
+  },
+  "fortress": {
+    "definitionId": 56,
+    "productionEpoch": 1,
+    "epochs": [
+      1,
+      4,
+      6,
+      8,
+      10,
+      12,
+      14
+    ],
+    "runtimeIntervals": [
+      [
+        0,
+        3
+      ],
+      [
+        3,
+        5
+      ],
+      [
+        5,
+        7
+      ],
+      [
+        7,
+        9
+      ],
+      [
+        9,
+        11
+      ],
+      [
+        11,
+        13
+      ],
+      [
+        13,
+        15
+      ]
+    ],
+    "fields": [
+      {
+        "sourceEpoch": 1,
+        "hp": 4200.0,
+        "cost9": [
+          0,
+          300,
+          0,
+          300,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "buildtime": 120.0,
+        "damage": 75.0,
+        "range": 7.0,
+        "reload": 3.0,
+        "garrison_slots": 10.0,
+        "garrison_heal": 2.0,
+        "garrison_attack_bonus": 0.03,
+        "attack_missile": "FireArrow"
+      },
+      {
+        "sourceEpoch": 4,
+        "hp": 4800.0,
+        "cost9": [
+          0,
+          370,
+          0,
+          370,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "buildtime": 120.0,
+        "damage": 100.0,
+        "range": 9.0,
+        "reload": 3.0,
+        "garrison_slots": 10.0,
+        "garrison_heal": 4.0,
+        "garrison_attack_bonus": 0.03,
+        "attack_missile": "FireArrow"
+      },
+      {
+        "sourceEpoch": 6,
+        "hp": 5800.0,
+        "cost9": [
+          0,
+          440,
+          0,
+          440,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "buildtime": 120.0,
+        "damage": 115.0,
+        "range": 9.0,
+        "reload": 3.0,
+        "garrison_slots": 10.0,
+        "garrison_heal": 6.0,
+        "garrison_attack_bonus": 0.03,
+        "attack_missile": "FireArrow"
+      },
+      {
+        "sourceEpoch": 8,
+        "hp": 6700.0,
+        "cost9": [
+          0,
+          510,
+          0,
+          510,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "buildtime": 120.0,
+        "damage": 145.0,
+        "range": 10.0,
+        "reload": 3.0,
+        "garrison_slots": 10.0,
+        "garrison_heal": 8.0,
+        "garrison_attack_bonus": 0.03,
+        "attack_missile": "Cannonball"
+      },
+      {
+        "sourceEpoch": 10,
+        "hp": 7600.0,
+        "cost9": [
+          0,
+          580,
+          0,
+          580,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "buildtime": 120.0,
+        "damage": 170.0,
+        "range": 10.0,
+        "reload": 3.0,
+        "garrison_slots": 10.0,
+        "garrison_heal": 10.0,
+        "garrison_attack_bonus": 0.03,
+        "attack_missile": "Cannonball"
+      },
+      {
+        "sourceEpoch": 12,
+        "hp": 8250.0,
+        "cost9": [
+          0,
+          640,
+          0,
+          640,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "buildtime": 120.0,
+        "damage": 200.0,
+        "range": 11.0,
+        "reload": 3.0,
+        "garrison_slots": 10.0,
+        "garrison_heal": 12.0,
+        "garrison_attack_bonus": 0.03,
+        "attack_missile": "TankShell"
+      },
+      {
+        "sourceEpoch": 14,
+        "hp": 9000.0,
+        "cost9": [
+          0,
+          700,
+          0,
+          700,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "buildtime": 120.0,
+        "damage": 225.0,
+        "range": 11.0,
+        "reload": 3.0,
+        "garrison_slots": 10.0,
+        "garrison_heal": 14.0,
+        "garrison_attack_bonus": 0.03,
+        "attack_missile": "TankShell"
+      }
+    ],
+    "models": [
+      {
+        "id": 56,
+        "epoch": 0,
+        "verified": true,
+        "yawOffset": 0,
+        "url": "local-original/models/bld_fort2_we.json",
+        "source": {
+          "archive": "graphics.zip",
+          "entry": "cache/nifcache/bld_fort2_we.nifcache",
+          "sha256": "8862a2dcbb6b31325ea520ffe968c0c5d9383c72814bd162f83a9c7de4e47fd4"
+        },
+        "triangles": 4001,
+        "databaseVisualBinding": {
+          "bindingType": "source-database-visual",
+          "unitType": "Fortress",
+          "originalEpoch": 1,
+          "database": {
+            "archive": "db.zip",
+            "entry": "db/Units/fortress.ddf",
+            "sha256": "b61868f3787350e33d36f97dc58b16285ebbc5db74f9ac36d06ab7db1f709d33"
+          },
+          "upgradeSource": {
+            "archive": "db.zip",
+            "entry": "db/TechTree/upgrade_unittypes.csv",
+            "sha256": "377cd1a4f02dde5383cbc02bdb4231446452be87b7fd217d13b501a0e302cdac",
+            "line": 130
+          },
+          "visualDefinition": "Fortress",
+          "visualDefinitionLine": 234,
+          "declaredModelChoices": [
+            "bld_fort2.nif"
+          ],
+          "scope": "Declared original Fortress canonical model/epoch, using the explicit western cache variant where present. Canonical stem and regional suffix retained; native culture-selection/VFS ordering is not inferred.",
+          "resolvedCacheModel": "bld_fort2_we.nifcache",
+          "cultureVariant": "western"
+        },
+        "definitionName": "Fortress",
+        "lodFarUrl": "local-original/models/bld_fort2_we_lodfar.json",
+        "lodNearTriangles": 4001,
+        "lodFarTriangles": 2880
+      },
+      {
+        "id": 56,
+        "epoch": 3,
+        "verified": true,
+        "yawOffset": 0,
+        "url": "local-original/models/bld_fort4_we.json",
+        "source": {
+          "archive": "graphics.zip",
+          "entry": "cache/nifcache/bld_fort4_we.nifcache",
+          "sha256": "27a86aaa500780b63831b0153c2d5acfbef20dedee65ac56817576a288f338d4"
+        },
+        "triangles": 2291,
+        "databaseVisualBinding": {
+          "bindingType": "source-database-visual",
+          "unitType": "Fortress",
+          "originalEpoch": 4,
+          "database": {
+            "archive": "db.zip",
+            "entry": "db/Units/fortress.ddf",
+            "sha256": "b61868f3787350e33d36f97dc58b16285ebbc5db74f9ac36d06ab7db1f709d33"
+          },
+          "upgradeSource": {
+            "archive": "db.zip",
+            "entry": "db/TechTree/upgrade_unittypes.csv",
+            "sha256": "377cd1a4f02dde5383cbc02bdb4231446452be87b7fd217d13b501a0e302cdac",
+            "line": 131
+          },
+          "visualDefinition": "Fortress_4",
+          "visualDefinitionLine": 266,
+          "declaredModelChoices": [
+            "bld_fort4.nif"
+          ],
+          "scope": "Declared original Fortress canonical model/epoch, using the explicit western cache variant where present. Canonical stem and regional suffix retained; native culture-selection/VFS ordering is not inferred.",
+          "resolvedCacheModel": "bld_fort4_we.nifcache",
+          "cultureVariant": "western"
+        },
+        "definitionName": "Fortress"
+      },
+      {
+        "id": 56,
+        "epoch": 5,
+        "verified": true,
+        "yawOffset": 0,
+        "url": "local-original/models/bld_fort6_we.json",
+        "source": {
+          "archive": "graphics.zip",
+          "entry": "cache/nifcache/bld_fort6_we.nifcache",
+          "sha256": "3e503f67e8533c0c77fe6ad5fa18364177a9e6a849e584bf7b6b63a223e31ccf"
+        },
+        "triangles": 2634,
+        "databaseVisualBinding": {
+          "bindingType": "source-database-visual",
+          "unitType": "Fortress",
+          "originalEpoch": 6,
+          "database": {
+            "archive": "db.zip",
+            "entry": "db/Units/fortress.ddf",
+            "sha256": "b61868f3787350e33d36f97dc58b16285ebbc5db74f9ac36d06ab7db1f709d33"
+          },
+          "upgradeSource": {
+            "archive": "db.zip",
+            "entry": "db/TechTree/upgrade_unittypes.csv",
+            "sha256": "377cd1a4f02dde5383cbc02bdb4231446452be87b7fd217d13b501a0e302cdac",
+            "line": 132
+          },
+          "visualDefinition": "Fortress_6",
+          "visualDefinitionLine": 298,
+          "declaredModelChoices": [
+            "bld_fort6.nif"
+          ],
+          "scope": "Declared original Fortress canonical model/epoch, using the explicit western cache variant where present. Canonical stem and regional suffix retained; native culture-selection/VFS ordering is not inferred.",
+          "resolvedCacheModel": "bld_fort6_we.nifcache",
+          "cultureVariant": "western"
+        },
+        "definitionName": "Fortress"
+      },
+      {
+        "id": 56,
+        "epoch": 7,
+        "verified": true,
+        "yawOffset": 0,
+        "url": "local-original/models/bld_fort8_we.json",
+        "source": {
+          "archive": "graphics.zip",
+          "entry": "cache/nifcache/bld_fort8_we.nifcache",
+          "sha256": "6fc00ce097d66add7f4fa06f693a17e7d5420873d8cf73ddd593630c6b7378cf"
+        },
+        "triangles": 3779,
+        "databaseVisualBinding": {
+          "bindingType": "source-database-visual",
+          "unitType": "Fortress",
+          "originalEpoch": 8,
+          "database": {
+            "archive": "db.zip",
+            "entry": "db/Units/fortress.ddf",
+            "sha256": "b61868f3787350e33d36f97dc58b16285ebbc5db74f9ac36d06ab7db1f709d33"
+          },
+          "upgradeSource": {
+            "archive": "db.zip",
+            "entry": "db/TechTree/upgrade_unittypes.csv",
+            "sha256": "377cd1a4f02dde5383cbc02bdb4231446452be87b7fd217d13b501a0e302cdac",
+            "line": 133
+          },
+          "visualDefinition": "Fortress_8",
+          "visualDefinitionLine": 330,
+          "declaredModelChoices": [
+            "bld_fort8.nif"
+          ],
+          "scope": "Declared original Fortress canonical model/epoch, using the explicit western cache variant where present. Canonical stem and regional suffix retained; native culture-selection/VFS ordering is not inferred.",
+          "resolvedCacheModel": "bld_fort8_we.nifcache",
+          "cultureVariant": "western"
+        },
+        "definitionName": "Fortress",
+        "lodFarUrl": "local-original/models/bld_fort8_we_lodfar.json",
+        "lodNearTriangles": 3779,
+        "lodFarTriangles": 2693
+      },
+      {
+        "id": 56,
+        "epoch": 9,
+        "verified": true,
+        "yawOffset": 0,
+        "url": "local-original/models/bld_fort10_we.json",
+        "source": {
+          "archive": "graphics.zip",
+          "entry": "cache/nifcache/bld_fort10_we.nifcache",
+          "sha256": "60dc48e9711dbf5c3b6353648569a4352eb66fc010e3c19f001246e40b010005"
+        },
+        "triangles": 6664,
+        "databaseVisualBinding": {
+          "bindingType": "source-database-visual",
+          "unitType": "Fortress",
+          "originalEpoch": 10,
+          "database": {
+            "archive": "db.zip",
+            "entry": "db/Units/fortress.ddf",
+            "sha256": "b61868f3787350e33d36f97dc58b16285ebbc5db74f9ac36d06ab7db1f709d33"
+          },
+          "upgradeSource": {
+            "archive": "db.zip",
+            "entry": "db/TechTree/upgrade_unittypes.csv",
+            "sha256": "377cd1a4f02dde5383cbc02bdb4231446452be87b7fd217d13b501a0e302cdac",
+            "line": 134
+          },
+          "visualDefinition": "Fortress_10",
+          "visualDefinitionLine": 362,
+          "declaredModelChoices": [
+            "bld_fort10.nif"
+          ],
+          "scope": "Declared original Fortress canonical model/epoch, using the explicit western cache variant where present. Canonical stem and regional suffix retained; native culture-selection/VFS ordering is not inferred.",
+          "resolvedCacheModel": "bld_fort10_we.nifcache",
+          "cultureVariant": "western"
+        },
+        "definitionName": "Fortress"
+      },
+      {
+        "id": 56,
+        "epoch": 11,
+        "verified": true,
+        "yawOffset": 0,
+        "url": "local-original/models/bld_fort12_we.json",
+        "source": {
+          "archive": "graphics.zip",
+          "entry": "cache/nifcache/bld_fort12_we.nifcache",
+          "sha256": "7aeeb790229c5961884cc1264b6c4cbf29387cde8103cfe721ff9eed8af6752c"
+        },
+        "triangles": 3548,
+        "databaseVisualBinding": {
+          "bindingType": "source-database-visual",
+          "unitType": "Fortress",
+          "originalEpoch": 12,
+          "database": {
+            "archive": "db.zip",
+            "entry": "db/Units/fortress.ddf",
+            "sha256": "b61868f3787350e33d36f97dc58b16285ebbc5db74f9ac36d06ab7db1f709d33"
+          },
+          "upgradeSource": {
+            "archive": "db.zip",
+            "entry": "db/TechTree/upgrade_unittypes.csv",
+            "sha256": "377cd1a4f02dde5383cbc02bdb4231446452be87b7fd217d13b501a0e302cdac",
+            "line": 135
+          },
+          "visualDefinition": "Fortress_12",
+          "visualDefinitionLine": 394,
+          "declaredModelChoices": [
+            "bld_fort12.nif"
+          ],
+          "scope": "Declared original Fortress canonical model/epoch, using the explicit western cache variant where present. Canonical stem and regional suffix retained; native culture-selection/VFS ordering is not inferred.",
+          "resolvedCacheModel": "bld_fort12_we.nifcache",
+          "cultureVariant": "western"
+        },
+        "definitionName": "Fortress",
+        "lodFarUrl": "local-original/models/bld_fort12_we_lodfar.json",
+        "lodNearTriangles": 3548,
+        "lodFarTriangles": 3451
+      },
+      {
+        "id": 56,
+        "epoch": 13,
+        "verified": true,
+        "yawOffset": 0,
+        "url": "local-original/models/bld_fort14.json",
+        "source": {
+          "archive": "graphics.zip",
+          "entry": "cache/nifcache/bld_fort14.nifcache",
+          "sha256": "4c2342edc813ea9022dab108a78d05202cb17bfc89689236c7c326dda554320b"
+        },
+        "triangles": 2376,
+        "databaseVisualBinding": {
+          "bindingType": "source-database-visual",
+          "unitType": "Fortress",
+          "originalEpoch": 14,
+          "database": {
+            "archive": "db.zip",
+            "entry": "db/Units/fortress.ddf",
+            "sha256": "b61868f3787350e33d36f97dc58b16285ebbc5db74f9ac36d06ab7db1f709d33"
+          },
+          "upgradeSource": {
+            "archive": "db.zip",
+            "entry": "db/TechTree/upgrade_unittypes.csv",
+            "sha256": "377cd1a4f02dde5383cbc02bdb4231446452be87b7fd217d13b501a0e302cdac",
+            "line": 136
+          },
+          "visualDefinition": "Fortress_14",
+          "visualDefinitionLine": 426,
+          "declaredModelChoices": [
+            "bld_fort14.nif"
+          ],
+          "scope": "Declared original Fortress canonical model/epoch, using the explicit western cache variant where present. Canonical stem and regional suffix retained; native culture-selection/VFS ordering is not inferred.",
+          "resolvedCacheModel": "bld_fort14.nifcache",
+          "cultureVariant": "neutral",
+          "unboundAnimationSources": [
+            {
+              "archive": "graphics.zip",
+              "entry": "Graphics/Building/bld_fort14_close.kf",
+              "sha256": "62a59960a760395d1287413b28ec823c1e55040fd22667d164e344adfa758ce6",
+              "reason": "Original KF exists, but neither this visual nor its inherited BuildingWithTurrets declaration supplies a matching AnimName; no state assignment guessed."
+            },
+            {
+              "archive": "graphics.zip",
+              "entry": "Graphics/Building/bld_fort14_close_idle.kf",
+              "sha256": "23f995bf74a33cb77c8f77d26496b88cc83384eb7293c9308481212813b19f2b",
+              "reason": "Original KF exists, but neither this visual nor its inherited BuildingWithTurrets declaration supplies a matching AnimName; no state assignment guessed."
+            },
+            {
+              "archive": "graphics.zip",
+              "entry": "Graphics/Building/bld_fort14_open.kf",
+              "sha256": "af09a2b8f359570d8b40b46a5a11ae2901d9e81e79baf596b058434a242811e6",
+              "reason": "Original KF exists, but neither this visual nor its inherited BuildingWithTurrets declaration supplies a matching AnimName; no state assignment guessed."
+            },
+            {
+              "archive": "graphics.zip",
+              "entry": "Graphics/Building/bld_fort14_open_idle.kf",
+              "sha256": "e9be427587ede92ed674f11a20f56311ad2c16429ee0c4399f6c796cc5d00665",
+              "reason": "Original KF exists, but neither this visual nor its inherited BuildingWithTurrets declaration supplies a matching AnimName; no state assignment guessed."
+            }
+          ]
+        },
+        "definitionName": "Fortress"
+      }
+    ],
+    "nativeReducedFarModels": 3,
+    "baseIcon": {
+      "url": "local-original/ui/icon_unit_fortress_2_we-sprite.png",
+      "archive_member": "cache/texcache/icon_unit_fortress_2_we.texcache",
+      "source_sha256": "36e0a0478b41542d0f6bafcef711918d178b9de9dd9a2c6418f75038adcbf117",
+      "png_sha256": "dc4e8c5ff2fe50dc2573e62d824750a112c0673eb6f77317b9fa009b04cbb3ab",
+      "format": "DXT3",
+      "width": 77,
+      "height": 60,
+      "mipmaps_in_source": 1,
+      "pixel_payload_bytes": 8192,
+      "top_mip_bytes": 8192,
+      "transformation": "Original top mip decoded to RGBA PNG and cropped exactly to the source sprite rectangle; no rescaling/repainting",
+      "sprite": "icon_unit_fortress_2",
+      "bindingType": "exact",
+      "bindingReason": "Corresponds to the EE2 unit/epoch variant already selected by the imported gameplay profile.",
+      "originalUnit": "Fortress",
+      "originalEpoch": 1,
+      "unitUpgradeSource": "db.zip!db/TechTree/upgrade_unittypes.csv:130",
+      "currentDef": 56,
+      "currentName": "Fortress",
+      "resolvedSprite": "icon_unit_fortress_2_we",
+      "spriteSource": "db.zip!db/UI/UnpackedSprites/dbsprite_unitIcons.csv:502",
+      "spriteRect": [
+        0,
+        0,
+        77,
+        60
+      ],
+      "sourceTextureWidth": 128,
+      "sourceTextureHeight": 64,
+      "cultureVariant": "western"
+    },
+    "iconVariants": {
+      "icon_unit_fortress_10_we": {
+        "url": "local-original/ui/icon_unit_fortress_10_we-sprite.png",
+        "archive_member": "cache/texcache/icon_unit_fortress_10_we.texcache",
+        "source_sha256": "7dc02a47186a9ef5a48b78f746d5633e0ee4caac6a5335f44d67ef46e9ab4afc",
+        "png_sha256": "776ab812037b80cb483cb5055f6af01a4a2bd227f13cf45c6711a43e34a94d33",
+        "format": "DXT3",
+        "width": 77,
+        "height": 60,
+        "mipmaps_in_source": 1,
+        "pixel_payload_bytes": 8192,
+        "top_mip_bytes": 8192,
+        "transformation": "Original top mip decoded to RGBA PNG and cropped exactly to its unambiguous source sprite rectangle; no rescaling/repainting",
+        "spriteCropStatus": "source-verified",
+        "spriteSources": [
+          "db.zip!db/UI/UnpackedSprites/dbsprite_unitIcons.csv:519",
+          "db.zip!db/UI/UnpackedSprites/dbsprite_unitIcons.csv:520"
+        ],
+        "resolvedSprites": [
+          "icon_unit_fortress_10_fe",
+          "icon_unit_fortress_10_we"
+        ],
+        "spriteRect": [
+          0,
+          0,
+          77,
+          60
+        ],
+        "sourceTextureWidth": 128,
+        "sourceTextureHeight": 64
+      },
+      "icon_unit_fortress_12_we": {
+        "url": "local-original/ui/icon_unit_fortress_12_we-sprite.png",
+        "archive_member": "cache/texcache/icon_unit_fortress_12_we.texcache",
+        "source_sha256": "b22a16283d0cc4a26865b8bbce1e9f1c2bc7c656c37847f5ab98a855bb12b1f8",
+        "png_sha256": "edbbeac3d7f860c3f67e08a7f3ddab6686e00118d66af0d477682c1acb408275",
+        "format": "DXT3",
+        "width": 77,
+        "height": 60,
+        "mipmaps_in_source": 1,
+        "pixel_payload_bytes": 8192,
+        "top_mip_bytes": 8192,
+        "transformation": "Original top mip decoded to RGBA PNG and cropped exactly to its unambiguous source sprite rectangle; no rescaling/repainting",
+        "spriteCropStatus": "source-verified",
+        "spriteSources": [
+          "db.zip!db/UI/UnpackedSprites/dbsprite_unitIcons.csv:526"
+        ],
+        "resolvedSprites": [
+          "icon_unit_fortress_12_we"
+        ],
+        "spriteRect": [
+          0,
+          0,
+          77,
+          60
+        ],
+        "sourceTextureWidth": 128,
+        "sourceTextureHeight": 64
+      },
+      "icon_unit_fortress_14": {
+        "url": "local-original/ui/icon_unit_fortress_14-sprite.png",
+        "archive_member": "cache/texcache/icon_unit_fortress_14.texcache",
+        "source_sha256": "e23c48a80aea805caf667e4504245519658febc7b6d6a8eff31d83238e180489",
+        "png_sha256": "1394ff9ac2f9f68bfbf62adcb4d18e7548774dc96d9e2c4f3f60ecf0ee39212c",
+        "format": "DXT3",
+        "width": 77,
+        "height": 60,
+        "mipmaps_in_source": 1,
+        "pixel_payload_bytes": 8192,
+        "top_mip_bytes": 8192,
+        "transformation": "Original top mip decoded to RGBA PNG and cropped exactly to its unambiguous source sprite rectangle; no rescaling/repainting",
+        "spriteCropStatus": "source-verified",
+        "spriteSources": [
+          "db.zip!db/UI/UnpackedSprites/dbsprite_unitIcons.csv:528"
+        ],
+        "resolvedSprites": [
+          "icon_unit_fortress_14"
+        ],
+        "spriteRect": [
+          0,
+          0,
+          77,
+          60
+        ],
+        "sourceTextureWidth": 128,
+        "sourceTextureHeight": 64
+      },
+      "icon_unit_fortress_2_we": {
+        "url": "local-original/ui/icon_unit_fortress_2_we-sprite.png",
+        "archive_member": "cache/texcache/icon_unit_fortress_2_we.texcache",
+        "source_sha256": "36e0a0478b41542d0f6bafcef711918d178b9de9dd9a2c6418f75038adcbf117",
+        "png_sha256": "dc4e8c5ff2fe50dc2573e62d824750a112c0673eb6f77317b9fa009b04cbb3ab",
+        "format": "DXT3",
+        "width": 77,
+        "height": 60,
+        "mipmaps_in_source": 1,
+        "pixel_payload_bytes": 8192,
+        "top_mip_bytes": 8192,
+        "transformation": "Original top mip decoded to RGBA PNG and cropped exactly to its unambiguous source sprite rectangle; no rescaling/repainting",
+        "spriteCropStatus": "source-verified",
+        "spriteSources": [
+          "db.zip!db/UI/UnpackedSprites/dbsprite_unitIcons.csv:502",
+          "db.zip!db/UI/UnpackedSprites/dbsprite_unitIcons.csv:503"
+        ],
+        "resolvedSprites": [
+          "icon_unit_fortress_2_we",
+          "icon_unit_fortress_2_fe"
+        ],
+        "spriteRect": [
+          0,
+          0,
+          77,
+          60
+        ],
+        "sourceTextureWidth": 128,
+        "sourceTextureHeight": 64
+      },
+      "icon_unit_fortress_4_we": {
+        "url": "local-original/ui/icon_unit_fortress_4_we-sprite.png",
+        "archive_member": "cache/texcache/icon_unit_fortress_4_we.texcache",
+        "source_sha256": "042f5eabf6e1fd38c4a8802e3237432d2cf30b2af1387560da68935df1f293fe",
+        "png_sha256": "eff07319d28f343e0f79eab5ec08c13a2ae62b96e057ceca80f7a36692f1fc18",
+        "format": "DXT3",
+        "width": 77,
+        "height": 60,
+        "mipmaps_in_source": 1,
+        "pixel_payload_bytes": 8192,
+        "top_mip_bytes": 8192,
+        "transformation": "Original top mip decoded to RGBA PNG and cropped exactly to its unambiguous source sprite rectangle; no rescaling/repainting",
+        "spriteCropStatus": "source-verified",
+        "spriteSources": [
+          "db.zip!db/UI/UnpackedSprites/dbsprite_unitIcons.csv:507"
+        ],
+        "resolvedSprites": [
+          "icon_unit_fortress_4_we"
+        ],
+        "spriteRect": [
+          0,
+          0,
+          77,
+          60
+        ],
+        "sourceTextureWidth": 128,
+        "sourceTextureHeight": 64
+      },
+      "icon_unit_fortress_6_we": {
+        "url": "local-original/ui/icon_unit_fortress_6_we-sprite.png",
+        "archive_member": "cache/texcache/icon_unit_fortress_6_we.texcache",
+        "source_sha256": "70db2b8647e58ad62fbe188b2eb9156594ab3a07a2716411c803385f6b41f1f3",
+        "png_sha256": "2358a3fdda48c82a1104782821897cbdc412c31e93cd0137a494add36041fa75",
+        "format": "DXT3",
+        "width": 77,
+        "height": 60,
+        "mipmaps_in_source": 1,
+        "pixel_payload_bytes": 8192,
+        "top_mip_bytes": 8192,
+        "transformation": "Original top mip decoded to RGBA PNG and cropped exactly to its unambiguous source sprite rectangle; no rescaling/repainting",
+        "spriteCropStatus": "source-verified",
+        "spriteSources": [
+          "db.zip!db/UI/UnpackedSprites/dbsprite_unitIcons.csv:510"
+        ],
+        "resolvedSprites": [
+          "icon_unit_fortress_6_we"
+        ],
+        "spriteRect": [
+          0,
+          0,
+          77,
+          60
+        ],
+        "sourceTextureWidth": 128,
+        "sourceTextureHeight": 64
+      },
+      "icon_unit_fortress_8_we": {
+        "url": "local-original/ui/icon_unit_fortress_8_we-sprite.png",
+        "archive_member": "cache/texcache/icon_unit_fortress_8_we.texcache",
+        "source_sha256": "1f84ffa225174531bf2590b5a501e77fb58fe325ab13e6642de2cc9fc1429570",
+        "png_sha256": "0731d87733738faf6ff25bd5fa4bf06862fa51224e0058eb81ed9cde0f256f79",
+        "format": "DXT3",
+        "width": 77,
+        "height": 60,
+        "mipmaps_in_source": 1,
+        "pixel_payload_bytes": 8192,
+        "top_mip_bytes": 8192,
+        "transformation": "Original top mip decoded to RGBA PNG and cropped exactly to its unambiguous source sprite rectangle; no rescaling/repainting",
+        "spriteCropStatus": "source-verified",
+        "spriteSources": [
+          "db.zip!db/UI/UnpackedSprites/dbsprite_unitIcons.csv:513"
+        ],
+        "resolvedSprites": [
+          "icon_unit_fortress_8_we"
+        ],
+        "spriteRect": [
+          0,
+          0,
+          77,
+          60
+        ],
+        "sourceTextureWidth": 128,
+        "sourceTextureHeight": 64
+      }
+    },
+    "ground": {
+      "id": 56,
+      "decal": "UnderFortress",
+      "nativeSize": [
+        3.0,
+        3.0
+      ],
+      "width": 3.0,
+      "depth": 3.0,
+      "offsetX": 0,
+      "offsetY": 0,
+      "offsetDefaults": [
+        "x",
+        "y"
+      ],
+      "rural": [
+        {
+          "url": "local-original/textures/ground/under_fortress_1.png",
+          "sprite": "under_fortress_1_r",
+          "sourceSlot": 0,
+          "imageWidth": 256,
+          "imageHeight": 256,
+          "uv": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "flipU": false,
+          "flipV": false,
+          "rotate90": false,
+          "alphaRange": [
+            0,
+            255
+          ]
+        },
+        {
+          "url": "local-original/textures/ground/under_fortress_2_r.png",
+          "sprite": "under_fortress_2_r",
+          "sourceSlot": 1,
+          "imageWidth": 256,
+          "imageHeight": 256,
+          "uv": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "flipU": false,
+          "flipV": false,
+          "rotate90": false,
+          "alphaRange": [
+            0,
+            255
+          ]
+        },
+        {
+          "url": "local-original/textures/ground/under_fortress_3.png",
+          "sprite": "under_fortress_3_u",
+          "sourceSlot": 2,
+          "imageWidth": 256,
+          "imageHeight": 256,
+          "uv": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "flipU": false,
+          "flipV": false,
+          "rotate90": false,
+          "alphaRange": [
+            0,
+            255
+          ]
+        }
+      ],
+      "urban": [
+        {
+          "url": "local-original/textures/ground/under_fortress_1.png",
+          "sprite": "under_fortress_1_u",
+          "sourceSlot": 0,
+          "imageWidth": 256,
+          "imageHeight": 256,
+          "uv": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "flipU": false,
+          "flipV": false,
+          "rotate90": false,
+          "alphaRange": [
+            0,
+            255
+          ]
+        },
+        {
+          "url": "local-original/textures/ground/under_fortress_2.png",
+          "sprite": "under_fortress_2_u",
+          "sourceSlot": 1,
+          "imageWidth": 256,
+          "imageHeight": 256,
+          "uv": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "flipU": false,
+          "flipV": false,
+          "rotate90": false,
+          "alphaRange": [
+            0,
+            255
+          ]
+        },
+        {
+          "url": "local-original/textures/ground/under_fortress_3.png",
+          "sprite": "under_fortress_3_u",
+          "sourceSlot": 2,
+          "imageWidth": 256,
+          "imageHeight": 256,
+          "uv": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "flipU": false,
+          "flipV": false,
+          "rotate90": false,
+          "alphaRange": [
+            0,
+            255
+          ]
+        }
+      ],
+      "death": {
+        "rural": [
+          {
+            "url": "local-original/textures/ground/under_fortress_1_d.png",
+            "sprite": "under_fortress_1_r_d",
+            "sourceSlot": 0,
+            "imageWidth": 256,
+            "imageHeight": 256,
+            "uv": [
+              0,
+              0,
+              1,
+              1
+            ],
+            "flipU": false,
+            "flipV": false,
+            "rotate90": false,
+            "alphaRange": [
+              0,
+              255
+            ]
+          },
+          {
+            "url": "local-original/textures/ground/under_fortress_2_d_r.png",
+            "sprite": "under_fortress_2_r_d",
+            "sourceSlot": 1,
+            "imageWidth": 256,
+            "imageHeight": 256,
+            "uv": [
+              0,
+              0,
+              1,
+              1
+            ],
+            "flipU": false,
+            "flipV": false,
+            "rotate90": false,
+            "alphaRange": [
+              0,
+              255
+            ]
+          },
+          {
+            "url": "local-original/textures/ground/under_fortress_3_d.png",
+            "sprite": "under_fortress_3_u_d",
+            "sourceSlot": 2,
+            "imageWidth": 256,
+            "imageHeight": 256,
+            "uv": [
+              0,
+              0,
+              1,
+              1
+            ],
+            "flipU": false,
+            "flipV": false,
+            "rotate90": false,
+            "alphaRange": [
+              0,
+              255
+            ]
+          }
+        ],
+        "urban": [
+          {
+            "url": "local-original/textures/ground/under_fortress_1_d.png",
+            "sprite": "under_fortress_1_u_d",
+            "sourceSlot": 0,
+            "imageWidth": 256,
+            "imageHeight": 256,
+            "uv": [
+              0,
+              0,
+              1,
+              1
+            ],
+            "flipU": false,
+            "flipV": false,
+            "rotate90": false,
+            "alphaRange": [
+              0,
+              255
+            ]
+          },
+          {
+            "url": "local-original/textures/ground/under_fortress_2_d.png",
+            "sprite": "under_fortress_2_u_d",
+            "sourceSlot": 1,
+            "imageWidth": 256,
+            "imageHeight": 256,
+            "uv": [
+              0,
+              0,
+              1,
+              1
+            ],
+            "flipU": false,
+            "flipV": false,
+            "rotate90": false,
+            "alphaRange": [
+              0,
+              255
+            ]
+          },
+          {
+            "url": "local-original/textures/ground/under_fortress_3_d.png",
+            "sprite": "under_fortress_3_u_d",
+            "sourceSlot": 2,
+            "imageWidth": 256,
+            "imageHeight": 256,
+            "uv": [
+              0,
+              0,
+              1,
+              1
+            ],
+            "flipU": false,
+            "flipV": false,
+            "rotate90": false,
+            "alphaRange": [
+              0,
+              255
+            ]
+          }
+        ]
+      }
+    },
+    "selectionAudio": {
+      "file": "Fx_Bld_Fortress.mp3",
+      "volume": 0.9,
+      "event": "Fortress_select",
+      "unit_type": "Fortress",
+      "source_epochs": [
+        1,
+        4,
+        6,
+        8,
+        10,
+        12,
+        14
+      ],
+      "selection_sources": [
+        {
+          "archive": "db.zip",
+          "entry": "db/TechTree/upgrade_unittypes.csv",
+          "line": 130,
+          "sha256": "377cd1a4f02dde5383cbc02bdb4231446452be87b7fd217d13b501a0e302cdac",
+          "column": "SNDSEL",
+          "value": "[fortress_select]"
+        },
+        {
+          "archive": "db.zip",
+          "entry": "db/TechTree/upgrade_unittypes.csv",
+          "line": 131,
+          "sha256": "377cd1a4f02dde5383cbc02bdb4231446452be87b7fd217d13b501a0e302cdac",
+          "column": "SNDSEL",
+          "value": "[fortress_select]"
+        },
+        {
+          "archive": "db.zip",
+          "entry": "db/TechTree/upgrade_unittypes.csv",
+          "line": 132,
+          "sha256": "377cd1a4f02dde5383cbc02bdb4231446452be87b7fd217d13b501a0e302cdac",
+          "column": "SNDSEL",
+          "value": "[fortress_select]"
+        },
+        {
+          "archive": "db.zip",
+          "entry": "db/TechTree/upgrade_unittypes.csv",
+          "line": 133,
+          "sha256": "377cd1a4f02dde5383cbc02bdb4231446452be87b7fd217d13b501a0e302cdac",
+          "column": "SNDSEL",
+          "value": "[fortress_select]"
+        },
+        {
+          "archive": "db.zip",
+          "entry": "db/TechTree/upgrade_unittypes.csv",
+          "line": 134,
+          "sha256": "377cd1a4f02dde5383cbc02bdb4231446452be87b7fd217d13b501a0e302cdac",
+          "column": "SNDSEL",
+          "value": "[fortress_select]"
+        },
+        {
+          "archive": "db.zip",
+          "entry": "db/TechTree/upgrade_unittypes.csv",
+          "line": 135,
+          "sha256": "377cd1a4f02dde5383cbc02bdb4231446452be87b7fd217d13b501a0e302cdac",
+          "column": "SNDSEL",
+          "value": "[fortress_select]"
+        },
+        {
+          "archive": "db.zip",
+          "entry": "db/TechTree/upgrade_unittypes.csv",
+          "line": 136,
+          "sha256": "377cd1a4f02dde5383cbc02bdb4231446452be87b7fd217d13b501a0e302cdac",
+          "column": "SNDSEL",
+          "value": "[fortress_select]"
+        }
+      ],
+      "event_source": {
+        "archive": "db.zip",
+        "entry": "db/Audio/dbsound.csv",
+        "line": 390,
+        "sha256": "9d8732a5afedf10fe97ef4bddb75b52f19265e6f475aa434bbce46c163ffa64b"
+      },
+      "scope": "Exact common selection event across all seven original Fortress stages. No empty SNDATTACK/SNDMOVE or unrelated work-loop mapped as a fortress response."
+    },
+    "slotBinding": {
+      "report": "../EE2-Research/analysis/fortress-population-binding.json",
+      "report_sha256": "eb4ce2007fd25b6d9531ceb7b06598100a89956ce6e05399f3ed8e62f4836a10",
+      "evidence": {
+        "format": "ee2-fortress-population-binding-v1",
+        "scope": "Read-only existing Ghidra engine project, no full reanalysis; independent PE string-table validation. This resolves the earlier UnitType+A0 population naming uncertainty for the analyzed engine.",
+        "executableSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+        "propertyTable": {
+          "namePointerVA": "00c14970",
+          "nameStringVA": "00c149dc",
+          "name": "popCount",
+          "resolvedOffsetVA": "00c14974",
+          "rowStrideBytes": 8,
+          "typeNamePointerVA": "00c14998",
+          "typeName": "DbUnitTypeDef"
+        },
+        "chain": [
+          {
+            "function": "0053a0f0",
+            "instructions": [
+              "0053a209",
+              "0053a20e",
+              "0053a216",
+              "0053a21b",
+              "0053a21e",
+              "0053a220"
+            ],
+            "meaning": "For each property-table row, resolve its name through00a36060 and store returned descriptor+0x18 as the corresponding property offset."
+          },
+          {
+            "function": "0053a8d0",
+            "instructions": [
+              "0053acdc",
+              "0053acec",
+              "0053acfe"
+            ],
+            "meaning": "Read the property through the popCount resolved offset, follow native inheritance resolution, and write the resulting integer to UnitType+0xA0."
+          },
+          {
+            "function": "007e63b0",
+            "meaning": "Garrison required-slots getter returns1 for Leaders, otherwise reads UnitType+0xA0. Together with the named-property binder this identifies ordinary required slots as native popCount, rather than merely estimating it from unit size."
+          }
+        ],
+        "header": {
+          "archive": "hdrs.zip",
+          "entry": "DbHdrs/DbUnitDefs.h",
+          "sha256": "afde5529ed266cc3995dfa3c48eecc3fd17f2eac7db65c880d077ac277cd26c3",
+          "lines": [
+            96,
+            97
+          ],
+          "supports": "m_popCount is population consumption; m_popCapacity is population granted. Naming supports, but does not replace, the executable binding."
+        },
+        "exports": [
+          {
+            "file": "fortress-population-binding-refs.c",
+            "sha256": "d80811e69ed1ffd056d5e03022ff72f93c2dbc1b220258c5b843c244b9b15031"
+          },
+          {
+            "file": "fortress-population-binding.c",
+            "sha256": "16206f1dc3f9adcd8668dbecfdac62eb27226c1709c71fcb20b4be7e4fa15141"
+          },
+          {
+            "file": "fortress-adjacency-population.c",
+            "sha256": "8e428bcd5c1b2444af61804df782485240c286b6d13f400fde2b0687fbe285ed"
+          },
+          {
+            "file": "fortress-claim-counts.c",
+            "sha256": "70e1a2d49b411f9cf69ed5005b675aa9903c748141a5ffe98fc2a325e971129b"
+          }
+        ],
+        "limits": [
+          "This establishes the analyzed engine build; it does not prove every unofficial patch DLL override.",
+          "The Leaders special case remains explicit. No playable Leader definition is added by this feature.",
+          "Imported gameplay roles still include explicit adapters; source-class population does not make every adapted role an exact original unit."
+        ],
+        "independentReview": "Confirmed independently by the engine and source-audit agents against the raw PE bytes and the exported assembly."
+      },
+      "scope": "Eligible bound native source classes use inherited DDF popCount, except Leaders use one. The semantic binding is verified on the explicitly identified EnabledUP15Units executable; numeric DDF values remain from the selected base db.zip. No general patch/VFS precedence is inferred."
+    }
+  },
+  "totals": {
+    "definitionRoles": 57,
+    "propRoles": 11,
+    "rendererBindings": 156,
+    "uniqueImportedNIFs": 125,
+    "nativeFarMeshes": 66,
+    "geometryFilesWithKFClips": 28,
+    "distinctBoundKFEntries": 72,
+    "stillStaticMobileMeshes": 16,
+    "staticMobileMeshesWithExactStemNativeKFs": 8,
+    "nativeClassEpochRows": 269,
+    "verifiedClassEpochVisualRows": 144,
+    "unverifiedClassEpochVisualRows": 125,
+    "newLaterEpochBindings": 26,
+    "newExistingExactSpriteBindings": 26,
+    "archiveNIFEntries": 1638,
+    "archiveKFEntries": 1427,
+    "baseDeclaredUnitTypeNamesIncludingHelpers": 438,
+    "baseUpgradeTableAllCivUnitClasses": 77,
+    "distinctBoundSourceUnitClasses": 39,
+    "modelMaterialPngs": 188,
+    "textureCacheFiles": 284,
+    "terrainMaps": 11,
+    "baseIconBindings": 55,
+    "iconVariants": 73,
+    "hudImages": 31,
+    "hudCrops": 31,
+    "groundBindings": 13,
+    "groundPngs": 125,
+    "teamTextureFamilies": 160,
+    "verifiedTeamColourMaps": 159,
+    "teamVariants": 1760,
+    "originalAudioAssets": 195,
+    "derivedAudioAssets": 1
+  },
+  "checks": [
+    {
+      "command": "python -m unittest test_extract_ee2_textures test_ee2_ground_decals test_ee2_epoch_icons test_ee2_units test_ee2_research test_ee2_team_textures",
+      "cases": 46,
+      "status": "passed",
+      "coverage": "DDS cache layout, unchanged Ground and Fortress sprite pixels, DDF/CSV hashes/fields, raw PE slot-property binder/getter, research bit56 masks, original player-colour DXT patches."
+    },
+    {
+      "command": "node tools/original-models-test.mjs",
+      "status": "passed",
+      "coverage": "156 near/epoch bindings,125 meshes,66 far meshes,188 PNG payloads,394 original source hashes,6528 animation buffers."
+    },
+    {
+      "command": "node tools/original-audio-test.mjs",
+      "status": "passed",
+      "coverage": "39 voices/progression plus exact Fortress seven SNDSEL rows, dbsound390 and original MP3 bytes."
+    },
+    {
+      "command": "node tools/original-icons-test.mjs",
+      "status": "passed",
+      "coverage": "Epoch transitions, async order, held-model consistency and optional-asset fallback."
+    },
+    {
+      "command": "python tools/portable-assets-test.py --docs docs --label fortress-workspace",
+      "status": "passed",
+      "report": "portable-assets-check.json",
+      "reportSha256": "bcaf32dc3179c02df4790da89a4a7d9b4c18d6cc768d115bf3f38339ceba33bf",
+      "files": 2901,
+      "references": 10435,
+      "exactCaseTargets": 2798,
+      "errors": 0
+    }
+  ],
+  "limits": [
+    "Explicit western Fortress cache variants where available, neutral at stage14; no culture-selection/VFS priority inferred.",
+    "Only three source Fortress LODs genuinely reduce triangles; other stages keep near geometry.",
+    "Four original E14 door KFs are hash-catalogued but unbound: read UnitModel declarations provide no unambiguous AnimName/state mapping. No fabricated animation.",
+    "All twelve UnderFortress image alternatives retain native pixels/alpha. Existing runtime Rural-slot0 isotropic adapter remains; native epoch/urban selection and world scale are unresolved.",
+    "Garrison slots are proven popCount except Leaders=1 on the identified EnabledUP15Units executable. Numeric values come from selected base db.zip; this does not establish all patch overrides.",
+    "Fortress SNDMOVE/SNDATTACK lists are empty; no invented work/attack voice.",
+    "Prior numeric fields of IDs0..55 remain unchanged; Fortress rules require separate engine/WASM and browser verification.",
+    "Partial original coverage:125/269 class-epoch visual rows remain unverified,16 mobile meshes remain static; other cultures/genders/effects/animation states are incomplete."
+  ]
+}

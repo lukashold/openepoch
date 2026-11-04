@@ -1,0 +1,149 @@
+{
+  "format": "openepoch-production-world-gles-replay-v1",
+  "passed": true,
+  "context": {
+    "egl": [
+      1,
+      5
+    ],
+    "vendor": "Google Inc. (AMD)",
+    "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11-31.0.21924.61)",
+    "version": "OpenGL ES 3.0 (ANGLE 2.1 git hash: unknown hash)",
+    "libraryDirectory": "C:\\Program Files\\Mozilla Firefox",
+    "surface": [
+      1280,
+      1280
+    ],
+    "uiLaunched": false,
+    "framebuffer": "RGBA8 texture + DEPTH24_STENCIL8 renderbuffer"
+  },
+  "capture": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\world-14-town-month6.json",
+  "captureSha256": "a74f348d50685f4f75071f004bf6f40a9ebd6c25002e878a623b308c18ed5804",
+  "sourceEpoch": 15,
+  "scene": "town",
+  "wasmInstances": 397,
+  "size": [
+    1280,
+    720
+  ],
+  "stats": {
+    "drawCalls": 35,
+    "instancedCalls": 26,
+    "drawnInstances": 815,
+    "triangles": 309406,
+    "bufferBytes": 3615340,
+    "textureBytes": 35166236
+  },
+  "compiledPrograms": [
+    {
+      "id": "1",
+      "compiled": true,
+      "linked": true,
+      "vertexSha256": "9f3482f9446fde6fa07f7ed0ca4219d2e35d92cf798ac9045e65f9a056ca999d",
+      "fragmentSha256": "82312ae9dd2708b8b7a854f87f612a434743768bb59fb8666cd8c377dccd4fc4"
+    },
+    {
+      "id": "4",
+      "compiled": true,
+      "linked": true,
+      "vertexSha256": "b72acea400e56c4c93b4d842cb1d7d7d440adbf2403f967553e9053df55ffd46",
+      "fragmentSha256": "58f6c4401123699a829e791985536515046b27ec6960d615fdceb6e1ebc0cc49"
+    },
+    {
+      "id": "22",
+      "compiled": true,
+      "linked": true,
+      "vertexSha256": "67c10b2db0ad79b591accf1eb2a314d6606795540416d1c85376614e875180c9",
+      "fragmentSha256": "8a5ccc8c6531ed60a08bb6d4b7699269ddae4cc7b9a9789de7c56ae4539ac418"
+    },
+    {
+      "id": "234",
+      "compiled": true,
+      "linked": true,
+      "vertexSha256": "9535f328c82af94214709f53f614a30577e270b714d52a2465e1fe37b76ca9c0",
+      "fragmentSha256": "846d396c976f2420073fb76bce272341fc4bc95664f3d52fdc135633c134ee13"
+    }
+  ],
+  "output": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\OpenEpoch\\native-season-future.png",
+  "pngSha256": "13a4e498d44ec893d1a1ba1993f684cb2e58ed620f8987af52aad37b54d6fada",
+  "colorHistogramBins": 768,
+  "scope": "WASM seed7 world, production simulation-tick calendar, camera/loaders/material, epoch/urban/seasonal building ground, terrain-conforming stencil shadows and terrain/water draw calls. World-only native GLES replay; no HUD, browser, native executable or original-game visual equality claim.",
+  "uiLaunched": false,
+  "limitation": "GPU replay of captured production world passes; not a browser/full HUD interaction test or a claim of original-game visual equality.",
+  "sourceHashes": {
+    "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+    "captureScriptSha256": "ca17b2910f5d0804e34b7d3d6063fe5e914fd91642454fd00d385c4fabb2215d",
+    "files": {
+      "original-terrain.js": "923805d2f4a2c9474a07895e597a9e0b05f90e9b3034e19005c43894c52e748b",
+      "original-ground.js": "bf0b44726870aacf5e57d72969d60a9468db823de21576fd7ea5b3f5962d1724",
+      "original-renderer.js": "176896aaa07ebce8c76745337869b1715db7b7e7ff6269fea62b6d45771b0192",
+      "original-camera.js": "56fdd51c6ec1ac099482cb14b101995c18c9d1ed0b3ce12ba4355d9544511575",
+      "original-seasons.js": "fb4001470974e86ed297465309933305bef3bd8c54c8c603f6e39d18b2e63492",
+      "local-original/terrain-native/manifest.json": "c7cf660ff198a5f3e7b9c0aa2391b27f38ec7afb116b9541fa09019223c0359a",
+      "local-original/ground-decals.json": "394dc17695378752eab77d37defde85e6ff225b33d12a65a162893c05ef49a5d",
+      "local-original/models/manifest.json": "ee42afb0d5ad06a65d295c548601d67b48c3c1b7a579174c224c75b3076850c1"
+    },
+    "shaders": {
+      "1": {
+        "vertexSha256": "9f3482f9446fde6fa07f7ed0ca4219d2e35d92cf798ac9045e65f9a056ca999d",
+        "fragmentSha256": "82312ae9dd2708b8b7a854f87f612a434743768bb59fb8666cd8c377dccd4fc4"
+      },
+      "4": {
+        "vertexSha256": "b72acea400e56c4c93b4d842cb1d7d7d440adbf2403f967553e9053df55ffd46",
+        "fragmentSha256": "58f6c4401123699a829e791985536515046b27ec6960d615fdceb6e1ebc0cc49"
+      },
+      "22": {
+        "vertexSha256": "67c10b2db0ad79b591accf1eb2a314d6606795540416d1c85376614e875180c9",
+        "fragmentSha256": "8a5ccc8c6531ed60a08bb6d4b7699269ddae4cc7b9a9789de7c56ae4539ac418"
+      },
+      "234": {
+        "vertexSha256": "9535f328c82af94214709f53f614a30577e270b714d52a2465e1fe37b76ca9c0",
+        "fragmentSha256": "846d396c976f2420073fb76bce272341fc4bc95664f3d52fdc135633c134ee13"
+      }
+    }
+  },
+  "season": {
+    "requestedMonthPosition": 6,
+    "actualSimulationTick": 0,
+    "tickSource": "WASM game_tick",
+    "steppedTicks": 0,
+    "month0": 6,
+    "month1": 7,
+    "blend": 0,
+    "monthPosition": 6,
+    "monthName": "Juli",
+    "secondsPerYear": 1200,
+    "ticksPerYear": 24000,
+    "settings": {
+      "cycle": true,
+      "startMonth": 6,
+      "minutesPerSeason": 5
+    }
+  },
+  "ground": {
+    "enabled": true,
+    "policy": "native-epoch-slots; CityManager callback, explicit rural fallback when absent",
+    "entries": 13,
+    "metrics": {
+      "calls": 1,
+      "instances": 1
+    },
+    "urbanSource": "WASM ground_urban_at; active source-backed Town Center city bands",
+    "urbanQueries": [
+      {
+        "x": 51,
+        "z": 51,
+        "team": 0,
+        "id": 0,
+        "index": 0,
+        "urban": true
+      }
+    ]
+  },
+  "epochs": [
+    14,
+    14,
+    0,
+    0
+  ]
+}

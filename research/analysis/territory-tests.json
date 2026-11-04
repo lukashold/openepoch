@@ -1,0 +1,23 @@
+{
+  "format": "territory-diplomacy-tests-v1",
+  "status": "passed",
+  "scope": "Persistent territory gifts and atomic swaps, actual map/building/unit ownership, declared garrison/queue adapters, recipient native stats, conservation, saves and strict authenticated lockstep. Crew and queue handling are explicit reconstruction policy, not a claim of complete original-game equivalence.",
+  "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+  "baseWasmSha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+  "sourceUnitAuditSha256": "c79ba14cb511042c0255fe24c03a5b8f850e94e72ef9293ff0ed880c54eb62ef",
+  "sourceResearchAuditSha256": "3b6c99a88adce9a2667a6399bb48fc72a36c00d8397e2e8224c4d3351813f29a",
+  "checkCount": 3701,
+  "completed": [
+    "persistent gift, province texture/minimap/build rights, actor identity, own-versus-third-party troops, construction/health, crew/slot limits, refund conservation and recipient native research/production",
+    "reject/withdraw/expiry/cooldown, atomic swap, ownership races, claim destruction/generation reuse and persistent two-way ownership",
+    "invalid IDs/fields/players, dead recipients, authenticated strict C15 wire and unknown-province information limits",
+    "allowed final-province gift/self-defeat and alliance termination; atomic final-province swap retains both players/treaties",
+    "gifted OilRig/UraniumMine retain crew but respect recipient unlocks; expired versus valid carried resource conservation",
+    "deterministic delayed AI valuation: rejects insufficient neutral offer with reason, accepts a strictly richer package",
+    "exact TER1 structure, claims/pending offer roundtrip, atomic malformed saves and genuine 991E/DIP1 migration with full old diplomacy state",
+    "two actual peers: queued swap/accept, persistent claims/alliance and final gift with matching hashes; base-profile gift/save smoke"
+  ],
+  "adapterPolicy": "Eigene Gebäude und Einheiten im Gebiet wechseln mitsamt Besatzung den Besitzer. Laufende Aufträge werden gestoppt und dem bisherigen Besitzer erstattet. Erforschte Technologien werden nicht übertragen.",
+  "legacyFixtureSha256": "dbf102e3a8c72e4f66c6dea360670c120f7f91be79d051cfea8c95a288755882",
+  "lockstepTurns": 618
+}

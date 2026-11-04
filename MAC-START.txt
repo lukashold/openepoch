@@ -1,0 +1,87 @@
+OpenEpoch – vollständiges Spielpaket mit lokal importierten Originalmedien
+
+Auf dem Mac starten
+1. Das ZIP vollständig entpacken. Den gesamten Ordner OpenEpoch zusammenlassen.
+2. Start-OpenEpoch.command doppelklicken. Der lokale Spielserver startet und
+   öffnet das Spiel im Standardbrowser. Das Terminalfenster geöffnet lassen.
+3. Im Spiel „Scharmützel starten“ wählen. Zum Beenden im Terminal Ctrl+C drücken.
+
+Voraussetzung: Python3.8 oder neuer. Falls es fehlt, nennt der Starter den
+offiziellen Installer: https://www.python.org/downloads/macos/
+Der offizielle macOS-Installer unterstützt Apple Silicon und Intel.
+Es werden keine zusätzlichen Python-Pakete benötigt. Empire Earth II, Ghidra,
+Rust, ein Windows-Laufzeitprogramm oder ein erneuter Medienimport sind zum
+Spielen nicht erforderlich. Die fertigen WASM-Dateien sind bereits enthalten.
+
+Alternativer Start im Terminal aus dem entpackten OpenEpoch-Ordner:
+    bash Start-OpenEpoch.command
+oder:
+    python3 tools/serve_game.py
+Nicht docs/index.html direkt mit file:// öffnen: Das Spiel lädt seine Dateien
+über den mitgelieferten lokalen HTTP-Server.
+
+Browser und Ton
+Das Spiel benötigt WebGL2 und WebAssembly. Die Originalklänge enthalten Ogg/Vorbis.
+Aktuelles Chrome oder Firefox ist dafür geeignet. Safari unterstützt Ogg/Vorbis
+ab Safari18.4 auf macOS15.4; ältere Safari-Versionen können Originalton verlieren.
+Der Ordner enthält original-audio-check.html als lokale Codec-Prüfansicht unter
+der vom Starter ausgegebenen Adresse, z.B. http://127.0.0.1:8125/original-audio-check.html.
+Für Vollbild den Vollbildbutton im Spiel benutzen. F11 kann auf dem Mac bereits
+mit einer Systemfunktion belegt sein. Auf älteren/langsameren Geräten lässt sich
+im Menü die Auflösung auf „Standard“ senken.
+
+Übertragung und Spielstände
+Alle bereits importierten Modelle, Material-/Spielerfarbtexturen, Gelände,
+Gebäudeböden, HUD-/Einheitensymbole, Stimmen, Effekte und Musik liegen unter
+docs/local-original. Dieser gesamte Ordner ist im Komplett-ZIP enthalten.
+Die Windows-GOG-Pfade in Quellenmanifesten sind Herkunftsnachweise; das laufende
+Spiel greift nicht darauf zu. Keine Installation unter C:\Program Files ist nötig.
+Spielstände liegen im jeweiligen Browserprofil und werden nicht automatisch
+zwischen Windows und Mac synchronisiert. Der Server bevorzugt127.0.0.1:8125;
+ist dieser Port belegt, nennt er einen Ersatzport. Ein anderer Port hat einen
+getrennten lokalen Speicher. Eine bereits laufende Instanz desselben Ordners
+wird wiederverwendet.
+
+Bedienung
+Im Scharmützelmenü lassen sich Startmonat, Jahreszeitenwechsel und Dauer wählen.
+Ohne Wechsel bleibt der gewählte Monat erhalten. Pause hält den Wechsel an.
+Spielstände behalten diese Einstellungen; alte Spielstände zeigen festen Sommer.
+Im Mehrspieler bestimmt der Gastgeber die Jahreszeiten. Beide Spieler benötigen
+denselben combat-season1-Stand mit Netzwerkprotokoll9.
+
+Linksklick/Ziehen: auswählen. Rechtsklick/Zweifingerklick: Auftrag.
+Mausrad: Zoom. Pfeiltasten/Screenrand: Kamera. Mittlere Maustaste: schieben.
+R/Strg/Komma/Punkt während der Bauvorschau:90° drehen; mit Umschalt45°.
+Umschalt+Mausrad:45°. Häfen verwenden zuerst Küstenautomatik; manuell ist möglich.
+F4: Diplomatie. F: freie Bürger. H: Heimat. P: Pause. Cmd+S/Ctrl+S: speichern.
+Enter: Cheatdialog. icheat aktiviert Cheats; loot, sea monkeys und give tech
+sind im Einzelspieler vorhanden.
+
+Neuer Grafikausbau: native-render1
+Die Kamera verwendet nun die aus Ghidra belegte Zoom-/Winkelkurve. Originale
+Modellmaßstäbe und Ursprünge, zusätzliche Materialwerte, höhenabhängige Schatten,
+Originalgelände und Wasserbilder sind eingebunden. Alle neuen Bilder und
+Zuordnungen sind ebenfalls im Spielordner enthalten. Der aktuelle Start zeigt
+Sommer; die vollständige originale Wetter- und Shadersteuerung ist noch offen.
+Die Grafik wurde ohne geöffneten Browser auf einem lokalen GLES-Framebuffer
+geprüft. Diese Prüfung ersetzt keinen tatsächlichen Mac-Start.
+
+Festungen und Gebiete
+Die sieben originalen Festungsstufen, ihre Texturen, Symbole, Spielerfarben und
+Klänge liegen ebenfalls im Spielordner. Für ein angrenzendes Gebiet genügt ein
+fertiges Stadtzentrum; abgelegen ist zusätzlich eine fertige eigene Festung nötig.
+F4 → Territorien → Gebiet ansehen zeigt die Anforderungen für bekannte Gebiete.
+Zulässige eigene Einheiten per Rechtsklick in einer Festung einquartieren.
+
+Prüfstand
+Das Paket wird auf diesem Windows-Rechner separat entpackt und über seinen
+eigenen Loopback-Server geprüft. Pfade und Groß-/Kleinschreibung werden strikt
+geprüft; die enthaltenen Originalmedien werden bytegenau verglichen.
+Ein tatsächlicher Start auf macOS/AppleSilicon oder Intel-Mac wurde hier nicht
+ausgeführt. Der Nachbau ist weiterhin kein vollständiges, regelgleiches EE2.
+
+Technische Quellen zur Plattform:
+https://docs.python.org/3/using/mac.html
+https://www.chromium.org/audio-video/
+https://support.mozilla.org/en-US/kb/html5-audio-and-video-firefox
+https://webkit.org/blog/16574/webkit-features-in-safari-18-4/

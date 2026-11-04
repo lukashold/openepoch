@@ -1,0 +1,27 @@
+{
+  "format": "fortress-territory-tests-v1",
+  "status": "passed",
+  "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+  "baseWasmSha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+  "unitAuditSha256": "c79ba14cb511042c0255fe24c03a5b8f850e94e72ef9293ff0ed880c54eb62ef",
+  "researchAuditSha256": "3b6c99a88adce9a2667a6399bb48fc72a36c00d8397e2e8224c4d3351813f29a",
+  "scope": "Real WASM57/Base53, original requirements/epochs/costs/HP/research masks, authenticated rotation commands, completed-building claims, retained rights/gifts, and genuine prior56 natural-save migration. Controlled fixture objects are cloned complete save records, not engine edits. Full native disputed state/combat matrix/AI and browser graphics are not certified.",
+  "checks": 1146,
+  "completed": [
+    "All15 native Fortress HP/cost epochs; actual eight-angle building/payment/save;10-slot capacity; maximum2; malformed/stale/foreign C16 rejection; Base53 excludes ID56",
+    "Real-map adjacent/isolated requirements, separate foundation counts, wrong owner, pending57 save, retained city rights, isolated gift/load and landless bootstrap",
+    "Genuine unmodified old56 binary+2000tick natural save provenance, complete state migration57/roundtrip and240 deterministic ticks",
+    "All3 source Fortress HP and3 cost tiers via actual paid research with exact57-class/other-player masks; source+1 range enables real projectile damage",
+    "Native eligibility and mixed3/1-slot boarding,10-slot overflow safety, actual projectile damage +3% per occupied slot, source per-second healing, cargo57 roundtrip and exact unload"
+  ],
+  "genuine56": {
+    "wasmSha256": "7e359577aa251607126bcd8d8ca4dcb89bb8d38f1a4b6358e38706804cc4d30e",
+    "saveSha256": "d5085cd05c51323f046660d4090089f1e1b19a1ad6462b89bb62884e76af6f2b",
+    "seed": 17,
+    "ai": 2,
+    "tick": 2000,
+    "continuedTicks": 240
+  },
+  "researchAttackScope": "Source has LOS/Range modifiers forFortress, no direct Damage effect; actual beyond-baseline-range hit tested. Full native RPS coefficients are not asserted.",
+  "garrisonSlotScope": "Native7E63B0 and independent53A0F0/53A8D0 property binding establish Leaders1 otherwise popCount; no inferred RPS/pop adapter. Health storage remains existing integer percent representation."
+}

@@ -1,0 +1,998 @@
+{
+  "format": "ee2-building-placement-evidence-v1",
+  "date": "2026-10-31",
+  "scope": "Read-only original BASE db.zip/hdrs.zip/manual plus targeted existing Ghidra EnabledUP15Units engine project. No own engine/JS/assets changed; no complete original VFS/patch precedence or original-game playtest claimed.",
+  "line_numbering": "1-based LF-separated lines after removing CR bytes in decoded original entry",
+  "archives": {
+    "db.zip": {
+      "path": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\zips\\db.zip",
+      "bytes": 1003840,
+      "sha256": "042291d39b8e5362124da5254c718966032533885638e8393d5900e91e9b492e"
+    },
+    "hdrs.zip": {
+      "path": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\zips\\hdrs.zip",
+      "bytes": 124550,
+      "sha256": "2776d86da7e8fa405e78dd6feee67aff2861dc4165637bfa8db9de84f66f37fc"
+    }
+  },
+  "sources": {
+    "db/Units/building.ddf": {
+      "archive": "db.zip",
+      "bytes": 4339,
+      "sha256": "9ffefc5fb059018d5189451b62b5c2fa0bd178f2b452934bbc95695b07181934",
+      "encoding": "utf-8-sig",
+      "line_count": 187,
+      "excerpts": [
+        {
+          "first_line": 4,
+          "last_line": 51,
+          "lines": [
+            "UnitType BareBoneBuilding\t\t// building with no ability",
+            "{",
+            "\townerType = PlayerOrWorld",
+            "\tplacementType = Building",
+            "\tproperties {",
+            "\t\trps = Building",
+            "\t\thitpoints = 666",
+            "\t\tFootprintType = kFootprintType_Rectangle",
+            "\t\trequiredOpenSides = kBuildingOpenSides_None",
+            "\t}",
+            "\tattributes = [ RectangularFootprint ]",
+            "\tfullMapOverlay { sprite = spr_fullmap_building }",
+            "\ticon = icon_unit_default_building",
+            "}",
+            "",
+            "UnitType NoProduceBuilding",
+            "{",
+            "\tparent = BareBoneBuilding",
+            "\tabilities = [",
+            "\t\tResearch {}",
+            "\t\tConvertable { ",
+            "\t\t\tconvertTimeModifier = 200.0;  //",
+            "\t\t\tgarrisonedUnitModifier = 0.0; // 10% increase in capture time",
+            "\t\t\tgarrisonedUnitDamage = 0.0;\t  // hitpoints subtracted from capturer per round per garrisoned unit",
+            "\t\t\tdamageRate = 0.0;\t\t\t  // hitpoints subtracted from capture target hitpoints per round",
+            "\t\t\tcapture = 1;",
+            "\t\t} // may be captured",
+            "",
+            "\t\tLOS { range = 0 }",
+            "\t]",
+            "}",
+            "",
+            "UnitType Building",
+            "{",
+            "\townerType = PlayerOnly",
+            "\tparent = NoProduceBuilding",
+            "\tabilities = [",
+            "\t\tProduce {}",
+            "\t]",
+            "}",
+            "",
+            "// a variation of Building that can belong to either player or world",
+            "UnitType PlayerOrWorldBuilding",
+            "{",
+            "\tparent = NoProduceBuilding",
+            "\tabilities = [",
+            "\t\tProduce {}",
+            "\t]"
+          ]
+        }
+      ]
+    },
+    "db/Units/city_center.ddf": {
+      "archive": "db.zip",
+      "bytes": 7970,
+      "sha256": "4f1cfef27687288b40872426c5d2fd72a0771cfa7b14aa68d90f6976aa58a197",
+      "encoding": "utf-8-sig",
+      "line_count": 235,
+      "excerpts": [
+        {
+          "first_line": 4,
+          "last_line": 27,
+          "lines": [
+            "UnitType CityCenter",
+            "{",
+            "\tparent = PlayerOrWorldBuilding",
+            "\tproperties {",
+            "\t\thitpoints = 0",
+            "\t\tSizeX = 3.5",
+            "\t\tSizeY = 3",
+            "\t\tFootprintSizeX = 5",
+            "\t\tFootprintSizeY = 4.5",
+            "\t\tOffsetX = 0.75",
+            "\t\tOffsetY = 0.75",
+            "\t\tUndertextureSizeX = 4",
+            "\t\tUndertextureSizeY = 3",
+            "\t\tUndertextureOffsetX = -0.25",
+            "\t\tmass = 1",
+            "\t\tdisplayName = tx_utn_cityCenter_name",
+            "\t\tDisplayNameScenEdit = tx_utn_cityCenter_sname",
+            "\t\tVerboseTooltip = vtt_unit_CityCenter",
+            "\t\tpopCapacity = 40",
+            "\t\trequiredOpenSides = kBuildingOpenSides_PosX",
+            "\t\tRallyPlacementFlags = ( Resources | University | Warehouse | Fortress | Tower | Terrain | CityCenter | ConstructionSite )",
+            "\t}",
+            "\tsounds {",
+            "    \t}"
+          ]
+        }
+      ]
+    },
+    "db/Units/house.ddf": {
+      "archive": "db.zip",
+      "bytes": 9553,
+      "sha256": "45f08b9bad02edc2fe94d5e685a6993522bcdedcc810949e1b2a3c1baf429342",
+      "encoding": "utf-8-sig",
+      "line_count": 345,
+      "excerpts": [
+        {
+          "first_line": 4,
+          "last_line": 27,
+          "lines": [
+            "UnitType House",
+            "{",
+            "\townerType = PlayerOnly",
+            "\tparent = NoProduceBuilding",
+            "\tproperties {",
+            "\t\tpopCapacity = 5",
+            "\t\trps = BuildingCombat",
+            "\t\tSizeX = 1.5",
+            "\t\tSizeY = 1.5",
+            "\t\tFootprintSizeX = 3",
+            "\t\tFootprintSizeY = 3",
+            "\t\tOffsetX = 0.75",
+            "\t\tOffsetY = 0.75",
+            "\t\tUndertextureSizeX = 1.5",
+            "\t\tUndertextureSizeY = 1.5",
+            "\t\tmass = 1",
+            "\t\tdisplayName = tx_utn_house_name",
+            "\t\tDisplayNameScenEdit = tx_utn_house_sname",
+            "\t\tVerboseTooltip = vtt_unit_House",
+            "\t}",
+            "\tsounds {",
+            "    \t}",
+            "\tfullMapOverlay { sprite = spr_fullmap_house }",
+            "\tabilities = ["
+          ]
+        }
+      ]
+    },
+    "db/Units/dock.ddf": {
+      "archive": "db.zip",
+      "bytes": 3938,
+      "sha256": "69c84100d38a8f020fb35207c48ad5d787ee7e1224961ff9c9a5356a3f3b2b76",
+      "encoding": "utf-8-sig",
+      "line_count": 127,
+      "excerpts": [
+        {
+          "first_line": 4,
+          "last_line": 20,
+          "lines": [
+            "UnitType Dock",
+            "{",
+            "\tparent = Building",
+            "\tplacementType = Dock",
+            "\tproperties {",
+            "\t\tSizeX = 2",
+            "\t\tSizeY = 3",
+            "\t\tmass = 1",
+            "\t\tdisplayName = tx_utn_dock_name",
+            "\t\tDisplayNameScenEdit = tx_utn_dock_sname",
+            "\t\tVerboseTooltip = vtt_unit_Dock",
+            "\t\tRallyPlacementFlags = ( Dock | Water | Fish | Allied | Neutral )",
+            "\t}",
+            "\tsounds {",
+            "    \t}",
+            "\tfullMapOverlay { sprite = spr_fullmap_dock }",
+            "\tabilities = ["
+          ]
+        }
+      ]
+    },
+    "db/Simulation/Misc/territory.ddf": {
+      "archive": "db.zip",
+      "bytes": 3864,
+      "sha256": "13832cfd05c7f1b7ebec01629082e2f4b3ce691c3a4ccce8af366a1ad83bf6f6",
+      "encoding": "utf-8-sig",
+      "line_count": 113,
+      "excerpts": [
+        {
+          "first_line": 7,
+          "last_line": 14,
+          "lines": [
+            "DbTerritoryInfo TheTerritoryInfo",
+            "{",
+            "\t// what to scale cost of buildings constructed in unclaimed territory by",
+            "\tunclaimedCostModifier = 1.0",
+            "\t",
+            "\t// what to scale cost of buildings constructed in territory claimed by others",
+            "\totherClaimedCostModifier = 1.0",
+            "\t"
+          ]
+        },
+        {
+          "first_line": 28,
+          "last_line": 82,
+          "lines": [
+            "\t// what unit types and associated minimum counts are needed to capture ",
+            "\t// an unclaimed or disputed territory adjacent to one you control?",
+            "\tadjacentReq =",
+            "\t{",
+            "\t\ttypeCounts =",
+            "\t\t[",
+            "\t\t\t{ type = CityCenter \tcount = 1 }",
+            "\t\t]",
+            "\t}",
+            "\t",
+            "\t// what unit types and associated minimum counts are needed to capture ",
+            "\t// an unclaimed or disputed territory that is not adjacent to one you control?",
+            "\t// NOTE:  the \"non adjacent requirements\" should be a superset",
+            "\t// of the \"adjacent requirements\"",
+            "\tnonAdjacentReq =",
+            "\t{",
+            "\t\ttypeCounts =",
+            "\t\t[",
+            "\t\t\t{ type = CityCenter\tcount = 1 }",
+            "\t\t\t{ type = Fortress\tcount = 1 }",
+            "\t\t]",
+            "\t}",
+            "\t",
+            "\t// what unit types and associated minimum counts are needed to capture",
+            "\t// and unclaimed or disputed territory if the player has the parthenon wonder?",
+            "\tparthenonReq =",
+            "\t{",
+            "\t\ttypeCounts =",
+            "\t\t[",
+            "\t\t\t{ type = Barracks\tcount = 1 }",
+            "\t\t\t{ type = Mill\t\tcount = 1 }",
+            "\t\t]",
+            "\t}",
+            "\t",
+            "\t// what unit types and associated miniumum counts are needed to capture",
+            "\t// an unclaimed or disputed territory if the game is \"king of the hill\"",
+            "\tkingOfTheHillReq = ",
+            "\t{",
+            "\t\ttypeCounts =",
+            "\t\t[",
+            "\t\t\t{ type = KingOfTheHill count = 1 }",
+            "\t\t]",
+            "\t}",
+            "\t",
+            "\t// what unit types and associated minimum counts are needed to keep",
+            "\t// your ownership of a territory from being labeled \"disputed\"?",
+            "\t// NOTE: the \"undisputed requirements\" should be a subset",
+            "\t// of the \"adjacent requirements\"",
+            "\tundisputedReq =",
+            "\t{",
+            "\t\ttypeCounts =",
+            "\t\t[",
+            "\t\t\t{ type = CityCenter\tcount = 1 }",
+            "\t\t]",
+            "\t}"
+          ]
+        },
+        {
+          "first_line": 94,
+          "last_line": 110,
+          "lines": [
+            "\tmaximumReq =",
+            "\t{",
+            "\t\ttypeCounts =",
+            "\t\t[",
+            "\t\t\t{ type = CityCenter\tcount = 1 }",
+            "\t\t\t{ type = AirDefense\tcount = 7 \tshowInUI = 1 nameInUI = tx_utn_airdefense_tReqName }",
+            "\t\t\t{ type = CoastalDefense\tcount = 6 \tshowInUI = 1 nameInUI = tx_utn_coastdefense_tReqName }",
+            "\t\t\t{ type = Fortress\tcount = 2 \tshowInUI = 1 }",
+            "\t\t\t{ type = Wall_Tower\tcount = 7 \tshowInUI = 1 nameInUI = tx_utn_walltower_tReqName }",
+            "\t\t\t{ type = House\t\tcount = 6 \tshowInUI = 1 }\t\t\t// @NOTE houses requirement is needed for various power upgrades.  please consult Andrew before removing it",
+            "\t\t\t{ type = Market\t\tcount = 1 \tshowInUI = 1}\t",
+            "\t\t\t{ type = Outpost\tcount = 7 \tshowInUI = 1 }",
+            "\t\t\t{ type = Temple\t\tcount = 1 \tshowInUI = 1 }\t\t\t// @NOTE temple requirement is needed for \"Favor of the Gods\" region power to work correctly.  please consult Andrew before removing it",
+            "\t\t\t{ type = University\tcount = 1 \tshowInUI = 1 }",
+            "\t\t\t{ type = Missile_Silo\tcount = 4 \tshowInUI = 1 }",
+            "\t\t]",
+            "\t}"
+          ]
+        }
+      ]
+    },
+    "db/AreaEffects/dbareaeffects_territory.ddf": {
+      "archive": "db.zip",
+      "bytes": 3701,
+      "sha256": "4fba49499601b9cc4095c22a3665e106483d2578e3c584b1f8b48ed448008ff8",
+      "encoding": "utf-8-sig",
+      "line_count": 151,
+      "excerpts": [
+        {
+          "first_line": 4,
+          "last_line": 25,
+          "lines": [
+            "DbAreaEffectInfo TerritoryConstructionTime",
+            "{\t",
+            "\teffects = [",
+            "\t\t// unclaimed territory modifier",
+            "\t\tEffectTerritoryConstructionTime {",
+            "\t\t\trange = UnclaimedTerritory",
+            "\t\t\tmask = BuildSlowInNonOwnedTerritories // city centers are excluded (in code) for this effect type",
+            "\t\t\tplayer = Self",
+            "\t\t",
+            "\t\t\tscale = 2.00",
+            "\t\t}",
+            "\t\t",
+            "\t\t// claimed territory modifier",
+            "\t\tEffectTerritoryConstructionTime {",
+            "\t\t\trange = OtherClaimedTerritoryIncludeDisputed",
+            "\t\t\tmask = BuildSlowInNonOwnedTerritories // city centers are excluded (in code) for this effect type",
+            "\t\t\tplayer = Self",
+            "\t\t\t",
+            "\t\t\tscale = 3.00",
+            "\t\t}",
+            "\t]",
+            "}"
+          ]
+        }
+      ]
+    },
+    "db/Simulation/dbunittypeattributes.ddf": {
+      "archive": "db.zip",
+      "bytes": 34952,
+      "sha256": "104b17045f29ac5fbe919e3c047c0f66dd954290a547ce18129cbf167659d366",
+      "encoding": "utf-8-sig",
+      "line_count": 1924,
+      "excerpts": [
+        {
+          "first_line": 488,
+          "last_line": 497,
+          "lines": [
+            "// Units that can be slowed when building in non-owned territories",
+            "UnitTypeAttribute BuildSlowInNonOwnedTerritories",
+            "{\t",
+            "\tMaskMode = Any",
+            "",
+            "\t// Construction sites",
+            "\tAbilityMask = [Construction]",
+            "",
+            "\tUnitTypeFamilies = [\"Wall_Connector\"]",
+            "}"
+          ]
+        }
+      ]
+    },
+    "db/Text/dbtext_misctips.utf8": {
+      "archive": "db.zip",
+      "bytes": 12564,
+      "sha256": "38422499fb450ef5e89cc9a38791e67885f510fe4dbcb90142a3b87a5337672a",
+      "encoding": "utf-8-sig",
+      "line_count": 144,
+      "excerpts": [
+        {
+          "first_line": 130,
+          "last_line": 140,
+          "lines": [
+            "// Building placement feedback",
+            "vtt_buildPlace_error,\"\"\"Fehler beim Platzieren von %TYPE%:\"\"\"",
+            "vtt_buildPlace_errors,\"\"\"Fehler beim Platzieren von %TYPE%:\"\"\"",
+            "vtt_buildPlace_collision,\"\"\"Zusammenstoß mit einer unbeweglichen Einheit.\"\"\"",
+            "vtt_buildPlace_unevenTerr,\"\"\"Das Terrain ist zu uneben.\"\"\"",
+            "vtt_buildPlace_invalidTerr,\"\"\"Terraintyp ist ungültig.\"\"\"",
+            "vtt_buildPlace_terrPop,\"\"\"In diesem Territorium darf es kein weiteres Gebäude dieser Art geben.\"\"\"",
+            "vtt_buildPlace_initialCF,\"\"\"Dieses Gebäude ist nur während des anfänglichen Waffenstillstands auf Heimatterritorium zulässig.\"\"\"",
+            "vtt_buildPlace_borderPerm,\"\"\"Grenzgenehmigungen lassen nicht zu, dass Bürger dieses Territorium betreten.\"\"\"",
+            "vtt_buildPlace_unclaimedTerr,\"\"\"Das Bauen auf diesem nicht beanspruchten Territorium dauert doppelt so lange wie das Bauen auf einem Territorium, das Ihnen gehört.\"\"\"",
+            "vtt_buildPlace_otherClaimedTerr,\"\"\"Das Bauen auf diesem Territorium, das von einem anderen Spieler kontrolliert wird, dauert dreimal so lange wie das Bauen auf einem Territorium, das Ihnen gehört.\"\"\""
+          ]
+        }
+      ]
+    },
+    "db/UI/dbhotkeys.csv": {
+      "archive": "db.zip",
+      "bytes": 100732,
+      "sha256": "2f883afd02f66ce5ae3467fcf86700bb7dc4ce181ddd9fdf0c163e897bda5a3a",
+      "encoding": "utf-8-sig",
+      "line_count": 1146,
+      "excerpts": []
+    },
+    "DbHdrs/DbUnitDefEnums.h": {
+      "archive": "hdrs.zip",
+      "bytes": 15951,
+      "sha256": "c2fd2ef87d9927872b913a30eaaf267a096b7e4c5221e145020a7173afeb79e9",
+      "encoding": "utf-8-sig",
+      "line_count": 383,
+      "excerpts": [
+        {
+          "first_line": 77,
+          "last_line": 101,
+          "lines": [
+            "ENUM eUnitOwnerType {",
+            "\tkUnitOwnerType_PlayerOnly = 1,\t// only a player can have this unit (default)",
+            "\t\t\t\t\t\t\t\t\t// set to 1 so we don't get it unintentionally",
+            "\tkUnitOwnerType_WorldOnly,\t\t// only the world can have this unit",
+            "\tkUnitOwnerType_PlayerOrWorld,\t// player or world can have this unit",
+            "\tkUnitOwnerType_Invalid,\t\t\t// not a valid unit type, just used for inheritance",
+            "};",
+            "",
+            "//\tThis enum determines how the unit is placed by the UI",
+            "",
+            "ENUM eUnitPlacementType {",
+            "\tkUnitPlacementType_Default,\t\t// no constraints",
+            "\tkUnitPlacementType_Building,\t// building: rotate 45 degrees, tile bounds, flatten terr",
+            "\tkUnitPlacementType_Dock,\t\t// like building, but must build on coast",
+            "\tkUnitPlacementType_NearWater,\t// like dock, but rather than overlapping water just needs to be near water (eg for coastal defense)",
+            "\tkUnitPlacementType_DeepWater,\t// deep water only (e.g., fish resource)",
+            "\tkUnitPlacementType_Airport,\t\t// ???",
+            "\tkUnitPlacementType_Road,\t\t// road",
+            "\tkUnitPlacementType_Bridge,\t\t// bridge",
+            "\tkUnitPlacementType_Wall,\t\t// wall",
+            "\tkUnitPlacementType_Farm,\t\t// farm",
+            "\tkUnitPlacementType_OnOil,\t\t// Oil rigs get built on top of oil",
+            "\tkUnitPlacementType_OnUranium,\t// Uranium extraction buildings get built on top of uranium",
+            "\tkUnitPlacementType_Unplaceable,\t// cannot be explicitly placed (projectiles, some wall/road units)",
+            "};"
+          ]
+        },
+        {
+          "first_line": 309,
+          "last_line": 342,
+          "lines": [
+            "// So, starting from positive x, ccw around the axes going from low bit to",
+            "// high bit.  A one in a bit means that that side MUST be allowed to be open,",
+            "// and other buildings cannot be built adjacent to that side.",
+            "// X and Y are talking about the sides of the building as if it were placed in",
+            "// the world with zero rotation (which never happens).  Note that this does not",
+            "// necessarily correspond to the X and Y coordinates of the model.",
+            "ENUM eBuildingOpenSides {",
+            "\tkBuildingOpenSides_None = 0x80,\t\t\t\t// 1000 0000",
+            "\tkBuildingOpenSides_PosX = 0x81,\t\t\t\t// 1000 0001",
+            "\tkBuildingOpenSides_PosY = 0x82,\t\t\t\t// 1000 0010",
+            "\tkBuildingOpenSides_PosXPosY = 0x83,\t\t\t// 1000 0011",
+            "\tkBuildingOpenSides_NegX = 0x84,\t\t\t\t// 1000 0100",
+            "\tkBuildingOpenSides_PosXNegX = 0x85,\t\t\t// 1000 0101",
+            "\tkBuildingOpenSides_PosYNegX = 0x86,\t\t\t// 1000 0110\t",
+            "\tkBuildingOpenSides_PosXPosYNegX = 0x87,\t\t// 1000 0111",
+            "\tkBuildingOpenSides_NegY = 0x88,\t\t\t\t// 1000 1000",
+            "\tkBuildingOpenSides_PosXNegY = 0x89,\t\t\t// 1000 1001",
+            "\tkBuildingOpenSides_PosYNegY = 0x8A,\t\t\t// 1000 1010",
+            "\tkBuildingOpenSides_PosXPosYNegY = 0x8B,\t\t// 1000 1011",
+            "\tkBuildingOpenSides_NegXNegY = 0x8C,\t\t\t// 1000 1100",
+            "\tkBuildingOpenSides_PosXNegXNegY = 0x8D,\t\t// 1000 1101",
+            "\tkBuildingOpenSides_PosYNegXNegY = 0x8E,\t\t// 1000 1110",
+            "\tkBuildingOpenSides_PosXPosYNegXNegY = 0x8F\t// 1000 1111",
+            "};",
+            "",
+            "// This goes with the above enum.  Doesn't need to be used in .ddfs (that I know of)",
+            "// It's for doing bitwise comparisons with the above.",
+            "enum eBuildingSides",
+            "{",
+            "\tkBuildingSide_PosX = 0x1,",
+            "\tkBuildingSide_PosY = 0x2,",
+            "\tkBuildingSide_NegX = 0x4,",
+            "\tkBuildingSide_NegY = 0x8,",
+            "};"
+          ]
+        }
+      ]
+    },
+    "DbHdrs/DbUnitDefs.h": {
+      "archive": "hdrs.zip",
+      "bytes": 24827,
+      "sha256": "afde5529ed266cc3995dfa3c48eecc3fd17f2eac7db65c880d077ac277cd26c3",
+      "encoding": "utf-8-sig",
+      "line_count": 600,
+      "excerpts": [
+        {
+          "first_line": 66,
+          "last_line": 84,
+          "lines": [
+            "\t// for rectangular footprint, size is impassable area and footprint size",
+            "\t//   is the total area for placement and undertexture.",
+            "\t// for elliptical footprint, SizeX is radius along the major axis (middle",
+            "\t//   to front) and SizeY is radius along the minor axis (middle to right).",
+            "\t// the FootprintType enum determines what type of shape this unit occupies.",
+            "\tenum eFootprintType FootprintType;\t\t",
+            "\tfloat\tDiameter;\t\t\t// used with the circle type radius*2",
+            "\tfloat\tFootprintSizeX;\t\t// depending on the type of footprint this is interpreted differently",
+            "\tfloat\tFootprintSizeY;\t\t// they are ignored for ellipse and are the size of the rectangle if rectangle type",
+            "\tfloat\tSizeX;\t\t\t\t// used by both rectangle and circle",
+            "\tfloat\tSizeY;\t\t\t\t// used by both rectangle and circle",
+            "\t// those two values determine where the upper left corner of the impassable area ",
+            "\t// is placed relative to the upper left corner of the footprint, default is both corner are aligned",
+            "\tfloat\tOffsetX;",
+            "\tfloat\tOffsetY;",
+            "\tfloat\tUndertextureSizeX;\t\t// size of the unit's undertexture",
+            "\tfloat\tUndertextureSizeY;",
+            "\tfloat\tUndertextureOffsetX;\t// offset of the unit's undertexture",
+            "\tfloat\tUndertextureOffsetY;"
+          ]
+        },
+        {
+          "first_line": 135,
+          "last_line": 180,
+          "lines": [
+            "\tDBINDEX(DbSprite) m_citizenManagerCursorSprite;\t// sprite to use in placement in citizen manager",
+            "\tenum eUnitOwnerType ownerType;\t\t\t\t// owner type (eUOT_xxxx)",
+            "\tUSER enum eUnitOwnerType inheritedOwnerType; // computed post-load",
+            "\tenum eUnitPlacementType placementType;\t\t// placement type (eUPT_xxxx)",
+            "\tUSER enum eUnitPlacementType inheritedPlacementType;\t// computed post-load",
+            "\tDC(DbUnitTypeProperties) *properties;\t\t// properties (see above)",
+            "\tDC(DbUnitTypeSounds) *sounds;\t\t\t\t// unit type UI sounds",
+            "\tLSizedArray<VARDC> abilities;\t\t\t\t// array of variable abilities",
+            "",
+            "\t// Arrays of attribute bits to set and clear.  For each ancestor, bits are",
+            "\t// first set, and then cleared from the attributes and nonAttributes arrays,",
+            "\t// respectively.  You can override ancestors attributes.",
+            "\tLSizedArray<enum eUnitTypeAttr> attributes;\t",
+            "\tLSizedArray<enum eUnitTypeAttr> nonAttributes;",
+            "\t",
+            "",
+            "\t//for inheritance tracking:",
+            "\tUSERPTR(DbUnitTypeDef) m_pParent;\t\t\t\t// the parent of this DbUnitTypeDef, or NULL if root (?)",
+            "\tUSER LDynArray<uint16> m_aiChildren;\t\t// an array of the DBINDEXes of all the unit types descended",
+            "\t\t\t\t\t\t\t\t\t\t\t// from this DbUnitTypeDef.",
+            "",
+            "ENDVARS",
+            "\tenum eUnitOwnerType GetOwnerType()\t\t\t// get owner type via inheritance",
+            "\t{",
+            "\t\treturn inheritedOwnerType;",
+            "\t}",
+            "\tenum eUnitPlacementType GetPlacementType()\t// get placement type via inheritance",
+            "\t{",
+            "\t\treturn inheritedPlacementType;",
+            "\t}",
+            "\t//is this a unit that must be placed when created in game",
+            "\tbool IsPlaceableUnit()\t\t\t",
+            "\t{\t\t\t\t\t\t",
+            "\t\tswitch(inheritedPlacementType) ",
+            "\t\t{",
+            "\t\t\tcase kUnitPlacementType_Building:\t",
+            "\t\t\tcase kUnitPlacementType_Dock:",
+            "\t\t\tcase kUnitPlacementType_NearWater:\t",
+            "\t\t\tcase kUnitPlacementType_Airport:",
+            "\t\t\tcase kUnitPlacementType_Road:",
+            "\t\t\tcase kUnitPlacementType_Bridge:",
+            "\t\t\tcase kUnitPlacementType_Wall:\t",
+            "\t\t\tcase kUnitPlacementType_Farm:\t",
+            "\t\t\tcase kUnitPlacementType_OnOil:",
+            "\t\t\tcase kUnitPlacementType_OnUranium:",
+            "\t\t\t\treturn true;"
+          ]
+        }
+      ]
+    },
+    "DbHdrs/DbTerrainDefs.h": {
+      "archive": "hdrs.zip",
+      "bytes": 4776,
+      "sha256": "19fc7b1e07b6aca24cfe5e3605b600d976f1a1b3a95eac0a6a4de9a1b626c2b2",
+      "encoding": "utf-8-sig",
+      "line_count": 123,
+      "excerpts": [
+        {
+          "first_line": 16,
+          "last_line": 44,
+          "lines": [
+            "// the basic move type each terrain type can be classified into",
+            "// WARNING: if you modify this, you must also update eMovementSpeedType",
+            "ENUM eTerrainMoveType {",
+            "\tkTerrainMoveType_Land,\t\t\t// normal (grass) land",
+            "\tkTerrainMoveType_Swamp,\t\t\t// swamp or marsh",
+            "\tkTerrainMoveType_Cliff,\t\t\t// cliff (impassable -- use for cliff faces)",
+            "\tkTerrainMoveType_Mountain,\t\t// mountain (impassable)",
+            "\tkTerrainMoveType_Forest,\t\t// forested",
+            "\tkTerrainMoveType_Coast,\t\t\t// coast/beach",
+            "\tkTerrainMoveType_River,\t\t\t// river (shallow water)",
+            "\tkTerrainMoveType_Ocean,\t\t\t// ocean (deep water)",
+            "\tkNumTerrainMoveType,",
+            "};",
+            "// WARNING: if you modify this, you must also update eMovementSpeedType",
+            "",
+            "// WARNING: eMovementSpeedType must be kept in sync with eTerrainMoveType",
+            "ENUM eMovementSpeedType {",
+            "\t// the first part of the following is must match eTerrainMoveType",
+            "\tkMovementSpeedType_Land,\t\t// normal (grass) land",
+            "\tkMovementSpeedType_Swamp,\t\t// swamp or marsh",
+            "\tkMovementSpeedType_Cliff,\t\t// cliff (impassable -- use for cliff faces)",
+            "\tkMovementSpeedType_Mountain,\t// mountain (impassable)",
+            "\tkMovementSpeedType_Forest,\t\t// forested",
+            "\tkMovementSpeedType_Coast,\t\t// coast/beach",
+            "\tkMovementSpeedType_River,\t\t// river (shallow water)",
+            "\tkMovementSpeedType_Ocean,\t\t// ocean (deep water)",
+            "",
+            "\t// second part of this enum are special",
+            "\tkMovementSpeedType_Bridge,\t\t// this should be equal to last valid eTerrainMoveType + 1"
+          ]
+        }
+      ]
+    },
+    "DbHdrs/DBTerritoryDefs.h": {
+      "archive": "hdrs.zip",
+      "bytes": 2371,
+      "sha256": "7ff9370d3ec6e49d91cff07b9b8144334d89b5298bc0c6651e666c9dcb08074f",
+      "encoding": "utf-8-sig",
+      "line_count": 78,
+      "excerpts": [
+        {
+          "first_line": 44,
+          "last_line": 70,
+          "lines": [
+            "",
+            "",
+            "DATACLASS(DbTerritoryReq)",
+            "\t// array of type - count pairs",
+            "\tLSizedArray<DC(DbTerritoryTypeCount)*>\tm_typeCounts;",
+            "ENDCLASS",
+            "",
+            "",
+            "DATACLASS(DbTerritoryInfo)",
+            "\t// unit types and their minimum counts",
+            "\t// to claim adjacent & nonadjacent territories",
+            "\tDC(DbTerritoryReq)\t*m_adjacentReq;",
+            "\tDC(DbTerritoryReq)\t*m_nonAdjacentReq;",
+            "\tDC(DbTerritoryReq)\t*m_parthenonReq;",
+            "\tDC(DbTerritoryReq)\t*m_kingOfTheHillReq;",
+            "",
+            "\t// unit types and their minimum counts",
+            "\t// to keep territory ownership from being labeled \"disputed\"",
+            "\tDC(DbTerritoryReq)\t*m_undisputedReq;",
+            "",
+            "\t// unit types and their maximum count per territory",
+            "\tDC(DbTerritoryReq)\t*m_maximumReq;",
+            "",
+            "\t// territory related upgradeable factors",
+            "\tDC(DbUpgradeableTerritoryFactors) *m_upgradeableFactors;",
+            "",
+            "\t// what to scale cost of buildings constructed in unclaimed territory by"
+          ]
+        }
+      ]
+    }
+  },
+  "manual": {
+    "path": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\Manual.pdf",
+    "sha256": "c06e78a132b2c200b55d16ec53f959115b0680a4509677986c840fb5dcc51483",
+    "pages": [
+      {
+        "pdf_page": 9,
+        "printed_pages": [
+          16,
+          17
+        ],
+        "finding": "One City Center per territory; citizens construct it; city limit increases in epochs4/7/10/13."
+      },
+      {
+        "pdf_page": 10,
+        "printed_pages": [
+          18,
+          19
+        ],
+        "finding": "Adjacent unclaimed territory: City Center; nonadjacent: City Center+Fortress; territorial building limits."
+      },
+      {
+        "pdf_page": 11,
+        "printed_pages": [
+          20,
+          21
+        ],
+        "finding": "Buildings may be constructed on unclaimed or other-player territory with a build-time penalty and type limits."
+      }
+    ],
+    "verification": "Full relevant PDF pages extracted and independently rendered/viewed locally."
+  },
+  "binary": {
+    "path": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\Unofficial Patch Files\\EnabledUP15Units\\EE2.exe",
+    "sha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+    "work_copy_sha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+    "limit": "EnabledUP15Units executable with appended patch hooks, not the root EE2.exe launcher. BASE data and patch binary are distinct provenance layers.",
+    "placement_constants": [
+      {
+        "address": "0x00B42604",
+        "type": "f",
+        "value": 1.5707963705062866,
+        "bytes_hex": "db0fc93f"
+      },
+      {
+        "address": "0x00B41414",
+        "type": "f",
+        "value": 6.2831854820251465,
+        "bytes_hex": "db0fc940"
+      },
+      {
+        "address": "0x00C6A8B4",
+        "type": "f",
+        "value": 4.0,
+        "bytes_hex": "00008040"
+      },
+      {
+        "address": "0x00B531A0",
+        "type": "d",
+        "value": 1.5,
+        "bytes_hex": "000000000000f83f"
+      },
+      {
+        "address": "0x00C6A8B8",
+        "type": "f",
+        "value": 1.7999999523162842,
+        "bytes_hex": "6666e63f"
+      },
+      {
+        "address": "0x00C6A8BC",
+        "type": "f",
+        "value": 0.10000000149011612,
+        "bytes_hex": "cdcccc3d"
+      },
+      {
+        "address": "0x00C6A8C0",
+        "type": "f",
+        "value": 0.25,
+        "bytes_hex": "0000803e"
+      },
+      {
+        "address": "0x00C6A8C4",
+        "type": "i",
+        "value": 3,
+        "bytes_hex": "03000000"
+      }
+    ]
+  },
+  "ghidra": {
+    "project": "ghidra-project/EE2-Engine.gpr",
+    "process": "EE2-engine.exe",
+    "flags": [
+      "-readOnly",
+      "-noanalysis"
+    ],
+    "scripts": [
+      "scripts/ExportResourceTargets.java",
+      "scripts/ExportPlacementEvidence.java"
+    ],
+    "files": [
+      {
+        "path": "analysis/building-placement-bounds.c",
+        "sha256": "1bcce28d1f983b9a9cc4c2f96107647fa8656a0e19bd2204bbda380fa3476a4f",
+        "addresses": [
+          "0085fa80",
+          "0085ff80",
+          "00870270",
+          "00fa7b01",
+          "007783c0"
+        ]
+      },
+      {
+        "path": "analysis/building-placement-coast-direction.c",
+        "sha256": "802851a0e9cf9aad7a31998c9cdd5b330160da02c9adee9a8326d31037fa9c76",
+        "addresses": [
+          "00716270",
+          "0070fb00",
+          "0086003b",
+          "00860200",
+          "00860590",
+          "00860950"
+        ]
+      },
+      {
+        "path": "analysis/building-placement-controls.c",
+        "sha256": "7b91bfd13241947b6abe5b8fc0d5c2553b5e52aabc1b9744dc5d2be4a4c52ec1",
+        "addresses": [
+          "00776730",
+          "00721a70",
+          "00721b70",
+          "00776960"
+        ]
+      },
+      {
+        "path": "analysis/building-placement-dock-cells.c",
+        "sha256": "dfa44c498a18ac83189c93f696c784080183e7b5a6bd45f11ccaeefc2645a4b2",
+        "addresses": [
+          "008620c0",
+          "00715ad0"
+        ]
+      },
+      {
+        "path": "analysis/building-placement-dock-mask.c",
+        "sha256": "83006b2aac32ec85cb0817c5ab3354c466a91901ac1969bf879dd1c0391f3c43",
+        "addresses": [
+          "0085f960",
+          "00860d00",
+          "00716490",
+          "00fa7b65"
+        ]
+      },
+      {
+        "path": "analysis/building-placement-events.c",
+        "sha256": "a6c9eab64bde62f78331fb65f917d1d378dc0fa576a93440b2d31742b9ab32ce",
+        "addresses": [
+          "00779e30",
+          "00776b80",
+          "0077a0c0",
+          "00784ae0",
+          "007783c0",
+          "0077a3b0"
+        ]
+      },
+      {
+        "path": "analysis/building-placement-keyboard.c",
+        "sha256": "61baa6ad418c733011b0a859a9d3637867baa64637f260c819d7eb6095b5a6aa",
+        "addresses": [
+          "00a2fdb0",
+          "00a300f0",
+          "00a30110",
+          "00a30130",
+          "00860a10"
+        ]
+      },
+      {
+        "path": "analysis/building-placement-mask-angle.c",
+        "sha256": "4469ab6919236589883bfda3b3f2449614df69eb5a987f4161c235d3896153d6",
+        "addresses": [
+          "00862220",
+          "00a207e0",
+          "00871f30"
+        ]
+      },
+      {
+        "path": "analysis/building-placement-rotation-dock.c",
+        "sha256": "0791206b235a909eb682f7f80807fc0092c90aedeeb482aba82059eea354e199",
+        "addresses": [
+          "00779580",
+          "007795f0",
+          "0077a260",
+          "0077a310",
+          "0077a540",
+          "00778470",
+          "007784a0"
+        ]
+      },
+      {
+        "path": "analysis/building-placement-rotation-input.c",
+        "sha256": "bec0796ed98adc15978a7cc1df1dd3efd60922360f004cc574d6ec2574290a5c",
+        "addresses": [
+          "00a300d0",
+          "007783d9",
+          "007783ee",
+          "0085feb0"
+        ]
+      },
+      {
+        "path": "analysis/building-placement-runtime.c",
+        "sha256": "77c5c1ffb1c5c3d85f69e832c78c6321c5ff9ae4699edf506e66256ca3ea90ed",
+        "addresses": [
+          "00778080",
+          "00784890",
+          "00776da0"
+        ]
+      },
+      {
+        "path": "analysis/building-placement-terrain-cell.c",
+        "sha256": "616430e9c3aa61450233f9c553b933425181d31ec2a2f7ad1da71afc0cd5e919",
+        "addresses": [
+          "004a30c0"
+        ]
+      },
+      {
+        "path": "analysis/building-placement-terrain-types.c",
+        "sha256": "6284ece8947959869e8abbb8bf5ba7b8712d1aaa3a0568bd244b931a10c990db",
+        "addresses": [
+          "004ab060",
+          "006bade0"
+        ]
+      }
+    ],
+    "limits": [
+      "Pseudocode is not original source. Partial continuations and patch thunks require assembly verification.",
+      "One mistyped exploratory address007784AE produced no function; it is not evidence or an implementation target."
+    ],
+    "read_only_log": "Headless reported Processing read-only project file and Discarding changes for transient decoded functions."
+  },
+  "rules": {
+    "city_center": {
+      "placement": "inherits Building from PlayerOrWorldBuilding; not restricted by DDF to already owned territory",
+      "claim_adjacent": {
+        "CityCenter": 1
+      },
+      "claim_nonadjacent": {
+        "CityCenter": 1,
+        "Fortress": 1
+      },
+      "undisputed": {
+        "CityCenter": 1
+      },
+      "maximum_per_territory": {
+        "CityCenter": 1,
+        "House": 6,
+        "Market": 1,
+        "Temple": 1,
+        "University": 1,
+        "Fortress": 2
+      },
+      "native_size": [
+        3.5,
+        3.0
+      ],
+      "native_footprint": [
+        5.0,
+        4.5
+      ],
+      "native_offset": [
+        0.75,
+        0.75
+      ],
+      "construction_time_outside_own": "CityCenter excluded; ordinary qualifying construction times2x unclaimed and3x other-owned/disputed.",
+      "resource_cost_scale": {
+        "unclaimed": 1.0,
+        "other_claimed": 1.0
+      },
+      "limitations": "Border permissions, terrain, collision, ceasefire and per-territory maxima are separate checks. Timing of construction-site reservations and complete claim-update order not audited here."
+    },
+    "rotation": {
+      "normal_building_key": "left or right CTRL on new press",
+      "normal_building_delta_radians": -1.5707963705062866,
+      "normal_building_delta_degrees": -90,
+      "angle_period": 6.2831854820251465,
+      "building_vtable": "0x00B4EE34",
+      "rotation_slot": "0x44",
+      "rotation_entry": "0x007783C0",
+      "verified_original_continuation": "0x007783D9 / 0x007783EE",
+      "keyboard_state_base": "0x00D10CB0",
+      "keyboard_indices": [
+        29,
+        157
+      ],
+      "key_names_table": "0x00C83708",
+      "key_names": {
+        "29": "LCTRL",
+        "157": "RCTRL"
+      },
+      "note": "Header comment says rotate45degrees; actual step is90degrees. Do not infer45degree quantization from the header comment.",
+      "patch_hook": "0x007783D3 -> thunk0x00FA7758 ->0x00FA7B01; callback0x0D may override input. Verified continuation still uses90degree subtraction."
+    },
+    "dock": {
+      "placement_type": 2,
+      "native_size": [
+        2.0,
+        3.0
+      ],
+      "vtable": "0x00B4F1EC",
+      "manual_rotation_slot": "0x44 ->0x00784AE0, immediate RET",
+      "orientation": "automatic coast alignment; not normal CTRL rotation",
+      "coast_tangent": "0x00716270 samples circle for two >=0 / <0 terrain-height transitions and normalizes their difference.",
+      "water_normal": "0x00716490 tests normal(-t.y,t.x) at center+radius*normal and then its opposite; selects side with sampled terrain height<0.",
+      "terrain_height_lookup": "0x0070FB00, unclamped when flag0",
+      "native_radius": 6.0,
+      "radius_source": "float0x00C6A8B4=4.0 * double0x00B531A0=1.5",
+      "native_yaw_formula": "wrap_0_2pi(atan2(waterNormal.y,waterNormal.x)+pi/2)",
+      "native_angle_function": "0x00A207E0 FPATAN(y,x), add2pi if negative",
+      "near_water_type3_difference": "same water-facing normal but without added pi/2",
+      "bound_transform": "0x00871F30 uses negative yaw to transform rectangle; own engine/render coordinate mapping needs explicit adapter.",
+      "validation_entry": "0x00862220 case2",
+      "validation": [
+        "successful coast orientation(+0x69)",
+        "valid footprint bounds(+0x68)",
+        "native cell test0x008620C0",
+        "uneven terrain check",
+        "territory type maximum",
+        "object/building collision"
+      ],
+      "cell_predicate": {
+        "entry": "0x008620C0",
+        "water_definition": "sampled terrain height<0",
+        "land_fraction_min": 0.1,
+        "water_fraction_min": 0.25,
+        "required_water_cell_type": 7,
+        "required_water_cell_count_min": 3,
+        "forbidden_water_cell_type": 6,
+        "cell_type_field": "+0xE in object from position lookup0x004A30C0",
+        "header_enum_names": {
+          "6": "River (shallow water)",
+          "7": "Ocean (deep water)"
+        },
+        "semantic_limit": "Raw field values and native header enum names verified separately; full runtime cell-construction binding not claimed."
+      },
+      "maximum_sampled_height": 1.7999999523162842,
+      "height_check": "0x00715AD0(...,0,0,&maximum) returns maximum sampled terrain height, not max-min slope. Dock rejects maximum>1.8 with uneven-terrain UI bit4.",
+      "limits": "Native-to-own-world scaling, terrain cell semantics and continuous geometry must be kept distinct from a nearest-eight-direction own-engine adapter."
+    }
+  },
+  "open_questions": [
+    "Complete patch override/VFS priority and installed DLL input remapping.",
+    "Construction-site count reservation timing and all territory-claim state transitions.",
+    "Exact native-world to own game scale, terrain tessellation and full slope/collision geometry equivalence."
+  ]
+}

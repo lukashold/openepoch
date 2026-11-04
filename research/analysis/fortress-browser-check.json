@@ -1,0 +1,85 @@
+{
+  "format": "fortress-browser-check-v1",
+  "status": "passed",
+  "createdUTC": "2026-10-31T12:11:21.432496+00:00",
+  "browser": "Windows in-app Chromium,1280x720; not a macOS execution test",
+  "url": "http://127.0.0.1:8126/?rules=ee2&build=fortress1&qa=1",
+  "wasmSha256": "98cc80a34f8985e2fc183aa431726e58e8284556eef830202188184694626530",
+  "baseWasmSha256": "26cdb7342ec868b94127df99c2f3d77304915bfc46e9f5d9ac947a6578c1670e",
+  "seed": 1,
+  "aiOpponents": 1,
+  "startingEpoch": 1,
+  "visibility": 2,
+  "startingSupplies": "Viel:800 native basic resources,400Tin",
+  "noCheatsUsed": true,
+  "construction": {
+    "building": "Fortress",
+    "id": 56,
+    "topLeftTile": [
+      53,
+      56
+    ],
+    "rotationDegrees": 90,
+    "tileBBox": [
+      5,
+      5
+    ],
+    "initialPlacementError": 0,
+    "woodBefore": 800,
+    "stoneBefore": 800,
+    "woodAfter": 500,
+    "stoneAfter": 500,
+    "baseConstructionSeconds": 120,
+    "browserSpeed": 4,
+    "completedByRealCitizen": true,
+    "displayedHp": [
+      4200,
+      4200
+    ],
+    "baseDamage": 75,
+    "range": 7,
+    "territories": 1,
+    "population": "5/40"
+  },
+  "garrison": {
+    "command": "select idle citizen, right-click Fortress",
+    "units": 1,
+    "occupiedSlots": 1,
+    "capacity": 10,
+    "attackBonusPercent": 3,
+    "healPointsPerSecond": 2
+  },
+  "saveLoad": {
+    "savedThroughUI": true,
+    "reloadedPage": true,
+    "loadedThroughContinueButton": true,
+    "fortressAndGarrisonRetained": true,
+    "resourcesRetained": true,
+    "finalUiSingular": "1 Einheit"
+  },
+  "territoryInspection": {
+    "knownNeutralSelectable": true,
+    "adjacentId": 4,
+    "adjacentText": "Angrenzendes freies Gebiet: Ein eigenes Stadtzentrum genügt für den Gebietsanspruch.",
+    "isolatedId": 2,
+    "isolatedText": "Abgelegenes freies Gebiet: Für den Gebietsanspruch brauchst du ein Stadtzentrum und eine eigene Festung.",
+    "neutralMapClickSelectedId": 2,
+    "inspectionLegendPresent": true,
+    "jumpButtonClosedDialogAndToasted": "Territorium 3"
+  },
+  "rendering": {
+    "nativeModelBindings": 156,
+    "exactAdditionalEpochIcons": 26,
+    "groundBindings": 13,
+    "groundDrawn": 2,
+    "groundErrors": [],
+    "consoleWarningsOrErrors": [],
+    "groundPolicy": "first-rural-slot (native epoch/urban selector unresolved)"
+  },
+  "screenshots": [
+    "../../OpenEpoch/fortress-placement-preview.jpg",
+    "../../OpenEpoch/fortress-garrison-completed.jpg",
+    "../../OpenEpoch/fortress-territory-requirements.jpg"
+  ],
+  "scope": "Natural local skirmish/UI/GPU/save inspection. All15-epoch stat, rotated garrison, combat, diplomacy and encoded two-peer lockstep regressions are separately reported; no manual internet multiplayer or physical macOS execution claim."
+}

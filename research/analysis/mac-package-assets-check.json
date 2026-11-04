@@ -1,0 +1,43 @@
+{
+  "format": "portable-assets-check-v1",
+  "status": "passed",
+  "scope": "Portable original media/runtime URL audit only; no original archives/EXE or original installation needed. Does not claim a physical Mac/Safari or GPU execution test.",
+  "latestLabel": "fortress1 freshly extracted complete Mac package",
+  "summaryOnly": true,
+  "fullLocalReportSha256": "f7395a09ed3a8286c50154b401ffa25038379a9027c5b16c4ac49a07edf35d1a",
+  "note": "Compact repository copy. The complete per-reference inventory remains in the local research report and source archive.",
+  "runs": [
+    {
+      "label": "extracted-package",
+      "status": "passed",
+      "fileCount": 2693,
+      "runtimeReferenceCount": 9754,
+      "uniqueRuntimeTargets": 2590,
+      "comparison": {
+        "referenceDocs": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\OpenEpoch\\docs",
+        "referenceFileCount": 2660,
+        "packageFileCount": 2660,
+        "missing": [],
+        "extra": [],
+        "changed": []
+      },
+      "checkerSha256": "6b38fa5b9596cda47cd35077e246c5d081359e43180b610f704bf708bce32571"
+    },
+    {
+      "label": "fortress1 freshly extracted complete Mac package",
+      "status": "passed",
+      "fileCount": 2901,
+      "runtimeReferenceCount": 10435,
+      "uniqueRuntimeTargets": 2798,
+      "comparison": {
+        "referenceDocs": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\OpenEpoch\\docs",
+        "referenceFileCount": 2867,
+        "packageFileCount": 2867,
+        "missing": [],
+        "extra": [],
+        "changed": []
+      },
+      "checkerSha256": "6b38fa5b9596cda47cd35077e246c5d081359e43180b610f704bf708bce32571"
+    }
+  ]
+}

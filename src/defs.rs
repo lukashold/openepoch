@@ -13,6 +13,13 @@ pub const F_DETECT: u16 = 2;
 pub const F_STEALTH: u16 = 4;
 pub const F_PLANE: u16 = 8;
 pub const F_TRANSPORT: u16 = 16;
+pub const F_RESEARCH: u16 = 32;
+pub const F_EXTRACT: u16 = 64;
+pub const F_DROPOFF:u16=128;
+pub const F_GARRISON:u16=256;
+pub const UNIVERSITY_SLOTS: usize = 3;
+// db.zip!db/Units/university.ddf: UniversityEpoch1Garrison overrides the base ability.
+pub const UNIVERSITY_RATE: f32 = 0.03;
 pub const CARGO_MAX: usize = 10;
 
 // Weapon kinds.
@@ -127,13 +134,30 @@ pub const DOCK: u8 = 5;
 pub const AIRFIELD: u8 = 6;
 pub const TOWER: u8 = 7;
 pub const WORKER: u8 = 8;
+pub const UNIVERSITY: u8 = 47;
+pub const MILL: u8 = 48;
+pub const STABLE: u8 = 49;
+pub const MARKET: u8 = 50;
+pub const TEMPLE: u8 = 51;
+pub const WAREHOUSE: u8 = 52;
+pub const OIL_RIG: u8 = 53;
+pub const URANIUM_MINE: u8 = 54;
+pub const HERC_FACILITY:u8=55;
+pub const FORTRESS:u8=56;
 pub const BUILT_BY_WORKER: u8 = 255;
 
-pub const EPOCH_NAMES: [&str; 6] = ["Stone Age", "Bronze Age", "Middle Ages", "Industrial Age", "Modern Age", "Atomic Age"];
+#[cfg(not(feature = "ee2-reference"))]
+pub const EPOCH_NAMES: [&str; 8] = ["Steinzeit", "Bronzezeit", "Mittelalter", "Industriezeitalter", "Moderne", "Atomzeitalter", "Synthetisches Zeitalter", "Nanozeitalter"];
+#[cfg(feature = "ee2-reference")]
+pub use crate::ee2_research::EPOCH_NAMES;
 /// Cost to advance *to* epoch index i (index 0 unused).
-pub const EPOCH_COST: [[u16; 3]; 6] = [[0, 0, 0], [400, 300, 0], [800, 600, 300], [1200, 900, 700], [1800, 1200, 1300], [2500, 1800, 2200]];
-pub const EPOCH_TIME: f32 = 40.0;
-pub const MAX_EPOCH: u8 = 5;
+pub const EPOCH_COST: [[u16; 3]; 8] = [[0, 0, 0], [400, 300, 0], [800, 600, 300], [1200, 900, 700], [1800, 1200, 1300], [2500, 1800, 2200], [3500, 2500, 3000], [5000, 3500, 4500]];
+pub const EPOCH_TIME: f32 = if cfg!(feature = "ee2-reference") { 15.0 } else { 40.0 };
+pub const MAX_EPOCH: u8 = if cfg!(feature = "ee2-reference") { 14 } else { 7 };
+pub const ORIGINAL_RESEARCH0: u8 = 64;
+pub fn original_research(item: u8) -> bool {
+    cfg!(feature = "ee2-reference") && (ORIGINAL_RESEARCH0..ORIGINAL_RESEARCH0 + 180).contains(&item)
+}
 
 const fn bld(name: &'static str, epoch: u8, size: f32, hp: f32, cost: [u16; 3], time: f32, dom: u8, flags: u16, wp: Wpn) -> Def {
     Def { name, epoch, until: 99, dom, building: true, size, hp, speed: 0.0, sight: 9.0, armor: A_BLD, cost, time, pop: 0, made_at: BUILT_BY_WORKER, flags, w: [wp, NOW] }
@@ -147,7 +171,15 @@ const fn unit(name: &'static str, epoch: u8, until: u8, dom: u8, made_at: u8, co
 
 const G: u8 = LAND | SEA; // "surface" targets
 
-pub const DEFS: &[Def] = &[
+#[cfg(not(feature = "ee2-reference"))]
+pub const DEFS: &[Def] = &legacy_defs();
+#[cfg(feature = "ee2-reference")]
+pub const DEFS: &[Def] = &crate::ee2_profile::apply(BASE_DEFS);
+const fn legacy_defs()->[Def;53]{let mut d=[BASE_DEFS[0];53];let mut i=0;while i<53 {d[i]=BASE_DEFS[i];i+=1;}d}
+#[cfg(feature="ee2-reference")]
+pub(crate) const fn prototype_defs()->[Def;57]{BASE_DEFS}
+
+const BASE_DEFS: [Def; 57] = [
     // ---- buildings (ids 0..=7) ----
     bld("Town Center", 1, 4.0, 2400.0, [0, 400, 300], 60.0, LAND, F_DETECT, w(7.0, 10.0, 1.5, W_ARROW, G | AIR, 0.0)),
     bld("House", 0, 2.0, 500.0, [0, 60, 0], 14.0, LAND, 0, NOW),
@@ -198,6 +230,24 @@ pub const DEFS: &[Def] = &[
     unit("Gunship", 5, 99, AIR, AIRFIELD, [100, 0, 450], 20.0, 2, 450.0, 5.0, A_AIR, 1.6, F_DETECT, w(7.0, 60.0, 1.6, W_MISSILE, G, 0.5), w(4.5, 90.0, 2.5, W_TORP, SUB, 0.0)),
     // ---- appended later (ids are stable: saves and sprites index into this table) ----
     unit("Transport Ship", 1, 99, SEA, DOCK, [0, 150, 30], 16.0, 2, 500.0, 3.0, A_SHIP, 2.2, F_TRANSPORT, NOW, NOW),
+    // Original prototype designs, not reconstructed EE2 definitions. Stable ids 43..46.
+    unit("Sentinel Mech", 6, 99, LAND, WORKSHOP, [250, 0, 700], 32.0, 4, 1800.0, 3.0, A_VEH, 1.8, F_DETECT, w(9.0, 170.0, 1.8, W_SHELL, G, 1.0), w(9.0, 90.0, 1.5, W_MISSILE, AIR, 0.0)),
+    unit("Aurora Interceptor", 6, 99, AIR, AIRFIELD, [150, 0, 800], 28.0, 3, 700.0, 12.0, A_AIR, 1.8, F_PLANE, w(10.0, 140.0, 1.4, W_MISSILE, AIR, 0.0), w(6.0, 90.0, 1.2, W_BULLET, G, 0.0)),
+    unit("Leviathan Sub", 7, 99, SUB, DOCK, [350, 0, 2200], 48.0, 6, 2400.0, 3.5, A_SHIP, 3.2, F_STEALTH | F_DETECT, w(12.0, 480.0, 3.0, W_TORP, SEA | SUB, 0.0), NOW),
+    unit("Aegis Hover Tank", 7, 99, LAND, WORKSHOP, [300, 0, 1100], 36.0, 5, 2200.0, 4.5, A_VEH, 1.9, F_DETECT, w(11.0, 230.0, 1.7, W_SHELL, G, 1.4), NOW),
+    // Building economics and meshes are our own; research hosts follow the base EE2 tree.
+    bld("University", 0, 3.0, 1400.0, [0, 250, 100], 35.0, LAND, F_RESEARCH, NOW),
+    bld("Mill", 0, 3.0, 1100.0, [0, 180, 50], 26.0, LAND, 0, NOW),
+    bld("Stable", 0, 3.0, 1200.0, [0, 180, 0], 24.0, LAND, 0, NOW),
+    bld("Market", 0, 3.0, 1100.0, [0, 200, 50], 28.0, LAND, 0, NOW),
+    bld("Temple", 0, 3.0, 1300.0, [0, 220, 100], 30.0, LAND, 0, NOW),
+    bld("Warehouse", 0, 2.0, 850.0, [0, 120, 0], 20.0, LAND, 0, NOW),
+    bld("Oil Rig", 3, 2.0, 1000.0, [0,100,0], 45.0, LAND, F_EXTRACT, NOW),
+    bld("Uranium Mine", 6, 2.0, 1000.0, [0,100,0], 45.0, LAND, F_EXTRACT, NOW),
+    bld("HercFacility", 6, 4.0, 3000.0, [0,0,250], 45.0, LAND, 0, NOW),
+    // EE2-only appended definition. Verified native fields are applied below
+    // by the BASE unit importer; raster footprint is an explicit adapter.
+    bld("Fortress", 0, 5.0, 4200.0, [0,300,0], 120.0, LAND, F_GARRISON, w(7.0,75.0,3.0,W_ARROW,G,0.0)),
 ];
 
 // ---------------------------------------------------------------- technologies
@@ -259,4 +309,8 @@ pub const TECHS: &[Tech] = &[
     tech("Steel Hulls", "Ships take 20% less damage", DOCK, 4, [0, 200, 700], 45.0, T_DEF, C_SHIP, 0.8),
     tech("Radar Gunsights", "Aircraft deal 20% more damage", AIRFIELD, 4, [200, 0, 600], 45.0, T_ATK, C_AIR, 1.2),
     tech("Composite Airframes", "Aircraft take 20% less damage", AIRFIELD, 5, [300, 0, 900], 50.0, T_DEF, C_AIR, 0.8),
+    tech("Autonomous Industry", "Workers gather another 30% faster", TC, 6, [600, 600, 900], 60.0, T_GATHER, 0, 1.3),
+    tech("Adaptive Armour", "Vehicles take another 20% less damage", WORKSHOP, 6, [0, 500, 1200], 60.0, T_DEF, C_VEH, 0.8),
+    tech("Nano Fabrication", "Workers gather another 35% faster", TC, 7, [800, 800, 1500], 75.0, T_GATHER, 0, 1.35),
+    tech("Deep Sea Sensors", "Naval weapons deal another 25% damage", DOCK, 7, [0, 600, 1800], 70.0, T_ATK, C_SHIP, 1.25),
 ];

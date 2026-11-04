@@ -1,0 +1,6109 @@
+{
+  "scope": "Explicit base db.zip, 180 stable research nodes. Nine-resource fields and population capacity are distinct; role adapters and unsupported abilities remain explicit. Tooltip-only factors never create runtime effects.",
+  "factor_source": {
+    "archive": "db.zip",
+    "entry": "db/TechTree/upgrade_factorset.csv",
+    "sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+  },
+  "fields": {
+    "HitPoints": 0,
+    "Damage": 1,
+    "Speed": 2,
+    "BuildTime": 3,
+    "Cost": 4,
+    "LOS": 5,
+    "Range": 6,
+    "GatherTech": 7,
+    "GarrisonSlots": 11,
+    "PopCap": 18,
+    "GatherFood": 8,
+    "GatherFood_NoTooltip": 8,
+    "GatherWood": 9,
+    "GatherWood_NoTooltip": 9,
+    "GatherIron": 10,
+    "GatherIron_NoTooltip": 10,
+    "GatherStone": 12,
+    "GatherStone_NoTooltip": 12,
+    "GatherGold": 13,
+    "GatherGold_NoTooltip": 13,
+    "GatherTin": 14,
+    "GatherTin_NoTooltip": 14,
+    "GatherSaltpeter": 15,
+    "GatherSaltpeter_NoTooltip": 15,
+    "GatherOil": 16,
+    "GatherOil_NoTooltip": 16,
+    "GatherUranium": 17,
+    "GatherUranium_NoTooltip": 17
+  },
+  "summary": {
+    "runtime_effects": 187,
+    "unsupported_factors": 82,
+    "tooltip_only_factors": 6,
+    "deduplicated_factors": 0
+  },
+  "nodes": [
+    {
+      "id": "Economic1_1",
+      "label": "Jahreszeitabhängige Jagdgruppen",
+      "host": "CityCenter",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:47",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E1_Slot1a",
+          "factor": "Cost",
+          "targets": [
+            0,
+            1
+          ],
+          "mask": 3,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:4",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E1_Slot1b",
+          "factor": "BuildTime",
+          "targets": [
+            0,
+            1
+          ],
+          "mask": 3,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:5",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic1_2",
+      "label": "Primitive Vorratslager",
+      "host": "Warehouse",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:48",
+      "adapted_effects": 4,
+      "effects": [
+        {
+          "factor_id": "BasicGather_Food_NoTooltip",
+          "factor": "GatherFood_NoTooltip",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 8,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:394",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "BasicGather_Wood_NoTooltip",
+          "factor": "GatherWood_NoTooltip",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 9,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:395",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "BasicGather_Stone_NoTooltip",
+          "factor": "GatherStone_NoTooltip",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 12,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:396",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "BasicGather_Gold_NoTooltip",
+          "factor": "GatherGold_NoTooltip",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 13,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:397",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [
+        {
+          "": "BasicGather_Tooltip",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TT_BasicGathering",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "GatherBasic_Tooltip",
+          "METHOD": "",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:398",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic1_3",
+      "label": "Steinhauergewerbe",
+      "host": "Barracks",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:49",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E1_Slot3a",
+          "factor": "Cost",
+          "targets": [
+            10,
+            12,
+            15,
+            16
+          ],
+          "mask": 103424,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:7",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E1_Slot3b",
+          "factor": "BuildTime",
+          "targets": [
+            10,
+            12,
+            15,
+            16
+          ],
+          "mask": 103424,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:8",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic1_4",
+      "label": "Fruchtbarkeitsrituale",
+      "host": "CityCenter",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:50",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E1_Slot4a",
+          "factor": "Cost",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:9",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E1_Slot4b",
+          "factor": "BuildTime",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:10",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military1_1",
+      "label": "Weberei",
+      "host": "CityCenter",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:55",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E1_Slot1a",
+          "factor": "HitPoints",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 0,
+          "method": 0,
+          "value": 20.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:19",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military1_2",
+      "label": "Stein-Feinbearbeitung",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:56",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "MilitaryTechUpgrade_E1_Slot2a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "SubjectToCapture",
+          "AFFECTED UNITS TOOLTIP": "tt_tt_allBuildings",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "1",
+          "FACTOR": "CaptureResistance",
+          "METHOD": "AddPermMul",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:20",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Military1_3",
+      "label": "Feuergehärtete Waffen",
+      "host": "Barracks",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:57",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E1_Slot3a",
+          "factor": "Damage",
+          "targets": [
+            9,
+            11,
+            13,
+            14
+          ],
+          "mask": 27136,
+          "field": 1,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:21",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "MilitaryTechUpgrade_E1_Slot3b",
+          "factor": "Damage",
+          "targets": [
+            17
+          ],
+          "mask": 131072,
+          "field": 1,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:22",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military1_4",
+      "label": "Räderkarren",
+      "host": "Mill",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:58",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E1_Slot4a",
+          "factor": "Speed",
+          "targets": [
+            22,
+            24,
+            27
+          ],
+          "mask": 155189248,
+          "field": 2,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:23",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial1_1",
+      "label": "Trockenholzkonstruktion",
+      "host": "CityCenter",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:51",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E1_Slot1a",
+          "factor": "HitPoints",
+          "targets": [
+            0,
+            1
+          ],
+          "mask": 3,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:12",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "ImperialTechUpgrade_E1_Slot1b",
+          "factor": "LOS",
+          "targets": [
+            0,
+            1
+          ],
+          "mask": 3,
+          "field": 5,
+          "method": 1,
+          "value": 1.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:13",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial1_2",
+      "label": "Geriffelte Geschossspitzen",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:52",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "ImperialTechUpgrade_E1_Slot2a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TT_Outpost",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "LatentAttackAbility",
+          "METHOD": "Set",
+          "VALUE": "0",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:14",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Imperial1_3",
+      "label": "Gerberei",
+      "host": "Barracks",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:53",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E1_Slot3a",
+          "factor": "HitPoints",
+          "targets": [
+            10,
+            12,
+            15,
+            16
+          ],
+          "mask": 103424,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:15",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial1_4",
+      "label": "Prophezeiungen",
+      "host": "Temple",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:54",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "ImperialTechUpgrade_E1_Slot4a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TT_PriestSpy",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "HitPoints",
+          "METHOD": "AddPermMul",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:16",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "": "ImperialTechUpgrade_E1_Slot4b",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TT_PriestSpy",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "Speed",
+          "METHOD": "AddPermMul",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:17",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Economic2_1",
+      "label": "Klassenstruktur",
+      "host": "Temple",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:91",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "EconomicTechUpgrade_E2_Slot1a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TT_PriestSpy",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "Cost",
+          "METHOD": "AddPermMul",
+          "VALUE": "-10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:27",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "": "EconomicTechUpgrade_E2_Slot1b",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TT_PriestSpy",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "BuildTime",
+          "METHOD": "AddPermMul",
+          "VALUE": "-10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:28",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Economic2_2",
+      "label": "Bürokratie",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:92",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E2_Slot2a",
+          "factor": "Cost",
+          "targets": [
+            7,
+            56
+          ],
+          "mask": 72057594037928064,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:29",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E2_Slot2b",
+          "factor": "BuildTime",
+          "targets": [
+            7,
+            56
+          ],
+          "mask": 72057594037928064,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:30",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic2_3",
+      "label": "Steinmetzwerkstatt",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:93",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E2_Slot3a",
+          "factor": "Cost",
+          "targets": [
+            47,
+            51
+          ],
+          "mask": 2392537302040576,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:31",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E2_Slot3b",
+          "factor": "BuildTime",
+          "targets": [
+            47,
+            51
+          ],
+          "mask": 2392537302040576,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:32",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic2_4",
+      "label": "Schiffbauer",
+      "host": "Dock",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:94",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E2_Slot4a",
+          "factor": "Cost",
+          "targets": [
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            42,
+            45
+          ],
+          "mask": 39719320682496,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:33",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E2_Slot4b",
+          "factor": "BuildTime",
+          "targets": [
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            42,
+            45
+          ],
+          "mask": 39719320682496,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:34",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military2_1",
+      "label": "Pferdezucht",
+      "host": "Stable",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:99",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E2_Slot1a",
+          "factor": "Damage",
+          "targets": [
+            18,
+            20,
+            21
+          ],
+          "mask": 3407872,
+          "field": 1,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:42",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military2_2",
+      "label": "Mahlstein",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:100",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E2_Slot2a",
+          "factor": "Cost",
+          "targets": [
+            3,
+            48,
+            49
+          ],
+          "mask": 844424930131976,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:43",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "MilitaryTechUpgrade_E2_Slot2b",
+          "factor": "BuildTime",
+          "targets": [
+            3,
+            48,
+            49
+          ],
+          "mask": 844424930131976,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:44",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military2_3",
+      "label": "Mathematik",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:101",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E2_Slot3a",
+          "factor": "LOS",
+          "targets": [
+            7,
+            56
+          ],
+          "mask": 72057594037928064,
+          "field": 5,
+          "method": 1,
+          "value": 1.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:45",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "MilitaryTechUpgrade_E2_Slot3b",
+          "factor": "Range",
+          "targets": [
+            7,
+            56
+          ],
+          "mask": 72057594037928064,
+          "field": 6,
+          "method": 1,
+          "value": 1.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:46",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military2_4",
+      "label": "Pflugscharen zu Speeren",
+      "host": "Stable",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:102",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E2_Slot4a",
+          "factor": "Damage",
+          "targets": [
+            19
+          ],
+          "mask": 524288,
+          "field": 1,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:47",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial2_1",
+      "label": "Herdenauslese",
+      "host": "Stable",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:95",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E2_Slot1a",
+          "factor": "HitPoints",
+          "targets": [
+            18,
+            20,
+            21
+          ],
+          "mask": 3407872,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:36",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial2_2",
+      "label": "Verbesserte Verteidigung",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:96",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "ImperialTechUpgrade_E2_Slot2a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "WallsPalisades",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "HitPoints",
+          "METHOD": "AddPermMul",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:37",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "": "ImperialTechUpgrade_E2_Slot2b",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "WallsPalisades",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "LOS",
+          "METHOD": "Add",
+          "VALUE": "1",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:38",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Imperial2_3",
+      "label": "Kupfernägel",
+      "host": "Mill",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:97",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E2_Slot3a",
+          "factor": "HitPoints",
+          "targets": [
+            22,
+            24,
+            27
+          ],
+          "mask": 155189248,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:39",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial2_4",
+      "label": "Verzierungen",
+      "host": "Temple",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:98",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "ImperialTechUpgrade_E2_Slot4a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "Priests",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "ConvertTimeModifier",
+          "METHOD": "AddPermMul",
+          "VALUE": "-10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:40",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Economic3_1",
+      "label": "Währung",
+      "host": "Market",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:124",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "EconomicTechUIDummy_E3_Slot1",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TT_TradeUnit",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "Currency",
+          "METHOD": "",
+          "VALUE": "0",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:51",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Economic3_2",
+      "label": "Handelsgesetze",
+      "host": "Market",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:125",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "EconomicTechUpgrade_E3_Slot2a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "TributeTax",
+          "METHOD": "Add",
+          "VALUE": "-10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:52",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Economic3_3",
+      "label": "Bronzewerkzeuge",
+      "host": "Mill",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:126",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E3_Slot3a",
+          "factor": "Cost",
+          "targets": [
+            22,
+            24,
+            27
+          ],
+          "mask": 155189248,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:54",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E3_Slot3b",
+          "factor": "BuildTime",
+          "targets": [
+            22,
+            24,
+            27
+          ],
+          "mask": 155189248,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:55",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic3_4",
+      "label": "Pferdehöfe",
+      "host": "Stable",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:127",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E3_Slot4a",
+          "factor": "Cost",
+          "targets": [
+            18,
+            20,
+            21
+          ],
+          "mask": 3407872,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:56",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E3_Slot4b",
+          "factor": "BuildTime",
+          "targets": [
+            18,
+            20,
+            21
+          ],
+          "mask": 3407872,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:57",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military3_1",
+      "label": "Marinetaktik",
+      "host": "Dock",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:132",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E3_Slot1a",
+          "factor": "Damage",
+          "targets": [
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36
+          ],
+          "mask": 136902082560,
+          "field": 1,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:66",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military3_2",
+      "label": "Kriegerklasse",
+      "host": "Barracks",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:133",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "MilitaryTechUIDummy_E3_Slot2a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "UniqueUnits",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "EliteUpgrade",
+          "METHOD": "",
+          "VALUE": "0",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:67",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Military3_3",
+      "label": "Bogenschießen",
+      "host": "Barracks",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:134",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E3_Slot3a",
+          "factor": "Damage",
+          "targets": [
+            10,
+            12,
+            15,
+            16
+          ],
+          "mask": 103424,
+          "field": 1,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:68",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military3_4",
+      "label": "Berufshandwerker",
+      "host": "Mill",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:135",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E3_Slot4a",
+          "factor": "Damage",
+          "targets": [
+            22,
+            24,
+            27
+          ],
+          "mask": 155189248,
+          "field": 1,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:69",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial3_1",
+      "label": "Medizin",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:128",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E3_Slot1a",
+          "factor": "PopCap",
+          "targets": [
+            1
+          ],
+          "mask": 2,
+          "field": 18,
+          "method": 1,
+          "value": 2.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:59",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial3_2",
+      "label": "Lagerräume",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:129",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E3_Slot2b",
+          "factor": "GarrisonSlots",
+          "targets": [
+            7
+          ],
+          "mask": 128,
+          "field": 11,
+          "method": 1,
+          "value": 2.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:61",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "ImperialTechUpgrade_E3_Slot2a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "Fortress",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "GarrisonSlots",
+          "METHOD": "Add",
+          "VALUE": "5",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:60",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Imperial3_3",
+      "label": "Stadtstaaten",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:130",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "ImperialTechUpgrade_E3_Slot3a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "WallsPalisades",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "Cost",
+          "METHOD": "AddPermMul",
+          "VALUE": "-10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:62",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "": "ImperialTechUpgrade_E3_Slot3b",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "WallsPalisades",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "BuildTime",
+          "METHOD": "AddPermMul",
+          "VALUE": "-10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:63",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Imperial3_4",
+      "label": "Steinmetzgilde",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:131",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E3_Slot4a",
+          "factor": "HitPoints",
+          "targets": [
+            7,
+            56
+          ],
+          "mask": 72057594037928064,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:64",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic4_1",
+      "label": "Tauschstandardisierung",
+      "host": "Market",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:155",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "EconomicTechUpgrade_E4_Slot1a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TT_TradeUnit",
+          "AFFECTED UNITS TOOLTIP": "tt_tt_allTrade",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "TradeRouteDrop",
+          "METHOD": "AddPermMul",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:73",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Economic4_2",
+      "label": "Urbarmachung",
+      "host": "Warehouse",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:156",
+      "adapted_effects": 5,
+      "effects": [
+        {
+          "factor_id": "SpecialGather_Tin_NoTooltip",
+          "factor": "GatherTin_NoTooltip",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 14,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:404",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "SpecialGather_Iron_NoTooltip",
+          "factor": "GatherIron_NoTooltip",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 10,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:405",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "SpecialGather_Saltpeter_NoTT",
+          "factor": "GatherSaltpeter_NoTooltip",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 15,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:406",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "SpecialGather_Oil_NoTooltip",
+          "factor": "GatherOil_NoTooltip",
+          "targets": [
+            53
+          ],
+          "mask": 9007199254740992,
+          "field": 16,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:407",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "SpecialGather_Uranium_NoTooltip",
+          "factor": "GatherUranium_NoTooltip",
+          "targets": [
+            54
+          ],
+          "mask": 18014398509481984,
+          "field": 17,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:408",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [
+        {
+          "": "SpecialGather_Tooltip",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "Citizens",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "GatherSpecial_Tooltip",
+          "METHOD": "",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:409",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic4_3",
+      "label": "Militärreformen",
+      "host": "Barracks",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:157",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E4_Slot3a",
+          "factor": "Cost",
+          "targets": [
+            9,
+            11,
+            13,
+            14,
+            17
+          ],
+          "mask": 158208,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:75",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E4_Slot3b",
+          "factor": "BuildTime",
+          "targets": [
+            9,
+            11,
+            13,
+            14,
+            17
+          ],
+          "mask": 158208,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:76",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic4_4",
+      "label": "Mechanik",
+      "host": "Mill",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:158",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E4_Slot4a",
+          "factor": "Cost",
+          "targets": [
+            24,
+            27,
+            28
+          ],
+          "mask": 419430400,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:77",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E4_Slot4b",
+          "factor": "BuildTime",
+          "targets": [
+            24,
+            27,
+            28
+          ],
+          "mask": 419430400,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:78",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military4_1",
+      "label": "List",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:163",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "MilitaryTechUpgrade_E4_Slot1a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "Spies",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "SpySabotageRestore",
+          "METHOD": "Set",
+          "VALUE": "0",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:86",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Military4_2",
+      "label": "Dezimalsystem",
+      "host": "Mill",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:164",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E4_Slot2a",
+          "factor": "Damage",
+          "targets": [
+            24,
+            27,
+            28
+          ],
+          "mask": 419430400,
+          "field": 1,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:87",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military4_3",
+      "label": "Hochseeschiffe",
+      "host": "Dock",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:165",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E4_Slot3a",
+          "factor": "Speed",
+          "targets": [
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            42,
+            45
+          ],
+          "mask": 39719320682496,
+          "field": 2,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:88",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military4_4",
+      "label": "Doppelbogen",
+      "host": "Barracks",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:166",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E4_Slot4a",
+          "factor": "LOS",
+          "targets": [
+            10,
+            12,
+            15,
+            16
+          ],
+          "mask": 103424,
+          "field": 5,
+          "method": 1,
+          "value": 1.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:89",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "MilitaryTechUpgrade_E4_Slot4b",
+          "factor": "Range",
+          "targets": [
+            10,
+            12,
+            15,
+            16
+          ],
+          "mask": 103424,
+          "field": 6,
+          "method": 1,
+          "value": 1.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:90",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial4_1",
+      "label": "Anatomie",
+      "host": "Barracks",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:159",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E4_Slot1a",
+          "factor": "HitPoints",
+          "targets": [
+            9,
+            11,
+            13,
+            14,
+            17
+          ],
+          "mask": 158208,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:80",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial4_2",
+      "label": "Geometrie",
+      "host": "Mill",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:160",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E4_Slot2a",
+          "factor": "HitPoints",
+          "targets": [
+            24,
+            27,
+            28
+          ],
+          "mask": 419430400,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:81",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial4_3",
+      "label": "Architektur",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:161",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E4_Slot3a",
+          "factor": "HitPoints",
+          "targets": [
+            47,
+            51
+          ],
+          "mask": 2392537302040576,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:82",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "ImperialTechUpgrade_E4_Slot3b",
+          "factor": "LOS",
+          "targets": [
+            47,
+            51
+          ],
+          "mask": 2392537302040576,
+          "field": 5,
+          "method": 1,
+          "value": 1.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:83",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial4_4",
+      "label": "Pergament",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:162",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E4_Slot4a",
+          "factor": "GarrisonSlots",
+          "targets": [
+            47,
+            51
+          ],
+          "mask": 2392537302040576,
+          "field": 11,
+          "method": 1,
+          "value": 1.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:84",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic5_1",
+      "label": "Kartographie",
+      "host": "Market",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:189",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "EconomicTechUpgrade_E5_Slot1a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TradeCart",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "HitPoints",
+          "METHOD": "AddPermMul",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:94",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "": "EconomicTechUpgrade_E5_Slot1b",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TradeCart",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "Speed",
+          "METHOD": "AddPermMul",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:95",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Economic5_2",
+      "label": "Sattel und Steigbügel",
+      "host": "Stable",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:190",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E5_Slot2a",
+          "factor": "Cost",
+          "targets": [
+            19
+          ],
+          "mask": 524288,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:96",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E5_Slot2b",
+          "factor": "BuildTime",
+          "targets": [
+            19
+          ],
+          "mask": 524288,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:97",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic5_3",
+      "label": "Volkszählung",
+      "host": "CityCenter",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:191",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E5_Slot3a",
+          "factor": "GarrisonSlots",
+          "targets": [
+            0,
+            52
+          ],
+          "mask": 4503599627370497,
+          "field": 11,
+          "method": 1,
+          "value": 5.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:98",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic5_4",
+      "label": "Arabische Zahlen",
+      "host": "Market",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:192",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "EconomicTechUpgrade_E5_Slot4a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TT_TradeUnit",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "TradeLoadTime",
+          "METHOD": "AddPermMul",
+          "VALUE": "-20",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:99",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Military5_1",
+      "label": "Zersplitterung",
+      "host": "Mill",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:197",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "MilitaryTechUpgrade_E5_Slot1a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "HeavyArtillery",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "AreaDamageRadius",
+          "METHOD": "Add",
+          "VALUE": "2",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:106",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Military5_2",
+      "label": "Federkatapult",
+      "host": "Mill",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:198",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E5_Slot2a",
+          "factor": "Speed",
+          "targets": [
+            24,
+            27,
+            28
+          ],
+          "mask": 419430400,
+          "field": 2,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:107",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military5_3",
+      "label": "Theologie",
+      "host": "Temple",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:199",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "MilitaryTechUpgrade_E5_Slot3a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TT_ConversionResistance",
+          "AFFECTED UNITS TOOLTIP": "tt_tt_allUnits",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "1",
+          "FACTOR": "ConversionResistance",
+          "METHOD": "AddPermMul",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:108",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Military5_4",
+      "label": "Monotheismus",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:200",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "MilitaryTechUpgrade_E5_Slot4a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "",
+          "AFFECTED UNITS TOOLTIP": "tt_tt_territories",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "1",
+          "FACTOR": "TerritoryMoraleBonus",
+          "METHOD": "Add",
+          "VALUE": "3",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:109",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "": "MilitaryTechUpgrade_E5_Slot4b",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "",
+          "AFFECTED UNITS TOOLTIP": "tt_tt_territories",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "1",
+          "FACTOR": "TerritoryFervorBonus",
+          "METHOD": "Add",
+          "VALUE": "3",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:110",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Imperial5_1",
+      "label": "Logik",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:193",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "ImperialTechUpgrade_E5_Slot1a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "LeaderPriestSpy",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "PowerRechargeTime",
+          "METHOD": "AddPermMul",
+          "VALUE": "-15",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:101",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Imperial5_2",
+      "label": "Numerologie",
+      "host": "CityCenter",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:194",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "ImperialTechUpgrade_E5_Slot2a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "RegionalPowerDuration",
+          "METHOD": "AddPermMul",
+          "VALUE": "25",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:102",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Imperial5_3",
+      "label": "Kettenrüstung",
+      "host": "Stable",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:195",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E5_Slot3a",
+          "factor": "HitPoints",
+          "targets": [
+            19
+          ],
+          "mask": 524288,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:103",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial5_4",
+      "label": "Astrolabium",
+      "host": "Dock",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:196",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E5_Slot4a",
+          "factor": "HitPoints",
+          "targets": [
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            42
+          ],
+          "mask": 4534948593664,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:104",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic6_1",
+      "label": "Wasserrad",
+      "host": "CityCenter",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:229",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E6_Slot1a",
+          "factor": "Cost",
+          "targets": [
+            0,
+            1
+          ],
+          "mask": 3,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:114",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E6_Slot1b",
+          "factor": "BuildTime",
+          "targets": [
+            0,
+            1
+          ],
+          "mask": 3,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:115",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic6_2",
+      "label": "Drei-Felder-Wirtschaft",
+      "host": "Warehouse",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:230",
+      "adapted_effects": 4,
+      "effects": [
+        {
+          "factor_id": "BasicGather_Food_NoTooltip",
+          "factor": "GatherFood_NoTooltip",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 8,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:394",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "BasicGather_Wood_NoTooltip",
+          "factor": "GatherWood_NoTooltip",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 9,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:395",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "BasicGather_Stone_NoTooltip",
+          "factor": "GatherStone_NoTooltip",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 12,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:396",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "BasicGather_Gold_NoTooltip",
+          "factor": "GatherGold_NoTooltip",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 13,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:397",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [
+        {
+          "": "BasicGather_Tooltip",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TT_BasicGathering",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "GatherBasic_Tooltip",
+          "METHOD": "",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:398",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic6_3",
+      "label": "Nomaden",
+      "host": "Stable",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:231",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E6_Slot3b",
+          "factor": "BuildTime",
+          "targets": [
+            18,
+            20,
+            21
+          ],
+          "mask": 3407872,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:118",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic6_4",
+      "label": "Fachleute",
+      "host": "CityCenter",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:232",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E6_Slot4a",
+          "factor": "Cost",
+          "targets": [
+            29
+          ],
+          "mask": 536870912,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:119",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E6_Slot4b",
+          "factor": "BuildTime",
+          "targets": [
+            29
+          ],
+          "mask": 536870912,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:120",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military6_1",
+      "label": "Hygiene",
+      "host": "CityCenter",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:237",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E6_Slot1a",
+          "factor": "HitPoints",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 0,
+          "method": 0,
+          "value": 20.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:130",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military6_2",
+      "label": "Lehenstreue",
+      "host": "CityCenter",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:238",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "MilitaryTechUpgrade_E6_Slot2a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "SubjectToCapture",
+          "AFFECTED UNITS TOOLTIP": "tt_tt_allBuildings",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "1",
+          "FACTOR": "CaptureResistance",
+          "METHOD": "AddPermMul",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:131",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Military6_3",
+      "label": "Ritterstand",
+      "host": "Stable",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:239",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E6_Slot3a",
+          "factor": "Damage",
+          "targets": [
+            19
+          ],
+          "mask": 524288,
+          "field": 1,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:132",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military6_4",
+      "label": "Achterstevenruder",
+      "host": "Dock",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:240",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E6_Slot4a",
+          "factor": "Speed",
+          "targets": [
+            29
+          ],
+          "mask": 536870912,
+          "field": 2,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:133",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial6_1",
+      "label": "Illustrierte Manuskripte",
+      "host": "Temple",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:233",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "ImperialTechUpgrade_E6_Slot1a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "Priests",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "LOS",
+          "METHOD": "Add",
+          "VALUE": "1",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:122",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "": "ImperialTechUpgrade_E6_Slot1b",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "Priests",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "ConversionRange",
+          "METHOD": "Add",
+          "VALUE": "1",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:123",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Imperial6_2",
+      "label": "Architektonische Innovationen",
+      "host": "CityCenter",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:234",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E6_Slot2a",
+          "factor": "HitPoints",
+          "targets": [
+            0,
+            1
+          ],
+          "mask": 3,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:124",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "ImperialTechUpgrade_E6_Slot2b",
+          "factor": "LOS",
+          "targets": [
+            0,
+            1
+          ],
+          "mask": 3,
+          "field": 5,
+          "method": 1,
+          "value": 1.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:125",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial6_3",
+      "label": "Handwerksgilden",
+      "host": "Mill",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:235",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E6_Slot3a",
+          "factor": "HitPoints",
+          "targets": [
+            24,
+            27,
+            28
+          ],
+          "mask": 419430400,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:126",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial6_4",
+      "label": "Mönchstum",
+      "host": "Temple",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:236",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "ImperialTechUpgrade_E6_Slot4a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TT_PriestSpy",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "HitPoints",
+          "METHOD": "AddPermMul",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:127",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "": "ImperialTechUpgrade_E6_Slot4b",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TT_PriestSpy",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "Speed",
+          "METHOD": "AddPermMul",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:128",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Economic7_1",
+      "label": "Inquisition",
+      "host": "Temple",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:257",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "EconomicTechUpgrade_E7_Slot1a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TT_PriestSpy",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "Cost",
+          "METHOD": "AddPermMul",
+          "VALUE": "-10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:137",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "": "EconomicTechUpgrade_E7_Slot1b",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TT_PriestSpy",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "BuildTime",
+          "METHOD": "AddPermMul",
+          "VALUE": "-10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:138",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Economic7_2",
+      "label": "Zeichenkunst",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:258",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E7_Slot2a",
+          "factor": "Cost",
+          "targets": [
+            7,
+            56
+          ],
+          "mask": 72057594037928064,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:139",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E7_Slot2b",
+          "factor": "BuildTime",
+          "targets": [
+            7,
+            56
+          ],
+          "mask": 72057594037928064,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:140",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic7_3",
+      "label": "Klassische Studien",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:259",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E7_Slot3b",
+          "factor": "BuildTime",
+          "targets": [
+            47,
+            51
+          ],
+          "mask": 2392537302040576,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:142",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic7_4",
+      "label": "Werften",
+      "host": "Dock",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:260",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E7_Slot4a",
+          "factor": "Cost",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:143",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E7_Slot4b",
+          "factor": "BuildTime",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:144",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military7_1",
+      "label": "Eisenlegierungen",
+      "host": "Barracks",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:265",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E7_Slot1a",
+          "factor": "Damage",
+          "targets": [
+            10,
+            12,
+            15,
+            16
+          ],
+          "mask": 103424,
+          "field": 1,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:152",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military7_2",
+      "label": "Formelle Ausbildung",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:266",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E7_Slot2a",
+          "factor": "Cost",
+          "targets": [
+            3,
+            48,
+            49
+          ],
+          "mask": 844424930131976,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:153",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "MilitaryTechUpgrade_E7_Slot2b",
+          "factor": "BuildTime",
+          "targets": [
+            3,
+            48,
+            49
+          ],
+          "mask": 844424930131976,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:154",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military7_3",
+      "label": "Geschützte Fensterflügel",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:267",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E7_Slot3a",
+          "factor": "Range",
+          "targets": [
+            7,
+            56
+          ],
+          "mask": 72057594037928064,
+          "field": 6,
+          "method": 1,
+          "value": 1.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:155",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "MilitaryTechUpgrade_E7_Slot3b",
+          "factor": "LOS",
+          "targets": [
+            7,
+            56
+          ],
+          "mask": 72057594037928064,
+          "field": 5,
+          "method": 1,
+          "value": 1.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:156",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military7_4",
+      "label": "Berufssoldaten",
+      "host": "Barracks",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:268",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E7_Slot4a",
+          "factor": "Damage",
+          "targets": [
+            9,
+            11,
+            13,
+            14,
+            17
+          ],
+          "mask": 158208,
+          "field": 1,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:157",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial7_1",
+      "label": "Detaillierte Anatomie",
+      "host": "Barracks",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:261",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E7_Slot1a",
+          "factor": "HitPoints",
+          "targets": [
+            10,
+            12,
+            15,
+            16
+          ],
+          "mask": 103424,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:146",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial7_2",
+      "label": "Erdwälle",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:262",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "ImperialTechUpgrade_E7_Slot2a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "WallsPalisades",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "HitPoints",
+          "METHOD": "AddPermMul",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:147",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "": "ImperialTechUpgrade_E7_Slot2b",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "WallsPalisades",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "LOS",
+          "METHOD": "Add",
+          "VALUE": "1",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:148",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Imperial7_3",
+      "label": "Mobile Geschützwagen",
+      "host": "Mill",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:263",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E7_Slot3a",
+          "factor": "HitPoints",
+          "targets": [
+            22,
+            24,
+            27
+          ],
+          "mask": 155189248,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:149",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial7_4",
+      "label": "Geheimgesellschaften",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:264",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "ImperialTechUpgrade_E7_Slot4a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "Spies",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "TechOnGatherIntel",
+          "METHOD": "Set",
+          "VALUE": "3",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:150",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Economic8_1",
+      "label": "Taktikstudien",
+      "host": "Barracks",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:293",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "EconomicTechUIDummy_E8_Slot1a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "UniqueUnits",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "EliteUpgrade",
+          "METHOD": "",
+          "VALUE": "0",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:161",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Economic8_2",
+      "label": "Bankwesen",
+      "host": "Market",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:294",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "EconomicTechUpgrade_E8_Slot2a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "TributeTax",
+          "METHOD": "Add",
+          "VALUE": "-10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:162",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Economic8_3",
+      "label": "Schneckengetriebe",
+      "host": "Mill",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:295",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E8_Slot3a",
+          "factor": "Cost",
+          "targets": [
+            22,
+            24,
+            27
+          ],
+          "mask": 155189248,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:164",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E8_Slot3b",
+          "factor": "BuildTime",
+          "targets": [
+            22,
+            24,
+            27
+          ],
+          "mask": 155189248,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:165",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic8_4",
+      "label": "Stehende Heere",
+      "host": "Barracks",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:296",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E8_Slot4a",
+          "factor": "Cost",
+          "targets": [
+            10,
+            12,
+            15,
+            16
+          ],
+          "mask": 103424,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:166",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E8_Slot4b",
+          "factor": "BuildTime",
+          "targets": [
+            10,
+            12,
+            15,
+            16
+          ],
+          "mask": 103424,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:167",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military8_1",
+      "label": "Marinetaktik",
+      "host": "Dock",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:301",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E8_Slot1a",
+          "factor": "Damage",
+          "targets": [
+            30,
+            31
+          ],
+          "mask": 3221225472,
+          "field": 1,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:176",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military8_2",
+      "label": "Kavallerietaktik",
+      "host": "Stable",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:302",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E8_Slot2a",
+          "factor": "Damage",
+          "targets": [
+            18,
+            20,
+            21
+          ],
+          "mask": 3407872,
+          "field": 1,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:177",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military8_3",
+      "label": "Verbesserter Zünder",
+      "host": "Barracks",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:303",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "MilitaryTechUpgrade_E8_Slot3a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "LightInfantry",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "AreaDamageRadius",
+          "METHOD": "Add",
+          "VALUE": "0.5",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:178",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Military8_4",
+      "label": "Refraktorteleskop",
+      "host": "Mill",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:304",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E8_Slot4a",
+          "factor": "Damage",
+          "targets": [
+            22,
+            24,
+            27
+          ],
+          "mask": 155189248,
+          "field": 1,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:179",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial8_1",
+      "label": "Kolonialismus",
+      "host": "CityCenter",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:297",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E8_Slot1a",
+          "factor": "PopCap",
+          "targets": [
+            1
+          ],
+          "mask": 2,
+          "field": 18,
+          "method": 1,
+          "value": 2.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:169",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial8_2",
+      "label": "Tragende Balken",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:298",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E8_Slot2b",
+          "factor": "GarrisonSlots",
+          "targets": [
+            7
+          ],
+          "mask": 128,
+          "field": 11,
+          "method": 1,
+          "value": 2.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:171",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "ImperialTechUpgrade_E8_Slot2a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "Fortress",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "GarrisonSlots",
+          "METHOD": "Add",
+          "VALUE": "5",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:170",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Imperial8_3",
+      "label": "Vermessungswesen",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:299",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "ImperialTechUpgrade_E8_Slot3a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "WallsPalisades",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "Cost",
+          "METHOD": "AddPermMul",
+          "VALUE": "-10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:172",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "": "ImperialTechUpgrade_E8_Slot3b",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "WallsPalisades",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "BuildTime",
+          "METHOD": "AddPermMul",
+          "VALUE": "-10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:173",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Imperial8_4",
+      "label": "Kavallerielogistik",
+      "host": "Stable",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:300",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E8_Slot4a",
+          "factor": "HitPoints",
+          "targets": [
+            18,
+            20,
+            21
+          ],
+          "mask": 3407872,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:174",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic9_1",
+      "label": "Merkantilismus",
+      "host": "Market",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:321",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "EconomicTechUpgrade_E9_Slot1a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TT_TradeUnit",
+          "AFFECTED UNITS TOOLTIP": "tt_tt_allTrade",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "TradeRouteDrop",
+          "METHOD": "AddPermMul",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:183",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Economic9_2",
+      "label": "Fruchtwechsel",
+      "host": "Warehouse",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:322",
+      "adapted_effects": 5,
+      "effects": [
+        {
+          "factor_id": "SpecialGather_Tin_NoTooltip",
+          "factor": "GatherTin_NoTooltip",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 14,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:404",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "SpecialGather_Iron_NoTooltip",
+          "factor": "GatherIron_NoTooltip",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 10,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:405",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "SpecialGather_Saltpeter_NoTT",
+          "factor": "GatherSaltpeter_NoTooltip",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 15,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:406",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "SpecialGather_Oil_NoTooltip",
+          "factor": "GatherOil_NoTooltip",
+          "targets": [
+            53
+          ],
+          "mask": 9007199254740992,
+          "field": 16,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:407",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "SpecialGather_Uranium_NoTooltip",
+          "factor": "GatherUranium_NoTooltip",
+          "targets": [
+            54
+          ],
+          "mask": 18014398509481984,
+          "field": 17,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:408",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [
+        {
+          "": "SpecialGather_Tooltip",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "Citizens",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "GatherSpecial_Tooltip",
+          "METHOD": "",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:409",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic9_3",
+      "label": "Standardisierte Ausrüstung",
+      "host": "Barracks",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:323",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E9_Slot3a",
+          "factor": "Cost",
+          "targets": [
+            9,
+            11,
+            13,
+            14,
+            17
+          ],
+          "mask": 158208,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:185",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E9_Slot3b",
+          "factor": "BuildTime",
+          "targets": [
+            9,
+            11,
+            13,
+            14,
+            17
+          ],
+          "mask": 158208,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:186",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic9_4",
+      "label": "Maschinenbearbeitete Werkzeuge",
+      "host": "Mill",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:324",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E9_Slot4a",
+          "factor": "Cost",
+          "targets": [
+            24,
+            27,
+            28
+          ],
+          "mask": 419430400,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:187",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E9_Slot4b",
+          "factor": "BuildTime",
+          "targets": [
+            24,
+            27,
+            28
+          ],
+          "mask": 419430400,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:188",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military9_1",
+      "label": "Fünfte Kolonne",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:329",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "MilitaryTechUpgrade_E9_Slot1a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "Spies",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "SpyContamDecon",
+          "METHOD": "Set",
+          "VALUE": "0",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:196",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Military9_2",
+      "label": "Berechnung",
+      "host": "Mill",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:330",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E9_Slot2a",
+          "factor": "Damage",
+          "targets": [
+            24,
+            27,
+            28
+          ],
+          "mask": 419430400,
+          "field": 1,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:197",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military9_3",
+      "label": "Artillerietaktik",
+      "host": "Mill",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:331",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E9_Slot3a",
+          "factor": "Speed",
+          "targets": [
+            22,
+            24,
+            27
+          ],
+          "mask": 155189248,
+          "field": 2,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:198",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military9_4",
+      "label": "Büchsenkartätsche",
+      "host": "Mill",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:332",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "MilitaryTechUpgrade_E9_Slot4a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "LightArtillery1",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "AreaDamageRadius",
+          "METHOD": "Add",
+          "VALUE": "2",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:199",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Imperial9_1",
+      "label": "Quartiermeisterkorps.",
+      "host": "Barracks",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:325",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E9_Slot1a",
+          "factor": "HitPoints",
+          "targets": [
+            9,
+            11,
+            13,
+            14,
+            17
+          ],
+          "mask": 158208,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:190",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial9_2",
+      "label": "Hochofen",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:326",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E9_Slot2a",
+          "factor": "HitPoints",
+          "targets": [
+            7,
+            56
+          ],
+          "mask": 72057594037928064,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:191",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial9_3",
+      "label": "Wissenschaftliche Instrumente",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:327",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E9_Slot3a",
+          "factor": "HitPoints",
+          "targets": [
+            47,
+            51
+          ],
+          "mask": 2392537302040576,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:192",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "ImperialTechUpgrade_E9_Slot3b",
+          "factor": "LOS",
+          "targets": [
+            47,
+            51
+          ],
+          "mask": 2392537302040576,
+          "field": 5,
+          "method": 1,
+          "value": 1.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:193",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial9_4",
+      "label": "Rationalismus",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:328",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E9_Slot4a",
+          "factor": "GarrisonSlots",
+          "targets": [
+            47,
+            51
+          ],
+          "mask": 2392537302040576,
+          "field": 11,
+          "method": 1,
+          "value": 1.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:194",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic10_1",
+      "label": "Eisenbahn",
+      "host": "Market",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:358",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "EconomicTechUpgrade_E10_Slot1a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TradeCart",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "HitPoints",
+          "METHOD": "AddPermMul",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:203",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "": "EconomicTechUpgrade_E10_Slot1b",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TradeCart",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "Speed",
+          "METHOD": "AddPermMul",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:204",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Economic10_2",
+      "label": "Standardausbildung",
+      "host": "Stable",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:359",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E10_Slot2a",
+          "factor": "Cost",
+          "targets": [
+            19
+          ],
+          "mask": 524288,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:205",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E10_Slot2b",
+          "factor": "BuildTime",
+          "targets": [
+            19
+          ],
+          "mask": 524288,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:206",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic10_3",
+      "label": "Stadtflucht",
+      "host": "CityCenter",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:360",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E10_Slot3a",
+          "factor": "GarrisonSlots",
+          "targets": [
+            0,
+            52
+          ],
+          "mask": 4503599627370497,
+          "field": 11,
+          "method": 1,
+          "value": 5.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:207",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic10_4",
+      "label": "Telegraf",
+      "host": "Market",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:361",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "EconomicTechUpgrade_E10_Slot4a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TT_TradeUnit",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "TradeLoadTime",
+          "METHOD": "AddPermMul",
+          "VALUE": "-20",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:208",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Military10_1",
+      "label": "Gezogener Lauf",
+      "host": "Barracks",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:366",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E10_Slot1a",
+          "factor": "LOS",
+          "targets": [
+            9,
+            11,
+            13,
+            14
+          ],
+          "mask": 27136,
+          "field": 5,
+          "method": 1,
+          "value": 1.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:215",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "MilitaryTechUpgrade_E10_Slot1b",
+          "factor": "Range",
+          "targets": [
+            9,
+            11,
+            13,
+            14
+          ],
+          "mask": 27136,
+          "field": 6,
+          "method": 1,
+          "value": 1.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:216",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military10_2",
+      "label": "Produktionseffektivität",
+      "host": "Mill",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:367",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E10_Slot2a",
+          "factor": "Speed",
+          "targets": [
+            24,
+            27,
+            28
+          ],
+          "mask": 419430400,
+          "field": 2,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:217",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military10_3",
+      "label": "Guerillataktik",
+      "host": "Barracks",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:368",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "MilitaryTechUpgrade_E10_Slot3a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TT_ConversionResistance",
+          "AFFECTED UNITS TOOLTIP": "tt_tt_allUnits",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "1",
+          "FACTOR": "ConversionResistance",
+          "METHOD": "AddPermMul",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:218",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Military10_4",
+      "label": "Nationalismus",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:369",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "MilitaryTechUpgrade_E10_Slot4a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "",
+          "AFFECTED UNITS TOOLTIP": "tt_tt_territories",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "1",
+          "FACTOR": "TerritoryMoraleBonus",
+          "METHOD": "Add",
+          "VALUE": "3",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:219",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "": "MilitaryTechUpgrade_E10_Slot4b",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "",
+          "AFFECTED UNITS TOOLTIP": "tt_tt_territories",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "1",
+          "FACTOR": "TerritoryFervorBonus",
+          "METHOD": "Add",
+          "VALUE": "3",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:220",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Imperial10_1",
+      "label": "Öffentliche Bildung",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:362",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "ImperialTechUpgrade_E10_Slot1a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "LeaderPriestSpy",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "PowerRechargeTime",
+          "METHOD": "AddPermMul",
+          "VALUE": "-15",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:210",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Imperial10_2",
+      "label": "Evolutionstheorie",
+      "host": "CityCenter",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:363",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "ImperialTechUpgrade_E10_Slot2a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "RegionalPowerDuration",
+          "METHOD": "AddPermMul",
+          "VALUE": "25",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:211",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Imperial10_3",
+      "label": "Glühlampe",
+      "host": "CityCenter",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:364",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E10_Slot3a",
+          "factor": "HitPoints",
+          "targets": [
+            19
+          ],
+          "mask": 524288,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:212",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial10_4",
+      "label": "Eisenpanzerung",
+      "host": "Dock",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:365",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E10_Slot4a",
+          "factor": "HitPoints",
+          "targets": [
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            42,
+            45
+          ],
+          "mask": 39719320682496,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:213",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic11_1",
+      "label": "Gewerbeverordnungen",
+      "host": "CityCenter",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:419",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E11_Slot1a",
+          "factor": "Cost",
+          "targets": [
+            0,
+            1
+          ],
+          "mask": 3,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:224",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E11_Slot1b",
+          "factor": "BuildTime",
+          "targets": [
+            0,
+            1
+          ],
+          "mask": 3,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:225",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic11_2",
+      "label": "Schwermaschinen",
+      "host": "Warehouse",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:420",
+      "adapted_effects": 4,
+      "effects": [
+        {
+          "factor_id": "BasicGather_Food_NoTooltip",
+          "factor": "GatherFood_NoTooltip",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 8,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:394",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "BasicGather_Wood_NoTooltip",
+          "factor": "GatherWood_NoTooltip",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 9,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:395",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "BasicGather_Stone_NoTooltip",
+          "factor": "GatherStone_NoTooltip",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 12,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:396",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "BasicGather_Gold_NoTooltip",
+          "factor": "GatherGold_NoTooltip",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 13,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:397",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [
+        {
+          "": "BasicGather_Tooltip",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TT_BasicGathering",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "GatherBasic_Tooltip",
+          "METHOD": "",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:398",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic11_3",
+      "label": "Mörserteams",
+      "host": "Barracks",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:421",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E11_Slot3a",
+          "factor": "Cost",
+          "targets": [
+            10,
+            12,
+            15,
+            16
+          ],
+          "mask": 103424,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:227",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E11_Slot3b",
+          "factor": "BuildTime",
+          "targets": [
+            10,
+            12,
+            15,
+            16
+          ],
+          "mask": 103424,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:228",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic11_4",
+      "label": "Fortschrittliche Reformen",
+      "host": "CityCenter",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:422",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E11_Slot4a",
+          "factor": "Cost",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:229",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E11_Slot4b",
+          "factor": "BuildTime",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:230",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military11_1",
+      "label": "Gewerkschaften",
+      "host": "CityCenter",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:427",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E11_Slot1a",
+          "factor": "HitPoints",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 0,
+          "method": 0,
+          "value": 20.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:239",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military11_2",
+      "label": "Straßenkampf",
+      "host": "CityCenter",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:428",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "MilitaryTechUpgrade_E11_Slot2a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "SubjectToCapture",
+          "AFFECTED UNITS TOOLTIP": "tt_tt_allBuildings",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "1",
+          "FACTOR": "CaptureResistance",
+          "METHOD": "AddPermMul",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:240",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Military11_3",
+      "label": "Hochexplosive Sprengstoffe",
+      "host": "Barracks",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:429",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E11_Slot3a",
+          "factor": "Damage",
+          "targets": [
+            9,
+            11,
+            13,
+            14,
+            17
+          ],
+          "mask": 158208,
+          "field": 1,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:241",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military11_4",
+      "label": "Telefon",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:430",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E11_Slot4a",
+          "factor": "LOS",
+          "targets": [
+            7,
+            56
+          ],
+          "mask": 72057594037928064,
+          "field": 5,
+          "method": 1,
+          "value": 1.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:242",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "MilitaryTechUpgrade_E11_Slot4b",
+          "factor": "Range",
+          "targets": [
+            7,
+            56
+          ],
+          "mask": 72057594037928064,
+          "field": 6,
+          "method": 1,
+          "value": 1.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:243",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial11_1",
+      "label": "Mechanisierte Kriegführung",
+      "host": "Stable",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:423",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "ImperialTechUpgrade_E11_Slot1a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "AllTanks",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "TanksFullMove",
+          "METHOD": "Set",
+          "VALUE": "0",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:232",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Imperial11_2",
+      "label": "Massentransport",
+      "host": "CityCenter",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:424",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E11_Slot2a",
+          "factor": "HitPoints",
+          "targets": [
+            0,
+            1
+          ],
+          "mask": 3,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:233",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "ImperialTechUpgrade_E11_Slot2b",
+          "factor": "LOS",
+          "targets": [
+            0,
+            1
+          ],
+          "mask": 3,
+          "field": 5,
+          "method": 1,
+          "value": 1.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:234",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial11_3",
+      "label": "Tarnung",
+      "host": "Mill",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:425",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E11_Slot3a",
+          "factor": "HitPoints",
+          "targets": [
+            22,
+            24,
+            27
+          ],
+          "mask": 155189248,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:235",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial11_4",
+      "label": "Stahlbau",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:426",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "ImperialTechUpgrade_E11_Slot4a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "WallsPalisades",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "HitPoints",
+          "METHOD": "AddPermMul",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:236",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "": "ImperialTechUpgrade_E11_Slot4b",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "WallsPalisades",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "LOS",
+          "METHOD": "Add",
+          "VALUE": "1",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:237",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Economic12_1",
+      "label": "Rationierung",
+      "host": "Barracks",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:455",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E12_Slot1a",
+          "factor": "Cost",
+          "targets": [
+            9,
+            11,
+            13,
+            14,
+            17
+          ],
+          "mask": 158208,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:247",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E12_Slot1b",
+          "factor": "BuildTime",
+          "targets": [
+            9,
+            11,
+            13,
+            14,
+            17
+          ],
+          "mask": 158208,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:248",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic12_2",
+      "label": "Unterirdische Bauweise",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:456",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E12_Slot2a",
+          "factor": "Cost",
+          "targets": [
+            7,
+            56
+          ],
+          "mask": 72057594037928064,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:249",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E12_Slot2b",
+          "factor": "BuildTime",
+          "targets": [
+            7,
+            56
+          ],
+          "mask": 72057594037928064,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:250",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic12_3",
+      "label": "Währungspolitik",
+      "host": "Market",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:457",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "EconomicTechUpgrade_E12_Slot3a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "TributeTax",
+          "METHOD": "Add",
+          "VALUE": "-10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:251",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Economic12_4",
+      "label": "Modularbauweise",
+      "host": "Dock",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:458",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E12_Slot4a",
+          "factor": "Cost",
+          "targets": [
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            42,
+            45
+          ],
+          "mask": 39719320682496,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:253",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E12_Slot4b",
+          "factor": "BuildTime",
+          "targets": [
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            42,
+            45
+          ],
+          "mask": 39719320682496,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:254",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military12_1",
+      "label": "Tragbare Funkgeräte",
+      "host": "Stable",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:463",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E12_Slot1a",
+          "factor": "Damage",
+          "targets": [
+            23,
+            25
+          ],
+          "mask": 41943040,
+          "field": 1,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:263",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military12_2",
+      "label": "Synthetische Materialien",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:464",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E12_Slot2a",
+          "factor": "Cost",
+          "targets": [
+            3,
+            48,
+            49
+          ],
+          "mask": 844424930131976,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:264",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "MilitaryTechUpgrade_E12_Slot2b",
+          "factor": "BuildTime",
+          "targets": [
+            3,
+            48,
+            49
+          ],
+          "mask": 844424930131976,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:265",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military12_3",
+      "label": "Taktik der komb. Streitkräfte",
+      "host": "Mill",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:465",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E12_Slot3a",
+          "factor": "Speed",
+          "targets": [
+            22,
+            24,
+            27
+          ],
+          "mask": 155189248,
+          "field": 2,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:266",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military12_4",
+      "label": "Panzervorhut",
+      "host": "Stable",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:466",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E12_Slot4a",
+          "factor": "Damage",
+          "targets": [
+            26,
+            46
+          ],
+          "mask": 70368811286528,
+          "field": 1,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:267",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial12_1",
+      "label": "Stahlbeton",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:459",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E12_Slot1b",
+          "factor": "GarrisonSlots",
+          "targets": [
+            7
+          ],
+          "mask": 128,
+          "field": 11,
+          "method": 1,
+          "value": 2.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:257",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "ImperialTechUpgrade_E12_Slot1a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "Fortress",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "GarrisonSlots",
+          "METHOD": "Add",
+          "VALUE": "5",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:256",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Imperial12_2",
+      "label": "Geheimdienste",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:460",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "ImperialTechUpgrade_E12_Slot2a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TT_PriestSpy",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "HitPoints",
+          "METHOD": "AddPermMul",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:258",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "": "ImperialTechUpgrade_E12_Slot2b",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TT_PriestSpy",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "Speed",
+          "METHOD": "AddPermMul",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:259",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Imperial12_3",
+      "label": "Raketentechnik",
+      "host": "Mill",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:461",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E12_Slot3a",
+          "factor": "HitPoints",
+          "targets": [
+            24,
+            27,
+            28
+          ],
+          "mask": 419430400,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:260",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial12_4",
+      "label": "Küstennahe Artillerie",
+      "host": "Dock",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:462",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "ImperialTechUpgrade_E12_Slot4a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "Battleships",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "AreaDamageRadius",
+          "METHOD": "Add",
+          "VALUE": "3",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:261",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Economic13_1",
+      "label": "Computer",
+      "host": "Barracks",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:512",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "EconomicTechUIDummy_E13_Slot1a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "UniqueUnits",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "EliteUpgrade",
+          "METHOD": "",
+          "VALUE": "0",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:271",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Economic13_2",
+      "label": "Robotik",
+      "host": "Stable",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:513",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E13_Slot2a",
+          "factor": "Cost",
+          "targets": [
+            26,
+            46
+          ],
+          "mask": 70368811286528,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:272",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E13_Slot2b",
+          "factor": "BuildTime",
+          "targets": [
+            26,
+            46
+          ],
+          "mask": 70368811286528,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:273",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic13_3",
+      "label": "Kunststoffe",
+      "host": "Mill",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:514",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E13_Slot3a",
+          "factor": "Cost",
+          "targets": [
+            22,
+            24,
+            27
+          ],
+          "mask": 155189248,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:274",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic13_4",
+      "label": "Globalisierung",
+      "host": "Market",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:515",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "EconomicTechUpgrade_E13_Slot4a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TT_TradeUnit",
+          "AFFECTED UNITS TOOLTIP": "tt_tt_allTrade",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "TradeRouteDrop",
+          "METHOD": "AddPermMul",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:276",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Military13_1",
+      "label": "Radar",
+      "host": "Dock",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:520",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "MilitaryTechUpgrade_E13_Slot1a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "NavalUnitsAttackEpoch13",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "Damage",
+          "METHOD": "AddPermMul",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:284",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Military13_2",
+      "label": "Verbesserte Signalsysteme",
+      "host": "Barracks",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:521",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E13_Slot2a",
+          "factor": "Damage",
+          "targets": [
+            10,
+            12,
+            15,
+            16
+          ],
+          "mask": 103424,
+          "field": 1,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:285",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military13_3",
+      "label": "Großraumflugzeug",
+      "host": "Airport",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:522",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "MilitaryTechUpgrade_E13_Slot3a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "ParatrooperPlane",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "ParatrooperPlaneCapacity",
+          "METHOD": "Add",
+          "VALUE": "4",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:286",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Military13_4",
+      "label": "GPS",
+      "host": "Mill",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:523",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E13_Slot4a",
+          "factor": "Damage",
+          "targets": [
+            24,
+            27,
+            28
+          ],
+          "mask": 419430400,
+          "field": 1,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:287",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial13_1",
+      "label": "Arzneimittel",
+      "host": "CityCenter",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:516",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E13_Slot1a",
+          "factor": "PopCap",
+          "targets": [
+            1
+          ],
+          "mask": 2,
+          "field": 18,
+          "method": 1,
+          "value": 2.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:278",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial13_2",
+      "label": "Reaktive Panzerung",
+      "host": "Stable",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:517",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E13_Slot2a",
+          "factor": "HitPoints",
+          "targets": [
+            23,
+            25
+          ],
+          "mask": 41943040,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:279",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial13_3",
+      "label": "Verbesserte Polymere",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:518",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "ImperialTechUpgrade_E13_Slot3a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "WallsPalisades",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "Cost",
+          "METHOD": "AddPermMul",
+          "VALUE": "-10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:280",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "": "ImperialTechUpgrade_E13_Slot3b",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "WallsPalisades",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "BuildTime",
+          "METHOD": "AddPermMul",
+          "VALUE": "-10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:281",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Imperial13_4",
+      "label": "Titanbauweise",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:519",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E13_Slot4a",
+          "factor": "HitPoints",
+          "targets": [
+            7,
+            56
+          ],
+          "mask": 72057594037928064,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:282",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic14_1",
+      "label": "Ferngesteuerte Fahrzeuge",
+      "host": "Stable",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:557",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E14_Slot1a",
+          "factor": "Cost",
+          "targets": [
+            23,
+            25
+          ],
+          "mask": 41943040,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:291",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E14_Slot1b",
+          "factor": "BuildTime",
+          "targets": [
+            23,
+            25
+          ],
+          "mask": 41943040,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:292",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic14_2",
+      "label": "Fort. Anreicherung/Raffination",
+      "host": "Warehouse",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:558",
+      "adapted_effects": 5,
+      "effects": [
+        {
+          "factor_id": "SpecialGather_Tin_NoTooltip",
+          "factor": "GatherTin_NoTooltip",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 14,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:404",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "SpecialGather_Iron_NoTooltip",
+          "factor": "GatherIron_NoTooltip",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 10,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:405",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "SpecialGather_Saltpeter_NoTT",
+          "factor": "GatherSaltpeter_NoTooltip",
+          "targets": [
+            8
+          ],
+          "mask": 256,
+          "field": 15,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:406",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "SpecialGather_Oil_NoTooltip",
+          "factor": "GatherOil_NoTooltip",
+          "targets": [
+            53
+          ],
+          "mask": 9007199254740992,
+          "field": 16,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:407",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "SpecialGather_Uranium_NoTooltip",
+          "factor": "GatherUranium_NoTooltip",
+          "targets": [
+            54
+          ],
+          "mask": 18014398509481984,
+          "field": 17,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:408",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [
+        {
+          "": "SpecialGather_Tooltip",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "Citizens",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "GatherSpecial_Tooltip",
+          "METHOD": "",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:409",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic14_3",
+      "label": "Gentherapie",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:559",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "EconomicTechUpgrade_E14_Slot3a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TT_PriestSpy",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "Cost",
+          "METHOD": "AddPermMul",
+          "VALUE": "-10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:294",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "": "EconomicTechUpgrade_E14_Slot3b",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TT_PriestSpy",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "BuildTime",
+          "METHOD": "AddPermMul",
+          "VALUE": "-10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:295",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Economic14_4",
+      "label": "Glasfaseroptik",
+      "host": "Mill",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:560",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E14_Slot4a",
+          "factor": "Cost",
+          "targets": [
+            24,
+            27,
+            28
+          ],
+          "mask": 419430400,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:296",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E14_Slot4b",
+          "factor": "BuildTime",
+          "targets": [
+            24,
+            27,
+            28
+          ],
+          "mask": 419430400,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:297",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military14_1",
+      "label": "Spezialtruppen-Teams",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:565",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "MilitaryTechUpgrade_E14_Slot1a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "Spies",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "SpySabBonus",
+          "METHOD": "Add",
+          "VALUE": "0",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:305",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "": "MilitaryTechUpgrade_E14_Slot1b",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "Spies",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "SpyContamBonus",
+          "METHOD": "Add",
+          "VALUE": "0",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:306",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Military14_2",
+      "label": "Laserzielführung",
+      "host": "Mill",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:566",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E14_Slot2a",
+          "factor": "Damage",
+          "targets": [
+            22,
+            24,
+            27
+          ],
+          "mask": 155189248,
+          "field": 1,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:307",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military14_3",
+      "label": "Brennstoffzellen",
+      "host": "Dock",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:567",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E14_Slot3a",
+          "factor": "Speed",
+          "targets": [
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            42,
+            45
+          ],
+          "mask": 39719320682496,
+          "field": 2,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:308",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military14_4",
+      "label": "Ballistische Raketenabwehrsysteme",
+      "host": "Airport",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:568",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "MilitaryTechUpgrade_E14_Slot4a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TT_AirDefenses",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "ICBMTargetingProbability",
+          "METHOD": "Add",
+          "VALUE": "5",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:309",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Imperial14_1",
+      "label": "Kevlar-Körperrüstung",
+      "host": "Barracks",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:561",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E14_Slot1a",
+          "factor": "HitPoints",
+          "targets": [
+            9,
+            11,
+            13,
+            14,
+            17
+          ],
+          "mask": 158208,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:299",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial14_2",
+      "label": "Reflektierende Fasern",
+      "host": "Barracks",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:562",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E14_Slot2a",
+          "factor": "HitPoints",
+          "targets": [
+            10,
+            12,
+            15,
+            16
+          ],
+          "mask": 103424,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:300",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial14_3",
+      "label": "Verbesserte Materialien",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:563",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E14_Slot3a",
+          "factor": "HitPoints",
+          "targets": [
+            47,
+            51
+          ],
+          "mask": 2392537302040576,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:301",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "ImperialTechUpgrade_E14_Slot3b",
+          "factor": "LOS",
+          "targets": [
+            47,
+            51
+          ],
+          "mask": 2392537302040576,
+          "field": 5,
+          "method": 1,
+          "value": 1.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:302",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial14_4",
+      "label": "Virtuelle Realität",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:564",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E14_Slot4a",
+          "factor": "GarrisonSlots",
+          "targets": [
+            47,
+            51
+          ],
+          "mask": 2392537302040576,
+          "field": 11,
+          "method": 1,
+          "value": 1.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:303",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic15_1",
+      "label": "Automatisierte Fernstraßen",
+      "host": "Market",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:610",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "EconomicTechUpgrade_E15_Slot1a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TradeCart",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "HitPoints",
+          "METHOD": "AddPermMul",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:313",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "": "EconomicTechUpgrade_E15_Slot1b",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TradeCart",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "Speed",
+          "METHOD": "AddPermMul",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:314",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Economic15_2",
+      "label": "Spirituelle Revolution",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:611",
+      "adapted_effects": 2,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E15_Slot2a",
+          "factor": "Cost",
+          "targets": [
+            47,
+            51
+          ],
+          "mask": 2392537302040576,
+          "field": 4,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:315",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "factor_id": "EconomicTechUpgrade_E15_Slot2b",
+          "factor": "BuildTime",
+          "targets": [
+            47,
+            51
+          ],
+          "mask": 2392537302040576,
+          "field": 3,
+          "method": 0,
+          "value": -10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:316",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic15_3",
+      "label": "Ergonomie",
+      "host": "CityCenter",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:612",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "EconomicTechUpgrade_E15_Slot3a",
+          "factor": "GarrisonSlots",
+          "targets": [
+            0,
+            52
+          ],
+          "mask": 4503599627370497,
+          "field": 11,
+          "method": 1,
+          "value": 5.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:317",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Economic15_4",
+      "label": "Virtueller Markt",
+      "host": "Market",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:613",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "EconomicTechUpgrade_E15_Slot4a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TT_TradeUnit",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "TradeLoadTime",
+          "METHOD": "AddPermMul",
+          "VALUE": "-20",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:318",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Military15_1",
+      "label": "Implantate",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:618",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "MilitaryTechUpgrade_E15_Slot1a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "Medic",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "HealingRadius",
+          "METHOD": "Add",
+          "VALUE": "3",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:325",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Military15_2",
+      "label": "Smart-Fahrzeuge",
+      "host": "Mill",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:619",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "MilitaryTechUpgrade_E15_Slot2a",
+          "factor": "Speed",
+          "targets": [
+            24,
+            27,
+            28
+          ],
+          "mask": 419430400,
+          "field": 2,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:326",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Military15_3",
+      "label": "Fühlende KI",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:620",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "MilitaryTechUpgrade_E15_Slot3a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "TT_ConversionResistance",
+          "AFFECTED UNITS TOOLTIP": "tt_tt_allUnits",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "1",
+          "FACTOR": "ConversionResistance",
+          "METHOD": "AddPermMul",
+          "VALUE": "10",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:327",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Military15_4",
+      "label": "Sensorische Verbesserung",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:621",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "MilitaryTechUpgrade_E15_Slot4a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "",
+          "AFFECTED UNITS TOOLTIP": "tt_tt_territories",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "1",
+          "FACTOR": "TerritoryMoraleBonus",
+          "METHOD": "Add",
+          "VALUE": "3",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:328",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        },
+        {
+          "": "MilitaryTechUpgrade_E15_Slot4b",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "",
+          "AFFECTED UNITS TOOLTIP": "tt_tt_territories",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "1",
+          "FACTOR": "TerritoryFervorBonus",
+          "METHOD": "Add",
+          "VALUE": "3",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:329",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Imperial15_1",
+      "label": "Cyborgs",
+      "host": "University",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:614",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "ImperialTechUpgrade_E15_Slot1a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "LeaderPriestSpy",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "PowerRechargeTime",
+          "METHOD": "AddPermMul",
+          "VALUE": "-15",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:320",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Imperial15_2",
+      "label": "Künstliches Gehirn",
+      "host": "CityCenter",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:615",
+      "adapted_effects": 0,
+      "effects": [],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": [
+        {
+          "": "ImperialTechUpgrade_E15_Slot2a",
+          "UNIT": "",
+          "UNIT TYPE ATTRIBUTE": "",
+          "AFFECTED UNITS TOOLTIP": "",
+          "USE TEXT INSTEAD OF AFFECTED UNIT ICONS?": "0",
+          "FACTOR": "RegionalPowerDuration",
+          "METHOD": "AddPermMul",
+          "VALUE": "25",
+          "CHILDREN": "0",
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:321",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ]
+    },
+    {
+      "id": "Imperial15_3",
+      "label": "Magnetische Dämpfungsschilde",
+      "host": "Stable",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:616",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E15_Slot3a",
+          "factor": "HitPoints",
+          "targets": [
+            26,
+            46
+          ],
+          "mask": 70368811286528,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:322",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    },
+    {
+      "id": "Imperial15_4",
+      "label": "Nanomaschinen",
+      "host": "Dock",
+      "source": "db.zip!db/TechTree/dbtechtreenode.csv:617",
+      "adapted_effects": 1,
+      "effects": [
+        {
+          "factor_id": "ImperialTechUpgrade_E15_Slot4a",
+          "factor": "HitPoints",
+          "targets": [
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            42,
+            45
+          ],
+          "mask": 39719320682496,
+          "field": 0,
+          "method": 0,
+          "value": 10.0,
+          "source": "db.zip!db/TechTree/upgrade_factorset.csv:323",
+          "source_sha256": "ff2350dc58b5a505b82fa0db96280445aaf6fa3b872b25ecb62540e02407c44c"
+        }
+      ],
+      "tooltip_only_factors": [],
+      "deduplicated_factors": [],
+      "unimplemented_factors": []
+    }
+  ]
+}

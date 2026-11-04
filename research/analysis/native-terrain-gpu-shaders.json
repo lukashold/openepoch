@@ -1,0 +1,36 @@
+{
+  "format": "openepoch-headless-gles-programs-v1",
+  "context": {
+    "egl": [
+      1,
+      5
+    ],
+    "vendor": "Google Inc. (AMD)",
+    "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11-31.0.21924.61)",
+    "version": "OpenGL ES 3.0 (ANGLE 2.1 git hash: unknown hash)",
+    "libraryDirectory": "C:\\Program Files\\Mozilla Firefox",
+    "surface": [
+      64,
+      64
+    ],
+    "uiLaunched": false,
+    "framebuffer": "RGBA8 texture + DEPTH24_STENCIL8 renderbuffer"
+  },
+  "programs": [
+    {
+      "name": "native-terrain",
+      "compiled": true,
+      "linked": true,
+      "vertexSha256": "9f3482f9446fde6fa07f7ed0ca4219d2e35d92cf798ac9045e65f9a056ca999d",
+      "fragmentSha256": "82312ae9dd2708b8b7a854f87f612a434743768bb59fb8666cd8c377dccd4fc4"
+    },
+    {
+      "name": "native-water",
+      "compiled": true,
+      "linked": true,
+      "vertexSha256": "b72acea400e56c4c93b4d842cb1d7d7d440adbf2403f967553e9053df55ffd46",
+      "fragmentSha256": "58f6c4401123699a829e791985536515046b27ec6960d615fdceb6e1ebc0cc49"
+    }
+  ],
+  "uiLaunched": false
+}

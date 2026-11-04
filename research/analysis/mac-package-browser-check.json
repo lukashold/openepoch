@@ -1,0 +1,60 @@
+{
+  "format": "mac-package-browser-check-v1",
+  "status": "passed",
+  "createdUTC": "2026-10-31T12:19:18.251263+00:00",
+  "platform": "Windows in-app Chromium; no physical macOS execution",
+  "root": "work/Mac Paket Fortress Test/OpenEpoch",
+  "url": "http://127.0.0.1:8127/?rules=ee2&build=fortress1&qa=1&epoch=13",
+  "wasmSha256": "98cc80a34f8985e2fc183aa431726e58e8284556eef830202188184694626530",
+  "seed": 1,
+  "startingEpoch": 14,
+  "population": "5/40",
+  "loadedNativeModelBindings": 156,
+  "loadedGroundBindings": 13,
+  "groundDrawn": 2,
+  "groundErrors": [],
+  "consoleWarningsOrErrors": [],
+  "construction": {
+    "id": 56,
+    "topLeft": [
+      53,
+      56
+    ],
+    "rotationDegrees": 90,
+    "bbox": [
+      5,
+      5
+    ],
+    "placementError": 0,
+    "wood": [
+      800,
+      100
+    ],
+    "stone": [
+      800,
+      100
+    ],
+    "completedDisplayedHp": [
+      9000,
+      9000
+    ],
+    "damage": 225,
+    "range": 11,
+    "garrisonSlots": 10,
+    "healPointsPerSecond": 14
+  },
+  "commandsTested": [
+    "icheat",
+    "sea monkeys"
+  ],
+  "cheatsScope": "Only this copied future visual/runtime test used instant completion after normal700wood/700stone payment and observed35percent ordinary construction. The separate early skirmish browser check completed naturally without cheats.",
+  "screenshots": [
+    "../../OpenEpoch/mac-fortress-future-check.jpg"
+  ],
+  "temporaryServerStopped": true,
+  "limits": [
+    "Windows copied-runtime test only; no Mac hardware, Safari or ARM execution test.",
+    "This copied case verifies startup, actual WASM, assets, late model, cost and cheat UI. Natural timing, garrison and save/load are in fortress-browser-check.json."
+  ],
+  "implicitFaviconRequest": "Browser default/favicon.ico returned404; no game asset dependency."
+}

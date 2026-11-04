@@ -1,0 +1,19 @@
+{
+  "format": "openepoch-native-render-package-extraction-v1",
+  "status": "passed",
+  "build": "native-render1",
+  "createdUTC": "2026-11-02T21:58:47.721302+00:00",
+  "file": "OpenEpoch-Mac-Komplett.zip",
+  "zipBytes": 686003836,
+  "sha256": "af81d662028077e1f5394e2bad74db20fe56e5d07c3644ab3d194660637b9ce3",
+  "zipEntries": 3132,
+  "manifestFilesVerified": 3130,
+  "allCopiedFilesMatchCurrentSource": true,
+  "mediaFiles": 3085,
+  "mediaBytes": 781953331,
+  "root": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\Mac Paket Native Test\\OpenEpoch",
+  "launcherMode": "0755",
+  "launcherLineEndings": "LF",
+  "pythonMinimum": "3.8",
+  "noMacExecutionClaim": true
+}

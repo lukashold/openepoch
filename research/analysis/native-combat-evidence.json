@@ -1,0 +1,216 @@
+{
+  "format": "ee2-native-combat-evidence-v1",
+  "createdUtc": "2026-11-03T06:34:35.523008+00:00",
+  "scope": "Explicit BASE db.zip/hdrs.zip RPS table and upgrade matchup adjustments for the current57 definition mappings. Existing role aliases remain explicit; this does not reconstruct all native attack abilities, armor modifiers, elevation, formations, veterancy or civilization effects.",
+  "engineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+  "sourceProfile": "BASE db.zip and hdrs.zip; matched to the existing BASE unit-stat profile",
+  "sources": [
+    {
+      "archive": "hdrs.zip",
+      "entry": "DbHdrs/DbUnitDefEnums.h",
+      "sha256": "c2fd2ef87d9927872b913a30eaaf267a096b7e4c5221e145020a7173afeb79e9"
+    },
+    {
+      "archive": "hdrs.zip",
+      "entry": "DbHdrs/DbCombatDefs.h",
+      "sha256": "08c479892dee1e1c9dcda642c91dd2d1e598093d78097245863fa5904b08caa8"
+    },
+    {
+      "archive": "db.zip",
+      "entry": "db/Simulation/dbcombat.csv",
+      "sha256": "8c0cf78cd966e3342c3b253c091cb5f83aa9344696e28d29b41279099e6e9680"
+    },
+    {
+      "archive": "db.zip",
+      "entry": "db/Simulation/dbcombat_unittypeadjust.csv",
+      "sha256": "ed5e7ea99651a25b9b7153bf4fbd7e250131b7bb356a027ec44b54944f8a67e4"
+    },
+    {
+      "archive": "db.zip",
+      "entry": "db/TechTree/upgrade_unittypes.csv",
+      "sha256": "377cd1a4f02dde5383cbc02bdb4231446452be87b7fd217d13b501a0e302cdac"
+    }
+  ],
+  "nativeFunctions": {
+    "0052fb20": {
+      "role": "DbCombat post-load table construction",
+      "table": "00c98b58",
+      "shape": [
+        35,
+        35
+      ],
+      "orientation": "defenderRPS*35 + attackerRPS",
+      "conversionAddress": "00b41748",
+      "conversion": 0.009999999776482582
+    },
+    "0052ff30/0052ffe0": {
+      "role": "Unit-type adjustment list construction",
+      "entry": "attacker upgrade + defender upgrade + adjustment*.01",
+      "bucket": "defender upgrade &255"
+    },
+    "0052ff40": {
+      "role": "Upgrade-pair lookup",
+      "fields": "attackerUnitType+0x2a0 and defenderUnitType+0x2a0",
+      "key": "(attackerUpgrade <<16) | defenderUpgrade",
+      "missingDefaultAddress": "00b433b8",
+      "missingDefault": 1.0
+    },
+    "007dbef0": {
+      "role": "Per-target damage multiplier",
+      "formula": "rawDamage * table[defenderRPS][attackerRPS] * adjustmentLookup(attackerType,defenderType), then additional target defense modifier"
+    },
+    "007da960": {
+      "role": "Target eligibility",
+      "conditions": "base class multiplier>0 and abs(upgrade adjustment)>=epsilon",
+      "epsilonAddress": "00b4141c",
+      "epsilon": 9.999999974752427e-07,
+      "implementationEquivalence": "All BASE table/adjustment integers in this profile are nonnegative, so combined multiplier>0 gives the same decision."
+    },
+    "007dfdf0": {
+      "role": "Per-defender area damage",
+      "rps": "Repeats the class and upgrade lookup for each defender, not just the original target",
+      "splash": "Original primary target retains full damage; secondary centers use(1-distance/radius)^2 inside radius, zero at/outside radius."
+    }
+  },
+  "coverage": {
+    "rpsTypes": 35,
+    "classPairs": 1225,
+    "sourceProfiles": 269,
+    "upgradeAdjustments": 221,
+    "unknownUpgradeProfiles": 8
+  },
+  "implementation": {
+    "module": "src/ee2_combat.rs",
+    "importer": "tools/import_ee2_combat.py",
+    "lookup": "57\u00d715 role/epoch map \u2192269 explicit native source profiles",
+    "upgradeIdentity": "Own stable integer IDs represent exact original upgrade names; pairs do not depend on matching the native database numeric order. Existing class-stat audit CSV source line selects the exact upgrade, including duplicate UNIT/EPOCH rows.",
+    "missingUpgradeScope": "Farm, CitizenM, OilRig and UraniumMine source rows have no matched upgrade. None of the BASE221 adjustment entries names Citizen/Farm/OilRig/UraniumMine upgrades; these profiles retain the native class multiplier and default adjustment1.",
+    "unknownProfile": "Explicit None fallback permits existing weapon/armor behavior for unmapped invalid/unavailable profiles.",
+    "basePreservation": "Integrated with ee2-reference guards; actual base53 before/after equivalence passed16economy/epoch scenarios plus2mixed-army combat scenarios.",
+    "engineHook": {
+      "damage": "Native matchup multiplier replaces own weapon/armor matrix when both profiles are known; existing player defense modifier remains. Unknown profiles preserve fallback.",
+      "targets": "Acquire, manual attack orders, cached-target resolution and firing reject zero native matchups.",
+      "projectiles": "Attacker profile captured at launch; defender current epoch evaluated separately per target at impact, including splash.",
+      "areaDamage": "EE2 uses center distance and squared secondary falloff, retaining full primary-target damage. Base keeps existing radius-adjusted linear falloff.",
+      "saveCompatibility": "Ent/Player/save layouts unchanged; existing saves deliberately discard projectiles. Attacker profile is a transient feature-gated Proj field."
+    }
+  },
+  "validation": {
+    "sourceImportTests": {
+      "command": "C:/Python314/python.exe outputs/OpenEpoch/tools/test_ee2_combat_import.py",
+      "passed": 6,
+      "failed": 0,
+      "observed": "Actual unittest invocation completed OK; every raw CSV cell and named adjustment compared, source hashes and269 profile/source-line bindings checked."
+    },
+    "standaloneRustTests": {
+      "command": "rustc --test outputs/OpenEpoch/src/ee2_combat.rs -o work/ee2_combat_module_tests.exe; run executable",
+      "passed": 5,
+      "failed": 0,
+      "observed": "Actual compiled Rust tests passed: asymmetric class matchups, unknown fallback, upgrade factor, squared splash golden vectors, all269\u00b2 bounded profile matchups."
+    },
+    "engineFixtures": {
+      "file": "src/ee2_combat_tests.rs",
+      "count": 11,
+      "status": "passed",
+      "combatCases": 9,
+      "cityCases": 2
+    },
+    "wasmOracle": {
+      "format": "native-combat-wasm-tests-v1",
+      "status": "passed",
+      "wasmSha256": "1c1507d527c6c24ffefb728616b5e2ad007a5b57ba1f4e0fbfaf99e294d5dc53",
+      "combatAuditSha256": "ee39309d94b4586b9466d952eb20c424fcf51dca1cca305f62c0a19379e9bb94",
+      "checks": 290363,
+      "profiles": 269,
+      "profilePairChecks": 72361
+    },
+    "integratedRust": [
+      {
+        "profile": "ee2-reference",
+        "passed": 64,
+        "failed": 0,
+        "log": "native-combat-ee2-rust-tests.log",
+        "logSha256": "8d99a614a5bfe49335d41f33f4962638d9add70afbb853067dacacc06fbb8fa6"
+      },
+      {
+        "profile": "base",
+        "passed": 32,
+        "failed": 0,
+        "log": "native-combat-base-rust-tests.log",
+        "logSha256": "497fd598b08819905fd38418c8289ee14617da5448cb523e52ec818ef318c2c5"
+      }
+    ]
+  },
+  "limits": [
+    "The analyzed installed UP engine loader uses dbcomba5.csv and dbcombat_unittypeadjus5.csv. This generated profile deliberately uses BASE tables consistently with existing BASE stats; installed UP data equivalence is not claimed.",
+    "This does not implement every native attack ability, accuracy, armor, elevation, formation, veterancy, civilization bonus, invulnerability or projectile lifetime mechanism.",
+    "Projectile attacker-profile capture and float32 WebAssembly operation ordering are reconstruction choices; a full x87/runtime pointer-lifetime equivalence audit is outside this slice.",
+    "Current role/visual aliases are retained from the existing unit audit. Native numerical source bindings do not make those names/roster slots a full original recreation."
+  ],
+  "exports": [
+    {
+      "file": "native-combat-loader.c",
+      "sha256": "b7f96471c20c1b651eaa5491845afefab3eb70b76835f8cd11a62718e4987373",
+      "bytes": 121420
+    },
+    {
+      "file": "native-combat-tables.c",
+      "sha256": "9e60217fd6469655470a9c4ad496645788692d56a007c290e5f5a5beb2fa61fa",
+      "bytes": 4619
+    },
+    {
+      "file": "native-combat-damage-ground.c",
+      "sha256": "392ed18260826384cb3c374a7088901f1c38845a3bf2b562253c1ce6f5120d4d",
+      "bytes": 53186
+    },
+    {
+      "file": "native-combat-adjustment-lookup.c",
+      "sha256": "1b83ab21cc629c6eea82ad45c41be9bada904a1d41d083fcd4e339b83bb6dcf9",
+      "bytes": 2407
+    }
+  ],
+  "files": [
+    {
+      "file": "src/game.rs",
+      "sha256": "5e10e7e42578603eb86ba824d0fd6f21d0fab69a9330b8e561f1529f9534aecf",
+      "bytes": 82446
+    },
+    {
+      "file": "src/lib.rs",
+      "sha256": "563bc98627ba3626fde4b95579b36bdeee11cf47e11372972497ccca3057cf39",
+      "bytes": 29154
+    },
+    {
+      "file": "src/ee2_combat.rs",
+      "sha256": "b58fddf7b8c83cd85134b83da42d4e6e48fa5eb0d7f59b7c6d3c4388af8b2ac0",
+      "bytes": 40744
+    },
+    {
+      "file": "src/ee2_combat_tests.rs",
+      "sha256": "1f43ce7e90e998a6486dd67c4cd235d2012ec32cec243736eb132c7df6b99459",
+      "bytes": 6260
+    },
+    {
+      "file": "tools/ee2-combat-test.mjs",
+      "sha256": "569712bb521704d523a2dab8387f678284004f421955e61ebbd3a961dbb64344",
+      "bytes": 4210
+    },
+    {
+      "file": "tools/combat-network-test.mjs",
+      "sha256": "6d5f2e131e4239faf8307216447d72c615fa2dbda33b3c67995ee4b0ca10062a",
+      "bytes": 1465
+    },
+    {
+      "file": "tools/import_ee2_combat.py",
+      "sha256": "2efb73cba79cf7b6a257c729c9895282dcff458924302c521cafdfd57df6f741",
+      "bytes": 11595
+    },
+    {
+      "file": "docs/ee2-combat.json",
+      "sha256": "ee39309d94b4586b9466d952eb20c424fcf51dca1cca305f62c0a19379e9bb94",
+      "bytes": 370789
+    }
+  ],
+  "originalInstallation": "Read only. No CUA/native game launch or GUI used.",
+  "integrationReport": "native-combat-integration.json"
+}

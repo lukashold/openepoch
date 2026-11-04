@@ -1,0 +1,93 @@
+{
+  "format": "openepoch-native-material-implementation-v1",
+  "date": "2026-11-02",
+  "changes": [
+    "All native material colours, glossiness, alpha, specular enable, vertex-colour/lighting, depth, alpha and stencil properties preserved in explicit optional part metadata.",
+    "191 existing near/far meshes upgraded from 125 SHA256-verified native NIF sources. All preexisting JSON values unchanged except the three added material fields.",
+    "Renderer consumes source ambient/diffuse/emissive/specular channels, source specular enable, vertex modes, alpha test functions, blend factors and depth flags; restores caller blend/depth state.",
+    "Renderer supports verified native class scales and restored source origins from model-scales.json. Resource triangle picking inverts exactly the same transform.",
+    "Optional shared height raster and light direction produce terrain-conforming silhouette shadows. This projector is an own adapter."
+  ],
+  "runtimeApi": {
+    "updateTerrain": "result.updateTerrain(heights, size=257); R32F height texture on unit6, manual bilinear sampling.",
+    "draw": "result.draw({...existing, eye:[x,y,z], lighting:{ambient,sun,direction}}); optional explicit light profile.",
+    "testExports": "MODEL_SHADERS/ORIGINAL_MODEL_SHADERS and packOriginalVertices from original-renderer.js; material decoders/reference in original-material.js."
+  },
+  "counts": {
+    "nativeSources": 125,
+    "upgradedModelFiles": 191,
+    "nearFarParts": 697,
+    "nativeSpecularEnabledParts": 31,
+    "nativeSpecularEnabledAndNonblackParts": 22,
+    "completeBaselineModelsVerified": 191
+  },
+  "ghidra": {
+    "engineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+    "export": "visual-material-runtime.c",
+    "exportSha256": "ad054e3018daf0155154e5699d7046b50f0a475ac438f09842cfdcf7042f804e",
+    "lightingUniforms": "00628FE0 binds SunDir/SunColor/SceneAmbient;006296B0 supplies Light+110 direction and multiplies Light+F4 diffuse/Light+E8 ambient by Light+E4 brightness.",
+    "skinShaderBinding": "Camera agent additionally exported005F9100 selecting IndexPal20_High/Low when the capability/config path is enabled."
+  },
+  "nativeShaderEvidence": {
+    "shaders/IndexPal20.NSF": "2684436956615886be6f7e1ebf54977ead949b11b410f9fc267483d6df841e13",
+    "shaders/vsh_psh/IndexPal20_High.vsh": "08447a22a4b9513a4dc4578999f16787827c42451729fd7083ca203e1a50aec6",
+    "shaders/vsh_psh/IndexPal20_Low.vsh": "64e1800be1d1be10720f09206e7fd4950db66f20ccae8b25ea1ba05e597240bf"
+  },
+  "nativeShaderInterpretation": {
+    "IndexPal20_High": "Signed dot(normal,-SunDir)*SunColor+SceneAmbient to vertex diffuse; MaterialDiffuse alpha; native Stage0 TOP_Modulate4x.",
+    "IndexPal20_Low": ".5*SunColor+SceneAmbient to vertex diffuse; MaterialDiffuse alpha; native Stage0 TOP_Modulate4x."
+  },
+  "tests": {
+    "pythonSourceExport": "PASS4 tests, including all191 current runtime hashes plus independent near/far NIF property equality.",
+    "rendererContract": "PASS native state uniforms/restoration, exact height upload, native scale/origin/picking, existing VAO/morph/LOD/team-texture regressions.",
+    "materialContract": "PASS8 alpha comparisons/threshold boundary, source specular flags, coloured vertex/emissive/specular and legacy illumination fixtures.",
+    "nativeGpu": {
+      "report": "native-material-gpu-tests.json",
+      "reportSha256": "81b6de0105b2e8ef1b7a14cc2a4292a064ebb2982dd99736602e552e4995f80e",
+      "passed": 11,
+      "context": {
+        "egl": [
+          1,
+          5
+        ],
+        "vendor": "Google Inc. (AMD)",
+        "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11-31.0.21924.61)",
+        "version": "OpenGL ES 3.0 (ANGLE 2.1 git hash: unknown hash)",
+        "libraryDirectory": "C:\\Program Files\\Mozilla Firefox",
+        "surface": [
+          64,
+          64
+        ],
+        "uiLaunched": false,
+        "framebuffer": "RGBA8 texture + DEPTH24_STENCIL8 renderbuffer"
+      },
+      "uiLaunched": false
+    },
+    "baseline": {
+      "report": "native-material-baseline-verification.json",
+      "reportSha256": "88b9e1819e8d4aec408ddbe70d27a05cf2bc954142f3c51d21221c8d9d216f46",
+      "verifiedModels": 191
+    }
+  },
+  "filesSha256": {
+    "docs/original-renderer.js": "176896aaa07ebce8c76745337869b1715db7b7e7ff6269fea62b6d45771b0192",
+    "docs/original-material.js": "2c0b2a0bb290ed78763a3330f43168a46a9c4258234fe590b3c12f794c8ee9c6",
+    "docs/original-scale.js": "4651e04fd4a0a61b8a47f2c4b8fb56df83bfd7864796011cf2648df6b992a947",
+    "tools/native_materials.py": "7a5343ba4534c49afa5cbd1e916a7510bf6224fe76b5e00011ddcf4894704466",
+    "tools/extract_ee2_models.py": "b614c23137532cc4150f8816fbae6823fb13466a68f638b7a1fbd6470134bbcf",
+    "tools/upgrade_ee2_materials.py": "474fbce30ce860cddf5e35c3013489ed40fb847a7d71769e605a3a8c076b90b4",
+    "tools/test_ee2_materials.py": "295a1730566078491aab3ad0861a327b0db5babdb336758901e6c7644f2c6325",
+    "tools/original-renderer-test.mjs": "ef4d5c3bb58b1d95bbf1fa39345062fde2f139baaeea0ca24f4e4154bcf5df55",
+    "tools/original-material-test.mjs": "71c5ba1e825a553a60cffbf472c855f97859ec7f0c4358c0bc9c3c809fed4e28",
+    "tools/export_original_model_shaders.mjs": "9a991c3bcac34e029263d9e59ef000e787ebe97d66e1ba53c3f53adeca6c2588",
+    "tools/original_material_gpu_test.py": "0d81738690d6781bfe862dc38b42e8d1e35694d53575033691e66d665db07445",
+    "tools/verify_material_upgrade_baseline.py": "d50d4bbce6b7f4864e63456e5512152b31056722a4cdacdbe5a90cf764a8cce7"
+  },
+  "limits": [
+    "Current illumination constants and per-fragment Blinn-Phong combination remain an explicit renderer adapter. Native atmosphere/brightness, fixed-function stages and per-skin IndexPal vertex-lighting are not universally reproduced.",
+    "No global4x colour boost is inferred from the native ApplyMode4 diagnostic. Numeric texture apply modes remain preserved without claiming full native stage equivalence.",
+    "Native render-order/transparent-pass overrides, complete stencil/cull pipeline, weather and all original shader families remain outside this change.",
+    "Own terrain-conforming shadow algorithm is not the original EE2 shadow algorithm.",
+    "Headless GPU tests execute ANGLE DLLs in Python only. No app/browser/native game was opened. No original-game screenshot parity, macOS execution, or whole-game1:1 claim."
+  ]
+}

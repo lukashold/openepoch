@@ -18,6 +18,12 @@ pub const R_NONE: u8 = 0;
 pub const R_FOOD: u8 = 1;
 pub const R_WOOD: u8 = 2;
 pub const R_METAL: u8 = 3;
+pub const R_STONE:u8=4;
+pub const R_GOLD:u8=5;
+pub const R_TIN:u8=6;
+pub const R_SALTPETER:u8=7;
+pub const R_OIL:u8=8;
+pub const R_URANIUM:u8=9;
 
 /// Cardinals first so BFS prefers straight moves; index 8 means "at goal".
 pub const DIRS: [(i32, i32); 8] = [(1, 0), (0, 1), (-1, 0), (0, -1), (1, 1), (-1, 1), (-1, -1), (1, -1)];
@@ -105,6 +111,9 @@ pub struct Map {
     /// Territory id of every tile, and the point each territory grew from.
     pub terr: Vec<u8>,
     pub tseeds: Vec<(f32, f32)>,
+    /// Shared tile-edge borders, matching native neighbor pairs in 00723ba0.
+    /// This graph is derived from the map, never serialized as mutable state.
+    pub territory_neighbors: [u32; 32],
     /// Terrain elevation at tile corners, `(N + 1)^2` values, for the 3D view.
     pub hm: Vec<f32>,
 }
@@ -137,6 +146,7 @@ impl Map {
             seed,
             terr: vec![0; NN],
             tseeds: Vec::new(),
+            territory_neighbors: [0; 32],
             hm: vec![0.0; (N + 1) * (N + 1)],
         };
         let mut seed = seed;
@@ -152,6 +162,7 @@ impl Map {
         }
         m.seed = seed;
         m.gen_resources(seed, players);
+        if cfg!(feature="ee2-reference") {m.seed_extra_resources(players);}
         for i in 0..NN {
             m.upd_pass(i);
             m.recolor(i);
@@ -188,6 +199,23 @@ impl Map {
             self.terr[i] = best as u8;
         }
         self.tseeds = seeds;
+        self.rebuild_territory_neighbors();
+    }
+
+    pub fn rebuild_territory_neighbors(&mut self) {
+        self.territory_neighbors = [0; 32];
+        for y in 0..N {
+            for x in 0..N {
+                let a = self.terr[y * N + x] as usize;
+                for b in [if x + 1 < N {self.terr[y*N+x+1] as usize} else {a},
+                          if y + 1 < N {self.terr[(y+1)*N+x] as usize} else {a}] {
+                    if a != b {
+                        self.territory_neighbors[a] |= 1 << b;
+                        self.territory_neighbors[b] |= 1 << a;
+                    }
+                }
+            }
+        }
     }
 
     fn elev(&self, i: usize) -> f32 {
@@ -325,11 +353,12 @@ impl Map {
     }
 
     fn blob(&mut self, rng: &mut Rng, cx: i32, cy: i32, count: u32, kind: u8, amt: u16) {
+        let amt=if cfg!(feature="ee2-reference"){if kind==R_WOOD{1277}else{1000}}else{amt};
         let (mut x, mut y) = (cx, cy);
         for _ in 0..count * 3 {
             if x > 2 && y > 2 && x < N as i32 - 3 && y < N as i32 - 3 {
                 let i = y as usize * N + x as usize;
-                if (self.ter[i] == T_GRASS || (kind == R_WOOD && self.ter[i] == T_SAND)) && self.res[i] == R_NONE {
+                if (self.ter[i] == T_GRASS || (kind == R_WOOD && self.ter[i] == T_SAND)) && self.res[i] == R_NONE && !self.blocked[i] {
                     self.res[i] = kind;
                     self.amt[i] = amt;
                     if kind == R_WOOD {
@@ -350,7 +379,7 @@ impl Map {
             self.amt[i] = 0;
             if self.ter[i] == T_FOREST {
                 self.res[i] = R_WOOD;
-                self.amt[i] = 150;
+                self.amt[i] = if cfg!(feature="ee2-reference"){1277}else{150};
             }
         }
         for _ in 0..70 {
@@ -380,6 +409,26 @@ impl Map {
                     }
                 }
                 self.blob(&mut rng, x, y, n, kind, amt);
+            }
+        }
+    }
+
+    /// Deterministic new deposits, also used when migrating a three-resource save.
+    pub fn seed_extra_resources(&mut self,players:usize){
+        let mut rng=Rng(self.seed^0x91b3_78d5|1);
+        for kind in R_STONE..=R_URANIUM {
+            for _ in 0..24 {let x=rng.range(N as u32) as i32;let y=rng.range(N as u32) as i32;self.blob(&mut rng,x,y,6,kind,1500);}
+            for p in 0..players {
+                let (sx,sy)=self.starts[p];
+                let a=(kind-R_STONE) as f32*1.0472+0.3;
+                let (cx,cy)=(sx as i32+(a.cos()*17.0) as i32,sy as i32+(a.sin()*17.0) as i32);
+                // Only unused land is changed: old deposits and structures survive migration.
+                for radius in 0..8 {let mut found=false;for oy in -radius..=radius {for ox in -radius..=radius {
+                    let t=tile_of((cx+ox) as f32,(cy+oy) as f32);
+                    if self.ter[t]==T_GRASS&&self.res[t]==R_NONE&&!self.blocked[t] {
+                        self.blob(&mut rng,(t%N) as i32,(t/N) as i32,6,kind,1500);found=true;break;
+                    }
+                }if found {break;}}if found {break;}}
             }
         }
     }

@@ -1,0 +1,10 @@
+{
+  "format": "openepoch-native-terrain-contract-tests-v1",
+  "checks": 3805,
+  "passed": true,
+  "imageCount": 52,
+  "initialSeasonSlot": 6,
+  "explicitWinterSlotTested": true,
+  "noBrowserOrUI": true,
+  "scope": "Real source manifest/images through loader with stateful GL contract fake; separate ANGLE GPU report covers actual shaders/pixels."
+}

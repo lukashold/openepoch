@@ -1,0 +1,362 @@
+{
+  "format": "fortress-ui-equivalence-v1",
+  "status": "PASS",
+  "createdUtc": "2026-10-31T12:06:32.812Z",
+  "change": "Only selected UI HP/maxHP formatting changed from integer truncation to round().",
+  "scope": "Real WebAssembly simulation comparison, with deliberately different UI read frequency. This report does not assert native HP arithmetic parity or replace browser HUD acceptance.",
+  "fieldsCompared": [
+    "state_hash() at tick0,100,...,1200"
+  ],
+  "fieldsRead": [
+    "ui(): before ticking when tick%13===0; old once, new twice"
+  ],
+  "init": {
+    "n_ai": 1,
+    "bench": 0,
+    "humans": 1,
+    "local": 0
+  },
+  "cases": [
+    {
+      "profile": "ee2",
+      "seed": 7,
+      "ticks": 1200,
+      "status": "PASS",
+      "oldWasm": {
+        "file": "../../work/fortress1-before-hp-round-ee2.wasm",
+        "sha256": "dac1a2f365266a4208543812118282cffb349a385b01b90c11c23c7dee389894",
+        "bytes": 415099
+      },
+      "currentWasm": {
+        "file": "docs/openepoch-ee2.wasm",
+        "sha256": "98cc80a34f8985e2fc183aa431726e58e8284556eef830202188184694626530",
+        "bytes": 415111
+      },
+      "oldUiCalls": 93,
+      "currentUiCalls": 186,
+      "states": [
+        {
+          "tick": 0,
+          "old": 3483293159,
+          "current": 3483293159
+        },
+        {
+          "tick": 100,
+          "old": 757398220,
+          "current": 757398220
+        },
+        {
+          "tick": 200,
+          "old": 489006843,
+          "current": 489006843
+        },
+        {
+          "tick": 300,
+          "old": 947638865,
+          "current": 947638865
+        },
+        {
+          "tick": 400,
+          "old": 907199733,
+          "current": 907199733
+        },
+        {
+          "tick": 500,
+          "old": 688925879,
+          "current": 688925879
+        },
+        {
+          "tick": 600,
+          "old": 2436970541,
+          "current": 2436970541
+        },
+        {
+          "tick": 700,
+          "old": 1360644581,
+          "current": 1360644581
+        },
+        {
+          "tick": 800,
+          "old": 3269073363,
+          "current": 3269073363
+        },
+        {
+          "tick": 900,
+          "old": 358024861,
+          "current": 358024861
+        },
+        {
+          "tick": 1000,
+          "old": 979498354,
+          "current": 979498354
+        },
+        {
+          "tick": 1100,
+          "old": 3383911321,
+          "current": 3383911321
+        },
+        {
+          "tick": 1200,
+          "old": 1584792023,
+          "current": 1584792023
+        }
+      ]
+    },
+    {
+      "profile": "ee2",
+      "seed": 13,
+      "ticks": 1200,
+      "status": "PASS",
+      "oldWasm": {
+        "file": "../../work/fortress1-before-hp-round-ee2.wasm",
+        "sha256": "dac1a2f365266a4208543812118282cffb349a385b01b90c11c23c7dee389894",
+        "bytes": 415099
+      },
+      "currentWasm": {
+        "file": "docs/openepoch-ee2.wasm",
+        "sha256": "98cc80a34f8985e2fc183aa431726e58e8284556eef830202188184694626530",
+        "bytes": 415111
+      },
+      "oldUiCalls": 93,
+      "currentUiCalls": 186,
+      "states": [
+        {
+          "tick": 0,
+          "old": 944810933,
+          "current": 944810933
+        },
+        {
+          "tick": 100,
+          "old": 3051386527,
+          "current": 3051386527
+        },
+        {
+          "tick": 200,
+          "old": 2975277685,
+          "current": 2975277685
+        },
+        {
+          "tick": 300,
+          "old": 4071126058,
+          "current": 4071126058
+        },
+        {
+          "tick": 400,
+          "old": 2302527112,
+          "current": 2302527112
+        },
+        {
+          "tick": 500,
+          "old": 2538675930,
+          "current": 2538675930
+        },
+        {
+          "tick": 600,
+          "old": 2753220058,
+          "current": 2753220058
+        },
+        {
+          "tick": 700,
+          "old": 2865111519,
+          "current": 2865111519
+        },
+        {
+          "tick": 800,
+          "old": 2829924200,
+          "current": 2829924200
+        },
+        {
+          "tick": 900,
+          "old": 848336485,
+          "current": 848336485
+        },
+        {
+          "tick": 1000,
+          "old": 3642613422,
+          "current": 3642613422
+        },
+        {
+          "tick": 1100,
+          "old": 1212183935,
+          "current": 1212183935
+        },
+        {
+          "tick": 1200,
+          "old": 1535844996,
+          "current": 1535844996
+        }
+      ]
+    },
+    {
+      "profile": "base",
+      "seed": 7,
+      "ticks": 1200,
+      "status": "PASS",
+      "oldWasm": {
+        "file": "../../work/fortress1-before-hp-round-base.wasm",
+        "sha256": "4ef6f76bd8b08cde61bc011b7d9545e06f368d2d8ee8d2aaa116be65f4b7dd5d",
+        "bytes": 268493
+      },
+      "currentWasm": {
+        "file": "docs/openepoch.wasm",
+        "sha256": "26cdb7342ec868b94127df99c2f3d77304915bfc46e9f5d9ac947a6578c1670e",
+        "bytes": 268505
+      },
+      "oldUiCalls": 93,
+      "currentUiCalls": 186,
+      "states": [
+        {
+          "tick": 0,
+          "old": 217898033,
+          "current": 217898033
+        },
+        {
+          "tick": 100,
+          "old": 1783168238,
+          "current": 1783168238
+        },
+        {
+          "tick": 200,
+          "old": 807842613,
+          "current": 807842613
+        },
+        {
+          "tick": 300,
+          "old": 3879069752,
+          "current": 3879069752
+        },
+        {
+          "tick": 400,
+          "old": 2947857503,
+          "current": 2947857503
+        },
+        {
+          "tick": 500,
+          "old": 105247432,
+          "current": 105247432
+        },
+        {
+          "tick": 600,
+          "old": 3957308353,
+          "current": 3957308353
+        },
+        {
+          "tick": 700,
+          "old": 217867695,
+          "current": 217867695
+        },
+        {
+          "tick": 800,
+          "old": 1383572985,
+          "current": 1383572985
+        },
+        {
+          "tick": 900,
+          "old": 2630061318,
+          "current": 2630061318
+        },
+        {
+          "tick": 1000,
+          "old": 510137689,
+          "current": 510137689
+        },
+        {
+          "tick": 1100,
+          "old": 1911534070,
+          "current": 1911534070
+        },
+        {
+          "tick": 1200,
+          "old": 183661196,
+          "current": 183661196
+        }
+      ]
+    },
+    {
+      "profile": "base",
+      "seed": 13,
+      "ticks": 1200,
+      "status": "PASS",
+      "oldWasm": {
+        "file": "../../work/fortress1-before-hp-round-base.wasm",
+        "sha256": "4ef6f76bd8b08cde61bc011b7d9545e06f368d2d8ee8d2aaa116be65f4b7dd5d",
+        "bytes": 268493
+      },
+      "currentWasm": {
+        "file": "docs/openepoch.wasm",
+        "sha256": "26cdb7342ec868b94127df99c2f3d77304915bfc46e9f5d9ac947a6578c1670e",
+        "bytes": 268505
+      },
+      "oldUiCalls": 93,
+      "currentUiCalls": 186,
+      "states": [
+        {
+          "tick": 0,
+          "old": 1450116239,
+          "current": 1450116239
+        },
+        {
+          "tick": 100,
+          "old": 3837968146,
+          "current": 3837968146
+        },
+        {
+          "tick": 200,
+          "old": 1734813468,
+          "current": 1734813468
+        },
+        {
+          "tick": 300,
+          "old": 1185987826,
+          "current": 1185987826
+        },
+        {
+          "tick": 400,
+          "old": 781572934,
+          "current": 781572934
+        },
+        {
+          "tick": 500,
+          "old": 413782623,
+          "current": 413782623
+        },
+        {
+          "tick": 600,
+          "old": 4185284579,
+          "current": 4185284579
+        },
+        {
+          "tick": 700,
+          "old": 3635519985,
+          "current": 3635519985
+        },
+        {
+          "tick": 800,
+          "old": 1315342058,
+          "current": 1315342058
+        },
+        {
+          "tick": 900,
+          "old": 1211386404,
+          "current": 1211386404
+        },
+        {
+          "tick": 1000,
+          "old": 863954142,
+          "current": 863954142
+        },
+        {
+          "tick": 1100,
+          "old": 3931411605,
+          "current": 3931411605
+        },
+        {
+          "tick": 1200,
+          "old": 3619375546,
+          "current": 3619375546
+        }
+      ]
+    }
+  ],
+  "checks": 52
+}

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="de"><meta charset="utf-8"><title>EE2 Originalaudio · lokale Prüfung</title>
+<style>body{font:16px system-ui;background:#142229;color:#e8e0cf;margin:40px auto;max-width:1000px;padding:0 20px}button{font:inherit;background:#33494e;color:inherit;border:1px solid #899787;border-radius:6px;padding:10px;margin:4px}td,th{text-align:left;border-bottom:1px solid #456;padding:7px}table{border-collapse:collapse;width:100%}#status{padding:16px;background:#24383c}.ok{color:#b5e08a}.error{color:#f4a3a0}</style>
+<h1>Originalaudio aus der lokalen EE2-Installation</h1>
+<p>Diese Prüfansicht dekodiert die tatsächlichen Originaldateien im Browser. Es werden keine Dateien hochgeladen.</p>
+<p>Für Ölbohrturm und Uranmine ist kein Auswahlklang belegt. Ihre Arbeitsloops werden nicht als Klickklänge verwendet.</p>
+<button id="check">Originaldateien prüfen</button><button id="select" disabled>Bürger auswählen</button><button id="order" disabled>Bürger beauftragen</button><button id="building" disabled>Stadtzentrum auswählen</button><button id="herc" disabled>HERC-Anlage auswählen</button><button id="music" disabled>Musik und Umgebung starten</button><button id="mute" disabled>Stummschalten</button>
+<p><label for="unit">Originales Einheiten-Sprachset: </label><select id="unit" disabled></select><button id="unit-select" disabled>Auswählen</button><button id="unit-order" disabled>Bewegungsbefehl</button><button id="unit-attack" disabled>Angriffsbefehl</button></p>
+<p><label for="audio-epoch">Epoche der Sprachquelle: </label><select id="audio-epoch" disabled></select></p>
+<p id="status">Noch nicht geprüft.</p><table><thead><tr><th>Wiedergabedatei</th><th>Dauer</th><th>Kanäle</th><th>Abtastrate</th><th>Ergebnis</th></tr></thead><tbody id="results"></tbody></table>
+<script type="module">
+import {createOriginalAudio} from './original-audio.js?v=voices-epochs';
+const $=id=>document.getElementById(id),base=new URL('./local-original/audio/',location.href);
+let ctx,output,originals,sourceManifest,music=false,muted=false;
+const show=text=>$('status').textContent=text;
+$('audio-epoch').replaceChildren(...Array.from({length:15},(_,i)=>new Option(`Epoche ${i+1}`,i)));
+$('check').onclick=async()=>{
+ $('check').disabled=true;$('results').replaceChildren();show('Lade und dekodiere die Originaldateien …');
+ try{
+  ctx=new AudioContext();await ctx.resume();output=ctx.createGain();output.gain.value=.5;output.connect(ctx.destination);
+  originals=createOriginalAudio({enabled:true,base});if(!await originals.prepare(ctx,output))throw Error('Original-Manifest fehlt. tools/extract_ee2_audio.py zuerst ausführen.');
+  const manifest=sourceManifest=await(await fetch(new URL('manifest.json',base),{cache:'no-cache'})).json();
+  const files=[...new Set([
+   ...Object.values(manifest.voices).flatMap(v=>['select','order','attack','build'].flatMap(action=>v[action]||[])),
+   ...(manifest.voiceVariants||[]).flatMap(v=>['select','order','attack','build'].flatMap(action=>v[action]||[])),
+   ...Object.values(manifest.effects).map(r=>r.file),...Object.values(manifest.buildingSelections).map(r=>r.file),
+   manifest.ambient.loop,...manifest.ambient.birds,...Object.values(manifest.music).flat()
+  ].filter(Boolean))];
+  $('unit').replaceChildren(...Object.entries(manifest.voices).map(([id,v])=>new Option(`${id} · ${v.source_visual||'CitizenM'}`,id)));$('unit').value='43';
+  let passed=0;
+  for(const file of files){
+   const row=document.createElement('tr');$('results').append(row);
+   const cells=Array.from({length:5},()=>{const td=document.createElement('td');row.append(td);return td;});
+   const record=manifest.assets[file.toLowerCase()];cells[0].textContent=file+(record?.derived_from?' (PCM-Ableitung aus '+record.derived_from+')':'');
+   try{const r=await fetch(new URL(file,base));if(!r.ok)throw Error('HTTP '+r.status);const decoded=await ctx.decodeAudioData(await r.arrayBuffer());if(decoded.duration<=0||decoded.numberOfChannels<1)throw Error('Leere Audiodaten');cells[1].textContent=decoded.duration.toFixed(2)+' s';cells[2].textContent=decoded.numberOfChannels;cells[3].textContent=decoded.sampleRate+' Hz';cells[4].textContent='Dekodiert';cells[4].className='ok';passed++;}
+   catch(e){cells[4].textContent=e.message;cells[4].className='error';}
+  }
+  const originalCount=Object.values(manifest.assets).filter(a=>!a.derived_from).length,derivedCount=Object.keys(manifest.assets).length-originalCount;
+  show(`${passed}/${files.length} aktive Wiedergabedateien im Browser dekodiert. ${originalCount} unveränderte Originaldateien und ${derivedCount} PCM-Ableitung im Quellenmanifest. Die undekodierbare alte ADPCM-Quelle bleibt als Original erhalten; aktiv wird ihre PCM-Ableitung geprüft. Aufnahme-Sprache wird nicht aus dem Regionssuffix abgeleitet.`);
+  for(const id of ['select','order','building','herc','music','mute','unit','audio-epoch','unit-select','unit-order','unit-attack'])$(id).disabled=false;
+ }catch(e){show('Prüfung fehlgeschlagen: '+e.message);$('check').disabled=false;}
+};
+for(const [id,def,action]of[['select',8,'select'],['order',8,'order'],['building',0,'select'],['herc',55,'select']])$(id).onclick=()=>{const played=originals.acknowledge(def,action);show((played?'Originalaufnahme abgespielt. ':'Noch nicht verfügbar. ')+JSON.stringify(originals.status()));};
+for(const [id,action]of[['unit-select','select'],['unit-order','order'],['unit-attack','attack']])$(id).onclick=()=>{const def=+$('unit').value,epoch=+$('audio-epoch').value;let voice=sourceManifest.voices[def];for(const row of sourceManifest.voiceVariants||[])if(row.id===def&&row.epoch<=epoch&&epoch<row.until)voice=row;const played=originals.acknowledge(def,action,epoch),source=voice?.source_visual?`${voice.source_unit} / ${voice.source_visual}, upgrade_unittypes.csv:${voice.upgrade_source.line}`:'CitizenM / West';show((played?'Originalaufnahme abgespielt. ':'Noch nicht geladen oder kein Originalereignis für diese Aktion. ')+`Epoche ${epoch+1}: ${source}. `+JSON.stringify(originals.status()));};
+$('music').onclick=()=>{music=!music;$('music').textContent=music?'Musik und Umgebung pausieren':'Musik und Umgebung starten';originals.music(music,0,true);};
+$('mute').onclick=()=>{muted=!muted;originals.setMuted(muted);$('mute').textContent=muted?'Ton einschalten':'Stummschalten';};
+setInterval(()=>{if(originals)originals.music(music&&!muted,0,true);},200);
+</script></html>

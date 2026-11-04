@@ -1,0 +1,236 @@
+{
+  "format": "ee2-native-view-implementation-v1",
+  "createdUtc": "2026-11-02T21:53:40.836676+00:00",
+  "engineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+  "scope": "Implemented native camera numeric profile and explicit visual scale bindings; original files and deterministic simulation unchanged. This is not full EE2 game or visual equivalence.",
+  "camera": {
+    "profileFile": "docs/original-camera.js",
+    "configFile": "myconfig.cfg",
+    "configSha256": "5724b92160ec3b4505fbbb646cc71fd3b124e97ea6256e8f1cb26327950668b8",
+    "parameterParser": "0051d090",
+    "orbitUpdate": "005207f0",
+    "projectionGetter": "0051f9f0",
+    "cameraConstructor": "0051e8a0 -> 0051f810",
+    "distance": "minDistance + fraction * (maxDistance-minDistance)",
+    "pitch": "piecewise linear through minPitch, kneePitch, maxPitch; compiled threshold/divisor is config+0x3c MINPITCH radians, not config+0x44 KNEEDIST",
+    "fov": "minFov + fraction * (maxFov-minFov)",
+    "fovAxis": "horizontal: left/right = +/-tan(FOV*0.5), top/bottom = +/-tan/aspect; half constant is double00b41660=0.5",
+    "near": 1,
+    "far": 300,
+    "clipDefaultsSources": [
+      "00b42f38",
+      "00b42f3c"
+    ],
+    "installedDefaults": {
+      "fraction": 0.2,
+      "distance": 24,
+      "pitchDegreesApprox": 41.79308832,
+      "horizontalFovDegrees": 57
+    },
+    "terrain": "focus elevation weighted by(1-fraction); eye constrained to terrainAtEye+minHeight, pitch corrected after collision as in005207f0",
+    "adapterLimits": [
+      "Fixed north-up mapping to current simulation coordinates; no heading/rotation UI added.",
+      "Browser wheel anchoring/pixel zoom conversion are input adapters, not a reconstruction of all native controls.",
+      "Compiled constructor/config values are proven; later live launcher memory patches are not observed."
+    ]
+  },
+  "scales": {
+    "bindings": 156,
+    "verified": 154,
+    "fallback": [
+      {
+        "key": "2:0",
+        "url": "local-original/models/bld_farm_wheat.json",
+        "reason": "No unambiguous declared UnitModel scale binding; retain current adapter"
+      },
+      {
+        "key": "2:7",
+        "url": "local-original/models/bld_farm8.json",
+        "reason": "No unambiguous declared UnitModel scale binding; retain current adapter"
+      }
+    ],
+    "categoryDefaults": {
+      "kScaleUnit": {
+        "global": "g_UnitScale",
+        "initializer": "005f6a60",
+        "literalBits": "3e428f5c",
+        "compiledDefault": 0.1899999976158142,
+        "initializerBytes": "6a01685c8f423e682425c300686c25c300686025c300e885b5420083c414c3",
+        "source": "native PE initializer; Ghidra native-scale-defaults.c",
+        "selectedValue": 0.1899999976158142
+      },
+      "kScaleLandAnimal": {
+        "global": "g_LandAnimalScale",
+        "initializer": "005f6a80",
+        "literalBits": "3e428f5c",
+        "compiledDefault": 0.1899999976158142,
+        "initializerBytes": "6a01685c8f423e682825c300686c25c300689825c300e865b5420083c414c3",
+        "source": "native PE initializer; Ghidra native-scale-defaults.c",
+        "selectedValue": 0.1899999976158142
+      },
+      "kScaleVehicle": {
+        "global": "g_VehicleScale",
+        "initializer": "005f6aa0",
+        "literalBits": "3dcccccd",
+        "compiledDefault": 0.10000000149011612,
+        "initializerBytes": "6a0168cdcccc3d682c25c300686c25c30068ac25c300e845b5420083c414c3",
+        "source": "native PE initializer; Ghidra native-scale-defaults.c",
+        "selectedValue": 0.10000000149011612
+      },
+      "kScaleMountedUnit": {
+        "global": "g_MountedUnitScale",
+        "initializer": "005f6ac0",
+        "literalBits": "3e4ccccd",
+        "compiledDefault": 0.20000000298023224,
+        "initializerBytes": "6a0168cdcc4c3e683025c300686c25c30068bc25c300e825b5420083c414c3",
+        "source": "native PE initializer; Ghidra native-scale-defaults.c",
+        "selectedValue": 0.20000000298023224
+      },
+      "kScaleBuilding": {
+        "global": "g_BuildingScale",
+        "initializer": "005f6ae0",
+        "literalBits": "3d23d70a",
+        "compiledDefault": 0.03999999910593033,
+        "initializerBytes": "6a01680ad7233d683425c300686c25c30068d025c300e805b5420083c414c3",
+        "source": "native PE initializer; Ghidra native-scale-defaults.c",
+        "selectedValue": 0.03999999910593033
+      },
+      "kScaleWall": {
+        "global": "g_WallScale",
+        "initializer": "005f6b00",
+        "literalBits": "3d23d70a",
+        "compiledDefault": 0.03999999910593033,
+        "initializerBytes": "6a01680ad7233d683825c300686c25c30068e025c300e8e5b4420083c414c3",
+        "source": "native PE initializer; Ghidra native-scale-defaults.c",
+        "selectedValue": 0.03999999910593033
+      },
+      "kScaleTree": {
+        "global": "g_TreeScale",
+        "initializer": "005f6b20",
+        "literalBits": "3d3851ec",
+        "compiledDefault": 0.04500000178813934,
+        "initializerBytes": "6a0168ec51383d683c25c300686c25c30068ec25c300e8c5b4420083c414c3",
+        "source": "native PE initializer; Ghidra native-scale-defaults.c",
+        "selectedValue": 0.04500000178813934
+      },
+      "kScaleAmmo": {
+        "global": "g_AmmoScale",
+        "initializer": "005f6b40",
+        "literalBits": "3e333333",
+        "compiledDefault": 0.17499999701976776,
+        "initializerBytes": "6a01683333333e684025c300686c25c30068f825c300e8a5b4420083c414c3",
+        "source": "native PE initializer; Ghidra native-scale-defaults.c",
+        "selectedValue": 0.17499999701976776
+      }
+    },
+    "commonConversion": {
+      "address": "00b41800",
+      "value": 0.7071067690849304,
+      "classGetter": "005f8040",
+      "overrideApplication": "00602210"
+    },
+    "classGetter": "005f8040: enum1Unit,2LandAnimal,3Building,4Wall,5Vehicle,6Mounted,7Tree,8Ammo; each global multiplied by float00b41800",
+    "inheritance": "005f8ec0 resolves nonzero ScaleType through UnitModel Parent;00602210 uses current UnitModel ForceScale+0xc directly;00602860 does same for CompositeModel ForceScale+0x8",
+    "sourceToWorld": "((convertedVertex - normalizationOffset*normalizationScale) * sourceScale/normalizationScale)",
+    "scope": "Native compiled category defaults, common renderer conversion005f8040/00602210/00602860, active assignments in the four startup config files, BASE UnitModel ScaleType inheritance, and CompositeModel/StateDatabase or DefaultModelList bindings. ForceScale is the current visual declaration only. Later launcher hooks, per-state scale and procedural nonuniform variation remain outside this profile."
+  },
+  "tests": [
+    {
+      "suite": "native-camera",
+      "checks": 1401,
+      "passed": true,
+      "projectionScope": "Curve, horizontal FOV and near/far defaults verified in Ghidra; north-up coordinates remain the current map adapter.",
+      "command": [
+        "node",
+        "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\OpenEpoch\\tools\\original-camera-test.mjs"
+      ]
+    },
+    {
+      "suite": "native-visual-scale",
+      "checks": 2100,
+      "passed": true,
+      "verifiedVariants": 154,
+      "fallbackVariants": 2,
+      "sourceScope": "Native compiled category defaults, common renderer conversion005f8040/00602210/00602860, active assignments in the four startup config files, BASE UnitModel ScaleType inheritance, and CompositeModel/StateDatabase or DefaultModelList bindings. ForceScale is the current visual declaration only. Later launcher hooks, per-state scale and procedural nonuniform variation remain outside this profile.",
+      "command": [
+        "node",
+        "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\OpenEpoch\\tools\\original-scale-test.mjs"
+      ]
+    }
+  ],
+  "sourceExports": [
+    {
+      "file": "native-camera-map.txt",
+      "bytes": 6091,
+      "sha256": "57df48cf87d1c5674a2e9d014bc2033a91642278a2520b6b0948ced87b6273ec"
+    },
+    {
+      "file": "native-camera-update.c",
+      "bytes": 55941,
+      "sha256": "d889b80349ab0684949b0054ec8d2a70cfaa3477f3660cbf3d5dfd97d8a827b6"
+    },
+    {
+      "file": "native-camera-curve.c",
+      "bytes": 41896,
+      "sha256": "336a527372f142331c275fc711125f6d5e1fc562c4bce99639668cd1ed3b9271"
+    },
+    {
+      "file": "native-camera-projection.c",
+      "bytes": 30409,
+      "sha256": "d75ca128a1448a294bd7620eb2761ff1f2a928160609fe90cf77b2792a0ab164"
+    },
+    {
+      "file": "native-scale-defaults.c",
+      "bytes": 7546,
+      "sha256": "d387307511b07def101de0fd5b93a2985e17b50cef35c93f16342f4f31f6a308"
+    },
+    {
+      "file": "native-scale-switch.c",
+      "bytes": 14559,
+      "sha256": "77a0d39d225de95df5fa877f2a36b8b5338401007de983725f035a6115afa7c8"
+    },
+    {
+      "file": "native-camera-frustum-scale.c",
+      "bytes": 46931,
+      "sha256": "8d62fb7bd75d00a07aa9cc1b00e12a18a2b5ab38d8fc9e56ae926cfda776eb32"
+    },
+    {
+      "file": "native-camera-frustum-final.c",
+      "bytes": 14620,
+      "sha256": "2fc085d2ba204e18d0685bdb34d712db59d0f624a0c62aee185e16dd25af4c78"
+    }
+  ],
+  "files": [
+    {
+      "file": "docs/original-camera.js",
+      "sha256": "56fdd51c6ec1ac099482cb14b101995c18c9d1ed0b3ce12ba4355d9544511575",
+      "bytes": 4206
+    },
+    {
+      "file": "docs/original-scale.js",
+      "sha256": "4651e04fd4a0a61b8a47f2c4b8fb56df83bfd7864796011cf2648df6b992a947",
+      "bytes": 756
+    },
+    {
+      "file": "docs/local-original/model-scales.json",
+      "sha256": "002897405c29f1c9aeb5f0c32f142ff76c4ad67b62ee08a29c2c6458c1d66577",
+      "bytes": 266327
+    },
+    {
+      "file": "tools/import_ee2_visual_scales.py",
+      "sha256": "b13c1fcafe0ad3625b436ed9b405e5b71414fed46316c5dcf3ccc53167f83cae",
+      "bytes": 9646
+    },
+    {
+      "file": "tools/original-camera-test.mjs",
+      "sha256": "d0518c71ce4443b6808e07f91a79889700f28b5838ca42aca9fcb3c451512079",
+      "bytes": 2911
+    },
+    {
+      "file": "tools/original-scale-test.mjs",
+      "sha256": "0fffd77bdab8dc47dcd993b0c6df5d11a548e12fc389fc1e4495f5892273ddcb",
+      "bytes": 2522
+    }
+  ],
+  "guiUse": "None. Ghidra headless readOnly/noanalysis, source reads, generated files and Node math/source tests only."
+}

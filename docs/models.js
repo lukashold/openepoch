@@ -1,13 +1,15 @@
 // Procedural low-poly 3D models. Like the 2D icons, every mesh is generated in
-// code at start-up from boxes, extruded outlines, cylinders and cones: the game
-// ships no model files.
+// code at start-up from boxes, extruded outlines, cylinders and cones. These
+// serve the base rules and missing-asset fallback; EE2 uses bundled native NIFs.
 //
 // Model space: +x is forward, +y is up, z is sideways. Units are authored about
 // one unit long and buildings exactly one unit square; the instance size scales
-// them. Vertex = position(3) normal(3) colour(3) team(1); team = 1 means "tint
+// them. Vertex = position(3) normal(3) colour(3) team(1) joint(1); team = 1 means "tint
 // with the owner's colour", keeping the stored colour as brightness.
 
-const F = 10; // floats per vertex
+const F = 11; // position, normal, colour/team, rigid articulation joint
+let joint = 0;
+function part(id, draw) { const old = joint; joint = id; draw(); joint = old; }
 let V = [];
 let centre = [0, 0, 0];
 
@@ -26,7 +28,7 @@ function tri(a, b, c, colour) {
   if (nx * mx + ny * my + nz * mz < 0) { nx = -nx; ny = -ny; nz = -nz; }
   const team = colour.team !== undefined;
   const rgb = team ? [colour.team, colour.team, colour.team] : col(colour);
-  for (const p of [a, b, c]) V.push(p[0], p[1], p[2], nx, ny, nz, rgb[0], rgb[1], rgb[2], team ? 1 : 0);
+  for (const p of [a, b, c]) V.push(p[0], p[1], p[2], nx, ny, nz, rgb[0], rgb[1], rgb[2], team ? 1 : 0, joint);
 }
 const quad = (a, b, c, d, colour) => { tri(a, b, c, colour); tri(a, c, d, colour); };
 
@@ -63,16 +65,45 @@ const STONE = 0xa9a498, DSTONE = 0x7d786c, TILE = 0xb5653a, SAIL = 0xefe6cf, OLI
 
 // ---------------------------------------------------------------- units
 function inf(o) {
-  box(0, 0, -0.07, 0.09, 0.22, 0.08, CLOTH); box(0, 0, 0.07, 0.09, 0.22, 0.08, CLOTH);
-  box(0, 0.22, 0, 0.14, 0.24, 0.27, T());
-  box(0.02, 0.46, 0, 0.13, 0.13, 0.13, o.head);
-  if (o.helm) box(0.02, 0.57, 0, 0.16, 0.05, 0.16, o.helm);
-  if (o.wl) box(0.1 + o.wl / 2, o.wy || 0.33, 0.17, o.wl, o.wt || 0.035, o.wt || 0.035, o.wc);
-  if (o.tip) box(0.1 + o.wl + 0.03, 0.31, 0.17, 0.08, 0.08, 0.05, STEEL, 0.2);
-  if (o.shield) box(0.11, 0.2, -0.17, 0.04, 0.24, 0.16, o.shield);
-  if (o.bow) { box(0.14, 0.2, 0.17, 0.03, 0.34, 0.03, DWOOD); }
-  if (o.pack) box(-0.1, 0.24, 0, 0.08, 0.18, 0.2, o.pack);
+  // Six independently hinged parts. Proportions favour readability at RTS scale.
+  for(const [id,z] of [[1,-.075],[2,.075]])part(id,()=>{
+    cyl(0,.045,z,.047,.265,0x4e493f,6,.82);
+    box(.035,.008,z,.155,.055,.09,0x302c26,.9);
+  });
+  cyl(0,.29,0,.105,.1,0x635542,6,.9);
+  slab([[-.075,-.1],[-.045,-.137],[.055,-.137],[.09,-.09],[.09,.09],[.055,.137],[-.045,.137],[-.075,.1]],.36,.58,T(),.86);
+  box(.085,.38,0,.012,.14,.09,0xc9b798);
+  box(0,.355,0,.18,.028,.27,0x554633);
+  for(const [id,z] of [[3,-.18],[4,.18]])part(id,()=>{
+    cyl(0,.37,z,.045,.16,T(.85),6,.8);
+    cyl(.018,.27,z,.033,.1,SKIN,6,.9);
+    box(.035,.25,z,.06,.045,.06,SKIN,.9);
+  });
+  part(5,()=>{
+    cyl(0,.57,0,.037,.05,SKIN,6);
+    crown(.015,.665,0,.078,.092,.075,SKIN,3);
+    box(.09,.644,0,.025,.035,.035,SKIN,.65);
+    for(const z of [-.029,.029])box(.087,.675,z,.008,.013,.012,0x302a24);
+    if(o.helm) { cyl(.008,.71,0,.09,.047,o.helm,8,.7); cyl(.008,.704,0,.102,.014,o.helm,8); }
+    else crown(.002,.711,0,.077,.045,.076,0x46372a,7);
+  });
+  part(4,()=>{
+    if (o.wl) box(.1+o.wl/2,.34,.18,o.wl,o.wt||.035,o.wt||.035,o.wc);
+    if (o.tip) box(.1+o.wl+.03,.33,.18,.08,.08,.05,STEEL,.2);
+    if (o.bow) { box(.14,.21,.18,.03,.34,.03,DWOOD); box(.15,.22,.18,.01,.32,.01,SAIL); }
+  });
+  if(o.shield)part(3,()=>{cyl(.05,.29,-.21,.125,.035,o.shield,8);box(.1,.27,-.21,.025,.2,.19,o.shield,.9);});
+  if(o.pack)box(-.12,.39,0,.1,.15,.19,o.pack,.85);
 }
+function worker() {
+  inf({head:SKIN,pack:0x856646});
+  // Tool joints 6..9 share the working hand; only the appropriate tool is drawn.
+  part(6,()=>{box(.06,.27,.19,.035,.36,.035,WOOD);box(.1,.59,.19,.17,.085,.045,0x84877c,.55);});
+  part(7,()=>{box(.06,.27,.19,.035,.37,.035,WOOD);box(.06,.59,.19,.29,.036,.045,STEEL,.45);});
+  part(8,()=>{box(.06,.27,.19,.035,.31,.035,WOOD);box(.06,.55,.19,.13,.085,.075,STEEL);});
+  part(9,()=>{cyl(.13,.22,.19,.09,.12,0x9a7849,8,1.22);});
+}
+
 function cav(o) {
   for (const [x, z] of [[0.2, 0.08], [0.2, -0.08], [-0.2, 0.08], [-0.2, -0.08]]) box(x, 0, z, 0.06, 0.2, 0.06, o.horse);
   box(0, 0.2, 0, 0.6, 0.2, 0.2, o.armor || o.horse);
@@ -158,8 +189,9 @@ const B = {
     base(DSTONE); box(0, 0.05, 0, 0.78, 0.2, 0.78, STONE);
     for (const [x, z] of [[-0.4, -0.4], [0.4, -0.4], [-0.4, 0.4], [0.4, 0.4]]) { box(x, 0.05, z, 0.16, 0.32, 0.16, DSTONE); box(x, 0.37, z, 0.2, 0.05, 0.2, STONE); }
     box(0, 0.25, 0, 0.5, 0.06, 0.5, TILE); box(0, 0.25, 0, 0.3, 0.3, 0.3, STONE);
-    slab(ring(0, 0, 0.26, 4).map(p => [p[0], p[1]]), 0.55, 0.74, T(), 0.02);
+    slab(ring(0, 0, 0.26, 4).map(p => [p[0], p[1]]), 0.55, 0.74, TILE, 0.02);
     box(0, 0.05, 0.4, 0.14, 0.14, 0.04, DWOOD);
+    box(.15,.55,0,.012,.23,.012,DWOOD); box(.15,.68,.06,.012,.08,.12,T());
   },
   house() { base(0x6f6a5e, 0.02); box(0, 0.02, 0, 0.8, 0.26, 0.68, 0xd9c9a0); roof(0, 0.28, 0, 0.9, 0.78, 0.26, TILE); box(0.22, 0.3, 0.16, 0.1, 0.3, 0.1, DSTONE); box(0.41, 0.02, 0, 0.02, 0.18, 0.12, T()); },
   farm() {
@@ -202,18 +234,36 @@ const B = {
   },
 };
 
+// Rounded irregular foliage, authored independently in code.
+function crown(x,y,z,rx,ry,rz,color,seed){
+  const rings=4,sides=8;
+  const point=(a,b)=>{
+    const theta=a/sides*Math.PI*2,phi=b/rings*Math.PI;
+    const rough=1+.1*Math.sin(a*7+b*9+seed);
+    return [x+Math.cos(theta)*Math.sin(phi)*rx*rough,y+Math.cos(phi)*ry,z+Math.sin(theta)*Math.sin(phi)*rz*rough];
+  };
+  centre=[x,y,z];
+  for(let b=0;b<rings;b++)for(let a=0;a<sides;a++)quad(point(a,b),point(a+1,b),point(a+1,b+1),point(a,b+1),color);
+}
 // ---------------------------------------------------------------- scenery, projectiles
 function tree(conifer) {
-  cyl(0, 0, 0, 0.07, 0.3, 0x5a3d22, 5);
-  if (conifer) { cone(0, 0.22, 0, 0.36, 0.5, 0x2f5d33, 6); cone(0, 0.5, 0, 0.27, 0.45, 0x3c7340, 6); cone(0, 0.78, 0, 0.17, 0.38, 0x4c8a4e, 6); }
-  else { slab(ring(0, 0, 0.4, 7), 0.28, 0.62, 0x3f7a36, 0.85); slab(ring(0.04, 0.03, 0.32, 7), 0.62, 0.9, 0x4f9343, 0.5); }
+  cyl(0,0,0,.055,.76,conifer?0x65503a:0x9b9876,8,.62);
+  if(conifer){
+    for(let j=0;j<5;j++){
+      const h=.32+j*.17,rad=.38-j*.058;
+      slab(ring(.02*Math.sin(j*3),0,rad,10),h,h+.3,j%2?0x365334:0x425f38,.06);
+    }
+  }else{
+    const lobes=[[-.18,.65,.03,.26,.24,.25],[.18,.69,-.1,.27,.28,.24],[.03,.91,.02,.29,.28,.26],[-.07,.7,-.2,.22,.24,.24],[.07,.64,.22,.26,.23,.22]];
+    lobes.forEach((q,i)=>crown(...q,[0x61733b,0x526b32,0x728344,0x465e2e,0x66783a][i],i*2));
+  }
 }
 function ore() {
   for (const [x, z, r, h] of [[-0.14, 0.04, 0.2, 0.26], [0.16, -0.06, 0.22, 0.36], [0.06, 0.22, 0.15, 0.18], [-0.1, -0.22, 0.13, 0.16]]) slab(ring(x, z, r, 5), 0, h, 0x767d86, 0.5);
   for (const [x, z, y] of [[-0.16, 0.02, 0.24], [0.17, -0.07, 0.33], [0.05, 0.2, 0.16]]) box(x, y, z, 0.07, 0.06, 0.07, 0xdfe9f5, 0.3);
 }
 function berry() {
-  slab(ring(0, 0, 0.36, 7), 0, 0.26, 0x3d7a35, 0.7);
+  crown(-.09,.16,0,.24,.16,.26,0x46632d,1); crown(.14,.19,.04,.23,.18,.24,0x557137,3);
   for (const [x, z] of [[-0.16, -0.1], [0.12, -0.14], [0.18, 0.08], [-0.05, 0.16], [0.02, -0.02], [-0.2, 0.1]]) box(x, 0.2, z, 0.07, 0.08, 0.07, 0xd6263d);
 }
 const P = {
@@ -229,7 +279,7 @@ function flag() { box(0, 0, 0, 0.04, 1.1, 0.04, 0xe9ecef); box(0, 0.78, 0.2, 0.0
 /** Model id -> generator. Ids 0..=42 match the unit/building table in src/defs.rs. */
 const MODELS = {
   0: B.tc, 1: B.house, 2: B.farm, 3: B.barracks, 4: B.workshop, 5: B.dock, 6: B.airfield, 7: B.tower,
-  8: () => inf({ head: 0xd9c074, wl: 0.22, wc: WOOD, pack: 0x7a5a34 }),
+  8: worker,
   9: () => inf({ head: SKIN, wl: 0.26, wc: DWOOD, wt: 0.06 }),
   10: () => inf({ head: SKIN, wl: 0.16, wc: 0x3b2a18 }),
   11: () => inf({ head: SKIN, helm: 0xb08d57, wl: 0.5, wc: WOOD, tip: 1, shield: 0x8b6b3d }),
@@ -260,8 +310,74 @@ const MODELS = {
   36: () => sub(1.2, 0.22, true),
   37: () => prop(false), 38: () => prop(true), 39: jet, 40: stealth, 41: heli,
   42: () => { hull(1.0, 0.36, 0.08, 0x6b5a45, 0x8a7a5a); box(-0.3, 0.09, 0, 0.2, 0.16, 0.26, T()); box(-0.3, 0.25, 0, 0.14, 0.06, 0.2, 0xbfc7cf); for (const z of [-0.16, 0.16]) box(0.1, 0.09, z, 0.56, 0.07, 0.02, 0x4d555e); box(0.44, 0.09, 0, 0.03, 0.12, 0.26, 0x4d555e); },
+  43: () => { for(const z of [-.22,.22]) { box(0,0,z,.28,.38,.18,0x263c50); box(.12,0,z,.4,.1,.22,0x15222e); box(0,.34,z,.2,.2,.2,T()); } box(0,.54,0,.38,.32,.6,0x9eafb9); box(.21,.65,0,.06,.08,.26,0x51e5f5); for(const z of [-.4,.4]) { box(.12,.48,z,.55,.14,.15,0x263c50); box(.4,.51,z,.1,.05,.07,0x51e5f5); } },
+  44: () => { jet(); for(const z of [-.32,.32]) { box(-.26,.05,z,.22,.07,.1,0x51e5f5); box(.05,.1,z,.35,.06,.14,0xc9dae1); } },
+  45: () => { sub(1.35,.28,true); for(const z of [-.14,.14]) box(-.05,.12,z,.55,.025,.035,0x51e5f5); },
+  46: () => { for(const z of [-.28,.28]) { box(0,.05,z,.9,.16,.18,0x263c50); box(0,.02,z,.7,.03,.2,0x51e5f5); } box(0,.18,0,.7,.16,.46,0xb1c4cc,.75); cyl(0,.34,0,.17,.1,T(),8); for(const z of [-.04,.04]) box(.3,.4,z,.65,.04,.03,0x263c50); },
+  47: () => {
+    base(0x9b927b,.03);
+    for(const x of [-.3,.3]) {box(x,.03,-.03,.27,.32,.78,0xcbbd9a);roof(x,.35,-.03,.32,.86,.16,0x6d675d);}
+    box(0,.03,-.3,.8,.37,.25,0xd7c7a6);roof(0,.4,-.3,.9,.32,.18,0x756956);
+    box(0,.03,.05,.22,.02,.4,0xa49677);cyl(0,.03,.08,.07,.16,0x8d8064,10);crown(0,.22,.08,.09,.09,.09,0x607b4a,2);
+    for(const x of [-.39,-.22,.22,.39])for(const y of [.12,.25])box(x,y,.368,.07,.08,.01,0x344d50);
+    box(0,.4,-.28,.2,.2,.2,0xcbbd9a);cone(0,.6,-.28,.16,.13,T(),8);
+    box(0,.03,-.166,.12,.2,.01,0x4a3b29);
+  },
+  48: () => {
+    base(0x8f896d,.03);box(-.12,.03,0,.58,.27,.65,0xc6b38c);roof(-.12,.3,0,.65,.72,.23,0x836348);
+    cyl(.28,.03,-.1,.13,.53,0xb6a98a,8);cone(.28,.56,-.1,.17,.16,T(),8);
+    for(const [x,y] of [[.28,.52],[.28,.26]])box(x,y,.054,.45,.025,.025,WOOD);
+    box(.28,.18,.054,.025,.44,.025,WOOD);
+    for(const x of [-.4,-.28,-.16])cyl(x,.03,.37,.045,.12,0xc8b479,8);
+  },
+  49: () => {
+    base(0x827855,.02);box(0,.02,-.15,.86,.24,.45,0xb8a078);roof(0,.26,-.15,.94,.53,.21,0x826044);
+    for(const x of [-.3,0,.3]){box(x,.02,.079,.18,.16,.01,0x4a3526);box(x,.02,.36,.022,.22,.022,WOOD);}
+    for(const x of [-.46,.46])box(x,.02,.2,.025,.22,.45,WOOD);box(0,.2,.36,.95,.025,.025,WOOD);
+    for(const x of [-.28,.1,.3])box(x,.03,.18,.14,.08,.09,0xb49b54);
+  },
+  50: () => {
+    base(0xa19070,.03);box(0,.03,-.21,.75,.2,.42,0xcdb58c);roof(0,.23,-.21,.84,.5,.2,0x896844);
+    for(const x of [-.3,0,.3]){for(const z of [.1,.38])box(x,.03,z,.025,.27,.025,WOOD);box(x,.27,.24,.26,.03,.35,T());box(x,.03,.3,.22,.13,.09,0x98714a);}
+    for(const x of [-.35,-.2,.2,.35])cyl(x,.03,-.44,.04,.07,0xa48452,8);
+  },
+  51: () => {
+    base(0xa09985,.04);box(0,.04,0,.67,.28,.7,0xd3c5a4);roof(0,.32,0,.79,.8,.25,0x797460);
+    for(const x of [-.29,-.1,.1,.29]){cyl(x,.04,.39,.026,.31,0xe3d9bd,8);box(x,.35,.39,.085,.035,.085,0xe3d9bd);}
+    box(0,.04,.355,.13,.22,.01,0x443c30);box(0,.04,.47,.4,.025,.07,0xc7b999);
+    cyl(0,.5,-.1,.065,.17,T(),8);
+  },
+  52: () => {
+    base(0x837b68,.03);box(-.06,.03,-.04,.72,.3,.7,0xb8ac8c);roof(-.06,.33,-.04,.83,.81,.23,0x74604b);
+    box(-.06,.03,.315,.26,.24,.014,0x574331);
+    for(const x of [.27,.39])for(const z of [.2,.37])box(x,.03,z,.1,.14,.1,0x9a7851);
+    cyl(-.38,.03,.36,.05,.15,0x84653e,8);box(0,.38,.02,.3,.018,.09,T());
+  },
+  // Fallback only: the EE2 profile renders the bundled native Fortress NIFs.
+  56: () => {
+    base(DSTONE,.04);
+    for(const x of [-.38,.38])for(const z of [-.38,.38]){
+      box(x,.04,z,.23,.46,.23,STONE);
+      box(x,.5,z,.26,.045,.26,DSTONE);
+      for(const dx of [-.085,.085])for(const dz of [-.085,.085])box(x+dx,.545,z+dz,.065,.08,.065,STONE);
+    }
+    for(const x of [-.4,.4])box(x,.04,0,.1,.3,.66,STONE);
+    box(0,.04,-.4,.66,.3,.1,STONE);
+    for(const x of [-.25,.25])box(x,.04,.4,.2,.3,.1,STONE);
+    box(0,.04,0,.34,.38,.36,DSTONE);roof(0,.42,0,.4,.42,.15,T());
+    box(0,.04,.39,.18,.23,.06,0x382b20);
+  },
   100: () => tree(false), 101: () => tree(true), 102: ore, 103: berry,
   104: P.arrow, 105: P.bullet, 106: P.shell, 107: P.torp, 108: P.missile, 109: P.bomb, 110: flag,
+  111: () => {
+    for(const side of [-.53,.53]){
+      for(const x of [-.48,0,.48])box(x,0,side,.025,.72,.025,WOOD);
+      for(const y of [.18,.43,.67]){box(0,y,side,.99,.022,.025,DWOOD);box(0,y,side*.94,.99,.025,.075,0xb39362);}
+      for(const z of [-.45,0,.45])box(side,0,z,.025,.72,.025,WOOD);
+      for(const y of [.18,.43,.67])box(side,y,0,.025,.022,.99,DWOOD);
+    }
+    box(-.37,0,.6,.36,.05,.13,0xab8a56);box(.16,0,.57,.25,.07,.16,0x827767);
+  },
 };
 
 /** Build every mesh into one vertex buffer. Returns { data, first[id], count[id] } in vertices. */
@@ -269,8 +385,27 @@ export function buildModels() {
   const first = new Int32Array(256), count = new Int32Array(256);
   const all = [];
   for (const id in MODELS) {
-    V = [];
+    V = []; joint = 0;
     MODELS[id]();
+    if(+id<8 || (+id>=47 && +id<=52)){
+      if(+id!==2 && +id!==5 && +id!==6){
+        for(const side of [-1,1])for(const x of [-.24,0,.24]){
+          box(x,.16,side*.397,.075,.11,.008,0x263332);
+          box(x,.15,side*.403,.095,.012,.015,0xc7b887);
+          box(x,.16,side*.409,.008,.11,.008,0x9d8d6b);
+        }
+        for(const side of [-1,1])box(0,.06,side*.41,.8,.028,.035,0x79735e);
+      }
+      if(+id===0){
+        for(const side of [-1,1])for(const x of [-.4,.4])box(x,.1,side*.4,.018,.25,.18,0x918775);
+        box(0,.05,.433,.13,.17,.024,0x392d20);
+        box(0,.225,.432,.19,.024,.04,0xc4b994);
+      }
+      if(+id===1 || +id===3){
+        for(const x of [-.3,.3])box(x,.04,.35,.022,.25,.025,0x604630);
+        box(0,.29,0,.93,.018,.03,0x735039);
+      }
+    }
     first[id] = all.length / F; count[id] = V.length / F;
     for (let i = 0; i < V.length; i++) all.push(V[i]);
   }

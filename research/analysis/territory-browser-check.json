@@ -1,0 +1,32 @@
+{
+  "date": "2026-10-31",
+  "uiVersion": "territory2",
+  "finalWasmSha256": "6e133ae7dc456ff196d0a6ea98eeb0848688dc4cd9bedb1126899ba37d860724",
+  "method": "Actual in-app browser, normal game controls, separate qa=1 saves. No browser evaluation of hidden game state and no gameplay cheats.",
+  "localWebRtc": {
+    "wasmSha256": "5c9299b10683a81624b87c51efa1904529c9390e0f4bf0e6beb0990a52e66560",
+    "protocol": 6,
+    "scope": "Two browser tabs on the same machine connected through the real invite/reply WebRTC UI. Original media on host; procedural rendering on the second peer. Both used the same EE2 simulation.",
+    "peace": "Host offered peace; the second player received and accepted it. Both displayed Neutral.",
+    "swap": "Territory 1 against Territory 2 was proposed, received and explicitly accepted. Their owners exchanged on both clients; each retained one territory and population 5/40. Resource balances did not change.",
+    "focus": "Eigenes Gebiet auf Karte zeigen and H focused the host's new southeastern territory with its blue city center and citizens.",
+    "gift": "Host declared directed war, then reviewed and confirmed giving its remaining Territory 2. Gift remained available despite hostility. Donor became 0 territories and 0 population; recipient became 2 territories and 10/80 population.",
+    "warnings": "Last-territory loss warning and the concrete 1-building/5-unit gift preview were shown before confirmation.",
+    "networkStatus": "Both UI performance/status strings reported multiplayer without an out-of-sync flag. Both browser warning/error logs were empty.",
+    "relationshipToFinalBuild": "The later 6E build changes only displayed event chronology; territory-logsort-equivalence.json verifies unchanged simulation hashes and byte-identical saves."
+  },
+  "finalSinglePlayer": {
+    "seed": 7,
+    "visibility": 2,
+    "setup": "Selected five citizens, scouted a neutral region, and built a second city center using ordinary controls at 4x speed. No cheats. Construction cost 300 wood and 300 stone; two territories and 5/80 population were visible.",
+    "selection": "The compact territory tab displayed both own Territories 1 and 13, map highlights, receiver parcels and object counts. Trade was disabled during hostility with a visible peace prerequisite.",
+    "confirmation": "Selected Territory 13. Preview identified one city-center building and five citizens; no last-territory warning appeared for this additional region. Cancel then reopening the review caused no transfer.",
+    "gift": "Confirmed Territory 13 to the AI. Own territory count changed from 2 to 1, population from 5/80 to 0/40. Territory 13 appeared in the recipient's parcel list, with one building and five citizens at the observed paused state.",
+    "balances": {"food":800,"wood":500,"stone":500,"gold":800,"tin":400},
+    "saveLoad": "Saved, reloaded the entire page and resumed the same save. Own Territory 1 remained, Territory 13 still belonged to the AI, its observed package was one building/five citizens, balances and population 0/40 persisted, and the territory gift event remained in the log.",
+    "presentation": "Final compact tab and action buttons were visually checked at 1280x720. Confirm describes the live package and conditionally the last-territory warning. Final gameplay warning/error log was empty."
+  },
+  "handoff": {"url":"http://127.0.0.1:8125/?rules=ee2&build=territory2","status":"Fresh normal start menu fully loaded, start button enabled, Full map selected; existing normal save records remained visible and were not altered by QA games."},
+  "screenshots": ["OpenEpoch/territory-diplomacy-preview.jpg", "OpenEpoch/territory-swap-preview.jpg"],
+  "limits": "No cross-machine or different-NAT WebRTC test; no full original-game equivalence, complete original treaty system or comprehensive rendered-performance claim."
+}

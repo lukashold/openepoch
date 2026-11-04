@@ -1,0 +1,67 @@
+{
+  "format": "openepoch-mac-portable-package-v4",
+  "status": "passed",
+  "build": "combat-season1",
+  "createdUTC": "2026-11-03T16:04:30.956566+00:00",
+  "file": "OpenEpoch-Mac-Komplett.zip",
+  "zipBytes": 686034494,
+  "sha256": "ba57e1f618bf895062bc907a4c97b694810a968ed93daebed5fa2830f68a72fc",
+  "zipEntries": 3135,
+  "manifestFilesVerified": 3133,
+  "mediaFiles": 3085,
+  "mediaBytes": 782002193,
+  "launcherMode": "0755",
+  "launcherLineEndings": "LF",
+  "pythonMinimum": "3.8",
+  "package": {
+    "allImportedMediaIncluded": true,
+    "allExtractedFileHashesMatchManifestAndSource": true,
+    "missingMedia": 0,
+    "changedMedia": 0,
+    "extraMedia": 0,
+    "rawOriginalExeOrArchivesRequired": false,
+    "extraPythonPackagesRequired": false,
+    "ghidraRequiredToPlay": false,
+    "rustCompilerRequiredToPlay": false
+  },
+  "validationReport": "combat-season-release.json",
+  "browserTestThisBuild": false,
+  "worldGpuReports": [
+    "native-season-world-qa.json"
+  ],
+  "currentHttpTests": {
+    "format": "openepoch-combat-season-http-tests-v1",
+    "status": "passed",
+    "build": "combat-season1",
+    "createdUTC": "2026-11-03T16:04:15.643430+00:00",
+    "runs": [
+      {
+        "label": "source",
+        "passed": 9,
+        "seconds": 7.169,
+        "serverSha256": "b995ff581cb9b867f3743a154ea9704c646d0d1cf2444b8372334af468644bd0",
+        "testSha256": "10d0ac8ad65561c69c74a132892e5b8ddd43c8580c5ca69fe71fa751f51a3c2d",
+        "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+        "logSha256": "55e7a0febdbb2b6ee8b568e14ca3f13b558799f93e16578f0cb65096ccd27417"
+      },
+      {
+        "label": "extracted",
+        "passed": 9,
+        "seconds": 6.8,
+        "serverSha256": "b995ff581cb9b867f3743a154ea9704c646d0d1cf2444b8372334af468644bd0",
+        "testSha256": "10d0ac8ad65561c69c74a132892e5b8ddd43c8580c5ca69fe71fa751f51a3c2d",
+        "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+        "logSha256": "2b2c0c9b57346ad6938e204871699cd0d6b12993d9f903e13b694d87cf51a2a5"
+      }
+    ],
+    "scope": "Actual local HTTP/process tests on Windows for current source and freshly extracted complete package. No browser, external network, original executable or physical macOS test."
+  },
+  "limits": [
+    "A complete gameplay or visual1:1 recreation of Empire Earth II is not achieved.",
+    "Native BASE combat tables are used consistently with current unit stats; installed UP5 tables are a separate source layer.",
+    "Full native AI, civilization sets, roster, special abilities, veteran/elite systems, weather, lighting and terrain generation remain incomplete.",
+    "Urban membership follows reconstructed completed-TC lifecycles and persisted radius maxima; complete native CityManager ownership/history registration is not reproduced.",
+    "No browser/HUD interaction, Internet/WebRTC connectivity or physical macOS execution was tested for this build.",
+    "All imported media are in the local portable ZIP. Original media are excluded from the proposed GitHub source payload."
+  ]
+}

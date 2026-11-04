@@ -1,0 +1,281 @@
+{
+  "format": "openepoch-combat-season-release-v1",
+  "status": "passed",
+  "build": "combat-season1",
+  "createdUTC": "2026-11-03T16:04:30.956566+00:00",
+  "networkProtocol": 9,
+  "scope": "Integrated native BASE combat factors/splash, continuous calendar and epoch/urban building ground, with persistent city-radius maxima.",
+  "wasm": {
+    "ee2": {
+      "sha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+      "bytes": 430146
+    },
+    "base": {
+      "sha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+      "bytes": 268821
+    }
+  },
+  "validation": {
+    "combatOracleChecks": 290363,
+    "combatLockstepCheckpoints": 120,
+    "seasonChannelChecks": 425,
+    "seasonWorldGpuChecks": 71,
+    "city": {
+      "status": "passed",
+      "build": "combat-season1",
+      "date": "2026-11-03",
+      "wasm": {
+        "ee2": {
+          "sha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+          "bytes": 430146
+        },
+        "base": {
+          "sha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+          "bytes": 268821
+        }
+      },
+      "format": "ee2-city-ground-integration-v1",
+      "rustTests": {
+        "ee2": 75,
+        "base": 32
+      },
+      "problem": "A current-owner epoch query shrank a long-lived city band after giving an epoch11 city to an epoch7 player, contrary to native CityManager high-water history.",
+      "implementation": {
+        "scope": "EE2-reference only; completed, alive, positive-health TC lifecycle adapter. Ent and Player layouts unchanged.",
+        "storage": "Dedicated Game.city_ground sidecar indexed by entity slot, retaining full generation-bearing handle and lifetime maximum source radius.",
+        "hooks": [
+          "spawn/reset",
+          "place_with_rotation foundation clears transient completed spawn",
+          "worker construction completion",
+          "instant construction completion using local Ent snapshot",
+          "rebuild_modifiers epoch/research refresh",
+          "transfer_territories before and after owner mutation",
+          "kill clears generation-bound state",
+          "build_grid deterministic reconciliation"
+        ],
+        "query": "Pure global any-city urbanBool. f32 abs(dx)+abs(dy), then strict f64 product of stored f32 radius and source sqrt2_f32=1.4142135381698608. No render/query/save cadence writes.",
+        "hash": "EE2 state_hash incorporates city marker, complete generation-bearing handles and effective lifetime radius.",
+        "base": "All executable WASM sections and non-location simulation data byte-identical; 285 changed bytes are only 272 panic source-line metadata records. BASE saves and sim state unchanged; full binary SHA differs due to diagnostics."
+      },
+      "save": {
+        "order": "existing header/players/entities/map/fog +236-byte EE2 flags/RES1/ECO1 prefix +DIP1 +TER1 +CGD1 city tail",
+        "layout": "u32 CGD1(0x31444743), u32 version1, u32 count; count records{u32 fullHandle,f32 radius}; u32 chunkBytes, u32 CGDE(0x45444743). chunkBytes=20+8*count. Little-endian; ascending slot order.",
+        "validation": [
+          "Recognize explicit final footer only beyond the largest accepted legacy payload; require its start exactly after full236/ECO1/DIP1/TER1, then strip before legacy inference. Coincidental final stock/research/tech-point bits CGDE remain valid legacy data.",
+          "CGD only allowed with current57 layout and complete236/ECO1/DIP1/TER1 prefix.",
+          "Bounded count/size, known version, exact payload length, sorted unique valid living completed-TC handles with matching generations.",
+          "Every active TC must have exactly one record; radius must be finite and one of7,8,9,10,11 and at least current source profile.",
+          "Unknown/malformed/truncated/extra data rejects the new world. lib::load_apply installs only Some(Game); old live world untouched on failure."
+        ],
+        "legacy": "Without CGD, preserve existing accepted legacy paths and synthesize only current owner/epoch profiles. Historical maxima lost before this extension cannot be reconstructed."
+      },
+      "tests": [
+        {
+          "suite": "Rust EE2",
+          "passed": 75,
+          "failed": 0,
+          "newCityCases": 11,
+          "log": "work\\city-ground-ee2-rust-tests.log"
+        },
+        {
+          "suite": "Rust BASE",
+          "passed": 32,
+          "failed": 0,
+          "log": "work\\city-ground-base-rust-tests.log"
+        },
+        {
+          "suite": "Native PE/DDF/HDR independent evidence",
+          "passed": 5,
+          "failed": 0,
+          "command": "python tools/test_ee2_city_evidence.py -v"
+        },
+        {
+          "suite": "BASE binary code/data equivalence",
+          "status": "passed",
+          "report": "native-city-ground-base-equivalence.json"
+        },
+        {
+          "suite": "City regressions",
+          "coverage": [
+            "Epoch11→7 actual territory gift retains radius10",
+            "epoch growth and downgrade",
+            "normal/instant completion and foundation no-registration",
+            "death/handle reuse/generation wrap",
+            "strict source radius9 boundary",
+            "byte-exact current save roundtrip",
+            "legacy56/57 rawcore/flags/RES1/ECO1/DIP1 synthesis",
+            "six legacy56/57 flags/RES1/ECO1 CGDE-bit-collision saves",
+            "38 malformed-tail rejections",
+            "two peers over240ticks with different query/save cadence"
+          ]
+        }
+      ],
+      "limits": [
+        "Exact symbolic mapping of native lifecycle eventkind/subkind numeric constants, including every city-emitter ability and replacement path.",
+        "Complete native CityManager ownership, timestamp/tie-selected CityInfo and animated border rendering are not reproduced by the boolean completed-TC registration adapter.",
+        "Non-BASE/civilization CityRadius upgrades are not imported into this adapter.",
+        "Only BASE DDF profile radii7..11 are modeled; modifier refresh observes current epoch profile, not unimported CityRadius technology/civilization modifiers.",
+        "The global boolean needs no native earliest-time/owner overlap priority; that does not establish equivalence for city ownership/territory attribution.",
+        "Legacy saves synthesize present radius and cannot recover pre-extension high-water history.",
+        "No claim of a complete or1:1 EE2 reconstruction."
+      ],
+      "sourceHashes": {
+        "src/city_ground.rs": "41bd8d510d94bd170f9bf7a3fccaf27970b83b7bec6525af4057b58955eb50b7",
+        "src/city_ground_tests.rs": "60eb5460b99ada0de2f769cd080bb4c1a10011bfd548c2c25f938c86c9471506",
+        "src/game.rs": "7f492f98f5079f55c9581e584cd9a943c655a26949af1de3391191cc7cc9c273",
+        "src/lib.rs": "7ec5248d4a7f5c48712d6061f9714f1e63de3c48a2599b89557952eef1493b37",
+        "src/save.rs": "3d9da2646d647ac6b8c8ce2119b04736ecc317ae570f418c760462df5daf3c86",
+        "src/research.rs": "125c4bd967a0884de5b4fa5766aa17496f03b0cb589cf92d2ee0eb06205de08b",
+        "src/territory.rs": "8aae5ef138ef0c231766df06c08ba8820381a887da2876e4761cfe413922072c",
+        "src/placement.rs": "f5b97bf3050bff7ca165f2157d21da4b841fe4b2576656f354f4a474efa47380",
+        "src/diplomacy.rs": "fd905e5fcaf7e2e1d7b713f74698e28dbd4f917d56ebad8932befc216885041e",
+        "src/claim_tests.rs": "7f924ac05e049c1fecc54e2d413bc8ad188db952fe4ee6f6de9af12352b5a4d8",
+        "tools/test_ee2_city_evidence.py": "a5ad25d581b19731787a2abf3d6291a9f1a83cdd06b6f087f68c8996013248cd",
+        "tools/verify_city_ground_base.py": "bd6b5a621bc9d5b6435c03f578ea94e968d292b02b5afed62a63062d397b92a1"
+      },
+      "evidence": {
+        "report": "ground-city-registration-evidence.json",
+        "sha256": "9a89a42e1d41f31c690ef3b154ac00b69335ff9857f9043caa7ca804f9080f34",
+        "engineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+        "nativeExportHashes": {
+          "ground-city-registration.c": "8494d1b22f75545bb0c6003c889a8024e51d4f3e2a403fc2aa873890294d74f6",
+          "ground-city-register-update.c": "641ddca8959e0e33473bc01866cd2c7822748e1c5a2f0c2233ab5c50f548d276",
+          "ground-city-radius-history.c": "1b7a600bed4862d86a7c3374b7c35cee382e923e5761b5e4a11d2a412c0ba109",
+          "ground-city-tick-radius.c": "d29c379c0bdddc88a5312052b1dbfc1007f601441fd512efc5e9fafc78c01027",
+          "ground-city-radius-binding.c": "5c1f2361a0c5d3332d950eb94fd894aebc56e603aedfacb5180855fdeabd8b14",
+          "ground-urban-epoch.c": "103fdfd2bf932fea101276f72673d3773b979a6fbc273c1534f6069bdfbb1422"
+        }
+      },
+      "previousCombatExecutionReport": {
+        "file": "native-combat-integration.json",
+        "note": "Historical earlier-WASM execution snapshot retained unchanged. This report describes the current rebuilt WASMs and75/32 Rust suites."
+      }
+    },
+    "independentCityChecks": 904,
+    "regressionReport": "native-city-ground-regression-tests.json",
+    "http": {
+      "format": "openepoch-combat-season-http-tests-v1",
+      "status": "passed",
+      "build": "combat-season1",
+      "createdUTC": "2026-11-03T16:04:15.643430+00:00",
+      "runs": [
+        {
+          "label": "source",
+          "passed": 9,
+          "seconds": 7.169,
+          "serverSha256": "b995ff581cb9b867f3743a154ea9704c646d0d1cf2444b8372334af468644bd0",
+          "testSha256": "10d0ac8ad65561c69c74a132892e5b8ddd43c8580c5ca69fe71fa751f51a3c2d",
+          "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+          "logSha256": "55e7a0febdbb2b6ee8b568e14ca3f13b558799f93e16578f0cb65096ccd27417"
+        },
+        {
+          "label": "extracted",
+          "passed": 9,
+          "seconds": 6.8,
+          "serverSha256": "b995ff581cb9b867f3743a154ea9704c646d0d1cf2444b8372334af468644bd0",
+          "testSha256": "10d0ac8ad65561c69c74a132892e5b8ddd43c8580c5ca69fe71fa751f51a3c2d",
+          "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+          "logSha256": "2b2c0c9b57346ad6938e204871699cd0d6b12993d9f903e13b694d87cf51a2a5"
+        }
+      ],
+      "scope": "Actual local HTTP/process tests on Windows for current source and freshly extracted complete package. No browser, external network, original executable or physical macOS test."
+    },
+    "runtimeReferences": 12354,
+    "exactCaseTargets": 3021
+  },
+  "package": {
+    "file": "OpenEpoch-Mac-Komplett.zip",
+    "zipBytes": 686034494,
+    "sha256": "ba57e1f618bf895062bc907a4c97b694810a968ed93daebed5fa2830f68a72fc",
+    "zipEntries": 3135,
+    "manifestFilesVerified": 3133,
+    "mediaFiles": 3085,
+    "mediaBytes": 782002193,
+    "launcherMode": "0755",
+    "launcherLineEndings": "LF",
+    "pythonMinimum": "3.8"
+  },
+  "currentFiles": {
+    "docs/index.html": {
+      "sha256": "fbd3c36353b755e50c094ad8e792beb3a3a51f3dbabd36e3f02ce7f6c8c84bf3",
+      "bytes": 21647
+    },
+    "docs/main.js": {
+      "sha256": "9f8d7ce30e74480933cfa8328eaf47893fa9704f3f6fe2dbf6ca6d76bb7c4995",
+      "bytes": 70328
+    },
+    "docs/net.js": {
+      "sha256": "4c0c1ae51b386a80e0785fef32c212799ca99ae0c2e7af9c44d65de81f3a992f",
+      "bytes": 5504
+    },
+    "docs/season-session.js": {
+      "sha256": "bcf6048713e00485eb9a639a2d5d779dc57e5da05abb4a740d093a8891307c2e",
+      "bytes": 1295
+    },
+    "docs/original-seasons.js": {
+      "sha256": "fb4001470974e86ed297465309933305bef3bd8c54c8c603f6e39d18b2e63492",
+      "bytes": 2176
+    },
+    "docs/original-ground.js": {
+      "sha256": "bf0b44726870aacf5e57d72969d60a9468db823de21576fd7ea5b3f5962d1724",
+      "bytes": 14653
+    },
+    "docs/original-terrain.js": {
+      "sha256": "923805d2f4a2c9474a07895e597a9e0b05f90e9b3034e19005c43894c52e748b",
+      "bytes": 16278
+    },
+    "docs/openepoch-ee2.wasm": {
+      "sha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+      "bytes": 430146
+    },
+    "docs/openepoch.wasm": {
+      "sha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+      "bytes": 268821
+    },
+    "src/game.rs": {
+      "sha256": "7f492f98f5079f55c9581e584cd9a943c655a26949af1de3391191cc7cc9c273",
+      "bytes": 82744
+    },
+    "src/lib.rs": {
+      "sha256": "7ec5248d4a7f5c48712d6061f9714f1e63de3c48a2599b89557952eef1493b37",
+      "bytes": 29213
+    },
+    "src/save.rs": {
+      "sha256": "3d9da2646d647ac6b8c8ce2119b04736ecc317ae570f418c760462df5daf3c86",
+      "bytes": 11481
+    },
+    "src/territory.rs": {
+      "sha256": "8aae5ef138ef0c231766df06c08ba8820381a887da2876e4761cfe413922072c",
+      "bytes": 43974
+    },
+    "src/research.rs": {
+      "sha256": "125c4bd967a0884de5b4fa5766aa17496f03b0cb589cf92d2ee0eb06205de08b",
+      "bytes": 7027
+    },
+    "src/city_ground.rs": {
+      "sha256": "41bd8d510d94bd170f9bf7a3fccaf27970b83b7bec6525af4057b58955eb50b7",
+      "bytes": 6051
+    },
+    "src/city_ground_tests.rs": {
+      "sha256": "60eb5460b99ada0de2f769cd080bb4c1a10011bfd548c2c25f938c86c9471506",
+      "bytes": 8825
+    },
+    "tools/serve_game.py": {
+      "sha256": "b995ff581cb9b867f3743a154ea9704c646d0d1cf2444b8372334af468644bd0",
+      "bytes": 7787
+    }
+  },
+  "liveUrl": "http://127.0.0.1:8125/?rules=ee2&build=combat-season1",
+  "github": {
+    "uploaded": false,
+    "reason": "Automatic approval review rejected create_tree pending explicit payload and destination authorization."
+  },
+  "limits": [
+    "A complete gameplay or visual1:1 recreation of Empire Earth II is not achieved.",
+    "Native BASE combat tables are used consistently with current unit stats; installed UP5 tables are a separate source layer.",
+    "Full native AI, civilization sets, roster, special abilities, veteran/elite systems, weather, lighting and terrain generation remain incomplete.",
+    "Urban membership follows reconstructed completed-TC lifecycles and persisted radius maxima; complete native CityManager ownership/history registration is not reproduced.",
+    "No browser/HUD interaction, Internet/WebRTC connectivity or physical macOS execution was tested for this build.",
+    "All imported media are in the local portable ZIP. Original media are excluded from the proposed GitHub source payload."
+  ]
+}

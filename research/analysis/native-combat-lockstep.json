@@ -1,0 +1,21 @@
+{
+  "format": "native-combat-lockstep-v1",
+  "status": "passed",
+  "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+  "checkpoints": 120,
+  "cases": [
+    {
+      "seed": 7,
+      "armyTargetPerTeam": 400,
+      "ticks": 1200,
+      "hash": 156526291
+    },
+    {
+      "seed": 41,
+      "armyTargetPerTeam": 400,
+      "ticks": 1200,
+      "hash": 1887115803
+    }
+  ],
+  "scope": "Two independent EE2 WASM memories with different local seats and render cadences, real automatic mixed-army combat. This validates engine determinism, not WebRTC signaling or Internet connectivity."
+}

@@ -1,0 +1,129 @@
+Einheiten und Originalkosten — Datenstand 30.10.2026
+
+Der Import ist ein nachvollziehbarer Datenbaustein für den eigenen EE2-Modus.
+Er verändert weder game.rs noch lib.rs noch defs.rs und bindet sich nicht selbst
+in die Simulation ein. Der aufrufende Overlay entscheidet über die Anwendung
+der optionalen Felder und die sichtbare Kennzeichnung von Rollenadaptern.
+
+Quelle und Umfang
+Ausschließlich C:\Program Files (x86)\GOG.com\Empire Earth II\zips\db.zip.
+Archiv-SHA256: 042291d39b8e5362124da5254c718966032533885638e8393d5900e91e9b492e
+Genutzt werden upgrade_unittypes.csv und dbtechtreenode.csv sowie originale
+UnitType-, UnitModel-, UpgradeSet- und UpgradeAbilities-DDF-Deklarationen.
+Jeder Feldwert trägt Datei, Originalzeile und SHA256. Die Installation wird
+ausschließlich gelesen. Patch-/VFS-Prioritäten werden damit nicht rekonstruiert.
+
+56 vorhandene Spielrollen, 111 belegte Visual-/Epochenrecords und 262 ergänzende
+Klassen-/Epochenrecords; alle 56 Quellen sind aufgelöst. Darunter liegen die
+neuen Rollen 53 OilRig, 54 UraniumMine und 55 HercFacility. 14 Zuordnungen sind ausdrücklich
+Rollenadapter. Es werden weder alle 438 deklarierten UnitTypes noch Hilfsobjekte
+als produktive Einheiten ausgegeben.
+
+Dateien und API
+tools/import_ee2_units.py
+src/ee2_units.rs
+docs/ee2-units.json
+tools/test_ee2_units.py
+
+Aufruf nach dem lokalen Modellimport:
+python tools/import_ee2_units.py
+Optional: --install "D:\Spiele\Empire Earth II".
+Das lokale Modellmanifest ist für den überprüfbaren VISUAL-/NIF-Abgleich nötig.
+Fehlt es, bricht der Import ab, statt Kampfwerte aus ungesicherten Zuordnungen
+zu erzeugen. Die Zahlen-/Quelltabellen enthalten selbst keine Originalmedien.
+Die erzeugten JSON- und Rust-Dateien werden erst abschließend ersetzt.
+
+Rust:
+lookup(id, epoch) und ROWS: streng an die vorhandenen Modellvarianten gebunden.
+lookup_class(id, epoch) und CLASS_ROWS: vollständige deklarierte Fortschreibung
+der zugeordneten Originalklasse, einschließlich grafisch nicht abgedeckter Varianten.
+production_class_from(id): 0-basierter Beginn aus dem Original-Produktionsknoten.
+available_from(id), available_until(id): Grenzen des strikten Visualbindings.
+
+epoch ist 0..14; source_epoch ist die originale 1..15; until ist exklusiv.
+Die Felder hp, buildtime, cost9, pop, pop_capacity, sight und weitere Zahlen
+sind Option-Werte. None bedeutet einen fehlenden/nicht bestätigten Feldwert,
+keinen erfundenen Nullwert. identity_verified und model_verified sind getrennt.
+source_unit, source_visual und source_host bewahren die konkrete Herkunft.
+
+Für alle 56 Rollen existieren ab dem Original-Produktionsbeginn bis Epoche 15
+lückenlos bestätigte Klassenwerte für HP, Kosten und Bauzeit. Die letzte
+deklarierte Upgradezeile gilt bis zur nächsten oder bis Epoche 15 weiter.
+Wenn die originale VISUAL-Variante nicht dem gebundenen Modell entspricht,
+sind model_verified und identity_verified dieser Klassenzeile false.
+Die numerischen Quellwerte bleiben unabhängig davon bestätigt.
+So kann die Engine Originalkosten verwenden, ohne visuelle Gleichheit zu behaupten.
+
+Interne Ressourcenreihenfolge
+0 FOOD, 1 WOOD, 2 IRON, 3 STONE, 4 GOLD, 5 TIN, 6 SALTPETER, 7 OIL, 8 URANIUM.
+Dies ist die bestehende Enginefolge mit Iron in Legacy-Slot 2, keine Übernahme
+der ursprünglichen CSV-Spaltenfolge oder ungeprüfter nativer ResourceIDs.
+Jede Kostenzeile wird anhand der Spaltennamen in diese neun Slots umgeordnet.
+
+Belegte Wirtschaftsbeispiele
+Stadtzentrum E1: 8.000 HP, 50 s, 300 Holz + 300 Stein, DDF-popCapacity 40.
+Haus E1: 750 HP, 35 s, 50 Holz + 50 Stein, DDF-popCapacity 5.
+Kaserne E1: 1.800 HP, 45 s, 250 Holz.
+Universität E1: 1.000 HP, 50 s, 150 Holz + 150 Stein; drei Bürger mit 0,03 TP/s.
+Mühle E1: 1.800 HP, 45 s, 250 Stein.
+Bürger: 30/30/40/50/60 HP ab E1/4/7/10/13, 50 Nahrung, 25 s, popCount 1.
+Farm: Produktionsfreigabe E2, 100 HP, 100 Holz, 25 s.
+OilRig: Freigabe E10, 1.000 HP, 100 Holz, 45 s.
+UraniumMine: Freigabe E13, 1.000 HP, 100 Holz, 45 s.
+HercFacility: Freigabe E14, 3.000 HP, 250 Stein, 45 s.
+Beide Spezialgebäude haben sechs Garrisonplätze und 0,75 Ress/s je Besatzung.
+generation_resource 7/8 bezeichnet Öl/Uran; 9 bezeichnet Technologie außerhalb
+der neun natürlichen Ressourcen. GatherFarm-Raten und Carry-Limits bleiben
+getrennt von dieser Garrisonförderung.
+
+Quellidentität und Ambiguitäten
+Ein Rollenadapter kann direkt belegte Zahlenwerte besitzen, obwohl eigener Name
+und Fähigkeiten keine exakte Originaleinheit darstellen. Marine bleibt etwa
+ein eigener Regel-Archetyp mit AssaultRifleman-Quelle. Slinger besitzt Bowman-
+Grafik; Watchtower besitzt Outpost-Grafik, nicht Wall_Tower. Diese Fälle tragen
+identity_verified:false und eine konkrete Begründung.
+
+Die CSV-VISUAL-Deklarationen werden über UnitModel-DefaultModel mit den lokalen
+Original-NIF-Quellen verglichen. Dabei wurde ID23 von einem unpassenden LHM-Bezug
+auf den belegten LLM11_guntank-Bezug korrigiert.
+
+LightArtillery2 E11 besitzt zwei CSV-Zeilen mit gleichem VISUAL und abweichenden
+Werten: UpgradeEpoch1 mit 170 HP und UpgradeEpoch11 mit 225 HP.
+Der Produktionsknoten referenziert ausdrücklich UpgradeEpoch11. Der Import
+folgt dieser Verknüpfung (225 HP, LOS 12, Schaden 27, Range 11, Reload 0,5),
+statt die erste visuell passende CSV-Zeile zu wählen. Alle Kandidatenquellen
+bleiben im Audit. Zwei HeavyArtillery-Initialisierungen vor der tatsächlichen
+Produktionsfreigabe E2 stehen ebenfalls im Audit und erzeugen keine E1-Produktion.
+
+Grenzen von Verfügbarkeit und Maßeinheiten
+Die strikten lookup-Intervalle decken eine konkrete Stat-/Visual-Variante bis
+zur nächsten Upgradezeile ab. Sie beweisen keine vollständige Rekonstruktion
+von Produktionsabschaltungen. Beispielsweise wird Frigate als Klasse in E6
+freigeschaltet, während das vorhandene Frigate-Modell aus E10 stammt.
+lookup_class liefert die originalen E6-Kosten mit einer sichtbaren Visual-
+Adaptermarkierung. Das alte Acht-Epochen-Schema wird dafür nicht verwendet.
+
+Native Produktionsorte werden aus source_host übernommen:
+CityCenter -> 0, Barracks -> 3, Mill -> 48, Stable -> 49, Dock -> 5,
+Airport -> 6 und HercFacility -> 55. Tank und HeavyTank gehören laut Original
+weiterhin nach Stable, Artillerie nach Mill. In der Basisquelle existiert keine
+Klasse/Produktionsstätte Factory. ID4 Workshop bleibt ein ausdrücklicher älterer
+Rollenadapter zu Mill und wird durch den Datenimport nicht umgedeutet.
+
+raw_size, raw_footprint, raw_speed und Range behalten native Werte. Eine
+unbestätigte Welt-/Tile-Skalierung wird nicht als originale Enginekonstante
+ausgegeben. DDF-popCount und popCapacity bleiben getrennt; eine CSV-Spalte
+POP CAPACITY mit 0 wird nicht als Bevölkerungskostenangabe missverstanden.
+Zivilisationen, Veteran/Elite, Forschungseffekte, Sonderfähigkeiten und alle
+verbleibenden DDF-/Gamebryo-Semantiken werden durch diese Tabellen nicht
+automatisch implementiert.
+
+Prüfung
+tools/test_ee2_units.py: zwölf Tests bestanden. Geprüft werden Parsergrenzen und
+Quellzeilen, neun Kostenslots, bekannte Originalwerte, Epochenfenster, Bürger-/
+Uni-Upgrades, Rig-/Uran-Garrison, Population, Rollenadapter, HercFacility samt
+nativen Produktionsorten, die kollidierenden
+Halftrack-Zeilen, lückenlose Klassenwerte nach Produktionsfreigabe und alle
+eingelesenen Archivdatei- sowie Feldquellhashes.
+Die aktuelle src/ee2_units.rs wurde mit rustc separat als Bibliothek kompiliert.
+Diese Datenprüfung ist keine vollständige Spielabnahme oder Leistungsmessung.

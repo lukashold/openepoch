@@ -1,0 +1,19 @@
+{
+  "format": "ee2-ground-selection-v1",
+  "engineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+  "nativeEpochFirst": [
+    1,
+    6,
+    11
+  ],
+  "nativeSelector": "006040D0",
+  "epochGetter": "005E0070",
+  "epochHeaderSha256": "75d3080734ebdc5649e8abd7bf57b3e12da6a9ae67a4e9e3ebcbb96d4b229c61",
+  "urbanQuery": "00814340; global CityManager; no owner filter; strict float L1 distance < stored city-band radius times native sqrt2 constant.",
+  "cityRadiusFactor": 1.4142135381698608,
+  "placement": "00603A60 supplies explicit UndertextureSize/Offset to00714CF0 without model-size normalization.",
+  "remaining": "Urban callback must supply registered native-equivalent city bands. Original map generation, full CityManager priorities, road decals and dead-unit lifetime integration are separate.",
+  "bindings": 13,
+  "runtimeManifestSha256": "394dc17695378752eab77d37defde85e6ff225b33d12a65a162893c05ef49a5d",
+  "mediaChanged": false
+}

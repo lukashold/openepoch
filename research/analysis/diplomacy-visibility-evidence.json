@@ -1,0 +1,702 @@
+{
+  "format": "ee2-diplomacy-visibility-evidence-v1",
+  "date": "2026-10-31",
+  "scope": "Read-only installed base db.zip/hdrs.zip + installed Manual.pdf + targeted read-only Ghidra of EnabledUP15Units engine; no runtime original-game verification and no VFS priority claim.",
+  "line_numbering": "1-based Python str.splitlines after utf-8-sig decoding",
+  "archives": {
+    "hdrs.zip": {
+      "path": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\zips\\hdrs.zip",
+      "bytes": 124550,
+      "sha256": "2776d86da7e8fa405e78dd6feee67aff2861dc4165637bfa8db9de84f66f37fc"
+    },
+    "db.zip": {
+      "path": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\zips\\db.zip",
+      "bytes": 1003840,
+      "sha256": "042291d39b8e5362124da5254c718966032533885638e8393d5900e91e9b492e"
+    }
+  },
+  "sources": {
+    "diplomacy_header": {
+      "archive": "hdrs.zip",
+      "entry": "DbHdrs/DbDiplomacyDefs.h",
+      "bytes": 3416,
+      "sha256": "846cf68edf5d009b46065cca8e59c7c6be752b45033843698fd999c8da99f3c3",
+      "encoding": "utf-8-sig",
+      "line_count": 105,
+      "relevant_lines": [
+        [
+          17,
+          37
+        ],
+        [
+          39,
+          64
+        ],
+        [
+          67,
+          103
+        ]
+      ]
+    },
+    "settings_header": {
+      "archive": "hdrs.zip",
+      "entry": "DbHdrs/DbGameSettingsDefs.h",
+      "bytes": 5317,
+      "sha256": "d5cc66cce270e1268d890032c2b81113d2b101e757833766963ea9296776ffdf",
+      "encoding": "utf-8-sig",
+      "line_count": 153,
+      "relevant_lines": [
+        [
+          61,
+          82
+        ],
+        [
+          138,
+          139
+        ]
+      ]
+    },
+    "frontend_header": {
+      "archive": "hdrs.zip",
+      "entry": "DbHdrs/DbFrontEndDefs.h",
+      "bytes": 7680,
+      "sha256": "136f70838a15d79f153a4c08ab30879f4dee176e23e7af389a270dd61eaa11b6",
+      "encoding": "utf-8-sig",
+      "line_count": 354,
+      "relevant_lines": [
+        [
+          32,
+          53
+        ]
+      ]
+    },
+    "victory_header": {
+      "archive": "hdrs.zip",
+      "entry": "DbHdrs/DbVictoryConditionDefs.h",
+      "bytes": 2574,
+      "sha256": "98c94afe9f4049b29b791766564b4bb3332973df1218ec1926b7530fc8d3f7c3",
+      "encoding": "utf-8-sig",
+      "line_count": 67,
+      "relevant_lines": [
+        [
+          19,
+          60
+        ]
+      ]
+    },
+    "ingame_text": {
+      "archive": "db.zip",
+      "entry": "db/Text/dbtext_ingame_widgets.utf8",
+      "bytes": 19150,
+      "sha256": "e460daf5dd10e61fa91a390417d83e44f92e92b31ce398d8d1262810653f3a6b",
+      "encoding": "utf-8-sig",
+      "line_count": 427,
+      "relevant_lines": [
+        [
+          70,
+          103
+        ],
+        [
+          129,
+          177
+        ]
+      ]
+    },
+    "diplomacy_tooltips": {
+      "archive": "db.zip",
+      "entry": "db/Text/dbtext_widgettips.utf8",
+      "bytes": 37275,
+      "sha256": "e62bc848bbf6144369b5536524efcdd99e394ee4830257a3d3b5f553f0b0bc7e",
+      "encoding": "utf-8-sig",
+      "line_count": 424,
+      "relevant_lines": [
+        [
+          392,
+          400
+        ]
+      ]
+    },
+    "frontend_tooltips": {
+      "archive": "db.zip",
+      "entry": "db/Text/dbtext_fe_widgettips.utf8",
+      "bytes": 39689,
+      "sha256": "70b18b2f7ea2643ef4a4aa5a7249835f7ec4884ae8f0e651c9f1d2820bbd4671",
+      "encoding": "utf-8-sig",
+      "line_count": 319,
+      "relevant_lines": [
+        [
+          20,
+          20
+        ],
+        [
+          146,
+          155
+        ],
+        [
+          194,
+          196
+        ]
+      ]
+    },
+    "enum_text": {
+      "archive": "db.zip",
+      "entry": "db/Text/dbtext_enums.utf8",
+      "bytes": 20000,
+      "sha256": "665a5c728086f4ed6bcaf5dda47fcbe0887339b50d31c816397ec5c71396aa28",
+      "encoding": "utf-8-sig",
+      "line_count": 560,
+      "relevant_lines": [
+        [
+          114,
+          116
+        ]
+      ]
+    },
+    "messages": {
+      "archive": "db.zip",
+      "entry": "db/Text/dbtext_msgingame.utf8",
+      "bytes": 29296,
+      "sha256": "d88c90fb8d2742a38016b8e4f93f4c5dd07f26896f151d07426ea6c10f006e3d",
+      "encoding": "utf-8-sig",
+      "line_count": 359,
+      "relevant_lines": [
+        [
+          67,
+          86
+        ],
+        [
+          131,
+          167
+        ],
+        [
+          217,
+          223
+        ]
+      ]
+    },
+    "ingame_widgets": {
+      "archive": "db.zip",
+      "entry": "db/UI/dbwidget_ingame.csv",
+      "bytes": 201871,
+      "sha256": "e981975df0078356efd898d241be8b0a85405ef9752e15187123edee2c2c61a7",
+      "encoding": "utf-8-sig",
+      "line_count": 1591,
+      "relevant_lines": [
+        [
+          834,
+          846
+        ]
+      ]
+    },
+    "frontend_widgets": {
+      "archive": "db.zip",
+      "entry": "db/UI/dbwidget_fe.csv",
+      "bytes": 198049,
+      "sha256": "1c132ebf83d834e5aa45e458fa15177cc0d879331922808a33075243293b84b9",
+      "encoding": "utf-8-sig",
+      "line_count": 1230,
+      "relevant_lines": [
+        [
+          1010,
+          1011
+        ]
+      ]
+    }
+  },
+  "files": {
+    "manual": {
+      "path": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\Manual.pdf",
+      "bytes": 1738913,
+      "sha256": "c06e78a132b2c200b55d16ec53f959115b0680a4509677986c840fb5dcc51483"
+    },
+    "analysed_engine_original": {
+      "path": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\Unofficial Patch Files\\EnabledUP15Units\\EE2.exe",
+      "bytes": 11804672,
+      "sha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f"
+    },
+    "analysed_engine_copy": {
+      "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\EE2-engine.exe",
+      "bytes": 11804672,
+      "sha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f"
+    },
+    "launcher_not_analysed": {
+      "path": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\EE2.exe",
+      "bytes": 10945712,
+      "sha256": "a17252980223e405b56849d3f5fe8d833193956bc6f718e3e41e74611b1f0872"
+    },
+    "ghidra_ui": {
+      "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\EE2-Research\\analysis\\diplomacy-ui-runtime.c",
+      "bytes": 25930,
+      "sha256": "00fbfc66b4af836171f87a3d3925b34ec786032c445d66d4d2923b734d517b0f"
+    },
+    "ghidra_defaults": {
+      "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\EE2-Research\\analysis\\diplomacy-defaults-runtime.c",
+      "bytes": 6341,
+      "sha256": "085dda5f1af2d98481c29ed07efce0d856de11ec569fe24d946af38552026019"
+    },
+    "ghidra_constructor": {
+      "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\EE2-Research\\analysis\\diplomacy-constructor-runtime.c",
+      "bytes": 5087,
+      "sha256": "7c446e7d98c67609fd85d16b7a870e9c39b29ff960502a3554644cd40025b3f0"
+    }
+  },
+  "enums": {
+    "eDiplomaticState": [
+      {
+        "key": "kDiplomaticState_Hostile",
+        "value": 0
+      },
+      {
+        "key": "kDiplomaticState_Neutral",
+        "value": 1
+      },
+      {
+        "key": "kDiplomaticState_Allied",
+        "value": 2
+      },
+      {
+        "key": "kNumDiplomaticStates",
+        "value": 3
+      }
+    ],
+    "eAllianceDuration": [
+      {
+        "key": "kAllianceDuration_UntilWar",
+        "value": 0
+      },
+      {
+        "key": "kAllianceDuration_Timed",
+        "value": 1
+      },
+      {
+        "key": "kNumAllianceDurations",
+        "value": 2
+      }
+    ],
+    "eAllianceLOSState": [
+      {
+        "key": "kAllianceLOSState_Full",
+        "value": 0
+      },
+      {
+        "key": "kAllianceLOSState_Buildings",
+        "value": 1
+      },
+      {
+        "key": "kAllianceLOSState_MobileUnits",
+        "value": 2
+      },
+      {
+        "key": "kAllianceLOSState_None",
+        "value": 3
+      },
+      {
+        "key": "kNumAllianceLOSStates",
+        "value": 4
+      }
+    ],
+    "eAllianceBorderPerm": [
+      {
+        "key": "kAllianceBorderPerm_Full",
+        "value": 0
+      },
+      {
+        "key": "kAllianceBorderPerm_Civilian",
+        "value": 1
+      },
+      {
+        "key": "kAllianceBorderPerm_Trade",
+        "value": 2
+      },
+      {
+        "key": "kAllianceBorderPerm_None",
+        "value": 3
+      },
+      {
+        "key": "kNumAllianceBorderPerms",
+        "value": 4
+      }
+    ],
+    "eAllianceResRight": [
+      {
+        "key": "kAllianceResRight_Full",
+        "value": 0
+      },
+      {
+        "key": "kAllianceResRight_Specified",
+        "value": 1
+      },
+      {
+        "key": "kAllianceResRight_None",
+        "value": 2
+      },
+      {
+        "key": "kNumAllianceResRights",
+        "value": 3
+      }
+    ],
+    "eMapRevealedLevel": [
+      {
+        "key": "kMapRevealedLevel_Unrevealed",
+        "value": 0
+      },
+      {
+        "key": "kMapRevealedLevel_Explored",
+        "value": 1
+      },
+      {
+        "key": "kMapRevealedLevel_Revealed",
+        "value": 2
+      }
+    ]
+  },
+  "selected_native_text": {
+    "map_choices": [
+      {
+        "line": 114,
+        "key": "tx_enum_eMapRevealedLevel_0",
+        "text": "N. aufgedeckt"
+      },
+      {
+        "line": 115,
+        "key": "tx_enum_eMapRevealedLevel_1",
+        "text": "Erforscht"
+      },
+      {
+        "line": 116,
+        "key": "tx_enum_eMapRevealedLevel_2",
+        "text": "Aufgedeckt"
+      }
+    ],
+    "map_tooltips": [
+      {
+        "line": 194,
+        "key": "tt_fe_revealMap_Unrevealed",
+        "text": "Nicht aufgedeckt:\\nDie Karte wird durch den Schleier verdeckt und der Nebel des Krieges ist wirksam."
+      },
+      {
+        "line": 195,
+        "key": "tt_fe_revealMap_Explored",
+        "text": "Erforscht:\\nDer Schleier verdeckt nicht mehr das Terrain, aber der Nebel des Krieges ist immer noch wirksam."
+      },
+      {
+        "line": 196,
+        "key": "tt_fe_revealMap_Revealed",
+        "text": "Aufgedeckt:\\nEs gibt weder Schleier noch Nebel des Krieges auf der Karte, sodass alles jederzeit sichtbar ist."
+      }
+    ],
+    "alliance_terms": [
+      {
+        "line": 148,
+        "key": "tt_ig_allprop_dur_UntilWar",
+        "text": "Bis zur Kriegserklärung:\\nDieser Vertrag wird bestehen, bis einer der Spieler den Krieg erklärt."
+      },
+      {
+        "line": 149,
+        "key": "tt_ig_allprop_dur_Timed",
+        "text": "Mit Timer:\\nDas Abkommen gilt für eine in Minuten festgelegte Zeit oder bis einer der Spieler den Krieg erklärt. Wenn die Option 'Nicht zu brechende Verträge' aktiviert ist, können die Verträge in dieser Zeit nicht gebrochen werden."
+      },
+      {
+        "line": 150,
+        "key": "tt_ig_allprop_los_Full",
+        "text": "Komplett:\\nAlle Spieler haben den Sichtbereich aller Einheiten und Gebäude, die ihren Verbündeten gehören."
+      },
+      {
+        "line": 151,
+        "key": "tt_ig_allprop_los_Buildings",
+        "text": "Gebäude:\\nAlle Spieler haben den Sichtbereich aller Gebäude, die ihren Verbündeten gehören."
+      },
+      {
+        "line": 152,
+        "key": "tt_ig_allprop_los_MobileUnits",
+        "text": "Mobile Einheiten:\\nAlle Spieler haben den Sichtbereich aller Einheiten, die ihren Verbündeten gehören."
+      },
+      {
+        "line": 153,
+        "key": "tt_ig_allprop_los_None",
+        "text": "Keine:\\nVerbündete teilen sich den Sichtbereich nicht."
+      },
+      {
+        "line": 154,
+        "key": "tt_ig_allprop_bord_Full",
+        "text": "Komplett:\\nAlle Einheiten Ihres Verbündeten dürfen Ihr Territorium uneingeschränkt betreten."
+      },
+      {
+        "line": 155,
+        "key": "tt_ig_allprop_bord_Civilian",
+        "text": "Zivilpersonen:\\nNur die Bürger Ihres Verbündeten dürfen Ihr Territorium betreten."
+      },
+      {
+        "line": 156,
+        "key": "tt_ig_allprop_bord_Trade",
+        "text": "Handel:\\nNur die Handelseinheiten Ihres Verbündeten dürfen Ihr Territorium betreten."
+      },
+      {
+        "line": 157,
+        "key": "tt_ig_allprop_bord_None",
+        "text": "Keine:\\nKeine der Einheiten Ihres Verbündeten darf Ihr Territorium betreten."
+      },
+      {
+        "line": 158,
+        "key": "tt_ig_allprop_tarriff",
+        "text": "Ressourcentarif:\\nFalls den Bürgern Ihres Verbündeten Zugang zu Ihrem Territorium gewährt wird, wird durch diese Einstellung ein Tarif (%) festgelegt, den diese Bürger zahlen, wenn sie in Ihrem Territorium Ressourcen sammeln. Dieser Tarif wird gezahlt, sobald die Ressourcen abgeladen werden."
+      }
+    ],
+    "team_and_treaty_options": [
+      {
+        "line": 20,
+        "key": "tt_fe_gametype_SoleSurvivor",
+        "text": "Einziger Überlebender:\\nBeim Spieltyp 'Einziger Überlebender' kann nur ein Spieler gewinnen. Während das Spiel eingerichtet wird, können Teams gebildet werden. Im laufenden Spiel können Allianzen eingegangen werden. Sind aber nur noch zwei Teams übrig, treten diese automatisch gegeneinander an. In der Folge können neue Allianzen eingegangen werden, bis nur noch zwei Spieler übrig sind."
+      },
+      {
+        "line": 146,
+        "key": "tt_fe_gameset_teamsLocked",
+        "text": "Festgelegte Teams:\\nWenn diese Option angewählt ist, können die Zuordnungen des Startteams während des Spiels nicht durch Diplomatie verändert werden."
+      },
+      {
+        "line": 147,
+        "key": "tt_fe_gameset_coopTeams",
+        "text": "Kooperative Teams:\\nWenn diese Option ausgewählt ist, dann teilen sich alle Spieler desselben Startteams die Kontrolle über eine Zivilisation."
+      },
+      {
+        "line": 153,
+        "key": "tt_fe_gameset_unbTreaties",
+        "text": "Nicht zu brechende Verträge:\\nWenn diese Option ausgewählt ist, können diplomatische Abkommen mit festgelegter Dauer nicht gebrochen werden."
+      }
+    ]
+  },
+  "claims": {
+    "relations": {
+      "states": [
+        "Hostile",
+        "Neutral",
+        "Allied"
+      ],
+      "hostile_directed": true,
+      "neutral_separate_own_stance": true,
+      "allied_symmetric": true,
+      "alliance_requires_acceptance": true,
+      "sources": [
+        "diplomacy_header:17-37",
+        "ingame_text:81-87",
+        "diplomacy_tooltips:392-400",
+        "manual:PDF18/print34-35"
+      ]
+    },
+    "shared_vision": {
+      "optional_contract_scope": true,
+      "mutual_per_header": true,
+      "scopes": [
+        "Full",
+        "Buildings",
+        "MobileUnits",
+        "None"
+      ],
+      "new_term_default": "Full",
+      "new_term_default_value": 0,
+      "default_scope_limit": "Proved constructor initialization for the analysed EnabledUP15Units engine; no claim for all loaded profiles or locked-team setup paths.",
+      "ghidra_chain": [
+        "007a91d0 invokes 00545620",
+        "00545620 invokes 00545040",
+        "00545040 zero-initializes six term fields",
+        "007ab9b0 and 007aba70 map term[3] to prop_termsl_los"
+      ],
+      "sources": [
+        "diplomacy_header:50-64",
+        "ingame_text:150-153",
+        "ingame_widgets:838-839",
+        "ghidra_ui",
+        "ghidra_defaults",
+        "ghidra_constructor"
+      ]
+    },
+    "map_visibility": {
+      "modes": [
+        {
+          "value": 0,
+          "key": "Unrevealed",
+          "terrain_discovered": false,
+          "fog_of_war": true
+        },
+        {
+          "value": 1,
+          "key": "Explored",
+          "terrain_discovered": true,
+          "fog_of_war": true
+        },
+        {
+          "value": 2,
+          "key": "Revealed",
+          "terrain_discovered": true,
+          "fog_of_war": false
+        }
+      ],
+      "native_new_match_default": null,
+      "default_note": "No native default proven; first enum item is not sufficient evidence.",
+      "sources": [
+        "frontend_header:32-36",
+        "settings_header:71",
+        "enum_text:114-116",
+        "frontend_tooltips:194-196",
+        "frontend_widgets:1010-1011"
+      ]
+    },
+    "offers_and_tribute": {
+      "offer_counter_accept_reject_withdraw_expire": true,
+      "tribute_types": [
+        "resources",
+        "units",
+        "territories"
+      ],
+      "give_and_demand": true,
+      "tribute_to_hostile_explicit_warning": true,
+      "separate_ceasefire_proposal": true,
+      "sources": [
+        "ingame_text:88-115",
+        "ingame_text:129-177",
+        "messages:131-167"
+      ]
+    },
+    "terms": {
+      "duration": [
+        "UntilWar",
+        "Timed"
+      ],
+      "borders": [
+        "Full",
+        "Civilian",
+        "Trade",
+        "None"
+      ],
+      "resource_rights_header_only": [
+        "Full",
+        "Specified",
+        "None"
+      ],
+      "tariff_percent": {
+        "min": 0,
+        "max": 99,
+        "default": 0,
+        "payment": "at resource dropoff"
+      },
+      "timed_unbreakable_only_if_setting_enabled_per_tooltip": true,
+      "header_duration_comment_is_broader_than_ui": true,
+      "source_ui_duration_minutes": {
+        "min": 2,
+        "max": 30,
+        "widget_value": 10
+      },
+      "separate_resource_rights_mode_current_ui_unproven": true,
+      "sources": [
+        "diplomacy_header:39-48",
+        "diplomacy_header:67-103",
+        "ingame_text:148-158",
+        "frontend_tooltips:153",
+        "ingame_widgets:835-846"
+      ]
+    },
+    "teams_and_victory": {
+      "locked_teams_unchangeable_by_diplomacy": true,
+      "locked_team_shared_victory_described_by_manual": true,
+      "unlocked_dynamic_alliance_not_automatic_shared_victory": true,
+      "cooperative_control_is_separate_setting": true,
+      "sole_survivor_single_winner": true,
+      "sole_survivor_break_trigger_conflict": "Manual PDF3 printed5 says one team remaining; German frontend tooltip says two teams. Countdown/forced-state code exists, exact trigger not resolved.",
+      "victory_enum_version_warning": "Do not transpose header victory numeric indices to UI enums; labels differ at index10 in these local data files.",
+      "sources": [
+        "frontend_tooltips:20",
+        "frontend_tooltips:146-147",
+        "victory_header:19-60",
+        "manual:PDF3/print4-5",
+        "manual:PDF4/print6-7",
+        "ghidra_defaults",
+        "ghidra_constructor"
+      ]
+    }
+  },
+  "manual_pages": [
+    {
+      "pdf_page": 3,
+      "printed_pages": [
+        4,
+        5
+      ],
+      "topics": [
+        "conquest",
+        "locked/unlocked team victory",
+        "sole survivor"
+      ],
+      "visually_checked": true
+    },
+    {
+      "pdf_page": 4,
+      "printed_pages": [
+        6,
+        7
+      ],
+      "topics": [
+        "team setup",
+        "advanced shroud/fog settings"
+      ],
+      "visually_checked": false
+    },
+    {
+      "pdf_page": 18,
+      "printed_pages": [
+        34,
+        35
+      ],
+      "topics": [
+        "diplomatic states",
+        "alliance terms",
+        "tribute"
+      ],
+      "visually_checked": true
+    },
+    {
+      "pdf_page": 19,
+      "printed_pages": [
+        36,
+        37
+      ],
+      "topics": [
+        "war plans"
+      ],
+      "visually_checked": false
+    }
+  ],
+  "targeted_pe_instruction_check": {
+    "va": "00545640",
+    "bytes_hex": "8d4f0ce8f8f9ffff",
+    "meaning": "LEA ECX,[EDI+0x0c]; CALL 00545040. Proposal constructor initializes the nested six-field term object at byte offset12.",
+    "verified_against": "analysed_engine_copy"
+  },
+  "ghidra": {
+    "version": "12.2",
+    "read_only": true,
+    "no_analysis": true,
+    "project": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\EE2-Research\\ghidra-project\\EE2-Engine.gpr",
+    "existing_script": "scripts/ExportResourceTargets.java",
+    "target_addresses": [
+      "007a91d0",
+      "007ab9b0",
+      "007aba70",
+      "007ac7f0",
+      "00545620",
+      "005b3800",
+      "005b39d0",
+      "00545040",
+      "005b3380"
+    ],
+    "label_note": "Reused generic target-export helper; its resource-research banner is not a semantic function identification."
+  },
+  "unresolved": [
+    "native match visibility default",
+    "all loaded profile/team default paths",
+    "sole survivor exact break trigger",
+    "full resource-rights mode implementation beyond header/manual",
+    "diplomacy AI/negotiation acceptance weights",
+    "patch/VFS priority",
+    "all victory mode runtime semantics"
+  ]
+}

@@ -1,0 +1,60 @@
+Umfang und Originalton — ehrlicher Quellenstand 31.10.2026
+
+Das komplette Originalspiel ist nicht nachgebaut. Der eigene Katalog enthält
+56 Definitionen (39 mobile Typen, 17 Gebäude), davon 14 Identitäts-/Rollenadapter
+und 38 unterschiedliche Original-Quellklassen. 111 Visual-/Zahlenrecords und 262
+Klassenfortschreibungen machen daraus nicht den vollen produktiven EE2-Katalog.
+
+Die ausdrücklich gewählte Basis-db.zip enthält 641 Baumknoten, 134 Zeilen mit
+PRODUCE und 132 unterschiedliche PRODUCE-Bezeichner sowie 438 UnitType-Deklarationen.
+Diese Bezeichner umfassen auch Kampagnenobjekte, Zivilisationsvarianten, Wunder,
+Mauerverbinder und Infrastruktur. Sie sind keine geprüfte Liste ebenso vieler
+spielbarer Kampfeinheiten und kein zulässiger Nenner für eine Fertig-Prozentzahl.
+Beispielsweise fehlen produktive Händler, Priester, Spione, zahlreiche
+Spezialeinheiten/Zivilisationen und deren vollständige Voraussetzungen.
+
+Originalton wurde konkret verbessert: alle 39 aktuellen mobilen IDs 8–46 haben
+quellbelegte Auswahl-/Move-Sätze und originale Angriffssatz-Daten. Alte falsche
+Rollenstimmen wurden an die aktuellen UnitModel-Quellen angepasst, die fünf
+vorher fehlenden Sets 41/43/44/45/46 ergänzt. Mech 43 benutzt bewusst die in der
+Originalzeile genannten HeavyInfantry1_15-Stimmen; Battle Tank 26 mit Visual 13
+ebenso bewusst die dort genannten HeavyMounted1_15-Stimmen. Kein Dateiname
+wurde nur anhand eines ähnlich klingenden Modells geraten.
+
+Das aktive Quellenmanifest enthält 194 bytegetreue Originaldateien plus eine
+PCM-Ableitung=195 Assets, 194 aktive Wiedergabe-URLs und 12.353.891 Bytes. Es hat
+39 mobile Basis-Sprachbindungen, 26 zusätzlich quellbelegte Epochenintervalle,
+15 Gebäudeselektionen und 17 Ereigniseffekte. Ölbohrturm
+und Uranmine bleiben ohne erfundene Auswahlbindung. Alte nicht mehr referenzierte
+Dateien können als lokaler Cache vorhanden bleiben; sie zählen nicht als aktive
+Manifestbindung. Es wurden keine Originaldateien der Installation geändert.
+
+Der Quelltest liest die Original-ZIPs/Originalmusik erneut und prüft alle 194
+Originaldateien sowie 39 Basis- und 26 Epochenzuordnungen gegen die Originalzeilen
+unabhängig. Die 26 Intervalle stimmen mit den nativen progressionBinding-Quellen
+der Grafik überein, inklusive der eigenständigen HeavyTank-Zeile 66 für Epoche 15.
+Intervallgrenzen, Basisfallback und eigene Rotationen je Intervall sind geprüft.
+Angriffs-Playback 41/43, Mute, Stimmen-/Musiksteuerung, PCM und Fallback bestehen
+die echten Modul-API-Tests mit WebAudio-Fake. Das führt keine Browser-Codecs aus.
+Die erweiterte Seite ../OpenEpoch/docs/original-audio-check.html prüft nun alle
+194 aktiven URLs und bietet Auswahl/Move/Attack je Typ sowie alle 15 Epochen an;
+die gewählte Originalquelle erscheint im Status. Die finale Browserprüfung
+dekodiert194/194 aktive URLs ohne Fehler. ID9/E3-Angriff, ID9/E7-Move und
+ID26/E15-Angriff wurden mit der erwarteten Originalquelle abgespielt (3voicePlays).
+Die Basis-Angriffsantworten41/43 waren ebenfalls im echten Browser erfolgreich.
+Der alte15/15-Codecbeleg bleibt historisch. Neuer Beleg: analysis/graphics-browser-check.json.
+
+Die 26 Epochenintervalle sind ausdrücklich begrenzt; außerhalb bleibt der
+Basisquelltyp als Fallback erhalten. Fehlende Epochenstimmen werden nicht durch
+angenommene Fortschreibung als Original ausgegeben. Grenzen bleiben West-Preset,
+eigene Abspielrotation statt vollständiger nativer Ereignisregie und keine
+komplette Zivilisations-/Epochen-Sprachumschaltung. Ebenso offen sind voller
+Katalog, Kampfmatrix/Spezialfähigkeiten, 82 Forschungsfaktoren, Handel, vollständige
+Diplomatie-/Siegmodi, Original-KI, Wetter/Jahreszeiten und umfassende Spielabnahme.
+Neue Grafik- und Decalarbeiten laufen getrennt; alte Manifestzahlen werden hier
+nicht vorschnell als Abnahme der veränderten Grafikpipeline ausgegeben.
+
+Quellen und SHA256: analysis/audio-coverage.json sowie das lokale Audiomanifest.
+Reproduzieren: ../OpenEpoch/tools/extract_ee2_audio.py, danach
+node ../OpenEpoch/tools/original-audio-test.mjs im passenden Projektkontext.
+Originalmedien bleiben lokal und außerhalb des Quell-ZIPs.

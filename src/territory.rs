@@ -1,0 +1,1112 @@
+//! Territory gifts and negotiated swaps. Original runtime evidence: 0071ddb0
+//! transfers eligible owner objects, not only buildings; 0054bdc0 is the
+//! immediate tribute path. Queue handling and AI pricing are explicit adapters.
+use crate::{defs::*, game::*, map::*};
+use core::fmt::Write;
+pub const TERR_MAGIC: u32 = 0x3152_4554; // TER1
+pub const TERR_BYTES: usize = 8 + 32 * 4 + 16 * 12 + 4 + 12 * 16;
+pub const TERR_NONE: u8 = 255;
+pub const TERR_POLICY: &str = "Eigene Gebäude und Einheiten im Gebiet wechseln mitsamt Besatzung den Besitzer. Laufende Aufträge werden gestoppt und dem bisherigen Besitzer erstattet. Erforschte Technologien werden nicht übertragen.";
+#[derive(Clone, Copy)]
+pub struct TerritoryOffer {
+    pub active: bool,
+    pub give: u8,
+    pub want: u8,
+    pub tick: u32,
+    pub cooldown: u32,
+}
+impl Default for TerritoryOffer {
+    fn default() -> Self {
+        Self {
+            active: false,
+            give: TERR_NONE,
+            want: TERR_NONE,
+            tick: 0,
+            cooldown: 0,
+        }
+    }
+}
+#[derive(Clone, Copy, Default)]
+pub struct TerritoryEvent {
+    pub tick: u32,
+    pub from: u8,
+    pub to: u8,
+    pub kind: u8,
+    pub reason: u8,
+    pub give: u32,
+    pub want: u32,
+}
+pub struct TerritoryDiplomacy {
+    pub claims: [u32; 32],
+    pub offers: [TerritoryOffer; 16],
+    pub log: Vec<TerritoryEvent>,
+}
+impl Default for TerritoryDiplomacy {
+    fn default() -> Self {
+        Self {
+            claims: [NONE; 32],
+            offers: [TerritoryOffer::default(); 16],
+            log: Vec::with_capacity(12),
+        }
+    }
+}
+impl Game {
+    /// New acquisition is separate from retaining an existing city anchor.
+    /// BASE territory.ddf requires CityCenter1 for adjacent acquisition and
+    /// CityCenter1+Fortress1 for isolated acquisition, but only CityCenter1
+    /// to retain ownership. 00718cc0 separates Construction (+C) from completed
+    /// counts (+8), and 007194b0 reads only completed counts. 00723ba0 builds
+    /// right/down cell-edge neighbor pairs, and 007217e0 filters same-player
+    /// ownership. Simultaneous rounds and lowest-ID bootstrap tie-break are adapters.
+    fn territory_control_ready(e: &Ent) -> bool {
+        e.alive && e.hp > 0.0 && e.built >= 1.0
+    }
+    pub fn territory_adjacent_owned(&self, team: u8, id: usize) -> bool {
+        let mask=self.map.territory_neighbors[id];
+        self.towner.iter().enumerate().any(|(k,&o)|o==team && mask & (1<<k)!=0)
+    }
+    /// Counts include foundations; ready counts reflect the acquisition gate.
+    pub fn territory_control_counts(&self, team:u8, id:usize)->[u32;4] {
+        let mut counts=[0;4];
+        for e in &self.ents[..self.high] {
+            if !e.alive || e.hp<=0.0 || e.team!=team || self.map.terr[tile_of(e.x,e.y)] as usize!=id {continue;}
+            let index=match e.def {TC=>0,FORTRESS=>1,_=>continue};
+            counts[index]+=1;
+            if Self::territory_control_ready(e) {counts[index+2]+=1;}
+        }
+        counts
+    }
+    pub fn territory_claim_status(&self,team:u8,id:usize)->u32 {
+        if self.towner[id]==team {return 1;}
+        let c=self.territory_control_counts(team,id);
+        if c[0]==0 {return 0;}
+        if c[2]==0 {return 2;}
+        if self.towner.contains(&team) && !self.territory_adjacent_owned(team,id) {
+            if c[1]==0 {return 3;}
+            if c[3]==0 {return 4;}
+        }
+        2 // Eligible city; the next ownership reconstruction commits the claim.
+    }
+    /// Old layouts claimed every live city, including foundations. Preserve
+    /// their acquired rights during migration rather than silently deleting land.
+    pub fn seed_legacy_territory_claims(&mut self) {
+        for i in 0..self.high {
+            let e=self.ents[i];
+            if e.alive && e.hp>0.0 && e.def==TC {
+                let k=self.map.terr[tile_of(e.x,e.y)] as usize;
+                if self.territory.claims[k]==NONE {self.territory.claims[k]=self.h(i);}
+            }
+        }
+    }
+    /// A live city handle anchors the claim. Transfer changes its owner, and a
+    /// destroyed/reused handle cannot restore the former owner's border next tick.
+    pub fn rebuild_territories(&mut self) {
+        let mut first = [NONE; 32];
+        for i in 0..self.high {
+            let e = &self.ents[i];
+            if e.alive && e.hp > 0.0 && e.def == TC {
+                let k = self.map.terr[tile_of(e.x, e.y)] as usize;
+                if first[k] == NONE && (!cfg!(feature="ee2-reference") || Self::territory_control_ready(e)) {
+                    first[k] = self.h(i);
+                }
+            }
+        }
+        let mut owner = [TERR_NONE; 32];
+        for k in 0..self.map.tseeds.len() {
+            let claim = self.territory.claims[k];
+            let valid = self.get(claim).filter(|&i| {
+                let e = &self.ents[i];
+                e.def == TC && e.hp > 0.0 && self.map.terr[tile_of(e.x, e.y)] as usize == k
+            });
+            let h = if valid.is_some() { claim } else if cfg!(feature="ee2-reference") {NONE} else { first[k] };
+            self.territory.claims[k] = h;
+            if let Some(i) = self.get(h) {
+                owner[k] = self.ents[i].team;
+            }
+        }
+        if cfg!(feature="ee2-reference") {
+            // Use a fixed point of simultaneous acquisition rounds. Chains of
+            // completed neighboring cities therefore do not depend on scan order.
+            let mut forts=[0u8;32];
+            for e in &self.ents[..self.high] {
+                if e.def==FORTRESS && Self::territory_control_ready(e) {
+                    forts[self.map.terr[tile_of(e.x,e.y)] as usize]|=1<<e.team;
+                }
+            }
+            for _ in 0..self.map.tseeds.len() {
+                let mut added=[TERR_NONE;32];
+                let mut changed=false;
+                let mut bootstrap=[usize::MAX;4];
+                for k in 0..self.map.tseeds.len() {
+                    if owner[k]!=TERR_NONE {continue;}
+                    if let Some(i)=self.get(first[k]) {
+                        let team=self.ents[i].team as usize;
+                        if !owner.contains(&(team as u8)) && bootstrap[team]==usize::MAX {bootstrap[team]=k;}
+                    }
+                }
+                for k in 0..self.map.tseeds.len() {
+                    if owner[k]!=TERR_NONE {continue;}
+                    let Some(i)=self.get(first[k]) else {continue;};
+                    let team=self.ents[i].team;
+                    let adjacent=owner.iter().enumerate().any(|(j,&o)|o==team && self.map.territory_neighbors[k]&(1<<j)!=0);
+                    // 00719280 also uses adjacentReq when this player owns no
+                    // territory: a landless player's first city can bootstrap.
+                    if adjacent || bootstrap[team as usize]==k || forts[k]&(1<<team)!=0 {added[k]=team;changed=true;}
+                }
+                if !changed {break;}
+                for k in 0..self.map.tseeds.len() {
+                    if added[k]!=TERR_NONE {owner[k]=added[k];self.territory.claims[k]=first[k];}
+                }
+            }
+        }
+        if owner != self.towner {
+            self.towner = owner;
+            self.terr_dirty = true;
+        }
+        for t in 0..self.nplayers {
+            self.players[t].terr = owner.iter().filter(|&&o| o as usize == t).count() as u32;
+        }
+    }
+    /// The original localized message explicitly voids existing alliances
+    /// when the last territory is lost. Run after the entire atomic operation.
+    pub fn void_landless_alliances(&mut self) {
+        for a in 0..self.nplayers {
+            if self.players[a].terr != 0 {
+                continue;
+            }
+            for b in 0..self.nplayers {
+                if a == b {
+                    continue;
+                }
+                let i = a * 4 + b;
+                let j = b * 4 + a;
+                if self.allied(a as u8, b as u8) {
+                    self.diplomacy.relation[i] = crate::diplomacy::NEUTRAL;
+                    self.diplomacy.relation[j] = crate::diplomacy::NEUTRAL;
+                    self.diplomacy.neutral_since[i] = self.tick;
+                    self.diplomacy.neutral_since[j] = self.tick;
+                    self.territory_event(a as u8, b as u8, 7, 0, NONE, NONE);
+                }
+                self.diplomacy.sharing[i] = 0;
+                self.diplomacy.sharing[j] = 0;
+                self.diplomacy.offers[i] = 0;
+                self.diplomacy.offers[j] = 0;
+            }
+        }
+        self.cancel_nonhostile_orders();
+        self.refresh_display_fog();
+    }
+    pub fn territory_living(&self, team: u8) -> bool {
+        (team as usize) < self.nplayers
+            && self.players[team as usize].alive
+            && self.ents[..self.high]
+                .iter()
+                .any(|e| e.alive && e.hp > 0.0 && e.team == team && DEFS[e.def as usize].building)
+    }
+    fn territory_owned(&self, team: u8, id: u32) -> bool {
+        id < self.map.tseeds.len() as u32
+            && self.towner[id as usize] == team
+            && self
+                .get(self.territory.claims[id as usize])
+                .map_or(false, |i| {
+                    let e = &self.ents[i];
+                    e.team == team
+                        && e.hp > 0.0
+                        && e.def == TC
+                        && self.map.terr[tile_of(e.x, e.y)] as u32 == id
+                })
+    }
+    pub fn territory_counts(&self, id: usize, owner: u8) -> [u32; 3] {
+        let mut counts = [0; 3];
+        for e in &self.ents[..self.high] {
+            if e.alive
+                && e.hp > 0.0
+                && e.team == owner
+                && self.map.terr[tile_of(e.x, e.y)] as usize == id
+            {
+                counts[if DEFS[e.def as usize].building { 0 } else { 1 }] += 1;
+                counts[2] += e.ncargo as u32;
+            }
+        }
+        counts
+    }
+    fn territory_offer_valid(&self, from: u8, to: u8, o: TerritoryOffer) -> bool {
+        o.active
+            && self.territory_living(from)
+            && self.territory_living(to)
+            && !self.hostile(from, to)
+            && !self.hostile(to, from)
+            && o.give != o.want
+            && self.territory_owned(from, o.give as u32)
+            && self.territory_owned(to, o.want as u32)
+            && self.tick.saturating_sub(o.tick) < 1200
+    }
+    pub fn territory_valid(&self, from: u8, to: u32, action: u32, give: u32, want: u32) -> bool {
+        if self.bench > 0
+            || to as usize >= self.nplayers
+            || from as usize >= self.nplayers
+            || to == from as u32
+            || action > 4
+            || !self.territory_living(from)
+            || !self.territory_living(to as u8)
+        {
+            return false;
+        }
+        let to = to as u8;
+        let i = from as usize * 4 + to as usize;
+        let j = to as usize * 4 + from as usize;
+        match action {
+            0 => want == NONE && self.territory_owned(from, give),
+            1 => {
+                !self.territory.offers[i].active
+                    && self.tick >= self.territory.offers[i].cooldown
+                    && !self.hostile(from, to)
+                    && !self.hostile(to, from)
+                    && give != want
+                    && self.territory_owned(from, give)
+                    && self.territory_owned(to, want)
+            }
+            2 => {
+                give == NONE
+                    && want == NONE
+                    && self.territory_offer_valid(to, from, self.territory.offers[j])
+            }
+            3 => give == NONE && want == NONE && self.territory.offers[j].active,
+            4 => give == NONE && want == NONE && self.territory.offers[i].active,
+            _ => false,
+        }
+    }
+    fn territory_event(&mut self, from: u8, to: u8, kind: u8, reason: u8, give: u32, want: u32) {
+        if self.territory.log.len() == 12 {
+            self.territory.log.remove(0);
+        }
+        self.territory.log.push(TerritoryEvent {
+            tick: self.tick,
+            from,
+            to,
+            kind,
+            reason,
+            give,
+            want,
+        });
+    }
+    /// Snapshot both directions before touching entities: no intermediate empty
+    /// empire, duplicate object, transferred queue or acquired research bits.
+    fn transfer_territories(&mut self, from: u8, to: u8, give: u8, want: u8) {
+        let mut objects = Vec::new();
+        for i in 0..self.high {
+            let e = &self.ents[i];
+            if !e.alive || e.hp <= 0.0 {
+                continue;
+            }
+            let territory = self.map.terr[tile_of(e.x, e.y)];
+            if e.team == from && territory == give {
+                objects.push((i, to));
+            } else if want != TERR_NONE && e.team == to && territory == want {
+                objects.push((i, from));
+            }
+        }
+        // Cancel and refund while each building still has its original owner.
+        for &(i, _) in &objects {
+            if DEFS[self.ents[i].def as usize].building {
+                while self.ents[i].qn > 0 {
+                    self.cancel(i);
+                }
+            }
+        }
+        for &(i, new_team) in &objects {
+            #[cfg(feature="ee2-reference")]
+            self.sync_city_ground_entry(i);
+            let old = self.ents[i];
+            let max_old = self.max_hp(old.team, old.def).max(0.01);
+            let max_new = self.max_hp(new_team, old.def);
+            let invalid_carry = old.def == WORKER
+                && old.q[2] != R_NONE
+                && !self.resource_unlocked(new_team, old.q[2]);
+            let e = &mut self.ents[i];
+            e.team = new_team;
+            // Match the normal return_cargo invalid-resource path.
+            if invalid_carry {
+                e.carry = 0.0;
+                e.q[1] = 0;
+                e.q[2] = 0;
+            }
+
+            e.hp = (old.hp / max_old * max_new).clamp(0.0, max_new);
+            e.sel = false;
+            e.order = O_IDLE;
+            e.tgt = NONE;
+            e.otgt = NONE;
+            e.ox = e.x;
+            e.oy = e.y;
+            e.vx = 0.0;
+            e.vy = 0.0;
+            e.prev = 0;
+            e.fkey = 0;
+            e.fslot = u16::MAX;
+            e.stuck = 0;
+            e.rx = -1.0;
+            e.ry = -1.0;
+            if DEFS[e.def as usize].building {
+                e.qt = 0.0;
+                e.carry = 0.0;
+            }
+            #[cfg(feature="ee2-reference")]
+            self.sync_city_ground_entry(i);
+        }
+        // Citizens already walking to a donated farm, ship, city or construction
+        // site keep their ownership and stop their now-invalid old-owner job.
+        for i in 0..self.high {
+            if !self.ents[i].alive {
+                continue;
+            }
+            let e = self.ents[i];
+            if matches!(e.order, O_BUILD | O_BOARD | O_GATHER) && e.otgt != NONE {
+                if let Some(j) = self.get(e.otgt) {
+                    if self.ents[j].team != e.team {
+                        let e = &mut self.ents[i];
+                        e.order = O_IDLE;
+                        e.otgt = NONE;
+                        e.tgt = NONE;
+                        e.ox = e.x;
+                        e.oy = e.y;
+                        e.vx = 0.0;
+                        e.vy = 0.0;
+                    }
+                }
+            }
+        }
+        self.cancel_nonhostile_orders();
+        self.build_grid();
+        for t in 0..self.nplayers {
+            self.players[t].alive = self.players[t].buildings > 0;
+        }
+        self.void_landless_alliances();
+        self.prune_territory_offers();
+        self.update_fog();
+        self.terr_dirty = true;
+    }
+    pub fn apply_territory(
+        &mut self,
+        from: u8,
+        to: u32,
+        action: u32,
+        give: u32,
+        want: u32,
+    ) -> bool {
+        if !self.territory_valid(from, to, action, give, want) {
+            return false;
+        }
+        let to = to as u8;
+        let i = from as usize * 4 + to as usize;
+        let j = to as usize * 4 + from as usize;
+        match action {
+            0 => {
+                self.territory_event(from, to, 0, 0, give, NONE);
+                self.transfer_territories(from, to, give as u8, TERR_NONE);
+            }
+            1 => {
+                self.territory.offers[i] = TerritoryOffer {
+                    active: true,
+                    give: give as u8,
+                    want: want as u8,
+                    tick: self.tick,
+                    cooldown: self.tick.saturating_add(100),
+                };
+                self.territory_event(from, to, 1, 0, give, want);
+            }
+            2 => {
+                let o = self.territory.offers[j];
+                self.territory.offers[j].active = false;
+                self.territory.offers[i].active = false;
+                self.territory_event(from, to, 2, 0, o.give as u32, o.want as u32);
+                self.transfer_territories(to, from, o.give, o.want);
+            }
+            3 => {
+                let o = self.territory.offers[j];
+                self.territory.offers[j].active = false;
+                self.territory_event(from, to, 3, 0, o.give as u32, o.want as u32);
+            }
+            4 => {
+                let o = self.territory.offers[i];
+                self.territory.offers[i].active = false;
+                self.territory_event(from, to, 4, 0, o.give as u32, o.want as u32);
+            }
+            _ => return false,
+        }
+        true
+    }
+    pub fn prune_territory_offers(&mut self) {
+        for a in 0..self.nplayers {
+            for b in 0..self.nplayers {
+                let i = a * 4 + b;
+                let o = self.territory.offers[i];
+                if !o.active {
+                    continue;
+                }
+                let reason = if !self.territory_living(a as u8) || !self.territory_living(b as u8) {
+                    3
+                } else if self.hostile(a as u8, b as u8) || self.hostile(b as u8, a as u8) {
+                    1
+                } else if !self.territory_owned(a as u8, o.give as u32)
+                    || !self.territory_owned(b as u8, o.want as u32)
+                {
+                    2
+                } else if self.tick.saturating_sub(o.tick) >= 1200 {
+                    4
+                } else {
+                    0
+                };
+                if reason != 0 {
+                    self.territory.offers[i].active = false;
+                    self.territory_event(
+                        a as u8,
+                        b as u8,
+                        if reason == 4 { 5 } else { 6 },
+                        reason,
+                        o.give as u32,
+                        o.want as u32,
+                    );
+                }
+            }
+        }
+    }
+    fn territory_value(&self, owner: u8, id: u8) -> f32 {
+        let mut value = 100.0;
+        for e in &self.ents[..self.high] {
+            if !e.alive || e.hp <= 0.0 || e.team != owner || self.map.terr[tile_of(e.x, e.y)] != id
+            {
+                continue;
+            }
+            let cost: f32 = self.unit_cost(owner, e.def).iter().map(|&v| v as f32).sum();
+            let health = (e.hp / self.max_hp(owner, e.def).max(0.01)).clamp(0.0, 1.0);
+            value += cost.max(25.0)
+                * (0.25 + 0.75 * health)
+                * if DEFS[e.def as usize].building {
+                    e.built.max(0.1)
+                } else {
+                    1.0
+                };
+            for k in 0..e.ncargo as usize {
+                value += self
+                    .unit_cost(owner, e.cargo[k])
+                    .iter()
+                    .map(|&v| v as f32)
+                    .sum::<f32>()
+                    * (e.cargo_hp[k] as f32 / 100.0).clamp(0.1, 1.0);
+            }
+        }
+        value
+    }
+    pub fn update_territory_diplomacy(&mut self) {
+        self.prune_territory_offers();
+        for a in 0..self.nplayers {
+            for b in 0..self.nplayers {
+                let i = a * 4 + b;
+                let o = self.territory.offers[i];
+                if o.active && self.players[b].ai && self.tick.saturating_sub(o.tick) >= 80 {
+                    let offered = self.territory_value(a as u8, o.give);
+                    let requested = self.territory_value(b as u8, o.want);
+                    let margin = if self.allied(a as u8, b as u8) {
+                        1.0
+                    } else {
+                        1.1
+                    };
+                    if offered + 0.001 >= requested * margin {
+                        self.apply_territory(b as u8, a as u32, 2, NONE, NONE);
+                    } else {
+                        self.territory.offers[i].active = false;
+                        self.territory_event(b as u8, a as u8, 3, 5, o.give as u32, o.want as u32);
+                    }
+                }
+            }
+        }
+    }
+    pub fn append_territory_player_ui(&self, s: &mut String, local: u8, other: u8) {
+        for (key, i) in [
+            ("territoryIncoming", other as usize * 4 + local as usize),
+            ("territoryOutgoing", local as usize * 4 + other as usize),
+        ] {
+            let o = self.territory.offers[i];
+            let _ = write!(s, ",\"{}\":", key);
+            if o.active {
+                let _ = write!(
+                    s,
+                    "{{\"give\":{},\"want\":{},\"expires\":{:.1}}}",
+                    o.give,
+                    o.want,
+                    (1200 - self.tick.saturating_sub(o.tick).min(1200)) as f32 * DT
+                );
+            } else {
+                s.push_str("null");
+            }
+        }
+        let _ = write!(
+            s,
+            ",\"territoryCooldown\":{:.1}",
+            self.territory.offers[local as usize * 4 + other as usize]
+                .cooldown
+                .saturating_sub(self.tick) as f32
+                * DT
+        );
+    }
+    pub fn append_territory_ui(&self, s: &mut String) {
+        let mut known = [false; 32];
+        let mut disclosed = [false; 32];
+        for (i, &v) in self.vis.iter().enumerate() {
+            if v > 0 {
+                known[self.map.terr[i] as usize] = true;
+            }
+        }
+        // An explicit offer discloses the two named parcels to its recipient.
+        for p in 0..self.nplayers {
+            let o = self.territory.offers[p * 4 + self.local as usize];
+            if o.active {
+                known[o.give as usize] = true;
+                known[o.want as usize] = true;
+                disclosed[o.give as usize] = true;
+            }
+        }
+        let _ = write!(
+            s,
+            ",\"territoryPolicy\":\"{}\",\"territories\":[",
+            TERR_POLICY
+        );
+        for id in 0..self.map.tseeds.len() {
+            let actual = self.towner[id];
+            let seen = known[id] || actual == self.local;
+            let owner = if seen { actual } else { TERR_NONE };
+            let complete =
+                seen && (actual == self.local || disclosed[id] || self.diplomacy.visibility == 2);
+            let mut counts = [0; 3];
+            if complete {
+                counts = self.territory_counts(id, actual);
+            } else if seen {
+                for (i, e) in self.ents[..self.high].iter().enumerate() {
+                    if e.alive
+                        && e.hp > 0.0
+                        && e.team == actual
+                        && self.map.terr[tile_of(e.x, e.y)] as usize == id
+                        && self.visible(i)
+                    {
+                        counts[if DEFS[e.def as usize].building { 0 } else { 1 }] += 1;
+                    }
+                }
+            }
+            let transferable = seen
+                && actual != TERR_NONE
+                && self.territory_living(actual)
+                && self.territory_owned(actual, id as u32);
+            let reason = if !seen {
+                "Gebiet noch nicht erkundet"
+            } else if actual == TERR_NONE {
+                "Kein Besitzer"
+            } else if !transferable {
+                "Kein lebender Eigentümer mit Stadtzentrum"
+            } else {
+                ""
+            };
+            let (x, y) = self.map.tseeds[id];
+            let control=if seen {self.territory_control_counts(self.local,id)}else{[0;4]};
+            let claim_status=if seen {self.territory_claim_status(self.local,id)}else{0};
+            let adjacent=seen&&self.territory_adjacent_owned(self.local,id);
+            let _=write!(s,"{}{{\"id\":{},\"name\":\"Territorium {}\",\"owner\":{},\"x\":{:.2},\"y\":{:.2},\"known\":{},\"canGive\":{},\"transferable\":{},\"reason\":\"{}\",\"buildings\":{},\"units\":{},\"garrison\":{},\"countsComplete\":{},\"lastTerritory\":{},\"claimStatus\":{},\"adjacent\":{},\"townCenters\":{},\"fortresses\":{},\"eligibleTownCenters\":{},\"eligibleFortresses\":{}}}",if id>0{","}else{""},id,id+1,owner,x,y,seen,transferable&&actual==self.local,transferable,reason,counts[0],counts[1],counts[2],complete,seen&&actual!=TERR_NONE&&self.players.get(actual as usize).map_or(false,|p|p.terr<=1),claim_status,adjacent,control[0],control[1],control[2],control[3]);
+        }
+        s.push(']');
+    }
+    pub(crate) fn append_territory_log(s: &mut String, e: &TerritoryEvent) {
+        if e.kind == 7 {
+            let _ = write!(
+                s,
+                "\"Spieler {}: Bündnis mit Spieler {} beendet, letztes Territorium verloren\"",
+                e.from + 1,
+                e.to + 1
+            );
+            return;
+        }
+        let verb = match e.kind {
+            0 => "verschenkt ein Territorium",
+            1 => "bietet einen Gebietstausch an",
+            2 => "nimmt den Gebietstausch an",
+            3 => "lehnt den Gebietstausch ab",
+            4 => "zieht den Gebietstausch zurück",
+            5 => "Gebietstausch abgelaufen",
+            7 => "letztes Territorium verloren: bestehende Allianzen aufgehoben",
+            _ => "Gebietstausch ungültig geworden",
+        };
+        let _ = write!(
+            s,
+            "\"Spieler {} → Spieler {}: {} (Territorium {}",
+            e.from + 1,
+            e.to + 1,
+            verb,
+            if e.give == NONE { 0 } else { e.give + 1 }
+        );
+        if e.want != NONE {
+            let _ = write!(s, " gegen {}", e.want + 1);
+        }
+        s.push(')');
+        let reason = match e.reason {
+            1 => "; Krieg",
+            2 => "; Eigentum verloren",
+            3 => "; Spieler ausgeschieden",
+            4 => "; Zeit abgelaufen",
+            5 => "; KI verlangt mindestens gleichwertige Gebiete, ohne Allianz 10 Prozent mehr",
+            _ => "",
+        };
+        s.push_str(reason);
+        s.push('"');
+    }
+    pub fn write_territory(&self, b: &mut Vec<u8>) {
+        b.extend_from_slice(&TERR_MAGIC.to_le_bytes());
+        b.extend_from_slice(&1u32.to_le_bytes());
+        for &h in &self.territory.claims {
+            b.extend_from_slice(&h.to_le_bytes());
+        }
+        for o in self.territory.offers {
+            b.extend_from_slice(&[o.active as u8, o.give, o.want, 0]);
+            b.extend_from_slice(&o.tick.to_le_bytes());
+            b.extend_from_slice(&o.cooldown.to_le_bytes());
+        }
+        b.extend_from_slice(&(self.territory.log.len() as u32).to_le_bytes());
+        for k in 0..12 {
+            let e = self.territory.log.get(k).copied().unwrap_or_default();
+            b.extend_from_slice(&e.tick.to_le_bytes());
+            b.extend_from_slice(&[e.from, e.to, e.kind, e.reason]);
+            b.extend_from_slice(&e.give.to_le_bytes());
+            b.extend_from_slice(&e.want.to_le_bytes());
+        }
+    }
+    pub fn read_territory(&mut self, b: &[u8]) -> Option<()> {
+        if b.len() != TERR_BYTES {
+            return None;
+        }
+        let u = |o: usize| u32::from_le_bytes(b[o..o + 4].try_into().unwrap());
+        if u(0) != TERR_MAGIC || u(4) != 1 {
+            return None;
+        }
+        let mut pos = 8;
+        for h in &mut self.territory.claims {
+            *h = u(pos);
+            pos += 4;
+        }
+        for o in &mut self.territory.offers {
+            if b[pos] > 1 || b[pos + 3] != 0 {
+                return None;
+            }
+            *o = TerritoryOffer {
+                active: b[pos] == 1,
+                give: b[pos + 1],
+                want: b[pos + 2],
+                tick: u(pos + 4),
+                cooldown: u(pos + 8),
+            };
+            pos += 12;
+            if (o.give != TERR_NONE && o.give as usize >= self.map.tseeds.len())
+                || (o.want != TERR_NONE && o.want as usize >= self.map.tseeds.len())
+                || o.tick > self.tick
+                || o.cooldown > self.tick.saturating_add(100)
+                || (o.active
+                    && (o.give as usize >= self.map.tseeds.len()
+                        || o.want as usize >= self.map.tseeds.len()
+                        || o.give == o.want))
+            {
+                return None;
+            }
+        }
+        let count = u(pos) as usize;
+        pos += 4;
+        if count > 12 {
+            return None;
+        }
+        self.territory.log.clear();
+        for k in 0..12 {
+            let e = TerritoryEvent {
+                tick: u(pos),
+                from: b[pos + 4],
+                to: b[pos + 5],
+                kind: b[pos + 6],
+                reason: b[pos + 7],
+                give: u(pos + 8),
+                want: u(pos + 12),
+            };
+            pos += 16;
+            if k < count {
+                if e.tick > self.tick
+                    || e.from as usize >= self.nplayers
+                    || e.to as usize >= self.nplayers
+                    || e.from == e.to
+                    || e.kind > 7
+                    || e.reason > 5
+                    || (e.give >= self.map.tseeds.len() as u32 && !(e.kind == 7 && e.give == NONE))
+                    || (e.want != NONE && e.want >= self.map.tseeds.len() as u32)
+                {
+                    return None;
+                }
+                self.territory.log.push(e);
+            }
+        }
+        Some(())
+    }
+    pub fn validate_territory_state(&self) -> bool {
+        for k in 0..32 {
+            let h = self.territory.claims[k];
+            if h == NONE {
+                continue;
+            }
+            let Some(i) = self.get(h) else {
+                return false;
+            };
+            let e = self.ents[i];
+            if k >= self.map.tseeds.len()
+                || e.def != TC
+                || e.hp <= 0.0
+                || self.map.terr[tile_of(e.x, e.y)] as usize != k
+            {
+                return false;
+            }
+        }
+        for a in 0..4 {
+            for b in 0..4 {
+                let o = self.territory.offers[a * 4 + b];
+                if o.active
+                    && (a == b
+                        || a >= self.nplayers
+                        || b >= self.nplayers
+                        || !self.territory_offer_valid(a as u8, b as u8, o))
+                {
+                    return false;
+                }
+            }
+        }
+        true
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    fn humans() -> Game {
+        Game::new(7, 0, 0, 2, 0)
+    }
+    fn region(g: &Game, team: u8) -> u8 {
+        g.ents[..g.high]
+            .iter()
+            .find(|e| e.alive && e.team == team && e.def == TC)
+            .map(|e| g.map.terr[tile_of(e.x, e.y)])
+            .unwrap()
+    }
+    fn keep_city(g: &mut Game, team: u8) -> usize {
+        let (x, y) = g.map.starts[3];
+        let i = g.spawn(TC, team, x as f32, y as f32);
+        g.build_grid();
+        g.update_fog();
+        i
+    }
+    fn peace(g: &mut Game) {
+        assert!(g.apply_diplomacy(0, 1, 0, 0, 0.0));
+        assert!(g.apply_diplomacy(1, 0, 3, 0, 0.0));
+    }
+    #[test]
+    fn gift_is_permanent_transfers_only_owner_objects_and_cancels_paid_queues() {
+        let mut g = humans();
+        let giver = region(&g, 0);
+        let keep = keep_city(&mut g, 0);
+        let city = g.get(g.territory.claims[giver as usize]).unwrap();
+        let old_city = g.ents[city];
+        let foreign = g.spawn(WORKER, 1, old_city.x + 6.0, old_city.y);
+        let builder = g.spawn(WORKER, 0, g.ents[keep].x, g.ents[keep].y);
+        g.ents[builder].order = O_BUILD;
+        g.ents[builder].otgt = g.h(city);
+        g.ents[city].ncargo = 2;
+        g.ents[city].cargo[..2].fill(WORKER);
+        g.ents[city].cargo_hp[0] = 50;
+        g.ents[city].cargo_hp[1] = 95;
+        let money = g.resource(0, 0);
+        assert!(g.train(city, WORKER));
+        let count = g.ents[..g.high].iter().filter(|e| e.alive).count();
+        let handle = g.h(city);
+        let recipient_money = g.resource(1, 0);
+        assert!(g.apply_territory(0, 1, 0, giver as u32, NONE));
+        assert_eq!(g.towner[giver as usize], 1);
+        assert_eq!(g.h(city), handle);
+        assert_eq!(g.ents[city].team, 1);
+        assert_eq!(g.ents[city].qn, 0);
+        assert_eq!(g.resource(0, 0), money);
+        assert_eq!(g.resource(1, 0), recipient_money);
+        assert_eq!(g.ents[city].ncargo, 2);
+        assert_eq!(g.ents[city].cargo_hp[..2], [50, 95]);
+        assert_eq!(g.ents[foreign].team, 1);
+        assert_eq!(g.ents[builder].team, 0);
+        assert_eq!(g.ents[builder].order, O_IDLE);
+        assert_eq!(g.ents[keep].team, 0);
+        assert_eq!(g.ents[..g.high].iter().filter(|e| e.alive).count(), count);
+        for _ in 0..20 {
+            g.build_grid();
+        }
+        assert_eq!(g.towner[giver as usize], 1);
+        assert!(g.players[0].alive);
+        g.save();
+        let loaded = Game::load(&g.savebuf).unwrap();
+        assert_eq!(g.state_hash(), loaded.state_hash());
+        assert_eq!(loaded.towner[giver as usize], 1);
+    }
+    #[test]
+    fn swap_requires_acceptance_is_atomic_and_keeps_alliance() {
+        let mut g = humans();
+        peace(&mut g);
+        g.tick = 100;
+        assert!(g.apply_diplomacy(0, 1, 1, 1, 0.0));
+        assert!(g.apply_diplomacy(1, 0, 3, 0, 0.0));
+        let a = region(&g, 0);
+        let b = region(&g, 1);
+        let n = g.sim_units;
+        assert!(g.apply_territory(0, 1, 1, a as u32, b as u32));
+        assert_eq!(g.towner[a as usize], 0);
+        assert_eq!(g.towner[b as usize], 1);
+        assert!(g.territory.offers[1].active);
+        assert!(g.apply_territory(1, 0, 2, NONE, NONE));
+        assert_eq!(g.towner[a as usize], 1);
+        assert_eq!(g.towner[b as usize], 0);
+        assert_eq!(g.players[0].terr, 1);
+        assert_eq!(g.players[1].terr, 1);
+        assert!(g.players[0].alive && g.players[1].alive);
+        assert!(g.allied(0, 1));
+        assert!(g.shares_to(0, 1) && g.shares_to(1, 0));
+        assert_eq!(g.sim_units, n);
+        assert!(!g.territory.offers[1].active);
+    }
+    #[test]
+    fn last_territory_gift_is_allowed_and_voids_existing_alliances() {
+        let mut g = humans();
+        peace(&mut g);
+        g.tick = 100;
+        assert!(g.apply_diplomacy(0, 1, 1, 1, 0.0));
+        assert!(g.apply_diplomacy(1, 0, 3, 0, 0.0));
+        let a = region(&g, 0);
+        assert!(g.apply_territory(0, 1, 0, a as u32, NONE));
+        assert_eq!(g.players[0].terr, 0);
+        assert!(!g.players[0].alive);
+        assert!(!g.allied(0, 1));
+        assert_eq!(g.relation(0, 1), crate::diplomacy::NEUTRAL);
+        assert!(!g.shares_to(0, 1) && !g.shares_to(1, 0));
+        g.save();
+        assert!(Game::load(&g.savebuf).is_some());
+    }
+    #[test]
+    fn stale_war_expired_rejected_and_withdrawn_offers_never_steal() {
+        let mut g = humans();
+        peace(&mut g);
+        let a = region(&g, 0);
+        let b = region(&g, 1);
+        keep_city(&mut g, 0);
+        assert!(g.apply_territory(0, 1, 1, a as u32, b as u32));
+        assert!(g.apply_territory(0, 1, 0, a as u32, NONE));
+        assert!(!g.territory.offers[1].active);
+        assert!(!g.apply_territory(1, 0, 2, NONE, NONE));
+        assert_eq!(g.towner[b as usize], 1);
+        let c = region(&g, 0);
+        g.tick = 100;
+        assert!(g.apply_territory(0, 1, 1, c as u32, b as u32));
+        assert!(g.apply_territory(1, 0, 3, NONE, NONE));
+        assert_eq!(g.towner[c as usize], 0);
+        g.tick = 200;
+        assert!(g.apply_territory(0, 1, 1, c as u32, b as u32));
+        assert!(g.apply_territory(0, 1, 4, NONE, NONE));
+        g.tick = 300;
+        assert!(g.apply_territory(0, 1, 1, c as u32, b as u32));
+        assert!(g.apply_diplomacy(0, 1, 2, 0, 0.0));
+        assert!(!g.territory.offers[1].active);
+        assert!(!g.apply_territory(1, 0, 2, NONE, NONE));
+        g.tick = 400;
+        assert!(g.apply_diplomacy(0, 1, 0, 0, 0.0));
+        assert!(g.apply_diplomacy(1, 0, 3, 0, 0.0));
+        assert!(g.apply_territory(0, 1, 1, c as u32, b as u32));
+        g.tick = 1600;
+        g.update_territory_diplomacy();
+        assert!(!g.territory.offers[1].active);
+        assert_eq!(g.towner[c as usize], 0);
+    }
+    #[test]
+    fn invalid_arguments_and_forged_wire_have_no_effect() {
+        let mut g = humans();
+        let a = region(&g, 0);
+        let b = region(&g, 1);
+        let h = g.state_hash();
+        for (to, action, give, want) in [
+            (0, 0, a as u32, NONE),
+            (256, 0, a as u32, NONE),
+            (1, 5, a as u32, NONE),
+            (1, 0, b as u32, NONE),
+            (1, 0, a as u32, 0),
+            (1, 1, a as u32, a as u32),
+            (1, 1, a as u32, b as u32),
+            (1, 0, 32, NONE),
+        ] {
+            assert!(!g.apply_territory(0, to, action, give, want));
+            assert_eq!(g.state_hash(), h);
+        }
+        for v in [f32::NAN, f32::INFINITY, -2.0, 0.5, 32.0, 999999.0] {
+            g.apply(0, crate::cmd::C_TERRITORY, v, -1.0, 1, &[]);
+            assert_eq!(g.state_hash(), h);
+        }
+        g.apply(0, crate::cmd::C_TERRITORY, a as f32, -1.0, 1, &[g.h(0)]);
+        assert_eq!(g.state_hash(), h);
+    }
+    #[test]
+    fn saved_dip1_and_ter1_pending_offers_roundtrip() {
+        let mut g = humans();
+        peace(&mut g);
+        let a = region(&g, 0);
+        let b = region(&g, 1);
+        assert!(g.apply_territory(0, 1, 1, a as u32, b as u32));
+        g.save();
+        let bytes = g.savebuf.clone();
+        let loaded = Game::load(&bytes).unwrap();
+        assert_eq!(loaded.state_hash(), g.state_hash());
+        assert!(loaded.territory.offers[1].active);
+        #[cfg(feature="ee2-reference")]
+        let bytes=crate::city_ground::split_save(&bytes).unwrap().0.to_vec();
+        let ter = bytes.len() - TERR_BYTES;
+        let dip = ter - crate::diplomacy::DIP_BYTES;
+        let legacy = Game::load(&bytes[..ter]).unwrap();
+        assert_eq!(legacy.relation(0, 1), crate::diplomacy::NEUTRAL);
+        assert!(!legacy.territory.offers[1].active);
+        assert_eq!(legacy.towner, g.towner);
+        assert_eq!(
+            &bytes[dip..dip + 4],
+            &crate::diplomacy::DIP_MAGIC.to_le_bytes()
+        );
+        assert_eq!(&bytes[ter..ter + 4], &TERR_MAGIC.to_le_bytes());
+        let mut bad = bytes.clone();
+        bad[ter + 136] = 2;
+        assert!(Game::load(&bad).is_none());
+        let mut bad = bytes;
+        bad[ter + 8..ter + 12].copy_from_slice(&123456u32.to_le_bytes());
+        assert!(Game::load(&bad).is_none());
+    }
+    #[test]
+    fn city_loss_releases_anchor_and_invalidates_pending_offer() {
+        let mut g = humans();
+        peace(&mut g);
+        let a = region(&g, 0);
+        let b = region(&g, 1);
+        keep_city(&mut g, 0);
+        assert!(g.apply_territory(0, 1, 1, a as u32, b as u32));
+        let i = g.get(g.territory.claims[a as usize]).unwrap();
+        g.ents[i].hp = 0.0;
+        g.tick();
+        assert_eq!(g.towner[a as usize], TERR_NONE);
+        assert!(!g.territory.offers[1].active);
+        assert!(!g.apply_territory(1, 0, 2, NONE, NONE));
+    }
+    #[test]
+    fn ai_swap_has_real_delay_and_requires_fair_value() {
+        let mut g = Game::new(7, 1, 0, 1, 0);
+        g.tick = 1200;
+        assert!(g.apply_diplomacy(0, 1, 0, 0, 0.0));
+        assert!(g.apply_diplomacy(1, 0, 3, 0, 0.0));
+        let a = region(&g, 0);
+        let b = region(&g, 1);
+        assert!(g.apply_territory(0, 1, 1, a as u32, b as u32));
+        g.tick = 1279;
+        g.update_territory_diplomacy();
+        assert!(g.territory.offers[1].active);
+        g.tick = 1280;
+        g.update_territory_diplomacy();
+        assert!(!g.territory.offers[1].active);
+        assert_eq!(g.territory.log.last().unwrap().reason, 5);
+        assert_eq!(g.towner[a as usize], 0);
+        let c = g.ents[g.get(g.territory.claims[a as usize]).unwrap()];
+        for k in 0..10 {
+            g.spawn(
+                HOUSE,
+                0,
+                c.x + 5.0 + (k % 3) as f32 * 2.0,
+                c.y + 5.0 + (k / 3) as f32 * 2.0,
+            );
+        }
+        g.build_grid();
+        g.tick = 1300;
+        assert!(g.apply_territory(0, 1, 1, a as u32, b as u32));
+        g.tick = 1380;
+        g.update_territory_diplomacy();
+        assert_eq!(g.towner[a as usize], 1);
+        assert_eq!(g.towner[b as usize], 0);
+    }
+    #[test]
+    fn territory_wire_is_deterministic_for_both_local_seats() {
+        let mut a = Game::new(31, 0, 0, 2, 0);
+        let mut b = Game::new(31, 0, 0, 2, 1);
+        let r = region(&a, 0);
+        a.submit(crate::cmd::C_TERRITORY, r as f32, -1.0, 1, &[]);
+        let bytes = a.outbox.clone();
+        a.inbox = bytes.clone();
+        b.inbox = bytes;
+        a.net_apply(0);
+        b.net_apply(0);
+        assert_eq!(a.state_hash(), b.state_hash());
+        for _ in 0..80 {
+            a.tick();
+            b.tick();
+        }
+        assert_eq!(a.state_hash(), b.state_hash());
+    }
+    #[test]
+    fn unknown_region_json_does_not_leak_owner_last_territory_or_counts() {
+        let mut g = humans();
+        let id = region(&g, 1);
+        let mut s = String::new();
+        g.append_territory_ui(&mut s);
+        let row = s
+            .split(&format!("\"id\":{},", id))
+            .nth(1)
+            .unwrap()
+            .split('}')
+            .next()
+            .unwrap();
+        assert!(row.contains("\"owner\":255"));
+        assert!(row.contains("\"known\":false"));
+        assert!(row.contains("\"lastTerritory\":false"));
+        assert!(row.contains("\"buildings\":0"));
+        assert!(row.contains("\"units\":0"));
+        assert!(row.contains("\"garrison\":0"));
+        assert!(row.contains("\"countsComplete\":false"));
+        g.diplomacy.visibility = 2;
+        g.refresh_display_fog();
+        let mut s = String::new();
+        g.append_territory_ui(&mut s);
+        let row = s
+            .split(&format!("\"id\":{},", id))
+            .nth(1)
+            .unwrap()
+            .split('}')
+            .next()
+            .unwrap();
+        assert!(row.contains("\"owner\":1"));
+        assert!(row.contains("\"countsComplete\":true"));
+    }
+    #[cfg(feature = "ee2-reference")]
+    #[test]
+    fn queued_research_refunds_old_owner_without_awarding_any_technology() {
+        let mut g = humans();
+        keep_city(&mut g, 0);
+        let id = region(&g, 0);
+        let base = g.ents[g.get(g.territory.claims[id as usize]).unwrap()];
+        let (k, node) = crate::ee2_research::NODES
+            .iter()
+            .enumerate()
+            .find(|(_, n)| n.epoch == 0)
+            .unwrap();
+        let b = g.spawn(node.host, 0, base.x + 8.0, base.y);
+        g.research_points[0] = 1000.0;
+        let before = g.research_points[0];
+        assert!(g.train(b, ORIGINAL_RESEARCH0 + k as u8));
+        g.ents[b].qt = node.time * 0.8;
+        assert!(g.apply_territory(0, 1, 0, id as u32, NONE));
+        assert_eq!(g.research_points[0], before);
+        assert_eq!(g.research_points[1], 0.0);
+        assert!(!g.has_research(0, k) && !g.has_research(1, k));
+        assert_eq!(g.ents[b].qn, 0);
+    }
+}

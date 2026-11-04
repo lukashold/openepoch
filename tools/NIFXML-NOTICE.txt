@@ -1,0 +1,9 @@
+NIF extraction schema attribution
+
+nif_schema.xml is a reduced parsing-metadata adaptation of niftools/nifxml,
+https://github.com/niftools/nifxml/blob/develop/nif.xml, retrieved 2026-10-30.
+The adaptation omits prose, default values and non-reading attributes; version
+conditions and field definitions are retained. Upstream license: GPL-3.0.
+See NIFXML-LICENSE.txt. This metadata and the independent conversion tools are
+separate build-time tools; the browser game reads only exported asset data.
+The original Empire Earth II game assets remain the property of their authors.

@@ -1,0 +1,53 @@
+{
+  "format": "openepoch-native-terrain-gpu-pixels-v1",
+  "context": {
+    "egl": [
+      1,
+      5
+    ],
+    "vendor": "Google Inc. (AMD)",
+    "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11-31.0.21924.61)",
+    "version": "OpenGL ES 3.0 (ANGLE 2.1 git hash: unknown hash)",
+    "libraryDirectory": "C:\\Program Files\\Mozilla Firefox",
+    "surface": [
+      192,
+      192
+    ],
+    "uiLaunched": false,
+    "framebuffer": "RGBA8 texture + DEPTH24_STENCIL8 renderbuffer"
+  },
+  "checks": [
+    "Grass produces native textured pixels",
+    "Forest produces native textured pixels",
+    "Rock produces native textured pixels",
+    "Beach produces native textured pixels",
+    "Grass and forest differ from terrain class IDs",
+    "Rock and beach differ from terrain class IDs",
+    "Native adjacent spring snowmelt images differ",
+    "Fractional month renders an intermediate native season",
+    "Monthly native blend remains between both endpoints",
+    "GPU monthly interpolation is linear on known RGBA input",
+    "Mask alpha changes the blend while RGB remains exactly black",
+    "Unexplored terrain remains black",
+    "Deep water has opacity from independent height field",
+    "Source flow constants animate native images",
+    "Water is discarded above land",
+    "Heightfield produces dry, shallow and deep regions",
+    "Optional reflection texture is sampled through source distortion path"
+  ],
+  "passed": true,
+  "productionShaders": [
+    {
+      "name": "native-terrain",
+      "vertexSha256": "9f3482f9446fde6fa07f7ed0ca4219d2e35d92cf798ac9045e65f9a056ca999d",
+      "fragmentSha256": "82312ae9dd2708b8b7a854f87f612a434743768bb59fb8666cd8c377dccd4fc4"
+    },
+    {
+      "name": "native-water",
+      "vertexSha256": "b72acea400e56c4c93b4d842cb1d7d7d440adbf2403f967553e9053df55ffd46",
+      "fragmentSha256": "58f6c4401123699a829e791985536515046b27ec6960d615fdceb6e1ebc0cc49"
+    }
+  ],
+  "preview": "native-terrain-gpu-preview.png",
+  "scope": "Production shader programs with original PNG textures and synthetic terrain/height/fog/reflection fields. Actual pbuffer rendering and RGBA readback; no browser/UI. This is not an original-game screenshot or a full browser compatibility test."
+}

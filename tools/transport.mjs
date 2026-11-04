@@ -13,6 +13,7 @@ for (seed = 1; seed < 40 && !dock; seed++) {            // find a map whose star
   [sx, sy] = [w.start_x(), w.start_y()];
   w.select_none(); w.select_point(sx, sy, 0, 0, ...ALL.slice(0, 2), 256, 256);
   w.cmd_train(255); run(20 * 41);                        // Bronze Age unlocks the dock
+  w.select_idle_worker();                               // preview checks a real selected builder
   // docks need explored water: walk a worker around is slow, so just look for a spot next to explored shore
   for (let r = 4; r < 60 && !dock; r++) for (let k = -r; k <= r && !dock; k++)
     for (const [x, y] of [[sx + k, sy - r], [sx + k, sy + r], [sx - r, sy + k], [sx + r, sy + k]])

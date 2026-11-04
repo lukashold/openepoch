@@ -1,0 +1,5073 @@
+{
+  "format": "openepoch-ee2-economic-soak-v1",
+  "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+  "scope": "Headless simulation only. Four AI controllers; combat-wave deadlines postponed in a save fixture. Native Standard starting stocks. No engine edits, cheats, speed multiplier or rendered-FPS claim.",
+  "cases": [
+    {
+      "seed": 7,
+      "startingEpoch": 1,
+      "minutes": 20,
+      "snapshots": [
+        {
+          "minutes": 0,
+          "stateHash": 46682675,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 0,
+              "epoch": 1,
+              "population": 5,
+              "capacity": 40,
+              "resources": [
+                400,
+                400,
+                200,
+                400,
+                400,
+                200,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 5,
+              "workerOrders": {
+                "0": 5
+              },
+              "carrying": 0,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1
+              },
+              "unfinished": 0,
+              "queued": 0,
+              "maxQueueSeconds": 0
+            },
+            {
+              "team": 1,
+              "minutes": 0,
+              "epoch": 1,
+              "population": 5,
+              "capacity": 40,
+              "resources": [
+                400,
+                400,
+                200,
+                400,
+                400,
+                200,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 5,
+              "workerOrders": {
+                "0": 5
+              },
+              "carrying": 0,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1
+              },
+              "unfinished": 0,
+              "queued": 0,
+              "maxQueueSeconds": 0
+            },
+            {
+              "team": 2,
+              "minutes": 0,
+              "epoch": 1,
+              "population": 5,
+              "capacity": 40,
+              "resources": [
+                400,
+                400,
+                200,
+                400,
+                400,
+                200,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 5,
+              "workerOrders": {
+                "0": 5
+              },
+              "carrying": 0,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1
+              },
+              "unfinished": 0,
+              "queued": 0,
+              "maxQueueSeconds": 0
+            },
+            {
+              "team": 3,
+              "minutes": 0,
+              "epoch": 1,
+              "population": 5,
+              "capacity": 40,
+              "resources": [
+                400,
+                400,
+                200,
+                400,
+                400,
+                200,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 5,
+              "workerOrders": {
+                "0": 5
+              },
+              "carrying": 0,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1
+              },
+              "unfinished": 0,
+              "queued": 0,
+              "maxQueueSeconds": 0
+            }
+          ]
+        },
+        {
+          "minutes": 1,
+          "stateHash": 1533680901,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 1,
+              "epoch": 1,
+              "population": 9,
+              "capacity": 40,
+              "resources": [
+                215,
+                0,
+                200,
+                0,
+                415,
+                230,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 7,
+              "workerOrders": {
+                "4": 4,
+                "5": 3
+              },
+              "carrying": 6,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "51": 1
+              },
+              "unfinished": 1,
+              "queued": 2,
+              "maxQueueSeconds": 8.7000150680542
+            },
+            {
+              "team": 1,
+              "minutes": 1,
+              "epoch": 1,
+              "population": 9,
+              "capacity": 40,
+              "resources": [
+                215,
+                0,
+                200,
+                0,
+                430,
+                230,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 7,
+              "workerOrders": {
+                "4": 4,
+                "5": 3
+              },
+              "carrying": 5,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "51": 1
+              },
+              "unfinished": 1,
+              "queued": 2,
+              "maxQueueSeconds": 9.050016403198242
+            },
+            {
+              "team": 2,
+              "minutes": 1,
+              "epoch": 1,
+              "population": 9,
+              "capacity": 40,
+              "resources": [
+                215,
+                0,
+                200,
+                0,
+                430,
+                230,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 7,
+              "workerOrders": {
+                "4": 4,
+                "5": 3
+              },
+              "carrying": 5,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "51": 1
+              },
+              "unfinished": 1,
+              "queued": 2,
+              "maxQueueSeconds": 9.400017738342285
+            },
+            {
+              "team": 3,
+              "minutes": 1,
+              "epoch": 1,
+              "population": 9,
+              "capacity": 40,
+              "resources": [
+                215,
+                0,
+                200,
+                0,
+                415,
+                230,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 7,
+              "workerOrders": {
+                "4": 4,
+                "5": 3
+              },
+              "carrying": 6,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "51": 1
+              },
+              "unfinished": 1,
+              "queued": 2,
+              "maxQueueSeconds": 9.750019073486328
+            }
+          ]
+        },
+        {
+          "minutes": 2,
+          "stateHash": 2152670293,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 2,
+              "epoch": 1,
+              "population": 11,
+              "capacity": 40,
+              "resources": [
+                190,
+                60,
+                200,
+                45,
+                445,
+                260,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 9,
+              "workerOrders": {
+                "4": 9
+              },
+              "carrying": 9,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 18.60000228881836
+            },
+            {
+              "team": 1,
+              "minutes": 2,
+              "epoch": 1,
+              "population": 11,
+              "capacity": 40,
+              "resources": [
+                220,
+                60,
+                200,
+                60,
+                460,
+                260,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 9,
+              "workerOrders": {
+                "4": 9
+              },
+              "carrying": 9,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 18.949996948242188
+            },
+            {
+              "team": 2,
+              "minutes": 2,
+              "epoch": 1,
+              "population": 11,
+              "capacity": 40,
+              "resources": [
+                205,
+                60,
+                200,
+                45,
+                460,
+                260,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 9,
+              "workerOrders": {
+                "4": 9
+              },
+              "carrying": 7,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 19.299991607666016
+            },
+            {
+              "team": 3,
+              "minutes": 2,
+              "epoch": 1,
+              "population": 11,
+              "capacity": 40,
+              "resources": [
+                205,
+                60,
+                200,
+                75,
+                445,
+                260,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 9,
+              "workerOrders": {
+                "4": 9
+              },
+              "carrying": 8,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 19.649986267089844
+            }
+          ]
+        },
+        {
+          "minutes": 3,
+          "stateHash": 2984817918,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 3,
+              "epoch": 1,
+              "population": 14,
+              "capacity": 40,
+              "resources": [
+                160,
+                150,
+                200,
+                105,
+                475,
+                320,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 12,
+              "workerOrders": {
+                "4": 12
+              },
+              "carrying": 11,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 3.449997901916504
+            },
+            {
+              "team": 1,
+              "minutes": 3,
+              "epoch": 1,
+              "population": 14,
+              "capacity": 40,
+              "resources": [
+                190,
+                150,
+                200,
+                135,
+                505,
+                320,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 12,
+              "workerOrders": {
+                "4": 12
+              },
+              "carrying": 10,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 3.799997568130493
+            },
+            {
+              "team": 2,
+              "minutes": 3,
+              "epoch": 1,
+              "population": 14,
+              "capacity": 40,
+              "resources": [
+                190,
+                150,
+                200,
+                105,
+                505,
+                320,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 12,
+              "workerOrders": {
+                "4": 12
+              },
+              "carrying": 8,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 4.149997711181641
+            },
+            {
+              "team": 3,
+              "minutes": 3,
+              "epoch": 1,
+              "population": 14,
+              "capacity": 40,
+              "resources": [
+                190,
+                135,
+                200,
+                165,
+                475,
+                320,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 12,
+              "workerOrders": {
+                "4": 12
+              },
+              "carrying": 12,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 4.499999046325684
+            }
+          ]
+        },
+        {
+          "minutes": 4,
+          "stateHash": 3333834113,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 4,
+              "epoch": 1,
+              "population": 17,
+              "capacity": 40,
+              "resources": [
+                175,
+                270,
+                200,
+                210,
+                520,
+                370,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 14,
+              "workerOrders": {
+                "4": 14
+              },
+              "carrying": 12,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 3,
+              "maxQueueSeconds": 13.350032806396484
+            },
+            {
+              "team": 1,
+              "minutes": 4,
+              "epoch": 1,
+              "population": 17,
+              "capacity": 40,
+              "resources": [
+                235,
+                270,
+                200,
+                225,
+                550,
+                370,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 14,
+              "workerOrders": {
+                "4": 14
+              },
+              "carrying": 12,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 3,
+              "maxQueueSeconds": 13.700034141540527
+            },
+            {
+              "team": 2,
+              "minutes": 4,
+              "epoch": 1,
+              "population": 17,
+              "capacity": 40,
+              "resources": [
+                205,
+                240,
+                200,
+                180,
+                550,
+                385,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 14,
+              "workerOrders": {
+                "4": 14
+              },
+              "carrying": 12,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 3,
+              "maxQueueSeconds": 14.05003547668457
+            },
+            {
+              "team": 3,
+              "minutes": 4,
+              "epoch": 1,
+              "population": 17,
+              "capacity": 40,
+              "resources": [
+                205,
+                255,
+                200,
+                270,
+                520,
+                370,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 14,
+              "workerOrders": {
+                "4": 14
+              },
+              "carrying": 14,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 3,
+              "maxQueueSeconds": 14.400036811828613
+            }
+          ]
+        },
+        {
+          "minutes": 5,
+          "stateHash": 1395135813,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 5,
+              "epoch": 1,
+              "population": 20,
+              "capacity": 40,
+              "resources": [
+                175,
+                110,
+                200,
+                120,
+                550,
+                435,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 2,
+              "workers": 13,
+              "workerOrders": {
+                "4": 13
+              },
+              "carrying": 11,
+              "army": 1,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "51": 1,
+                "52": 1
+              },
+              "unfinished": 0,
+              "queued": 3,
+              "maxQueueSeconds": 35.99973678588867
+            },
+            {
+              "team": 1,
+              "minutes": 5,
+              "epoch": 1,
+              "population": 20,
+              "capacity": 40,
+              "resources": [
+                250,
+                125,
+                200,
+                165,
+                595,
+                450,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 2,
+              "workers": 13,
+              "workerOrders": {
+                "4": 13
+              },
+              "carrying": 13,
+              "army": 1,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "51": 1,
+                "52": 1
+              },
+              "unfinished": 0,
+              "queued": 3,
+              "maxQueueSeconds": 36.3497314453125
+            },
+            {
+              "team": 2,
+              "minutes": 5,
+              "epoch": 1,
+              "population": 20,
+              "capacity": 40,
+              "resources": [
+                250,
+                95,
+                200,
+                105,
+                580,
+                450,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 2,
+              "workers": 13,
+              "workerOrders": {
+                "4": 13
+              },
+              "carrying": 12,
+              "army": 1,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "51": 1,
+                "52": 1
+              },
+              "unfinished": 0,
+              "queued": 3,
+              "maxQueueSeconds": 36.69972610473633
+            },
+            {
+              "team": 3,
+              "minutes": 5,
+              "epoch": 1,
+              "population": 20,
+              "capacity": 40,
+              "resources": [
+                250,
+                95,
+                200,
+                225,
+                565,
+                420,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 2,
+              "workers": 13,
+              "workerOrders": {
+                "4": 13
+              },
+              "carrying": 13,
+              "army": 2,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "51": 1,
+                "52": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 24.299915313720703
+            }
+          ]
+        },
+        {
+          "minutes": 6,
+          "stateHash": 829233738,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 6,
+              "epoch": 1,
+              "population": 25,
+              "capacity": 40,
+              "resources": [
+                155,
+                240,
+                200,
+                210,
+                595,
+                520,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 7,
+              "workers": 16,
+              "workerOrders": {
+                "4": 16
+              },
+              "carrying": 14,
+              "army": 3,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "51": 1,
+                "52": 1
+              },
+              "unfinished": 0,
+              "queued": 3,
+              "maxQueueSeconds": 20.399974822998047
+            },
+            {
+              "team": 1,
+              "minutes": 6,
+              "epoch": 1,
+              "population": 25,
+              "capacity": 40,
+              "resources": [
+                240,
+                275,
+                200,
+                20,
+                640,
+                520,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 7,
+              "workers": 16,
+              "workerOrders": {
+                "4": 13,
+                "5": 3
+              },
+              "carrying": 14,
+              "army": 3,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1
+              },
+              "unfinished": 1,
+              "queued": 3,
+              "maxQueueSeconds": 20.749969482421875
+            },
+            {
+              "team": 2,
+              "minutes": 6,
+              "epoch": 1,
+              "population": 25,
+              "capacity": 40,
+              "resources": [
+                230,
+                120,
+                200,
+                195,
+                625,
+                535,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 7,
+              "workers": 16,
+              "workerOrders": {
+                "4": 16
+              },
+              "carrying": 14,
+              "army": 3,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "51": 1,
+                "52": 1
+              },
+              "unfinished": 0,
+              "queued": 3,
+              "maxQueueSeconds": 21.099964141845703
+            },
+            {
+              "team": 3,
+              "minutes": 6,
+              "epoch": 1,
+              "population": 25,
+              "capacity": 40,
+              "resources": [
+                215,
+                180,
+                200,
+                65,
+                610,
+                505,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 7,
+              "workers": 16,
+              "workerOrders": {
+                "4": 16
+              },
+              "carrying": 14,
+              "army": 3,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1
+              },
+              "unfinished": 0,
+              "queued": 3,
+              "maxQueueSeconds": 21.44995880126953
+            }
+          ]
+        },
+        {
+          "minutes": 7,
+          "stateHash": 3468889412,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 7,
+              "epoch": 1,
+              "population": 28,
+              "capacity": 40,
+              "resources": [
+                245,
+                390,
+                200,
+                59.18425750732422,
+                655,
+                590,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 5,
+              "workers": 18,
+              "workerOrders": {
+                "4": 18
+              },
+              "carrying": 15,
+              "army": 5,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 18.000011444091797
+            },
+            {
+              "team": 1,
+              "minutes": 7,
+              "epoch": 1,
+              "population": 28,
+              "capacity": 40,
+              "resources": [
+                327.01251220703125,
+                390,
+                200,
+                185,
+                715,
+                590,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 5,
+              "workers": 18,
+              "workerOrders": {
+                "4": 18
+              },
+              "carrying": 17,
+              "army": 5,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 18.350006103515625
+            },
+            {
+              "team": 2,
+              "minutes": 7,
+              "epoch": 1,
+              "population": 28,
+              "capacity": 40,
+              "resources": [
+                342.01251220703125,
+                135,
+                200,
+                50,
+                655,
+                605,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 5,
+              "workers": 18,
+              "workerOrders": {
+                "4": 15,
+                "5": 3
+              },
+              "carrying": 18,
+              "army": 5,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1
+              },
+              "unfinished": 1,
+              "queued": 2,
+              "maxQueueSeconds": 18.700000762939453
+            },
+            {
+              "team": 3,
+              "minutes": 7,
+              "epoch": 1,
+              "population": 28,
+              "capacity": 40,
+              "resources": [
+                310,
+                295,
+                200,
+                245,
+                685,
+                605,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 5,
+              "workers": 18,
+              "workerOrders": {
+                "4": 18
+              },
+              "carrying": 15,
+              "army": 5,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 19.04999542236328
+            }
+          ]
+        },
+        {
+          "minutes": 8,
+          "stateHash": 1295335495,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 8,
+              "epoch": 1,
+              "population": 29,
+              "capacity": 40,
+              "resources": [
+                457.01251220703125,
+                570,
+                200,
+                269.18426513671875,
+                730,
+                670,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 2,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 16,
+              "army": 6,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1
+              },
+              "unfinished": 0,
+              "queued": 1,
+              "maxQueueSeconds": 28.799846649169922
+            },
+            {
+              "team": 1,
+              "minutes": 8,
+              "epoch": 1,
+              "population": 29,
+              "capacity": 40,
+              "resources": [
+                522.0125122070312,
+                250,
+                200,
+                95,
+                820,
+                670,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 2,
+              "workers": 19,
+              "workerOrders": {
+                "4": 16,
+                "5": 3
+              },
+              "carrying": 19,
+              "army": 6,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 1,
+              "queued": 1,
+              "maxQueueSeconds": 29.14984130859375
+            },
+            {
+              "team": 2,
+              "minutes": 8,
+              "epoch": 1,
+              "population": 29,
+              "capacity": 40,
+              "resources": [
+                532.0125122070312,
+                135,
+                200,
+                185,
+                700,
+                700,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 2,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 18,
+              "army": 6,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1
+              },
+              "unfinished": 0,
+              "queued": 1,
+              "maxQueueSeconds": 29.499835968017578
+            },
+            {
+              "team": 3,
+              "minutes": 8,
+              "epoch": 1,
+              "population": 29,
+              "capacity": 40,
+              "resources": [
+                499.0250244140625,
+                145,
+                200,
+                140,
+                745,
+                685,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 2,
+              "workers": 19,
+              "workerOrders": {
+                "4": 16,
+                "5": 3
+              },
+              "carrying": 18,
+              "army": 6,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 1,
+              "queued": 1,
+              "maxQueueSeconds": 29.849830627441406
+            }
+          ]
+        },
+        {
+          "minutes": 9,
+          "stateHash": 3233988457,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 9,
+              "epoch": 1,
+              "population": 31,
+              "capacity": 40,
+              "resources": [
+                587.0125122070312,
+                415,
+                200,
+                134.18426513671875,
+                790,
+                725,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 19,
+              "workerOrders": {
+                "4": 16,
+                "5": 3
+              },
+              "carrying": 18,
+              "army": 8,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 1,
+              "queued": 2,
+              "maxQueueSeconds": 14.400036811828613
+            },
+            {
+              "team": 1,
+              "minutes": 9,
+              "epoch": 1,
+              "population": 31,
+              "capacity": 40,
+              "resources": [
+                727.0125122070312,
+                335,
+                200,
+                247.01025390625,
+                910,
+                725,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 19,
+              "workerOrders": {
+                "4": 16,
+                "5": 3
+              },
+              "carrying": 17,
+              "army": 8,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 1,
+              "queued": 2,
+              "maxQueueSeconds": 14.750038146972656
+            },
+            {
+              "team": 2,
+              "minutes": 9,
+              "epoch": 1,
+              "population": 31,
+              "capacity": 40,
+              "resources": [
+                752.0125122070312,
+                70,
+                200,
+                365,
+                760,
+                755,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 7,
+              "workers": 19,
+              "workerOrders": {
+                "4": 16,
+                "5": 3
+              },
+              "carrying": 15,
+              "army": 8,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1
+              },
+              "unfinished": 1,
+              "queued": 1,
+              "maxQueueSeconds": 15.1000394821167
+            },
+            {
+              "team": 3,
+              "minutes": 9,
+              "epoch": 1,
+              "population": 31,
+              "capacity": 45,
+              "resources": [
+                674.0250244140625,
+                215,
+                200,
+                301.03302001953125,
+                820,
+                755,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 17,
+              "army": 8,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 15.450040817260742
+            }
+          ]
+        },
+        {
+          "minutes": 10,
+          "stateHash": 1232943931,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 10,
+              "epoch": 1,
+              "population": 32,
+              "capacity": 45,
+              "resources": [
+                792.0125122070312,
+                535,
+                200,
+                258.20477294921875,
+                865,
+                790,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 5,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 16,
+              "army": 9,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 0,
+              "queued": 1,
+              "maxQueueSeconds": 21.599956512451172
+            },
+            {
+              "team": 1,
+              "minutes": 10,
+              "epoch": 1,
+              "population": 32,
+              "capacity": 45,
+              "resources": [
+                955.0125122070312,
+                497,
+                200,
+                427.01025390625,
+                1045,
+                821,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 5,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 17,
+              "army": 9,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 0,
+              "queued": 1,
+              "maxQueueSeconds": 21.949951171875
+            },
+            {
+              "team": 2,
+              "minutes": 10,
+              "epoch": 1,
+              "population": 32,
+              "capacity": 45,
+              "resources": [
+                1025.012451171875,
+                52,
+                200,
+                515,
+                820,
+                851,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 5,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 17,
+              "army": 9,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1
+              },
+              "unfinished": 0,
+              "queued": 1,
+              "maxQueueSeconds": 22.299945831298828
+            },
+            {
+              "team": 3,
+              "minutes": 10,
+              "epoch": 1,
+              "population": 32,
+              "capacity": 45,
+              "resources": [
+                932.0250244140625,
+                362,
+                200,
+                481.03302001953125,
+                880,
+                836,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 5,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 18,
+              "army": 9,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 0,
+              "queued": 1,
+              "maxQueueSeconds": 22.649940490722656
+            }
+          ]
+        },
+        {
+          "minutes": 11,
+          "stateHash": 78052561,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 11,
+              "epoch": 1,
+              "population": 34,
+              "capacity": 45,
+              "resources": [
+                978.0125122070312,
+                672.041015625,
+                200,
+                333.20477294921875,
+                910,
+                862,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 2,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 19,
+              "army": 11,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 0,
+              "queued": 1,
+              "maxQueueSeconds": 10.800023078918457
+            },
+            {
+              "team": 1,
+              "minutes": 11,
+              "epoch": 1,
+              "population": 34,
+              "capacity": 45,
+              "resources": [
+                1175.0272216796875,
+                615.0285034179688,
+                200,
+                637.01025390625,
+                1120,
+                892,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 2,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 18,
+              "army": 11,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 0,
+              "queued": 1,
+              "maxQueueSeconds": 14.750038146972656
+            },
+            {
+              "team": 2,
+              "minutes": 11,
+              "epoch": 1,
+              "population": 34,
+              "capacity": 45,
+              "resources": [
+                1220.03515625,
+                16,
+                200,
+                656.03076171875,
+                880,
+                938,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 2,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 18,
+              "army": 11,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1
+              },
+              "unfinished": 0,
+              "queued": 1,
+              "maxQueueSeconds": 15.1000394821167
+            },
+            {
+              "team": 3,
+              "minutes": 11,
+              "epoch": 1,
+              "population": 34,
+              "capacity": 45,
+              "resources": [
+                1154.050048828125,
+                494,
+                200,
+                676.0330200195312,
+                925,
+                907,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 2,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 18,
+              "army": 11,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 0,
+              "queued": 1,
+              "maxQueueSeconds": 11.850027084350586
+            }
+          ]
+        },
+        {
+          "minutes": 12,
+          "stateHash": 1681318971,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 12,
+              "epoch": 1,
+              "population": 35,
+              "capacity": 45,
+              "resources": [
+                1147.043212890625,
+                819.041015625,
+                200,
+                483.20477294921875,
+                925,
+                933,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 17,
+              "army": 13,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 2.399998903274536
+            },
+            {
+              "team": 1,
+              "minutes": 12,
+              "epoch": 1,
+              "population": 36,
+              "capacity": 45,
+              "resources": [
+                1398.0272216796875,
+                792.0285034179688,
+                200,
+                832.01025390625,
+                1240,
+                978,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 18,
+              "army": 13,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 2.7499985694885254
+            },
+            {
+              "team": 2,
+              "minutes": 12,
+              "epoch": 1,
+              "population": 36,
+              "capacity": 45,
+              "resources": [
+                1435.03515625,
+                16,
+                200,
+                821.03076171875,
+                925,
+                1023,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 17,
+              "army": 13,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 4.2999982833862305
+            },
+            {
+              "team": 3,
+              "minutes": 12,
+              "epoch": 1,
+              "population": 36,
+              "capacity": 45,
+              "resources": [
+                1362.050048828125,
+                625.0250244140625,
+                200,
+                871.0330200195312,
+                970,
+                1008,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 17,
+              "army": 13,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 3.449997901916504
+            }
+          ]
+        },
+        {
+          "minutes": 13,
+          "stateHash": 1166080201,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 13,
+              "epoch": 1,
+              "population": 37,
+              "capacity": 50,
+              "resources": [
+                1330.043212890625,
+                921.041015625,
+                200,
+                603.2047729492188,
+                1030,
+                999,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 5,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 18,
+              "army": 14,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 2,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 0,
+              "queued": 1,
+              "maxQueueSeconds": 26.399883270263672
+            },
+            {
+              "team": 1,
+              "minutes": 13,
+              "epoch": 1,
+              "population": 37,
+              "capacity": 50,
+              "resources": [
+                1626.0272216796875,
+                864.0285034179688,
+                200,
+                967.01025390625,
+                1358.043212890625,
+                1049.0150146484375,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 5,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 19,
+              "army": 14,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 2,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 0,
+              "queued": 1,
+              "maxQueueSeconds": 26.7498779296875
+            },
+            {
+              "team": 2,
+              "minutes": 13,
+              "epoch": 1,
+              "population": 37,
+              "capacity": 45,
+              "resources": [
+                1685.03515625,
+                16,
+                200,
+                1031.03076171875,
+                970,
+                1102.02490234375,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 5,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 15,
+              "army": 14,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1
+              },
+              "unfinished": 0,
+              "queued": 1,
+              "maxQueueSeconds": 27.099872589111328
+            },
+            {
+              "team": 3,
+              "minutes": 13,
+              "epoch": 1,
+              "population": 37,
+              "capacity": 50,
+              "resources": [
+                1605.050048828125,
+                712.0250244140625,
+                200,
+                1036.032958984375,
+                1015,
+                1101.0274658203125,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 5,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 16,
+              "army": 14,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 2,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 0,
+              "queued": 1,
+              "maxQueueSeconds": 27.449867248535156
+            }
+          ]
+        },
+        {
+          "minutes": 14,
+          "stateHash": 2299903858,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 14,
+              "epoch": 1,
+              "population": 39,
+              "capacity": 50,
+              "resources": [
+                1500.043212890625,
+                1101.041015625,
+                200,
+                693.2047729492188,
+                1030,
+                1075.0350341796875,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 3,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 18,
+              "army": 16,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 2,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 0,
+              "queued": 1,
+              "maxQueueSeconds": 15.600041389465332
+            },
+            {
+              "team": 1,
+              "minutes": 14,
+              "epoch": 1,
+              "population": 39,
+              "capacity": 50,
+              "resources": [
+                1849.0272216796875,
+                1041.028564453125,
+                200,
+                1162.01025390625,
+                1433.043212890625,
+                1120.0150146484375,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 3,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 19,
+              "army": 16,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 2,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 0,
+              "queued": 1,
+              "maxQueueSeconds": 19.54998779296875
+            },
+            {
+              "team": 2,
+              "minutes": 14,
+              "epoch": 1,
+              "population": 39,
+              "capacity": 45,
+              "resources": [
+                1885.03515625,
+                16,
+                200,
+                1181.03076171875,
+                1015,
+                1172.02490234375,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 2,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 18,
+              "army": 16,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1
+              },
+              "unfinished": 0,
+              "queued": 1,
+              "maxQueueSeconds": 12.700030326843262
+            },
+            {
+              "team": 3,
+              "minutes": 14,
+              "epoch": 1,
+              "population": 39,
+              "capacity": 50,
+              "resources": [
+                1828.050048828125,
+                859.0250244140625,
+                200,
+                1209.073974609375,
+                1060,
+                1172.0274658203125,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 3,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 19,
+              "army": 16,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 2,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 0,
+              "queued": 1,
+              "maxQueueSeconds": 16.65003204345703
+            }
+          ]
+        },
+        {
+          "minutes": 15,
+          "stateHash": 2180262265,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 15,
+              "epoch": 1,
+              "population": 41,
+              "capacity": 50,
+              "resources": [
+                1655.043212890625,
+                1206.041015625,
+                200,
+                753.2047729492188,
+                1030,
+                1160.0350341796875,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 8,
+              "workers": 19,
+              "workerOrders": {
+                "4": 16,
+                "5": 3
+              },
+              "carrying": 18,
+              "army": 18,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 3,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 1,
+              "queued": 1,
+              "maxQueueSeconds": 1.1999999284744263
+            },
+            {
+              "team": 1,
+              "minutes": 15,
+              "epoch": 1,
+              "population": 41,
+              "capacity": 50,
+              "resources": [
+                2054.029296875,
+                1131.028564453125,
+                200,
+                1288.041015625,
+                1538.043212890625,
+                1190.0150146484375,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 8,
+              "workers": 19,
+              "workerOrders": {
+                "4": 16,
+                "5": 3
+              },
+              "carrying": 19,
+              "army": 18,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 3,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 1,
+              "queued": 1,
+              "maxQueueSeconds": 5.150001525878906
+            },
+            {
+              "team": 2,
+              "minutes": 15,
+              "epoch": 1,
+              "population": 40,
+              "capacity": 45,
+              "resources": [
+                2104.06005859375,
+                16,
+                200,
+                1331.03076171875,
+                1060,
+                1252.02490234375,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 8,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 19,
+              "army": 17,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1
+              },
+              "unfinished": 0,
+              "queued": 1,
+              "maxQueueSeconds": 35.4997444152832
+            },
+            {
+              "team": 3,
+              "minutes": 15,
+              "epoch": 1,
+              "population": 41,
+              "capacity": 50,
+              "resources": [
+                2027.080810546875,
+                961.0250244140625,
+                200,
+                1359.073974609375,
+                1105,
+                1243.0274658203125,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 8,
+              "workers": 19,
+              "workerOrders": {
+                "4": 16,
+                "5": 3
+              },
+              "carrying": 18,
+              "army": 18,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 3,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 1,
+              "queued": 1,
+              "maxQueueSeconds": 9.450017929077148
+            }
+          ]
+        },
+        {
+          "minutes": 16,
+          "stateHash": 1922477235,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 16,
+              "epoch": 1,
+              "population": 42,
+              "capacity": 55,
+              "resources": [
+                1830.043212890625,
+                1386.041015625,
+                200,
+                873.2047729492188,
+                1045,
+                1240.0350341796875,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 13,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 17,
+              "army": 19,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 3,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 0,
+              "queued": 1,
+              "maxQueueSeconds": 23.999919891357422
+            },
+            {
+              "team": 1,
+              "minutes": 16,
+              "epoch": 1,
+              "population": 42,
+              "capacity": 55,
+              "resources": [
+                2267.029296875,
+                1308.028564453125,
+                200,
+                1468.041015625,
+                1643.043212890625,
+                1271.0150146484375,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 13,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 19,
+              "army": 19,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 3,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 0,
+              "queued": 1,
+              "maxQueueSeconds": 27.949859619140625
+            },
+            {
+              "team": 2,
+              "minutes": 16,
+              "epoch": 1,
+              "population": 42,
+              "capacity": 45,
+              "resources": [
+                2289.06005859375,
+                16,
+                200,
+                1481.03076171875,
+                1105,
+                1322.02490234375,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 13,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 18,
+              "army": 19,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1
+              },
+              "unfinished": 0,
+              "queued": 1,
+              "maxQueueSeconds": 21.099964141845703
+            },
+            {
+              "team": 3,
+              "minutes": 16,
+              "epoch": 1,
+              "population": 42,
+              "capacity": 55,
+              "resources": [
+                2262.080810546875,
+                1111.0250244140625,
+                200,
+                1539.073974609375,
+                1150,
+                1323.0274658203125,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 13,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 17,
+              "army": 19,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 3,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 0,
+              "queued": 1,
+              "maxQueueSeconds": 32.249794006347656
+            }
+          ]
+        },
+        {
+          "minutes": 17,
+          "stateHash": 1049055602,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 17,
+              "epoch": 1,
+              "population": 44,
+              "capacity": 55,
+              "resources": [
+                1990.0579833984375,
+                1533.041015625,
+                200,
+                963.2047729492188,
+                1060,
+                1311.0350341796875,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 19,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 19,
+              "army": 21,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 3,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 0,
+              "queued": 1,
+              "maxQueueSeconds": 13.200032234191895
+            },
+            {
+              "team": 1,
+              "minutes": 17,
+              "epoch": 1,
+              "population": 44,
+              "capacity": 55,
+              "resources": [
+                2513.029296875,
+                1422.028564453125,
+                200,
+                1648.041015625,
+                1748.043212890625,
+                1343.0150146484375,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 19,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 19,
+              "army": 21,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 3,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 0,
+              "queued": 1,
+              "maxQueueSeconds": 20.749969482421875
+            },
+            {
+              "team": 2,
+              "minutes": 17,
+              "epoch": 1,
+              "population": 43,
+              "capacity": 45,
+              "resources": [
+                2524.06005859375,
+                16,
+                200,
+                1630.0557861328125,
+                1160.0045166015625,
+                1432.02490234375,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 19,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 17,
+              "army": 21,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1
+              },
+              "unfinished": 0,
+              "queued": 0,
+              "maxQueueSeconds": 0
+            },
+            {
+              "team": 3,
+              "minutes": 17,
+              "epoch": 1,
+              "population": 44,
+              "capacity": 55,
+              "resources": [
+                2493.080810546875,
+                1225.0250244140625,
+                200,
+                1734.073974609375,
+                1210,
+                1395.0274658203125,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 19,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 18,
+              "army": 21,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 3,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 0,
+              "queued": 1,
+              "maxQueueSeconds": 21.44995880126953
+            }
+          ]
+        },
+        {
+          "minutes": 18,
+          "stateHash": 753980103,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 18,
+              "epoch": 1,
+              "population": 46,
+              "capacity": 55,
+              "resources": [
+                2161.05810546875,
+                1617.041015625,
+                200,
+                1023.204833984375,
+                1105,
+                1383.0350341796875,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 24,
+              "workers": 19,
+              "workerOrders": {
+                "4": 16,
+                "5": 3
+              },
+              "carrying": 18,
+              "army": 23,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 4,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 1,
+              "queued": 1,
+              "maxQueueSeconds": 2.399998903274536
+            },
+            {
+              "team": 1,
+              "minutes": 18,
+              "epoch": 1,
+              "population": 46,
+              "capacity": 55,
+              "resources": [
+                2729.029296875,
+                1521.028564453125,
+                200,
+                1798.041015625,
+                1868.043212890625,
+                1415.0150146484375,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 24,
+              "workers": 19,
+              "workerOrders": {
+                "4": 16,
+                "5": 3
+              },
+              "carrying": 17,
+              "army": 23,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 4,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 1,
+              "queued": 1,
+              "maxQueueSeconds": 13.550033569335938
+            },
+            {
+              "team": 2,
+              "minutes": 18,
+              "epoch": 1,
+              "population": 43,
+              "capacity": 45,
+              "resources": [
+                2764.06005859375,
+                16,
+                200,
+                1795.0557861328125,
+                1220.0045166015625,
+                1537.02490234375,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 24,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 17,
+              "army": 21,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1
+              },
+              "unfinished": 0,
+              "queued": 0,
+              "maxQueueSeconds": 0
+            },
+            {
+              "team": 3,
+              "minutes": 18,
+              "epoch": 1,
+              "population": 46,
+              "capacity": 55,
+              "resources": [
+                2678.080810546875,
+                1330.0250244140625,
+                200,
+                1869.073974609375,
+                1220.0045166015625,
+                1465.0274658203125,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 24,
+              "workers": 19,
+              "workerOrders": {
+                "4": 16,
+                "5": 3
+              },
+              "carrying": 18,
+              "army": 23,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 4,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 1,
+              "queued": 1,
+              "maxQueueSeconds": 10.650022506713867
+            }
+          ]
+        },
+        {
+          "minutes": 19,
+          "stateHash": 2322091021,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 19,
+              "epoch": 1,
+              "population": 46,
+              "capacity": 60,
+              "resources": [
+                2371.05810546875,
+                1784.05126953125,
+                200,
+                1198.2093505859375,
+                1120,
+                1458.0350341796875,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 30,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 19,
+              "army": 24,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 4,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 0,
+              "queued": 0,
+              "maxQueueSeconds": 0
+            },
+            {
+              "team": 1,
+              "minutes": 19,
+              "epoch": 1,
+              "population": 46,
+              "capacity": 60,
+              "resources": [
+                2999.029296875,
+                1690.049072265625,
+                200,
+                1978.041015625,
+                1988.043212890625,
+                1490.0150146484375,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 30,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 19,
+              "army": 24,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 4,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 0,
+              "queued": 0,
+              "maxQueueSeconds": 0
+            },
+            {
+              "team": 2,
+              "minutes": 19,
+              "epoch": 1,
+              "population": 43,
+              "capacity": 45,
+              "resources": [
+                3026.072509765625,
+                16,
+                200,
+                1960.0557861328125,
+                1280.0045166015625,
+                1627.02490234375,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 29,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 18,
+              "army": 21,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1
+              },
+              "unfinished": 0,
+              "queued": 0,
+              "maxQueueSeconds": 0
+            },
+            {
+              "team": 3,
+              "minutes": 19,
+              "epoch": 1,
+              "population": 46,
+              "capacity": 60,
+              "resources": [
+                2953.0830078125,
+                1495.0250244140625,
+                200,
+                2064.073974609375,
+                1280.0045166015625,
+                1555.0274658203125,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 30,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 17,
+              "army": 24,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 4,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 0,
+              "queued": 0,
+              "maxQueueSeconds": 0
+            }
+          ]
+        },
+        {
+          "minutes": 20,
+          "stateHash": 2449969441,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 20,
+              "epoch": 2,
+              "population": 51,
+              "capacity": 60,
+              "resources": [
+                2384.05810546875,
+                1556.05126953125,
+                200,
+                1348.2093505859375,
+                985,
+                1524.0350341796875,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 3,
+              "workers": 20,
+              "workerOrders": {
+                "4": 17,
+                "5": 3
+              },
+              "carrying": 19,
+              "army": 24,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 4,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 1,
+              "queued": 4,
+              "maxQueueSeconds": 22.799938201904297
+            },
+            {
+              "team": 1,
+              "minutes": 20,
+              "epoch": 2,
+              "population": 49,
+              "capacity": 60,
+              "resources": [
+                3149.029296875,
+                1555.049072265625,
+                200,
+                2160.05126953125,
+                2053.043212890625,
+                1505.0150146484375,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 3,
+              "workers": 19,
+              "workerOrders": {
+                "4": 16,
+                "5": 3
+              },
+              "carrying": 18,
+              "army": 24,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 4,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "49": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 1,
+              "queued": 3,
+              "maxQueueSeconds": 21.949951171875
+            },
+            {
+              "team": 2,
+              "minutes": 20,
+              "epoch": 2,
+              "population": 45,
+              "capacity": 45,
+              "resources": [
+                3206.072509765625,
+                16,
+                200,
+                2155.0556640625,
+                1340.0045166015625,
+                1717.02490234375,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 3,
+              "workers": 19,
+              "workerOrders": {
+                "4": 19
+              },
+              "carrying": 15,
+              "army": 21,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 1,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "51": 1,
+                "52": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 21.099964141845703
+            },
+            {
+              "team": 3,
+              "minutes": 20,
+              "epoch": 2,
+              "population": 52,
+              "capacity": 60,
+              "resources": [
+                3018.0830078125,
+                1262.0374755859375,
+                200,
+                2247.11279296875,
+                1175.0045166015625,
+                1620.0274658203125,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 3,
+              "workers": 20,
+              "workerOrders": {
+                "4": 17,
+                "5": 3
+              },
+              "carrying": 18,
+              "army": 24,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "1": 4,
+                "3": 1,
+                "7": 1,
+                "47": 1,
+                "48": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1,
+                "52": 1,
+                "56": 1
+              },
+              "unfinished": 1,
+              "queued": 4,
+              "maxQueueSeconds": 23.84992218017578
+            }
+          ]
+        }
+      ],
+      "wallSeconds": 2.926538,
+      "meanSimulationMillisecondsPerTick": 0.12193908333333334
+    },
+    {
+      "seed": 41,
+      "startingEpoch": 10,
+      "minutes": 10,
+      "snapshots": [
+        {
+          "minutes": 0,
+          "stateHash": 3896562593,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 0,
+              "epoch": 10,
+              "population": 5,
+              "capacity": 40,
+              "resources": [
+                400,
+                400,
+                200,
+                400,
+                400,
+                200,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 5,
+              "workerOrders": {
+                "0": 5
+              },
+              "carrying": 0,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1
+              },
+              "unfinished": 0,
+              "queued": 0,
+              "maxQueueSeconds": 0
+            },
+            {
+              "team": 1,
+              "minutes": 0,
+              "epoch": 10,
+              "population": 5,
+              "capacity": 40,
+              "resources": [
+                400,
+                400,
+                200,
+                400,
+                400,
+                200,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 5,
+              "workerOrders": {
+                "0": 5
+              },
+              "carrying": 0,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1
+              },
+              "unfinished": 0,
+              "queued": 0,
+              "maxQueueSeconds": 0
+            },
+            {
+              "team": 2,
+              "minutes": 0,
+              "epoch": 10,
+              "population": 5,
+              "capacity": 40,
+              "resources": [
+                400,
+                400,
+                200,
+                400,
+                400,
+                200,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 5,
+              "workerOrders": {
+                "0": 5
+              },
+              "carrying": 0,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1
+              },
+              "unfinished": 0,
+              "queued": 0,
+              "maxQueueSeconds": 0
+            },
+            {
+              "team": 3,
+              "minutes": 0,
+              "epoch": 10,
+              "population": 5,
+              "capacity": 40,
+              "resources": [
+                400,
+                400,
+                200,
+                400,
+                400,
+                200,
+                200,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 5,
+              "workerOrders": {
+                "0": 5
+              },
+              "carrying": 0,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1
+              },
+              "unfinished": 0,
+              "queued": 0,
+              "maxQueueSeconds": 0
+            }
+          ]
+        },
+        {
+          "minutes": 1,
+          "stateHash": 4275585705,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 1,
+              "epoch": 10,
+              "population": 9,
+              "capacity": 40,
+              "resources": [
+                215,
+                25,
+                200,
+                150,
+                305,
+                200,
+                230,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 7,
+              "workerOrders": {
+                "4": 7
+              },
+              "carrying": 6,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 8.7000150680542
+            },
+            {
+              "team": 1,
+              "minutes": 1,
+              "epoch": 10,
+              "population": 9,
+              "capacity": 40,
+              "resources": [
+                215,
+                25,
+                200,
+                150,
+                305,
+                200,
+                230,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 7,
+              "workerOrders": {
+                "4": 7
+              },
+              "carrying": 5,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 9.050016403198242
+            },
+            {
+              "team": 2,
+              "minutes": 1,
+              "epoch": 10,
+              "population": 9,
+              "capacity": 40,
+              "resources": [
+                215,
+                40,
+                200,
+                150,
+                290,
+                200,
+                215,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 7,
+              "workerOrders": {
+                "4": 7
+              },
+              "carrying": 7,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 9.400017738342285
+            },
+            {
+              "team": 3,
+              "minutes": 1,
+              "epoch": 10,
+              "population": 9,
+              "capacity": 40,
+              "resources": [
+                215,
+                25,
+                200,
+                150,
+                305,
+                200,
+                215,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 7,
+              "workerOrders": {
+                "4": 7
+              },
+              "carrying": 5,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 9.750019073486328
+            }
+          ]
+        },
+        {
+          "minutes": 2,
+          "stateHash": 3930059057,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 2,
+              "epoch": 10,
+              "population": 11,
+              "capacity": 40,
+              "resources": [
+                220,
+                115,
+                200,
+                180,
+                350,
+                200,
+                290,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 9,
+              "workerOrders": {
+                "4": 9
+              },
+              "carrying": 9,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 18.60000228881836
+            },
+            {
+              "team": 1,
+              "minutes": 2,
+              "epoch": 10,
+              "population": 11,
+              "capacity": 40,
+              "resources": [
+                205,
+                115,
+                200,
+                195,
+                350,
+                200,
+                260,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 9,
+              "workerOrders": {
+                "4": 9
+              },
+              "carrying": 8,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 18.949996948242188
+            },
+            {
+              "team": 2,
+              "minutes": 2,
+              "epoch": 10,
+              "population": 11,
+              "capacity": 40,
+              "resources": [
+                220,
+                130,
+                200,
+                210,
+                320,
+                200,
+                245,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 9,
+              "workerOrders": {
+                "4": 9
+              },
+              "carrying": 8,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 19.299991607666016
+            },
+            {
+              "team": 3,
+              "minutes": 2,
+              "epoch": 10,
+              "population": 11,
+              "capacity": 40,
+              "resources": [
+                205,
+                115,
+                200,
+                195,
+                335,
+                200,
+                245,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 9,
+              "workerOrders": {
+                "4": 9
+              },
+              "carrying": 8,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 19.649986267089844
+            }
+          ]
+        },
+        {
+          "minutes": 3,
+          "stateHash": 748954242,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 3,
+              "epoch": 10,
+              "population": 14,
+              "capacity": 40,
+              "resources": [
+                175,
+                205,
+                200,
+                240,
+                425,
+                200,
+                395,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 12,
+              "workerOrders": {
+                "4": 12
+              },
+              "carrying": 8,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 3.449997901916504
+            },
+            {
+              "team": 1,
+              "minutes": 3,
+              "epoch": 10,
+              "population": 14,
+              "capacity": 40,
+              "resources": [
+                160,
+                205,
+                200,
+                255,
+                410,
+                200,
+                320,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 12,
+              "workerOrders": {
+                "4": 12
+              },
+              "carrying": 12,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 3.799997568130493
+            },
+            {
+              "team": 2,
+              "minutes": 3,
+              "epoch": 10,
+              "population": 14,
+              "capacity": 40,
+              "resources": [
+                190,
+                190,
+                200,
+                285,
+                365,
+                200,
+                305,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 12,
+              "workerOrders": {
+                "4": 12
+              },
+              "carrying": 10,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 4.149997711181641
+            },
+            {
+              "team": 3,
+              "minutes": 3,
+              "epoch": 10,
+              "population": 14,
+              "capacity": 40,
+              "resources": [
+                160,
+                175,
+                200,
+                255,
+                380,
+                200,
+                305,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 12,
+              "workerOrders": {
+                "4": 12
+              },
+              "carrying": 11,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 4.499999046325684
+            }
+          ]
+        },
+        {
+          "minutes": 4,
+          "stateHash": 2204933825,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 4,
+              "epoch": 10,
+              "population": 16,
+              "capacity": 40,
+              "resources": [
+                210,
+                30,
+                200,
+                285,
+                515,
+                200,
+                485,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 14,
+              "workerOrders": {
+                "4": 14
+              },
+              "carrying": 12,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 13.350032806396484
+            },
+            {
+              "team": 1,
+              "minutes": 4,
+              "epoch": 10,
+              "population": 18,
+              "capacity": 40,
+              "resources": [
+                195,
+                29,
+                200,
+                315,
+                449,
+                200,
+                354,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 14,
+              "workerOrders": {
+                "4": 14
+              },
+              "carrying": 14,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 3,
+              "maxQueueSeconds": 13.700034141540527
+            },
+            {
+              "team": 2,
+              "minutes": 4,
+              "epoch": 10,
+              "population": 16,
+              "capacity": 40,
+              "resources": [
+                225,
+                45,
+                200,
+                360,
+                425,
+                200,
+                365,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 14,
+              "workerOrders": {
+                "4": 14
+              },
+              "carrying": 13,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 14.05003547668457
+            },
+            {
+              "team": 3,
+              "minutes": 4,
+              "epoch": 10,
+              "population": 16,
+              "capacity": 40,
+              "resources": [
+                195,
+                30,
+                200,
+                300,
+                455,
+                200,
+                365,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 14,
+              "workerOrders": {
+                "4": 14
+              },
+              "carrying": 13,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 14.400036811828613
+            }
+          ]
+        },
+        {
+          "minutes": 5,
+          "stateHash": 2069706850,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 5,
+              "epoch": 10,
+              "population": 20,
+              "capacity": 40,
+              "resources": [
+                305,
+                119,
+                200,
+                95,
+                539,
+                200,
+                549,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 16,
+              "workerOrders": {
+                "4": 16
+              },
+              "carrying": 16,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "4": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 3,
+              "maxQueueSeconds": 57.59940719604492
+            },
+            {
+              "team": 1,
+              "minutes": 5,
+              "epoch": 10,
+              "population": 22,
+              "capacity": 40,
+              "resources": [
+                275,
+                118,
+                200,
+                405,
+                503,
+                200,
+                388,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 16,
+              "workerOrders": {
+                "4": 16
+              },
+              "carrying": 16,
+              "army": 1,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 3,
+              "maxQueueSeconds": 23.599925994873047
+            },
+            {
+              "team": 2,
+              "minutes": 5,
+              "epoch": 10,
+              "population": 20,
+              "capacity": 40,
+              "resources": [
+                320,
+                134,
+                200,
+                185,
+                449,
+                200,
+                414,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 16,
+              "workerOrders": {
+                "4": 16
+              },
+              "carrying": 14,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "4": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 3,
+              "maxQueueSeconds": 58.29939651489258
+            },
+            {
+              "team": 3,
+              "minutes": 5,
+              "epoch": 10,
+              "population": 20,
+              "capacity": 40,
+              "resources": [
+                275,
+                134,
+                200,
+                390,
+                479,
+                200,
+                399,
+                200,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 16,
+              "workerOrders": {
+                "4": 16
+              },
+              "carrying": 15,
+              "army": 0,
+              "garrisoned": 0,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 3,
+              "maxQueueSeconds": 53.849464416503906
+            }
+          ]
+        },
+        {
+          "minutes": 6,
+          "stateHash": 2251972168,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 6,
+              "epoch": 10,
+              "population": 25,
+              "capacity": 40,
+              "resources": [
+                335,
+                62,
+                200,
+                200,
+                587,
+                200,
+                587,
+                215,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 15,
+              "workerOrders": {
+                "4": 12,
+                "6": 3
+              },
+              "carrying": 14,
+              "army": 2,
+              "garrisoned": 4,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "4": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1,
+                "53": 1
+              },
+              "unfinished": 0,
+              "queued": 3,
+              "maxQueueSeconds": 8.10001277923584
+            },
+            {
+              "team": 1,
+              "minutes": 6,
+              "epoch": 10,
+              "population": 27,
+              "capacity": 40,
+              "resources": [
+                305,
+                57,
+                200,
+                345,
+                542,
+                200,
+                452,
+                200,
+                200
+              ],
+              "researchPoints": 1,
+              "workers": 16,
+              "workerOrders": {
+                "4": 16
+              },
+              "carrying": 15,
+              "army": 2,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "47": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1
+              },
+              "unfinished": 0,
+              "queued": 3,
+              "maxQueueSeconds": 8.450014114379883
+            },
+            {
+              "team": 2,
+              "minutes": 6,
+              "epoch": 10,
+              "population": 25,
+              "capacity": 40,
+              "resources": [
+                320,
+                108,
+                200,
+                335,
+                473,
+                200,
+                478,
+                251,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 13,
+              "workerOrders": {
+                "4": 13
+              },
+              "carrying": 11,
+              "army": 2,
+              "garrisoned": 6,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "4": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1,
+                "53": 1
+              },
+              "unfinished": 0,
+              "queued": 2,
+              "maxQueueSeconds": 8.800015449523926
+            },
+            {
+              "team": 3,
+              "minutes": 6,
+              "epoch": 10,
+              "population": 25,
+              "capacity": 40,
+              "resources": [
+                290,
+                123,
+                200,
+                215,
+                533,
+                200,
+                463,
+                229,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 13,
+              "workerOrders": {
+                "4": 9,
+                "5": 3,
+                "6": 1
+              },
+              "carrying": 11,
+              "army": 1,
+              "garrisoned": 6,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "4": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1,
+                "53": 1
+              },
+              "unfinished": 1,
+              "queued": 3,
+              "maxQueueSeconds": 55.04944610595703
+            }
+          ]
+        },
+        {
+          "minutes": 7,
+          "stateHash": 810313492,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 7,
+              "epoch": 10,
+              "population": 31,
+              "capacity": 40,
+              "resources": [
+                400,
+                1,
+                200,
+                140,
+                641,
+                200,
+                636,
+                482,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 15,
+              "workerOrders": {
+                "4": 12,
+                "5": 3
+              },
+              "carrying": 12,
+              "army": 3,
+              "garrisoned": 6,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "4": 1,
+                "47": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1,
+                "53": 1
+              },
+              "unfinished": 1,
+              "queued": 3,
+              "maxQueueSeconds": 18.000011444091797
+            },
+            {
+              "team": 1,
+              "minutes": 7,
+              "epoch": 10,
+              "population": 31,
+              "capacity": 40,
+              "resources": [
+                385,
+                26,
+                200,
+                285,
+                566,
+                200,
+                501,
+                200,
+                200
+              ],
+              "researchPoints": 6,
+              "workers": 18,
+              "workerOrders": {
+                "4": 15,
+                "5": 3
+              },
+              "carrying": 17,
+              "army": 3,
+              "garrisoned": 3,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "47": 2,
+                "49": 1,
+                "50": 1,
+                "51": 1
+              },
+              "unfinished": 1,
+              "queued": 3,
+              "maxQueueSeconds": 18.350006103515625
+            },
+            {
+              "team": 2,
+              "minutes": 7,
+              "epoch": 10,
+              "population": 29,
+              "capacity": 40,
+              "resources": [
+                355,
+                47,
+                200,
+                275,
+                497,
+                200,
+                512,
+                521,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 15,
+              "workerOrders": {
+                "4": 12,
+                "5": 3
+              },
+              "carrying": 11,
+              "army": 2,
+              "garrisoned": 6,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "4": 1,
+                "47": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1,
+                "53": 1
+              },
+              "unfinished": 1,
+              "queued": 3,
+              "maxQueueSeconds": 42.69963455200195
+            },
+            {
+              "team": 3,
+              "minutes": 7,
+              "epoch": 10,
+              "population": 29,
+              "capacity": 40,
+              "resources": [
+                340,
+                32,
+                200,
+                140,
+                561.5474853515625,
+                200,
+                482,
+                499,
+                200
+              ],
+              "researchPoints": 0,
+              "workers": 15,
+              "workerOrders": {
+                "4": 12,
+                "5": 3
+              },
+              "carrying": 13,
+              "army": 2,
+              "garrisoned": 6,
+              "buildings": {
+                "0": 1,
+                "3": 1,
+                "4": 1,
+                "47": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1,
+                "53": 1
+              },
+              "unfinished": 1,
+              "queued": 3,
+              "maxQueueSeconds": 43.04962921142578
+            }
+          ]
+        },
+        {
+          "minutes": 8,
+          "stateHash": 4097708259,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 8,
+              "epoch": 10,
+              "population": 36,
+              "capacity": 45,
+              "resources": [
+                415,
+                40,
+                200,
+                150,
+                680,
+                200,
+                670,
+                752,
+                200
+              ],
+              "researchPoints": 4,
+              "workers": 15,
+              "workerOrders": {
+                "4": 15
+              },
+              "carrying": 13,
+              "army": 4,
+              "garrisoned": 9,
+              "buildings": {
+                "0": 1,
+                "1": 1,
+                "3": 1,
+                "4": 1,
+                "47": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1,
+                "53": 1
+              },
+              "unfinished": 0,
+              "queued": 3,
+              "maxQueueSeconds": 2.8499984741210938
+            },
+            {
+              "team": 1,
+              "minutes": 8,
+              "epoch": 10,
+              "population": 36,
+              "capacity": 45,
+              "resources": [
+                403.0174865722656,
+                15,
+                200,
+                290,
+                605,
+                200,
+                550,
+                200,
+                200
+              ],
+              "researchPoints": 17,
+              "workers": 18,
+              "workerOrders": {
+                "4": 15,
+                "5": 3
+              },
+              "carrying": 15,
+              "army": 4,
+              "garrisoned": 6,
+              "buildings": {
+                "0": 1,
+                "1": 2,
+                "3": 1,
+                "47": 2,
+                "49": 1,
+                "50": 1,
+                "51": 1
+              },
+              "unfinished": 1,
+              "queued": 3,
+              "maxQueueSeconds": 3.199998140335083
+            },
+            {
+              "team": 2,
+              "minutes": 8,
+              "epoch": 10,
+              "population": 34,
+              "capacity": 45,
+              "resources": [
+                346.0350036621094,
+                56,
+                200,
+                315,
+                506,
+                200,
+                546,
+                791,
+                200
+              ],
+              "researchPoints": 5,
+              "workers": 15,
+              "workerOrders": {
+                "4": 15
+              },
+              "carrying": 14,
+              "army": 3,
+              "garrisoned": 9,
+              "buildings": {
+                "0": 1,
+                "1": 1,
+                "3": 1,
+                "4": 1,
+                "47": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1,
+                "53": 1
+              },
+              "unfinished": 0,
+              "queued": 3,
+              "maxQueueSeconds": 28.299854278564453
+            },
+            {
+              "team": 3,
+              "minutes": 8,
+              "epoch": 10,
+              "population": 34,
+              "capacity": 45,
+              "resources": [
+                327.0400085449219,
+                41,
+                200,
+                165,
+                585.5474853515625,
+                200,
+                516,
+                769,
+                200
+              ],
+              "researchPoints": 4,
+              "workers": 15,
+              "workerOrders": {
+                "4": 15
+              },
+              "carrying": 14,
+              "army": 3,
+              "garrisoned": 9,
+              "buildings": {
+                "0": 1,
+                "1": 1,
+                "3": 1,
+                "4": 1,
+                "47": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1,
+                "53": 1
+              },
+              "unfinished": 0,
+              "queued": 3,
+              "maxQueueSeconds": 28.64984893798828
+            }
+          ]
+        },
+        {
+          "minutes": 9,
+          "stateHash": 1084028093,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 9,
+              "epoch": 10,
+              "population": 40,
+              "capacity": 50,
+              "resources": [
+                495,
+                64,
+                200,
+                175,
+                719,
+                200,
+                734,
+                1022,
+                200
+              ],
+              "researchPoints": 10,
+              "workers": 17,
+              "workerOrders": {
+                "4": 17
+              },
+              "carrying": 17,
+              "army": 5,
+              "garrisoned": 9,
+              "buildings": {
+                "0": 1,
+                "1": 2,
+                "3": 1,
+                "4": 1,
+                "47": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1,
+                "53": 1
+              },
+              "unfinished": 0,
+              "queued": 3,
+              "maxQueueSeconds": 12.750030517578125
+            },
+            {
+              "team": 1,
+              "minutes": 9,
+              "epoch": 10,
+              "population": 38,
+              "capacity": 50,
+              "resources": [
+                483.0174865722656,
+                20,
+                200,
+                395,
+                695,
+                200,
+                640,
+                200,
+                200
+              ],
+              "researchPoints": 9,
+              "workers": 20,
+              "workerOrders": {
+                "4": 17,
+                "5": 3
+              },
+              "carrying": 18,
+              "army": 5,
+              "garrisoned": 6,
+              "buildings": {
+                "0": 1,
+                "1": 2,
+                "3": 1,
+                "47": 2,
+                "49": 1,
+                "50": 1,
+                "51": 1,
+                "53": 1
+              },
+              "unfinished": 1,
+              "queued": 2,
+              "maxQueueSeconds": 13.100031852722168
+            },
+            {
+              "team": 2,
+              "minutes": 9,
+              "epoch": 10,
+              "population": 38,
+              "capacity": 50,
+              "resources": [
+                411.0350036621094,
+                95,
+                200,
+                400,
+                545,
+                200,
+                580,
+                1061,
+                200
+              ],
+              "researchPoints": 10,
+              "workers": 17,
+              "workerOrders": {
+                "4": 17
+              },
+              "carrying": 17,
+              "army": 4,
+              "garrisoned": 9,
+              "buildings": {
+                "0": 1,
+                "1": 2,
+                "3": 1,
+                "4": 1,
+                "47": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1,
+                "53": 1
+              },
+              "unfinished": 0,
+              "queued": 3,
+              "maxQueueSeconds": 29.499835968017578
+            },
+            {
+              "team": 3,
+              "minutes": 9,
+              "epoch": 10,
+              "population": 38,
+              "capacity": 50,
+              "resources": [
+                392.0400085449219,
+                80,
+                200,
+                220,
+                609.5474853515625,
+                200,
+                550,
+                1039,
+                200
+              ],
+              "researchPoints": 10,
+              "workers": 17,
+              "workerOrders": {
+                "4": 17
+              },
+              "carrying": 16,
+              "army": 4,
+              "garrisoned": 9,
+              "buildings": {
+                "0": 1,
+                "1": 2,
+                "3": 1,
+                "4": 1,
+                "47": 1,
+                "49": 1,
+                "50": 1,
+                "51": 1,
+                "53": 1
+              },
+              "unfinished": 0,
+              "queued": 3,
+              "maxQueueSeconds": 29.849830627441406
+            }
+          ]
+        },
+        {
+          "minutes": 10,
+          "stateHash": 1260078185,
+          "teams": [
+            {
+              "team": 0,
+              "minutes": 10,
+              "epoch": 10,
+              "population": 42,
+              "capacity": 55,
+              "resources": [
+                605,
+                14,
+                200,
+                95,
+                809,
+                200,
+                824,
+                1292,
+                200
+              ],
+              "researchPoints": 15,
+              "workers": 19,
+              "workerOrders": {
+                "4": 16,
+                "5": 3
+              },
+              "carrying": 16,
+              "army": 6,
+              "garrisoned": 9,
+              "buildings": {
+                "0": 1,
+                "1": 3,
+                "3": 1,
+                "4": 1,
+                "47": 2,
+                "49": 1,
+                "50": 1,
+                "51": 1,
+                "53": 1
+              },
+              "unfinished": 1,
+              "queued": 2,
+              "maxQueueSeconds": 22.649940490722656
+            },
+            {
+              "team": 1,
+              "minutes": 10,
+              "epoch": 10,
+              "population": 42,
+              "capacity": 55,
+              "resources": [
+                530.4699096679688,
+                44,
+                200,
+                412.6075134277344,
+                734,
+                200,
+                659,
+                403,
+                200
+              ],
+              "researchPoints": 3,
+              "workers": 16,
+              "workerOrders": {
+                "4": 16
+              },
+              "carrying": 16,
+              "army": 5,
+              "garrisoned": 12,
+              "buildings": {
+                "0": 1,
+                "1": 3,
+                "3": 1,
+                "47": 2,
+                "49": 1,
+                "50": 1,
+                "51": 1,
+                "53": 1
+              },
+              "unfinished": 0,
+              "queued": 4,
+              "maxQueueSeconds": 53.14947509765625
+            },
+            {
+              "team": 2,
+              "minutes": 10,
+              "epoch": 10,
+              "population": 42,
+              "capacity": 50,
+              "resources": [
+                506.0350036621094,
+                49,
+                200,
+                340,
+                599,
+                200,
+                614,
+                1331,
+                200
+              ],
+              "researchPoints": 16,
+              "workers": 16,
+              "workerOrders": {
+                "4": 16
+              },
+              "carrying": 14,
+              "army": 5,
+              "garrisoned": 12,
+              "buildings": {
+                "0": 1,
+                "1": 2,
+                "3": 1,
+                "4": 1,
+                "47": 2,
+                "49": 1,
+                "50": 1,
+                "51": 1,
+                "53": 1
+              },
+              "unfinished": 0,
+              "queued": 3,
+              "maxQueueSeconds": 23.349929809570312
+            },
+            {
+              "team": 3,
+              "minutes": 10,
+              "epoch": 10,
+              "population": 42,
+              "capacity": 50,
+              "resources": [
+                457.0400085449219,
+                34,
+                200,
+                175,
+                648.5474853515625,
+                200,
+                614,
+                1309,
+                200
+              ],
+              "researchPoints": 16,
+              "workers": 16,
+              "workerOrders": {
+                "4": 16
+              },
+              "carrying": 13,
+              "army": 5,
+              "garrisoned": 12,
+              "buildings": {
+                "0": 1,
+                "1": 2,
+                "3": 1,
+                "4": 1,
+                "47": 2,
+                "49": 1,
+                "50": 1,
+                "51": 1,
+                "53": 1
+              },
+              "unfinished": 0,
+              "queued": 3,
+              "maxQueueSeconds": 23.69992446899414
+            }
+          ]
+        }
+      ],
+      "wallSeconds": 2.1244861,
+      "meanSimulationMillisecondsPerTick": 0.17704050833333335
+    }
+  ],
+  "warnings": [],
+  "observations": [],
+  "progressionFailures": []
+}

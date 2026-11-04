@@ -1,0 +1,17 @@
+{
+  "provenance": "Actual saved unmodified pre-Fortress EE2 build; supplied by parent before57-definition integration. Save generated naturally with seed17,2AI,tick2000,visibility1. No header relabelling.",
+  "artifacts": [
+    {
+      "source": "openepoch-ee2-56.wasm",
+      "file": "reference-ee2-pre-fortress-56.wasm",
+      "sourceSha256": "7e359577aa251607126bcd8d8ca4dcb89bb8d38f1a4b6358e38706804cc4d30e",
+      "bytes": 363873
+    },
+    {
+      "source": "ee2-56-natural-2000.save",
+      "file": "fortress-legacy56.sav.gz",
+      "sourceSha256": "d5085cd05c51323f046660d4090089f1e1b19a1ad6462b89bb62884e76af6f2b",
+      "bytes": 596044
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "format": "portable-assets-check-v1",
+  "status": "passed",
+  "scope": "Portable original media/runtime URL audit only; no original archives/EXE or original installation needed. Does not claim a physical Mac/Safari or GPU execution test.",
+  "latestLabel": "native-render1-extracted",
+  "summaryOnly": true,
+  "fullLocalReportSha256": "9ccae476af7140a409c843dda4ee9bd783656d8d6c558b992adfb9f048034f20",
+  "note": "Compact repository copy. The complete per-reference inventory remains in the local research report and source archive.",
+  "runs": [
+    {
+      "label": "native-render1-source",
+      "status": "passed",
+      "fileCount": 3123,
+      "runtimeReferenceCount": 11219,
+      "uniqueRuntimeTargets": 3019,
+      "comparison": null,
+      "checkerSha256": "6b38fa5b9596cda47cd35077e246c5d081359e43180b610f704bf708bce32571"
+    },
+    {
+      "label": "native-render1-extracted",
+      "status": "passed",
+      "fileCount": 3123,
+      "runtimeReferenceCount": 11219,
+      "uniqueRuntimeTargets": 3019,
+      "comparison": {
+        "referenceDocs": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\OpenEpoch\\docs",
+        "referenceFileCount": 3085,
+        "packageFileCount": 3085,
+        "missing": [],
+        "extra": [],
+        "changed": []
+      },
+      "checkerSha256": "6b38fa5b9596cda47cd35077e246c5d081359e43180b610f704bf708bce32571"
+    }
+  ]
+}

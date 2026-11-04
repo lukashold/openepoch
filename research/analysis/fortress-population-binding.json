@@ -1,0 +1,75 @@
+{
+  "format": "ee2-fortress-population-binding-v1",
+  "scope": "Read-only existing Ghidra engine project, no full reanalysis; independent PE string-table validation. This resolves the earlier UnitType+A0 population naming uncertainty for the analyzed engine.",
+  "executableSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+  "propertyTable": {
+    "namePointerVA": "00c14970",
+    "nameStringVA": "00c149dc",
+    "name": "popCount",
+    "resolvedOffsetVA": "00c14974",
+    "rowStrideBytes": 8,
+    "typeNamePointerVA": "00c14998",
+    "typeName": "DbUnitTypeDef"
+  },
+  "chain": [
+    {
+      "function": "0053a0f0",
+      "instructions": [
+        "0053a209",
+        "0053a20e",
+        "0053a216",
+        "0053a21b",
+        "0053a21e",
+        "0053a220"
+      ],
+      "meaning": "For each property-table row, resolve its name through00a36060 and store returned descriptor+0x18 as the corresponding property offset."
+    },
+    {
+      "function": "0053a8d0",
+      "instructions": [
+        "0053acdc",
+        "0053acec",
+        "0053acfe"
+      ],
+      "meaning": "Read the property through the popCount resolved offset, follow native inheritance resolution, and write the resulting integer to UnitType+0xA0."
+    },
+    {
+      "function": "007e63b0",
+      "meaning": "Garrison required-slots getter returns1 for Leaders, otherwise reads UnitType+0xA0. Together with the named-property binder this identifies ordinary required slots as native popCount, rather than merely estimating it from unit size."
+    }
+  ],
+  "header": {
+    "archive": "hdrs.zip",
+    "entry": "DbHdrs/DbUnitDefs.h",
+    "sha256": "afde5529ed266cc3995dfa3c48eecc3fd17f2eac7db65c880d077ac277cd26c3",
+    "lines": [
+      96,
+      97
+    ],
+    "supports": "m_popCount is population consumption; m_popCapacity is population granted. Naming supports, but does not replace, the executable binding."
+  },
+  "exports": [
+    {
+      "file": "fortress-population-binding-refs.c",
+      "sha256": "d80811e69ed1ffd056d5e03022ff72f93c2dbc1b220258c5b843c244b9b15031"
+    },
+    {
+      "file": "fortress-population-binding.c",
+      "sha256": "16206f1dc3f9adcd8668dbecfdac62eb27226c1709c71fcb20b4be7e4fa15141"
+    },
+    {
+      "file": "fortress-adjacency-population.c",
+      "sha256": "8e428bcd5c1b2444af61804df782485240c286b6d13f400fde2b0687fbe285ed"
+    },
+    {
+      "file": "fortress-claim-counts.c",
+      "sha256": "70e1a2d49b411f9cf69ed5005b675aa9903c748141a5ffe98fc2a325e971129b"
+    }
+  ],
+  "limits": [
+    "This establishes the analyzed engine build; it does not prove every unofficial patch DLL override.",
+    "The Leaders special case remains explicit. No playable Leader definition is added by this feature.",
+    "Imported gameplay roles still include explicit adapters; source-class population does not make every adapted role an exact original unit."
+  ],
+  "independentReview": "Confirmed independently by the engine and source-audit agents against the raw PE bytes and the exported assembly."
+}

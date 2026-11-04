@@ -1,0 +1,46 @@
+{
+  "format": "openepoch-portable-server-tests-v1",
+  "date": "2026-10-31",
+  "platform": "Windows-11-10.0.26300-SP0",
+  "python": "3.14.7 (tags/v3.14.7:823f032, Aug  5 2026, 10:51:32) [MSC v.1944 64 bit (AMD64)]",
+  "test_command": "python tools/portable-server-test.py",
+  "result": "PASS",
+  "test_count": 9,
+  "elapsed_seconds": 6.596,
+  "transport": "Real HTTP subprocess tests on IPv4 loopback outside network-restricted sandbox; no browser opened.",
+  "checks": [
+    "HTTP available at READY; root containing spaces and Unicode",
+    "literal127.0.0.1 listener; independent exclusive127.0.0.2 same-port bind",
+    "actual base/EE2 WASM bytes +application/wasm +HEAD Content-Length",
+    "actual local model/texture/audio JSON, textured mesh, original PNG, citizenMP3 and derivedPCM SHA/MIME",
+    "same-root listener reuse; other-root fallback preserves original listener",
+    "foreign application never reused; strict-port conflict fails without READY",
+    "all11 candidate ports occupied falls back to ephemeral port",
+    "encoded traversal cannot read outside docs; hostile Host403; directory listing404",
+    "SIGBREAK clean exit0 and actual port release"
+  ],
+  "fixed_during_review": "Windows HTTPServer SO_REUSEADDR originally allowed duplicate listening sockets and bypassed reuse/fallback. Root added Windows-exclusive bind; final rerun passes.",
+  "file_sha256": {
+    "tools/serve_game.py": "3ee3bd587a95ff5c7a51855261f3f0290e06a4042198368b5d799402dbf24b72",
+    "Start-OpenEpoch.command": "fe7ca3c548333cc16e164570586ac4781f05b452774be67366e4c3bcd5f64ecc",
+    "tools/portable-server-test.py": "10d0ac8ad65561c69c74a132892e5b8ddd43c8580c5ca69fe71fa751f51a3c2d",
+    "docs/openepoch-ee2.wasm": "98cc80a34f8985e2fc183aa431726e58e8284556eef830202188184694626530",
+    "docs/openepoch.wasm": "26cdb7342ec868b94127df99c2f3d77304915bfc46e9f5d9ac947a6578c1670e"
+  },
+  "launcher_static": {
+    "lf_only": true,
+    "shebang": "#!/bin/bash",
+    "quoted_paths": true,
+    "python_minimum": "3.8",
+    "shell_executed": false
+  },
+  "limits": [
+    "No macOS execution host available; no Mac/Finder/Gatekeeper acceptance claimed.",
+    "HTTP tests do not execute browser WebGL/AudioContext codecs or assess gameplay.",
+    "ZIP executable mode and copied-package content must still be checked by packaging QA.",
+    "No original installation or network package installation is used by the server."
+  ],
+  "createdUTC": "2026-10-31T12:16:51.458313+00:00",
+  "build": "fortress1",
+  "currentRerun": "Nine unchanged real HTTP/process test cases rerun successfully against the final98CC/26CD WASM files. Current sources and launcher hashes replace historical test-run metadata."
+}

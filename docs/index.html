@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>OpenEpoch — browser RTS in Rust + WebAssembly</title>
-<meta name="description" content="OpenEpoch is a free, open-source real-time strategy game spanning six epochs, from clubmen to nuclear submarines. Written in Rust, runs in your browser.">
+<meta name="description" content="OpenEpoch: lokales Echtzeit-Strategiespiel mit Scharmützeln, Forschung und Epochen von der Steinzeit bis in die Zukunft.">
 <style>
   :root { --bg:#10151b; --panel:#1a222bee; --line:#33414f; --text:#e6edf3; --dim:#93a1b0; --acc:#4aa3ff; }
   * { box-sizing: border-box; }
@@ -17,7 +17,13 @@
   #top .sp { flex:1; }
   #top .dim { color:var(--dim); }
   #top button { background:#26323e; color:var(--text); border:1px solid var(--line); border-radius:5px; padding:3px 9px; cursor:pointer; font:inherit; }
-  #top button:hover { border-color:var(--acc); }
+  #top button:hover { border-color:#dec38c; background:#3b4650; }
+  #top { background:linear-gradient(180deg,#202b35f5,#111b23f5); border-bottom:1px solid #957e5a; box-shadow:0 4px 18px #0008; }
+  #bottom { background:linear-gradient(180deg,#26333bea,#101a23f7); border-top:1px solid #a48b61; box-shadow:0 -5px 25px #0007; }
+  #mini { border:2px solid #9e8969; box-shadow:0 0 0 2px #18252e; }
+  .act { background:linear-gradient(145deg,#34444c,#18242c); border-color:#59625d; }
+  .act:hover { border-color:#e0bf78; box-shadow:0 0 12px #d5ad6044; }
+  #epoch { color:#f0d497; letter-spacing:.04em; }
   #bottom { position:fixed; left:0; right:0; bottom:0; height:170px; display:flex; gap:10px; padding:8px; background:var(--panel); border-top:1px solid var(--line); }
   #mini { width:154px; height:154px; border:1px solid var(--line); background:#000; image-rendering:pixelated; cursor:crosshair; flex:none; }
   #info { width:250px; flex:none; overflow:hidden; }
@@ -50,6 +56,8 @@
   #menu .row { display:flex; gap:10px; align-items:center; margin:10px 0; flex-wrap:wrap; }
   #menu label { color:var(--dim); width:96px; }
   #menu select, #menu input { background:#0b0f13; color:var(--text); border:1px solid var(--line); border-radius:6px; padding:7px 9px; font:inherit; }
+  #menu .map-options label {width:120px;flex:none;}
+  #menu .map-options select {min-width:0;max-width:100%;flex:1 1 260px;}
   #menu button { background:var(--acc); color:#04121f; border:0; border-radius:7px; padding:10px 18px; font:600 15px system-ui; cursor:pointer; }
   #menu button.alt { background:#26323e; color:var(--text); border:1px solid var(--line); }
   #mp { display:none; border:1px solid var(--line); border-radius:8px; padding:4px 14px 8px; margin:8px 0; }
@@ -63,26 +71,76 @@
   #menu a { color:var(--acc); }
   #end { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:#000a; z-index:9; font-size:44px; font-weight:700; flex-direction:column; gap:18px; }
   #end button { font:600 16px system-ui; padding:10px 18px; border-radius:7px; border:0; background:var(--acc); cursor:pointer; }
+  @media (max-width: 1350px) { #perf { display:none; } #top { gap:7px; padding:0 7px; font-size:12px; } #top button { padding:3px 5px; } }
+  #bottom { background:linear-gradient(180deg,#26333bf2,#101a23fa); border-top:1px solid #a48b61; box-shadow:0 -5px 25px #0007; }
+  #mini { border:2px solid #9e8969; box-shadow:0 0 0 2px #18252e; }
+  .act { background:linear-gradient(145deg,#34444c,#18242c); border-color:#59625d; }
+  .act:hover { border-color:#e0bf78; box-shadow:0 0 12px #d5ad6044; }
+  .activity { margin:6px 0; color:#e7c88e; font-size:13px; }
+
+#research-dialog {color:#eee4cc;background:linear-gradient(135deg,#293b40,#131f27);border:1px solid #a99770;border-radius:12px;width:min(1040px,92vw);max-height:88vh;padding:24px;}
+#research-dialog::backdrop{background:#0008;}
+#research-dialog header{display:flex;align-items:center;justify-content:space-between;gap:20px;}
+#research-dialog h2{margin:0;font-size:28px;}
+#research-dialog p{color:#c4bda9;}
+#research-dialog button,#research-dialog select{font:inherit;color:inherit;background:#23323c;border:1px solid #657576;border-radius:6px;padding:9px;}
+#research-epochs select{width:100%;margin:10px 0;}
+#research-nodes{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+#research-nodes h3{border-bottom:1px solid #8c8065;padding-bottom:10px;}
+.research-node{display:flex;flex-direction:column;text-align:left;gap:8px;width:100%;margin:10px 0;min-height:120px;}
+.research-node strong{font-size:16px;}
+.research-node span,.research-node small{font-size:12px;color:#bac9ca;}
+.research-node:disabled{opacity:.55;}
+.research-node.done{border-color:#84b56a!important;opacity:.85;background:#283b31!important;}
+.research-node.busy{border-color:#cdaf65!important;opacity:1;}
+.research-node:enabled:hover{background:#3c5055!important;border-color:#e1c780!important;cursor:pointer;}
+#science{color:#e0ca8c;}
+@media(max-width:800px){#research-nodes{grid-template-columns:1fr;}#top .r{font-size:11px;}#top{flex-wrap:wrap;height:auto;min-height:40px;}}
+
+.original-art #menu {background-color:#000;background-size:cover;background-position:center bottom;}
+.original-art #menu .card {background:linear-gradient(#111b20ec,#10181fef);border:2px solid #999e87;box-shadow:0 12px 70px #000b;}
+.original-art .ee2-logo {display:block;width:230px;height:100px;object-fit:contain;margin:-10px auto 3px;}
+.original-art #top {background:var(--ee2-panel) center/100% 100%;color:#182018;text-shadow:0 1px #eee6;border-bottom:1px solid #6e7464;}
+.original-art #epoch,.original-art #science {color:#202918;}
+.original-art .resource-icon {width:20px;height:20px;object-fit:contain;}
+.original-art #bottom {background:#a7ab99 var(--ee2-panel) center/400px 260px;color:#181e17;border-top:4px ridge #adb09c;}
+.original-art #info {background:var(--ee2-panel) center/100% 100%;padding:5px 7px;border:1px solid #5c6455;width:250px;}
+.original-art #acts {padding:4px;background:var(--ee2-panel) center/450px 260px;border:1px solid #606755;}
+.original-art #info .dim,.original-art #info .activity {color:#343e2d;}
+.original-art .act,.original-art #top button {background:#a0a796 var(--ee2-button) center/100% 100%;border:1px solid #535c50;color:#151d13;text-shadow:0 1px #e5e6d799;}
+.original-art .act:hover,.original-art #top button:hover {filter:brightness(1.15);border-color:#f1dfab;}
+.original-art .act kbd {color:#3a4838;}
+.original-art #mini {border:3px ridge #c0c2ab;box-shadow:0 0 0 2px #4a5147;}
+.extra-options{margin-top:14px;border-top:1px solid #657165;padding-top:10px;color:#bcc4b5}.extra-options summary{cursor:pointer;font-size:13px}
+#building-controls{position:fixed;bottom:180px;left:50%;transform:translateX(-50%);z-index:5;max-width:min(760px,94vw);padding:10px 14px;border:1px solid #a7a987;border-radius:7px;background:#16221cef;color:#eee9d8;box-shadow:0 4px 20px #0009}
+#building-controls[hidden]{display:none}#building-controls header{display:flex;align-items:center;gap:14px;flex-wrap:wrap}#building-controls strong{font-size:16px}#building-controls button{font:inherit;color:inherit;background:#35443a;border:1px solid #8b947c;border-radius:4px;padding:5px 10px;cursor:pointer}#building-controls button:hover{background:#506148}#building-controls p{margin:7px 0 3px}#building-controls small{color:#b7c5b0}#building-status[data-valid="true"]{color:#b5ed9e}#building-status[data-valid="false"]{color:#ffd09b}
 </style>
 </head>
 <body>
 <canvas id="gl"></canvas>
 
 <div id="top">
-  <span class="r"><i class="dot" style="background:#e06c5a"></i>Food <b id="r0">0</b></span>
-  <span class="r"><i class="dot" style="background:#6fae4c"></i>Wood <b id="r1">0</b></span>
-  <span class="r"><i class="dot" style="background:#aeb8c4"></i>Metal <b id="r2">0</b></span>
-  <span class="r">Pop <b id="pop">0/0</b></span>
-  <span class="r"><b id="epoch">Stone Age</b></span>
-  <span class="r" title="Territories you hold. Build a Town Center in a free territory to claim it.">Territories <b id="terr">1</b></span>
+  <span class="r"><i class="dot" style="background:#e06c5a"></i>Nahrung <b id="r0">0</b></span>
+  <span class="r"><i class="dot" style="background:#6fae4c"></i>Holz <b id="r1">0</b></span>
+  <span class="r"><i class="dot" style="background:#aeb8c4"></i>Metall <b id="r2">0</b></span>
+  <span class="r">Bev. <b id="pop">0/0</b></span>
+  <span class="r"><b id="epoch">Steinzeit</b></span>
+  <span id="science" class="r" title="Technologiepunkte durch Bürger in Universitäten"></span>
+  <button id="research-button">Forschung</button>
+  <button id="diplomacy-button" title="Beziehungen, Friedensangebote, Bündnisse und Rohstoffgeschenke · F4">Diplomatie</button>
+  <span class="r" title="Deine Gebiete. Baue ein Stadtzentrum in einem freien Gebiet.">Gebiete <b id="terr">1</b></span>
   <button id="idle" title="Select next idle worker (F)">Idle workers: 0</button>
   <span class="sp"></span>
   <span id="perf"></span>
-  <button id="mute" title="Toggle sound (M)">Sound on</button>
-  <button id="save" title="Save game (Ctrl+S). The game also saves itself every few minutes.">Save</button>
+  <button id="music" title="Hintergrundmusik an oder aus">Musik an</button>
+  <button id="voices" title="Einheitenstimmen an oder aus">Stimmen an</button>
+  <button id="mute" title="Toggle sound (M)">Ton an</button>
+  <button id="cheats" title="Cheats eingeben (Enter)">Cheats</button>
+  <button id="save" title="Save game (Ctrl+S). The game also saves itself every few minutes.">Speichern</button>
   <button id="speed" title="Game speed (+ / -)">1×</button>
   <button id="pause" title="Pause (P)">Pause</button>
-  <button id="quit">Menu</button>
+  <button id="fullscreen" title="Vollbild · F11" aria-pressed="false">Vollbild</button>
+  <button id="quit">Menü</button>
 </div>
 
 <div id="bottom">
@@ -93,15 +151,45 @@
 <div id="tip"></div>
 <div id="box"></div>
 <div id="toast"></div>
+<dialog id="research-dialog">
+ <header><h2>Forschung</h2><button id="research-close">Schließen · Esc</button></header>
+ <p id="research-status"></p><div id="research-epochs"></div><div id="research-nodes"></div>
+ <p>Bürger mit Rechtsklick in eine Universität schicken. Sechs Technologien der aktuellen Epoche und die nötigen Technologiepunkte erlauben den Epochenwechsel im Stadtzentrum.</p>
+</dialog>
+<dialog id="cheat-dialog" style="background:#161d25;color:#e8edf2;border:1px solid #596c80;border-radius:10px;max-width:480px;padding:24px">
+  <form id="cheat-form">
+    <h2 style="margin-top:0">Cheats · Scharmützel</h2>
+    <p>Mit <b>icheat</b> aktivieren, mit <b>idontcheat</b> deaktivieren.</p>
+    <p><b>loot</b> · +10.000 je Rohstoff<br><b>sea monkeys</b> · Sofortbau und Einheitenproduktion an/aus<br><b>give tech</b> · +50 Technologiepunkte</p>
+    <p id="cheat-rule" style="font-size:13px;color:#bac5d1">OpenEpoch-Regel: Ein Technologiepunkt überspringt eine Sekunde Technologieforschung. Rohstoffkosten und Epochenforschung bleiben unverändert.</p>
+    <label for="cheat-input">Cheat eingeben</label><br>
+    <input id="cheat-input" autocomplete="off" spellcheck="false" style="width:95%;padding:10px;margin:8px 0" placeholder="icheat">
+    <p id="cheat-result" role="status" aria-live="polite"></p>
+    <button type="submit">Ausführen</button> <button id="cheat-close" type="button">Schließen · Esc</button>
+  </form>
+</dialog>
 <div id="end"><span id="endtext"></span><button id="again">Back to menu</button></div>
 
 <div id="menu">
   <div class="card">
     <h1>Open<span>Epoch</span></h1>
-    <p>A free real-time strategy game across six epochs — from clubmen to nuclear submarines. Rust + WebAssembly simulation, 3D WebGL2 rendering, zero downloads.</p>
-    <div class="row"><label>Opponents</label><select id="nai"><option>1</option><option>2</option><option>3</option></select>
-      <label style="width:auto;margin-left:14px">Map seed</label><input id="seed" size="8" placeholder="random"></div>
-    <div class="row"><button id="play">Start game</button><button id="continue" class="alt" style="display:none">Continue</button><button id="mpopen" class="alt">Multiplayer…</button></div>
+
+    <p id="rules-note">Lokaler Nachbau mit Scharmützeln von der Steinzeit bis in die Zukunft.</p>
+    <p>Scharmützel von der Steinzeit bis in die Zukunft.</p>
+    <div class="row"><label>KI-Gegner</label><select id="nai"><option>1</option><option>2</option><option>3</option></select>
+      <label style="width:auto;margin-left:14px">Kartenschlüssel</label><input id="seed" size="8" placeholder="zufällig"></div>
+    <div class="row"><label>Bevölkerung</label><select id="pop-limit"><option value="250">250 pro Spieler</option><option value="500" selected>500 pro Spieler</option><option value="1000">1 000 pro Spieler</option></select></div>
+    <div class="row"><label>Startvorräte</label><select id="supplies"><option value="0">Normal</option><option value="1" selected>Großzügig</option><option value="2">Sehr großzügig</option></select><span class="dim">Für alle Spieler gleich</span></div>
+    <div class="row map-options"><label for="map-visibility">Kartenaufdeckung</label><select id="map-visibility"><option value="0">Unerforscht · mit Kriegsnebel</option><option value="1">Erkundet · mit Kriegsnebel</option><option value="2">Vollständig aufgedeckt · ohne Kriegsnebel</option></select></div>
+    <p class="dim" style="font-size:12px;margin:0 0 10px">Kartenaufdeckung gilt für ein neues Scharmützel. Erkundet zeigt das Gelände; vollständig aufgedeckt zeigt auch fremde Einheiten.</p>
+    <div id="season-options" hidden>
+      <div class="row"><label for="season-start">Startmonat</label><select id="season-start"><option value="0">Januar · Winter</option><option value="1">Februar</option><option value="2">März · Frühling</option><option value="3">April</option><option value="4">Mai</option><option value="5">Juni · Sommer</option><option value="6" selected>Juli</option><option value="7">August</option><option value="8">September · Herbst</option><option value="9">Oktober</option><option value="10">November</option><option value="11">Dezember · Winter</option></select></div>
+      <div class="row"><label for="season-cycle">Jahreszeitenwechsel</label><input id="season-cycle" type="checkbox" checked><label for="season-length" style="width:auto">Dauer pro Jahreszeit</label><select id="season-length"><option value="1">1 Minute</option><option value="5" selected>5 Minuten</option><option value="10">10 Minuten</option><option value="20">20 Minuten</option><option value="30">30 Minuten</option></select></div>
+      <p class="dim" style="font-size:12px;margin:0 0 10px">Gelände und Gebäudeböden wechseln allmählich zwischen den Monaten. Der Gastgeber bestimmt die Einstellungen im Multiplayer.</p>
+    </div>
+    <div class="row"><label>Auflösung</label><select id="quality"><option value="1">Standard · 1×</option><option value="1.5">Hoch · bis 1,5×</option><option value="2" selected>Sehr hoch · bis 2×</option></select></div>
+    <div class="row"><button id="play">Scharmützel starten</button><button id="continue" class="alt" style="display:none">Continue</button><button id="mpopen" class="alt">Multiplayer…</button><button id="menu-fullscreen" class="alt" aria-pressed="false">Vollbild</button></div>
+      <button id="previous-save" class="alt" style="display:none">Vorheriger Spielstand</button>
     <div id="mp">
       <div class="row"><button id="mphost" class="alt">Host a game</button><button id="mpjoin" class="alt">Join a game</button>
         <label style="width:auto;margin-left:10px">AI opponents</label><select id="mpai"><option>0</option><option>1</option><option>2</option></select></div>
@@ -111,7 +199,8 @@
       <textarea id="mpout" rows="3" readonly placeholder="Your code will appear here" spellcheck="false"></textarea>
       <div class="row"><button id="mpcopy" class="alt">Copy code</button></div>
     </div>
-    <div class="row"><label>Stress test</label>
+    <details class="extra-options"><summary>Steuerung und weitere Optionen</summary>
+    <div class="row"><label>Leistungstest</label>
       <button class="alt" data-bench="1000">2 000 units</button>
       <button class="alt" data-bench="2000">4 000 units</button>
       <button class="alt" data-bench="3500">7 000 units</button></div>
@@ -119,18 +208,29 @@
       <tr><td>Left click / drag</td><td>select · double-click selects all of a type · Shift adds</td></tr>
       <tr><td>Right click</td><td>move · attack · gather · build · set rally point</td></tr>
       <tr><td>A + click</td><td>attack-move &nbsp; <b>S</b> stop &nbsp; <b>Del</b> destroy</td></tr>
-      <tr><td>Arrows / screen edge</td><td>scroll · mouse wheel zooms · middle-drag pans</td></tr>
+      <tr><td>Pfeiltasten / Bildschirmrand</td><td>Kamera bewegen · Mausrad: Zoom · mittlere Maustaste: schieben</td></tr>
+      <tr><td>Strg / R / Komma / Punkt</td><td>Gebäude in der Bauvorschau um 90° drehen; mit Umschalt 45°</td></tr>
+      <tr><td>Umschalt + Mausrad</td><td>Bauvorschau um 45° drehen; der Hafen richtet sich zunächst an der Küste aus</td></tr>
+      <tr><td>F11</td><td>Vollbild an/aus; auch über den Vollbildbutton im Menü und Spiel</td></tr>
       <tr><td>Q W E R T / Z X C V B</td><td>command buttons &nbsp; <b>Esc</b> cancel</td></tr>
       <tr><td>Ctrl+1…9 / 1…9</td><td>set / recall control group (tap twice to jump)</td></tr>
       <tr><td>F &nbsp; H &nbsp; Space</td><td>idle worker · home · jump to selection</td></tr>
+      <tr><td>F4</td><td>Diplomatie · Frieden, Bündnisse, Sicht teilen und Rohstoffe schenken</td></tr>
       <tr><td>U</td><td>unload transport ships (or right-click a shore)</td></tr>
       <tr><td>P &nbsp; + &nbsp; − &nbsp; M</td><td>pause · game speed · sound</td></tr>
       <tr><td>Ctrl+S</td><td>save (single player; also saved automatically)</td></tr>
     </table>
-    <p style="margin-top:14px;font-size:12px">Original code and procedurally drawn art, MIT licensed. <a href="https://github.com/lukashold/openepoch">Source on GitHub</a>.</p>
+    <p><a href="reference.html">Originalwerte und Quellen</a> · <a href="catalog.html">Originaldatenbank</a> · <a href="?">OpenEpoch-Regeln</a></p>
+    </details>
+    <p style="margin-top:14px;font-size:12px">Eigenständiger Nachbau mit OpenEpoch-Code. Originalgrafiken und Klänge sind im vollständigen Spielpaket enthalten. <a href="https://github.com/lukashold/openepoch">Source on GitHub</a>.</p>
   </div>
 </div>
 
-<script type="module" src="main.js"></script>
+<aside id="building-controls" hidden aria-label="Gebäude ausrichten und platzieren">
+  <header><strong id="building-name"></strong><span id="building-angle"></span><button id="building-left" title="90° nach links · mit Umschalt 45°" aria-label="Gebäude nach links drehen">↶90°</button><button id="building-right" title="90° nach rechts · mit Umschalt 45°" aria-label="Gebäude nach rechts drehen">90°↷</button><button id="building-auto" title="Hafen wieder automatisch an der Küste ausrichten" hidden>Küste: automatisch</button><button id="building-cancel">Abbrechen</button></header>
+  <p id="building-status" role="status" aria-live="polite"></p>
+  <small>Strg / R / Komma / Punkt: 90° · mit Umschalt: 45° · Umschalt+Mausrad: 45° · Esc: abbrechen</small>
+</aside>
+<script type="module" src="main.js?v=combat-season1"></script>
 </body>
 </html>

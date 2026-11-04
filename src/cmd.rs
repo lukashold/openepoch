@@ -23,6 +23,9 @@ pub const C_PLACE: u8 = 10;
 pub const C_TRAIN: u8 = 11;
 pub const C_CANCEL: u8 = 12;
 pub const C_DELETE: u8 = 13;
+pub const C_DIPLOMACY:u8=14;
+pub const C_TERRITORY:u8=15;
+pub const C_PLACE_ROTATED:u8=16;
 
 const HEAD: usize = 14; // kind, count, a, b, c
 
@@ -82,6 +85,15 @@ impl Game {
         if !a.is_finite() || !b.is_finite() || team as usize >= self.nplayers {
             return;
         }
+        if kind==C_TERRITORY{
+            if !hs.is_empty()||c<0||(c as u32)&0xffff_0000!=0{return;}
+            let dec=|v:f32|if v==-1.0{Some(u32::MAX)}else if v>=0.0&&v<32.0&&v.fract()==0.0{Some(v as u32)}else{None};
+            if let(Some(give),Some(want))=(dec(a),dec(b)){let bits=c as u32;self.apply_territory(team,bits&255,(bits>>8)&255,give,want);}return;
+        }
+        if kind==C_DIPLOMACY {
+            if !hs.is_empty()||b!=0.0||c<0||(c as u32)&0xff00_0000!=0{return;}
+            let bits=c as u32;self.apply_diplomacy(team,bits&255,(bits>>8)&255,(bits>>16)&255,a);return;
+        }
         // never trust the wire: only our own living entities take orders
         let ids: Vec<usize> = hs.iter().filter_map(|&h| self.get(h)).filter(|&i| self.ents[i].team == team).collect();
         let target = self.get(c as u32);
@@ -89,7 +101,7 @@ impl Game {
             C_MOVE => self.order_move(&ids, a, b, false),
             C_AMOVE => self.order_move(&ids, a, b, true),
             C_ATTACK => {
-                if let Some(j) = target.filter(|&j| self.ents[j].team != team) {
+                if let Some(j) = target.filter(|&j| self.hostile(team,self.ents[j].team)&&self.can_see(team,j)) {
                     self.order_attack(&ids, j);
                 }
             }
@@ -99,7 +111,7 @@ impl Game {
                 }
             }
             C_GATHER => {
-                if c >= 0 && (c as usize) < NN && self.map.res[c as usize] != R_NONE {
+                if c >= 0 && (c as usize) < NN && self.map.res[c as usize] != R_NONE && self.real_fog(team,c as usize)>0 {
                     self.order_gather(&ids, c as usize);
                 }
             }
@@ -118,13 +130,11 @@ impl Game {
                 }
             }
             C_STOP => self.order_stop(&ids),
-            C_PLACE => {
-                if (0..DEFS.len() as i32).contains(&c) {
-                    let bi = self.place(c as u8, a as i32, b as i32, team);
-                    if bi != NOIDX {
-                        self.order_building(&ids, bi);
-                    }
-                }
+            C_PLACE|C_PLACE_ROTATED=>{
+                if a.fract()!=0.0||b.fract()!=0.0||a<0.0||b<0.0||a>=N as f32||b>=N as f32||c<0{return;}
+                let bits=c as u32;if(kind==C_PLACE&&bits>=DEFS.len()as u32)||(kind==C_PLACE_ROTATED&&bits&0xffff_0000!=0){return;}
+                let def=(bits&255)as u8;let turn=bits>>8;if def as usize>=DEFS.len()||turn>=crate::placement::ROTATION_STEPS{return;}
+                self.begin_construction(team,def,a as i32,b as i32,turn,&ids,true);
             }
             C_TRAIN => {
                 if let (Some(&i), 0..=255) = (ids.first(), c) {
@@ -137,9 +147,10 @@ impl Game {
                 }
             }
             C_DELETE => {
-                for &i in &ids {
-                    self.ents[i].hp = 0.0;
-                }
+                let mut city=false;
+                for &i in &ids {city|=self.ents[i].def==TC;self.ents[i].hp=0.0;}
+                if city{self.rebuild_territories();self.void_landless_alliances();}
+                self.prune_territory_offers();
             }
             _ => {}
         }

@@ -9,7 +9,7 @@ use crate::game::*;
 use crate::map::*;
 use core::mem::size_of;
 
-const MAGIC: u32 = 0x3250_454f; // "OEP2"
+const MAGIC: u32 = if cfg!(feature = "ee2-reference") { 0x3252_454f } else { 0x3250_454f };
 
 /// View a slice of plain `#[repr(C)]` values as bytes.
 fn raw<T: Copy>(s: &[T]) -> &[u8] {
@@ -38,22 +38,51 @@ impl Game {
         b.extend_from_slice(&self.map.res);
         b.extend_from_slice(raw(&self.map.amt));
         b.extend_from_slice(&self.vis);
+        for v in [self.cheats_enabled as u32, self.instant_build as u32, self.tech_points] {
+            b.extend_from_slice(&v.to_le_bytes());
+        }
+        b.extend_from_slice(&0x3153_4552u32.to_le_bytes()); // RES1 research extension
+        b.extend_from_slice(&1u32.to_le_bytes());
+        b.extend_from_slice(raw(&self.research_points));
+        for bits in self.researched {b.extend_from_slice(raw(&bits));}
+        if cfg!(feature="ee2-reference"){
+            b.extend_from_slice(&0x314f_4345u32.to_le_bytes()); // ECO1: six extra stock accounts, no Player layout change
+            b.extend_from_slice(&1u32.to_le_bytes());
+            b.extend_from_slice(raw(&self.extra_resources));
+        }
+        self.write_diplomacy(&mut b);self.write_territory(&mut b);
+        #[cfg(feature="ee2-reference")]
+        self.write_city_ground(&mut b);
         self.savebuf = b;
     }
 
     pub fn load(buf: &[u8]) -> Option<Game> {
+        #[cfg(feature="ee2-reference")]
+        let (buf,city_chunk)=crate::city_ground::split_save(buf)?;
         const H: usize = 9 * 4;
         if buf.len() < H {
             return None;
         }
         let u = |k: usize| u32::from_le_bytes([buf[k * 4], buf[k * 4 + 1], buf[k * 4 + 2], buf[k * 4 + 3]]);
         let high = u(8) as usize;
+        if high>MAXE{return None;}
         let (psz, esz) = (size_of::<[Player; 4]>(), size_of::<Ent>() * high);
         // a save from another build has a different layout: refuse it rather than misread it
-        if u(0) != MAGIC || u(1) as usize != size_of::<Ent>() || u(2) as usize != size_of::<Player>() || u(3) as usize != DEFS.len() || high > MAXE || buf.len() != H + psz + esz + NN * 5 {
+        let end=H+psz+esz+NN*5;
+        let total_trailer=buf.len().checked_sub(end)?;
+        let has_territory=total_trailer>=crate::diplomacy::DIP_BYTES+crate::territory::TERR_BYTES;
+        let remainder=if has_territory{total_trailer-crate::territory::TERR_BYTES}else{total_trailer};
+        let has_diplomacy=remainder>=crate::diplomacy::DIP_BYTES;
+        let trailer=if has_diplomacy{remainder-crate::diplomacy::DIP_BYTES}else{remainder};
+        if u(0) != MAGIC || u(1) as usize != size_of::<Ent>() || u(2) as usize != size_of::<Player>() || (u(3) as usize != DEFS.len() && u(3)!=47 && !(cfg!(feature="ee2-reference")&&(u(3)==53||u(3)==55||u(3)==56))) || ![0,12,132,236].contains(&trailer) {
             return None;
         }
-        let mut g = Game::new(u(4), u(5), 0, 1, 0);
+        if u(5)>3{return None;}
+        #[cfg(feature="ee2-reference")]
+        if city_chunk.is_some() && (trailer!=236 || !has_diplomacy || !has_territory || u(3) as usize!=DEFS.len()) {return None;}
+        let humans=if has_diplomacy{u32::from_le_bytes(buf[end+trailer+8..end+trailer+12].try_into().ok()?)}else{1};
+        if !(1..=2).contains(&humans){return None;}
+        let mut g = Game::new(u(4), u(5), 0, humans, 0);
         g.tick = u(6);
         g.rng = Rng(u(7));
         let mut o = H;
@@ -69,31 +98,119 @@ impl Game {
         for e in g.ents.iter_mut() {
             e.alive = false;
         }
+        g.territory.claims.fill(NONE);
         fill(&mut g.ents[..high], take(esz));
+        if cfg!(feature="ee2-reference")&&trailer<236 {for e in &mut g.ents[..high]{if e.alive&&e.def==WORKER{e.carry=0.0;e.q[1]=0;e.q[2]=0;}}}
         g.map.ter.copy_from_slice(take(NN));
         g.map.res.copy_from_slice(take(NN));
         fill(&mut g.map.amt, take(NN * 2));
         g.vis.copy_from_slice(take(NN));
+        let end = H + psz + esz + NN * 5;
+        if trailer >= 12 {
+            let v = |k| u32::from_le_bytes(buf[end+k..end+k+4].try_into().unwrap());
+            if v(0) > 1 || v(4) > 1 { return None; }
+            g.cheats_enabled = v(0) == 1;
+            g.instant_build = v(4) == 1 && g.cheats_enabled;
+            g.tech_points = v(8);
+        }
+        if trailer>=132 {
+            let ext=&buf[end+12..];
+            if u32::from_le_bytes(ext[..4].try_into().ok()?)!=0x3153_4552 || u32::from_le_bytes(ext[4..8].try_into().ok()?)!=1 {return None;}
+            fill(&mut g.research_points,&ext[8..24]);
+            for t in 0..4 {fill(&mut g.researched[t],&ext[24+t*24..48+t*24]);}
+            if g.research_points.iter().any(|v| !v.is_finite() || *v<0.0) {return None;}
+        }
+        if trailer==236 {
+            let ext=&buf[end+132..];
+            if u32::from_le_bytes(ext[..4].try_into().ok()?)!=0x314f_4345 || u32::from_le_bytes(ext[4..8].try_into().ok()?)!=1{return None;}
+            fill(&mut g.extra_resources,&ext[8..104]);
+        }
+        if has_diplomacy{g.read_diplomacy(&buf[end+trailer..end+trailer+crate::diplomacy::DIP_BYTES])?;}
+        if has_territory{g.read_territory(&buf[end+trailer+crate::diplomacy::DIP_BYTES..])?;}
+        if g.extra_resources.iter().flatten().any(|v|!v.is_finite()||*v<0.0)||g.players.iter().flat_map(|p|p.res).any(|v|!v.is_finite()||v<0.0){return None;}
+        if g.map.res.iter().any(|&v|v as usize>crate::economy::RESOURCE_COUNT){return None;}
+        #[cfg(feature = "ee2-reference")]
+        if u(3)==47 {
+            // Preserve the cultural age of saves made by the former eight-epoch ruleset.
+            let epochs=[0u8,2,5,9,10,11,13,14];
+            let old_epochs=g.players.map(|p|p.epoch as usize);
+            for p in &mut g.players {
+                if p.epoch>7 {return None;}
+                p.epoch=epochs[p.epoch as usize]; p.researching=false;p.tech_busy=0;
+            }
+            for e in &mut g.ents[..high] {
+                if e.qn>5 || e.team as usize>=g.nplayers {return None;}
+                if !e.alive || !DEFS.get(e.def as usize)?.building {continue;}
+                let mut n=0;
+                for j in 0..e.qn as usize {
+                    let q=e.q[j];
+                    if q>=TECH0 {
+                        let cost=if q==RESEARCH {
+                            let ep=old_epochs[e.team as usize];if ep>=7 {return None;} EPOCH_COST[ep+1]
+                        }else {
+                            let tech=TECHS.get((q-TECH0) as usize)?;tech.cost
+                        };
+                        for r in 0..3 {g.players[e.team as usize].res[r]+=cost[r] as f32;}
+                        if j==0 {e.qt=0.0;}
+                    }
+                    else {e.q[n]=q;n+=1;}
+                }
+                e.qn=n as u8;
+            }
+            g.research_points[0]+=g.tech_points as f32;g.tech_points=0;
+        }
+        for p in &g.players[..g.nplayers] {if p.epoch>MAX_EPOCH {return None;}}
+        for e in &g.ents[..high] {
+            if !e.alive {continue;}
+            if e.def as usize>=DEFS.len() || e.team as usize>=g.nplayers || e.qn>5 || e.ncargo as usize>CARGO_MAX {return None;}
+            if !e.x.is_finite()||!e.y.is_finite()||!e.rot.is_finite()||!e.prot.is_finite(){return None;}
+            if DEFS[e.def as usize].building{let(tx,ty,side)=Game::building_bounds(e);if tx<0||ty<0||tx+side>N as i32||ty+side>N as i32{return None;}}
+            if e.cargo[..e.ncargo as usize].iter().any(|&c| c as usize>=DEFS.len()) {return None;}
+            if DEFS[e.def as usize].building && e.q[..e.qn as usize].iter().any(|&q| q!=RESEARCH && !original_research(q) && q as usize>=DEFS.len() && (q<TECH0 || (q-TECH0) as usize>=TECHS.len())) {return None;}
+        }
+        for t in 0..g.nplayers {g.rebuild_modifiers(t as u8,false);}
+        #[cfg(feature="ee2-reference")]
+        if trailer<236&&(u(3)==47||u(3)==53){
+            let old=crate::ee2_profile::legacy(crate::defs::prototype_defs());
+            for e in &mut g.ents[..high]{
+                if !e.alive{continue;}let id=e.def as usize;let base=old[id].hp;let mut maximum=base;
+                for (k,node) in crate::ee2_research::NODES.iter().enumerate(){
+                    if g.researched[e.team as usize][k/32]>>(k%32)&1==0{continue;}
+                    for effect in node.effects{if effect.field==0&&effect.mask>>id&1==1{match effect.method{0=>maximum+=base*effect.value*0.01,1=>maximum+=effect.value,_=>maximum=effect.value}}}
+                }
+                let target=g.modifiers[e.team as usize][id][0];e.hp=(e.hp/maximum.max(0.01)*target).clamp(0.0,target);
+            }
+        }
         g.high = high;
+        #[cfg(feature="ee2-reference")]
+        g.read_city_ground(city_chunk)?;
         g.free = (0..MAXE).rev().filter(|&i| !g.ents[i].alive).map(|i| i as u16).collect();
         for i in 0..high {
             g.ents[i].fslot = u16::MAX; // flow-field cache starts empty
             if g.ents[i].alive && DEFS[g.ents[i].def as usize].building {
-                let (x, y, s) = (g.ents[i].x, g.ents[i].y, DEFS[g.ents[i].def as usize].size);
-                let (tx0, ty0) = ((x - s * 0.5).round() as usize, (y - s * 0.5).round() as usize);
-                for ty in ty0..ty0 + s as usize {
-                    for tx in tx0..tx0 + s as usize {
-                        g.map.blocked[ty * N + tx] = true;
-                    }
-                }
+                let(tx0,ty0,s)=Game::building_bounds(&g.ents[i]);
+                for ty in ty0..ty0+s{for tx in tx0..tx0+s{g.map.blocked[ty as usize*N+tx as usize]=true;}}
             }
         }
+        if cfg!(feature="ee2-reference")&&trailer<236 {g.map.seed_extra_resources(g.nplayers);}
         for i in 0..NN {
             g.map.upd_pass(i);
             g.map.recolor(i);
         }
         g.map.nav_ver += 1;
+        // Validate claimed city handles before ownership reconstruction can
+        // replace a malformed or stale handle with a convenient different city.
+        if has_territory{
+            for k in 0..32{let h=g.territory.claims[k];if h==NONE{continue;}let i=g.get(h)?;let e=g.ents[i];if k>=g.map.tseeds.len()||e.def!=TC||e.hp<=0.0||g.map.terr[tile_of(e.x,e.y)] as usize!=k{return None;}}
+        }
+        if cfg!(feature="ee2-reference") && u(3)<57 {g.seed_legacy_territory_claims();}
         g.build_grid();
+        if has_territory&&!g.validate_territory_state(){return None;}
+        if !has_diplomacy {
+            g.team_vis.fill(0);
+            g.team_vis[..NN].copy_from_slice(&g.vis);
+            g.update_fog();
+        }else{g.refresh_display_fog();}
         g.terr_dirty = true;
         Some(g)
     }

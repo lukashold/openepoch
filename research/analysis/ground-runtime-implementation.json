@@ -1,0 +1,86 @@
+{
+  "format": "openepoch-ground-runtime-implementation-v1",
+  "date": "2026-11-03",
+  "changes": [
+    "Native epoch boundaries1/6/11 now select the original three arrays per player epoch. World-owned decals retain source slot zero.",
+    "Urban/rural selection accepts the caller city query. The exact native CityManager geometry predicate is exported as nativeUrbanAt; ownership and minimap colour are never used as a substitute.",
+    "Thirteen explicit UndertextureSize/Offset bindings now use their source world dimensions independently of model normalization/gameplay raster size.",
+    "All declared physical frames are resident before rendering. Source seasonal list lengths1/4/5/12 and repeated filenames are preserved. The shared render calendar interpolates adjacent source images.",
+    "Every original PNG remains byte-identical; no new original installation dependency exists at runtime."
+  ],
+  "api": {
+    "draw": "draw({data,ranges,vp,epochs,isUrbanAt:(x,z,team,def,index)=>boolean})",
+    "calendar": "setSeasonPhase({month0,month1,blend}) accepts the same deterministic calendar phase as the terrain renderer.",
+    "epochHelper": "groundEpochSlot(nativeEpochNumber1..15,hasOwner=true); selectGroundSprite uses the application zero-based epoch.",
+    "cityHelper": "nativeUrbanAt(x,z,cities[{x,z,radius,active?}]) takes registered city-band radii in native world units. It does not invent those bands from renderer visibility.",
+    "textureUnits": "DiffuseA0, Fog2, Height6, DiffuseB7. Every touched texture binding and prior program/VAO/buffer/blend/depth/flip state is restored."
+  },
+  "sourceProof": {
+    "engineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+    "selector": "006040D0 compares native owner epoch against6 and11, then chooses rural+4 or urban+C DecalState arrays.",
+    "ownerEpoch": "005E0070 reads owner+88 then+C; DbTechTreeDefs.h enumerates Stone1 throughSynthetic15.",
+    "urban": "00604193 calls globalCityManager00814340 at the parent render position. Strict float L1 sum < radius(float)*1.4142135381698608, with extended product precision and no owner filter.",
+    "dimensions": "00603A60 consumes explicit UndertextureSize/Offset packet fields and sends them directly to00714CF0. Model instance size/normalization does not participate in this source path.",
+    "seasonal": "GDbSpriteDefs.h marks m_bAnimated as a seasonal texture; DbTerrainDefs.h describes uniform annual interpolation. Physical frame order/aliases are copied from the audited original seasonal table.",
+    "exports": {
+      "ground-decal-runtime.c": "b6a35857eefab765fd45d5e7a3903b2dae1bd2809426b194cdd6d72e66680008",
+      "ground-urban-epoch.c": "103fdfd2bf932fea101276f72673d3773b979a6fbc273c1534f6069bdfbb1422",
+      "native-combat-damage-ground.c": "392ed18260826384cb3c374a7088901f1c38845a3bf2b562253c1ce6f5120d4d",
+      "ground-city-radius-binding.c": "5c1f2361a0c5d3332d950eb94fd894aebc56e603aedfacb5180855fdeabd8b14"
+    }
+  },
+  "tests": {
+    "javascript": "PASS: every15epoch/urban/death/world choice, native dimension invariance, strict city/x87 boundaries,1/4/5/12 seasonal framework, team/context draw batching, no async epoch loads, existing source height/state contracts.",
+    "python": "PASS10 tests: six original pixel/source integration tests plus four runtime seasonal/profile/unchanged-PNG tests.",
+    "gpu": {
+      "fixtures": 240,
+      "pixelProbes": 2160,
+      "physicalPngs": 123,
+      "context": {
+        "egl": [
+          1,
+          5
+        ],
+        "vendor": "Google Inc. (AMD)",
+        "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11-31.0.21924.61)",
+        "version": "OpenGL ES 3.0 (ANGLE 2.1 git hash: unknown hash)",
+        "libraryDirectory": "C:\\Program Files\\Mozilla Firefox",
+        "surface": [
+          64,
+          64
+        ],
+        "uiLaunched": false,
+        "framebuffer": "RGBA8 texture + DEPTH24_STENCIL8 renderbuffer"
+      },
+      "report": "ground-sprite-gpu-tests.json",
+      "reportSha256": "744346eaf4fa4e72a8c5d019581377de707548774e60bb6d154ffd963b1fad54",
+      "shaderSha256": {
+        "vertex": "9535f328c82af94214709f53f614a30577e270b714d52a2465e1fe37b76ca9c0",
+        "fragment": "846d396c976f2420073fb76bce272341fc4bc95664f3d52fdc135633c134ee13"
+      },
+      "uiLaunched": false
+    }
+  },
+  "runtimeManifestSha256": "394dc17695378752eab77d37defde85e6ff225b33d12a65a162893c05ef49a5d",
+  "filesSha256": {
+    "docs/original-ground.js": "bf0b44726870aacf5e57d72969d60a9468db823de21576fd7ea5b3f5962d1724",
+    "tools/import_ee2_ground_profile.py": "9c9496b97dce13c5b2f1d1012e7f63ac12250aa342b83bea7db4ec9ed87b28ef",
+    "tools/import_ee2_ground_seasons.py": "c34c51e07e326243286852e64518ba7a1f976a2ffbed5226171a1084ee53eefc",
+    "tools/original-ground-test.mjs": "3708bce4f1f712fd2b0aa71b7d595ff8755109822cf02e45b0b62fc802fc0776",
+    "tools/test_ee2_ground_runtime.py": "02bdded78e6c455407f9554a13f74bc31b3440578cd17dbc09bc2e338ac7aea8",
+    "tools/test_ee2_ground_decals.py": "4947ace4f93486114c3d35ead33b065d9e086ebeae4039b9d6a14f4c096d0c17",
+    "tools/export_original_ground_fixture.mjs": "64c67ec70c72dbe13cac0e7f905dbd7ee2a5a82e974c8b918c87fbde35cb4264",
+    "tools/original_ground_gpu_test.py": "8de901ea61ab75b2c2c5633653f11e77a322ee5e0eb4e35eac9206f57c3e0311"
+  },
+  "reproduceMetadata": [
+    "python tools/import_ee2_ground_seasons.py",
+    "python tools/import_ee2_ground_profile.py"
+  ],
+  "limits": [
+    "Exact native CityManager point membership is proved, but the renderer relies on the caller to supply the actual registered city bands. Full radius-registration/state/upgrade pipeline is not reconstructed by this module.",
+    "The original sprite-manager implementation and its complete seasonal blend/render-state pipeline remain outside this change; shared phase interpolation is a documented adapter.",
+    "Lighting, terrain grid projection and epsilon depth offset remain the existing adapters; no full native shader or pixel-perfect original-game comparison is claimed.",
+    "Death images are loaded and directly selectable, but the current simulation does not expose the complete native corpse/decal fade lifetime. Farm unresolved dimensions remain excluded.",
+    "GPU verification uses native offscreen EGL/GLES in Python. No browser, GUI or original game was opened; no physical macOS execution was tested."
+  ]
+}

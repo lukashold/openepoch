@@ -1,0 +1,38 @@
+{
+  "format": "pre-diplomacy-ee2-save-fixture-v1",
+  "wasmSha256": "2a127d17ed05e27ddafa54bf78f0dfa61e202bbfc8f099644843d073dda59b47",
+  "saveSha256": "a2ca3848c79262e73ec8df29728a97b41c36176f9b03648bd2cff74e09868eca",
+  "seed": 71,
+  "ticks": 13,
+  "definitions": 56,
+  "trailerBytes": 236,
+  "stockByTeam": [
+    [
+      573.25,
+      573.25,
+      373.25,
+      573.25,
+      573.25,
+      373.25,
+      373.25,
+      373.25,
+      373.25
+    ],
+    [
+      400,
+      400,
+      200,
+      400,
+      400,
+      200,
+      200,
+      200,
+      200
+    ]
+  ],
+  "popByTeam": [
+    5,
+    5
+  ],
+  "stateHash": -54322694
+}

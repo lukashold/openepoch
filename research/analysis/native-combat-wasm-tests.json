@@ -1,0 +1,9 @@
+{
+  "format": "native-combat-wasm-tests-v1",
+  "status": "passed",
+  "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+  "combatAuditSha256": "ee39309d94b4586b9466d952eb20c424fcf51dca1cca305f62c0a19379e9bb94",
+  "checks": 290363,
+  "profiles": 269,
+  "profilePairChecks": 72361
+}

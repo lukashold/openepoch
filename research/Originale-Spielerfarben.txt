@@ -1,0 +1,63 @@
+Originale Spielerfarben — Sparse-DXT-Patches vom 30.10.2026
+
+Quelle: lokale Installation, zips/textures.zip, cache/pcpcache/*.pcpatch;
+Farbpalette: db.zip!db/UI/dbcolor.csv, Einträge playerColor_*. Die Ausgaben
+liegen ausschließlich unter OpenEpoch/docs/local-original/team-textures/.
+Die Dateien der Originalinstallation werden nicht verändert.
+
+Formatbefund
+Die .pcpatch-Datei ist ein Gamebryo-10.1-NiPixelData-Container mit Pixel Format 2,
+8 Bit, keiner Palette und genau einem ungewöhnlich breiten 1-Pixel-Datensatz.
+Seine Bytes sind kein PAL8-Bild, sondern ein benutzerdefinierter Sparse-Stream:
+uint32 Recordanzahl, anschließend Paare uint32(Blockindex, Blockanzahl), danach
+die sequenziellen originalen Ersatz-DXT-Blöcke. Das Paar (0xffffffff,0) beendet
+jeweils eine Mip-Ebene; Blockindizes beginnen pro Ebene wieder bei null.
+DXT1 benutzt 8-Byte-Blöcke, DXT3/DXT5 vollständige 16-Byte-Blöcke.
+
+Der Bürger-A-Patch hat 158 Records, 9 Mip-Enden und 2.060 Ersatzblöcke:
+4 + 158*8 + 2.060*8 = 17.748 Bytes. Der Stadtzentrum-A-Patch hat 45 Records,
+11 Mip-Enden und 633*16 Ersatzbytes. Weitere Modelle bestätigen dieselbe
+Struktur. Der Konverter prüft alle Zielbereiche, Überschneidungen, Mipmarker
+und die vollständige Byteaufnahme. Er ersetzt ausschließlich die vorgegebenen
+Originalblöcke und dekodiert daraus das originale höchste Mip als RGBA-PNG.
+Es findet keine frei gewählte Einfärbung, Übermalung oder Größenänderung statt.
+
+Farbzuordnung
+Die Buchstaben wurden anhand der tatsächlich erzeugten Pixel über alle elf
+Varianten gegen die Originalpalette gemessen und im Bürger-Kontaktbild geprüft:
+A blau, B rot, C grün, D orange, E magenta, F cyan, G gelb,
+H lavendel, I lila, J gold, K grau.
+Für die vier aktuellen Spielteams blau/rot/grün/gelb bedeutet das A/B/C/G.
+Es wurde keine Annahme A/B/C/D = Spieler 0/1/2/3 getroffen.
+Die Quell-Palette enthält die Original-RGB-Werte; Datei-, Patch- und PNG-Hashes
+sowie Messdistanzen, Mip-/Blockzahlen und Herkunft stehen im Manifest.
+
+Prüfstand
+146 Materialfamilien, je elf Varianten, insgesamt 1.606 Varianten-PNGs.
+145 Familien haben mindestens eine sicher identifizierte Einzelvariante.
+Blau A ist für 143 Materialien, Rot B für 145, Grün C für 136 und Gelb G für
+143 Materialien bestätigt. Unsichere Einzelvarianten bleiben verified:false
+und dürfen nicht stillschweigend produktiv aktiviert werden. Eine Textur mit
+verified:true besagt lediglich, dass sichere Einzelvarianten vorhanden sind;
+der Renderer muss zusätzlich variants[letter].verified prüfen.
+
+Die korrigierten Trebuchet-, AssaultRifleman-, Pikeman- und Crossbowman-
+Materialien sind mit je elf bestätigten Varianten ergänzt beziehungsweise
+aktualisiert; Reiterei-, Artillerie-, Frachtboot- und Galeerenmaterialien bleiben
+erhalten. Auch Ölbohrturm, Uranmine und beide HERC-Materialien sind ergänzt.
+Der Export enthält nur Familien des aktuellen Modellmanifests.
+llm8_caribineer_we_h hat keinen Original-PCPatch und bleibt neutral. Materialien
+von Requisiten, Effekten oder Animationen ohne Patch werden nicht erfunden.
+
+Werkzeuge
+python tools/extract_ee2_team_textures.py --all-model-textures
+python tools/test_ee2_team_textures.py
+Der erneute Export verwendet einen SHA256-validierten Cache und ersetzt das
+Manifest erst abschließend. Sechs unabhängige Tests bestanden: bekannte echte
+Source-Records, Multi-Mip-Schreibadressen und Erhalt unberührter Blöcke,
+DXT3/DXT5-Blockbreite, Ablehnung fehlerhafter Runs/Marker/Restdaten, tatsächliche
+Farbzuordnung sowie Dekodierung/Abmessungen und SHA256 aller 1.606 PNGs und ihrer
+Originalpatches. Kontaktbild: team-textures/citizen-colour-identification.png.
+
+Diese Prüfung belegt Assetformat und Originalfarben. Sie behauptet keine
+vollständige Rekonstruktion der EE2-Spielregeln oder der gesamten Renderpipeline.

@@ -1,0 +1,136 @@
+{
+  "format": "ee2-native-calendar-evidence-v1",
+  "date": "2026-11-03",
+  "scope": "Two bounded read-only/noanalysis Ghidra exports from the installed EnabledUP15Units engine; native configuration/header/table checks. No original files, gameplay rules or weather RNG changed.",
+  "engineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+  "sources": [
+    {
+      "archive": "hdrs.zip",
+      "entry": "DbHdrs/DbTerrainDefs.h",
+      "sha256": "19fc7b1e07b6aca24cfe5e3605b600d976f1a1b3a95eac0a6a4de9a1b626c2b2",
+      "bytes": 4776
+    },
+    {
+      "archive": "hdrs.zip",
+      "entry": "DbHdrs/DbFrontEndDefs.h",
+      "sha256": "136f70838a15d79f153a4c08ab30879f4dee176e23e7af389a270dd61eaa11b6",
+      "bytes": 7680
+    },
+    {
+      "archive": "hdrs.zip",
+      "entry": "DbHdrs/DbClimateDefs.h",
+      "sha256": "69d3fc6585039ee9b1fd712966ac7b64b5dc19b6e709073ff815fc0f62ada536",
+      "bytes": 5586
+    },
+    {
+      "archive": "db.zip",
+      "entry": "db/Terrain/dbclimate.ddf",
+      "sha256": "f2199462c639eda040c81ad7298c73a00b01212be97a18cb94e46a12d0bc515c",
+      "bytes": 23130
+    },
+    {
+      "archive": "db.zip",
+      "entry": "db/Terrain/DbSeasonalTextureSets_Temperate.csv",
+      "sha256": "8e39b763fc81877f2aea5c94248d839257648e8d67131974917e756cff4554bc",
+      "bytes": 132751
+    }
+  ],
+  "exports": [
+    {
+      "file": "native-calendar-runtime.c",
+      "sha256": "e1105d7db70dc6fc6068430e557f1f1a86de460c06deee77d31a77841bc46cff",
+      "bytes": 6055
+    },
+    {
+      "file": "native-calendar-phase.c",
+      "sha256": "d947064a893115e8ffa13011cc053aa403b1a1aded0558fd6cde6f7c81cd900d",
+      "bytes": 11631
+    }
+  ],
+  "constants": {
+    "constructorSecondsPerYear": 1200.0,
+    "constructorSecondsBits": "44960000",
+    "constructorCycleMonth": true,
+    "constructorStartMonth": 0,
+    "monthsPerYear": 12,
+    "inverseMonthConstantVA": "00b474d8",
+    "inverseMonthBits": "3daaaaab",
+    "inverseMonthFloat": 0.0833333358168602,
+    "frontEndMinutesPerSeasonOptions": [
+      1,
+      5,
+      10,
+      20,
+      30
+    ]
+  },
+  "verifiedFunctions": [
+    {
+      "address": "006c8b60",
+      "finding": "Calendar constructor writes vtable, currentMonth0, cycleMonthtrue, secondsPerYear1200, yearTimer0, yearsPlayed0, stopMonth-1."
+    },
+    {
+      "address": "006c8b90",
+      "finding": "Copies year length and cycle flag from supplied settings; initializes yearTimer=(secondsPerYear/12)*requestedMonth for a valid month0..11."
+    },
+    {
+      "address": "006c8c10",
+      "finding": "Adds supplied elapsed time when cycling; wraps at secondsPerYear and increments yearsPlayed. Assembly computes currentMonth=truncate(yearTimer/(secondsPerYear*1/12)). Optional stopMonth may stop cycling."
+    },
+    {
+      "address": "006c8d30",
+      "finding": "Changes secondsPerYear and rescales yearTimer by new/old to preserve annual phase."
+    },
+    {
+      "address": "006c8d50",
+      "finding": "Serializer identifies offsets +4CurrentMonth,+8CycleMonth,+CSecondsPerYear,+10YearTimer,+14YearsPlayed,+18PauseCalendar,+19CurrentMonthChangedManually."
+    },
+    {
+      "address": "006c8ec0",
+      "finding": "Returns elapsed seconds within current month by subtracting currentMonth*monthlyDuration from yearTimer."
+    },
+    {
+      "address": "006cb350",
+      "finding": "EE2Season update forwards the same supplied delta to Calendar, then invokes season/weather/lighting-related updates."
+    },
+    {
+      "address": "00fa8119",
+      "finding": "Installed patch wrapper calls an optional function pointer before native Calendar initialization; untracked live patch settings are not inferred."
+    }
+  ],
+  "sourceInterpolation": {
+    "header": "DbHdrs/DbTerrainDefs.h:76-82",
+    "rule": "Ordered texture list is interpolated evenly across the year; twelve textures give one per month.",
+    "textureLists": 32,
+    "sourceImagesPerList": 12,
+    "gpuImplementation": "Eight native-size RGBA8 texture arrays, twelve monthly layers each; adjacent monthly texture samples mixed by the normalized month fraction."
+  },
+  "ownAdapter": {
+    "simulationTicksPerSecond": 20,
+    "phaseSource": "Current deterministic WASM tick, reduced modulo integral year duration, plus explicit startMonth.",
+    "applicationStartMonth": 6,
+    "defaultMinutesPerSeason": 5,
+    "rateStatus": "Matches native1200-second constructor year; summer starting month is an application choice.",
+    "saveLoadAndNetwork": "Calendar settings must accompany a save/host setup. Phase is recomputed from restored/current tick without a wall-clock timer or accumulated render deltas.",
+    "floatDifference": "Original accumulates floating elapsed-time steps; the render-only adapter derives phase from integer ticks and does not reproduce native float drift or all live patch hooks."
+  },
+  "weatherSourceOnly": {
+    "climate": "ClimateWeatherTemperate",
+    "rainySeasonStart": 3,
+    "rainySeasonStop": 6,
+    "snowySeasonStart": 11,
+    "snowySeasonStop": 3,
+    "snowRequiredLeadTime": 5,
+    "snowRequiredMonths": 3,
+    "dustySeasonStart": -1,
+    "leafySeasonStart": 9,
+    "leafySeasonStop": 11,
+    "status": "Availability/source fields only. No rain/snow scheduling, boundary inclusivity, random event probability/duration, precipitation geometry or gameplay weather penalties are reconstructed by these fields alone."
+  },
+  "open": [
+    "Live front-end/random starting-season selection and patch callbacks",
+    "Calendar stop-at-month editor control",
+    "Complete seasonal tint/weather/lighting and vegetation changes",
+    "Weather queue RNG, event probabilities and durations"
+  ]
+}

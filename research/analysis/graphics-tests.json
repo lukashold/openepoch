@@ -1,0 +1,59 @@
+{
+  "checkedAt": "2026-10-31 09:44:19 UTC",
+  "release": "graphics2",
+  "scope": "Presentation/import/audio changes. No simulation rebuild or rule change.",
+  "nodeTests": [
+    {
+      "name": "renderer",
+      "exitCode": 0,
+      "output": "PASS original renderer: VAO/index isolation, native morph packing/phase batching, deferred team textures, native far LOD, preserved sampler units, precise source-resource picking (crown/triangle misses/yaw/scale/altitude/nearest/last-color/LOD/fallback)"
+    },
+    {
+      "name": "ground",
+      "exitCode": 0,
+      "output": "PASS original ground: native aspect/offset/yaw placement and skips, independent triangle/edge heights, read-only inputs, untouched RGBA, deduplicated sprites, sampler0/2/6 and complete caller GL-state restoration, instance counts and safe fallbacks. GPU shaders require the separate browser check."
+    },
+    {
+      "name": "icons",
+      "exitCode": 0,
+      "output": "PASS original epoch icons: exact Bronze/Renaissance/Modern/Digital native transitions, asynchronous ordering, source-image deduplication, held-model consistency and optional-asset fallbacks"
+    },
+    {
+      "name": "audio",
+      "exitCode": 0,
+      "output": "PASS originals: 39 independently source-verified UnitModel voice bindings + native progression intervals, exact original upgrade rows, interval boundaries/base fallback/per-variant cycles, attack 41/43 playback, audio/PCM bytes, pause/resume, music/voice/mute and fallback"
+    },
+    {
+      "name": "models",
+      "exitCode": 0,
+      "output": "PASS native far LODs: 85 bindings, 63 files, 234 parts, 89716 triangles, 148 source-range selections and 4196 animation frame buffers; exact near normalization and NIF/KF/texture provenance retained.\nPASS original models: 149 id/epoch bindings, 118 mesh files, 533 parts, 291518 vertices, 244778 triangles; 172 PNG payloads/dimensions/CRCs, 216 highest LOD selections, 6528 animation frame buffers and 366 original ZIP source hashes verified. Visual skinning comparison remains separate."
+    },
+    {
+      "name": "procedural-audio",
+      "exitCode": 0,
+      "output": "PASS audio: music scheduling, local speech, cooldown, mute, missing-voice fallback and controls"
+    }
+  ],
+  "python": {
+    "exitCode": 0,
+    "count": 51,
+    "seconds": 29.003,
+    "modules": [
+      "test_extract_ee2_textures",
+      "test_ee2_ground_decals",
+      "test_ee2_epoch_icons",
+      "test_ee2_models",
+      "test_ee2_citizen_poses",
+      "test_ee2_aircraft_poses",
+      "test_ee2_epoch_visuals",
+      "test_ee2_future_motion",
+      "test_ee2_units"
+    ],
+    "result": "OK"
+  },
+  "limits": [
+    "FakeGL and WebAudio tests do not execute real GPU shaders or browser codecs.",
+    "Physical browser observations are recorded separately in graphics-browser-check.json.",
+    "No claim of a complete EE2 remake or exhaustive gameplay/visual acceptance."
+  ]
+}

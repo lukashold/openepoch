@@ -1,0 +1,1171 @@
+{
+  "format": "ee2-base-economy-v1",
+  "profile": "Explicit BASE db.zip + hdrs.zip. No patch archive precedence inferred.",
+  "sourceArchives": {
+    "hdrs.zip": {
+      "path": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\zips\\hdrs.zip",
+      "sha256": "2776d86da7e8fa405e78dd6feee67aff2861dc4165637bfa8db9de84f66f37fc"
+    },
+    "db.zip": {
+      "path": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\zips\\db.zip",
+      "sha256": "042291d39b8e5362124da5254c718966032533885638e8393d5900e91e9b492e"
+    }
+  },
+  "sources": {
+    "hdrs.zip!DbHdrs/DbResourceDefs.h": {
+      "archive": "hdrs.zip",
+      "entry": "DbHdrs/DbResourceDefs.h",
+      "sha256": "c40eb29485f150eab26661239f02b3c9ccfeccbfc3b4556919bbe9bb0c3e3c35"
+    },
+    "db.zip!db/Units/resources.ddf": {
+      "archive": "db.zip",
+      "entry": "db/Units/resources.ddf",
+      "sha256": "35ec70b4cf8a5c2f0471db86586cb70376e68bf103c43535811c7ac30a7e8347"
+    },
+    "db.zip!db/Units/citizen.ddf": {
+      "archive": "db.zip",
+      "entry": "db/Units/citizen.ddf",
+      "sha256": "49ad998e0cf3370902940b4224f22b707c08fc061076718c70074275f33167ea"
+    },
+    "db.zip!db/Units/farm.ddf": {
+      "archive": "db.zip",
+      "entry": "db/Units/farm.ddf",
+      "sha256": "629e5dec7df3dfc1e0b53861718be7b27345140c96ef6c778f85b2a689e88abc"
+    },
+    "hdrs.zip!DbHdrs/DbUnitDefs.h": {
+      "archive": "hdrs.zip",
+      "entry": "DbHdrs/DbUnitDefs.h",
+      "sha256": "afde5529ed266cc3995dfa3c48eecc3fd17f2eac7db65c880d077ac277cd26c3"
+    },
+    "hdrs.zip!DbHdrs/DbUnitDefEnums.h": {
+      "archive": "hdrs.zip",
+      "entry": "DbHdrs/DbUnitDefEnums.h",
+      "sha256": "c2fd2ef87d9927872b913a30eaaf267a096b7e4c5221e145020a7173afeb79e9"
+    },
+    "db.zip!db/Simulation/dbresourcelevels.csv": {
+      "archive": "db.zip",
+      "entry": "db/Simulation/dbresourcelevels.csv",
+      "sha256": "e1aed5063510b513489940b956babc3d1ec20e15e24ee8bcda0dd25a14e034f2"
+    },
+    "db.zip!db/TechTree/dbtechtreenode.csv": {
+      "archive": "db.zip",
+      "entry": "db/TechTree/dbtechtreenode.csv",
+      "sha256": "f3e658e6a27f40b712a99a6a18ffcc05fd00604a097217ddf5a319ff1311f92e"
+    },
+    "db.zip!db/TechTree/epoch4_upgrades.ddf": {
+      "archive": "db.zip",
+      "entry": "db/TechTree/epoch4_upgrades.ddf",
+      "sha256": "b714c3adb006201b0e9824e69409ee55b1b2fff1bddcc9d638f0a56394f79dcb"
+    },
+    "db.zip!db/TechTree/epoch7_upgrades.ddf": {
+      "archive": "db.zip",
+      "entry": "db/TechTree/epoch7_upgrades.ddf",
+      "sha256": "4e7d5e9ccdf461390c779b1a129c389bb339ed8859fb83b645c9dddfd0adffbb"
+    },
+    "db.zip!db/TechTree/epoch10_upgrades.ddf": {
+      "archive": "db.zip",
+      "entry": "db/TechTree/epoch10_upgrades.ddf",
+      "sha256": "71e9631d65cd8072601518895e934120325d199cc91e2fbe591b312d7f2b0d36"
+    },
+    "db.zip!db/TechTree/epoch13_upgrades.ddf": {
+      "archive": "db.zip",
+      "entry": "db/TechTree/epoch13_upgrades.ddf",
+      "sha256": "893117af6622b1c09051e2306ea4adaebfc62b1facd0cabb0ad7e163abd4a7f4"
+    },
+    "db.zip!db/Units/city_center.ddf": {
+      "archive": "db.zip",
+      "entry": "db/Units/city_center.ddf",
+      "sha256": "4f1cfef27687288b40872426c5d2fd72a0771cfa7b14aa68d90f6976aa58a197"
+    },
+    "db.zip!db/Units/warehouse.ddf": {
+      "archive": "db.zip",
+      "entry": "db/Units/warehouse.ddf",
+      "sha256": "572d9e9c197938e7b6a62979c0a9a1b5ab62949b2ec52ce5f3f167b8c53561a2"
+    },
+    "db.zip!db/Units/dock.ddf": {
+      "archive": "db.zip",
+      "entry": "db/Units/dock.ddf",
+      "sha256": "69c84100d38a8f020fb35207c48ad5d787ee7e1224961ff9c9a5356a3f3b2b76"
+    }
+  },
+  "naturalResources": [
+    {
+      "id": 0,
+      "enum": "kResourceType_Food",
+      "name": "Food",
+      "displayNameDe": "Nahrung",
+      "citizenConfiguredRate": 0.85,
+      "revealEpoch": 1,
+      "revealEpochZeroBased": 0,
+      "special": false,
+      "activeEpochFirst": 1,
+      "activeEpochEndExclusive": null
+    },
+    {
+      "id": 1,
+      "enum": "kResourceType_Wood",
+      "name": "Wood",
+      "displayNameDe": "Holz",
+      "citizenConfiguredRate": 0.85,
+      "revealEpoch": 1,
+      "revealEpochZeroBased": 0,
+      "special": false,
+      "activeEpochFirst": 1,
+      "activeEpochEndExclusive": null
+    },
+    {
+      "id": 2,
+      "enum": "kResourceType_Stone",
+      "name": "Stone",
+      "displayNameDe": "Stein",
+      "citizenConfiguredRate": 0.85,
+      "revealEpoch": 1,
+      "revealEpochZeroBased": 0,
+      "special": false,
+      "activeEpochFirst": 1,
+      "activeEpochEndExclusive": null
+    },
+    {
+      "id": 3,
+      "enum": "kResourceType_Gold",
+      "name": "Gold",
+      "displayNameDe": "Gold",
+      "citizenConfiguredRate": 0.85,
+      "revealEpoch": 1,
+      "revealEpochZeroBased": 0,
+      "special": false,
+      "activeEpochFirst": 1,
+      "activeEpochEndExclusive": null
+    },
+    {
+      "id": 4,
+      "enum": "kResourceType_Tin",
+      "name": "Tin",
+      "displayNameDe": "Zinn",
+      "citizenConfiguredRate": 0.85,
+      "revealEpoch": 1,
+      "revealEpochZeroBased": 0,
+      "special": true,
+      "activeEpochFirst": 1,
+      "activeEpochEndExclusive": 7,
+      "specialSlotByEpoch": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      "activeWindowEvidence": {
+        "function": "00884710",
+        "tableBase": "00b5526c",
+        "firstAddress": "00b5527c"
+      }
+    },
+    {
+      "id": 5,
+      "enum": "kResourceType_Iron",
+      "name": "Iron",
+      "displayNameDe": "Eisen",
+      "citizenConfiguredRate": 0.85,
+      "revealEpoch": 4,
+      "revealEpochZeroBased": 3,
+      "special": true,
+      "activeEpochFirst": 4,
+      "activeEpochEndExclusive": 10,
+      "specialSlotByEpoch": [
+        -1,
+        -1,
+        -1,
+        2,
+        2,
+        2,
+        1,
+        1,
+        1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      "activeWindowEvidence": {
+        "function": "00884710",
+        "tableBase": "00b5526c",
+        "firstAddress": "00b55280"
+      },
+      "revealUpgrade": "ResourceIronUpgradeEpoch04",
+      "revealSource": "db.zip!db/TechTree/epoch4_upgrades.ddf"
+    },
+    {
+      "id": 6,
+      "enum": "kResourceType_Saltpeter",
+      "name": "Saltpeter",
+      "displayNameDe": "Salpeter",
+      "citizenConfiguredRate": 0.85,
+      "revealEpoch": 7,
+      "revealEpochZeroBased": 6,
+      "special": true,
+      "activeEpochFirst": 7,
+      "activeEpochEndExclusive": 13,
+      "specialSlotByEpoch": [
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        2,
+        2,
+        2,
+        1,
+        1,
+        1,
+        -1,
+        -1,
+        -1
+      ],
+      "activeWindowEvidence": {
+        "function": "00884710",
+        "tableBase": "00b5526c",
+        "firstAddress": "00b55284"
+      },
+      "revealUpgrade": "ResSaltpeterUpgradeEpoch07",
+      "revealSource": "db.zip!db/TechTree/epoch7_upgrades.ddf"
+    },
+    {
+      "id": 7,
+      "enum": "kResourceType_Oil",
+      "name": "Oil",
+      "displayNameDe": "Öl",
+      "citizenConfiguredRate": 3.4,
+      "revealEpoch": 10,
+      "revealEpochZeroBased": 9,
+      "special": true,
+      "activeEpochFirst": 10,
+      "activeEpochEndExclusive": null,
+      "specialSlotByEpoch": [
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        2,
+        2,
+        2,
+        1,
+        1,
+        1
+      ],
+      "activeWindowEvidence": {
+        "function": "00884710",
+        "tableBase": "00b5526c",
+        "firstAddress": "00b55288"
+      },
+      "revealUpgrade": "ResourceOilUpgradeEpoch10",
+      "revealSource": "db.zip!db/TechTree/epoch10_upgrades.ddf"
+    },
+    {
+      "id": 8,
+      "enum": "kResourceType_Uranium",
+      "name": "Uranium",
+      "displayNameDe": "Uran",
+      "citizenConfiguredRate": 3.4,
+      "revealEpoch": 13,
+      "revealEpochZeroBased": 12,
+      "special": true,
+      "activeEpochFirst": 13,
+      "activeEpochEndExclusive": null,
+      "specialSlotByEpoch": [
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        2,
+        2,
+        2
+      ],
+      "activeWindowEvidence": {
+        "function": "00884710",
+        "tableBase": "00b5526c",
+        "firstAddress": "00b5528c"
+      },
+      "revealUpgrade": "ResourceUraniumUpgradeEpoch13",
+      "revealSource": "db.zip!db/TechTree/epoch13_upgrades.ddf"
+    }
+  ],
+  "nonNaturalTypes": {
+    "TechPoints": 9,
+    "PopCap": 10
+  },
+  "citizen": {
+    "unitType": "FullCitizen",
+    "gatherFarm": {
+      "treeCuttingRange": 0.9,
+      "otherRange": 0.8,
+      "dropoffRange": 0.7,
+      "foodRate": 0.85,
+      "woodRate": 0.85,
+      "stoneRate": 0.85,
+      "goldRate": 0.85,
+      "tinRate": 0.85,
+      "ironRate": 0.85,
+      "saltpeterRate": 0.85,
+      "oilRate": 3.4,
+      "uraniumRate": 3.4,
+      "carryLimit": 15.0,
+      "farmRate": 4.37,
+      "farmCarryLimit": 15.0
+    },
+    "evidence": {
+      "source": "db.zip!db/Units/citizen.ddf",
+      "line": 25,
+      "declaration": "UnitType FullCitizen"
+    }
+  },
+  "farm": {
+    "unitType": "Farm",
+    "resourceId": 0,
+    "configuredAmount": 100,
+    "maxWorkers": 1,
+    "gatherPerWorkerPerSecond": 4.37,
+    "sourceComment": "Farm keeps producing resource as long as someone works on it.",
+    "evidence": {
+      "source": "db.zip!db/Units/farm.ddf",
+      "line": 4,
+      "declaration": "UnitType Farm"
+    }
+  },
+  "resourceNodes": [
+    {
+      "unitType": "Tree",
+      "resourceId": 1,
+      "resource": "Wood",
+      "configuredAmount": 1277,
+      "maxWorkers": 3,
+      "alwaysExhaustible": true,
+      "directWorkerGathering": true,
+      "evidence": {
+        "source": "db.zip!db/Units/resources.ddf",
+        "line": 186,
+        "declaration": "UnitType Tree"
+      }
+    },
+    {
+      "unitType": "ForageTree",
+      "resourceId": 0,
+      "resource": "Food",
+      "configuredAmount": 1000,
+      "maxWorkers": 6,
+      "alwaysExhaustible": null,
+      "directWorkerGathering": true,
+      "evidence": {
+        "source": "db.zip!db/Units/resources.ddf",
+        "line": 929,
+        "declaration": "UnitType ForageTree"
+      }
+    },
+    {
+      "unitType": "ResourceForagePatch",
+      "resourceId": 0,
+      "resource": "Food",
+      "configuredAmount": 2000,
+      "maxWorkers": 6,
+      "alwaysExhaustible": true,
+      "directWorkerGathering": true,
+      "evidence": {
+        "source": "db.zip!db/Units/resources.ddf",
+        "line": 1179,
+        "declaration": "UnitType ResourceForagePatch"
+      }
+    },
+    {
+      "unitType": "ResourceGold",
+      "resourceId": 3,
+      "resource": "Gold",
+      "configuredAmount": 1000,
+      "maxWorkers": 6,
+      "alwaysExhaustible": null,
+      "directWorkerGathering": true,
+      "evidence": {
+        "source": "db.zip!db/Units/resources.ddf",
+        "line": 1333,
+        "declaration": "UnitType ResourceGold"
+      }
+    },
+    {
+      "unitType": "ResourceStone",
+      "resourceId": 2,
+      "resource": "Stone",
+      "configuredAmount": 1000,
+      "maxWorkers": 6,
+      "alwaysExhaustible": null,
+      "directWorkerGathering": true,
+      "evidence": {
+        "source": "db.zip!db/Units/resources.ddf",
+        "line": 1378,
+        "declaration": "UnitType ResourceStone"
+      }
+    },
+    {
+      "unitType": "ResourceTin",
+      "resourceId": 4,
+      "resource": "Tin",
+      "configuredAmount": 1000,
+      "maxWorkers": 6,
+      "alwaysExhaustible": null,
+      "directWorkerGathering": true,
+      "evidence": {
+        "source": "db.zip!db/Units/resources.ddf",
+        "line": 1423,
+        "declaration": "UnitType ResourceTin"
+      }
+    },
+    {
+      "unitType": "ResourceIron",
+      "resourceId": 5,
+      "resource": "Iron",
+      "configuredAmount": 1000,
+      "maxWorkers": 6,
+      "alwaysExhaustible": null,
+      "directWorkerGathering": true,
+      "evidence": {
+        "source": "db.zip!db/Units/resources.ddf",
+        "line": 1493,
+        "declaration": "UnitType ResourceIron"
+      }
+    },
+    {
+      "unitType": "ResourceSaltPeter",
+      "resourceId": 6,
+      "resource": "Saltpeter",
+      "configuredAmount": 1000,
+      "maxWorkers": 6,
+      "alwaysExhaustible": null,
+      "directWorkerGathering": true,
+      "evidence": {
+        "source": "db.zip!db/Units/resources.ddf",
+        "line": 1577,
+        "declaration": "UnitType ResourceSaltPeter"
+      }
+    },
+    {
+      "unitType": "ResourceOil",
+      "resourceId": 7,
+      "resource": "Oil",
+      "configuredAmount": 1000,
+      "maxWorkers": 0,
+      "alwaysExhaustible": null,
+      "directWorkerGathering": false,
+      "evidence": {
+        "source": "db.zip!db/Units/resources.ddf",
+        "line": 1656,
+        "declaration": "UnitType ResourceOil"
+      }
+    },
+    {
+      "unitType": "ResourceUranium",
+      "resourceId": 8,
+      "resource": "Uranium",
+      "configuredAmount": 1000,
+      "maxWorkers": 0,
+      "alwaysExhaustible": null,
+      "directWorkerGathering": false,
+      "evidence": {
+        "source": "db.zip!db/Units/resources.ddf",
+        "line": 1735,
+        "declaration": "UnitType ResourceUranium"
+      }
+    },
+    {
+      "unitType": "ResourceFish",
+      "resourceId": 0,
+      "resource": "Food",
+      "configuredAmount": 2000,
+      "maxWorkers": 6,
+      "alwaysExhaustible": true,
+      "directWorkerGathering": true,
+      "evidence": {
+        "source": "db.zip!db/Units/resources.ddf",
+        "line": 1805,
+        "declaration": "UnitType ResourceFish"
+      }
+    }
+  ],
+  "productionStructures": [
+    {
+      "unitType": "OilRig",
+      "placementType": "OnOil",
+      "model": "bld_OilRig.NIF",
+      "gatherResource": "Oil",
+      "garrisonType": "UniWarehouseOilDerrickCityCenter",
+      "garrisonSlots": 6,
+      "gatherPerOccupiedSlotPerSecond": 0.75,
+      "maxBaseGatherPerSecond": 4.5,
+      "rightClickToGarrison": true,
+      "properties": {
+        "SizeX": 1.5,
+        "SizeY": 1.5,
+        "HitPoints": 1000.0,
+        "Mass": 1.0
+      },
+      "lineOfSight": 4.0,
+      "build": {
+        "epoch": 10,
+        "seconds": 45.0,
+        "host": "Citizen",
+        "costByOriginalId": [
+          0.0,
+          100.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "evidence": {
+          "source": "db.zip!db/TechTree/dbtechtreenode.csv",
+          "line": 354
+        }
+      },
+      "evidence": {
+        "source": "db.zip!db/Units/resources.ddf",
+        "line": 1835,
+        "declaration": "UnitType OilRig"
+      }
+    },
+    {
+      "unitType": "UraniumMine",
+      "placementType": "OnUranium",
+      "model": "res_uranium_mine.NIF",
+      "gatherResource": "Uranium",
+      "garrisonType": "UniWarehouseOilDerrickCityCenter",
+      "garrisonSlots": 6,
+      "gatherPerOccupiedSlotPerSecond": 0.75,
+      "maxBaseGatherPerSecond": 4.5,
+      "rightClickToGarrison": true,
+      "properties": {
+        "SizeX": 1.5,
+        "SizeY": 1.5,
+        "HitPoints": 1000.0,
+        "Mass": 1.0
+      },
+      "lineOfSight": 4.0,
+      "build": {
+        "epoch": 13,
+        "seconds": 45.0,
+        "host": "Citizen",
+        "costByOriginalId": [
+          0.0,
+          100.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "evidence": {
+          "source": "db.zip!db/TechTree/dbtechtreenode.csv",
+          "line": 508
+        }
+      },
+      "evidence": {
+        "source": "db.zip!db/Units/resources.ddf",
+        "line": 1880,
+        "declaration": "UnitType UraniumMine"
+      }
+    }
+  ],
+  "dropoffs": [
+    {
+      "unitType": "CityCenter",
+      "acceptedType": "kResourceType_AllNaturalResource",
+      "garrisonSlots": 5,
+      "bonusPerOccupiedSlot": 0.02,
+      "evidence": {
+        "source": "db.zip!db/Units/city_center.ddf",
+        "line": 4,
+        "declaration": "UnitType CityCenter"
+      }
+    },
+    {
+      "unitType": "Warehouse",
+      "acceptedType": "kResourceType_AllNaturalResource",
+      "garrisonSlots": 5,
+      "bonusPerOccupiedSlot": 0.02,
+      "evidence": {
+        "source": "db.zip!db/Units/warehouse.ddf",
+        "line": 4,
+        "declaration": "UnitType Warehouse"
+      }
+    },
+    {
+      "unitType": "Dock",
+      "acceptedType": "kResourceType_Food",
+      "garrisonSlots": 0,
+      "bonusPerOccupiedSlot": 0,
+      "evidence": {
+        "source": "db.zip!db/Units/dock.ddf",
+        "line": 4,
+        "declaration": "UnitType Dock"
+      }
+    }
+  ],
+  "startingResourceLevels": [
+    {
+      "NAME": "Low_1",
+      "Epoch": 1,
+      "Level": "Low",
+      "FOOD": 200,
+      "WOOD": 200,
+      "STONE": 100,
+      "GOLD": 100,
+      "TIN": 0,
+      "IRON": 0,
+      "SALTPETER": 0,
+      "OIL": 0,
+      "URANIUM": 0,
+      "TECHPTS": 0,
+      "source": "db.zip!db/Simulation/dbresourcelevels.csv",
+      "line": 2
+    },
+    {
+      "NAME": "Low_4",
+      "Epoch": 4,
+      "Level": "Low",
+      "FOOD": 200,
+      "WOOD": 200,
+      "STONE": 100,
+      "GOLD": 100,
+      "TIN": 0,
+      "IRON": 0,
+      "SALTPETER": 0,
+      "OIL": 0,
+      "URANIUM": 0,
+      "TECHPTS": 0,
+      "source": "db.zip!db/Simulation/dbresourcelevels.csv",
+      "line": 3
+    },
+    {
+      "NAME": "Low_7",
+      "Epoch": 7,
+      "Level": "Low",
+      "FOOD": 200,
+      "WOOD": 200,
+      "STONE": 100,
+      "GOLD": 100,
+      "TIN": 0,
+      "IRON": 0,
+      "SALTPETER": 0,
+      "OIL": 0,
+      "URANIUM": 0,
+      "TECHPTS": 0,
+      "source": "db.zip!db/Simulation/dbresourcelevels.csv",
+      "line": 4
+    },
+    {
+      "NAME": "Low_10",
+      "Epoch": 10,
+      "Level": "Low",
+      "FOOD": 200,
+      "WOOD": 200,
+      "STONE": 100,
+      "GOLD": 100,
+      "TIN": 0,
+      "IRON": 0,
+      "SALTPETER": 0,
+      "OIL": 0,
+      "URANIUM": 0,
+      "TECHPTS": 0,
+      "source": "db.zip!db/Simulation/dbresourcelevels.csv",
+      "line": 5
+    },
+    {
+      "NAME": "Low_13",
+      "Epoch": 13,
+      "Level": "Low",
+      "FOOD": 200,
+      "WOOD": 200,
+      "STONE": 100,
+      "GOLD": 100,
+      "TIN": 0,
+      "IRON": 0,
+      "SALTPETER": 0,
+      "OIL": 0,
+      "URANIUM": 0,
+      "TECHPTS": 0,
+      "source": "db.zip!db/Simulation/dbresourcelevels.csv",
+      "line": 6
+    },
+    {
+      "NAME": "Defensive_1",
+      "Epoch": 1,
+      "Level": "Defensive",
+      "FOOD": 200,
+      "WOOD": 200,
+      "STONE": 500,
+      "GOLD": 100,
+      "TIN": 0,
+      "IRON": 0,
+      "SALTPETER": 0,
+      "OIL": 0,
+      "URANIUM": 0,
+      "TECHPTS": 0,
+      "source": "db.zip!db/Simulation/dbresourcelevels.csv",
+      "line": 7
+    },
+    {
+      "NAME": "Defensive_4",
+      "Epoch": 4,
+      "Level": "Defensive",
+      "FOOD": 200,
+      "WOOD": 200,
+      "STONE": 500,
+      "GOLD": 100,
+      "TIN": 0,
+      "IRON": 0,
+      "SALTPETER": 0,
+      "OIL": 0,
+      "URANIUM": 0,
+      "TECHPTS": 0,
+      "source": "db.zip!db/Simulation/dbresourcelevels.csv",
+      "line": 8
+    },
+    {
+      "NAME": "Defensive_7",
+      "Epoch": 7,
+      "Level": "Defensive",
+      "FOOD": 200,
+      "WOOD": 200,
+      "STONE": 500,
+      "GOLD": 100,
+      "TIN": 0,
+      "IRON": 0,
+      "SALTPETER": 0,
+      "OIL": 0,
+      "URANIUM": 0,
+      "TECHPTS": 0,
+      "source": "db.zip!db/Simulation/dbresourcelevels.csv",
+      "line": 9
+    },
+    {
+      "NAME": "Defensive_10",
+      "Epoch": 10,
+      "Level": "Defensive",
+      "FOOD": 200,
+      "WOOD": 200,
+      "STONE": 500,
+      "GOLD": 100,
+      "TIN": 0,
+      "IRON": 0,
+      "SALTPETER": 0,
+      "OIL": 0,
+      "URANIUM": 0,
+      "TECHPTS": 0,
+      "source": "db.zip!db/Simulation/dbresourcelevels.csv",
+      "line": 10
+    },
+    {
+      "NAME": "Defensive_13",
+      "Epoch": 13,
+      "Level": "Defensive",
+      "FOOD": 200,
+      "WOOD": 200,
+      "STONE": 500,
+      "GOLD": 100,
+      "TIN": 0,
+      "IRON": 0,
+      "SALTPETER": 0,
+      "OIL": 0,
+      "URANIUM": 0,
+      "TECHPTS": 0,
+      "source": "db.zip!db/Simulation/dbresourcelevels.csv",
+      "line": 11
+    },
+    {
+      "NAME": "Standard_1",
+      "Epoch": 1,
+      "Level": "Standard",
+      "FOOD": 400,
+      "WOOD": 400,
+      "STONE": 400,
+      "GOLD": 400,
+      "TIN": 200,
+      "IRON": 200,
+      "SALTPETER": 200,
+      "OIL": 200,
+      "URANIUM": 200,
+      "TECHPTS": 0,
+      "source": "db.zip!db/Simulation/dbresourcelevels.csv",
+      "line": 12
+    },
+    {
+      "NAME": "Standard_4",
+      "Epoch": 4,
+      "Level": "Standard",
+      "FOOD": 400,
+      "WOOD": 400,
+      "STONE": 400,
+      "GOLD": 400,
+      "TIN": 200,
+      "IRON": 200,
+      "SALTPETER": 200,
+      "OIL": 200,
+      "URANIUM": 200,
+      "TECHPTS": 0,
+      "source": "db.zip!db/Simulation/dbresourcelevels.csv",
+      "line": 13
+    },
+    {
+      "NAME": "Standard_7",
+      "Epoch": 7,
+      "Level": "Standard",
+      "FOOD": 400,
+      "WOOD": 400,
+      "STONE": 400,
+      "GOLD": 400,
+      "TIN": 200,
+      "IRON": 200,
+      "SALTPETER": 200,
+      "OIL": 200,
+      "URANIUM": 200,
+      "TECHPTS": 0,
+      "source": "db.zip!db/Simulation/dbresourcelevels.csv",
+      "line": 14
+    },
+    {
+      "NAME": "Standard_10",
+      "Epoch": 10,
+      "Level": "Standard",
+      "FOOD": 400,
+      "WOOD": 400,
+      "STONE": 400,
+      "GOLD": 400,
+      "TIN": 200,
+      "IRON": 200,
+      "SALTPETER": 200,
+      "OIL": 200,
+      "URANIUM": 200,
+      "TECHPTS": 0,
+      "source": "db.zip!db/Simulation/dbresourcelevels.csv",
+      "line": 15
+    },
+    {
+      "NAME": "Standard_13",
+      "Epoch": 13,
+      "Level": "Standard",
+      "FOOD": 400,
+      "WOOD": 400,
+      "STONE": 400,
+      "GOLD": 400,
+      "TIN": 200,
+      "IRON": 200,
+      "SALTPETER": 200,
+      "OIL": 200,
+      "URANIUM": 200,
+      "TECHPTS": 0,
+      "source": "db.zip!db/Simulation/dbresourcelevels.csv",
+      "line": 16
+    },
+    {
+      "NAME": "High_1",
+      "Epoch": 1,
+      "Level": "High",
+      "FOOD": 800,
+      "WOOD": 800,
+      "STONE": 800,
+      "GOLD": 800,
+      "TIN": 400,
+      "IRON": 400,
+      "SALTPETER": 400,
+      "OIL": 400,
+      "URANIUM": 400,
+      "TECHPTS": 0,
+      "source": "db.zip!db/Simulation/dbresourcelevels.csv",
+      "line": 17
+    },
+    {
+      "NAME": "High_4",
+      "Epoch": 4,
+      "Level": "High",
+      "FOOD": 800,
+      "WOOD": 800,
+      "STONE": 800,
+      "GOLD": 800,
+      "TIN": 400,
+      "IRON": 400,
+      "SALTPETER": 400,
+      "OIL": 400,
+      "URANIUM": 400,
+      "TECHPTS": 0,
+      "source": "db.zip!db/Simulation/dbresourcelevels.csv",
+      "line": 18
+    },
+    {
+      "NAME": "High_7",
+      "Epoch": 7,
+      "Level": "High",
+      "FOOD": 800,
+      "WOOD": 800,
+      "STONE": 800,
+      "GOLD": 800,
+      "TIN": 400,
+      "IRON": 400,
+      "SALTPETER": 400,
+      "OIL": 400,
+      "URANIUM": 400,
+      "TECHPTS": 0,
+      "source": "db.zip!db/Simulation/dbresourcelevels.csv",
+      "line": 19
+    },
+    {
+      "NAME": "High_10",
+      "Epoch": 10,
+      "Level": "High",
+      "FOOD": 800,
+      "WOOD": 800,
+      "STONE": 800,
+      "GOLD": 800,
+      "TIN": 400,
+      "IRON": 400,
+      "SALTPETER": 400,
+      "OIL": 400,
+      "URANIUM": 400,
+      "TECHPTS": 0,
+      "source": "db.zip!db/Simulation/dbresourcelevels.csv",
+      "line": 20
+    },
+    {
+      "NAME": "High_13",
+      "Epoch": 13,
+      "Level": "High",
+      "FOOD": 800,
+      "WOOD": 800,
+      "STONE": 800,
+      "GOLD": 800,
+      "TIN": 400,
+      "IRON": 400,
+      "SALTPETER": 400,
+      "OIL": 400,
+      "URANIUM": 400,
+      "TECHPTS": 0,
+      "source": "db.zip!db/Simulation/dbresourcelevels.csv",
+      "line": 21
+    },
+    {
+      "NAME": "DeathMatch_1",
+      "Epoch": 1,
+      "Level": "DeathMatch",
+      "FOOD": 15000,
+      "WOOD": 15000,
+      "STONE": 10000,
+      "GOLD": 10000,
+      "TIN": 7500,
+      "IRON": 7500,
+      "SALTPETER": 7500,
+      "OIL": 7500,
+      "URANIUM": 7500,
+      "TECHPTS": 16,
+      "source": "db.zip!db/Simulation/dbresourcelevels.csv",
+      "line": 22
+    },
+    {
+      "NAME": "DeathMatch_4",
+      "Epoch": 4,
+      "Level": "DeathMatch",
+      "FOOD": 15000,
+      "WOOD": 15000,
+      "STONE": 10000,
+      "GOLD": 10000,
+      "TIN": 7500,
+      "IRON": 7500,
+      "SALTPETER": 7500,
+      "OIL": 7500,
+      "URANIUM": 7500,
+      "TECHPTS": 20,
+      "source": "db.zip!db/Simulation/dbresourcelevels.csv",
+      "line": 23
+    },
+    {
+      "NAME": "DeathMatch_7",
+      "Epoch": 7,
+      "Level": "DeathMatch",
+      "FOOD": 15000,
+      "WOOD": 15000,
+      "STONE": 10000,
+      "GOLD": 10000,
+      "TIN": 7500,
+      "IRON": 7500,
+      "SALTPETER": 7500,
+      "OIL": 7500,
+      "URANIUM": 7500,
+      "TECHPTS": 24,
+      "source": "db.zip!db/Simulation/dbresourcelevels.csv",
+      "line": 24
+    },
+    {
+      "NAME": "DeathMatch_10",
+      "Epoch": 10,
+      "Level": "DeathMatch",
+      "FOOD": 15000,
+      "WOOD": 15000,
+      "STONE": 10000,
+      "GOLD": 10000,
+      "TIN": 7500,
+      "IRON": 7500,
+      "SALTPETER": 7500,
+      "OIL": 7500,
+      "URANIUM": 7500,
+      "TECHPTS": 28,
+      "source": "db.zip!db/Simulation/dbresourcelevels.csv",
+      "line": 25
+    },
+    {
+      "NAME": "DeathMatch_13",
+      "Epoch": 13,
+      "Level": "DeathMatch",
+      "FOOD": 15000,
+      "WOOD": 15000,
+      "STONE": 10000,
+      "GOLD": 10000,
+      "TIN": 7500,
+      "IRON": 7500,
+      "SALTPETER": 7500,
+      "OIL": 7500,
+      "URANIUM": 7500,
+      "TECHPTS": 32,
+      "source": "db.zip!db/Simulation/dbresourcelevels.csv",
+      "line": 26
+    }
+  ],
+  "runtime": {
+    "enginePath": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\EE2-engine.exe",
+    "engineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+    "engineProfile": "Installed Unofficial Patch Files/EnabledUP15Units/EE2.exe, preserved as work/EE2-engine.exe. Not asserted to be a vanilla binary.",
+    "ghidraVersion": "12.2",
+    "readOnly": true,
+    "analysisFiles": [
+      {
+        "file": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\EE2-Research\\analysis\\resource-initial.c",
+        "sha256": "2df2e418e266cc22a266660072dd6d12459f669c215dc492bacf525128f7aee5",
+        "functions": [
+          "007ed5f0",
+          "007ed630",
+          "007f8490",
+          "007f8500",
+          "007f8960",
+          "007f89a0",
+          "005e0bd0"
+        ]
+      },
+      {
+        "file": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\EE2-Research\\analysis\\resource-gather-runtime.c",
+        "sha256": "b7c8524869eadfcf3e022c1b70de414803266864afe905d17d44f3d45ac6dca8",
+        "functions": [
+          "007ee140",
+          "007eedd0",
+          "007ee6b0",
+          "007ef6a0",
+          "007edf10",
+          "007f01a0",
+          "007ed7f0",
+          "007efc80",
+          "007f8330",
+          "007f8390",
+          "007e7cf0"
+        ]
+      },
+      {
+        "file": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\EE2-Research\\analysis\\resource-special-runtime.c",
+        "sha256": "ea019c1f7be13f11fb0a6bf7dc1350b9d1ca7fbee5b53591a21a348d6e495160",
+        "functions": [
+          "00884710",
+          "007ee230",
+          "007f8580",
+          "007f85c0",
+          "007f85f0",
+          "007ed930",
+          "00857080"
+        ]
+      },
+      {
+        "file": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\EE2-Research\\analysis\\resource-limits-runtime.c",
+        "sha256": "905e2226287c78e7316fa95b2029268c11d48cc6b89bcf7944b22ebde0c71a0b",
+        "functions": [
+          "007f86e0",
+          "007f86b0",
+          "007f8aa0",
+          "008048f0"
+        ]
+      }
+    ],
+    "stock": {
+      "minimum": 0.0,
+      "maximum": 999999.0,
+      "capAddress": "00b413a4",
+      "playerArrayOffset": "0x9c",
+      "itemBytes": 4,
+      "functions": [
+        "007ef6a0",
+        "007e7cf0"
+      ]
+    },
+    "delivery": {
+      "function": "007ef6a0",
+      "resourceBonusesFunction": "00857080",
+      "garrisonBonusFunction": "007f8aa0",
+      "result": "At dropoff, credit carried resource times type-specific multiplier; clamp stock; clear carry amount. Multiplier includes occupied garrison slots times resourceBonus, added to the base effect modifier."
+    },
+    "resourceNodeInitialization": {
+      "function": "007f86b0",
+      "result": "Initialize per-unit reserve as float from the configured Resource amount; worker counters and covered flag begin at zero."
+    },
+    "garrisonGeneration": {
+      "function": "007e7cf0",
+      "result": "Rate times occupied slots, with resource factor and fractional accumulation. Credit floor(accumulation) and retain remainder; no citizen haul trip."
+    },
+    "specialResourceEligibility": {
+      "function": "00884710",
+      "tableBase": "00b5526c",
+      "callers": [
+        "007eedd0",
+        "007ef6a0"
+      ],
+      "result": "Return special UI slot1/2 for active epoch interval, -1 otherwise. Not a resource conversion."
+    }
+  },
+  "limitations": [
+    "Database values are base db.zip only; installed patch overlays were deliberately not selected.",
+    "Runtime code evidence comes from the already analyzed installed enabled-UP engine; equivalence to every retail/patch version is not asserted.",
+    "alwaysExhaustible null means absent in that DDF declaration; engine defaults/global finite-resource settings are not established here.",
+    "Special-resource stock cleanup on epoch transition is not established here; active gather/delivery windows are established.",
+    "Resource modifiers, taxes, diplomacy, crown/technology effects are not all reconstructed. Rates are base values.",
+    "No simulator or renderer code is changed by this extractor."
+  ]
+}

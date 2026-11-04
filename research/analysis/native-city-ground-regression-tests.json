@@ -1,0 +1,140 @@
+{
+  "format": "native-city-ground-regression-tests-v1",
+  "status": "passed",
+  "completedUtc": "2026-11-03T16:03:21.751657+00:00",
+  "scope": "Independent review of persistent source-BASE TC radius state and compatible save extension. Runtime Rust owned and built by materials agent; this reviewer changed test fixtures only.",
+  "wasm": {
+    "ee2": {
+      "sha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+      "bytes": 430146
+    },
+    "base": {
+      "sha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+      "bytes": 268821
+    }
+  },
+  "independentReview": {
+    "report": "city-ground-independent-review.json",
+    "sha256": "7d78a7390d5ec7f48b348754d40da938d7c5382f28a7770e7d4ea1d5c1c54da2",
+    "checks": 904,
+    "baseCases": 16,
+    "baseTicksPerCase": 1200,
+    "baseSaveByteAndHashCheckpoints": 112,
+    "explicitMalformedMutations": 22,
+    "additionalFooterTruncations": 36,
+    "additionalTrailingDataCases": 32,
+    "results": [
+      "BASE: 2 seeds Ã— 8 epochs Ã— 1200 ticks, worker production, 112 full save-byte/state-hash checkpoints against pre-City WASM.",
+      "CGD1 current byte roundtrip; pure queries; invalid marker/version/count/footer/radius/stale/foreign/duplicate/out-of-order records and all truncation/trailing-data cases leave active hash and bytes unchanged.",
+      "Real C15 gift: epoch15 TC to epoch1 recipient retains radius11 immediately, after save/load and after40ticks.",
+      "Save generation recycling: stale old-generation CGD1 rejected atomically; explicit fresh generation receives radius7 and cannot inherit old11.",
+      "Genuine pre-City57 and991E/DIP1 legacy saves migrate; exact old prefix preserved; present-profile synthesis, upgrade idempotence and finite ECO1/CGDE marker collision verified."
+    ]
+  },
+  "existingTargetedSuites": [
+    {
+      "name": "city-independent-review",
+      "status": "passed",
+      "log": "work/city-review-logs/city-independent-review.log",
+      "logSha256": "d2c13edc32b737b0477539478b37c74bf3c7b8b77c7b91120dc6aff91711de5b",
+      "summary": "904 independent checks; 112 BASE save-byte/hash checkpoints"
+    },
+    {
+      "name": "diplomacy-test",
+      "status": "passed",
+      "log": "work/city-review-logs/diplomacy-test.log",
+      "logSha256": "671782f7c4edca34070e6719533452352a9b940b36fef7a3b60c7de2bae605fd",
+      "summary": "PASS diplomacy: 3177 checks; bilateral offers, stance direction, alliance sight handshake, reject/withdraw/expiry and validation; all nine tribute slots, exact amounts, affordability, recipient cap and atomic invalid transactions; malformed/truncated/forged diplomacy wire records and sender authorization; live direct/splash damage, peaceful third parties, non-hostile context/acquisition and in-flight treaty changes; all start visibility modes, minimap/render consistency, mode-aware building terrain knowledge without natural-fog changes, stealth and consented bilateral ally sight; AI rejection/acceptance timing, mature/common-enemy/1v1 alliances, sight negotiation, war response and display-independent AI evolution; exact ECO1+DIP1 structure, pending treaties/logs/vision roundtrip, atomic malformed-save rejection and genuine 56-definition legacy migration; two real lockstep peers: queued offers/acceptance, shared sight, tribute, directed war and long-run hashes; base-profile diplomacy with its unchanged three-resource save prefix"
+    },
+    {
+      "name": "economy-ai-soak-test",
+      "status": "passed",
+      "log": "work/city-review-logs/economy-ai-soak-test.log",
+      "logSha256": "a2aeb139fc2d2eeef7ba36e3cd8571d8c2d6bbc887177af0050832c024240d87",
+      "summary": "PASS AI economic soak: bounded/finite stocks and state over20+10 simulated minutes; observations written to /C:/Users/Admin/Documents/Codex/2026-10-30/es-x20/outputs/EE2-Research/analysis/economy-ai-soak.json warnings 0"
+    },
+    {
+      "name": "economy-research-effects-test",
+      "status": "passed",
+      "log": "work/city-review-logs/economy-research-effects-test.log",
+      "logSha256": "353f25285061dab6fd313cab80b4a4c8d994eb485e6a4dffd9b5dfdb3ada1d70",
+      "summary": "PASS economy research effects: 43 actual WASM scenarios; three house +2 factors and native baselines, separate basic/stone/gold/iron carry rates, tin/iron/saltpeter/oil/uranium fields, era/build gates, real extractor garrisons and integer stock+remainder, additive tiers and no tooltip/unrelated-owner/mask bonuses."
+    },
+    {
+      "name": "economy-test",
+      "status": "passed",
+      "log": "work/city-review-logs/economy-test.log",
+      "logSha256": "5acfa0fb4e38d4e1a8fc06743916c626c238c09206c6abcb77abe6d299ca7e40",
+      "summary": "PASS economy: original costs/stats, all resource/epoch gates, hauling15 and dropoff bonus, Oil/Uran six-slot generation, nine-account cap/hash/save/legacy migration, two clients plus AI without OOS."
+    },
+    {
+      "name": "economy-worker-limits-test",
+      "status": "passed",
+      "log": "work/city-review-logs/economy-worker-limits-test.log",
+      "logSha256": "1095041b21b1393dc48657def51cdbb33990e37a468ebf6562f5724f528c6d06",
+      "summary": "PASS original worker limits: wood3, forage6, iron6, farm1; extra citizens cannot exceed native caps, with native carry rates and delayed bank credit."
+    },
+    {
+      "name": "fortress-territory-test",
+      "status": "passed",
+      "log": "work/city-review-logs/fortress-territory-test.log",
+      "logSha256": "f44fe06cd13fdfef6f5eac1d548662de4ad99b23593d59121a3e075d7526f204",
+      "summary": "PASS Fortress/territory: 1146 checks; 5 groups; native acquisition/completion/bootstrap, Fortress57 rotation/research and genuine56 migration, Base53."
+    },
+    {
+      "name": "people-test",
+      "status": "passed",
+      "log": "work/city-review-logs/people-test.log",
+      "logSha256": "7615ae556e8eb36d6845987521f6f57814aad9b9bf6c6c0fe540646272d300a0",
+      "summary": "PASS openepoch.wasm human articulation, all four tools, walking/gathering/building state and render determinism"
+    },
+    {
+      "name": "placement-rotation-test",
+      "status": "passed",
+      "log": "work/city-review-logs/placement-rotation-test.log",
+      "logSha256": "8515cd43cf8aba610f0cca092f05b9dec095a4239b3f29f8dae99ab1567c3774",
+      "summary": "PASS placement/rotation: 5027 checks; eight45-degree choices; positive/square odd-angle tile BBoxes; invalid IDs/turns; neutral TC claim, native9-slot cost, actual citizen movement/source-time build, persistent ownership, same-province and foreign limits; untouched generated seed1: reachable neutral TC completes from actual start citizen, native costs and mode2, without fixture/map edits or cheats; no/wrong builder, invalid definitions/turns/map coordinates, exact-cost failure, deposits/water and disconnected selected-worker land path; map modes0/1/2 building knowledge, unchanged genuine per-team fog, full diagonal-BBox scouting; non-TC neutral terrain: equal source cost, no territory claim and measured2x build-time rule with actual adjacent citizen; actual mixed-land/water dock BBoxes, all8 manual directions, cardinal shore adapter, real builder completion/save and missing-land/missing-sea/rock/deposit rejection; ee2: all8 real construction/save/render/Ground rotations; diagonal occupancy; old cmd_place default0; base: all8 real construction/save/render/Ground rotations; diagonal occupancy; old cmd_place default0; C_PLACE_ROTATED16 strict integer coordinates/bit packing/own-builder authentication, malformed records and legacy C_PLACE10; two actual seats queue exact18-byte rotated commands, execute on identical turns and finish construction without hash divergence"
+    },
+    {
+      "name": "research-test",
+      "status": "passed",
+      "log": "work/city-review-logs/research-test.log",
+      "logSha256": "5e2e3f7e21acc4cd6370b776ac5948de345a33c2320f10157df5a9c1f957e989",
+      "summary": "PASS research: 53 fallback meshes, 57 native definitions/nine resources, source-backed university/HP/host epochs, garrison/generation/unload, point economy/refunds/six-tech gate, all 180 technologies/all 15 epochs, save roundtrip and invalid research/economy rejection; controlled explored coast"
+    },
+    {
+      "name": "territory-diplomacy-test",
+      "status": "passed",
+      "log": "work/city-review-logs/territory-diplomacy-test.log",
+      "logSha256": "0c24290c9a87c25b06e34fd795b0b29172d35d92d5957e526289a530e5004801",
+      "summary": "PASS territory diplomacy: 3701 checks; persistent gift, province texture/minimap/build rights, actor identity, own-versus-third-party troops, construction/health, crew/slot limits, refund conservation and recipient native research/production; reject/withdraw/expiry/cooldown, atomic swap, ownership races, claim destruction/generation reuse and persistent two-way ownership; invalid IDs/fields/players, dead recipients, authenticated strict C15 wire and unknown-province information limits; allowed final-province gift/self-defeat and alliance termination; atomic final-province swap retains both players/treaties; gifted OilRig/UraniumMine retain crew but respect recipient unlocks; expired versus valid carried resource conservation; deterministic delayed AI valuation: rejects insufficient neutral offer with reason, accepts a strictly richer package; exact TER1 structure, claims/pending offer roundtrip, atomic malformed saves and genuine 991E/DIP1 migration with full old diplomacy state; two actual peers: queued swap/accept, persistent claims/alliance and final gift with matching hashes; base-profile gift/save smoke"
+    }
+  ],
+  "testFixtureChanges": {
+    "sourceSha256": {
+      "tools/save-fixture.mjs": "d5ccb3cd4718741da4f0d91ce8cfe5354f0d0a45e648815c240d01ba58d00c58",
+      "tools/diplomacy-test.mjs": "f5670df2fa4ebf85de49c372eb88783092227f8ac2636a4fb5b7afda45315573",
+      "tools/economy-test.mjs": "ccedf90fdcb3d4b3a4fee9af10d6ef0f759ff4e36c4063348c2730e4b05c2588",
+      "tools/economy-research-effects-test.mjs": "15e81d88805e7c2357ea311fcfa320b701f7c755c8d10d41b2e2624a0fc7eb1a",
+      "tools/research-test.mjs": "3de87b3f10f460204ff8d50e0f1032c87a10ab33926b696a646adf1ff69acbd0",
+      "tools/territory-diplomacy-test.mjs": "4241ee57ad0c54a1694615a1615b0d69281c4a3350fcc209bb25b688a38f5799",
+      "tools/fortress-territory-test.mjs": "0bce77083f5885aac7a539d428e2f51e26fd14a2a0351ffcb1fc79a374f9a0ba",
+      "tools/economy-ai-soak-test.mjs": "ca7454d1bd7912868848f5ec5fe8d4f3b72d099db368d4b68d627d988cd06c04",
+      "tools/placement-rotation-test.mjs": "2fbce07b114987bf92c31dac1d591302457aa02e27e4086ac4bd8aff969e9fb3"
+    },
+    "details": [
+      "CGD1 footer offsets leave BASE unchanged.",
+      "Explicit City fixture refresh only for controlled epoch/completion/handle edits; malformed and roundtrip loads unchanged.",
+      "Synthetic older55 save omits future CGD1.",
+      "Placement GL mock implements state save/restore."
+    ]
+  },
+  "limits": [
+    "Registration adapter uses alive completed TCs and BASE radius bands; civ/tech-specific radii remain outside this slice.",
+    "Legacy saves lack old radius history and synthesize current profiles.",
+    "Independent recycling uses a valid saved-generation fixture; actual kill/spawn lifecycle is covered by materials Rust suite.",
+    "BASE binary differs in source-position data but tested hashes and complete saves are identical."
+  ],
+  "githubWrites": 0,
+  "runtimeEditsByReviewer": []
+}

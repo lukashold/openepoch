@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {nextBuildingTurn,placementMessage,PLACEMENT_ERRORS} from '../docs/building-controls.js';
+assert.equal(nextBuildingTurn(0,1),2,'native default UI step is90 degrees');
+assert.equal(nextBuildingTurn(0,-1),6);assert.equal(nextBuildingTurn(6,1),0);
+assert.equal(nextBuildingTurn(0,1,true),1,'explicit fine option is45 degrees');
+assert.equal(nextBuildingTurn(0,-1,true),7);
+let turn=0;for(let i=0;i<8;i++)turn=nextBuildingTurn(turn,1,true);assert.equal(turn,0);
+assert.match(placementMessage(1,5),/Wasserfläche.*Ufer/);assert.match(placementMessage(3,0),/Erkunde/);
+assert.match(placementMessage(5,0),/bereits ein Stadtzentrum/);assert.match(placementMessage(6,0),/Bürger/);
+assert.match(placementMessage(7,0),/Kein Landweg/);assert.match(placementMessage(0,0),/Linksklick/);
+for(let i=1;i<=10;i++)assert.ok(PLACEMENT_ERRORS[i].length>15);
+assert.match(placementMessage(10,56),/höchstens zwei Festungen/);
+console.log('PASS building controls:90-degree standard, optional45-degree fine steps, angle wrap and concrete placement error messages.');

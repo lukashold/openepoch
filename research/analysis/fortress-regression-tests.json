@@ -1,0 +1,174 @@
+{
+  "format": "fortress-regression-tests-v1",
+  "createdUTC": "2026-10-31T12:06:33.434366+00:00",
+  "status": "passed",
+  "wasmSha256": "98cc80a34f8985e2fc183aa431726e58e8284556eef830202188184694626530",
+  "baseWasmSha256": "26cdb7342ec868b94127df99c2f3d77304915bfc46e9f5d9ac947a6578c1670e",
+  "sameBuildThroughout": true,
+  "suiteCount": 18,
+  "suites": [
+    {
+      "tool": "OpenEpoch/tools/cheats-test.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 0.21,
+      "sourceSha256": "ed4010c38343a7ffc8d65028e5844211d154e1237c514e0d667fe9c9d41bee9c",
+      "scope": "Base profile: cheat gate, loot/research/instant toggles, saves and multiplayer exclusion.",
+      "output": "PASS openepoch.wasm cheat gating, loot, research credit, instant construction/production, toggles, saves including old format, multiplayer exclusion\n"
+    },
+    {
+      "tool": "OpenEpoch/tools/diplomacy-test.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 2.87,
+      "sourceSha256": "6a8fea6637abff6bf0b8432e181fe30fdc4e2903e539912d256b1f8358bfe1a9",
+      "scope": "Offers/treaties/vision, tribute, hostile combat/projectiles, natural versus display sight, AI, old saves and lockstep.",
+      "output": "PASS diplomacy: 3177 checks; bilateral offers, stance direction, alliance sight handshake, reject/withdraw/expiry and validation; all nine tribute slots, exact amounts, affordability, recipient cap and atomic invalid transactions; malformed/truncated/forged diplomacy wire records and sender authorization; live direct/splash damage, peaceful third parties, non-hostile context/acquisition and in-flight treaty changes; all start visibility modes, minimap/render consistency, mode-aware building terrain knowledge without natural-fog changes, stealth and consented bilateral ally sight; AI rejection/acceptance timing, mature/common-enemy/1v1 alliances, sight negotiation, war response and display-independent AI evolution; exact ECO1+DIP1 structure, pending treaties/logs/vision roundtrip, atomic malformed-save rejection and genuine 56-definition legacy migration; two real lockstep peers: queued offers/acceptance, shared sight, tribute, directed war and long-run hashes; base-profile diplomacy with its unchanged three-resource save prefix\n"
+    },
+    {
+      "tool": "OpenEpoch/tools/economy-ai-soak-test.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 4.03,
+      "sourceSha256": "d606a2247630fd12ff02a5bea124ed394967e02ef94e64588ac3b605dcb7745f",
+      "scope": "Four-player20-minute early and10-minute industrial economic stress fixtures; bounded finite resources/state and zero warnings.",
+      "output": "eSeconds\":21.949951171875},{\"team\":2,\"minutes\":20,\"epoch\":2,\"population\":45,\"capacity\":45,\"resources\":[3206.072509765625,16,200,2155.0556640625,1340.0045166015625,1717.02490234375,200,200,200],\"researchPoints\":3,\"workers\":19,\"workerOrders\":{\"4\":19},\"carrying\":15,\"army\":21,\"garrisoned\":3,\"buildings\":{\"0\":1,\"1\":1,\"3\":1,\"7\":1,\"47\":1,\"48\":1,\"51\":1,\"52\":1},\"unfinished\":0,\"queued\":2,\"maxQueueSeconds\":21.099964141845703},{\"team\":3,\"minutes\":20,\"epoch\":2,\"population\":52,\"capacity\":60,\"resources\":[3018.0830078125,1262.0374755859375,200,2247.11279296875,1175.0045166015625,1620.0274658203125,200,200,200],\"researchPoints\":3,\"workers\":20,\"workerOrders\":{\"4\":17,\"5\":3},\"carrying\":18,\"army\":24,\"garrisoned\":3,\"buildings\":{\"0\":1,\"1\":4,\"3\":1,\"7\":1,\"47\":1,\"48\":1,\"49\":1,\"50\":1,\"51\":1,\"52\":1,\"56\":1},\"unfinished\":1,\"queued\":4,\"maxQueueSeconds\":23.84992218017578}]}\n{\"seed\":41,\"startingEpoch\":10,\"minutes\":10,\"wallSeconds\":1.558,\"meanTickMs\":0.1298,\"final\":[{\"team\":0,\"minutes\":10,\"epoch\":10,\"population\":42,\"capacity\":55,\"resources\":[605,14,200,95,809,200,824,1292,200],\"researchPoints\":15,\"workers\":19,\"workerOrders\":{\"4\":16,\"5\":3},\"carrying\":16,\"army\":6,\"garrisoned\":9,\"buildings\":{\"0\":1,\"1\":3,\"3\":1,\"4\":1,\"47\":2,\"49\":1,\"50\":1,\"51\":1,\"53\":1},\"unfinished\":1,\"queued\":2,\"maxQueueSeconds\":22.649940490722656},{\"team\":1,\"minutes\":10,\"epoch\":10,\"population\":42,\"capacity\":55,\"resources\":[530.4699096679688,44,200,412.6075134277344,734,200,659,403,200],\"researchPoints\":3,\"workers\":16,\"workerOrders\":{\"4\":16},\"carrying\":16,\"army\":5,\"garrisoned\":12,\"buildings\":{\"0\":1,\"1\":3,\"3\":1,\"47\":2,\"49\":1,\"50\":1,\"51\":1,\"53\":1},\"unfinished\":0,\"queued\":4,\"maxQueueSeconds\":53.14947509765625},{\"team\":2,\"minutes\":10,\"epoch\":10,\"population\":42,\"capacity\":50,\"resources\":[506.0350036621094,49,200,340,599,200,614,1331,200],\"researchPoints\":16,\"workers\":16,\"workerOrders\":{\"4\":16},\"carrying\":14,\"army\":5,\"garrisoned\":12,\"buildings\":{\"0\":1,\"1\":2,\"3\":1,\"4\":1,\"47\":2,\"49\":1,\"50\":1,\"51\":1,\"53\":1},\"unfinished\":0,\"queued\":3,\"maxQueueSeconds\":23.349929809570312},{\"team\":3,\"minutes\":10,\"epoch\":10,\"population\":42,\"capacity\":50,\"resources\":[457.0400085449219,34,200,175,648.5474853515625,200,614,1309,200],\"researchPoints\":16,\"workers\":16,\"workerOrders\":{\"4\":16},\"carrying\":13,\"army\":5,\"garrisoned\":12,\"buildings\":{\"0\":1,\"1\":2,\"3\":1,\"4\":1,\"47\":2,\"49\":1,\"50\":1,\"51\":1,\"53\":1},\"unfinished\":0,\"queued\":3,\"maxQueueSeconds\":23.69992446899414}]}\n"
+    },
+    {
+      "tool": "OpenEpoch/tools/economy-legacy-health-test.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 0.3,
+      "sourceSha256": "db3b17b7ffceeaaaddb0ab2900a7eeeecd52d428a80286ab0034556e92158c89",
+      "scope": "Genuine53-definition health migration and full/partial native HP, banks/research/carry and roundtrip.",
+      "output": "PASS genuine legacy53 health migration: workers40→30 and researched48→36, full/half/quarter health retained, town centers2400→8000, banks/research preserved, obsolete carry remainder cleared, native roundtrip stable.\n"
+    },
+    {
+      "tool": "OpenEpoch/tools/economy-research-effects-test.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 4.66,
+      "sourceSha256": "737428f81e3f182fd42f36e45a336eed3e43035e56b64a32c60bea403a705904",
+      "scope": "43 actual WASM research-effect scenarios, native modifiers, cargo/resource fields and exact epoch/build gates.",
+      "output": "PASS economy research effects: 43 actual WASM scenarios; three house +2 factors and native baselines, separate basic/stone/gold/iron carry rates, tin/iron/saltpeter/oil/uranium fields, era/build gates, real extractor garrisons and integer stock+remainder, additive tiers and no tooltip/unrelated-owner/mask bonuses.\n"
+    },
+    {
+      "tool": "OpenEpoch/tools/economy-start-epoch-test.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 0.52,
+      "sourceSha256": "806ff79323a650e09420b55fdac633c166c4cd3d3f477870d6c1cc3f5c42115e",
+      "scope": "All15 native start epochs, four-player symmetry/HP and invalid/late/network/benchmark setting guards.",
+      "output": "PASS skirmish start epoch: all15 native epochs, four-player symmetry, native full-health initialization, invalid/after-start/network/benchmark mutation guards.\n"
+    },
+    {
+      "tool": "OpenEpoch/tools/economy-test.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 2.04,
+      "sourceSha256": "1ef5d35f48014505ededb4170007d77b68c9069a8139e8ec548e82b52902e63f",
+      "scope": "Nine accounts, original costs/epochs, hauling/dropoff, oil/uranium generation, caps/hash/save/legacy and multiplayer.",
+      "output": "PASS economy: original costs/stats, all resource/epoch gates, hauling15 and dropoff bonus, Oil/Uran six-slot generation, nine-account cap/hash/save/legacy migration, two clients plus AI without OOS.\n"
+    },
+    {
+      "tool": "OpenEpoch/tools/economy-worker-limits-test.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 0.32,
+      "sourceSha256": "497498c353e4bc76f22674ae3c75ccc8943e0886e8b0666c4d1dd6a009b3b0b6",
+      "scope": "Wood3, forage6, iron6, farm1 native worker caps and carried production.",
+      "output": "PASS original worker limits: wood3, forage6, iron6, farm1; extra citizens cannot exceed native caps, with native carry rates and delayed bank credit.\n"
+    },
+    {
+      "tool": "OpenEpoch/tools/legacy-save-test.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 0.2,
+      "sourceSha256": "cf2350370a1cb3e2e5742f29eaf3373cc8f936a8626c21f45ee10d85671b2fb4",
+      "scope": "Genuine historic save migration: epoch, incompatible queue refund, population/map and research credit.",
+      "output": "PASS genuine previous-build save: Bronze Age mapped correctly, incompatible epoch queue refunded, population/map preserved, unused cheat credit migrated into research bank\n"
+    },
+    {
+      "tool": "OpenEpoch/tools/people-test.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 1.2,
+      "sourceSha256": "a2d263bb55e4613a81f32457cce44e4eda0c83d21e4e320efb837ccece3ab57a",
+      "scope": "Both profiles: human articulation, all four tools, walk/gather/build state and rendering determinism.",
+      "output": "PASS openepoch.wasm human articulation, all four tools, walking/gathering/building state and render determinism\nPASS openepoch-ee2.wasm human articulation, all four tools, walking/gathering/building state and render determinism\n"
+    },
+    {
+      "tool": "OpenEpoch/tools/placement-rotation-test.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 5.14,
+      "sourceSha256": "b45ec9346892c370c197a6da261278785805e1aa3ad69795472cef63de607614",
+      "scope": "Eight optional45-degree turns, conservative BBoxes, actual construction/rotation, native NIF draw payload and Ground, dock coasts, visibility, authenticated commands, saves and two-peer lockstep.",
+      "output": "PASS placement/rotation: 5026 checks; eight45-degree choices; positive/square odd-angle tile BBoxes; invalid IDs/turns; neutral TC claim, native9-slot cost, actual citizen movement/source-time build, persistent ownership, same-province and foreign limits; untouched generated seed1: reachable neutral TC completes from actual start citizen, native costs and mode2, without fixture/map edits or cheats; no/wrong builder, invalid definitions/turns/map coordinates, exact-cost failure, deposits/water and disconnected selected-worker land path; map modes0/1/2 building knowledge, unchanged genuine per-team fog, full diagonal-BBox scouting; non-TC neutral terrain: equal source cost, no territory claim and measured2x build-time rule with actual adjacent citizen; actual mixed-land/water dock BBoxes, all8 manual directions, cardinal shore adapter, real builder completion/save and missing-land/missing-sea/rock/deposit rejection; ee2: all8 real construction/save/render/Ground rotations; diagonal occupancy; old cmd_place default0; base: all8 real construction/save/render/Ground rotations; diagonal occupancy; old cmd_place default0; C_PLACE_ROTATED16 strict integer coordinates/bit packing/own-builder authentication, malformed records and legacy C_PLACE10; two actual seats queue exact18-byte rotated commands, execute on identical turns and finish construction without hash divergence\n"
+    },
+    {
+      "tool": "OpenEpoch/tools/reference-test.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 7.63,
+      "sourceSha256": "5c9ca666a1daf71afce2748330c311b4c86d47c19c2f2119642a03fca1ce7b91",
+      "scope": "Source scalar baselines, legacy movement adapters, Ghidra angles, nuclear-sub secondary, matrix convention, distinct rules/saves and deterministic2000-unit run.",
+      "output": "PASS: 8 source-backed static visual baselines and legacy movement/weapon adapters, Ghidra degree/radian conversion, nuclear-sub secondary removal, 15 epochs, matrix orientation, separate rulesets/save rejection, deterministic 2000-unit simulation and save roundtrip\n"
+    },
+    {
+      "tool": "OpenEpoch/tools/research-network-test.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 1.18,
+      "sourceSha256": "35f80ac600102c774fd56a61622b0e9f692dd531f63d1de2576dbaf5f9f1fab7",
+      "scope": "Both actual clients build universities, garrison/research/ungarrison with identical hashes across2650 turns.",
+      "output": "PASS research lockstep: both players build universities, garrison citizens, earn/spend points, research HP bonus and ungarrison without desync across 2650 turns\n"
+    },
+    {
+      "tool": "OpenEpoch/tools/research-test.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 2.99,
+      "sourceSha256": "6aba2b20df2a0e6fb9dab89f7fb3f58d93bdddbc552316fdfded75d5993dafe8",
+      "scope": "All180 technologies across15 epochs, source HP/hosts, university garrison/generation/unload, source gates and saves.",
+      "output": "PASS research: 53 fallback meshes, 57 native definitions/nine resources, source-backed university/HP/host epochs, garrison/generation/unload, point economy/refunds/six-tech gate, all 180 technologies/all 15 epochs, save roundtrip and invalid research/economy rejection; controlled explored coast\n"
+    },
+    {
+      "tool": "OpenEpoch/tools/skirmish-test.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 0.64,
+      "sourceSha256": "b413d0dea284d6865abd8a81d1fa4a053fd450bc7a5aec1cc43a2c8de23b81dc",
+      "scope": "Base profile: all eight epochs, symmetric settings, future production and save roundtrip.",
+      "output": "PASS openepoch.wasm all 8 epochs, symmetric settings, future production, save roundtrip, 53 meshes\n"
+    },
+    {
+      "tool": "OpenEpoch/tools/smoke.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 15.46,
+      "sourceSha256": "ed595eac06d2124655cf3ba6f93937c77183cb658852352fb5c5607acac039a3",
+      "scope": "Base30-minute AI expansion/research, building/research/saves,3330 lockstep turns and up to6982-entity simulation benchmark.",
+      "output": "     after 30 min: [{\"epoch\":5,\"pop\":76,\"terr\":3,\"tech\":3},{\"epoch\":5,\"pop\":89,\"terr\":3,\"tech\":2}] 0.0615 ms/tick\nok   AI advances epochs \nok   AI researches technologies \nok   AI claims a second territory \nok   box select grabs the 5 workers \nok   cannot build outside own territory \nok   barracks placed \nok   barracks finished \nok   town center offers a technology Worker,Stone Tools,Next Epoch\nok   research queued \nok   research completed \nok   state moved on after saving \nok   load accepted \nok   load restores the exact state (594460 bytes)\nok   corrupt save rejected \nok   simulation runs on after load \nok   lockstep advanced (6610 / 6608 ticks, 2063 stalls waiting for the peer)\nok   no desync detected in 3305 turns \nok   both peers hold identical state \nok   each seat saw its own economy grow (pop 11 / 11)\n     bench: 2001 entities, avg 1.443 ms/tick, worst 4.19 ms, 9086 instances\n     bench: 3986 entities, avg 3.591 ms/tick, worst 5.37 ms, 12533 instances\n     bench: 6982 entities, avg 9.893 ms/tick, worst 20.57 ms, 17902 instances\n\nall checks passed\n"
+    },
+    {
+      "tool": "OpenEpoch/tools/territory-diplomacy-test.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 2.92,
+      "sourceSha256": "cd7b40465c4f0f7b997a7f77ca927cd2e45559a7df3559ed4cfea2b357923a68",
+      "scope": "Gift/swap ownership, actors/cargo/queues, recipient values, claims/generations, malformed records, legacy saves and lockstep.",
+      "output": "PASS territory diplomacy: 3701 checks; persistent gift, province texture/minimap/build rights, actor identity, own-versus-third-party troops, construction/health, crew/slot limits, refund conservation and recipient native research/production; reject/withdraw/expiry/cooldown, atomic swap, ownership races, claim destruction/generation reuse and persistent two-way ownership; invalid IDs/fields/players, dead recipients, authenticated strict C15 wire and unknown-province information limits; allowed final-province gift/self-defeat and alliance termination; atomic final-province swap retains both players/treaties; gifted OilRig/UraniumMine retain crew but respect recipient unlocks; expired versus valid carried resource conservation; deterministic delayed AI valuation: rejects insufficient neutral offer with reason, accepts a strictly richer package; exact TER1 structure, claims/pending offer roundtrip, atomic malformed saves and genuine 991E/DIP1 migration with full old diplomacy state; two actual peers: queued swap/accept, persistent claims/alliance and final gift with matching hashes; base-profile gift/save smoke\n"
+    },
+    {
+      "tool": "OpenEpoch/tools/transport.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 0.76,
+      "sourceSha256": "87219f3c92a01817ee34ae0f36d99cd82214e10285fc8bcb55e6a51b144a1a36",
+      "scope": "Actual dock and transport production, five citizens board/unload, identities/population retained.",
+      "output": "ok   found a dock site in own territory (seed 7, 46,56)\nok   dock placed \nok   dock finished {\"n\":1,\"activity\":0,\"name\":\"Dock\",\"def\":5,\"hp\":1400,\"max\":1400,\"built\":1,\"q\":[],\nok   dock offers the transport \nok   transport queued \nok   transport built 45.5,57.5\nok   all five workers selected (5 Worker)\nok   workers boarded (5/10, 5 sent)\nok   passengers left the map \nok   passengers still count as population (pop 7 -> 7)\nok   unload button offered \nok   ship is empty again \nok   all five workers are back ashore (5 Worker)\n\nall checks passed\n"
+    }
+  ],
+  "scope": "Current-WASM regression suite for Fortress/territory build. Native Fortress-specific source/behavior and browser reports are separate."
+}

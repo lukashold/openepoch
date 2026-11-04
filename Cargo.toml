@@ -8,6 +8,9 @@ description = "An original, clean-room epoch-spanning RTS for the browser (Rust 
 [lib]
 crate-type = ["cdylib"]
 
+[features]
+ee2-reference = []
+
 [profile.release]
 opt-level = 3
 lto = true

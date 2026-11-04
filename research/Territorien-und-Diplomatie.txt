@@ -1,0 +1,159 @@
+Empire Earth II: Territorien verschenken und tauschen — Befund 31.10.2026
+
+Ergebnis
+Das Original unterstützt direktes Territorien-Tribut und die beidseitige Gabe/
+Forderung von Territorien innerhalb eines angenommenen Allianzvertrags. Die
+deutsche Hilfe warnt ausdrücklich, dass eigene Gebäude im Gebiet mitgehen.
+Der untersuchte Runtimepfad ist noch weiter gefasst: Er bearbeitet tributfähige
+Objekte des bisherigen Besitzers im Gebiet und enthält keinen Building-only-
+Filter. Eine Garantie, freie Feldtruppen blieben immer beim Schenker, wäre
+deshalb keine belegte Originalregel.
+
+Eine lückenlose automatische Mitgabe jeder Garnison und jedes Sondertyps ist
+hier nicht rekonstruiert. Auch pauschale Verbote für das letzte, umkämpfte oder
+gerade angegriffene Gebiet sind nicht belegt. Solche sinnvollen Schutzregeln
+im eigenen Nachbau müssen als eigene Regeln kenntlich bleiben.
+
+Quellen und Grenzen
+Nur die lokale Installation wurde gelesen:
+C:\Program Files (x86)\GOG.com\Empire Earth II
+Basisarchive zips/db.zip und zips/hdrs.zip, Manual.pdf und Scripting Docs/
+EE2 SCRIPTING.doc. Alle Archiv-/Eintragshashes, Quellzeilen, Originalpfade,
+Funktionsadressen und Unsicherheiten stehen in analysis/territory-evidence.json.
+Quellzeilen sind 1-basiert nach UTF-8-BOM-Dekodierung und splitlines.
+
+Ghidra 12.2 nutzte das vorhandene Projekt EE2-Engine in sechs gezielten Läufen
+mit -readOnly -noanalysis für insgesamt 19 Funktionen. Die ausgewählte Engine
+ist Unofficial Patch Files/EnabledUP15Units/EE2.exe, unverändert als
+work/EE2-engine.exe kopiert. SHA256:
+d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f
+Die Haupt-EE2.exe ist ein anderer Launcher. Ungepatchte Versionen, sämtliche
+Patchvarianten und ihre VFS-Priorität werden nicht damit gleichgesetzt.
+Die .c-Ausgaben sind Ghidra-Pseudocode, keine originalen C++-Quellen.
+Installation, eigener Spielcode, Assets und Tests wurden nicht verändert.
+Der vorherige eigene EE2-Build 991E ist nur Ausgangsstand, keine Abnahme einer
+neuen Territorienfunktion.
+
+Direktes Geschenk und angenommener Vertrag sind verschiedene Wege
+db.zip!db/Text/dbtext_eee.utf8:745 beschreibt jederzeitiges Schicken von
+Ressourcen, Einheiten und Territorien. Der direkte Dialog hat einen eigenen
+Tribut-Senden-Button (db/UI/dbwidget_ingame.csv:670). Der Scriptbefehl
+TributeTerritory in 0048a5d0 bildet eine Gebietsliste und ruft 0054bdc0 direkt
+auf. In diesem Pfad ist kein vorausgehender Allianz-Annahmezustand nötig.
+Die generische Originalwarnung für Tribut an einen feindlichen Spieler
+(dbtext_msgingame:167) ist ebenfalls kein pauschales Handelsverbot.
+
+Für einen Allianzvertrag beschreibt dbtext_eee:737 das Abgeben eigener und
+Fordern fremder Territorien; Zeile739 beschreibt Gegenangebote und erneute
+Annahme/Ablehnung. AddAllianceProposalTributeTerritory 00488fa0 prüft, ob ein
+Gebiet einem der beiden Vertragspartner gehört, und ordnet es einer von zwei
+Listen zu. VerifyProposalTributeTerritory 0048a020 prüft aktuelles Eigentum des
+Gebenden; die lokale Scripting-Dokumentation bestätigt diese Voraussetzung.
+Bei Allianzannahme 00549650 wird SendTribute 0054bdc0 an 0054999b/005499b2 in beiden
+Richtungen ausgeführt. Damit sind beidseitige Gebietsgaben/Forderungen belegt.
+Ein unabhängiger reiner Tauschvertrag ohne Allianz ist damit nicht nachgewiesen.
+Auch vollständige atomare Rückabwicklung bei zwischenzeitlicher Eroberung ist
+aus zwei aufeinanderfolgenden Aufrufen allein nicht abzuleiten.
+
+Was geht mit?
+- Eigene normale Gebäude einschließlich Stadtzentrum: Die Angebots-Hilfe, Zeile 737
+  sagt ausdrücklich eigene Gebäude im Territorium; der Tributabschnitt, Zeile 745
+  bestätigt Gebäude-Mitgabe. Das normale Stadtzentrum ist dadurch als Gebäude
+  eingeschlossen. Es gibt keinen Beleg, sämtliche Sondergebäude dürften den
+  allgemeinen Tributfähigkeitsfilter umgehen.
+- Fremde oder neutrale Objekte: Der Runtimehandler beginnt mit der Objektliste
+  des bisherigen Gebietsbesitzers. Er ist kein pauschales Stehlen aller Objekte
+  anderer Spieler, die zufällig innerhalb derselben Grenzen stehen.
+- Freie bewegliche Einheiten:0071ddb0 ermittelt das Gebiet für bewegliche und
+  unbewegliche Objekte unterschiedlich, prüft 0054fed0 und ruft bei Übereinstimmung
+  00550f60 auf. Dieser Helfer wechselt über 008265b0/00826630 den Objektbesitzer;
+  er hat keinen Building-only-Filter. Der untersuchte Codepfad kann somit auch
+  tributfähige bewegliche eigene Objekte berücksichtigen. Das ist statische
+  Rekonstruktion, keine vollständige Originalspiel-Testmatrix aller Einheitentypen.
+- Garnisonen/Container: Bei einzeln angebotenen Gebäuden erscheinen stationierte
+  Einheiten laut Hilfe, Zeilen 735/745 jeweils separat in der Auswahlliste. Der Einzel-
+  Objekttributhelfer 00550d10 hat tatsächlich rekursive Insassenübertragung und
+  erneutes Einsetzen in den übertragenen Container. Die Territorienfunktion
+  verwendet aber 00550f60 statt dieses rekursiven Wrappers. Ihre Eigentümerliste
+  und der generische Besitzerwechsel können weitere Objekte betreffen; eine
+  zwingende, vollständige Übertragung aller Garnisonen ist damit nicht bewiesen.
+  „Jede Garnison geht garantiert unverändert mit“ wäre zu stark.
+
+Die allgemeine Übertragung 00826630 erzeugt ein Empfängerobjekt und übernimmt
+ausgewählte Zustände; sie ist mehr als das bloße Überschreiben einer Teamnummer.
+Ein Erhalt sämtlicher Produktionsschlangen, Ziele, Technologiezustände und
+Container-Sonderfälle wird aus diesem Ausschnitt nicht behauptet.
+
+Ausnahmen nicht blind aus einem Abschnitt verallgemeinern
+Der EINHEITEN-Tributabschnitt in dbtext_eee:745 nennt Anführer, Mauern,
+Mauertürme/-tore, Palisaden/-tore, Wunder und Baustellen als nicht abgebbar.
+Die gleiche allgemeine Tributfähigkeitsprüfung 0054fed0 wird auch im
+Territorienpfad verwendet; sie enthält mehrere Typ-/Zustandsprüfungen und
+rekursive Prüfungen bestimmter Container. Nicht jede Binärprüfung wurde hier
+einem konkreten Datenbanktyp zugeordnet. Die Hilfsaussage „alle Gebäude“ und
+diese allgemeinen Filter werden deshalb nicht zu einer erfundenen, lückenlosen
+Sonderfallliste zusammengezogen. Insbesondere werden aus Gebäude-Mitgabe
+keine ungeprüften Aussagen über Wunder, Baustellen oder Anführer abgeleitet.
+
+Letztes Gebiet, umkämpft und laufende Übergabe
+Die Originalmeldung dbtext_msgingame:165–166 besagt: Verliert ein Spieler sein
+letztes Territorium, werden seine Allianzen nichtig. Das ist eine Verlustfolge,
+kein Textbeleg für ein Verbot, das letzte Gebiet zu verschenken. In den hier
+untersuchten unteren Übergabefunktionen ist kein pauschaler Last-Territory-
+Frühabbruch erkennbar. Ungeprüfte UI-, Hauptstadt- und Siegmodusbedingungen
+verhindern aber die Gegenbehauptung, dies sei immer und überall zulässig.
+
+„Disputed/umkämpft“ bedeutet in den Quellen fehlende Kontrollvoraussetzungen.
+DbHdrs/DBTerritoryDefs.h:60–62 definiert solche Mindestanforderungen;
+db/Simulation/Misc/territory.ddf:72–82 verlangt standardmäßig ein Stadtzentrum.
+Das ist nicht gleichbedeutend mit Beschuss oder einer gerade laufenden Schlacht.
+Ein allgemeines Geschenkverbot wegen disputed/under attack ist hier nicht belegt.
+
+dbtext_msgingame:202 warnt, dass bereits in anderen Angeboten reservierte
+EINHEITEN aus einer Auswahl entfernt wurden. Eine gleichartige, vollständige
+Territorienreservierung ist damit nicht bewiesen. Eigentum wird in Script-
+Angebotshelfern geprüft; wie jede spätere Eroberung, Zerstörung oder parallele
+Übergabe im Original atomar abgefangen wird, bleibt offen. Eigene Prüfungen
+bei Angebot UND Vollzug sind vernünftig, aber kein automatisch originalgetreu
+rekonstruiertes Transaktionsprotokoll.
+
+KI, Tauschbewertung und eigener Implementierungsrahmen
+Angenommene Verträge und Gegenangebote sind als Vorgänge belegt. Die Scripting-
+Dokumentation beschreibt VerifyProposalTributeTerritory und automatische
+Gegenangebote nach nicht erfüllter Verifikation. Das ist Szenarioschnittstelle,
+kein Beweis einer universellen Original-KI-Preisliste. Bewertung von Flächen,
+Gebäuden, mobilen Truppen, Garnisonen oder Rohstoffgegenleistungen sowie
+Original-Antwortfristen wurden nicht vollständig rekonstruiert.
+
+Ein eigener Teilumfang mit ausdrücklicher Bestätigung, klarer Objektliste,
+aktueller Eigentumsprüfung und konservativen Schutzregeln kann daraus abgeleitet
+werden. Geschenk/Vertrag, eigene Schutzregeln und eigene KI-Bewertung müssen
+dabei erkennbar bleiben. Ein komplettes, regelgleiches Original-Diplomatiesystem
+oder eine Laufzeitabnahme des Originalspiels wird hier nicht behauptet.
+
+Nachweise im Analyseordner
+territory-tribute-runtime.c: direkte Scriptgabe, Scriptangebote, SendTribute
+territory-transfer-core.c: Prüfung, Vollzug und beidseitige Allianzannahme
+territory-owner-ui.c: Territorienobjekte und Einzelobjekt-Containerübertragung
+territory-transfer-filters.c: allgemeiner Objektfilter und Übergabewrapper
+territory-owner-setter.c: generischer Wechsel und Gebietsbesitzer-Setter
+territory-object-ownership.c: Objektneuerzeugung/Zustandsübernahme/Positionsdaten
+territory-evidence.json: Quellen, SHA256, Adressen, Status je Aussage und offene Punkte
+
+Aktueller eigener Ausbau nach diesem Befund
+Territoriengeschenke und angenommene Tauschangebote sind inzwischen implementiert.
+Die eigenen Gebäude und Feld-/Luft-/Seeeinheiten im Gebiet wechseln den Besitzer;
+Drittobjekte bleiben. Cargo-Mitgabe, Rückzahlungen aller Aufträge an den alten
+Besitzer, HP-Prozent/Empfängerwerte, Zielreset, Stadtzentrumsanker und atomare
+Zweirichtungs-Snapshots sind eigene Adapter, soweit oben nicht originalbelegt.
+Forschung, Epoche und Rohstoffbanken gehen nicht mit. Direkte Abgabe ist auch
+im Krieg und beim letzten Gebiet erlaubt, mit Warnung vor Bündnisverlust und
+möglicher Niederlage. Die neue Vier-Sekunden-KI-/Kostenbewertung ist eine eigene
+Regel. Der eigene 6E-Build besteht die gezielten WASM- und Browserprüfungen.
+Der echte lokale WebRTC-Tausch lief auf dem unmittelbar vorherigen 5C-Stand;
+Simulation/Speicherstände sind über zehn repräsentative 5C→6E-Fälle identisch
+geprüft. Verschiedene Rechner/NATs und Originalspiel-Äquivalenz bleiben offen.
+Aktuelle Prüfsummen und Grenzen: ../OpenEpoch/README.md und Originaltreue-Stand.txt.
+Belege: analysis/territory-tests.json, analysis/territory-logsort-equivalence.json
+und analysis/territory-browser-check.json; Bilder:
+../OpenEpoch/territory-diplomacy-preview.jpg und ../OpenEpoch/territory-swap-preview.jpg.
