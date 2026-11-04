@@ -8,4 +8,10 @@ try {
     cargo build --offline --release --target wasm32-unknown-unknown --features ee2-reference
     if ($LASTEXITCODE) { throw 'EE2 profile build failed' }
     Copy-Item "$env:CARGO_TARGET_DIR\wasm32-unknown-unknown\release\openepoch.wasm" 'docs\openepoch-ee2.wasm' -Force
+    cargo build --offline --release --target wasm32-unknown-unknown --features ee2-paidqueue7,ee2-render-meta7
+    if ($LASTEXITCODE) { throw 'EE2 UP roster build failed' }
+    Copy-Item "$env:CARGO_TARGET_DIR\wasm32-unknown-unknown\release\openepoch.wasm" 'docs\openepoch-ee2-up15.wasm' -Force
+    Copy-Item "$env:CARGO_TARGET_DIR\wasm32-unknown-unknown\release\openepoch.wasm" 'docs\openepoch-ee2-roster6.wasm' -Force
+    python tools/build_source_cloth.py
+    if ($LASTEXITCODE) { throw 'Own visual cloth build failed' }
 } finally { Pop-Location }

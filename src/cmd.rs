@@ -132,13 +132,14 @@ impl Game {
             C_STOP => self.order_stop(&ids),
             C_PLACE|C_PLACE_ROTATED=>{
                 if a.fract()!=0.0||b.fract()!=0.0||a<0.0||b<0.0||a>=N as f32||b>=N as f32||c<0{return;}
-                let bits=c as u32;if(kind==C_PLACE&&bits>=DEFS.len()as u32)||(kind==C_PLACE_ROTATED&&bits&0xffff_0000!=0){return;}
-                let def=(bits&255)as u8;let turn=bits>>8;if def as usize>=DEFS.len()||turn>=crate::placement::ROTATION_STEPS{return;}
+                let bits=c as u32;let shift=if cfg!(feature="ee2-roster6"){16}else{8};let mask=(1u32<<shift)-1;
+                if(kind==C_PLACE&&bits>=DEFS.len()as u32)||(kind==C_PLACE_ROTATED&&bits>>(shift+8)!=0){return;}
+                let def=(bits&mask)as DefId;let turn=bits>>shift;if def as usize>=DEFS.len()||turn>=crate::placement::ROTATION_STEPS{return;}
                 self.begin_construction(team,def,a as i32,b as i32,turn,&ids,true);
             }
             C_TRAIN => {
-                if let (Some(&i), 0..=255) = (ids.first(), c) {
-                    self.train(i, c as u8);
+                if let Some(&i)=ids.first().filter(|_|c>=0&&(cfg!(feature="ee2-roster6")||c<=255)) {
+                    self.train(i, c as QueueItem);
                 }
             }
             C_CANCEL => {

@@ -1,0 +1,8 @@
+{
+  "format": "native-sails7-composite-helper-tests-v1",
+  "status": "passed",
+  "checks": 144,
+  "manifestSha256": "f744b0a4f25313963a3c4bbcd2d6249fc306a2eae9667d069da146114a349d2d",
+  "helperSha256": "83545114207927c8004cc90fc32dfc60c88a2e0bd21dc4047d0cf0a4e2c2981e",
+  "scope": "Typed additive source composite, unchanged parent/inputs, verified source NIF identity, explicit FlagShader state and source initial local-plane diffuse formula; synthetic lighting operands are arithmetic probes."
+}

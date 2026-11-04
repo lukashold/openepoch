@@ -1,0 +1,10 @@
+{
+  "format": "native-classic6-selection-v1",
+  "scope": "Active UP CSV5/CFG5 data only. BASE membership selects classical families, never numerical fallback.",
+  "bindings": [
+    {"id": 57, "definition_name": "Scout", "source_unit": "Scout", "domain": "LAND", "host": "CityCenter", "building": false, "modelKind": "human", "limits": ["Existing grid movement/collision and generic command adapter; no native formation or conversion mechanic."]},
+    {"id": 58, "definition_name": "FightingSail", "source_unit": "FightingSail", "domain": "SEA", "host": "Dock", "building": false, "modelKind": "ship", "limits": ["Existing naval pathing/collision adapter; native ship turning and unit veterancy remain separate."]},
+    {"id": 59, "definition_name": "AirDefense", "source_unit": "AirDefense", "domain": "LAND", "host": "Citizen", "building": true, "modelKind": "building", "limits": ["Native conversion and per-family improvement jobs remain unsupported, as in the existing roster."]},
+    {"id": 60, "definition_name": "CoastalDefense", "source_unit": "CoastalDefense", "domain": "LAND", "host": "Citizen", "building": true, "modelKind": "building", "limits": ["Native conversion and per-family improvement jobs remain unsupported, as in the existing roster."]}
+  ]
+}

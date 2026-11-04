@@ -1,0 +1,10 @@
+{
+  "format": "native6-font-regeneration-tests-v1",
+  "status": "passed",
+  "filesCompared": 212,
+  "changed": [],
+  "liveRuntimeUntouched": true,
+  "systemFontFilesCopied": 0,
+  "extractorSha256": "cba0e17e3dbb2bb35b42da166588a44a7df77cc4ebc2ae69bc55f69fd762b0ec",
+  "scope": "Source ZIP metadata/cache plus source-derived current-system GDI raster regenerated in an isolated directory. Every original and supplemental runtime font file compared byte-for-byte."
+}

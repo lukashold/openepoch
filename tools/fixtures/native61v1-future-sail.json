@@ -1,0 +1,16 @@
+{
+  "format": "openepoch-own-save-fixture-v1",
+  "file": "native61v1-future-sail.oes",
+  "sha256": "7fb848e62f837f73760bcf66e3762a8d3c7407098289172f9c2e514aba5b9425",
+  "bytes": 597696,
+  "producerWasmSha256": "2f905ebd0ba69d155a7fdb2361f7a8f84642e8a3f2f908b9f133bfef7b7cefbc",
+  "ruleset": 2,
+  "schema": 6,
+  "definitions": 61,
+  "seed": 7,
+  "epoch": 14,
+  "gameTick": 4120,
+  "instantBuild": false,
+  "containsOriginalMedia": false,
+  "scope": "Historical OpenEpoch61v1 normal-command save, used solely to verify surviving future-era ships after production availability is corrected. V1 permitted future Sail production; this is not an original EE2 availability or native-save fixture."
+}

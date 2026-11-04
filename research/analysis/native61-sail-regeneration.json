@@ -1,0 +1,28 @@
+{
+  "status": "passed",
+  "format": "native61-initial-sail-regeneration-v1",
+  "byteIdenticalFiles": 18,
+  "files": {
+    "fighting-sail-5-initial.json": "da76a9e84d5909d91ae15464a28623923919c3d12342840211b0460feca980ad",
+    "fighting-sail-7-initial.json": "1268e39a0f8c36f4dd759e99e7210687ada7a94810d811d28342b098d587d2b9",
+    "fighting-sail-9-initial.json": "72ba856931b29edb61fb1a7bfbe7447a37dbd4adf35551719e166dd96beb4892",
+    "manifest.json": "f744b0a4f25313963a3c4bbcd2d6249fc306a2eae9667d069da146114a349d2d",
+    "textures/fx_flag_damage00.png": "a09a956e7c4300cf2a5cb9de5959f529c2bee1c50d13f2babdc1e22b401615fc",
+    "textures/fx_flag_damage01.png": "05733ad548a005a34d5c0b2178926055d6ed9467b14e76c56c5b41586f270b98",
+    "textures/fx_flag_damage02.png": "477ecb81a7ecf89b4559f2d78ad492ca1529cff50b6df607c69cd0a322b28b19",
+    "textures/fx_flag_damage03.png": "c090cb40153141e1817db1b7dc9261e99e1e73e72a334794937ffa7f0cfba901",
+    "textures/fx_flag_damage04.png": "9a6ce223898f767b5894aa97f0e9781af5e8e8023c567eb6cc3fbbceb0914c8d",
+    "textures/fx_flag_damage05.png": "2a0090b5777f7785cc4b6fb609e74fbec5049ed634edf044362018d92ea87925",
+    "textures/fx_flag_damage06.png": "30e31cf269980820cc682f8edcf38210b423895ecffd8c83060afdd6f1152f54",
+    "textures/fx_flag_damage07.png": "4a4ff2c1322f86c1b8f70b418a0d92a3bb156882f608801913d4b4a454bb17cd",
+    "textures/fx_flag_damage08.png": "804c7c45af21794443f7378dbcc2ce105fdfda16430819e90eb41453680693c6",
+    "textures/nf6_barque_sail_1.png": "1f7b5c2644ad884cde0d84b4685209ceba6695e757367999f94da748f30247e8",
+    "textures/nf6_barque_sail_2.png": "372fcdf19abca5c4732e6bab79061072a413fdd64739f7017cb5d49056fc97c4",
+    "textures/nfs8_shipoftheline_sail01.png": "abc458583bf5102767ba1a224aa3d1da633f9d3ea4a4befe8eda7b9a68feb93f",
+    "textures/nfs8_shipoftheline_sail02.png": "affba9079978b94f15529b7993fe6e0f5090f3036db69d355a1e187e17fb9193",
+    "textures/nfs8_shipoftheline_sail03.png": "38f9b46f4fa2e33cec680fec9a296b26c1a855d7b0b0787efc588aeba6ae5861"
+  },
+  "extractorSha256": "7b1f88793e90cd524f661e9c97e0558670f6888ce5bb7bffa02221f636e80e54",
+  "originalExeOrDllExecuted": false,
+  "scope": "Production extractor regenerated all3 composites,14 decoded PNGs and manifest into a separate directory, matching active source-derived media byte for byte."
+}

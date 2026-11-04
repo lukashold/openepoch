@@ -321,8 +321,8 @@ impl Game {
             let max_old = self.max_hp(old.team, old.def).max(0.01);
             let max_new = self.max_hp(new_team, old.def);
             let invalid_carry = old.def == WORKER
-                && old.q[2] != R_NONE
-                && !self.resource_unlocked(new_team, old.q[2]);
+                && old.q[2] != R_NONE as QueueItem
+                && !self.resource_unlocked(new_team, old.q[2] as u8);
             let e = &mut self.ents[i];
             e.team = new_team;
             // Match the normal return_cargo invalid-resource path.
@@ -471,7 +471,7 @@ impl Game {
             }
         }
     }
-    fn territory_value(&self, owner: u8, id: u8) -> f32 {
+    fn territory_value(&self, owner: u8, id:u8) -> f32 {
         let mut value = 100.0;
         for e in &self.ents[..self.high] {
             if !e.alive || e.hp <= 0.0 || e.team != owner || self.map.terr[tile_of(e.x, e.y)] != id
@@ -823,7 +823,7 @@ mod tests {
         g.ents[city].cargo_hp[0] = 50;
         g.ents[city].cargo_hp[1] = 95;
         let money = g.resource(0, 0);
-        assert!(g.train(city, WORKER));
+        assert!(g.train(city, WORKER as QueueItem));
         let count = g.ents[..g.high].iter().filter(|e| e.alive).count();
         let handle = g.h(city);
         let recipient_money = g.resource(1, 0);
@@ -1105,7 +1105,7 @@ mod tests {
         let b = g.spawn(node.host, 0, base.x + 8.0, base.y);
         g.research_points[0] = 1000.0;
         let before = g.research_points[0];
-        assert!(g.train(b, ORIGINAL_RESEARCH0 + k as u8));
+        assert!(g.train(b, ORIGINAL_RESEARCH0 + k as QueueItem));
         g.ents[b].qt = node.time * 0.8;
         assert!(g.apply_territory(0, 1, 0, id as u32, NONE));
         assert_eq!(g.research_points[0], before);

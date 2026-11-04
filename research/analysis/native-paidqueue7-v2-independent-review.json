@@ -1,0 +1,119 @@
+{
+  "format": "native-paidqueue7-v2-independent-review-v1",
+  "status": "PASS",
+  "wasmSha256": "2b2825b68243ed0c7b369e4470f2939f0c79f1fce31cf0f0525b4ca73153ecfd",
+  "activationManifestSha256": "fc5c636ab7d67b5b92d048a406dbe220aaae8b233b53ad2185a7bbddc58e9977",
+  "frozenDeltaFilesChecked": [
+    "Cargo.toml",
+    "src/game.rs",
+    "src/lib.rs",
+    "src/save.rs",
+    "src/render.rs",
+    "src/native_attack_clock.rs",
+    "src/paid_queue7.rs",
+    "src/paid_queue7_tests.rs",
+    "src/paid_queue7_main.rs",
+    "tools/save-fixture.mjs",
+    "tools/roster6-state.mjs",
+    "tools/generate_paid_queue7_main.py",
+    "tools/build_paid_queue7_profiles.py",
+    "tools/test_paidqueue7_gameplay_wasm.mjs",
+    "tools/test_paidqueue7_wasm.mjs",
+    "tools/test_paidqueue7_network_wasm.mjs",
+    "tools/test_paidqueue7_duration_wasm.mjs",
+    "tools/test_paidqueue7_off_profiles.mjs",
+    "docs/paidqueue7-main-actions.json",
+    "docs/paidqueue7-format.json",
+    "docs/PAIDQUEUE7.md",
+    "docs/openepoch-ee2-paidqueue7.wasm"
+  ],
+  "tests": {
+    "checks": 2631,
+    "malformedCases": 34,
+    "profiles": [
+      {
+        "name": "own",
+        "beforeSha256": "82ccbb1e17862d90ec6c242e9d1b9af029878c7a45b25f0f62b3e2f5e2caae9f",
+        "afterSha256": "d79e7a7d9a29d9b40f4baff4bca13f0f0950c84f36d4112366d459e1428c5aea",
+        "ticks": 320
+      },
+      {
+        "name": "base",
+        "beforeSha256": "1571c43a6ddd2d3382b4f72cdaf5c71b3d1b67761ac24bc15b8954ad48799a5c",
+        "afterSha256": "7ea0253f7abb8e58d223b3d8a52256b292e470154be03b72e91d722fe8fb6ecf",
+        "ticks": 320
+      },
+      {
+        "name": "up5",
+        "beforeSha256": "e6a2da2007940cd2ceabc6848de6443d8b7e94cffd432059571975b8de0faaa7",
+        "afterSha256": "d510876a430f4847898e498f51fae6f4a04386d93da8e23a3a29d68f6a016d9b",
+        "ticks": 320
+      },
+      {
+        "name": "classic6",
+        "beforeSha256": "3a71249f493c2cd73e2694ee0e1befb9f653a3100d43ebb9d78540a0cc71bdb0",
+        "afterSha256": "69b892b65bfea2df648f503de8904308c46e3344a8a9389d6c87af2b2859ce0a",
+        "ticks": 320
+      }
+    ],
+    "migrations": [
+      {
+        "name": "OEU5",
+        "sourceSha256": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51",
+        "ticks": 120,
+        "sourceSaveSha256": "bf42f1c10ea1a95bcf7b0a1927bcb54e910d807e7f20c06f0ea901aaf1d4dc37",
+        "migratedSaveSha256": "54b347209ea93025b348d2153dd5f8e77c9bb4c76db36c0903fd36f0724baa66"
+      },
+      {
+        "name": "OEU6",
+        "sourceSha256": "3a71249f493c2cd73e2694ee0e1befb9f653a3100d43ebb9d78540a0cc71bdb0",
+        "ticks": 120,
+        "sourceSaveSha256": "4fe3eddd1676374b37f62e6b7f7677d9739cbb0494949ac89922d7f496b1db33",
+        "migratedSaveSha256": "54b347209ea93025b348d2153dd5f8e77c9bb4c76db36c0903fd36f0724baa66"
+      }
+    ],
+    "network": {
+      "packets": 4,
+      "ticks": 320,
+      "restoredContinuationTicks": 80
+    },
+    "report": "native-paidqueue7-v2-independent-tests.json",
+    "sha256": "e7b9e3cbf1f1e96e7ba6f40aba04d2fae4f33c97c62b9f8ea9b91232ab301662"
+  },
+  "readOnlyReview": [
+    "PQPversion2 has exactly64byte records and OEU7descriptor schema2. Header/count/length/registry/ordered generational tuples and all11price components are checked before replacing the active world.",
+    "New paid UnitProduce jobs retain duration-1 until the first simulation work step; the start step captures current production_time and stores exact binary32 literal0.01. Readonly UI/render/duration queries do not start it.",
+    "Pay/Reprice update financial snapshots without rewriting duration. The active job is excluded from pending repricing. Cached active32.5 remains after the future Scout quote changes to29.25; its successor captures29.25 only on starting.",
+    "Save/load preserves cached duration, inferred/purchased flags and complete ledger. A malformed chunk is rejected atomically; state hash and the full previous save remain exact.",
+    "Feature-off0/1/5/6 retain exact simulation hash and full save bytes against their frozen baselines in the independent run. Feature-on OEU5/OEU6 migration marks unknown historical payments inferred; it does not pretend to recover original past invoice/time values.",
+    "Actual two-seat outbox/inbox/net_apply transport keeps hashes and full64byte ledgers aligned under different render cadences. Saving/restoring a peer preserves subsequent queue behavior; browser protocol negotiation/view-seat restoration is not covered."
+  ],
+  "resolvedFindings": [
+    "The initialv2reader accepted prematurely cached positive pending duration. Camera tightened current own-FIFO pending position>0 to duration-1 and added regressions.",
+    "The initialv2reader accepted positive front duration while elapsedqt==0. Camera tightened this too, retaining duration0 as a possible completed/blocked zero-time state. Both guards are in the reviewed finalhash."
+  ],
+  "sourceScope": {
+    "sourceHashes": {
+      "native-paidqueue7-task-time.c": "42233e09f22ef8eca089267018ca236dc32d4ece57faf51373538f1ef509ebbd",
+      "native-paidqueue7-task-time-runtime.c": "822c57ae1b9f43239dd697d87142eb4007afea053e41a94d12c4cc8bb72a3975",
+      "native-paidqueue7-task-time-getters.c": "cb99211286b9e4ffc4baadf291fbc7c07f682e79beb8217787ab40f42a226505"
+    },
+    "unitProduce": "00816670 ctor duration-1/timeSpent0;007F50F0 pay copies price, not time;007F4910 samples00537B40 when work starts and adds literal00B41748=.009999999776482582 before subsequent elapsed/rate updates.",
+    "separateAdapters": [
+      "Research/Epoch retain existing TIME/Main/host adapters; the UnitProduce.01 proof is not transferred to their update code.",
+      "00804100 dynamically computes an AreaEffect production-rate divisor in the original; the current smaller simulation does not newly reproduce that system.",
+      "Original temporal x87 rounding/precision state remains conditional. The existing market nearest53 arithmetic is explicitly an adapter, not unconditional native float bits.",
+      "Current own queue has no reorder/suspend/cycle command. The duration reachability guards apply to this supported FIFO schema."
+    ]
+  },
+  "remainingActionableFindings": [],
+  "sourceFiles": {
+    "src/paid_queue7.rs": "7c321d588f0d3684596a774ddcbc19995d8a375536f87e1c58b2fa7693daa742",
+    "src/game.rs": "5e0bb496b9ae7d14488c022b94311008524171d5c9ba2d11bc7b51c33276db99",
+    "src/save.rs": "76c3daf8028ab0f87ca23e7579e5471413732ea2b0b9179c879ed6b77dcc541b",
+    "src/save6.rs": "c6cb817bc80050cfda0359a940b327cfe7c5d168023563b5e37b9a1d8bdbfa8b",
+    "src/lib.rs": "1e593709e7a6afeffa0a425a5227620ab40b92e9d0503f1a895b2e5c556677d5"
+  },
+  "reviewerChangedCandidate": false,
+  "originalCodeExecuted": false
+}

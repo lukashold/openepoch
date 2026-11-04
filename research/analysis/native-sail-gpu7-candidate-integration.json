@@ -1,0 +1,186 @@
+{
+  "format": "native-sail-gpu7-candidate-integration-v1",
+  "status": "passed",
+  "build": "native-sail-gpu7-isolated",
+  "createdUtc": "2026-11-04T18:37:28.639285+00:00",
+  "activeFilesChanged": false,
+  "candidateDirectory": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-sail-gpu7",
+  "baseline": {
+    "rendererSha256": "cb5e95de9f31eb46d1906706b764792dc7a994cf37bb86648721e5ded49f1ad9",
+    "activeRendererStillMatches": true
+  },
+  "promotionFiles": {
+    "docs/original-renderer.js": "d9a4575a4c9753fad939586b643322c2fff5e0db7c9ba9becc3165cafe21be64",
+    "docs/original-dynamic-sails.js": "e1ef51c17b1d29b997c531dd48bfc276c6565c66b4c6ec0b53a7168f812ea43d"
+  },
+  "unchangedRootDependencies": {
+    "docs/source-cloth-kernel.js": "6c6c1ad7782beef0f60afc326d3e647b71eb1dda8df24269c3a5abfba1369262",
+    "docs/source-cloth-arithmetic.js": "0941661ccc487907881d897cc6149c903fe6a74ac7d047c2f817071c84fa6393"
+  },
+  "tests": {
+    "totalIndependentChecks": 3457,
+    "dynamicContracts": 1750,
+    "staticOptionalOffRegression": 1622,
+    "realGlesPixelProbes": 73,
+    "actualWorldPixelControls": 12,
+    "actualWorldFrames": 7,
+    "rootRuntimeIntegrationIncluded": true,
+    "independentTransformReview": "outputs/EE2-Research/analysis/native-sails7-own-render-basis-audit.json"
+  },
+  "sourceHashes": {
+    "wasm": "f7784ee37122a8bd1e281bf09c4a898cae081e752cd5f9649a2c1d09efa50bd5",
+    "cloth": "c8d1207fec111a5b47dbe24b75d51cf3f250f032dfdb4073e75113e65353c625",
+    "modelManifest": "b836d79292c77af4c812e0b2a0053c0f524c0b2f6d6fd6b3045489cdbc48bf3c",
+    "sailManifest": "f744b0a4f25313963a3c4bbcd2d6249fc306a2eae9667d069da146114a349d2d",
+    "docs/original-renderer.js": "d9a4575a4c9753fad939586b643322c2fff5e0db7c9ba9becc3165cafe21be64",
+    "docs/original-dynamic-sails.js": "e1ef51c17b1d29b997c531dd48bfc276c6565c66b4c6ec0b53a7168f812ea43d",
+    "docs/source-cloth-kernel.js": "6c6c1ad7782beef0f60afc326d3e647b71eb1dda8df24269c3a5abfba1369262",
+    "docs/source-cloth-arithmetic.js": "0941661ccc487907881d897cc6149c903fe6a74ac7d047c2f817071c84fa6393",
+    "../native-sail-controller7/source-sail-controller.mjs": "b59c8f1d69a3878c3ecd94167bf20cda5eae35f188efc7a159c19f0e3f064a27",
+    "../native-sail-controller7/source-sail-runtime.mjs": "acb40f5b5dd47f190ba01a841e446efed2a870b506b3dc468bfcba0fc6a6f6c8",
+    "../native-cloth-fast7/wasm-source-cloth-factory.js": "b6d60140eec038f9f5225abbd791d6fb43a584a090d2949a2b1eec7e31a67f95"
+  },
+  "proofHashes": {
+    "contract-report-dynamic.json": "b365f210f7050a6e14779f1d45851051ff84d6a6aad8b7966bc55dc72433320c",
+    "contract-report.json": "2156bdd7b72bf7ae3eea12f962242cd0176f3686a56d85d9dd51e3dbccdc5d7e",
+    "gpu-probe-report.json": "2886120ba925d61d9ec48a3b4832f6ebc219fd31652084497c8ae17f06f62dc2",
+    "world-gpu-report.json": "322ac6ffa0f1035a333076f7824af9122a3b8499f6929958e73493b6e15b323f",
+    "test.mjs": "1eac492a454511724f63991c935e6d10ca88bdffc9d3cf789ac8967016b53047",
+    "static-regression.mjs": "d9e28a9a546a6c26b65a3e0b8e4e89baab9565e9717bacbdfabb65405faabd0a",
+    "gpu_probe.py": "4938bbb523bab96a0373332b21409c1cd8128526dc148474e0719773b89eb632",
+    "replay.py": "33c90a10e565ba9e4be93ca8a4a674d4885878fcc277c957f0e4b09d39064a87",
+    "HANDOFF.md": "bd2696869f1d4686ba92f7c6572e89c06fadaad154e5e853f2de4d430b7a8e01",
+    "renderer.patch": "0bc4cd65e587d9d408b31c5d386bcd11ddda8811d2d8a7a9829e3fcf98e23a73"
+  },
+  "screenshots": {
+    "ship-5-frame0": {
+      "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-sail-gpu7\\ship-5-frame0.png",
+      "sha256": "2835fef96738e40018a29f6432a064a9b5d6203e6b064d51e646e07a82af6ab5"
+    },
+    "ship-5-frame1": {
+      "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-sail-gpu7\\ship-5-frame1.png",
+      "sha256": "8772d9eedeb3280b9fcbeac6e2166e43757df3882152f586aee5b531213393d5"
+    },
+    "ship-5-frame2": {
+      "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-sail-gpu7\\ship-5-frame2.png",
+      "sha256": "b9d0fb1d8dac41675b9acb63d0181a6772c236638b87ef923fad15838b1d76df"
+    },
+    "ship-7-frame0": {
+      "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-sail-gpu7\\ship-7-frame0.png",
+      "sha256": "08bb88387342fbbc9cfbc88f8fc5a11475c730d63a84e4c516ef64f456216b25"
+    },
+    "ship-7-frame1": {
+      "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-sail-gpu7\\ship-7-frame1.png",
+      "sha256": "d284dc772d325ca41b11a442efa172114ee0bee51c40ac3667e114efc1c91214"
+    },
+    "ship-7-frame2": {
+      "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-sail-gpu7\\ship-7-frame2.png",
+      "sha256": "49d2fffae0b41a06c1abf46d31b7bd8e546ad959c5d9c4c7e43688c33191395a"
+    },
+    "two-owner-same-position": {
+      "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-sail-gpu7\\two-owner-same-position.png",
+      "sha256": "535e89cfb8ac8b80260ceb0b8e3473f002c08c2e2d502bbec381fa0d9a4d77bb"
+    }
+  },
+  "implementation": {
+    "bodyShaders": "Byte-identical original VS/FS; dynamic Flag has separate fragment branch only.",
+    "initialPositions": "All18 source planes exactly match original static packed normalized positions before stepping (max float difference0).",
+    "identity": "Actual opaque entity handle plus world session and source visual key. Separate owner buffers; no seed/position identity.",
+    "preparation": "Controller advances/shades once before all passes; GPU prepare uploads once per matching metadata frame; draw is read-only.",
+    "replace": "Ordinary actual cmd_epoch/tick preserves handle13 over six\u2192twelve\u2192zero planes; old GPU buffers/VAOs disposed.",
+    "pipeline": "NativeFlag Base*VertexRGB*4 clamp beforeDark; Base.a*Dark.a GREATER0; two-sided linear/clamp/noMip,LEQUAL/depth-write,SRC_ALPHA blend.",
+    "fallback": "Verified static surfaces on missing/stale metadata, preview, disposed/failed runtime, missing dynamic-only masks; generic far LOD stays static.",
+    "state": "GPU preparation restores live external VAO/ARRAY_BUFFER and never rebinds retired owned objects. Per-owner draws restore complete shared instance stream for later parts."
+  },
+  "coordinates": {
+    "points": "Local sourcePlanePositions from hashed composite joined to manifest.effects grid, full authored tag, A[x,z,-y], exact parent normalization; unchanged VS applies origin/nativeScale/yaw.",
+    "forces": "Rz(-(renderYaw+variantYawOffset))*authoredTagR9, transpose only; own-world delta[dx,-dmapY], no inverseScale/translation or R9 renormalization.",
+    "lighting": "Source local normal sequence and raw lighting fields without dimmer1.5 or actor/tag ray rotation."
+  },
+  "actualTransitions": [
+    {
+      "epoch": 5,
+      "handle": 13,
+      "sourceKey": "f3c70a79746d5f01f8749ab63d72d64525290736a1c998f444247d10ed012a39:CaravelSail",
+      "planes": 6
+    },
+    {
+      "epoch": 6,
+      "handle": 13,
+      "sourceKey": "f3c70a79746d5f01f8749ab63d72d64525290736a1c998f444247d10ed012a39:CaravelSail",
+      "planes": 6
+    },
+    {
+      "epoch": 7,
+      "handle": 13,
+      "sourceKey": "5af9ace81bc7c2d174c90673f2ffcc998653cb8c688cd76c4e304482e81fe1eb:ShipOfTheLineSail",
+      "planes": 12
+    },
+    {
+      "epoch": 8,
+      "handle": 13,
+      "sourceKey": "5af9ace81bc7c2d174c90673f2ffcc998653cb8c688cd76c4e304482e81fe1eb:ShipOfTheLineSail",
+      "planes": 12
+    },
+    {
+      "epoch": 9,
+      "handle": 13,
+      "sourceKey": "abf0a61d4e22df75118ed2637fc44c5d02ecaa98fdcc489fb4951fac8b358d1b:none",
+      "planes": 0
+    }
+  ],
+  "visiblePixelChanges": [
+    {
+      "case": "actual source solver changes rendered pixels",
+      "epoch": 5,
+      "firstFrame": 0,
+      "lastFrame": 1,
+      "changedPixels": 5989
+    },
+    {
+      "case": "actual source solver changes rendered pixels",
+      "epoch": 5,
+      "firstFrame": 1,
+      "lastFrame": 2,
+      "changedPixels": 9401
+    },
+    {
+      "case": "actual source solver changes rendered pixels",
+      "epoch": 5,
+      "firstFrame": 0,
+      "lastFrame": 2,
+      "changedPixels": 10837
+    },
+    {
+      "case": "actual source solver changes rendered pixels",
+      "epoch": 7,
+      "firstFrame": 0,
+      "lastFrame": 1,
+      "changedPixels": 10004
+    },
+    {
+      "case": "actual source solver changes rendered pixels",
+      "epoch": 7,
+      "firstFrame": 1,
+      "lastFrame": 2,
+      "changedPixels": 13887
+    },
+    {
+      "case": "actual source solver changes rendered pixels",
+      "epoch": 7,
+      "firstFrame": 0,
+      "lastFrame": 2,
+      "changedPixels": 15164
+    }
+  ],
+  "limits": [
+    "Isolated candidate, not activated. Root owns joint Main/water/network/finalWASM QA.",
+    "Source numerical algorithms under explicit conditional CHOP53. Entire native temporal original FPU state remains unclosed.",
+    "GPU color upload is unclamped float RGBA; original packed vertex color conversion/quantization remains unproven.",
+    "Own presentation clock, motion predicate, source actor angle reconstruction, first-appearance zero delta and cull-retain-without-step are explicit adapters.",
+    "No automatic nativeDeath from HP/despawn, no corpse rendering; explicit death events are external controller input. No unproven cloth shadow path.",
+    "Existing simulation culling is unchanged; exposed conservative bounds do not establish native visibility equivalence.",
+    "Current original sail variants have no farLOD; generic far model keeps existing static fallback.",
+    "Paired-handle and research-prerequisite setup use documented controlled valid saves; subsequent render metadata/epoch commands are actual WASM outputs."
+  ]
+}

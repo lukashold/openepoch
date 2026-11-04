@@ -1,0 +1,19 @@
+{
+  "format": "openepoch-github-publication-v1",
+  "status": "published",
+  "build": "native-ui5",
+  "repository": "https://github.com/lukashold/openepoch",
+  "branch": "main",
+  "commit": "c07e3571bd045b54b404b352696dcc6655319e29",
+  "tree": "432a2fa878be961da1289ea058e69dbc4f1f1998",
+  "parent": "3d2c5e14d82e747a8c957043a9b39c13ac01af20",
+  "files": 528,
+  "changedFiles": 134,
+  "totalBytes": 28124461,
+  "manifestSha256": "02df106dc91ac2b06c66cf732ec827f13a7c825c92cfb4fcf67a8056d4ecd0c2",
+  "allManifestBlobHashesAndModesVerified": true,
+  "branchVerifiedAfterUpdate": true,
+  "force": false,
+  "originalMediaIncluded": false,
+  "fullOriginalParity": false
+}

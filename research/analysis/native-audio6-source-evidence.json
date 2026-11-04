@@ -1,0 +1,128 @@
+{
+  "format": "native-audio6-source-evidence-v1",
+  "engineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+  "status": "proved-with-isolated-candidate",
+  "facts": [
+    {
+      "address": "00541DF3 / 00541E04",
+      "fact": "Native audio loader passes the two-path configuration at C16330 to A2CCA0. Read-only PE C16330→C163CC is db/audio/dbsoun5.csv. CSV6 and the BASE dbsound.csv are not substituted.",
+      "existingExport": "native-combat-loader.c"
+    },
+    {
+      "address": "0053C930",
+      "fact": "Unit-type upgrade application calls007C7FD0 for selection,move,attack,death with LSizedArray fields+0x17/+0x19/+0x1B/+0x1D."
+    },
+    {
+      "address": "007C7FD0",
+      "fact": "count<=0 at7C7FE8 jumps directly to7C808E return. With nonzero input, zero resolved events at7C8054 also returns without writing. A valid prefix clears/copies the8-event channel and resets its last-index field. Therefore [] preserves the preceding set."
+    },
+    {
+      "header": "DbUnitDefs.h:DbUnitTypeSounds",
+      "fact": "Four native channels: sndSelection,sndCmdMove,sndCmdAttack,sndDeath. There is no native build-response field."
+    },
+    {
+      "family": "Scout",
+      "fact": "CSV5 runtime0..3 uses Spy07; raw[] at3..6 preservesSpy07;6..9 usesSpy13; raw[] at9..12 preservesSpy13;12..15 usesSpy04. This is an explicit CSV upgrade mapping, not a filename-stem guess."
+    },
+    {
+      "family": "FightingSail",
+      "fact": "Runtime5..7,7..9,9..15 bind complete native06/08/10 selection,move,attack event arrays."
+    },
+    {
+      "family": "AirDefense / CoastalDefense",
+      "fact": "Both are source building types and actual new WASM building flags17. Each CSV5 selection array has two original events, including UP-specific *_select2 from dbsoun5.csv; move/attack arrays are empty and do not become invented responses."
+    }
+  ],
+  "sourceManifestSha256": "eabf590cacef634646eb4e8e47eb58e29a44ca8a6ac1d914a012e1b91b9f87f3",
+  "sourceTables": {
+    "upgrade": {
+      "virtualPath": "db/TechTree/upgrade_unittype5.csv",
+      "lookupKey": "db/techtree/upgrade_unittype5.csv",
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/TechTree/upgrade_unittype5.csv",
+      "bytes": 145672,
+      "sha256": "225b9e7c8e34fcf2969e166207997d349aeed642b371f5fc08911911ce575ffb",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1791150192,
+      "initialRecordTime": 1791150192,
+      "initialRecordSize": 145672,
+      "insertionPriority": 452,
+      "profile": {
+        "game": "ee2",
+        "up16Enabled": true,
+        "enhancedTerrainRequested": false,
+        "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+        "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+        "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+      }
+    },
+    "sound": {
+      "virtualPath": "db/Audio/dbsoun5.csv",
+      "lookupKey": "db/audio/dbsoun5.csv",
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/Audio/dbsoun5.csv",
+      "bytes": 128595,
+      "sha256": "0c7ea15dd893c6d132ce98b3777baad8d4ff78dac0daa1522a7d914825611e8f",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1791150192,
+      "initialRecordTime": 1791150192,
+      "initialRecordSize": 128595,
+      "insertionPriority": 398,
+      "profile": {
+        "game": "ee2",
+        "up16Enabled": true,
+        "enhancedTerrainRequested": false,
+        "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+        "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+        "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+      }
+    },
+    "cfg": {
+      "virtualPath": "db/dbunitfile5.cfg",
+      "lookupKey": "db/dbunitfile5.cfg",
+      "kind": "zip-member",
+      "physical": "zips/db_155.zip",
+      "marker": "zips/db_155.zip",
+      "member": "db/dbunitfile5.cfg",
+      "bytes": 4672,
+      "sha256": "6cca2dec44dc660841403d253126d6dfbea22770dd3478d9161332191190f9d5",
+      "archivePriority": 2,
+      "hookSubstitution": false,
+      "memberTime": 1785976612,
+      "initialRecordTime": 1785976612,
+      "initialRecordSize": 4672,
+      "insertionPriority": 431,
+      "profile": {
+        "game": "ee2",
+        "up16Enabled": true,
+        "enhancedTerrainRequested": false,
+        "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+        "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+        "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+      }
+    }
+  },
+  "exports": [
+    {
+      "file": "native-audio6-upgrade.c",
+      "sha256": "08624df397c06b8586b9b2ceff6809d210d798150cc0b6d87cbad77ace9cf4bb"
+    },
+    {
+      "file": "native-audio6-sound-setter.c",
+      "sha256": "35af49142fbf140df4005cf47417cf71c444a986f1fb45034e01b8d1c880864f"
+    }
+  ],
+  "sourceTests": {
+    "file": "native-audio6-source-tests.json",
+    "sha256": "0dd5696374042b7cd2b8e36c19847ad80bff0bb4f88c051a868966ad6239aed6",
+    "checks": 501
+  },
+  "originalsReadOnly": true,
+  "originalExeOrDllExecuted": false
+}

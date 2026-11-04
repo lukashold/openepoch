@@ -1,0 +1,60 @@
+{
+  "format": "native6-bitmap-live-ui-images-v1",
+  "sourceHashes": {
+    "docs\\original-fonts.js": "0ba484a3748b41e3853b0aa223ec69aae2d2d0442f3e266acb51f4edf5f7e6fe",
+    "docs\\original-font-ui.js": "113c703adc3a094e863741a2f8de83a770229dbb14147e130debb551fe0c7f7b",
+    "docs\\local-original\\fonts-native\\bitmap-manifest.json": "ff12ad34c6940c32f4993290a3c9f3e6f85c0bb5ee418f4b77d5cd0dce05c82c"
+  },
+  "status": "passed",
+  "images": [
+    {
+      "scene": "hud",
+      "file": "native6-hud-bitmap.png",
+      "sha256": "2d8c428337c9ff252e3ad4ed0bc628c867d8a3d99e3009c53bd3c4c72876c850",
+      "sourceSpriteDraws": 28,
+      "bitmapLabels": 12,
+      "glyphDraws": 69
+    },
+    {
+      "scene": "relations",
+      "file": "native6-relations-bitmap.png",
+      "sha256": "c73e736b043a0cefba17276a232a32a0b94a197198339632ee21e018200b388b",
+      "sourceSpriteDraws": 61,
+      "bitmapLabels": 22,
+      "glyphDraws": 165
+    },
+    {
+      "scene": "resources",
+      "file": "native6-resources-bitmap.png",
+      "sha256": "40c911c78f3bf8b9e75dc1d747b2707084bd6df46a88c1bb889a4904db7a3dc3",
+      "sourceSpriteDraws": 73,
+      "bitmapLabels": 31,
+      "glyphDraws": 193
+    },
+    {
+      "scene": "proposal",
+      "file": "native6-proposal-bitmap.png",
+      "sha256": "3768bcb9be79f3183f0d56fc8ac797b3598577ef391f9ba6a5d7636ed870f72e",
+      "sourceSpriteDraws": 80,
+      "bitmapLabels": 30,
+      "glyphDraws": 241
+    },
+    {
+      "scene": "territories",
+      "file": "native6-territories-bitmap.png",
+      "sha256": "1602c790ae819a932580b5f5590b3439a811bc21fdcc921c595509f961e0c91f",
+      "sourceSpriteDraws": 63,
+      "bitmapLabels": 25,
+      "glyphDraws": 189
+    }
+  ],
+  "background": {
+    "path": "outputs\\OpenEpoch\\native5-world-summer.png",
+    "sha256": "896dafc02349ed90b9f5769d1389f6fc25fbfa3211a98d31c0a38843bbfc9ce7"
+  },
+  "scope": "Actual production component DOM/art and active font coordinator glyph draw calls, original PNG crops and actual WASM minimap over a separately captured Native5 world background. No browser/original EXE; this is not a same-frame original screenshot.",
+  "limits": [
+    "Positioned source widgets and native bitmap overlays are rasterized. Legacy flowing treaty/territory forms are outside this non-browser layout transport.",
+    "HUD resource typography and calendar label binding are explicit application adapters. Native font-style shadow and complete native text wrapping are still unbound."
+  ]
+}

@@ -1,5 +1,6 @@
+use crate::ids::DefId;
 // Generated from resolved UP15 inherited DDF fields; no BASE numeric layer.
-#[derive(Clone,Copy)] pub struct Extras {pub id:u8,pub epoch:u8,pub until:u8,pub angular_speed:Option<f32>,pub dropoff_bonus:Option<f32>}
+#[derive(Clone,Copy)] pub struct Extras {pub id:DefId,pub epoch:u8,pub until:u8,pub angular_speed:Option<f32>,pub dropoff_bonus:Option<f32>}
 pub const ROWS:&[Extras]=&[
 Extras{id:0,epoch:0,until:3,angular_speed:None,dropoff_bonus:Some(0.02_f32)},
 Extras{id:0,epoch:3,until:6,angular_speed:None,dropoff_bonus:Some(0.02_f32)},
@@ -281,5 +282,5 @@ Extras{id:56,epoch:9,until:11,angular_speed:None,dropoff_bonus:None},
 Extras{id:56,epoch:11,until:13,angular_speed:None,dropoff_bonus:None},
 Extras{id:56,epoch:13,until:15,angular_speed:None,dropoff_bonus:None},
 ];
-pub fn lookup(id:u8,epoch:u8)->Option<&'static Extras>{ROWS.iter().find(|r|r.id==id&&epoch>=r.epoch&&epoch<r.until)}
-pub fn generation(id:u8,epoch:u8,resource:u8)->f32{crate::ee2_units::lookup_class(id,epoch).filter(|r|r.generation_resource==Some(resource)).and_then(|r|r.generation).unwrap_or(0.0)}
+pub fn lookup(id:DefId,epoch:u8)->Option<&'static Extras>{ROWS.iter().find(|r|r.id==id&&epoch>=r.epoch&&epoch<r.until)}
+pub fn generation(id:DefId,epoch:u8,resource:u8)->f32{crate::ee2_units::lookup_class(id,epoch).filter(|r|r.generation_resource==Some(resource)).and_then(|r|r.generation).unwrap_or(0.0)}

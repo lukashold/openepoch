@@ -47,11 +47,28 @@ def main():
                 "docs/local-original/water-native/manifest.json",
                 "docs/original-diplomacy.js", "docs/original-diplomacy-layout.js",
                 "docs/original-labels.js", "docs/original-lighting.js",
+                "docs/original-fonts.js", "docs/original-font-ui.js",
+                "docs/original-render-namespace.js", "docs/render-namespace.js",
+                "docs/native-terrain-lightmap.js", "docs/native-terrain-lighting.js",
+                "docs/local-original/fonts-native/bitmap-manifest.json", "docs/local-original/fonts-native/manifest.json",
                 "docs/local-original/diplomacy-native/manifest.json",
                 "docs/local-original/labels-native.json", "docs/local-original/climate-lighting.json",
                 "docs/local-original/models/manifest-up15.json", "docs/local-original/model-scales-up15.json",
                 "docs/local-original/season-model-textures/team/manifest.json"}
     names = [name for _, name in files]
+    main_source=(project / 'docs/main.js').read_text(encoding='utf8')
+    if 'manifest-roster6.json' in main_source:
+        required.update({'docs/local-original/models/manifest-roster6.json','docs/local-original/model-scales-roster6.json'})
+    if 'configureOriginalDefinitions' in main_source:
+        required.update({'docs/original-audio-bindings.js','docs/local-original/audio/native-families.json'})
+    if (project/'docs/original-sail-composite.js').is_file():
+        required.update({'docs/original-sail-composite.js','docs/local-original/sails-native/manifest.json'})
+    if 'loadSourceSailRuntime' in main_source:
+        required.update({'docs/render-actor-metadata.js','docs/source-sail-runtime.js',
+                         'docs/source-sail-controller.js','docs/source-cloth-kernel.js',
+                         'docs/source-cloth-lighting.js','docs/source-cloth-arithmetic.js',
+                         'docs/source-cloth-wasm.js','docs/original-dynamic-sails.js',
+                         'docs/openepoch-cloth7.wasm'})
     if len(names) != len(set(names)) or not required.issubset(names):
         raise ValueError("Incomplete or duplicated game tree")
     print("Hashing complete game files ...", flush=True)

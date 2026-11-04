@@ -1,0 +1,102 @@
+{
+  "format": "native-sails7-dynamics-candidate-v1",
+  "status": "isolated-source-kernel-passed",
+  "engineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+  "sourceParameterManifestSha256": "f744b0a4f25313963a3c4bbcd2d6249fc306a2eae9667d069da146114a349d2d",
+  "files": {
+    "native-cloth.mjs": "2eb0d416b1f6e41b998593364cbf4a0a8010e801d58e376befda0514b4467032",
+    "chop53.mjs": "0941661ccc487907881d897cc6149c903fe6a74ac7d047c2f817071c84fa6393",
+    "reference_kernel.py": "728555cf0d62ad18e226abc37cc8ecefdbd1e9702d4007d166a2cc496c0f6266",
+    "make_arithmetic_oracle.py": "d34b093faa368b9cd9053085f3b4861b2b05c036eccfb816ff134c2d5d0fb296",
+    "test_kernel.mjs": "6739b8549792eb0eea3eb8a513398d0f06f485916c1d588ab09dfae9d281d745",
+    "test_arithmetic.mjs": "78c070cb2eb1ce8a25e77c92e6a486375cd1cc9f49c0336c35555d9c92025f22",
+    "HANDOFF.txt": "df5216c962f705d928728c6f3b73c4f37c8b563d2213f70028e654a8ab8dc1b2",
+    "BINDING-CONTRACT.txt": "18afb91b04511a5b0e796f4fd0bf64a1d8a9702a90e50be03a7ce5bdb4151797"
+  },
+  "nativeScope": "Native00A9DA10 initialization +00A9DFE0 outer update +00A9E130 null-plane branch actually called by VisualSail00658D20. No native executable, DLL or bytecode routine was executed.",
+  "api": {
+    "constructor": "createNativeCloth({positions,nx,ny,pinned},{rounding:chop53|nearest53,seed:12345})",
+    "update": "step(deltaSeconds,{gravity,windMin,windMax}) returns native clamp/substep/RNG trace and updates local positions/velocity.",
+    "positions": "Float32Array in original local cloth XY/Z coordinates. Caller applies the original tag world matrix and shared parent normalization; this module never applies own-map coordinates or native source scale twice.",
+    "rendererBindingContract": "work/native-sails7-dynamics/BINDING-CONTRACT.txt: actual opaque generational handles plus session, aligned read-only HP/moving/lifecycle metadata, no renderSeed/position identity, once-per-frame advance, no ABI widening during61freeze.",
+    "release": "releasePins() corresponds exactly to00A9DFB0, not a freeze.",
+    "motion": "nativeMotionWorldForces(sourceDeltaXY,{moving,windDamping,suppressWind,rounding}) implements the pre-attachment world-force calculation from00658D20. nativeInverseTagRotation implements008E6BA0 as a binary32-preserving transpose; nativeRotateForce/nativeLocalForces implement008E6970 with source per-axis addition order. VisualSail uses only this rotation portion of008EE030: inverse scale/translation are intentionally ignored.",
+    "damage": "nativeSailDamageMask(previous,fraction) implements00659730; actual native event-to-fraction adapter is separate.",
+    "snapshot": "Own isolated QA state only; no WASM/native save schema is changed."
+  },
+  "sourceConstants": {
+    "ctor": "00A9D410",
+    "seed": 12345,
+    "lcgMultiplier": 1664525,
+    "lcgIncrement": 1013904223,
+    "gravity": -32.17399978637695,
+    "flagDragOverride": 0.9900000095367432,
+    "springStiffness": 300,
+    "springRecordDamping": 2,
+    "totalMass": 100,
+    "floatThird": 0.3333333432674408,
+    "randomScale": 3.0518509447574615e-05,
+    "maxDelta": 0.05000000074505806,
+    "halfSteps": 2
+  },
+  "nativeDetails": [
+    "00A9DA10 stores totalMass/triangleCount, then particle mass=sourceCoefficient*triangleMass*binary32(1/3), and float inverse mass. Its bottom/right boundary comparisons use NY/NX, not NY−1/NX−1; the source behavior is preserved.",
+    "Spring order is each grid vertex: right, down, down-right, down-left when valid. Records retain both stiffness300 and damping2; the exported null-plane force branch does not use the per-spring damping record.",
+    "00615970 ASM calculates sqrt((x*x+y*y)+z*z). Its decompiler prints a different addition order; the port follows ASM.",
+    "00A9E130 accumulates spring X product before its float store; Y/Z spring products first pass through float temporaries. Gravity, quadratic drag, acceleration, velocity change and position change retain their separate FSTP32 points.",
+    "00A9DFE0 advances its single RNG three times, then reads word+2 via three aliased pointers. All XYZ components use the same final15-bit sample. Two halfsteps reuse the one random force vector.",
+    "Source ctor seed12345 is fixed independently for each cloth. No wall-clock seed or invented turbulence phase is introduced.",
+    "00A9DFB0 clears pins. The matching StateChangeNotification branch sets the motion-wind suppression flag but spring/gravity update continues; this is not whole-cloth freeze.",
+    "00659730 selects mask0..7 at the exact binary32 thresholds8/9..1/9. Below1/9 it retains the previous mask; mask8 is not guessed as a death fallback.",
+    "WindDamping zero becomes1 while moving, then multiplied by.5. Idle coefficient is binary32(.075). Source normalized position delta is multiplied by600, then force maximum by4; no native weather wind input is inferred.",
+    "008EE030 accepts a NiTransform and obtains inverse rotation by008E6BA0 transpose. VisualSail then passes only its first9rotation floats to008E6970; source model/tag scale and inverse translation never divide or translate the forces."
+  ],
+  "fpuEvidence": {
+    "precision": "PE-importedMSVCRT!_controlfp at IAT00B3F298. 005B7E70 and graphics setup paths explicitly set precision53 via10000/30000.",
+    "rounding": "005B7E70 also sets300/300, the toward-zero rounding mode; several D3D paths repeat this. Direct callers005B7030/005B7D10 have no local restore. The bounded context audit does not establish the exact scheduling/control-word lifetime reaching every factor setter or VisualSail callback.",
+    "contextAudit": "native-fpu-context-audit.json records actual setter references, caller-local context, PC-only restore and remaining temporal coverage gaps; no runtime change is inferred from incomplete global context.",
+    "contextAuditSha256": "f5b904c583fb3d659cf9d426c93b72ab6e54e3bec1893f766978395e347cb240",
+    "namedModes": "The kernel names its arithmetic context. CHOP53 is independently implemented using compensated binary64 residuals and explicit float stores; it is not approximated with epsilon. nearest53 remains an explicit comparison mode.",
+    "oldFactorOracleLimit": "Earlier independent Classic61 actual-WASM checks remain valid for that implementation. Their original-bit attribution is conditional on FPU context, including180/204. With literalF32(.01), CHOP53 produces179.99998474121094/203.99998474121094; nearest53 produces180/204. See native-percent-rounding-context-addendum.json. No runtime change or historical execution report overwrite.",
+    "proofFixtures": "2448 exact Fraction/integer operation oracles, including integer square-root truncation, check add/sub/mul/div/sqrt/FSTP32 with zero tolerance. These verify the bounded cloth arithmetic operands, not every possible IEEE754 exception/subnormal domain."
+  },
+  "validation": {
+    "arithmeticChecks": 2448,
+    "kernelChecks": 362,
+    "sourceSails": 18,
+    "sourceStates": 69,
+    "strictComparison": "Every mass/inverse-mass/position/velocity bit, pin flag and RNG state at69selectedstates across all18source sails. Three representative grids run10steps including clamp and pin release; all other source sail dimensions run2steps.",
+    "independentOracle": "Python Fraction/integer directed-rounding reconstruction is separate from the JavaScript compensated arithmetic and source kernel.",
+    "benchmark": {
+      "sails": 18,
+      "vertices": 431,
+      "outerUpdates": 60,
+      "milliseconds": 108.4762
+    },
+    "nativeProgramExecuted": false,
+    "activeFilesModified": false,
+    "reports": [
+      "native-sails7-dynamics-arithmetic-tests.json",
+      "native-sails7-dynamics-kernel-tests.json"
+    ]
+  },
+  "sourceExports": {
+    "native-sails7-dynamics-construct.c": "0c74a2360a19a4d64225e1b428df41be5637289d5fe60972741b061469d84d42",
+    "native-sails7-dynamics-force-transform.c": "d017b75587e43fe26c5edafb30d3f0ab8f6a4c6cd9d9ae93d238b3b96a076785",
+    "native-sails7-dynamics-fpu-refs.c": "2e503bb6c7649f6ec281b637cd825bfdb69d6d17edd17dfdf6fdc352b0e33f79",
+    "native-sails7-dynamics-math-context.c": "456a030f87f484029bac9f78f387d07a87afa4418eda375ff5b6ae983bc33fdf"
+  },
+  "deathStatePEEvidence": {
+    "global": "00D02690",
+    "stringVA": "00C70804",
+    "string": "Death",
+    "internStoreVA": "00897F87",
+    "storeBytesHex": "890d9026d000"
+  },
+  "remaining": [
+    "Original visual update scheduler, full FPU control-word lifetime, moving/placed/death message dispatch and shadow invalidation callbacks are not activated by this low-level kernel.",
+    "The original nonnull collision-plane branch is exported but intentionally outside the VisualSail null-plane path implemented here.",
+    "Dynamic local-cloth normal/color refresh and GPU buffer updates need explicit renderer integration and source pixel/world QA. Initial static-sail pipeline remains unchanged and separate.",
+    "This is source-algorithm verification, not a captured original wind trajectory or full1:1 game claim."
+  ]
+}

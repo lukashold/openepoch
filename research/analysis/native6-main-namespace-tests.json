@@ -1,0 +1,62 @@
+{
+  "format": "openepoch-native6-main-namespace-tests-v1",
+  "passed": true,
+  "checks": 36,
+  "mainSha256": "159c31e73f72bf6b6922ac51779681a5c3df6f42e42069261e4caa982530b381",
+  "scenarios": [
+    {
+      "profile": "own",
+      "wide": false,
+      "calls": [
+        {
+          "method": "cmd_train",
+          "id": 8
+        }
+      ],
+      "sha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a"
+    },
+    {
+      "profile": "base",
+      "wide": false,
+      "calls": [
+        {
+          "method": "cmd_train",
+          "id": 8
+        },
+        {
+          "method": "cmd_train",
+          "id": 64
+        },
+        {
+          "method": "cmd_train",
+          "id": 64
+        }
+      ],
+      "sha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18"
+    },
+    {
+      "profile": "up15",
+      "wide": true,
+      "calls": [
+        {
+          "method": "cmd_queue_job",
+          "id": 8
+        },
+        {
+          "method": "cmd_queue_job",
+          "id": 65536
+        },
+        {
+          "method": "cmd_queue_job",
+          "id": 65536
+        },
+        {
+          "method": "cmd_queue_job",
+          "id": 196608
+        }
+      ],
+      "sha256": "3a71249f493c2cd73e2694ee0e1befb9f653a3100d43ebb9d78540a0cc71bdb0"
+    }
+  ],
+  "scope": "Actual production Main HUD/action handlers, real selected producers, queue commands/ticks and stale-selection validation. DOM/Canvas are substituted; synthetic queue boundary is explicitly marked. No browser or original executable."
+}

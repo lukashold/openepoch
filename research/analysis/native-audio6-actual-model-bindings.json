@@ -1,0 +1,37 @@
+{
+  "format": "native-audio6-actual-renderer-bindings-v1",
+  "status": "passed",
+  "checks": 458,
+  "rows": [
+    {
+      "id": 57,
+      "family": "Scout",
+      "bindings": 5,
+      "flags": 18
+    },
+    {
+      "id": 58,
+      "family": "FightingSail",
+      "bindings": 3,
+      "flags": 18
+    },
+    {
+      "id": 59,
+      "family": "AirDefense",
+      "bindings": 3,
+      "flags": 17
+    },
+    {
+      "id": 60,
+      "family": "CoastalDefense",
+      "bindings": 5,
+      "flags": 17
+    }
+  ],
+  "sourceHashes": {
+    "models": "b836d79292c77af4c812e0b2a0053c0f524c0b2f6d6fd6b3045489cdbc48bf3c",
+    "familyAudio": "7aa92154cbd1e760be5b08658546da74d1d3cc304463f9d2bd07221efb4f43da",
+    "frozen61Wasm": "e68cbe7a8b8187d1454d94a6773c8e514b7b49c7ae79dd3bc2fb69db198bdcf3"
+  },
+  "scope": "Independent root join of actual isolated61-definition WASM static roles, actual renderer manifest and imported source-family audio data. No audio graph/device or browser/original executable is launched."
+}

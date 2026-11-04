@@ -11,6 +11,9 @@ crate-type = ["cdylib"]
 [features]
 ee2-reference = []
 ee2-up15 = ["ee2-reference"]
+ee2-roster6 = ["ee2-up15"]
+ee2-render-meta7 = ["ee2-roster6"]
+ee2-paidqueue7 = ["ee2-roster6"]
 
 [profile.release]
 opt-level = 3

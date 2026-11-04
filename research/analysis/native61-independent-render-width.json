@@ -1,0 +1,41 @@
+{
+  "format": "openepoch-native6-render-namespace-tests-v1",
+  "passed": true,
+  "checks": 216371,
+  "binaries": {
+    "own": {
+      "sha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+      "bytes": 268821
+    },
+    "base": {
+      "sha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+      "bytes": 430146
+    },
+    "roster6": {
+      "sha256": "2f905ebd0ba69d155a7fdb2361f7a8f84642e8a3f2f908b9f133bfef7b7cefbc",
+      "bytes": 482478
+    }
+  },
+  "scenes": [
+    {
+      "epoch": 0,
+      "instances": 5957,
+      "rangeLength": 634
+    },
+    {
+      "epoch": 7,
+      "instances": 5957,
+      "rangeLength": 634
+    },
+    {
+      "epoch": 14,
+      "instances": 5957,
+      "rangeLength": 634
+    }
+  ],
+  "sourceHashes": {
+    "adapter": "949a191c9aca295a58ffef0c2431426638f09844edea2633c00f7fd797479307",
+    "mapping": "ac77c08f83fbf5b9919b6c59e3a192bbac704e71c74e429440fdb9b656cbd147"
+  },
+  "scope": "Actual pre-init metadata, typed jobs, real WASM render streams/ranges and non-mutating fallback buffers; no browser or original executable."
+}

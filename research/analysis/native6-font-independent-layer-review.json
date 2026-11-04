@@ -1,0 +1,80 @@
+{
+  "format": "native6-fonts-independent-layer-review-v1",
+  "status": "passed",
+  "runtimeSha256": "22ac2db9ff78cc33dc11971347f4a7cab3450d07dee2f4d2753bf175109ca6c7",
+  "observations": [
+    {
+      "name": "visibility:hidden suppresses sibling bitmap",
+      "wanted": true,
+      "actual": true,
+      "passed": true
+    },
+    {
+      "name": "removing ancestor prunes disconnected control",
+      "wanted": 0,
+      "actual": 0,
+      "passed": true
+    },
+    {
+      "name": "DPR change redraws even when pixel dimensions equal",
+      "wanted": 2,
+      "actual": 2,
+      "passed": true
+    },
+    {
+      "name": "DPR transform matches current ratio",
+      "wanted": 2,
+      "actual": 2,
+      "passed": true
+    },
+    {
+      "name": "event listener identity",
+      "wanted": true,
+      "actual": true,
+      "passed": true
+    },
+    {
+      "name": "accessible text retained",
+      "wanted": "A",
+      "actual": "A",
+      "passed": true
+    },
+    {
+      "name": "pointer events cannot intercept original control",
+      "wanted": "none",
+      "actual": "none",
+      "passed": true
+    },
+    {
+      "name": "HTML hidden suppresses overlay",
+      "wanted": true,
+      "actual": true,
+      "passed": true
+    },
+    {
+      "name": "display:none suppresses overlay",
+      "wanted": true,
+      "actual": true,
+      "passed": true
+    },
+    {
+      "name": "dispose removes overlay only",
+      "wanted": 1,
+      "actual": 1,
+      "passed": true
+    },
+    {
+      "name": "dispose restores original text colour",
+      "wanted": "red",
+      "actual": "red",
+      "passed": true
+    },
+    {
+      "name": "dispose retains listener",
+      "wanted": true,
+      "actual": true,
+      "passed": true
+    }
+  ],
+  "scope": "Independent DOM transport with browser geometry semantics: visibility:hidden retains a rectangle; detached subtrees have empty rectangles; inverse CSS/DPR changes retain physical canvas dimensions. No browser, GUI, original program or candidate-source edit."
+}

@@ -4,16 +4,19 @@ import hashlib,json,shutil
 import import_ee2_units as units
 from up15_source_database import ActiveDatabase,default_manifest
 from up15_unit_upgrade_refs import apply_refs
+from roster6_codegen import rust_identities
 ROOT=Path(__file__).resolve().parents[1]
 MANIFEST=default_manifest(ROOT)
 STAGE=ROOT.parent/'stage/OpenEpoch'
 
-def run():
+def run(extra_bindings=(), prefix="ee2-up15", model_manifest="manifest-up15.json"):
     for directory in ['src','docs/local-original/models']: (STAGE/directory).mkdir(parents=True,exist_ok=True)
     shutil.copyfile(ROOT/'src/defs.rs',STAGE/'src/defs.rs')
-    shutil.copyfile(ROOT/'docs/local-original/models/manifest-up15.json',STAGE/'docs/local-original/models/manifest.json')
+    shutil.copyfile(ROOT/('docs/local-original/models/'+model_manifest),STAGE/'docs/local-original/models/manifest.json')
     research=STAGE.parent/'EE2-Research/analysis';research.mkdir(parents=True,exist_ok=True)
-    shutil.copyfile(ROOT.parent/'EE2-Research/analysis/fortress-population-binding.json',research/'fortress-population-binding.json')
+    evidence=[p for p in [ROOT.parent/'EE2-Research/analysis/fortress-population-binding.json',ROOT/'research/analysis/fortress-population-binding.json']if p.is_file()]
+    assert len(evidence)==1,'Exactly one verified fortress population binding report required'
+    shutil.copyfile(evidence[0],research/'fortress-population-binding.json')
     old_root,old_database,old_fields=units.ROOT,units.Database,units.make_fields
     def fields(db,original,epoch,upgrade=None,production=None):
         result,resolved=old_fields(db,original,epoch,upgrade,production)
@@ -73,13 +76,13 @@ def run():
         return result,resolved
     try:
         units.ROOT=STAGE;units.Database=lambda _:ActiveDatabase(MANIFEST);units.make_fields=fields
-        data=units.run()
+        data=units.run(extra_bindings=extra_bindings)
     finally:units.ROOT,units.Database,units.make_fields=old_root,old_database,old_fields
     db=ActiveDatabase(MANIFEST)
     try:
         db.table('db/techtree/upgrade_unittype5.csv')
         data['format']='ee2-up15-unit-runtime-audit-v1'
-        data['scope']='Resolved native UP15 CSV5 and exactly the two native CFG5 DDF lists. Existing 57 gameplay roles only; aliases, unmatched visual identities and unsupported native abilities remain explicit.'
+        data['scope']=f'Resolved native UP15 CSV5 and exactly the two native CFG5 DDF lists. {len(data["bindings"])} bound gameplay definitions, including legacy role aliases and explicitly selected additional source families; unmatched visual graph children and unsupported native abilities remain explicit. This does not claim the complete132classical or311installed families.'
         data['native_source_manifest']=db.manifest_audit()
         data['native_garrison_slots']['scope']='Compiled popCount binding applied to the resolved active CFG5 DDF values, preserving role-alias limitations.'
         for collection in ['rows','class_rows']:
@@ -94,9 +97,9 @@ def run():
         source_paths=set(data['source_files'])|set(db.files)
         data['source_files']={path:{'sha256':db.reader.origin(path)['sha256'],'origin':db.reader.origin(path)} for path in sorted(source_paths)}
     finally:db.close()
-    target=ROOT/'docs/ee2-up15-units.json';target.write_text(json.dumps(data,indent=2,ensure_ascii=False)+'\n',encoding='utf8')
+    target=ROOT/('docs/'+prefix+'-units.json');target.write_text(json.dumps(data,indent=2,ensure_ascii=False)+'\n',encoding='utf8')
     rust=(STAGE/'src/ee2_units.rs').read_text().replace('tools/import_ee2_units.py','tools/import_ee2_up15_units.py').replace('Base db.zip','Resolved active UP15 CSV5/CFG5').replace('base db.zip','resolved active UP15 CSV5/CFG5')
-    (ROOT/'src/ee2_up15_units.rs').write_text(rust)
+    (ROOT/('src/'+prefix.replace('-','_')+'_units.rs')).write_text(rust_identities(rust))
     print(json.dumps({'bindings':len(data['bindings']),'rows':len(data['rows']),'class_rows':len(data['class_rows']),'manifest':data['native_source_manifest']['manifest_sha256']}))
     return data
 if __name__=='__main__':run()

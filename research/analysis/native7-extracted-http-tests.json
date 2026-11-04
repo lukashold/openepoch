@@ -1,0 +1,19 @@
+{
+  "format": "openepoch-native7-extracted-http-tests-v1",
+  "status": "passed",
+  "createdUTC": "2026-11-04T18:58:41.626562+00:00",
+  "passed": 12,
+  "seconds": 9.057,
+  "logSha256": "74e3e3a0b7b6ffbe259d07aced0c3b0f81053f3cf6c87ff6e51e656322fb3409",
+  "sourceHashes": {
+    "tools/serve_game.py": "164f164087ce16c314e337797101fd09dfd4ce131cfcdd52f2ea676a1e87d3b8",
+    "tools/portable-server-test.py": "8db68ba2e98ab65cb80be458fb89f238ac24524d5d439a6c88e29950c248b353"
+  },
+  "wasmSha256ByFile": {
+    "openepoch.wasm": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+    "openepoch-ee2.wasm": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+    "openepoch-ee2-up15.wasm": "25c832f13c1c8b4d8547eb6c65d78bd74c5fa50f45d9745328f8bb18ccbb146d",
+    "openepoch-cloth7.wasm": "c8d1207fec111a5b47dbe24b75d51cf3f250f032dfdb4073e75113e65353c625"
+  },
+  "scope": "Actual Windows loopback/process tests on freshly extracted complete package. No browser, external network, original executable or physical macOS execution."
+}

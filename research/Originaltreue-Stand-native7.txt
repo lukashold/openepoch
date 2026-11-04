@@ -1,0 +1,21 @@
+OpenEpoch native7 – weiter in Entwicklung, keine vollständige1:1-Übereinstimmung.
+
+Der aktive Stand besitzt61 quellgebundene Rollen.43 von132 klassischen
+Quellenfamilien sind angebunden;89 bleiben offen. Neu sind gespeicherte
+bezahlte Produktionspreise, Startdauer, Warteschlangen-Neuberechnung und
+bewegte Originalsegelflächen mit getrennten echten Schiffshandles.
+
+Die gemeinsam geprüfte WASM-Datei ist518.082Bytes groß.131Rusttests,
+aktuelle Migrations-/Erstattungs-/Mehrspielerfälle, getrennte Identitäts-
+und Physikprüfungen sowie18 echte GLES-Weltbilder sind bestanden.
+Der vollständige Mac-Laufzeitordner wurde frisch entpackt und alle5.026
+Manifestdateien bytegenau geprüft.4.918Originalmediendateien sind enthalten.
+Ein tatsächlicher Mac- oder Browserstart wurde nicht ausgeführt.
+
+Offen sind insbesondere vollständige Einheiten/Zivilisationen/Fähigkeiten,
+Originalkarten/Startplatzierung/KI, Markt/Kronen/Produktionszyklen,
+Projektil-/Leichenlebenszyklen und vollständige originale Darstellungssteuerung.
+Die Ghidra-Auswertung bleibt read-only; Original-EXE/DLL werden nicht ausgeführt.
+
+Die genauen Hashes, Prüfbereiche und Einschränkungen stehen in
+analysis/native7-frontend-integration.json und original-parity-audit-native7.json.

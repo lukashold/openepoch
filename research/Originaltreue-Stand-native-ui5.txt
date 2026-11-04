@@ -1,0 +1,37 @@
+Originaltreue – Stand native-ui5, 04.11.2026
+
+Die Entwicklung läuft weiter. Ein vollständiger 1:1-Nachbau ist noch nicht erreicht.
+
+Alle 57 bisherigen Rollen sind an Quellen gebunden: 279 Klassenintervalle,
+129 Visualintervalle und 313 RPS-Profile. Paladin und LightHerc besitzen ihre
+wirklichen UP-Modelle. Die beiden bisherigen WASMs und BASE-Modellmanifeste
+bleiben unverändert. Angriffsrunden, verzögerter Schaden und belegte Ziel-/
+Mindestreichweiten-/Projektilregeln sind aktiv. Alte UP-Saves migrieren; Netzwerk-
+protokoll10 trennt frühere Kampfstände. Projektile im Flug bleiben eine Save-Lücke.
+
+Die native F4-Oberfläche verwendet 236 Widgetdefinitionen und 151 Originalcrops,
+mit Spielerfarben, Beziehungen, Ressourcen- und Gebietstausch. Deutsche
+Originalnamen, Mehrzahlformen und Beschreibungen folgen Klasse und Epoche.
+Die Quellenbeleuchtung der Modelle berücksichtigt Farbbytes, NiLight und die
+passenden statischen/IndexPal-Materialpfade. Die Anwendung wählt vorerst
+Temperate/Afternoon/Normal; die native Tageszeit-/Wettersteuerung fehlt noch.
+
+Die Farm-/Boden-/Wasser- und HUD-Quellschichten des vorherigen Standes bleiben
+enthalten. Alle importierten Medien liegen im lokalen Spielordner. Einheiten-
+übergaben, Bitmap-Schrift, vollständige KI/Kartenerzeugung und der vollständige
+Einheiten-/Zivilisationsbestand sind noch offen. 439 UpgradeRef-Feldvorkommen
+und82 Forschungsfaktoren sind inventarisierte Lücken, keine439 Einzelmerkmale.
+
+Prüfstand: 90 UP-/75 Referenz-/32 eigene Rusttests;115.192 Rohquellenchecks,
+407.723 WASMchecks und5.429 Angriffs-/Save-/Malformedchecks. Acht tatsächliche
+GLES-Weltszenen bestehen432 Kontrollen, zusätzliche Reflexionskontrollen106.
+1364 Profil-/Save-/Netzwerkchecks,1618 Diplomatie-UI-/Befehlschecks und6029
+HUD-Prüfungen bestehen. Die Originaltexte wurden in13.094 unabhängigen
+Quellenprüfungen und5179 Runtime-/142 tatsächlichen HUD-Handlerchecks geprüft.
+
+Kein Originalspiel/Original-DLL und kein Browserfenster wurde ausgeführt. Ein
+physischer Mac-Start und eine vollständige Bild-/Spielgleichheit sind ungetestet.
+Originalmedien bleiben außerhalb des öffentlichen Quellrepositories.
+
+Aktueller Nachweis: analysis/native5-frontend-integration.json und
+analysis/original-parity-audit.json. Vorheriger Stand: Originaltreue-Stand-native-ui4.txt.

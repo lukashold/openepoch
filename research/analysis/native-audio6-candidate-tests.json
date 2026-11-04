@@ -1,0 +1,46 @@
+{
+  "format": "native-audio6-candidate-tests-v1",
+  "status": "passed",
+  "checks": 7323,
+  "realWasmSnapshot": {
+    "path": "work/native-roster6/classic-candidate/builds/pre-placement-classic6.wasm",
+    "sha256": "e68cbe7a8b8187d1454d94a6773c8e514b7b49c7ae79dd3bc2fb69db198bdcf3",
+    "ruleset": 2,
+    "schema": 6,
+    "definitions": 61,
+    "flags": [
+      {
+        "id": 57,
+        "flags": 18
+      },
+      {
+        "id": 58,
+        "flags": 18
+      },
+      {
+        "id": 59,
+        "flags": 17
+      },
+      {
+        "id": 60,
+        "flags": 17
+      }
+    ],
+    "scope": "Read-only metadata check of isolated pre-placement candidate; this WASM is not activated by the audio task."
+  },
+  "legacyComparison": {
+    "acknowledgmentResults": 3420,
+    "recordingAndGroupResults": 3420,
+    "legacyManifestSha256": "ff67ba2de5ca7175449793786f9f95852eb469ed0e7b1a29ce518422b0e1a6ce"
+  },
+  "familyIntervals": 16,
+  "originalRecordings": 28,
+  "sourceHashes": {
+    "docs/original-audio-bindings.js": "6271658a613c5293a52efa3f7092a53b49b7550389e08d30cf84893af95c99f1",
+    "docs/original-audio.js": "02cd8dcee8d2e3f385b2dc775e90154988290f0b80cd2c4c79bf578ded611bfc",
+    "docs/audio.js": "9c225e5b87325ea33990cd5f3aa6e03bff3b08a03b7b568986192ddc0cb7abb3",
+    "docs/local-original/audio/native-families.json": "7aa92154cbd1e760be5b08658546da74d1d3cc304463f9d2bd07221efb4f43da",
+    "import_audio6.py": "a9e8f9985a9ba8d036f6f62c7521349c5d34148eeeec981c71237891e53b3e25"
+  },
+  "scope": "Isolated typed resolver plus actual candidate original-audio and audio wrapper. Actual active original player is the57-role regression oracle; WebAudio graph/decoder and clock are deterministic test transports, not a browser/audio-device playback test. No active runtime or original game write."
+}

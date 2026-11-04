@@ -1,0 +1,43 @@
+{
+  "format": "native-render-meta7-client-tests-v1",
+  "status": "passed",
+  "checks": 410,
+  "wasmSha256": "f7784ee37122a8bd1e281bf09c4a898cae081e752cd5f9649a2c1d09efa50bd5",
+  "decoderSha256": "8cb10d47f6a305d7177e1e701f2736b051c654700eb8460084983d63d3827fcc",
+  "scenes": [
+    {
+      "seed": 7,
+      "epoch": 0,
+      "instances": 5956,
+      "actors": 12,
+      "sessionBefore": 1,
+      "sessionAfter": 2
+    },
+    {
+      "seed": 41,
+      "epoch": 5,
+      "instances": 10291,
+      "actors": 12,
+      "sessionBefore": 1,
+      "sessionAfter": 2
+    },
+    {
+      "seed": 71,
+      "epoch": 9,
+      "instances": 7685,
+      "actors": 12,
+      "sessionBefore": 1,
+      "sessionAfter": 2
+    },
+    {
+      "seed": 11,
+      "epoch": 14,
+      "instances": 11883,
+      "actors": 12,
+      "sessionBefore": 1,
+      "sessionAfter": 2
+    }
+  ],
+  "activeRuntimeModified": false,
+  "scope": "Real isolated metadata WASM and active typed namespace; pre-init, sorted actual handles, cull-versus-destruction, immutable copies, successful/failed loads and save/hash preservation. Synthetic malformed/future-ID records are separate; no original executable or browser."
+}

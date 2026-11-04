@@ -67,7 +67,7 @@ try{
  flush();
  for(const peer of peers){check(peer.api.getNet()?.ls instanceof Lockstep,'Actual main channel creates the production Lockstep');check(peer.begins.length===1,'One match starts');equal(peer.session.settings,hostSettings,'Guest adopts all host calendar fields');equal(plain(peer.api.menuSeasonSettings()),hostSettings,'Production controls reflect host settings');equal(peer.wasm.game_tick(),0,'Handshake does not advance simulation');}
  equal(peers[0].wasm.state_hash(),peers[1].wasm.state_hash(),'Host seed/AI/visibility override different guest menu values');
- check(PROTOCOL_VERSION===10,'Current native UP combat/season protocol is10');
+ check(PROTOCOL_VERSION===14,'Current paid-production roster/season protocol is14');
  // Issue genuine commands through both WASM outboxes, not artificial packets.
  for(const peer of peers){
   const w=peer.wasm,id=w.select_idle_worker();check(id!==0xffffffff,'Real worker available');

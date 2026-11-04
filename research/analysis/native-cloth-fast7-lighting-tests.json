@@ -1,0 +1,15 @@
+{
+  "format": "native-cloth-lighting-source-tests-v1",
+  "status": "PASS",
+  "checks": 31981,
+  "cases": 71,
+  "states": 426,
+  "vertices": 9516,
+  "helperSha256": "c8d1207fec111a5b47dbe24b75d51cf3f250f032dfdb4073e75113e65353c625",
+  "arithmeticSha256": "ca1e78369d65895c4b9ff78d94181f6aedfa3b875c4cb5cd85bc70b4a9e14daa",
+  "oracleSha256": "af8dfba6c068f3773a819eac0b1f8f96c5358d3ad3bc781dc4539a2f028c23f4",
+  "generatorSha256": "659f114f745555033a7b8cab5d91f63f1fb93da8b9b0c76558a17dd4428701ee",
+  "inputSha256": "f6e0c7c42435606e9d5385398f2d386d0d526b418766492a8b4fbaa0ce7fa153",
+  "crossProductSha256": "a222afc5c65306aa35e9e0ed926668a1259f256e3bf41bed4c3e609570c3d769",
+  "scope": "Exact stored-RGBA bits against independent Fraction/integer CHOP53 reconstruction across69source spring states plus folded/degenerate own fixtures,3 raw atmosphere selections,normal/uniform. Diagnostic temporary normal zeros are canonicalized; RGB has no tolerance. Source005F9920 confirms this-cross-other and independent component FSTP32 stores. No renderer or original code executed."
+}

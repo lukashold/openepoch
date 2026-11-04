@@ -1,0 +1,80 @@
+{
+  "format": "native-paidqueue7-actual-wasm-v1",
+  "status": "PASS",
+  "checks": 1141,
+  "wasmSha256": "25c832f13c1c8b4d8547eb6c65d78bd74c5fa50f45d9745328f8bb18ccbb146d",
+  "wasmBytes": 518082,
+  "malformed": 28,
+  "epochTrace": [
+    {
+      "epoch": 8,
+      "ticks": 300,
+      "queue": [
+        58,
+        58,
+        58,
+        58,
+        58
+      ],
+      "progress": 14.960039138793945,
+      "stock": [
+        15000,
+        14000,
+        6050,
+        10000,
+        9200,
+        7500,
+        7500,
+        7500,
+        7500
+      ]
+    },
+    {
+      "epoch": 9,
+      "ticks": 300,
+      "queue": [
+        58,
+        58,
+        58,
+        58
+      ],
+      "progress": 29.959829330444336,
+      "stock": [
+        15000,
+        14179,
+        6050,
+        10000,
+        9299.5,
+        7500,
+        7500,
+        7500,
+        7500
+      ]
+    },
+    {
+      "epoch": 10,
+      "ticks": 300,
+      "queue": [],
+      "progress": 0,
+      "stock": [
+        15000,
+        15000,
+        6340,
+        10000,
+        9969.5,
+        7500,
+        8421,
+        7500,
+        7500
+      ]
+    }
+  ],
+  "ordinaryTicks": 4120,
+  "limits": [
+    "Fixtures establish initial controlled research/shore state through the older real loader; all new payments and epoch orders are public commands.",
+    "Ledger preserves the actual smaller-engine price. Its existing u16 cost-calculation adapter is not a proof of fractional native unit costs.",
+    "Reprice arithmetic models the source register/store graph in nearest53. Actual temporal native x87 rounding and live manual-market/Crown price modifiers remain explicit source gaps.",
+    "Production-cycle mode is not exposed by this smaller engine; the source normal-mode pending-delete branch is implemented. Unpaid front jobs cannot progress without payment.",
+    "Legacy saves lack historical invoices and are explicitly inferred; original paid-price reconstruction is impossible from them alone."
+  ]
+}

@@ -1,3 +1,4 @@
+import {buildNativeTerrainLightmap,validateTerrainLighting,nativeTerrainCoefficients,LIGHTMAP_LAYOUT} from './native-terrain-lightmap.js';
 // Native terrain images and source bindings on OpenEpoch's own generated map.
 // UV scale, class blending and water motion are explicit rendering adapters.
 const MAP=256;
@@ -15,6 +16,7 @@ void main(){vP=aP;vN=aN;gl_Position=uVP*vec4(aP,1.);}
 precision highp float;
 uniform highp sampler2DArray uGrass,uPatch,uForest,uRock,uBeach,uCoral,uRocky,uRoots;
 uniform sampler2D uMask,uWeights,uFog,uTerr;
+uniform highp sampler2DArray uNativeLightmap;uniform bool uNativeLighting;uniform float uNativeBlocks;uniform vec3 uNativeDiffuse,uNativeAmbient;
 uniform vec3 uTeam[8];uniform float uPx,uSeasonBlend;uniform vec2 uSeasonMonths;
 uniform bool uClipEnabled;uniform vec4 uClipPlane;in vec3 vP;in vec3 vN;out vec4 outColor;
 ${COMMON}
@@ -38,8 +40,17 @@ void main(){
  vec3 rock=mix(seasonSample(uRock,tiled),seasonSample(uRocky,tiled),smoothstep(.45,.94,n.y));
  vec3 color=grass*weights.r+forest*weights.g+rock*weights.b+seasonSample(uBeach,tiled)*weights.a;
  color=mix(color,seasonSample(uCoral,tiled),smoothstep(.08,.7,-vP.y));
- vec3 sun=normalize(vec3(.42,.82,.39));
- color*=vec3(.55,.57,.59)+vec3(.53,.50,.43)*max(dot(n,sun),0.);
+ if(uNativeLighting){
+  vec2 block=floor(clamp(vP.xz,vec2(0.),vec2(255.999))/25.);
+  vec2 mapUV=(vP.xz-block*25.)*((1.-1./128.)/25.)+vec2(.5/128.);
+  float lightmap=texture(uNativeLightmap,vec3(mapUV,block.x+block.y*uNativeBlocks)).r;
+  vec3 stage0=clamp(2.*lightmap*uNativeDiffuse,0.,1.);
+  vec3 stage1=clamp(stage0+uNativeAmbient,0.,1.);
+  color=clamp(2.*color*stage1,0.,1.);
+ }else{
+  vec3 sun=normalize(vec3(.42,.82,.39));
+  color*=vec3(.55,.57,.59)+vec3(.53,.50,.43)*max(dot(n,sun),0.);
+ }
  color*=mix(1.,.65,clamp(-vP.y*.5,0.,1.));
  vec4 t=texture(uTerr,uv);float d=max(.09,uPx*1.3)/256.;float edge=0.;
  edge=max(edge,step(.001,abs(texture(uTerr,uv+vec2(d,0.)).r-t.r)));
@@ -144,8 +155,8 @@ function makeProgram(gl,sources){
  return {program,uniform:name=>gl.getUniformLocation(program,name)};
 }
 const absolute=url=>new URL(url,import.meta.url);
-async function imageTexture(gl,url,repeat=true){
- const response=await fetch(absolute(url));if(!response.ok)throw new Error(`${url}: ${response.status}`);
+async function imageTexture(gl,url,repeat=true,resolve=absolute){
+ const response=await fetch(resolve(url));if(!response.ok)throw new Error(`${url}: ${response.status}`);
  const image=await createImageBitmap(await response.blob(),{premultiplyAlpha:'none',colorSpaceConversion:'none'});
  const texture=gl.createTexture();gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture);
  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);
@@ -157,21 +168,22 @@ async function imageTexture(gl,url,repeat=true){
 }
 const sameArray=(a,b)=>a&&b&&a.length===b.length&&a.every((value,i)=>value===b[i]);
 
-export async function loadOriginalTerrain(gl,enabled,teams){
- const result={enabled:false,errors:[],metrics:{terrainCalls:0,waterCalls:0,seasonSlot:6,seasonNext:7,seasonBlend:0,images:0,classification:'none'},
-  policy:'native-images-own-map-material-adapter',updateMap(){},drawTerrain(){},drawWater(){},setSeasonPhase(){return false;},async setSeason(){return false;}};
+export async function loadOriginalTerrain(gl,enabled,teams,options={}){
+ const result={enabled:false,errors:[],metrics:{terrainCalls:0,waterCalls:0,seasonSlot:6,seasonNext:7,seasonBlend:0,images:0,classification:'none',lightmapBuilds:0,lightmapUploads:0,lightmapBytes:0,lightmapBuildMs:0,nativeLighting:false,lightingFallback:'missing-context'},
+  policy:'native-images-own-map-material-adapter',updateMap(){},drawTerrain(){},drawWater(){},setLightingContext(){return false;},setSeasonPhase(){return false;},async setSeason(){return false;}};
  if(!enabled)return result;
  try{
-  const response=await fetch(absolute('./local-original/terrain-native/manifest.json'),{cache:'no-store'});
+  const resolveAsset=url=>new URL(url,options.assetBaseURL||import.meta.url);
+  const response=await fetch(resolveAsset('./local-original/terrain-native/manifest.json'),{cache:'no-store'});
   if(!response.ok)throw new Error(`Native terrain manifest: ${response.status}`);
   const manifest=await response.json();result.manifest=manifest;
   if(manifest.format!=='ee2-native-terrain-v1')throw new Error('Unsupported native terrain manifest');
   const terrain=makeProgram(gl,TERRAIN_SHADERS),water=makeProgram(gl,WATER_SHADERS),cache=new Map();
-  const texture=(url,repeat=true)=>{if(!cache.has(url))cache.set(url,imageTexture(gl,url,repeat));return cache.get(url);};
+  const texture=(url,repeat=true)=>{if(!cache.has(url))cache.set(url,imageTexture(gl,url,repeat,resolveAsset));return cache.get(url);};
   const mask=await texture(manifest.maskUrl),normal=await texture(manifest.water.normal),layer1=await texture(manifest.water.layer1),layer2=await texture(manifest.water.layer2),colorLut=await texture(manifest.water.colorLut,false);
   const images=new Map();
   const bitmap=url=>{
-   if(!images.has(url))images.set(url,(async()=>{const response=await fetch(absolute(url));if(!response.ok)throw new Error(`${url}: ${response.status}`);return createImageBitmap(await response.blob(),{premultiplyAlpha:'none',colorSpaceConversion:'none'});})());
+   if(!images.has(url))images.set(url,(async()=>{const response=await fetch(resolveAsset(url));if(!response.ok)throw new Error(`${url}: ${response.status}`);return createImageBitmap(await response.blob(),{premultiplyAlpha:'none',colorSpaceConversion:'none'});})());
    return images.get(url);
   };
   const roles={};let lastFields=null,season={month0:6,month1:7,blend:0};
@@ -200,15 +212,49 @@ export async function loadOriginalTerrain(gl,enabled,teams){
   result.setSeason=async slot=>result.setSeasonPhase({month0:slot});
   await result.setSeason(manifest.adapter.initialSeasonSlot);
   const bind=(unit,t,target=gl.TEXTURE_2D)=>{gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(target,t);};
-  result.updateMap=({heights,types,size=MAP})=>{
+  let lighting=null,lightmap=null,atlasTexture=null,bakedHeights=null,bakedDirection=null,bakedNormals=null,mapNormals=null;
+  const clock=()=>globalThis.performance?.now?.()??Date.now();
+  const arrayTexture=(width,height,layers,data)=>{
+   const t=gl.createTexture();bind(LIGHTMAP_LAYOUT.textureUnit,t,gl.TEXTURE_2D_ARRAY);
+   gl.texStorage3D(gl.TEXTURE_2D_ARRAY,1,gl.R8,width,height,layers);
+   gl.texSubImage3D(gl.TEXTURE_2D_ARRAY,0,0,0,0,width,height,layers,gl.RED,gl.UNSIGNED_BYTE,data);
+   for(const key of [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER])gl.texParameteri(gl.TEXTURE_2D_ARRAY,key,gl.LINEAR);
+   for(const key of [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T])gl.texParameteri(gl.TEXTURE_2D_ARRAY,key,gl.CLAMP_TO_EDGE);
+   return t;
+  };
+  const fallbackTexture=arrayTexture(1,1,1,new Uint8Array([0]));
+  const bake=()=>{
+   if(!lighting||!lastFields)return false;
+   if(lightmap&&sameArray(bakedHeights,lastFields.heights)&&sameArray(bakedDirection,lighting.direction)&&((!mapNormals&&!bakedNormals)||sameArray(mapNormals,bakedNormals)))return false;
+   const started=clock();
+   try{
+    const next=buildNativeTerrainLightmap({heights:lastFields.heights,size:MAP,normals:mapNormals,direction:lighting.direction});
+    const nextTexture=arrayTexture(next.resolution,next.resolution,next.layers,next.data);
+    if(atlasTexture)gl.deleteTexture(atlasTexture);atlasTexture=nextTexture;lightmap=next;
+    bakedHeights=new Float32Array(lastFields.heights);bakedDirection=[...lighting.direction];bakedNormals=mapNormals&&new Float32Array(mapNormals);
+    Object.assign(result.metrics,{lightmapBuilds:result.metrics.lightmapBuilds+1,lightmapUploads:result.metrics.lightmapUploads+1,lightmapBytes:next.data.length,lightmapLayers:next.layers,lightmapBuildMs:clock()-started,lightmapOccludedSamples:next.occludedSamples,nativeLighting:true,lightingFallback:null});
+    return true;
+   }catch(error){
+    lightmap=null;result.metrics.nativeLighting=false;result.metrics.lightingFallback='lightmap-build-failed';result.errors.push('Native terrain lightmap: '+error.message);return false;
+   }finally{gl.activeTexture(gl.TEXTURE0);}
+  };
+  result.setLightingContext=context=>{
+   if(context===null||context===undefined){lighting=null;result.lighting=null;result.metrics.nativeLighting=false;result.metrics.lightingFallback='missing-context';return false;}
+   try{lighting=validateTerrainLighting(context);}catch(error){lighting=null;result.lighting=null;result.metrics.nativeLighting=false;result.metrics.lightingFallback='invalid-context';result.errors.push('Native terrain lighting: '+error.message);return false;}
+   result.lighting=lighting;if(!lastFields)result.metrics.lightingFallback='awaiting-map';bake();
+   if(lightmap){result.metrics.nativeLighting=true;result.metrics.lightingFallback=null;}
+   return true;
+  };
+  result.updateMap=({heights,types,size=MAP,normals=null})=>{
    if(size!==MAP)throw new RangeError('Native renderer currently requires the 256x256 simulation map');
-   if(lastFields&&sameArray(lastFields.heights,heights)&&sameArray(lastFields.types,types))return false;
+   if(normals&&(!ArrayBuffer.isView(normals)||normals.length!==(MAP+1)**2*3||!Array.from(normals).every(Number.isFinite)))throw new RangeError('Invalid terrain lightmap normals');
+   if(lastFields&&sameArray(lastFields.heights,heights)&&sameArray(lastFields.types,types)&&((!normals&&!mapNormals)||sameArray(normals,mapNormals)))return false;
    const fields=buildTerrainFields({heights,types,size});
    bind(UNITS.weights,weightsTexture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,MAP,MAP,0,gl.RGBA,gl.UNSIGNED_BYTE,fields.weights);
    bind(UNITS.heights,heightTexture);gl.texImage2D(gl.TEXTURE_2D,0,gl.R32F,MAP+1,MAP+1,0,gl.RED,gl.FLOAT,fields.heights);
    // The shader interpolates four exact corners, requiring no float-linear extension.
    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
-   lastFields=fields;result.metrics.classification=fields.classification;gl.activeTexture(gl.TEXTURE0);return true;
+   lastFields=fields;mapNormals=normals&&new Float32Array(normals);result.metrics.classification=fields.classification;bake();gl.activeTexture(gl.TEXTURE0);return true;
   };
   result.drawTerrain=({vao,indexCount=MAP*MAP*6,vp,px=1/28,fogTexture,territoryTexture,clipPlane=null,capture=false})=>{
    if(!lastFields)return;
@@ -216,6 +262,12 @@ export async function loadOriginalTerrain(gl,enabled,teams){
    gl.useProgram(terrain.program);gl.bindVertexArray(vao);gl.uniformMatrix4fv(terrain.uniform('uVP'),false,vp);gl.uniform1f(terrain.uniform('uPx'),px);gl.uniform3fv(terrain.uniform('uTeam'),new Float32Array(teams.flat()));
    gl.uniform1i(terrain.uniform('uClipEnabled'),clipPlane?1:0);gl.uniform4fv(terrain.uniform('uClipPlane'),clipPlane||[0,0,0,0]);
    for(const role of ROLES){bind(UNITS[role],roles[role],gl.TEXTURE_2D_ARRAY);gl.uniform1i(terrain.uniform('u'+role[0].toUpperCase()+role.slice(1)),UNITS[role]);}
+   const nativeEnabled=!!(lighting&&lightmap);gl.uniform1i(terrain.uniform('uNativeLighting'),nativeEnabled?1:0);
+   bind(LIGHTMAP_LAYOUT.textureUnit,nativeEnabled?atlasTexture:fallbackTexture,gl.TEXTURE_2D_ARRAY);gl.uniform1i(terrain.uniform('uNativeLightmap'),LIGHTMAP_LAYOUT.textureUnit);
+   gl.uniform1f(terrain.uniform('uNativeBlocks'),nativeEnabled?lightmap.blocks:1);
+   const coefficients=lighting&&nativeTerrainCoefficients(lighting);
+   gl.uniform3fv(terrain.uniform('uNativeDiffuse'),coefficients?coefficients.diffuseBytes.map(v=>v/255):[0,0,0]);
+   gl.uniform3fv(terrain.uniform('uNativeAmbient'),coefficients?coefficients.ambientBytes.map(v=>v/255):[0,0,0]);
    gl.uniform2fv(terrain.uniform('uSeasonMonths'),[season.month0,season.month1]);gl.uniform1f(terrain.uniform('uSeasonBlend'),season.blend);
    bind(UNITS.mask,mask);bind(UNITS.weights,weightsTexture);gl.uniform1i(terrain.uniform('uMask'),UNITS.mask);gl.uniform1i(terrain.uniform('uWeights'),UNITS.weights);
    if(fogTexture)bind(2,fogTexture);if(territoryTexture)bind(3,territoryTexture);gl.uniform1i(terrain.uniform('uFog'),2);gl.uniform1i(terrain.uniform('uTerr'),3);
@@ -229,7 +281,8 @@ export async function loadOriginalTerrain(gl,enabled,teams){
    if(fogTexture)bind(2,fogTexture);gl.uniform1i(water.uniform('uFog'),2);
    gl.drawArrays(gl.TRIANGLE_STRIP,0,4);result.metrics.waterCalls++;gl.activeTexture(gl.TEXTURE0);
   };
-  result.enabled=true;
+  result.enabled=true;result.policy='native-lightmap-operations-own-heightfield-input';
+  if(options.lighting)result.setLightingContext(options.lighting);
  }catch(error){result.errors.push(error.message);console.warn('Original terrain:',error);}
  return result;
 }

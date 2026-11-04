@@ -1,9 +1,13 @@
+import {normalizeRenderAssetMapping,sourceRenderBindings,manifestAssetKind} from './original-render-namespace.js';
+export {createRenderAssetMapping} from './original-render-namespace.js';
 // Textured NIF geometry converted locally by tools/extract_ee2_models.py.
 // This renderer does not inspect original files or alter the deterministic simulation.
 import {DEFAULT_MODEL_LIGHTING,modelMaterial,alphaState,depthState} from './original-material.js?v=material1';
 import {nativeModelTransform} from './original-scale.js?v=native1';
 import {modelYearPhase,modelSeasonFrames,modelSeasonBinding} from './original-model-seasons.js?v=modelseason1';
-import {createNativeLightingContext,nativeModelPipeline} from './original-lighting.js?v=lighting5';
+import {createNativeLightingContext,nativeModelPipeline} from './original-lighting.js?v=lighting6';
+import {appendInitialSailParts,nativeInitialSailDiffuse} from './original-sail-composite.js?v=initialsail7';
+import {createDynamicSailBinding,createDynamicSailGPU,dynamicSailForces} from './original-dynamic-sails.js?v=clothgpu7';
 const VS=`#version 300 es
 layout(location=0) in vec3 aPosition;layout(location=1) in vec3 aNormal;layout(location=2) in vec2 aUV;
 layout(location=3) in vec4 iA;layout(location=4) in vec4 iB;layout(location=5) in vec4 iC;
@@ -111,6 +115,33 @@ void main(){
 }`;
 export const ORIGINAL_MODEL_SHADERS=Object.freeze({vertex:VS,fragment:FS});
 export const MODEL_SHADERS=ORIGINAL_MODEL_SHADERS;
+// FlagShader.NSF uses its own fixed-function stage sequence. This branch never
+// changes the existing static/skinned material shader or its texture operands.
+const SAIL_FS=`#version 300 es
+precision highp float;
+uniform sampler2D uDiffuse,uDark,uFog;uniform vec3 uSailDiffuse;
+uniform bool uClipEnabled;uniform vec4 uClipPlane;uniform float uModelHeight;
+in vec2 vUV;in vec2 vWorld;in vec3 vPosition;in float vY;flat in vec4 vInfo;out vec4 outColor;
+void main(){
+ if(uClipEnabled&&dot(vec4(vPosition,1.),uClipPlane)<0.)discard;
+ vec4 base=texture(uDiffuse,vUV),dark=texture(uDark,vUV);
+ float coverage=base.a*dark.a;if(coverage<=0.)discard;
+ int flags=int(vInfo.w+.5);float fog=texture(uFog,vWorld/256.).r;
+ if((flags&32)==0&&fog<.05)discard;
+ if((flags&64)!=0&&vInfo.z<1.&&vY>max(.02,uModelHeight*vInfo.z))discard;
+ vec3 color=clamp(base.rgb*uSailDiffuse*4.,0.,1.)*dark.rgb;
+ if((flags&4)!=0)color=mix(color,vec3(1.),.5);
+ if((flags&8)!=0){color=mix(color,vec3(.3,1.,.4),.4);coverage=.6;}
+ if((flags&16)!=0){color=mix(color,vec3(1.,.15,.15),.65);coverage=.6;}
+ if((flags&32)==0)color*=smoothstep(.02,.45,fog)*mix(.5,1.,smoothstep(.55,.95,fog));
+ outColor=vec4(color,coverage);
+}`;
+export const ORIGINAL_INITIAL_SAIL_SHADERS=Object.freeze({vertex:VS,fragment:SAIL_FS});
+// The source CPU color routine stores unclamped floats. This explicit float
+// vertex adapter retains them until the Flag texture-stage clamp. Native GPU
+// color packing/quantization is not claimed by this port.
+const DYNAMIC_SAIL_FS=SAIL_FS.replace('in vec2 vUV;', 'in vec4 vColor;in vec2 vUV;').replace('base.rgb*uSailDiffuse*4.', 'base.rgb*vColor.rgb*4.');
+export const ORIGINAL_DYNAMIC_SAIL_SHADERS=Object.freeze({vertex:VS,fragment:DYNAMIC_SAIL_FS});
 const enabled=(gl,cap,value)=>value?gl.enable(cap):gl.disable(cap);
 function drawState(gl){
  return {blend:gl.isEnabled(gl.BLEND),test:gl.isEnabled(gl.DEPTH_TEST),write:gl.getParameter(gl.DEPTH_WRITEMASK),depth:gl.getParameter(gl.DEPTH_FUNC),
@@ -131,21 +162,29 @@ function applyDrawState(gl,part,shadow,preview){
   gl.blendFunc(factors[a.source]??gl.SRC_ALPHA,factors[a.destination]??gl.ONE_MINUS_SRC_ALPHA);
  }
 }
-function program(gl){
+function program(gl,fragment=FS,extraUniforms=[]){
  const p=gl.createProgram();
- for(const [type,source] of [[gl.VERTEX_SHADER,VS],[gl.FRAGMENT_SHADER,FS]]){
+ for(const [type,source] of [[gl.VERTEX_SHADER,VS],[gl.FRAGMENT_SHADER,fragment]]){
   const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);
   if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));
   gl.attachShader(p,s);gl.deleteShader(s);
  }
  gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));
  const u={};for(const name of ['uVP','uShadow','uAnimated','uYOffset','uOriginOffset','uDiffuse','uDiffuseNext','uModelSeasonBlend','uFog','uColor','uHasAlpha','uCutoff','uModelHeight','uTeam','uFrames','uFrameWidth','uFrameCount','uTerrain','uTerrainSize','uTerrainEnabled','uSunDirection','uAmbientMaterial','uSpecularMaterial','uEmissiveMaterial','uGlossiness','uSpecularEnabled','uVertexMode','uLightingMode','uAmbientLight','uSunColor','uSpecularLight','uNativeShader','uTextureScale','uNativeLighting','uEye','uAlphaFunction','uClipEnabled','uClipPlane','uFarmPlotConform','uFarmPlotCenter'])u[name]=gl.getUniformLocation(p,name);
+ for(const name of extraUniforms)u[name]=gl.getUniformLocation(p,name);
  return {p,u};
 }
 const absolute=url=>new URL(url,import.meta.url);
 async function json(url){const r=await fetch(absolute(url),{cache:'no-store'});if(!r.ok)throw new Error(`${url}: ${r.status}`);return r.json();}
-async function texture(gl,url,cache){
- if(cache.has(url))return cache.get(url);
+async function verifiedSailJSON(url,digest){
+ if(!/^[a-f0-9]{64}$/.test(digest||''))throw new Error('Missing original sail composite hash');
+ const r=await fetch(absolute(url),{cache:'no-store'});if(!r.ok)throw new Error(`Original sail ${url}: ${r.status}`);
+ const bytes=await r.arrayBuffer(),hash=new Uint8Array(await crypto.subtle.digest('SHA-256',bytes));
+ if(Array.from(hash,value=>value.toString(16).padStart(2,'0')).join('')!==digest)throw new Error('Original sail composite hash differs');
+ return JSON.parse(new TextDecoder().decode(bytes));
+}
+async function texture(gl,url,cache,sail=false){
+ const key=sail?'initial-sail:'+url:url;if(cache.has(key))return cache.get(key);
  const promise=(async()=>{
   const t=gl.createTexture();gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,t);
   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([255,255,255,255]));
@@ -155,9 +194,9 @@ async function texture(gl,url,cache){
    gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,t);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);image.close();
   }
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT);gl.generateMipmap(gl.TEXTURE_2D);return t;
- })();cache.set(url,promise);return promise;
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,sail?gl.LINEAR:gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,sail?gl.CLAMP_TO_EDGE:gl.REPEAT);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,sail?gl.CLAMP_TO_EDGE:gl.REPEAT);if(!sail)gl.generateMipmap(gl.TEXTURE_2D);return t;
+ })();cache.set(key,promise);return promise;
 }
 function packedVertices(positions,normals,uvs,colors){
  const verts=new Float32Array(positions.length/3*12);
@@ -165,7 +204,6 @@ function packedVertices(positions,normals,uvs,colors){
  return verts;
 }
 export {packedVertices as packOriginalVertices};
-const resourceId=id=>id>=100&&id<=110;
 function geometryBounds(positions){
  const min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];
  for(let i=0;i<positions.length;i+=3)for(let a=0;a<3;a++){min[a]=Math.min(min[a],positions[i+a]);max[a]=Math.max(max[a],positions[i+a]);}
@@ -242,10 +280,30 @@ function gpuPart(gl,part,instanceBuffer,materialTexture,keepPickingGeometry=fals
 }
 
 export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},options={}){
- const result={available:new Set(),models:new Map(),errors:[],metrics:{colorMs:0,shadowMs:0,calls:0,triangles:0,gpuMs:0},draw(){},updateTerrain(){},setLightingContext(){return false;},setLightingSettings(){return false;},setSeasonPhase(){return false;},setSeasonClimate(){return false;},pickResource(){return null;}};if(!enabled)return result;
- let manifest,teamManifest={},scales={},seasonManifest={},seasonTeamManifest={},yearPhase,seasonClimate='Temperate',lightingData,defaultLighting=DEFAULT_MODEL_LIGHTING;
+ const result={available:new Set(),models:new Map(),resourceRenderIds:new Set(),errors:[],metrics:{colorMs:0,shadowMs:0,calls:0,triangles:0,gpuMs:0},draw(){},updateTerrain(){},setLightingContext(){return false;},setLightingSettings(){return false;},setSeasonPhase(){return false;},setSeasonClimate(){return false;},pickResource(){return null;}};if(!enabled)return result;
+ let assetMapping;try{assetMapping=normalizeRenderAssetMapping(options.assetMapping);}catch(e){result.errors.push(e.message);return result;}
+ result.assetMapping=assetMapping; let manifest,teamManifest={},scales={},seasonManifest={},seasonTeamManifest={},yearPhase,seasonClimate='Temperate',lightingData,defaultLighting=DEFAULT_MODEL_LIGHTING;
  try{manifest=await json(options.manifestURL||'./local-original/models/manifest.json');}catch{return result;}
  result.manifest=manifest;
+ const sailStatus={enabled:options.initialSails!==false,manifestAvailable:false,models:0,parts:0,errors:[]},sailErrors=new Set(),sailComposites=new Map();let sailManifest=null,sailShader=null,dynamicSailShader=null;const dynamicBindings=new WeakMap();
+ result.initialSails=sailStatus;
+ const sailError=message=>{if(!sailErrors.has(message)){sailErrors.add(message);sailStatus.errors.push(message);result.errors.push(message);}};
+ if(sailStatus.enabled){try{
+  sailManifest=await json(options.sailManifestURL||'./local-original/sails-native/manifest.json');
+  if(sailManifest.format!=='ee2-native-sail-initial-composites-v1'||!Array.isArray(sailManifest.models))throw new Error('Unsupported native initial sail manifest');
+  sailStatus.manifestAvailable=true;result.sailManifest=sailManifest;
+ }catch{/* Old portable folders and all existing models remain usable. */}}
+ const augmentModel=async(model,entry)=>{
+  const row=sailManifest?.models?.find(r=>r.source?.sha256===model.source?.sha256&&r.epoch===(entry.epoch??0));if(!row||(!row.effect&&!options.dynamicSails))return model;
+  try{
+   if(!sailComposites.has(row.url))sailComposites.set(row.url,verifiedSailJSON(row.url,row.sha256));
+   const composite=await sailComposites.get(row.url);
+   if(composite.assetKind!==manifestAssetKind(entry)||composite.id!==entry.id||composite.epoch!==(entry.epoch??0))return model;
+   const augmented=appendInitialSailParts(model,composite);
+   if(options.dynamicSails){try{dynamicBindings.set(augmented,createDynamicSailBinding(model,composite,sailManifest,entry.yawOffset??model.yawOffset??0));}catch(e){sailError(e.message);}}
+   return augmented;
+  }catch(e){sailError(e.message);return model;}
+ };
  try{teamManifest=await json('./local-original/team-textures/manifest.json');}catch{/* The original neutral materials remain available. */}
  try{scales=await json(options.scaleManifestURL||'./local-original/model-scales.json');}catch{/* Legacy normalized exports remain playable without native scale bindings. */}
  result.scaleManifest=scales;
@@ -267,12 +325,37 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
  let shader;
  try{shader=program(gl);}catch(e){result.errors.push(e.message);console.warn('Originalmodell-Renderer:',e);return result;}
  const instances=gl.createBuffer(),textures=new Map();
+ const dynamicGPU=options.dynamicSails?createDynamicSailGPU(gl,instances):null,dynamicSourceVariants=new Map();
+ result.dynamicSails={enabled:!!dynamicGPU,state:()=>dynamicGPU?.status()??null};
+ const actorVariant=(actor,epochs)=>{
+  if(!actor||!epochs||!Number.isInteger(actor.def)||!Number.isInteger(actor.team))return null;
+  let selected=null;for(const variant of dynamicSourceVariants.get(actor.def)||[]){if(variant.epoch<=(epochs[actor.team]??0)&&(!selected||variant.epoch>selected.epoch))selected=variant;}
+  return selected;
+ };
+ result.resolveSailSource=(actor,epochs)=>dynamicGPU?actorVariant(actor,epochs)?.dynamicSailBinding??null:null;
+ result.resolveSailForces=(actor,source,planeIndex,life)=>dynamicSailForces(actor,source,planeIndex,life,{rounding:options.dynamicSailRounding||'chop53',windDamping:options.dynamicSailWindDamping??0});
+ result.prepareDynamicSails=inputs=>dynamicGPU?dynamicGPU.prepare(inputs):false;
+ result.dynamicSailBounds=handle=>{const key=dynamicGPU?.sourceKey(handle);if(!key)return null;for(const variants of result.models.values())for(const variant of variants)if(variant.dynamicSailBinding?.key===key)return dynamicGPU.bounds(handle,variant);return null;};
+ result.disposeDynamicSails=()=>dynamicGPU?.dispose();
  const entries=Array.isArray(manifest.models)?manifest.models:Object.entries(manifest.models||manifest.mapping||{}).map(([id,value])=>typeof value==='string'?{id:+id,url:value}:{id:+id,...value});
  const loadParts=async (model,keepPickingGeometry=false,modelUrl=null)=>{
    const parts=[];
-   for(const part of model.parts){
+   let sourceSailIndex=0;for(const part of model.parts){
+    const sailIndex=part.nativeSail?sourceSailIndex++:null;
     const url=part.textureUrl||part.texture||manifest.textures?.[part.textureSource?.toLowerCase()]||null;
-    const gpu=gpuPart(gl,part,instances,await texture(gl,url,textures),keepPickingGeometry);
+    let materialTexture,darkTexture,darkTextures;
+    try{
+     materialTexture=await texture(gl,url,textures,!!part.nativeSail);
+     if(part.nativeSail){
+      darkTexture=await texture(gl,part.nativeSail.damageMaskUrls[part.nativeSail.initialDamageMask],textures,true);
+      if(!sailShader)sailShader=program(gl,SAIL_FS,['uDark','uSailDiffuse']);
+      if(dynamicGPU){try{darkTextures=await Promise.all(part.nativeSail.damageMaskUrls.map(url=>texture(gl,url,textures,true)));if(!dynamicSailShader)dynamicSailShader=program(gl,DYNAMIC_SAIL_FS,['uDark','uSailDiffuse']);}catch(e){sailError('Dynamic sail mask preload: '+e.message);}}
+     }
+    }catch(e){if(!part.nativeSail)throw e;sailError(e.message);continue;}
+    const gpu=gpuPart(gl,part,instances,materialTexture,keepPickingGeometry);
+    if(part.nativeSail){
+     gpu.nativeSail=part.nativeSail;gpu.darkTexture=darkTexture;gpu.darkTextures=darkTextures;gpu.sailIndex=sailIndex;gpu.forTeam=()=>gpu.texture;gpu.forSeason=()=>({first:gpu.texture,next:gpu.texture,blend:0});parts.push(gpu);sailStatus.parts++;continue;
+    }
     const seasonalKey=modelSeasonBinding(seasonManifest,modelUrl,model,part),neutralGPU=new Map([[url,gpu.texture]]),teamGPU=new Map(),requested=new Set();
     // Preload every declared climate image before exposing the model. A seasonal
     // switch never displays an unrelated summer image while its pixels load.
@@ -308,11 +391,15 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   if(entry.verified===false)continue;
   try{
    const id=+(entry.id??entry.def);if(!Number.isFinite(id))continue;
-   const modelUrl=entry.url||entry.file,model=await json(modelUrl),parts=await loadParts(model,resourceId(id),modelUrl);
+   const assetKind=manifestAssetKind(entry),bindings=sourceRenderBindings(assetMapping,assetKind,id);if(!bindings.length)continue;
+   const modelUrl=entry.url||entry.file,model=await augmentModel(await json(modelUrl),{...entry,id}),parts=await loadParts(model,assetKind===1,modelUrl);
    if(!parts.length)continue;
-   const sea=(id>=29&&id<=36)||id===42||id===45,transform=nativeModelTransform(model,scales.variants?.[id+':'+(entry.epoch??0)]);
+   const scaleKey=(entry.assetKind===undefined?'':assetKind+':')+id+':'+(entry.epoch??0),sea=assetKind===0&&((id>=29&&id<=36)||id===42||id===45),transform=nativeModelTransform(model,scales.variants?.[scaleKey]);
    const yOffset=!transform.native&&sea?-(model.normalization?.offset?.[1]||0)*(model.normalization?.scale||1):0;
-   const variants=result.models.get(id)||[];variants.push({epoch:entry.epoch??0,parts,yOffset,originOffset:transform.originOffset,nativeScale:transform.native?transform.scale:null,yawOffset:entry.yawOffset??model.yawOffset??0,farUrl:entry.lodFarUrl,far:null,farRequested:false,pickBounds:resourceBounds(parts)});result.models.set(id,variants);result.available.add(id);
+   const variant={sourceId:id,assetKind,scaleKey,epoch:entry.epoch??0,parts,yOffset,originOffset:transform.originOffset,nativeScale:transform.native?transform.scale:null,yawOffset:entry.yawOffset??model.yawOffset??0,farUrl:entry.lodFarUrl,far:null,farRequested:false,pickBounds:resourceBounds(parts)};
+   if(dynamicBindings.has(model)){variant.dynamicSailBinding=dynamicBindings.get(model);const list=dynamicSourceVariants.get(id)||[];list.push(variant);dynamicSourceVariants.set(id,list);}
+   if(model.nativeSailComposite){variant.sailComposite=model.nativeSailComposite;sailStatus.models++;}
+   for(const {renderId}of bindings){const variants=result.models.get(renderId)||[];variants.push(variant);result.models.set(renderId,variants);result.available.add(renderId);if(assetKind===1)result.resourceRenderIds.add(renderId);}
   }catch(e){result.errors.push(e.message);console.warn('Originalmodell:',entry,e);}
  }
  for(const list of result.models.values())list.sort((a,b)=>a.epoch-b.epoch);
@@ -343,7 +430,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   const {data,ranges,epochs,zoom}=resourceView;if(!data?.length||!ranges?.length)return null;
   if(!(maxDistance>0))return null;
   let closest=maxDistance,hit=null;
-  for(let id=100;id<=110;id++){
+  for(const id of result.resourceRenderIds){
    const variants=result.models.get(id);if(!variants)continue;
    const first=ranges[id*2],count=ranges[id*2+1];
    for(let i=first;i<first+count;i++){
@@ -368,7 +455,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   }
   return hit;
  };
- result.draw=({data,ranges,vp,epochs,zoom=80,shadow=false,eye=[0,200,0],lighting=defaultLighting,clipPlane=null,capture=false})=>{
+ result.draw=({data,ranges,vp,epochs,zoom=80,shadow=false,eye=[0,200,0],lighting=defaultLighting,clipPlane=null,capture=false,actorMetadata=null})=>{
   const started=performance.now();let calls=0,triangles=0,querying=false;
   const previousState=drawState(gl);
   if(!shadow&&!capture){resourceView.data=data;resourceView.ranges=ranges;resourceView.epochs=epochs;resourceView.zoom=zoom;resourceView.choices.clear();}
@@ -385,6 +472,17 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   gl.uniform3fv(shader.u.uSunColor,lighting.sun||DEFAULT_MODEL_LIGHTING.sun);gl.uniform3fv(shader.u.uSunDirection,lighting.direction||DEFAULT_MODEL_LIGHTING.direction);
   gl.uniform3fv(shader.u.uSpecularLight,lighting.specular||lighting.sun||DEFAULT_MODEL_LIGHTING.sun);gl.uniform1i(shader.u.uNativeLighting,lighting.native?1:0);
   gl.activeTexture(gl.TEXTURE0+6);gl.bindTexture(gl.TEXTURE_2D,heightTexture);gl.uniform1i(shader.u.uTerrainSize,heightSize);gl.uniform1i(shader.u.uTerrainEnabled,heightReady?1:0);
+  let activeShader=shader,sailDiffuse=null;
+  if(sailShader&&!shadow){try{sailDiffuse=nativeInitialSailDiffuse({ambient:lighting.sourceAmbient,diffuse:lighting.sourceDiffuse,sunDirection:lighting.sourceDirection});}catch(e){sailError(e.message);}}
+  const selectShader=target=>{
+   if(activeShader===target)return;
+   gl.useProgram(target.p);activeShader=target;
+   if(target!==sailShader&&target!==dynamicSailShader)return;
+   const u=target.u;gl.uniformMatrix4fv(u.uVP,false,vp);gl.uniform1i(u.uShadow,0);gl.uniform1i(u.uClipEnabled,clipPlane?1:0);gl.uniform4fv(u.uClipPlane,clipPlane||[0,0,0,0]);
+   gl.uniform1i(u.uDiffuse,0);gl.uniform1i(u.uDark,7);gl.uniform1i(u.uFog,2);gl.uniform1i(u.uFrames,5);gl.uniform1i(u.uTerrain,6);
+   gl.uniform1i(u.uTerrainSize,heightSize);gl.uniform1i(u.uTerrainEnabled,heightReady?1:0);gl.uniform3fv(u.uSunDirection,lighting.direction||DEFAULT_MODEL_LIGHTING.direction);
+   gl.uniform3fv(u.uSailDiffuse,sailDiffuse);
+  };
   for(const [id,variants] of result.models){
    const count=ranges[id*2+1];if(!count)continue;
    const first=ranges[id*2],groups=new Map();
@@ -395,7 +493,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     if(far&&variant.farUrl){
      if(!variant.farRequested){
       variant.farRequested=true;const near=variant;
-      json(near.farUrl).then(model=>loadParts(model,resourceId(id),near.farUrl)).then(parts=>{near.far={...near,parts,pickBounds:resourceBounds(parts)};}).catch(e=>{result.errors.push(e.message);console.warn('Original-Fernmodell:',e);});
+      json(near.farUrl).then(model=>augmentModel(model,{id:near.sourceId,assetKind:near.assetKind,epoch:near.epoch})).then(async model=>({model,parts:await loadParts(model,near.assetKind===1,near.farUrl)})).then(({model,parts})=>{near.far={...near,parts,pickBounds:resourceBounds(parts),sailComposite:model.nativeSailComposite,dynamicSailBinding:null};}).catch(e=>{result.errors.push(e.message);console.warn('Original-Fernmodell:',e);});
      }
      if(variant.far)variant=variant.far;
     }
@@ -406,40 +504,64 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     const time=data[i*12+10],seed=data[i*12+6];
     const phase=((time/duration+seed)%1+1)%1;
     const preview=!!(Math.round(data[i*12+7])&24),key=variantIndex+':'+team+':'+activity+':'+(far&&variant.farRequested?1:0)+':'+(Math.round(data[i*12+7])&24);
-    const group=groups.get(key)||{variant,team,activity,clip,preview,list:[]};
+    const group=groups.get(key)||{variant,team,activity,clip,preview,list:[],instanceIndices:[]};
+    group.instanceIndices.push(i);
     const offset=group.list.length;for(let k=0;k<12;k++)group.list.push(data[i*12+k]);
     group.list[offset+3]+=variant.yawOffset;group.list[offset+9]=phase;
     if(variant.nativeScale!==null)group.list[offset+8]=variant.nativeScale;
     groups.set(key,group);
    }
-   for(const [groupKey,{variant,team,list,activity,clip,preview}] of groups){
-    if(!shadow&&!capture&&resourceId(id))resourceView.choices.set(id+':'+groupKey,variant);
-    gl.uniform1f(shader.u.uYOffset,variant.yOffset);
+   for(const [groupKey,{variant,team,list,activity,clip,preview,instanceIndices}] of groups){
+    if(!shadow&&!capture&&variant.assetKind===1)resourceView.choices.set(id+':'+groupKey,variant);
+    selectShader(shader);gl.uniform1f(shader.u.uYOffset,variant.yOffset);
     gl.uniform3fv(shader.u.uOriginOffset,variant.originOffset);
     gl.bindBuffer(gl.ARRAY_BUFFER,instances);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(list),gl.STREAM_DRAW);
+    const dynamicOwners=dynamicGPU&&!preview&&!shadow&&variant.dynamicSailBinding?instanceIndices.map((index,j)=>{
+     const actor=actorMetadata?.forInstance?.(index),at=j*12;
+     // A sidecar from another render call/stream must never deform this row.
+     if(!actor||actor.def!==variant.sourceId||actor.team!==team||actor.renderX!==list[at]||actor.renderY!==list[at+1]||actor.renderAltitude!==list[at+2]||actor.renderYaw!==data[index*12+3])return null;
+     return dynamicGPU.get(actor,actorMetadata,variant.dynamicSailBinding.key);
+    }):null;
     for(const part of variant.parts){
      if(part.activities&&!part.activities.includes(activity))continue;
-     gl.uniform1i(shader.u.uFarmPlotConform,part.farmPlotOffset?1:0);gl.uniform3fv(shader.u.uFarmPlotCenter,part.farmPlotOffset||[0,0,0]);
-     const pose=part.pose(clip);gl.uniform1i(shader.u.uAnimated,pose?1:0);
+     // Native cloth shadow events/physics are still separate. Existing body
+     // shadows remain byte-identical; no synthetic sail shadow is added here.
+     if(part.nativeSail&&(shadow||!sailDiffuse))continue;
+     const isolated=part.nativeSail&&part.darkTextures&&dynamicOwners?.some(Boolean),jobs=isolated?dynamicOwners.map((owner,j)=>({owner,record:new Float32Array(list.slice(j*12,j*12+12)),instances:1})):[{owner:null,record:null,instances:list.length/12}];
+     for(const job of jobs){
+     const deformed=job.owner?.parts[part.sailIndex],gpu=deformed||part;
+     if(job.record){gl.bindBuffer(gl.ARRAY_BUFFER,instances);gl.bufferData(gl.ARRAY_BUFFER,job.record,gl.STREAM_DRAW);}
+     selectShader(deformed?dynamicSailShader:part.nativeSail?sailShader:shader);const u=activeShader.u;
+     if(part.nativeSail){gl.uniform1f(u.uYOffset,variant.yOffset);gl.uniform3fv(u.uOriginOffset,variant.originOffset);}
+     gl.uniform1i(u.uFarmPlotConform,part.farmPlotOffset?1:0);gl.uniform3fv(u.uFarmPlotCenter,part.farmPlotOffset||[0,0,0]);
+     const pose=part.pose(clip);gl.uniform1i(u.uAnimated,pose?1:0);
      gl.activeTexture(gl.TEXTURE5);gl.bindTexture(gl.TEXTURE_2D_ARRAY,pose?.texture||emptyFrames);
-     gl.uniform1i(shader.u.uFrameWidth,pose?.width||1);gl.uniform1i(shader.u.uFrameCount,pose?.count||1);
+     gl.uniform1i(u.uFrameWidth,pose?.width||1);gl.uniform1i(u.uFrameCount,pose?.count||1);
      const seasonal=part.forSeason(team);
-     gl.activeTexture(gl.TEXTURE0+7);gl.bindTexture(gl.TEXTURE_2D,seasonal.next);gl.uniform1f(shader.u.uModelSeasonBlend,seasonal.blend);
-     gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,seasonal.first);gl.bindVertexArray(part.vao);
+     gl.activeTexture(gl.TEXTURE0+7);gl.bindTexture(gl.TEXTURE_2D,part.nativeSail?(deformed?part.darkTextures[job.owner.damageMask]:part.darkTexture):seasonal.next);gl.uniform1f(u.uModelSeasonBlend,seasonal.blend);
+     gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,seasonal.first);gl.bindVertexArray(gpu.vao);
      const m=part.material,a=part.alpha;
-     const pipeline=nativeModelPipeline(part.pipeline,lighting);gl.uniform1i(shader.u.uNativeShader,pipeline.shader);gl.uniform1f(shader.u.uTextureScale,pipeline.textureScale);
-     gl.uniform4fv(shader.u.uColor,[...m.diffuse,m.alpha]);gl.uniform1f(shader.u.uModelHeight,part.height);
-     gl.uniform3fv(shader.u.uAmbientMaterial,m.ambient);gl.uniform3fv(shader.u.uSpecularMaterial,m.specular);gl.uniform3fv(shader.u.uEmissiveMaterial,m.emissive);
-     gl.uniform1f(shader.u.uGlossiness,m.glossiness);gl.uniform1i(shader.u.uSpecularEnabled,m.specularEnabled?1:0);
-     gl.uniform1i(shader.u.uVertexMode,m.vertexMode);gl.uniform1i(shader.u.uLightingMode,m.lightingMode);
-     gl.uniform1i(shader.u.uHasAlpha,(a.test?1:0)|(a.blend?2:0));gl.uniform1f(shader.u.uCutoff,a.threshold);gl.uniform1i(shader.u.uAlphaFunction,a.testFunction);
-     applyDrawState(gl,part,shadow,preview);
-     gl.drawElementsInstanced(gl.TRIANGLES,part.count,gl.UNSIGNED_INT,0,list.length/12);
-     calls++;triangles+=part.count/3*list.length/12;
+     const pipeline=nativeModelPipeline(part.pipeline,lighting);gl.uniform1i(u.uNativeShader,pipeline.shader);gl.uniform1f(u.uTextureScale,pipeline.textureScale);
+     gl.uniform4fv(u.uColor,[...m.diffuse,m.alpha]);gl.uniform1f(u.uModelHeight,deformed?deformed.height:part.height);
+     gl.uniform3fv(u.uAmbientMaterial,m.ambient);gl.uniform3fv(u.uSpecularMaterial,m.specular);gl.uniform3fv(u.uEmissiveMaterial,m.emissive);
+     gl.uniform1f(u.uGlossiness,m.glossiness);gl.uniform1i(u.uSpecularEnabled,m.specularEnabled?1:0);
+     gl.uniform1i(u.uVertexMode,m.vertexMode);gl.uniform1i(u.uLightingMode,m.lightingMode);
+     gl.uniform1i(u.uHasAlpha,(a.test?1:0)|(a.blend?2:0));gl.uniform1f(u.uCutoff,a.threshold);gl.uniform1i(u.uAlphaFunction,a.testFunction);
+     let sailState;
+     if(part.nativeSail){
+      sailState={cull:gl.isEnabled(gl.CULL_FACE),equationRGB:gl.getParameter(gl.BLEND_EQUATION_RGB),equationAlpha:gl.getParameter(gl.BLEND_EQUATION_ALPHA)};
+      gl.disable(gl.CULL_FACE);gl.enable(gl.DEPTH_TEST);gl.depthMask(true);gl.depthFunc(gl.LEQUAL);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.blendEquation(gl.FUNC_ADD);
+     }else applyDrawState(gl,part,shadow,preview);
+     gl.drawElementsInstanced(gl.TRIANGLES,gpu.count,gl.UNSIGNED_INT,0,job.instances);
+     if(sailState){if(sailState.cull)gl.enable(gl.CULL_FACE);else gl.disable(gl.CULL_FACE);gl.blendEquationSeparate(sailState.equationRGB,sailState.equationAlpha);}
+     calls++;triangles+=gpu.count/3*job.instances;
+     }
+     // Shared instance attributes are restored for later rigid/other parts.
+     if(isolated){gl.bindBuffer(gl.ARRAY_BUFFER,instances);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(list),gl.STREAM_DRAW);}
     }
    }
   }
-  restoreDrawState(gl,previousState);
+  selectShader(shader);restoreDrawState(gl,previousState);
   if(querying)gl.endQuery(timer.TIME_ELAPSED_EXT);
   if(capture)return;
   if(shadow)result.metrics.shadowMs=performance.now()-started;

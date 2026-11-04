@@ -1,0 +1,17 @@
+{
+  "format": "native-sail-runtime7-tests-v1",
+  "status": "passed",
+  "checks": 47,
+  "runtimeSha256": "acb40f5b5dd47f190ba01a841e446efed2a870b506b3dc468bfcba0fc6a6f6c8",
+  "controllerSha256": "b59c8f1d69a3878c3ecd94167bf20cda5eae35f188efc7a159c19f0e3f064a27",
+  "factorySha256": "b6d60140eec038f9f5225abbd791d6fb43a584a090d2949a2b1eec7e31a67f95",
+  "metadataWasmSha256": "f7784ee37122a8bd1e281bf09c4a898cae081e752cd5f9649a2c1d09efa50bd5",
+  "visualWasmSha256": "c8d1207fec111a5b47dbe24b75d51cf3f250f032dfdb4073e75113e65353c625",
+  "visualModuleBytes": 52850,
+  "activeRuntimeModified": false,
+  "limits": [
+    "Real production and metadata with controlled explicit forces; no GPU pixels or native pause/motion scheduler claim.",
+    "Missing or failed optional visual modules retain static geometry.",
+    "The separate original-game global FPU context is not proven; visual helper uses explicit conditional CHOP53."
+  ]
+}

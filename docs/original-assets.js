@@ -54,7 +54,9 @@ const ICON_EPOCH_PATTERNS={
   56:/^icon_unit_fortress_(\d+)(?:_we)?$/
 };
 export function originalIcon(assets,id,epoch){
-  const pattern=ICON_EPOCH_PATTERNS[id];let chosen=assets.icons.get(id),latest=0;
+  // The untyped atlas uses only the 57 legacy definition slots. New unit IDs
+  // must resolve through typed native bindings, never resource/projectile cells.
+  const legacy=Number.isInteger(id)&&id>=0&&id<57,pattern=legacy?ICON_EPOCH_PATTERNS[id]:null;let chosen=legacy?assets.icons.get(id):undefined,latest=0;
   if(pattern)for(const [key,image] of assets.iconVariants){const m=key.match(pattern),score=m?+m[1]*2+(key.endsWith('_we')?1:0):0;if(m&&+m[1]<=epoch+1&&score>=latest){chosen=image;latest=score;}}
   // Follow every exported model transition, including those lacking a proven
   // native SpriteName. Their explicit model-associated fallback uses the base
@@ -65,18 +67,26 @@ export function originalIcon(assets,id,epoch){
 
 export async function loadOriginalEpochIcons(assets,modelManifest){
   assets.epochIcons=new Map();if(!assets.enabled)return;
-  const images=new Map(),exact=new Map((modelManifest?.epochIconBindings||[]).map(row=>[`${row.id}:${row.epoch}`,row]));
-  const transitions=modelManifest?.models?.filter(row=>row.progressionBinding)||modelManifest?.epochIconBindings||[];
+  const legacyUnitIcon=id=>Number.isInteger(id)&&id>=0&&id<57?assets.icons.get(id):undefined;
+  // assetKind follows the typed ABI:0 unit,1 resource,2 projectile,3 quad,4 deco.
+  // Untyped legacy0..56 stays compatible; untyped source100 is never a unit.
+  const isUnit=row=>row.assetKind===0||(row.assetKind===undefined&&Number.isInteger(row.id)&&row.id>=0&&row.id<57);
+  const key=row=>`${row.id}:${row.epoch}`,images=new Map(),exact=new Map(),combined=new Map();
+  for(const row of modelManifest?.models||[])if(row.progressionBinding&&isUnit(row))combined.set(key(row),row);
+  for(const row of modelManifest?.epochIconBindings||[])if(isUnit(row)){
+    exact.set(key(row),row);combined.set(key(row),{...combined.get(key(row)),...row});
+  }
+  const transitions=[...combined.values()];
   await Promise.all(transitions.map(async transition=>{
     const row=exact.get(`${transition.id}:${transition.epoch}`),id=transition.id;
     try{
       if(row&&!images.has(row.url))images.set(row.url,bitmap(row.url));
-      const fallback=assets.icons.get(transition.progressionBinding?.reusedFrom?.id);
+      const fallback=legacyUnitIcon(transition.progressionBinding?.reusedFrom?.id);
       const image=row?await images.get(row.url):fallback,list=assets.epochIcons.get(id)||[];
       list.push({...transition,image,nativeExact:!!row,iconFallback:row?null:'associated-model-base-icon'});assets.epochIcons.set(id,list);
     }catch(error){
       assets.errors.push(error.message);const list=assets.epochIcons.get(id)||[];
-      list.push({...transition,image:assets.icons.get(transition.progressionBinding?.reusedFrom?.id)??assets.icons.get(id),nativeExact:false,iconFallback:'unavailable-native-sprite'});
+      list.push({...transition,image:legacyUnitIcon(transition.progressionBinding?.reusedFrom?.id)??legacyUnitIcon(id),nativeExact:false,iconFallback:'unavailable-native-sprite'});
       assets.epochIcons.set(id,list);
     }
   }));

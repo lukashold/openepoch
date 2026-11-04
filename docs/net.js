@@ -9,7 +9,7 @@
 
 export const TURN_TICKS = 2;   // one network turn = 2 simulation ticks = 100 ms
 export const DELAY = 2;        // commands run this many turns after they are issued
-export const PROTOCOL_VERSION = 10; // Native UP attack clocks/target rules and shared season settings
+export const PROTOCOL_VERSION = 14; // Paid production invoices, pending repricing and latched task times
 
 /** Turn-based command scheduler. `send(ArrayBuffer)` delivers to the peer. */
 export class Lockstep {

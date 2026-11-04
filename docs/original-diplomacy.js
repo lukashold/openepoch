@@ -230,6 +230,12 @@ export async function enhanceOriginalDiplomacy(panel,{wasm,enabled=true,manifest
  const cancelProposal=event=>{if(proposalOpen){event.preventDefault();event.stopImmediatePropagation?.();propCancel.click();}};dialog.addEventListener('cancel',cancelProposal,true);
  result.enabled=true;result.status=()=>({enabled:!disposed,view,proposalOpen,proposalView,meta,opponents:opponents().length,staged:[...staged],widgets:Object.keys(manifest.widgets).length,sprites:Object.keys(manifest.sprites).length});
  result.setView=setView;result.openProposal=openProposal;result.setProposalView=setProposalView;
+ result.fontBindings=()=>{
+  if(disposed)return null;
+  const labels=sourceBindings.map(binding=>({element:binding.node,widget:binding.widget}));
+  for(const button of players.children)for(const [selector,widget]of [['strong','diplo_pl_name'],['.native-dip-team','diplo_pl_team'],['.native-dip-civ','diplo_pl_civ']]){const element=query(selector,button);if(element)labels.push({element,widget});}
+  return {source:manifest,meta,labels};
+ };
  result.dispose=()=>{if(disposed)return;disposed=true;result.enabled=false;panel.open=old.open;panel.refresh=old.refresh;panel.close=old.close;win.removeEventListener?.('resize',resize);dialog.removeEventListener?.('cancel',cancelProposal,true);for(const [node,original]of [...moved].reverse()){if(original.next?.parentElement===original.parent)original.parent.insertBefore(node,original.next);else original.parent?.append(node);}for(const [node,value]of sourceAttrs){node.className=value.className;node.style.cssText=value.cssText||'';node.hidden=value.hidden;for(const key of skinHandlers)node[key]=value.handlers[key];for(const key of ['nativeWidget','nativeSprite','nativeSkinBase'])if(value[key]===undefined)delete node.dataset[key];else node.dataset[key]=value[key];}addedRowLabels.forEach(node=>node.remove());mapMarkers.forEach(node=>node.remove());dialog.className=savedClass;layer.remove();proposal.remove();style.remove();if(ui&&dialog.open)old.refresh(ui);};
  return result;
 }

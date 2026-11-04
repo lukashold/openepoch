@@ -1,3 +1,4 @@
+use crate::ids::DefId;
 use super::*;
 
 fn game(epoch:u8)->Game {
@@ -26,7 +27,7 @@ fn fortress_acquires_land_and_surface_ships_but_never_air_or_submarines() {
     assert_eq!(g.acquire(&g.ents[f],&DEFS[FORTRESS as usize],11.0),g.h(ship));
 }
 
-fn board(g:&mut Game,f:usize,def:u8)->Ent {
+fn board(g:&mut Game,f:usize,def:DefId)->Ent {
     let b=g.ents[f];let u=g.spawn(def,0,b.x+3.0,b.y);let mut e=g.ents[u];
     e.hp*=0.5;e.order=O_BOARD;e.otgt=g.h(f);
     g.do_board(u,&mut e,&DEFS[def as usize],&mut(0.0,0.0),&mut false);
@@ -65,7 +66,7 @@ fn odd_turn_fortress_crew_can_leave_its_wider_rotated_bounds() {
 #[test]
 fn fortress_technology_masks_apply_without_touching_other_roster_bindings() {
     let mut g=game(1);let before=g.max_hp(0,FORTRESS);let cost=g.unit_cost(0,FORTRESS);
-    let (k,_)=crate::ee2_research::NODES.iter().enumerate().find(|(_,n)|n.effects.iter().any(|ef|ef.mask&(1<<FORTRESS)!=0&&ef.field==4)).unwrap();
+    let (k,_)=crate::ee2_research::NODES.iter().enumerate().find(|(_,n)|n.effects.iter().any(|ef|crate::ids::mask_has(ef.mask,FORTRESS)&&ef.field==4)).unwrap();
     g.researched[0][k/32]|=1<<(k%32);g.rebuild_modifiers(0,false);
     assert_eq!(g.max_hp(0,FORTRESS),before);assert!(g.unit_cost(0,FORTRESS)[1]<cost[1]);assert!(g.unit_cost(0,FORTRESS)[3]<cost[3]);
 }

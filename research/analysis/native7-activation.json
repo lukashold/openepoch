@@ -1,0 +1,523 @@
+{
+  "format": "native7-activation-receipt-v1",
+  "status": "applied",
+  "createdUTC": "2026-11-04T19:02:08.468374+00:00",
+  "planSha256": "af9162cb3efe0a20618395d8600443a0af19d33aee29cadea35a4f5f283ac8c5",
+  "wasmSha256": "25c832f13c1c8b4d8547eb6c65d78bd74c5fa50f45d9745328f8bb18ccbb146d",
+  "protocol": 14,
+  "schemaRevision": 7,
+  "files": [
+    {
+      "path": "Build-All.ps1",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\Build-All.ps1",
+      "sha256": "9b6f10e026e2cbaaf380589849df5d4b8abb9f9849cfcea8fafda6446bc5ce1b",
+      "previousSha256": "4b8179eeea5cd0b04f009ddbe4c340ef5116b67b8f3dc024916da44d0172b709",
+      "bytes": 1208
+    },
+    {
+      "path": "Build-All.sh",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\Build-All.sh",
+      "sha256": "cb828efd2752c2a09e0442ac88dd1f03d3049199ca6278b7d724a125e987e681",
+      "previousSha256": "a6f956fd0235eb3fac52044ac9132887606bad9cd664d6a6381d81f12b0e4ff7",
+      "bytes": 751
+    },
+    {
+      "path": "Cargo.toml",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\Cargo.toml",
+      "sha256": "e590a11fc482f3bf5c622451759c05255ba9170978855a957d6d2be90660bba8",
+      "previousSha256": "7c8175ed64ae980675efcac90dcfb20cfec3685b549b5e8c2f2905db7523e53d",
+      "bytes": 462
+    },
+    {
+      "path": "docs/EE2-UP15-PROFIL.md",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\docs\\EE2-UP15-PROFIL.md",
+      "sha256": "c7cdf5ce1ffb6c8d6b7ded0262e9de80c280d5a10f85c3063caf07e0e70e8cc3",
+      "previousSha256": "daf125b6effec866a9b8a894332478feb905b48fded19b48de6f88dedaeb1eba",
+      "bytes": 4252
+    },
+    {
+      "path": "docs/index.html",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\docs\\index.html",
+      "sha256": "145ff11f42d4c2266b8ab28687d9b2709d892dbd219fe7b15c82566280a92911",
+      "previousSha256": "f4aadb2fd13e7e7b9195a1345f026ab08fc1bd328f19c8884214e4334bd760c9",
+      "bytes": 22873
+    },
+    {
+      "path": "docs/main.js",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\docs\\main.js",
+      "sha256": "a112eeabc5b6a8aa72ac06f33870598cf6de796cef5e60e429abb217d46fff8b",
+      "previousSha256": "159c31e73f72bf6b6922ac51779681a5c3df6f42e42069261e4caa982530b381",
+      "bytes": 77574
+    },
+    {
+      "path": "docs/net.js",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\docs\\net.js",
+      "sha256": "7dfff30e7660adfdda735c7b7194d4a7d3414f6543d0e30966d6823dac6ceee0",
+      "previousSha256": "e687c74515c31309eb89509c0b6ad1add27587f57de56f2ca42cfd84770b13ee",
+      "bytes": 5521
+    },
+    {
+      "path": "docs/openepoch-cloth7.wasm",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\docs\\openepoch-cloth7.wasm",
+      "sha256": "c8d1207fec111a5b47dbe24b75d51cf3f250f032dfdb4073e75113e65353c625",
+      "previousSha256": null,
+      "bytes": 52850
+    },
+    {
+      "path": "docs/openepoch-ee2-roster6.wasm",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\docs\\openepoch-ee2-roster6.wasm",
+      "sha256": "25c832f13c1c8b4d8547eb6c65d78bd74c5fa50f45d9745328f8bb18ccbb146d",
+      "previousSha256": "3a71249f493c2cd73e2694ee0e1befb9f653a3100d43ebb9d78540a0cc71bdb0",
+      "bytes": 518082
+    },
+    {
+      "path": "docs/openepoch-ee2-up15.wasm",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\docs\\openepoch-ee2-up15.wasm",
+      "sha256": "25c832f13c1c8b4d8547eb6c65d78bd74c5fa50f45d9745328f8bb18ccbb146d",
+      "previousSha256": "3a71249f493c2cd73e2694ee0e1befb9f653a3100d43ebb9d78540a0cc71bdb0",
+      "bytes": 518082
+    },
+    {
+      "path": "docs/original-dynamic-sails.js",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\docs\\original-dynamic-sails.js",
+      "sha256": "e1ef51c17b1d29b997c531dd48bfc276c6565c66b4c6ec0b53a7168f812ea43d",
+      "previousSha256": null,
+      "bytes": 10544
+    },
+    {
+      "path": "docs/original-renderer.js",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\docs\\original-renderer.js",
+      "sha256": "d9a4575a4c9753fad939586b643322c2fff5e0db7c9ba9becc3165cafe21be64",
+      "previousSha256": "cb5e95de9f31eb46d1906706b764792dc7a994cf37bb86648721e5ded49f1ad9",
+      "bytes": 44421
+    },
+    {
+      "path": "docs/paidqueue7-format.json",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\docs\\paidqueue7-format.json",
+      "sha256": "b7b031dfbe449a34559c4f738e2f027b6424ed733a9ea003abd927674058f4b5",
+      "previousSha256": null,
+      "bytes": 3584
+    },
+    {
+      "path": "docs/paidqueue7-main-actions.json",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\docs\\paidqueue7-main-actions.json",
+      "sha256": "6250a25ccf5df14c7177dc3423161b994347a3df39b34af3c5bbe6175209015c",
+      "previousSha256": null,
+      "bytes": 378288
+    },
+    {
+      "path": "docs/PAIDQUEUE7.md",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\docs\\PAIDQUEUE7.md",
+      "sha256": "be196350ab97b06d3f4cb7bac4e923f444827bc230a5400dc58afe926b2d112f",
+      "previousSha256": null,
+      "bytes": 7176
+    },
+    {
+      "path": "docs/render-actor-metadata.js",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\docs\\render-actor-metadata.js",
+      "sha256": "8cb10d47f6a305d7177e1e701f2736b051c654700eb8460084983d63d3827fcc",
+      "previousSha256": null,
+      "bytes": 4466
+    },
+    {
+      "path": "docs/render-namespace.js",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\docs\\render-namespace.js",
+      "sha256": "f9e24a8a4cf01ef415daf46d4d4331f6dd4bb19e1cda84edb68f58172532368a",
+      "previousSha256": "949a191c9aca295a58ffef0c2431426638f09844edea2633c00f7fd797479307",
+      "bytes": 4721
+    },
+    {
+      "path": "docs/rules-profile.js",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\docs\\rules-profile.js",
+      "sha256": "1f3b431df1b02afa4d16145f5bc775fd62ac7aba438151c118d10323887808fe",
+      "previousSha256": "65f3129cb39e131c07a31a14a09d3f6bc25e4eb5f539fd25e26e813883af3ee6",
+      "bytes": 3643
+    },
+    {
+      "path": "docs/source-cloth-arithmetic.js",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\docs\\source-cloth-arithmetic.js",
+      "sha256": "0941661ccc487907881d897cc6149c903fe6a74ac7d047c2f817071c84fa6393",
+      "previousSha256": null,
+      "bytes": 2552
+    },
+    {
+      "path": "docs/source-cloth-kernel.js",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\docs\\source-cloth-kernel.js",
+      "sha256": "6c6c1ad7782beef0f60afc326d3e647b71eb1dda8df24269c3a5abfba1369262",
+      "previousSha256": null,
+      "bytes": 8844
+    },
+    {
+      "path": "docs/source-cloth-lighting.js",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\docs\\source-cloth-lighting.js",
+      "sha256": "78bddb0dead587323a8bbe38130c18deeea0b37d68b4792fac3831ccc351f116",
+      "previousSha256": null,
+      "bytes": 4249
+    },
+    {
+      "path": "docs/source-cloth-wasm.js",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\docs\\source-cloth-wasm.js",
+      "sha256": "b6d60140eec038f9f5225abbd791d6fb43a584a090d2949a2b1eec7e31a67f95",
+      "previousSha256": null,
+      "bytes": 5597
+    },
+    {
+      "path": "docs/source-sail-controller.js",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\docs\\source-sail-controller.js",
+      "sha256": "1ac7fa55570dd41a1a19a8d25de72e8a4e588d20b88110c44431d94afdeb004b",
+      "previousSha256": null,
+      "bytes": 6551
+    },
+    {
+      "path": "docs/source-sail-runtime.js",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\docs\\source-sail-runtime.js",
+      "sha256": "b962e0f641b24f7dce7571bd12378a56c2fddc0ef3643dd4f448b8d260254228",
+      "previousSha256": null,
+      "bytes": 3404
+    },
+    {
+      "path": "docs/SOURCE-SAILS7.md",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\docs\\SOURCE-SAILS7.md",
+      "sha256": "8e4aac73cbf916c1fa071261dfb8846b662728cbb063de6b8e0b6fc12889e2e0",
+      "previousSha256": null,
+      "bytes": 2696
+    },
+    {
+      "path": "MAC-START.txt",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\MAC-START.txt",
+      "sha256": "52864e71675efef61c7dde6fc2cd12e08e0d4c8caa3ba17e74695524eb27893a",
+      "previousSha256": "8fd601d76b7a852b3bb9b988ef5b61987d6ec0a85ac13fb6b6e7477b9035b326",
+      "bytes": 6945
+    },
+    {
+      "path": "README.md",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\README.md",
+      "sha256": "53e7ecf89017778ade12e29a45bbc31c8b8bd03f2a43ebf391146259fc80ef38",
+      "previousSha256": "a41efc5912d3b699a8af95046afdd4eccd1f0c2bf338d2f1e7537b794de981ad",
+      "bytes": 47720
+    },
+    {
+      "path": "src/game.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\src\\game.rs",
+      "sha256": "5e0bb496b9ae7d14488c022b94311008524171d5c9ba2d11bc7b51c33276db99",
+      "previousSha256": "b0eca2397b476d0f0ccc6db886088f87e48f32b084788c74d04cfabf45537f8d",
+      "bytes": 96776
+    },
+    {
+      "path": "src/lib.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\src\\lib.rs",
+      "sha256": "b230fe9f5c156e1549ce11f57ad7f6e46cd4ba5f323ee4a5d37029346e8a4203",
+      "previousSha256": "8fe6b3a7a7b9c124d5fee4b9ee0fd6387eb0e67f3913252422dbb74f7efffd86",
+      "bytes": 38479
+    },
+    {
+      "path": "src/native_attack_clock.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\src\\native_attack_clock.rs",
+      "sha256": "c8feccd942f133df00b592e6e7f784fcb9679f132cf62a5e7af62ff704b6c65b",
+      "previousSha256": "2b0fcef988ce1a05c403018ac7019df7e3397775ff20189edd106813c9fabf5b",
+      "bytes": 5750
+    },
+    {
+      "path": "src/paid_queue7.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\src\\paid_queue7.rs",
+      "sha256": "7c321d588f0d3684596a774ddcbc19995d8a375536f87e1c58b2fa7693daa742",
+      "previousSha256": null,
+      "bytes": 17998
+    },
+    {
+      "path": "src/paid_queue7_main.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\src\\paid_queue7_main.rs",
+      "sha256": "93ae7cd76fb11de0eed8949bb1f5e5e207070c4972f69ab458ca23d1b1c4708a",
+      "previousSha256": null,
+      "bytes": 10490
+    },
+    {
+      "path": "src/paid_queue7_tests.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\src\\paid_queue7_tests.rs",
+      "sha256": "3e5058169995a4625a2535b4a107ea3d3330b403e1ab4bbf57b334bbf4fb3c6e",
+      "previousSha256": null,
+      "bytes": 8211
+    },
+    {
+      "path": "src/render.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\src\\render.rs",
+      "sha256": "2359c1544baf5dc1eb2d85c476dae253c8876d3c3dbb24fc1e9698f368e292bf",
+      "previousSha256": "eb17097a07db92ecfea5907fb046610248fd368db7d58ee283685af248f47105",
+      "bytes": 28487
+    },
+    {
+      "path": "src/render_meta7.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\src\\render_meta7.rs",
+      "sha256": "87f3335b688481f26734534a60d46832213be44664b2d0338871d8fed4ff0fa7",
+      "previousSha256": null,
+      "bytes": 3721
+    },
+    {
+      "path": "src/render_meta7_tests.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\src\\render_meta7_tests.rs",
+      "sha256": "efd9429a84e12a7bce7997bd5376080f07336e091bf2c98208dc9411091bb228",
+      "previousSha256": null,
+      "bytes": 7241
+    },
+    {
+      "path": "src/save.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\src\\save.rs",
+      "sha256": "76c3daf8028ab0f87ca23e7579e5471413732ea2b0b9179c879ed6b77dcc541b",
+      "previousSha256": "f4b25b6312e787f0663be9eb95c9ff5862d9ea76a2f20d1b889e71796e308431",
+      "bytes": 13343
+    },
+    {
+      "path": "tools/build_paid_queue7_profiles.py",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\tools\\build_paid_queue7_profiles.py",
+      "sha256": "37d1ede3fa4d559a8670dd68587dbaf4bd72de8fd633f54edce48db3aae4edbb",
+      "previousSha256": null,
+      "bytes": 1176
+    },
+    {
+      "path": "tools/build_source_cloth.py",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\tools\\build_source_cloth.py",
+      "sha256": "0739c9231c17014868a10e9bfa62f851dcae971a8af0b9726a9be462d13f8324",
+      "previousSha256": null,
+      "bytes": 1542
+    },
+    {
+      "path": "tools/fixtures/native5-up15.wasm",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\tools\\fixtures\\native5-up15.wasm",
+      "sha256": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51",
+      "previousSha256": null,
+      "bytes": 460364
+    },
+    {
+      "path": "tools/fixtures/native61v2-up15.wasm",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\tools\\fixtures\\native61v2-up15.wasm",
+      "sha256": "3a71249f493c2cd73e2694ee0e1befb9f653a3100d43ebb9d78540a0cc71bdb0",
+      "previousSha256": null,
+      "bytes": 482478
+    },
+    {
+      "path": "tools/fixtures/native7-legacy-wasm-provenance.json",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\tools\\fixtures\\native7-legacy-wasm-provenance.json",
+      "sha256": "226081e23f2182747af25acf2a816bd93e8436088806961ff610bd5251aec27c",
+      "previousSha256": null,
+      "bytes": 581
+    },
+    {
+      "path": "tools/generate_paid_queue7_main.py",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\tools\\generate_paid_queue7_main.py",
+      "sha256": "b1c22a2c99cdbca0ef161bf77b8be833ffa1dd84f848a159ef234454910f571b",
+      "previousSha256": null,
+      "bytes": 2347
+    },
+    {
+      "path": "tools/headless-world-capture.mjs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\tools\\headless-world-capture.mjs",
+      "sha256": "bf2116a16a24589a3951599544b910331051ca5ac622232e6eeda2b22c71224a",
+      "previousSha256": "4561104bda63e94485d0bb4892ff7c2fb295cdd6f615ec2af5cd427d08a293e9",
+      "bytes": 27503
+    },
+    {
+      "path": "tools/native-audio6-binding-test.mjs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\tools\\native-audio6-binding-test.mjs",
+      "sha256": "b2a9c7b4796d100bbebc2caf6034fdf9045ebe7a1ed525408afdc532ab0216fb",
+      "previousSha256": "c91c5fa49085b5b1248a7692be44a947e84b1734fff0c9f8e09f966dc8093bb9",
+      "bytes": 3117
+    },
+    {
+      "path": "tools/native-audio6-test.mjs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\tools\\native-audio6-test.mjs",
+      "sha256": "87f4b04f261187ef70f86fb80ed4367f53191f99fcee0a5ac5a937a60147eb12",
+      "previousSha256": "e58b0db44e2afd790e27c6bc5cb2c7cc2401943b4c120ad9d9895b574f8f5416",
+      "bytes": 11068
+    },
+    {
+      "path": "tools/native5-production-showcase.mjs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\tools\\native5-production-showcase.mjs",
+      "sha256": "0d379063c56b3e2e2b70f7d5c2ec22d22097b14ef000722d9b3ee2337a8b139b",
+      "previousSha256": "62d12fa1b60e656e1ac8c922aefbe840e899b9846c03215aa685159031a8264c",
+      "bytes": 2972
+    },
+    {
+      "path": "tools/native7-world-qa.mjs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\tools\\native7-world-qa.mjs",
+      "sha256": "774cf54d04154782e3ee3003cb7be339e53a3ec92f29d3d4d7d492980b0ee7dc",
+      "previousSha256": null,
+      "bytes": 9569
+    },
+    {
+      "path": "tools/ordinary-sail-voyage.mjs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\tools\\ordinary-sail-voyage.mjs",
+      "sha256": "f4f67409c63cf53a4f0b609ead63109b4e559645ea635d55bc0fdccde4969b97",
+      "previousSha256": null,
+      "bytes": 4370
+    },
+    {
+      "path": "tools/package_portable.py",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\tools\\package_portable.py",
+      "sha256": "81e60bdc5ef0433edac0b05906cdea50eacd163e51baafea26915926dedf6e5e",
+      "previousSha256": "2f60eb47d88c81e58ee8a8f46572ffefa9916e345f7b71b678d391ff29c12120",
+      "bytes": 7207
+    },
+    {
+      "path": "tools/portable-assets-test.py",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\tools\\portable-assets-test.py",
+      "sha256": "34651b2651e8bb9b10162fe75fc7cfb1989f835d6f34029ae9338fc2c7a30f0e",
+      "previousSha256": "5c7660028d10c13c08e6577a9492099e8de4ba8273ada12949074e9530788fec",
+      "bytes": 77808
+    },
+    {
+      "path": "tools/portable-server-test.py",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\tools\\portable-server-test.py",
+      "sha256": "8db68ba2e98ab65cb80be458fb89f238ac24524d5d439a6c88e29950c248b353",
+      "previousSha256": "412aa3ea93529748ab6dc49c880bef9b4d6a1be5e261f4fd1706a4accc17b923",
+      "bytes": 20005
+    },
+    {
+      "path": "tools/render-namespace-test.mjs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\tools\\render-namespace-test.mjs",
+      "sha256": "ddd86341f9d402a2665746498d37317c77425646a8c7f633f2a99811e7e83001",
+      "previousSha256": "87f10ff6f85faf62f4ef86c0c195a00fd7c6febd0dfb5708883231262fcc029e",
+      "bytes": 7027
+    },
+    {
+      "path": "tools/roster6-state.mjs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\tools\\roster6-state.mjs",
+      "sha256": "93110922f9ba075c4599e06a5a371110445754ddf9f28313ae04cf8a17b3391d",
+      "previousSha256": "3295a9f8cf529760debadbe97bbd3a305fdb977edd8b9510a82177b2575ac4ea",
+      "bytes": 2391
+    },
+    {
+      "path": "tools/rules-profile-test.mjs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\tools\\rules-profile-test.mjs",
+      "sha256": "6c716a59f4c235d9969a319be9e4ab4c2230524d9f5f61642fb3cba65a0355f3",
+      "previousSha256": "848eaaab64c3fe0f02efc45721e0437db0937680dfa7da8a47262115d9d209f7",
+      "bytes": 18009
+    },
+    {
+      "path": "tools/save-fixture.mjs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\tools\\save-fixture.mjs",
+      "sha256": "e47783b3e3eac1bf64dd15155b6a3e96cd88c6182e4255b511f96a4928ec3323",
+      "previousSha256": "49095dfac1fbe1ca3b7dba34bb5face248ae687426dfde8b98a6be568dbd2600",
+      "bytes": 7973
+    },
+    {
+      "path": "tools/season-session-test.mjs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\tools\\season-session-test.mjs",
+      "sha256": "037b4af2733f59d1c602a056b646f664a4420974a36118bc22ef65fc56b3b0f5",
+      "previousSha256": "290aa1d9fd5312179fd48670ba35709f4327ab695b3125767cba0f214781eb23",
+      "bytes": 16850
+    },
+    {
+      "path": "tools/serve_game.py",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\tools\\serve_game.py",
+      "sha256": "164f164087ce16c314e337797101fd09dfd4ce131cfcdd52f2ea676a1e87d3b8",
+      "previousSha256": "2c1fd13b03f47701bc336772ecfbb48631228adf089c28ee2faca3311054138a",
+      "bytes": 8027
+    },
+    {
+      "path": "tools/source-sail-frame-test.mjs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\tools\\source-sail-frame-test.mjs",
+      "sha256": "42942e03c16a6a11c7c7d83c368c92965a26dde3dbee4cdc82ca4aeca464d9ed",
+      "previousSha256": null,
+      "bytes": 7427
+    },
+    {
+      "path": "tools/test_paidqueue7_duration_wasm.mjs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\tools\\test_paidqueue7_duration_wasm.mjs",
+      "sha256": "c1e0b095e94141bc952b56c38cb37b8790b9b7fb802ceb49343ce08a3d11ff61",
+      "previousSha256": null,
+      "bytes": 4607
+    },
+    {
+      "path": "tools/test_paidqueue7_gameplay_wasm.mjs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\tools\\test_paidqueue7_gameplay_wasm.mjs",
+      "sha256": "65b106734c54b85f96a938ae2ea2c970f4d364d75ddaff90af974c87f4d65d28",
+      "previousSha256": null,
+      "bytes": 9972
+    },
+    {
+      "path": "tools/test_paidqueue7_network_wasm.mjs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\tools\\test_paidqueue7_network_wasm.mjs",
+      "sha256": "4e323e9247c8b164889119ad1e3a1b2787c6b93aca95ccf50685b471b1d2b7dd",
+      "previousSha256": null,
+      "bytes": 3047
+    },
+    {
+      "path": "tools/test_paidqueue7_off_profiles.mjs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\tools\\test_paidqueue7_off_profiles.mjs",
+      "sha256": "48d316f8871b5b579950193af0caafe18b27789030c3e7e7ea2f39b9d20e9a7b",
+      "previousSha256": null,
+      "bytes": 1685
+    },
+    {
+      "path": "tools/test_paidqueue7_wasm.mjs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\tools\\test_paidqueue7_wasm.mjs",
+      "sha256": "b78c4154f21cb47ab4cd276ed3c69926f65689cb01211be3ef7a92622642a045",
+      "previousSha256": null,
+      "bytes": 8858
+    },
+    {
+      "path": "visual-cloth7/API.md",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\visual-cloth7\\API.md",
+      "sha256": "dcd1e3bb40151124626b37c6502243f4c1a7d9fd5957548eb1c55e41711cd422",
+      "previousSha256": null,
+      "bytes": 3073
+    },
+    {
+      "path": "visual-cloth7/Cargo.lock",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\visual-cloth7\\Cargo.lock",
+      "sha256": "8cd46c42843726a1dd945ce4d803073b3dbe3ea37a7eefdf6549787f3927ae87",
+      "previousSha256": null,
+      "bytes": 155
+    },
+    {
+      "path": "visual-cloth7/Cargo.toml",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\visual-cloth7\\Cargo.toml",
+      "sha256": "9750e13b0e846cfdbbd5d27e7d1a30e645e33eef6f982091a4a01bb6a2e70a8d",
+      "previousSha256": null,
+      "bytes": 194
+    },
+    {
+      "path": "visual-cloth7/DOMAIN.md",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\visual-cloth7\\DOMAIN.md",
+      "sha256": "f5c572aaaa1c2aacba6ce5e9f390dd40568e7d6ed966264cffe096af100ebd54",
+      "previousSha256": null,
+      "bytes": 5967
+    },
+    {
+      "path": "visual-cloth7/src/cloth.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\visual-cloth7\\src\\cloth.rs",
+      "sha256": "e577502d8ddc3220cfa86033e2a117c533321aab0c1d502dbf7439fee00a6d93",
+      "previousSha256": null,
+      "bytes": 5422
+    },
+    {
+      "path": "visual-cloth7/src/lib.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\visual-cloth7\\src\\lib.rs",
+      "sha256": "a32565b36235e56d4870009f179e099618dc476b0401b99b44a4fc576128b8c5",
+      "previousSha256": null,
+      "bytes": 4474
+    },
+    {
+      "path": "visual-cloth7/src/math.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\visual-cloth7\\src\\math.rs",
+      "sha256": "ca1e78369d65895c4b9ff78d94181f6aedfa3b875c4cb5cd85bc70b4a9e14daa",
+      "previousSha256": null,
+      "bytes": 5264
+    },
+    {
+      "path": "visual-cloth7/src/tests.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-joint7\\OpenEpoch\\visual-cloth7\\src\\tests.rs",
+      "sha256": "7e2e0ac1cf38761be17ef180502280f731e1956f64e83cad04048230cc686ede",
+      "previousSha256": null,
+      "bytes": 983
+    }
+  ],
+  "unchanged": {
+    "docs/openepoch.wasm": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+    "docs/openepoch-ee2.wasm": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18"
+  },
+  "privateOriginalMediaChanged": false,
+  "fullOriginalParity": false,
+  "finishedGameClaim": false,
+  "originalCodeExecuted": false
+}

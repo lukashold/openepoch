@@ -1,3 +1,4 @@
+import {normalizeRenderAssetMapping,sourceRenderBindings} from './original-render-namespace.js';
 // Original Under* building sprites, extracted locally from EE2. Only rendering
 // is adapted here; ownership, collision, terrain and the WASM state are untouched.
 // Native VisualDecal006040D0 uses epoch numbers1..5,6..10,11..15. Urban
@@ -131,6 +132,8 @@ export async function loadOriginalGround(gl,enabled,options={}){
     policy:'native-epoch-slots; CityManager callback, explicit rural fallback when absent',metrics:{calls:0,instances:0},
     updateTerrain(){},draw(){},setSeasonPhase(){return false;}};
   if(!enabled)return result;
+  let assetMapping;try{assetMapping=normalizeRenderAssetMapping(options.assetMapping);}catch(error){result.errors.push(error.message);return result;}
+  result.assetMapping=assetMapping;
   const fetchFile=options.fetch||fetch,decode=options.decode||createImageBitmap;
   const state=snapshot(gl),textures=new Map();let shader,vao,instances,height;
   try{
@@ -139,6 +142,7 @@ export async function loadOriginalGround(gl,enabled,options={}){
     const manifest=await response.json();result.manifest=manifest;
     // Deduplicate physical source images shared by several building bindings.
     for(const entry of manifest.entries||[]){
+      const bindings=sourceRenderBindings(assetMapping,0,+entry.id);if(!bindings.length)continue;
       const entryTextures=new Map();
       // All source-declared slots are distinct bindings. Preload their physical
       // images once so a later epoch/context change cannot retain the old floor.
@@ -167,7 +171,7 @@ export async function loadOriginalGround(gl,enabled,options={}){
         entryTextures.set(sprite.url,texture);
       }catch(error){result.errors.push(error.message);}
       }
-      if(entryTextures.size)result.entries.set(entry.id,{entry,texture:entryTextures.get(selectGroundSprite(entry)?.url),textures:entryTextures});
+      if(entryTextures.size)for(const {renderId}of bindings)result.entries.set(renderId,{entry,sourceId:+entry.id,assetKind:0,texture:entryTextures.get(selectGroundSprite(entry)?.url),textures:entryTextures});
     }
     if(!result.entries.size)return result;
     shader=createProgram(gl);vao=gl.createVertexArray();gl.bindVertexArray(vao);
@@ -207,12 +211,12 @@ export async function loadOriginalGround(gl,enabled,options={}){
   result.draw=({data,ranges,vp,epochs=[],isUrbanAt})=>{
     result.metrics.calls=0;result.metrics.instances=0;
     const groups=[];
-    for(const [id,{entry,textures}]of result.entries){
+    for(const [id,{entry,textures,sourceId}]of result.entries){
       const first=ranges[id*2],count=ranges[id*2+1],byTexture=new Map();
       for(let i=first;i<first+count;i++){
         const instance=data.subarray(i*STRIDE,(i+1)*STRIDE),team=Math.round(instance[5]);
         const placement=groundPlacement(entry,instance);if(!placement)continue;
-        const hasOwner=epochs[team]!==undefined,urban=typeof isUrbanAt==='function'&&!!isUrbanAt(instance[0],instance[1],team,id,i);
+        const hasOwner=epochs[team]!==undefined,urban=typeof isUrbanAt==='function'&&!!isUrbanAt(instance[0],instance[1],team,sourceId,i,id);
         const sprite=selectGroundSprite(entry,{epoch:epochs[team]??0,hasOwner,urban}),frames=groundSeasonFrames(sprite,yearPhase);
         const texture=textures.get(frames?.first),textureB=textures.get(frames?.next);
         if(!texture||!textureB)continue;

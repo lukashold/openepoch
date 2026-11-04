@@ -1,0 +1,163 @@
+{
+  "format": "openepoch-roster6-abi-v1",
+  "schemaRevision": 6,
+  "rulesetId": 2,
+  "phase": "61-classic-source-slice",
+  "invalidU32": 4294967295,
+  "javascriptU32": "value >>> 0",
+  "types": {
+    "DefId": "u16",
+    "QueueItem": "u32",
+    "ResearchId": "u16",
+    "RenderId": "u32"
+  },
+  "exports": {
+    "schema_revision": {
+      "params": [],
+      "result": "u32"
+    },
+    "definition_count": {
+      "params": [],
+      "result": "u32"
+    },
+    "definition_flags": {
+      "params": [
+        "defId:u32"
+      ],
+      "result": "u32"
+    },
+    "queue_job_encode": {
+      "params": [
+        "kind:u32",
+        "value:u32"
+      ],
+      "result": "u32"
+    },
+    "queue_item_kind": {
+      "params": [
+        "item:u32"
+      ],
+      "result": "u32"
+    },
+    "queue_item_value": {
+      "params": [
+        "item:u32"
+      ],
+      "result": "u32"
+    },
+    "render_range_len": {
+      "params": [],
+      "result": "u32",
+      "unit": "u32-elements"
+    },
+    "ranges_len": {
+      "params": [],
+      "result": "u32",
+      "alias": "render_range_len"
+    },
+    "render_asset_kind": {
+      "params": [
+        "renderId:u32"
+      ],
+      "result": "u32"
+    },
+    "render_asset_source_id": {
+      "params": [
+        "renderId:u32"
+      ],
+      "result": "u32"
+    },
+    "cmd_epoch": {
+      "params": [],
+      "result": "u32",
+      "meaning": "1 if submitted through selected eligible producer"
+    },
+    "cmd_queue_job": {
+      "params": [
+        "encodedQueueItem:u32"
+      ],
+      "result": "u32",
+      "meaning": "Selected action buttons: shortest eligible selected producer only, no global fallback"
+    }
+  },
+  "definitionFlagBits": {
+    "building": 0,
+    "mobile": 1,
+    "worker": 2,
+    "transport": 3,
+    "armed": 4
+  },
+  "queueKinds": {
+    "0": {
+      "name": "unit",
+      "min": 0,
+      "max": 65535,
+      "encodingBase": 0
+    },
+    "1": {
+      "name": "nativeResearch",
+      "min": 0,
+      "max": 179,
+      "encodingBase": 65536
+    },
+    "2": {
+      "name": "independentTechnology",
+      "encodingBase": 131072,
+      "enabledInUP6": false
+    },
+    "3": {
+      "name": "epoch",
+      "min": 0,
+      "max": 0,
+      "encodingBase": 196608
+    }
+  },
+  "renderKinds": {
+    "0": {
+      "name": "unit",
+      "source": "DefId",
+      "rawBase": 256
+    },
+    "1": {
+      "name": "resource",
+      "sourceMin": 100,
+      "sourceMax": 110,
+      "rawMin": 0,
+      "rawMax": 10
+    },
+    "2": {
+      "name": "projectile",
+      "sourceMin": 0,
+      "sourceMax": 6,
+      "rawMin": 16,
+      "rawMax": 22
+    },
+    "3": {
+      "name": "quad",
+      "sourceMin": 240,
+      "sourceMax": 243,
+      "rawMin": 40,
+      "rawMax": 43
+    },
+    "4": {
+      "name": "decoration",
+      "sourceMin": 110,
+      "sourceMax": 111,
+      "rawMin": 32,
+      "rawMax": 33
+    }
+  },
+  "renderRangePair": [
+    "start",
+    "count"
+  ],
+  "saveMagic": "OEU6",
+  "legacyImportMagic": "OEU5",
+  "registrySha256": "d5790a14cedaef0d8c08c3399851eccdab34d2e302c9f68b1442a2d2284eed40",
+  "compatibility": "Never mix UP5 and UP6 peers by rulesetId alone. BASE0/reference1 encodings remain unchanged.",
+  "previousRegistry": {
+    "definitions": 57,
+    "sha256": "9d62e9fb0ed9ba38c483510f2c5ac3da28752129b5c6ab3b39b60ed58225ac00",
+    "migration": "checked append-only definition extension"
+  }
+}

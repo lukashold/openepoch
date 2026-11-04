@@ -1,0 +1,52 @@
+{
+  "format": "native61-factor-asm-oracle-v1",
+  "constantVA": "00B41748",
+  "constantHex": "0ad7233c",
+  "constantFloat": 0.009999999776482582,
+  "sourceInstructions": [
+    "005F351B ADD word[ESI+12],AX",
+    "005F353F LEA EAX,[permanent+temporary+100]",
+    "005F3547 FILD total",
+    "005F354B FMUL float[00B41748]",
+    "005F3551 FMUL float[ESI+C]",
+    "005F3559 FSTP float[ESP+1C]"
+  ],
+  "rows": [
+    {
+      "base": 143,
+      "percent": 0,
+      "native": 143,
+      "bits": "430f0000",
+      "incorrectEarlyF32Factor": 143.0
+    },
+    {
+      "base": 143,
+      "percent": 10,
+      "native": 157.3000030517578,
+      "bits": "431d4ccd",
+      "incorrectEarlyF32Factor": 157.3000030517578
+    },
+    {
+      "base": 150,
+      "percent": 10,
+      "native": 165.0,
+      "bits": "43250000",
+      "incorrectEarlyF32Factor": 165.0
+    },
+    {
+      "base": 150,
+      "percent": 20,
+      "native": 180.0,
+      "bits": "43340000",
+      "incorrectEarlyF32Factor": 179.99998474121094
+    },
+    {
+      "base": 170,
+      "percent": 20,
+      "native": 204.0,
+      "bits": "434c0000",
+      "incorrectEarlyF32Factor": 203.99998474121094
+    }
+  ],
+  "scope": "Read-only original PE bytes plus exact integer/binary32 operands. Products use double intermediates, exact for these integer profiles and this binary32 reciprocal; no earlybinary32 factor rounding. FinalFSTP32 result checked as bits."
+}

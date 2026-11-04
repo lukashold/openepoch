@@ -1,0 +1,193 @@
+{
+  "format": "native-sails7-source-composite-candidate-v1",
+  "status": "passed-isolated-candidate",
+  "sourceProfile": "Explicit effective native CSV5/CFG5 UP namespace; no original program executed.",
+  "engineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+  "sourceManifestSha256": "eabf590cacef634646eb4e8e47eb58e29a44ca8a6ac1d914a012e1b91b9f87f3",
+  "scope": "Source initial SailEffect geometry for exact FightingSail58 variants. Original hull/masts, native source scale, deterministic core, Main and active renderer are unchanged.",
+  "findings": {
+    "effectKind": "SailEffect maps to VisualSail in00658810, factory00659BA0. It is procedural sailcloth, separate from BoatWake/MuzzleSmokeEffect/ExplosionSelector/FlyingPart children.",
+    "variants": [
+      {
+        "runtimeEpoch": [
+          5,
+          7
+        ],
+        "visual": "FightingSail_06",
+        "nif": "NFS6_Caravel.nifcache",
+        "effect": "CaravelSail",
+        "sails": 6,
+        "nativeTagOrder": [
+          4,
+          5,
+          6,
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "runtimeEpoch": [
+          7,
+          9
+        ],
+        "visual": "FightingSail_08",
+        "nif": "NFS8_ShipOfTheLine.nifcache",
+        "effect": "ShipOfTheLineSail",
+        "sails": 12,
+        "nativeTagOrder": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ]
+      },
+      {
+        "runtimeEpoch": [
+          9,
+          15
+        ],
+        "visual": "FightingSail_10",
+        "nif": "NFS10_ironclad.nifcache",
+        "effect": null,
+        "sails": 0
+      }
+    ],
+    "bodyDoesNotContainSailcloth": "Each current early body selects one native near-LOD mesh with hull/rigging/masts texture. All18tag_sail nodes are NiNode leaves with no geometry; their source planes/textures are created by the SailEffect. Existing near/far body LODs are retained.",
+    "attachment": "00659FF0 calls0066E000/0066E0E0: append substring tag_sail_ match before recursively traversing authored NiNode children. 00659160 copies each tag world rotation/translation/scale to the matching generated sail. Sorting tags numerically would misassign Caravel source sails.",
+    "grid": "006195D0 constructs row-major XY planes, source width/(NX−1) and height/(NY−1), FSTP32 spacing then vertex multiplication, UV0..1, two source triangles(a,b,c)/(b,d,c). 00659E40 zero/missing count defaults5, despite stale OneSail header comment6.",
+    "pins": "00A9E740 first applies whole-edge pins. 00A9E830 then replaces each requested corner-only edge with exactly its two endpoints. Source flags and all431initial vertices are retained.",
+    "planeOn": "The DDF field is retained; 00659E40 calls00A9E730, which is a bareRET in this engine. It is not used as a guessed deformation switch.",
+    "nativeEvents": {
+      "registration": "00659580 binds native message globals; exact string initializers in native-sails7-events.c.",
+      "HitPointChange": "+100→00659730 selects native fx_flag_damage00..07 thresholds; creation helper00659A60 has all00..08branches. Candidate binds only original initial mask00; no unproved damage-event adapter.",
+      "ConstructionDoneAndUnitPlaced": "+104/+110 invoke0065C5F0 when parent0066DF20 exposes shadow support and markclothready(+148=1).",
+      "UnitStartMoving": "+114 sets moving(+149=1) and copies current parentposition as prior; UnitStopMoving(+118)clears it.",
+      "StateChangeNotification": "+108 clears custom-light override and marksready; matching source-state globalD02690 sets11D and callsA9DFB0, which clears every pin. Motion-derived wind is disabled while gravity/spring updates continue. No state string name is asserted without its initializer.",
+      "GraphicsSettingsChanged": "+10C updates VisualFlag callbacks: setting1no-op,2uniform light,othersnormal-based light."
+    },
+    "nativeMotionBoundary": "00658D20 computes parent XY position delta, transforms force vectors through attachment inverse matrix, uses moving WindDamping(default1 when zero) or idle coefficient. 00A9DFE0 clamps incoming dt above.05, uses native LCG random inputs and twohalfsteps into00A9E130 mass/spring integration. Algorithms are exported for later work; no sinusoid, arbitrary weather timer or replacement wind is activated.",
+    "shadowBoundary": "Native parent BaseShip has MobileStencilShadow. New cloth is registered via0065C5F0 on placed/construction notifications when the parent shadow path exists. Candidate initial geometry metadata does not claim full native shadow lifecycle or deformation updates."
+  },
+  "flagPass": {
+    "selection": "00659ED9 PUSH00C33CA8 = FlagShader; this is not an inference from APPLY_MODULATE4X or ClothShader.",
+    "nsf": {
+      "path": "shaders/FlagShader.NSF",
+      "sha256": "76cac79434e76adf658db76c730e1b9e4a6da72df3187134552b90678b7a85a8"
+    },
+    "color": "Stage0 saturate(Base.rgb*VertexDiffuse.rgb*4); Stage1 multiplies Dark.rgb after that saturation.",
+    "alpha": "Stage0 selects Base.a, Stage1 multiplies Dark.a. Native geometry builder emits NiAlphaFlags12ED/Threshold0 => SRC_ALPHA/ONE_MINUS_SRC_ALPHA and GREATER0 after both texture stages. Fully transparent mask fragments discard before depth write.",
+    "sampler": "Original FlagShader sampler0/1 CLAMP, LINEAR min/mag, no mip filtering. Z enabled, write enabled, LEQUAL; source NiStencilProperty DrawMode3/both sides.",
+    "lighting": {
+      "normalMode": "00619FB0 computes per-vertex Ambient+abs(dot(normal,SunDir))*Diffuse from local cloth triangles. Initial XY plane normal is +/−Z; do not rotate this dot into world/ship heading.",
+      "uniformMode": "00619F20 computes Ambient+Diffuse without normal dot.",
+      "rawAmbient": "006CD700 copies NiLight+E8/EC/F0 directly.",
+      "rawDiffuse": "006CD6D0 copies NiLight+F4/F8/FC directly.",
+      "sourceDirection": "006CD670 returns NiLight localRotation[0,3,6]. 006CCA00 writes the normalized authored SunDirection to those elements directly; no negation or Y-up swap.",
+      "noDimmer": "006CCA00: Atmosphere+4 Ambient and+0 Diffuse pass through00A30390 byteRGB*float(1/255), then copied to the above fields. Flag getters do not multiply NiLight+E4 dimmer1.5. Existing lighting.ambient/sun are already dimmed and must not be passed directly.",
+      "requiredContextFields": [
+        "sourceAmbient",
+        "sourceDiffuse",
+        "sourceDirection"
+      ],
+      "existingModelShaders": "0/1 lighting and native model source scales must retain their present behavior."
+    }
+  },
+  "candidate": {
+    "manifest": "work/native-sails7/docs/local-original/sails-native/manifest.json",
+    "sha256": "f744b0a4f25313963a3c4bbcd2d6249fc306a2eae9667d069da146114a349d2d",
+    "files": 18,
+    "pngs": 14,
+    "vertices": 431,
+    "sails": 18,
+    "triangles": 548,
+    "textures": "Five exact native cloth images plus nine original fx_flag_damage00..08 images, top-mipRGBA unscaled/unpainted, source/cache/PNG/RGBA hashes retained.",
+    "helper": "work/native-sails7/original-sail-composite.mjs",
+    "api": "appendInitialSailParts(parentModel, sourceComposite) returns additive parts after exact parentNIFSHA check. It preserves parent and input objects; nativeSail metadata explicitly selects FlagShader and native state. Dedicated NATIVE_SAIL_SHADERS and source diffuse/texture-stage arithmetic functions are exported.",
+    "integration": [
+      "Select this optional graph only for typed unit0:58 source epochs5 and7; epoch9ironclad has no sails. Do not replace or renumber legacy0/1definitions or resources.",
+      "Use the exact same native parent model transform/scale/yaw/origin offset; candidate planes are already attached and normalized in that parent basis. Do not apply tag matrices a second time.",
+      "Extend parent near/far bounds after appending parts. Preserve original hull NIF/model hashes.",
+      "Use the explicit Flag pass and initial mask00, with raw light channels/source direction. Native dynamic damage/cloth motion and shadow lifecycle remain separate.",
+      "Copy only the candidate local-original/sails-native subtree into active local-original when Root authorizes production promotion; do not publish original media to Git."
+    ],
+    "activeFilesModified": false
+  },
+  "tests": {
+    "source": {
+      "checks": 200,
+      "path": "outputs/EE2-Research/analysis/native-sails7-source-tests.json"
+    },
+    "helper": {
+      "checks": 144,
+      "path": "outputs/EE2-Research/analysis/native-sails7-helper-tests.json"
+    },
+    "gles": {
+      "checks": 118,
+      "path": "outputs/EE2-Research/analysis/native-sails7-gles-tests.json"
+    }
+  },
+  "totalChecks": 462,
+  "previews": [
+    {
+      "file": "work/native-sails7/ship-5-body-only.png",
+      "sha256": "e0c1bbc95135444249b2daac2920435a7ca3f136ca50eec6692d25a8e945b019",
+      "sails": false,
+      "epoch": 5
+    },
+    {
+      "file": "work/native-sails7/ship-5-initial-sails.png",
+      "sha256": "896dd4d5d2ce7fa4cd3de657036c93df38102beb4f7b85ffab7dde7c6276ac68",
+      "sails": true,
+      "epoch": 5
+    },
+    {
+      "file": "work/native-sails7/ship-7-body-only.png",
+      "sha256": "0c33c7216d47ca4ffa2b6091c8cadd5d990c2038a2b71fc18f4ccf25e7824153",
+      "sails": false,
+      "epoch": 7
+    },
+    {
+      "file": "work/native-sails7/ship-7-initial-sails.png",
+      "sha256": "20256a83b47ee2f365d5e3afb79a036a3916bf46d82fc7a1bd010afc0b90747e",
+      "sails": true,
+      "epoch": 7
+    }
+  ],
+  "previewLimit": "Actual GLES renders source initial composite with neutralDiffuse.25 to inspect unchanged texture RGB. It is not a browser/original screenshot, a native-climate lighting comparison or a dynamic-cloth parity claim.",
+  "sourceExports": {
+    "native-sails7-attach-order.c": "6baf7bd4f45f76ca5663380d64ff4645f5749eb8f488d0d724771e9eae4871fe",
+    "native-sails7-binding.c": "e1d5774b43c10a2fbf098a807a197e8059047ed7e67dacb6f6664302129195a6",
+    "native-sails7-creation.c": "77a8aca2587d6f04ca4059ffad9eccdc8c57834fc0ced96cab35c98a8ee419e3",
+    "native-sails7-events.c": "217d0b91e02e0977c3106c990b6f330fd6cf8deec573a780ab8fe9b1122a74de",
+    "native-sails7-grid.c": "c0474cef02ba4713f04a011a0713813cae647df2c515a5dc5ee375462cc43dea",
+    "native-sails7-light-getters.c": "972b721ecc5c1531e6fce4ff590dc21585a2144c6ba670748db94ff445f71425",
+    "native-sails7-lighting.c": "e93243070400ece661bbf9d16ce96d2fbcb4198cf3be67dd31c0cec27ca9a542",
+    "native-sails7-refs.c": "a4fc2675873cbd7738454339ccc7ed0bc6c5cbd61737fd7982f3c1b8760fd8ce",
+    "native-sails7-runtime.c": "4e3ee90ab161f958cc16d0b29865af3b7066fdde04aabf13f881712f3585e07e",
+    "native-sails7-updates.c": "d4b254c88fa9b970a4213cf1c7ab721a8e78bfae24d3717a37126dbbf81ea8a2"
+  },
+  "sourceHashes": {
+    "extract_sails.py": "0c679fb1b45c8a8fe6357dd15e34ac66171d83390f41211415c41821290e5e90",
+    "original-sail-composite.mjs": "83545114207927c8004cc90fc32dfc60c88a2e0bd21dc4047d0cf0a4e2c2981e",
+    "test_sources.py": "037361f9a1d5f344b9a68ad06aef387b3cd66448c48e5871e636df4ee0040e31",
+    "test_helper.mjs": "48c53afbe37b8d0ef670667f4695ba259accea937fb0ae3523d65a30b7ed461a",
+    "gpu_test.py": "a4f12fc6e831c42ddbff22f66c5838dd55f9effd15005a6fe9e41fb82a0e77ac",
+    "native-lighting4-channels.c": "a8024c9d29845e3d3ebcdc58d2b7effb220da45fe37ce1e474829d073b147b35",
+    "DBVisualDefs.h": "fb9d472d986e009045caab4aa29fdd02a0c64c275fc3e2ec39e2058c12ce8f1f"
+  },
+  "limits": [
+    "Native spring/LCG wind/deformed normals are exported but unported. The production candidate intentionally retains the native initial plane only.",
+    "Damage masks00..08 are preserved but automatic HP/event selection is not activated by this helper.",
+    "BoatWake source classes and their native idle/move/sink models are separately identified, not reproduced by generic particles.",
+    "The helper is isolated and cannot be treated as already integrated production rendering. Root owns runtime promotion and Main/renderer hooks."
+  ]
+}

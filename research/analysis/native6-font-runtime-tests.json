@@ -1,0 +1,24 @@
+{
+  "format": "native6-bitmap-font-runtime-tests-v1",
+  "passed": true,
+  "checks": 1958,
+  "metricCases": 910,
+  "captures": 5,
+  "actualWasm": [
+    {
+      "file": "openepoch-ee2.wasm",
+      "ruleset": 1,
+      "sha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18"
+    },
+    {
+      "file": "openepoch-ee2-up15.wasm",
+      "ruleset": 2,
+      "sha256": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51"
+    }
+  ],
+  "sourceHashes": {
+    "runtime": "0ba484a3748b41e3853b0aa223ec69aae2d2d0442f3e266acb51f4edf5f7e6fe",
+    "manifest": "ff12ad34c6940c32f4993290a3c9f3e6f85c0bb5ee418f4b77d5cd0dce05c82c"
+  },
+  "scope": "Actual active layout/loader/draw and sibling-overlay code; unchanged control nodes/listeners/accessible text; independent native metric oracle. Two production WASMs and live native diplomacy tribute controls execute a real resource debit. Canvas/DOM transport substituted, source atlas composition verified separately. No browser/original process."
+}

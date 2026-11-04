@@ -1,0 +1,19 @@
+{
+  "format": "openepoch-native7-package-extraction-v1",
+  "status": "passed",
+  "build": "native7",
+  "createdUTC": "2026-11-04T18:56:24.955397+00:00",
+  "file": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native7-packages\\OpenEpoch-Mac-Komplett.zip",
+  "zipBytes": 1250396554,
+  "sha256": "61c21b51e4b07b35b715b396e5d62682bae32b1ee9da1844a1476ecadff1fd23",
+  "zipEntries": 5028,
+  "manifestFilesVerified": 5026,
+  "allCopiedFilesMatchFrozenCandidate": true,
+  "mediaFiles": 4918,
+  "mediaBytes": 1406180391,
+  "root": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\Mac Paket Native7 Test\\OpenEpoch",
+  "launcherMode": "0755",
+  "launcherLineEndings": "LF",
+  "pythonMinimum": "3.8",
+  "noMacExecutionClaim": true
+}

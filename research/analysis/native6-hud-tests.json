@@ -1,0 +1,12 @@
+{
+  "format": "ee2-native-hud-tests-v1",
+  "status": "passed",
+  "checks": 6029,
+  "sourceHashes": {
+    "original-hud.js": "12214361f25f9f840d12a56644a4f0835fe93ec6ae6a4a16db037f174887f794",
+    "original-hud-layout.js": "dd7c84000e04cfa0708539b426d365872845ff26f8b2e322de4438f23ad762b5",
+    "original-seasons.js": "fb4001470974e86ed297465309933305bef3bd8c54c8c603f6e39d18b2e63492",
+    "local-original/hud-native/manifest.json": "2b5c66a91b27cf7c3833d00db063a74c0b8e8dfedc2d0a67504d3bd6b4d6db6a"
+  },
+  "scope": "Independent named-corner/integer fixtures for native geometry; exact live DOM identity, command listeners, drawer access, themes and resize. Browser raster and full native widget state are not asserted."
+}

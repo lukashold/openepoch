@@ -1,0 +1,57 @@
+{
+  "status": "passed",
+  "format": "native6-independent-main-gl-state-review-v1",
+  "checks": 380,
+  "scenarios": [
+    {
+      "quality": 1,
+      "native": false,
+      "fallbackCalls": 12,
+      "quadCalls": 1,
+      "nativeCalls": 2,
+      "sounds": 1
+    },
+    {
+      "quality": 1,
+      "native": true,
+      "fallbackCalls": 10,
+      "quadCalls": 1,
+      "nativeCalls": 7,
+      "sounds": 1
+    },
+    {
+      "quality": 2,
+      "native": false,
+      "fallbackCalls": 24,
+      "quadCalls": 1,
+      "nativeCalls": 2,
+      "sounds": 1
+    },
+    {
+      "quality": 2,
+      "native": true,
+      "fallbackCalls": 20,
+      "quadCalls": 1,
+      "nativeCalls": 10,
+      "sounds": 1
+    }
+  ],
+  "mainSha256": "65bbb8fdb6513adcf45cc116551e898d957836c464169239521113e8a1652ff8",
+  "namespaceSha256": "949a191c9aca295a58ffef0c2431426638f09844edea2633c00f7fd797479307",
+  "wasm": {
+    "sha256": "1f13de2c11b2d935e6e669541ff9a2ef67a0bb4cf186c0f5f0694e6559adb324",
+    "bytes": 472065
+  },
+  "sourceStatement": "originalModels.draw changes ARRAY_BUFFER and VAO. Main explicitly rebinds instBuf before upload, procedural colour and quads; real Ground and reflection restore caller binding. Actual Main section executed with real partial native models and Ground.",
+  "limits": [
+    "Recording GL verifies state and exact production Main branch execution; separate GLES captures already compile/render the shaders.",
+    "Work activity flags were changed only in transient render records to exercise the actual wide-worker audio branch; simulation state/source untouched.",
+    "Main shadow draws retain existing explicit legacy projector adapter."
+  ],
+  "captureCandidate": {
+    "sha256": "51e7db09caa4f16c9feb271e858327daa598d9385335032765c4f586a4de7625",
+    "review": "Typed sourceKey/manifestKey disambiguate Unit/Resource; post-init raw range length dynamic; shoreline selector uses typed Resource100/101; passed model/ground assetMapping and source climate-lighting context retained. No actionable static finding."
+  },
+  "blockers": [],
+  "reviewScriptSha256": "c9f828980d7da2ce69354653940a7e4c04cf20ec0e8e853409ce73d526ca7d21"
+}

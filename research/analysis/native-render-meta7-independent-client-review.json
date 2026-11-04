@@ -1,0 +1,9 @@
+{
+  "format": "render-meta7-independent-client-review-v1",
+  "status": "PASS",
+  "checks": 69,
+  "wasmSha256": "f7784ee37122a8bd1e281bf09c4a898cae081e752cd5f9649a2c1d09efa50bd5",
+  "decoderSha256": "8cb10d47f6a305d7177e1e701f2736b051c654700eb8460084983d63d3827fcc",
+  "scope": "Exact-source dynamic import; actual isolated WASM, raw handle0, immutable copies, culling, reentrant render during namespace lookup, memory growth and new-session identity, no simulation-memory writes. Two synthetic malformed transports independently verify the final pointer/empty fix.",
+  "finding": "No remaining actionable finding. Both directions of the previously reported pointer/empty inconsistency are rejected."
+}

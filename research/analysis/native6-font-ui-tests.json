@@ -1,0 +1,71 @@
+{
+  "format": "native6-bitmap-font-live-ui-tests-v1",
+  "status": "passed",
+  "checks": 1040,
+  "scenes": [
+    {
+      "name": "hud",
+      "bitmapLabels": 12,
+      "unsupported": []
+    },
+    {
+      "name": "relations",
+      "bitmapLabels": 22,
+      "unsupported": [
+        8212,
+        8212
+      ]
+    },
+    {
+      "name": "resources",
+      "bitmapLabels": 31,
+      "unsupported": [
+        8212,
+        8212
+      ]
+    },
+    {
+      "name": "proposal",
+      "bitmapLabels": 30,
+      "unsupported": [
+        8212,
+        8212
+      ]
+    },
+    {
+      "name": "territories",
+      "bitmapLabels": 25,
+      "unsupported": [
+        8212,
+        8212
+      ]
+    }
+  ],
+  "hookModes": {
+    "original-hud.js": "active",
+    "original-diplomacy.js": "active"
+  },
+  "wasmSha256": "2f905ebd0ba69d155a7fdb2361f7a8f84642e8a3f2f908b9f133bfef7b7cefbc",
+  "wasmRuleset": 2,
+  "sourceHashes": {
+    "docs/original-fonts.js": "0ba484a3748b41e3853b0aa223ec69aae2d2d0442f3e266acb51f4edf5f7e6fe",
+    "docs/original-font-ui.js": "113c703adc3a094e863741a2f8de83a770229dbb14147e130debb551fe0c7f7b",
+    "docs/main.js": "8add0032a04bfe676763a153812d7c39bb30654fed4c8cc389674e3a94619e09",
+    "docs/index.html": "99bed0653387d2aca30ebc58322d669f7a36c4b93cd58144d53354b9deb3d610",
+    "docs/original-hud.js": "12214361f25f9f840d12a56644a4f0835fe93ec6ae6a4a16db037f174887f794",
+    "docs/original-hud-layout.js": "dd7c84000e04cfa0708539b426d365872845ff26f8b2e322de4438f23ad762b5",
+    "docs/economy-bar.js": "8b5442150c1ed288d87cf34ef30d85bc36aa2e0fe121fe90f7770944ac952d44",
+    "docs/original-diplomacy.js": "4028328ea35edec0ae5346f53c6e18dca3fe8a162f7a8bb9d209313d7db488a8",
+    "docs/original-diplomacy-layout.js": "9e119882f4e90950aa6193f7f680b35109ab98191924fb9d136926ef46a5b80c",
+    "docs/local-original/hud-native/manifest.json": "2b5c66a91b27cf7c3833d00db063a74c0b8e8dfedc2d0a67504d3bd6b4d6db6a",
+    "docs/local-original/diplomacy-native/manifest.json": "fb527824c257e1dd23caf70666507b5f6c883a81628fda3495af54dff76abd2f",
+    "docs/local-original/textures.json": "0eff6e13abfe7296637d6ff36f5e116b180825710dbf1e1d5292994833f64a55"
+  },
+  "fontModuleSha256": "0ba484a3748b41e3853b0aa223ec69aae2d2d0442f3e266acb51f4edf5f7e6fe",
+  "fontManifestSha256": "ff12ad34c6940c32f4993290a3c9f3e6f85c0bb5ee418f4b77d5cd0dce05c82c",
+  "limits": [
+    "Production HUD/diplomacy controllers, active font coordinator/modules, real WASM and actual glyph placements; actual active component fontBindings are used directly. This is not a browser/CSS raster or original executable capture.",
+    "Resource-row CSS flow is explicitly represented from Native5 CSS declarations. Resource typography and newly added calendar label font are identified application bindings.",
+    "Legacy proposal/territory form flow and unbound alternate-font glyphs keep their previous presentation. Main entry point bindings are active and their source hash is recorded."
+  ]
+}

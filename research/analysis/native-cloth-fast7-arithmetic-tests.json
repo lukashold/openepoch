@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "checks": 21372,
+  "frozenRows": 2448,
+  "boundaryRows": 18924,
+  "wasmSha256": "c8d1207fec111a5b47dbe24b75d51cf3f250f032dfdb4073e75113e65353c625"
+}

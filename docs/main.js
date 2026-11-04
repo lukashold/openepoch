@@ -5,22 +5,26 @@ import { buildModels } from './models.js?v=fortress1';
 import { parseCheat } from './cheats.js';
 import { researchPanel } from './research.js?v=research3';
 import { diplomacyPanel } from './diplomacy.js?v=fortress1';
-import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=diplomacy5';
+import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native6';
+import {loadNativeFontUI} from './original-font-ui.js?v=native6';
 import {territoryClaimMessage} from './territory-help.js?v=fortress1';
-import * as sfx from './audio.js?v=graphics2';
-import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=fortress1';
-import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native-text5';
-import {loadNativeHud} from './original-hud.js?v=native-ui4';
-import {loadOriginalModels} from './original-renderer.js?v=native-light5';
-import {loadOriginalGround} from './original-ground.js?v=native-ui4';
-import {loadOriginalTerrain} from './original-terrain.js?v=visual-seasons2';
+import * as sfx from './audio.js?v=native61';
+import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=native6';
+import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
+import {loadNativeHud} from './original-hud.js?v=native6';
+import {loadOriginalModels} from './original-renderer.js?v=dynamic-sails7';
+import {loadSourceSailRuntime} from './source-sail-runtime.js?v=sails7';
+import {createRenderAssetMapping} from './original-render-namespace.js?v=native6';
+import {createFrontendNamespace} from './render-namespace.js?v=native7';
+import {loadOriginalGround} from './original-ground.js?v=native6';
+import {loadOriginalTerrain} from './original-terrain.js?v=native6';
 import {loadOriginalWater} from './original-water.js?v=water-farm3';
 import {createOriginalReflection} from './original-reflection.js?v=visual-seasons2';
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=profile1';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native7';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
-import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native-combat5';
+import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native7';
 import {createFullscreenController} from './fullscreen.js?v=building2';
 import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=fortress1';
 import {updateOriginalCamera,originalCameraRay,originalFractionForZoom,normalizeOriginalHeading,rotateOriginalCameraHeading} from './original-camera.js?v=heading2';
@@ -79,6 +83,8 @@ try{wasm=await loadRulesWasm(rulesProfile,import.meta.url);}catch(error){rulesLo
 const u8 = (ptr, len) => new Uint8Array(wasm.memory.buffer, ptr, len);
 const f32 = (ptr, len) => new Float32Array(wasm.memory.buffer, ptr, len);
 const dec = new TextDecoder();
+const assetMapping=createRenderAssetMapping(wasm);
+const renderNamespace=createFrontendNamespace(wasm,{referenceMode,assetMapping});
 if(referenceMode){
   const row=document.createElement('div');row.className='row';
   const label=document.createElement('label');label.htmlFor='start-epoch';label.textContent='Startepoche';
@@ -429,12 +435,16 @@ for (const pr of [terrain, water, models, quads]) {
 }
 const originalEnabled=referenceMode&&new URLSearchParams(location.search).get('assets')!=='procedural';
 const originalAssets=await loadOriginalAssets(gl,originalEnabled);
-const originalLabels=await loadOriginalLabels(rulesProfile);
+const originalLabels=await loadOriginalLabels(rulesProfile,{definitionCount:renderNamespace.definitionCount});
 const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,total)=>{
   $('play').textContent=`Originalgrafiken laden · ${Math.round(loaded/total*100)} %`;
-},{lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-up15.json',scaleManifestURL:'./local-original/model-scales-up15.json'}:{})});
-const originalGround=await loadOriginalGround(gl,originalEnabled);
+},{assetMapping,dynamicSails:rulesProfile.ruleset===2&&typeof wasm.render_meta_version==='function',lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-roster6.json',scaleManifestURL:'./local-original/model-scales-roster6.json'}:{})});
+const sourceSails=await loadSourceSailRuntime({wasm,namespace:renderNamespace,models:originalModels,enabled:originalEnabled&&rulesProfile.ruleset===2});
+if(sourceSails?.metrics.error)console.warn('Source sails:',sourceSails.metrics.error);
+sfx.configureOriginalDefinitions({wasm,bindings:originalModels.manifest?.models||[]});
+const originalGround=await loadOriginalGround(gl,originalEnabled,{assetMapping});
 const originalTerrain=await loadOriginalTerrain(gl,originalEnabled,TEAM);
+originalTerrain.setLightingContext?.(originalModels.lighting);
 const originalWater=await loadOriginalWater(gl,originalEnabled);
 const seasonSession=createSeasonSession(wasm,originalTerrain,originalGround,originalModels);
 const originalReflection=createOriginalReflection(gl);
@@ -594,6 +604,8 @@ const diplomacy=diplomacyPanel({wasm,referenceMode,
 });
 const nativeDiplomacy=await enhanceOriginalDiplomacy(diplomacy,{wasm,enabled:referenceMode&&originalAssets.enabled});
 document.body.dataset.originalDiplomacy=String(nativeDiplomacy.enabled);
+const nativeBitmapFonts=await loadNativeFontUI({enabled:referenceMode&&originalAssets.enabled,hud:nativeHud,diplomacy:nativeDiplomacy});
+document.body.dataset.originalBitmapFonts=String(nativeBitmapFonts.enabled);
 $('diplomacy-button').onclick=()=>{if(running&&!bench)diplomacy.open();};
 
 // ---------------------------------------------------------------- starting, saving, loading
@@ -754,8 +766,13 @@ function frame(now) {
   if (ghost) { gid = ghost.id; [gx, gy] = ghostTile(); }
   updatePlacement(now);
   const n = (wasm.render_rotated||wasm.render)(alpha, x0, y0, x1, y1, gid, gx, gy,ghost?.turn||0);
-  const ranges = n ? new Uint32Array(wasm.memory.buffer, wasm.ranges_ptr(), 512) : null;
+  const ranges = n ? new Uint32Array(wasm.memory.buffer, wasm.ranges_ptr(), renderNamespace.rangeLength) : null;
   const renderEpochs=[0,1,2,3].map(t=>wasm.stat(t,0));
+  // Own visual clock: once before every scene pass. Pause/wait freezes cloth;
+  // solo speed scales the explicit delta. Native helpers apply their own cap.
+  const actorMetadata=sourceSails?.advance({count:n,instances:f32(wasm.inst_ptr(),n*STRIDE),epochs:renderEpochs,
+    deltaSeconds:dt*(net?1:speed),runPhysics:!paused&&!(net&&net.ls.waiting)})??null;
+  if(qaMode&&sourceSails)canvas.dataset.sourceSails=JSON.stringify(sourceSails.metrics);
   let reflection=null;
   if(originalTerrain.enabled&&!reflectionError){
     const scale=+$('quality').value>1?1:.5;
@@ -763,7 +780,7 @@ function frame(now) {
       reflection=originalReflection.render({vp:view.vp,eye:view.eye,width:Math.max(1,Math.round(w*scale)),height:Math.max(1,Math.round(h*scale)),
         drawScene:pass=>{
           originalTerrain.drawTerrain({vao:vaoT,px,fogTexture,territoryTexture,...pass});
-          if(n)originalModels.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,epochs:renderEpochs,zoom:cam.zoom,...pass});
+          if(n)originalModels.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,epochs:renderEpochs,zoom:cam.zoom,actorMetadata,...pass});
         }});
     }catch(error){reflectionError=String(error);console.warn('Water reflection:',error);}
     if(qaMode){canvas.dataset.reflection=JSON.stringify(originalReflection.metrics);canvas.dataset.reflectionError=reflectionError||'';}
@@ -781,13 +798,13 @@ function frame(now) {
 
   if (n) {
     gl.bindBuffer(gl.ARRAY_BUFFER, instBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, f32(wasm.inst_ptr(), n * STRIDE), gl.STREAM_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, renderNamespace.fallbackInstances(f32(wasm.inst_ptr(), n * STRIDE)), gl.STREAM_DRAW);
     originalGround.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,vp:view.vp,
       epochs:renderEpochs,isUrbanAt:(x,z)=>!!wasm.ground_urban_at(x,z)});
     if(qaMode)canvas.dataset.originalGroundDrawn=String(originalGround.metrics.instances);
     if(!paused && now-lastWorkSound>500){
       lastWorkSound=now;
-      const instances=f32(wasm.inst_ptr(),n*STRIDE),first=ranges[8*2],count=ranges[8*2+1];
+      const instances=f32(wasm.inst_ptr(),n*STRIDE),workerId=renderNamespace.unitRenderId(8),first=ranges[workerId*2],count=ranges[workerId*2+1];
       let closest=Infinity,hit=-1;
       for(let j=first;j<first+count;j++){
         const k=j*STRIDE,action=instances[k+11];if(action!==2 && action!==3 && action!==5)continue;
@@ -802,27 +819,30 @@ function frame(now) {
       gl.stencilFunc(gl.EQUAL,0,255); gl.stencilOp(gl.KEEP,gl.KEEP,gl.INCR);
       gl.useProgram(models.p); gl.bindVertexArray(vaoM);
       gl.uniformMatrix4fv(models.u.uVP,false,view.vp); gl.uniform1i(models.u.uShadow,1);
-      for(let id=0;id<104;id++){
+      for(let id=0;id<renderNamespace.slotCount;id++){
         if(originalModels.available.has(id))continue;
-        if(id>=29 && id<100) continue;
-        const cnt=ranges[id*2+1]; if(!cnt||!mesh.count[id])continue;
-        instOffset(ranges[id*2]); gl.drawArraysInstanced(gl.TRIANGLES,mesh.first[id],mesh.count[id],cnt);
+        const template=renderNamespace.fallbackModelId(id);
+        if(template<0||template>=104||(template>=29&&template<100))continue;
+        const cnt=ranges[id*2+1]; if(!cnt||!mesh.count[template])continue;
+        instOffset(ranges[id*2]); gl.drawArraysInstanced(gl.TRIANGLES,mesh.first[template],mesh.count[template],cnt);
       }
-      originalModels.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,vp:view.vp,epochs:renderEpochs,zoom:cam.zoom,eye:view.eye,shadow:true});
+      originalModels.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,vp:view.vp,epochs:renderEpochs,zoom:cam.zoom,eye:view.eye,shadow:true,actorMetadata});
       gl.disable(gl.STENCIL_TEST); gl.depthMask(true);
     }
     // one instanced draw per model type
     gl.enable(gl.BLEND);
     gl.useProgram(models.p); gl.bindVertexArray(vaoM); gl.bindBuffer(gl.ARRAY_BUFFER, instBuf);
     gl.uniformMatrix4fv(models.u.uVP, false, view.vp); gl.uniform1i(models.u.uShadow,0);
-    for (let id = 0; id < 240; id++) {
+    for (let id = 0; id < renderNamespace.slotCount; id++) {
       if(originalModels.available.has(id))continue;
+      const template=renderNamespace.fallbackModelId(id);
+      if(template<0||template>=240)continue;
       const cnt = ranges[id * 2 + 1];
-      if (!cnt || !mesh.count[id]) continue;
+      if (!cnt || !mesh.count[template]) continue;
       instOffset(ranges[id * 2]);
-      gl.drawArraysInstanced(gl.TRIANGLES, mesh.first[id], mesh.count[id], cnt);
+      gl.drawArraysInstanced(gl.TRIANGLES, mesh.first[template], mesh.count[template], cnt);
     }
-    originalModels.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,vp:view.vp,epochs:renderEpochs,zoom:cam.zoom,eye:view.eye});
+    originalModels.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,vp:view.vp,epochs:renderEpochs,zoom:cam.zoom,eye:view.eye,actorMetadata});
   }
 
   // Native base-water depth/alpha followed by the separate reflection overlay.
@@ -843,10 +863,11 @@ function frame(now) {
     gl.useProgram(quads.p); gl.bindVertexArray(vaoQ); gl.bindBuffer(gl.ARRAY_BUFFER, instBuf);
     gl.uniformMatrix4fv(quads.u.uVP, false, view.vp); gl.uniform1f(quads.u.uPx, px);
     gl.uniform3fv(quads.u.uRight,view.right||[1,0,0]); gl.uniform3fv(quads.u.uUp, view.u);
-    for (const id of [243, 240, 242, 241]) {            // shadows, rings, explosions, then bars on top of everything
+    for (const template of [243, 240, 242, 241]) {
+      const id=renderNamespace.quadRenderId(template);            // shadows, rings, explosions, then bars on top of everything
       const cnt = ranges[id * 2 + 1];
       if (!cnt) continue;
-      if (id === 241) gl.disable(gl.DEPTH_TEST);
+      if (template === 241) gl.disable(gl.DEPTH_TEST);
       instOffset(ranges[id * 2]);
       gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, cnt);
     }
@@ -865,7 +886,8 @@ function icon(id, px) {
     const scale=Math.min(px/original.width,px/original.height),w=original.width*scale,h=original.height*scale;
     c.getContext('2d').drawImage(original,(px-w)/2,(px-h)/2,w,h);return c;
   }
-  c.getContext('2d').drawImage(iconAtlas, (id % 16) * CELL, ((id / 16) | 0) * CELL, CELL, CELL, 0, 0, px, px);
+  const fallbackId=renderNamespace.unitFallbackId(id);
+  if(fallbackId>=0)c.getContext('2d').drawImage(iconAtlas, (fallbackId % 16) * CELL, ((fallbackId / 16) | 0) * CELL, CELL, CELL, 0, 0, px, px);
   return c;
 }
 const glyph = (ch, px) => { const d = document.createElement('div'); d.style.cssText = `font-size:${px * 0.66}px;height:${px}px;line-height:${px}px`; d.textContent = ch; return d; };
@@ -904,7 +926,7 @@ function updateUi(drawn, now) {
     let h = `<h3>${s.n > 1 && s.types.length > 1 ? s.n + ' Einheiten' : escapeLabelHtml(label(s.name,s.def,s.n)) + (s.n > 1 ? ' ×' + s.n : '')}</h3>`;
     if (s.n === 1) {
       h += `<div class="hp"><i style="width:${100 * s.hp / s.max}%"></i></div>${s.hp} / ${s.max} HP`;
-      if (s.def >= 8 && s.def <= 46) h += `<div class="activity">${ACTIVITIES[s.activity] || 'Bereit'}</div>`;
+      if (renderNamespace.isMobile(s.def)) h += `<div class="activity">${ACTIVITIES[s.activity] || 'Bereit'}</div>`;
       if (s.dmg) h += ` · ${s.dmg} dmg · range ${s.rng}`;
       if (s.built < 1) h += `<br>Im Bau: ${Math.round(s.built * 100)}%`;
     }
@@ -915,7 +937,7 @@ function updateUi(drawn, now) {
     if (s.q.length) h += `<div class="q" id="queue"></div><div class="hp"><i style="width:${s.qp * 100}%;background:#4aa3ff"></i></div>`;
     info.innerHTML = h;
     const q = $('queue');
-    if (q) { for (const id of s.q) q.append(id === 255 ? glyph('⬆', 30) : id >= (referenceMode ? 64 : 200) ? glyph('⚗', 30) : icon(id, 30)); q.title = 'Rechtsklick oder Rücktaste: letzten Auftrag abbrechen'; }
+    if (q) { for (const id of s.q) {const job=renderNamespace.queueJob(id);q.append(!job?glyph('?',30):job.kind===3?glyph('⬆',30):job.kind===1||job.kind===2?glyph('⚗',30):icon(job.value,30));} q.title = 'Rechtsklick oder Rücktaste: letzten Auftrag abbrechen'; }
   }
 
   const sig = ui.epoch+':'+ui.act.map(a => a.k + a.id).join(',');
@@ -946,6 +968,7 @@ function updateUi(drawn, now) {
     $('end').style.display = 'flex';
     sfx.play(ui.win === 1 ? 13 : 11);
   }
+  nativeBitmapFonts.update();
 }
 
 function doAct(i) {
@@ -953,7 +976,7 @@ function doAct(i) {
   if (!a) return;
   if (a.k === 'b') { ghost = { id: a.id, size: a.size,name:label(a.name,a.id),turn:0,manual:false }; placementKey='';attackMode = false; sfx.play(20);updatePlacement();return; }
   if (a.k === 'u') { wasm.cmd_unload(); sfx.play(22); return; }
-  if (wasm.cmd_train(a.id)) sfx.play(20);
+  if (renderNamespace.wide?wasm.cmd_queue_job(a.id):wasm.cmd_train(a.id)) sfx.play(20);
   else { sfx.play(21); toast(a.ok ? 'Warteschlange voll' : a.k==='e' && referenceMode && ui.research.count<6 ? 'Zuerst sechs Technologien dieser Epoche erforschen' : a.tp && ui.research.points<a.tp ? 'Technologiepunkte fehlen – Bürger in Universitäten schicken' : a.k === 't' && ui.pop >= ui.cap ? 'Mehr Häuser bauen' : 'Rohstoffe fehlen'); }
 }
 
@@ -1236,6 +1259,6 @@ else if (qs.has('seed')) start(+qs.get('ai') || 1, +qs.get('seed') || 1, 0);
 // ?warm=600 fast-forwards that many ticks; ?zoom= ?x= ?y= place the camera
 for (let i = +qs.get('warm') || 0; i > 0 && running; i--) wasm.tick();
 for (const k of ['zoom', 'x', 'y']) if (qs.has(k)) cam[k] = +qs.get(k);
-window.openepoch = { wasm, rulesProfile, cam, gl, frame, start, saveGame, loadGame, toWorld, channel, seasonSession, nativeDiplomacy, get net() { return net; } };
+window.openepoch = { wasm, rulesProfile, renderNamespace, cam, gl, frame, start, saveGame, loadGame, toWorld, channel, seasonSession, nativeDiplomacy, nativeBitmapFonts, get net() { return net; } };
 const loop = now => { requestAnimationFrame(loop); frame(now); };
 requestAnimationFrame(loop);

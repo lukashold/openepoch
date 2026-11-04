@@ -1,0 +1,177 @@
+{
+  "status": "passed",
+  "scenes": [
+    {
+      "format": "ordinary-sail-fixture-v1",
+      "seed": 7,
+      "epoch": 5,
+      "instantBuild": true,
+      "gameTick": 2,
+      "trace": [
+        {
+          "action": "place",
+          "def": 5,
+          "x": 58,
+          "y": 45,
+          "turn": 0,
+          "ticks": 1
+        },
+        {
+          "action": "train",
+          "def": 58,
+          "ticks": 1
+        }
+      ],
+      "entities": [
+        {
+          "slot": 12,
+          "def": 5,
+          "team": 0,
+          "x": 59.5,
+          "y": 46.5,
+          "built": 1,
+          "selected": true
+        },
+        {
+          "slot": 13,
+          "def": 58,
+          "team": 0,
+          "x": 60.5,
+          "y": 44.5,
+          "built": 1,
+          "selected": false
+        }
+      ],
+      "source": "Public settings/select/queue/place/tick/cheat exports; serialized bytes are inspected without writing simulation memory."
+    },
+    {
+      "format": "ordinary-sail-fixture-v1",
+      "seed": 7,
+      "epoch": 5,
+      "instantBuild": false,
+      "gameTick": 2164,
+      "trace": [
+        {
+          "action": "place",
+          "def": 5,
+          "x": 58,
+          "y": 45,
+          "turn": 0,
+          "ticks": 863
+        },
+        {
+          "action": "train",
+          "def": 58,
+          "ticks": 1301
+        }
+      ],
+      "entities": [
+        {
+          "slot": 12,
+          "def": 5,
+          "team": 0,
+          "x": 59.5,
+          "y": 46.5,
+          "built": 1,
+          "selected": true
+        },
+        {
+          "slot": 23,
+          "def": 58,
+          "team": 0,
+          "x": 60.5,
+          "y": 44.5,
+          "built": 1,
+          "selected": false
+        }
+      ],
+      "source": "Public settings/select/queue/place/tick/cheat exports; serialized bytes are inspected without writing simulation memory."
+    },
+    {
+      "format": "ordinary-sail-fixture-v1",
+      "seed": 7,
+      "epoch": 7,
+      "instantBuild": true,
+      "gameTick": 2,
+      "trace": [
+        {
+          "action": "place",
+          "def": 5,
+          "x": 58,
+          "y": 45,
+          "turn": 0,
+          "ticks": 1
+        },
+        {
+          "action": "train",
+          "def": 58,
+          "ticks": 1
+        }
+      ],
+      "entities": [
+        {
+          "slot": 12,
+          "def": 5,
+          "team": 0,
+          "x": 59.5,
+          "y": 46.5,
+          "built": 1,
+          "selected": true
+        },
+        {
+          "slot": 13,
+          "def": 58,
+          "team": 0,
+          "x": 60.5,
+          "y": 44.5,
+          "built": 1,
+          "selected": false
+        }
+      ],
+      "source": "Public settings/select/queue/place/tick/cheat exports; serialized bytes are inspected without writing simulation memory."
+    },
+    {
+      "format": "ordinary-sail-fixture-v1",
+      "seed": 7,
+      "epoch": 7,
+      "instantBuild": false,
+      "gameTick": 2164,
+      "trace": [
+        {
+          "action": "place",
+          "def": 5,
+          "x": 58,
+          "y": 45,
+          "turn": 0,
+          "ticks": 863
+        },
+        {
+          "action": "train",
+          "def": 58,
+          "ticks": 1301
+        }
+      ],
+      "entities": [
+        {
+          "slot": 12,
+          "def": 5,
+          "team": 0,
+          "x": 59.5,
+          "y": 46.5,
+          "built": 1,
+          "selected": true
+        },
+        {
+          "slot": 23,
+          "def": 58,
+          "team": 0,
+          "x": 60.5,
+          "y": 44.5,
+          "built": 1,
+          "selected": false
+        }
+      ],
+      "source": "Public settings/select/queue/place/tick/cheat exports; serialized bytes are inspected without writing simulation memory."
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "format": "openepoch-own-legacy-wasm-fixtures-v1",
+  "files": [
+    {
+      "file": "native5-up15.wasm",
+      "sha256": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51",
+      "bytes": 460364,
+      "origin": "Own earlier OpenEpoch compilation, never the original game executable."
+    },
+    {
+      "file": "native61v2-up15.wasm",
+      "sha256": "3a71249f493c2cd73e2694ee0e1befb9f653a3100d43ebb9d78540a0cc71bdb0",
+      "bytes": 482478,
+      "origin": "Own earlier OpenEpoch compilation, never the original game executable."
+    }
+  ]
+}

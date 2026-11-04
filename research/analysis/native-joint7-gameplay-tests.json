@@ -1,0 +1,156 @@
+{
+  "format": "native-paidqueue7-migrated-gameplay-wasm-v1",
+  "binaries": {
+    "classic": {
+      "sha256": "25c832f13c1c8b4d8547eb6c65d78bd74c5fa50f45d9745328f8bb18ccbb146d",
+      "bytes": 518082
+    },
+    "old57": {
+      "sha256": "1f13de2c11b2d935e6e669541ff9a2ef67a0bb4cf186c0f5f0694e6559adb324",
+      "bytes": 472065
+    },
+    "old5": {
+      "sha256": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51",
+      "bytes": 460364
+    }
+  },
+  "migrations": [
+    {
+      "source": "old5",
+      "seed": 7,
+      "epoch": 0,
+      "ticks": 800,
+      "oldSaveSha256": "18b3e875caa199c2912a5263695bd23428e3c00ae0815c99088dfea65a5bdf3c",
+      "newSaveSha256": "685d4c7564a67313b4e1d3b00ef01de6601d2f45ae627f6ee7715d4486c408bf"
+    },
+    {
+      "source": "old5",
+      "seed": 7,
+      "epoch": 5,
+      "ticks": 800,
+      "oldSaveSha256": "2199a8b0f6c8872ed353805fe622cc57c662dff9398dbfc8882283c5dc5dd048",
+      "newSaveSha256": "c870a14a462b56caad71518ee70d9e8c6d7dd628f0f9e3635507dfec44a82ee4"
+    },
+    {
+      "source": "old5",
+      "seed": 7,
+      "epoch": 10,
+      "ticks": 800,
+      "oldSaveSha256": "58a1ca4c57b3cc3ae41cc78408390ff37db12d80f58bca83f6b9d9a524dc40e3",
+      "newSaveSha256": "8bb1b7d232d2624969a6f2da631ea3a10108bd1b4f04d99454555b5de0896b2a"
+    },
+    {
+      "source": "old5",
+      "seed": 7,
+      "epoch": 14,
+      "ticks": 800,
+      "oldSaveSha256": "3f9f21099d9acf948fcbfc3cbba8d3cbede5674430c61952cb1a4e3173221e01",
+      "newSaveSha256": "ce91cb7706d53ae868d1e5ae8bf4918abd1fdd104c6b855f3529aa64390ca057"
+    },
+    {
+      "source": "old5",
+      "seed": 41,
+      "epoch": 0,
+      "ticks": 800,
+      "oldSaveSha256": "2263b1aaabf9c19409096f5dad996be87d38c5842f9b968c96eda8cac3b00db5",
+      "newSaveSha256": "ab7c17d6ba16a9524392b8cfc7c87890c7c1dd19f93e5c7736cc55cca0d2d331"
+    },
+    {
+      "source": "old5",
+      "seed": 41,
+      "epoch": 5,
+      "ticks": 800,
+      "oldSaveSha256": "a99f098b30916e5db9856dd943903e2870f5832685e626cf70a944e6723d528b",
+      "newSaveSha256": "2fab28165dfeeb7bfee4cdbec4e29632192b1e133eaca2030f884445afd8c913"
+    },
+    {
+      "source": "old5",
+      "seed": 41,
+      "epoch": 10,
+      "ticks": 800,
+      "oldSaveSha256": "58af510e6eac0132703b6f0699e82baca749372fb24be7a2bce701dd71dd2f1a",
+      "newSaveSha256": "0b0546b07b3269482744bbf501dae0816b3538e8600dc5c654abaeb6b4b59508"
+    },
+    {
+      "source": "old5",
+      "seed": 41,
+      "epoch": 14,
+      "ticks": 800,
+      "oldSaveSha256": "557daf616ea56c5a8028814d6c071f1af20f316e12fb51afe929183a0a6b16ca",
+      "newSaveSha256": "066aa29fc461685f7a837560c71f6ea73406489c8b2d9f6c1425a0286508def6"
+    },
+    {
+      "source": "old57",
+      "seed": 7,
+      "epoch": 0,
+      "ticks": 800,
+      "oldSaveSha256": "d4085b3acac265d0d7016619f920761d38775e84300d3fff43db41ecf53ab54d",
+      "newSaveSha256": "685d4c7564a67313b4e1d3b00ef01de6601d2f45ae627f6ee7715d4486c408bf"
+    },
+    {
+      "source": "old57",
+      "seed": 7,
+      "epoch": 5,
+      "ticks": 800,
+      "oldSaveSha256": "b9cba2a2fb550974b65e7e397f808997683217ac11e00de2906c9ff0d5d5ce64",
+      "newSaveSha256": "c870a14a462b56caad71518ee70d9e8c6d7dd628f0f9e3635507dfec44a82ee4"
+    },
+    {
+      "source": "old57",
+      "seed": 7,
+      "epoch": 10,
+      "ticks": 800,
+      "oldSaveSha256": "f2c6c8ff3423de3c64568aa22fb1d3d69e2d6ed1f478d97ac1f4d74b80b2d8c0",
+      "newSaveSha256": "8bb1b7d232d2624969a6f2da631ea3a10108bd1b4f04d99454555b5de0896b2a"
+    },
+    {
+      "source": "old57",
+      "seed": 7,
+      "epoch": 14,
+      "ticks": 800,
+      "oldSaveSha256": "6f415e2659d3d89e1a443e684a227e92fb1b9dc33da7858927ce182f6d57de3d",
+      "newSaveSha256": "ce91cb7706d53ae868d1e5ae8bf4918abd1fdd104c6b855f3529aa64390ca057"
+    },
+    {
+      "source": "old57",
+      "seed": 41,
+      "epoch": 0,
+      "ticks": 800,
+      "oldSaveSha256": "79ac90c80648acf4523e4a1d6890b2f001bd72424d036cccce8e2ddbc9a62f84",
+      "newSaveSha256": "ab7c17d6ba16a9524392b8cfc7c87890c7c1dd19f93e5c7736cc55cca0d2d331"
+    },
+    {
+      "source": "old57",
+      "seed": 41,
+      "epoch": 5,
+      "ticks": 800,
+      "oldSaveSha256": "48af56c2b43a29deeccdffee098e7ce910d569ed1e9bf6a7383c743319b74703",
+      "newSaveSha256": "2fab28165dfeeb7bfee4cdbec4e29632192b1e133eaca2030f884445afd8c913"
+    },
+    {
+      "source": "old57",
+      "seed": 41,
+      "epoch": 10,
+      "ticks": 800,
+      "oldSaveSha256": "105add5673536b32089cad100fd32452a6f67f4fccaff118c2192f5ca1000e8a",
+      "newSaveSha256": "0b0546b07b3269482744bbf501dae0816b3538e8600dc5c654abaeb6b4b59508"
+    },
+    {
+      "source": "old57",
+      "seed": 41,
+      "epoch": 14,
+      "ticks": 800,
+      "oldSaveSha256": "3db1da90eedee0e63a5717ab82d3c6d8917f29736f0859469c7e862a0e1d3532",
+      "newSaveSha256": "066aa29fc461685f7a837560c71f6ea73406489c8b2d9f6c1425a0286508def6"
+    }
+  ],
+  "status": "PASS",
+  "checks": 1145,
+  "malformedCases": 5,
+  "limits": [
+    "Current61 contains four additional genuine source families, not the full132-family native roster.",
+    "Migration retains the existing omission of in-flight projectiles.",
+    "The permanent-percent source state is verified; 180/204 assertions test our arithmetic adapter. Original x87 CHOP53 vs nearest mode at the actual setter remains unresolved, so these are not unconditional native-bit or complete-original-firetrace oracles.",
+    "Native terrain/collision remain separate work; optional source cloth has its own renderer and scheduler checks."
+  ]
+}

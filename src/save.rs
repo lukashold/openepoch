@@ -10,7 +10,7 @@ use crate::game::*;
 use crate::map::*;
 use core::mem::size_of;
 
-const MAGIC: u32 = if cfg!(feature="ee2-up15") {0x3555_454f} else if cfg!(feature = "ee2-reference") { 0x3252_454f } else { 0x3250_454f };
+const MAGIC: u32 = if cfg!(feature="ee2-paidqueue7"){0x3755_454f}else if cfg!(feature="ee2-roster6"){0x3655_454f}else if cfg!(feature="ee2-up15") {0x3555_454f} else if cfg!(feature = "ee2-reference") { 0x3252_454f } else { 0x3250_454f };
 
 /// View a slice of plain `#[repr(C)]` values as bytes.
 fn raw<T: Copy>(s: &[T]) -> &[u8] {
@@ -33,8 +33,10 @@ impl Game {
         for v in head {
             b.extend_from_slice(&v.to_le_bytes());
         }
-        b.extend_from_slice(raw(&self.players));
-        b.extend_from_slice(raw(&self.ents[..self.high]));
+        #[cfg(not(feature="ee2-roster6"))]
+        {b.extend_from_slice(raw(&self.players));b.extend_from_slice(raw(&self.ents[..self.high]));}
+        #[cfg(feature="ee2-roster6")]
+        {crate::save6::write_players(&self.players,&mut b);crate::save6::write_entities(&self.ents[..self.high],&mut b);}
         b.extend_from_slice(&self.map.ter);
         b.extend_from_slice(&self.map.res);
         b.extend_from_slice(raw(&self.map.amt));
@@ -56,10 +58,20 @@ impl Game {
         self.write_city_ground(&mut b);
         #[cfg(feature="ee2-up15")]
         self.write_attack_clock(&mut b);
+        #[cfg(all(feature="ee2-roster6",not(feature="ee2-paidqueue7")))]
+        crate::save6::append_descriptor(&mut b);
+        #[cfg(feature="ee2-paidqueue7")]
+        {self.write_paid_queue(&mut b);crate::paid_queue7::append_descriptor(&mut b);}
         self.savebuf = b;
     }
 
     pub fn load(buf: &[u8]) -> Option<Game> {
+        #[cfg(feature="ee2-paidqueue7")] let (paid_normalized,paid_chunk)=crate::paid_queue7::split_input(buf)?;
+        #[cfg(feature="ee2-paidqueue7")] let buf=paid_normalized.as_slice();
+        #[cfg(feature="ee2-roster6")]
+        let normalized=crate::save6::normalize_input(buf)?;
+        #[cfg(feature="ee2-roster6")]
+        let buf=normalized.as_slice();
         #[cfg(feature="ee2-up15")]
         let(buf,attack_chunk)=crate::native_attack_clock::split_save(buf)?;
         #[cfg(feature="ee2-reference")]
@@ -79,11 +91,11 @@ impl Game {
         let remainder=if has_territory{total_trailer-crate::territory::TERR_BYTES}else{total_trailer};
         let has_diplomacy=remainder>=crate::diplomacy::DIP_BYTES;
         let trailer=if has_diplomacy{remainder-crate::diplomacy::DIP_BYTES}else{remainder};
-        if u(0) != MAGIC || u(1) as usize != size_of::<Ent>() || u(2) as usize != size_of::<Player>() || (u(3) as usize != DEFS.len() && u(3)!=47 && !(cfg!(feature="ee2-reference")&&(u(3)==53||u(3)==55||u(3)==56))) || ![0,12,132,236].contains(&trailer) {
+        if u(0) != (if cfg!(feature="ee2-paidqueue7"){0x3655_454f}else{MAGIC}) || u(1) as usize != size_of::<Ent>() || u(2) as usize != size_of::<Player>() || (u(3) as usize != DEFS.len() && u(3)!=47 && !(cfg!(feature="ee2-reference")&&(u(3)==53||u(3)==55||u(3)==56))) || ![0,12,132,236].contains(&trailer) {
             return None;
         }
         #[cfg(feature="ee2-up15")]
-        if u(3)!=57 || trailer!=236 || !has_diplomacy || !has_territory || city_chunk.is_none(){return None;}
+        if u(3) as usize!=DEFS.len() || trailer!=236 || !has_diplomacy || !has_territory || city_chunk.is_none(){return None;}
         if u(5)>3{return None;}
         #[cfg(feature="ee2-reference")]
         if city_chunk.is_some() && (trailer!=236 || !has_diplomacy || !has_territory || u(3) as usize!=DEFS.len()) {return None;}
@@ -193,6 +205,7 @@ impl Game {
         g.read_city_ground(city_chunk)?;
         #[cfg(feature="ee2-up15")]
         g.read_attack_clock(attack_chunk)?;
+        #[cfg(feature="ee2-paidqueue7")] g.read_paid_queue(paid_chunk.as_deref())?;
         g.free = (0..MAXE).rev().filter(|&i| !g.ents[i].alive).map(|i| i as u16).collect();
         for i in 0..high {
             g.ents[i].fslot = u16::MAX; // flow-field cache starts empty

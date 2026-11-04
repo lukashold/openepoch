@@ -1,0 +1,297 @@
+{
+  "format": "native-audio6-candidate-integration-v1",
+  "status": "isolated-ready-for-root-review",
+  "createdUTC": "2026-11-04T14:52:41.396768+00:00",
+  "activeRuntimeChanged": false,
+  "candidateRoot": "work/native-audio6",
+  "scope": "Typed audio source-family adapter for explicit new unit definitions. Existing original audio manifest/recordings, own0 and reference1 behavior, and all established57-role mappings remain untouched. No media is committed/uploaded by this task.",
+  "nativeBindings": {
+    "definitions": {
+      "57": "Scout",
+      "58": "FightingSail",
+      "59": "AirDefense",
+      "60": "CoastalDefense"
+    },
+    "families": 4,
+    "intervals": 16,
+    "events": 28,
+    "recordings": 28,
+    "originalRecordingBytes": 532764,
+    "manifest": "docs/local-original/audio/native-families.json",
+    "manifestSha256": "7aa92154cbd1e760be5b08658546da74d1d3cc304463f9d2bd07221efb4f43da",
+    "allRecordingFiles": [
+      {
+        "file": "family6/v_Spy_07_sel01.mp3",
+        "bytes": 20796,
+        "sha256": "6a8fcbbeb8114fae06e78de5102c11b104dd5f1f0ef98240138307a2f659a2de"
+      },
+      {
+        "file": "family6/v_Spy_07_com01.mp3",
+        "bytes": 17452,
+        "sha256": "94f9a5c97b83508867337109229dca6a72bcad88f625b2792d4d0a2108da53cc"
+      },
+      {
+        "file": "family6/v_Spy_07_com02.mp3",
+        "bytes": 25812,
+        "sha256": "5143e402c738255323df75803b24ead77fc63a169e08e998f7e9e133ddf55f10"
+      },
+      {
+        "file": "family6/v_Spy_07_spe01.mp3",
+        "bytes": 24558,
+        "sha256": "e94671b4fad187509b89fadc874e29ae57afd8df6cb8c98f863d3fe6380d67ff"
+      },
+      {
+        "file": "family6/v_Spy_13_sel01.mp3",
+        "bytes": 18288,
+        "sha256": "06615dd8699fb98b5bf360f1585942edf15d886a4c8838955800694006a2fcef"
+      },
+      {
+        "file": "family6/v_Spy_13_com01.mp3",
+        "bytes": 18288,
+        "sha256": "999f47056920dab7a001c99a33f33c209382bc843b7e77614dc6a11cf734ab75"
+      },
+      {
+        "file": "family6/v_Spy_13_com02.mp3",
+        "bytes": 13273,
+        "sha256": "375787324b7437c99aa398ed485b19b6706d36942b2ffdcbe8b2568564fa8619"
+      },
+      {
+        "file": "family6/v_Spy_13_spe01.mp3",
+        "bytes": 12437,
+        "sha256": "1c48c8398910153d268086134eab17c076742fa5468afa1978593809a5cd9fab"
+      },
+      {
+        "file": "family6/v_spy_04_sel01.mp3",
+        "bytes": 16199,
+        "sha256": "1ec7086754bf8d1b9d7e9c0cda6e8dd8d0322aa5f97c546f523a2e603aa5cea5"
+      },
+      {
+        "file": "family6/v_spy_04_com01.mp3",
+        "bytes": 18706,
+        "sha256": "ed6a6d2fc5b65c532b090e112ff5020e9d4607676f276d59eab808b8650424be"
+      },
+      {
+        "file": "family6/v_spy_04_com02.mp3",
+        "bytes": 13691,
+        "sha256": "1d1150306b108c13ce5b7fd820f9097be280617b09cc00e5de886eccc41ff7a3"
+      },
+      {
+        "file": "family6/v_spy_04_spe01.mp3",
+        "bytes": 22050,
+        "sha256": "a54c53d2d742a060be187d91f46a1f8da4d3f37b8ab038e60fa5c601442bdb91"
+      },
+      {
+        "file": "family6/v_fightingsail_06_sel01.mp3",
+        "bytes": 7839,
+        "sha256": "df0458c1edfd04271f99a5a07fd15e31625db719d58dc27603efc02904ecbdd6"
+      },
+      {
+        "file": "family6/v_fightingsail_06_com01.mp3",
+        "bytes": 14945,
+        "sha256": "3e73bb066096d3e8453ac0aca90bc4d0cab07064cd58ae9bb03fac243d102d54"
+      },
+      {
+        "file": "family6/v_fightingsail_06_com02.mp3",
+        "bytes": 10765,
+        "sha256": "b2b323d3dd80fc7e05b7248be499d37ac6b518d9507d3608df91bc1088558709"
+      },
+      {
+        "file": "family6/v_fightingsail_06_spe01.mp3",
+        "bytes": 19124,
+        "sha256": "5b65c72febd44500c00a8e51b0efa250e342251356238ff3868ceab66951d228"
+      },
+      {
+        "file": "family6/v_FightingSail_08_sel01.mp3",
+        "bytes": 19354,
+        "sha256": "1b7d3d7f950a0304cd2993de0171d45d11681886c3251c35f6b45a6a5229da77"
+      },
+      {
+        "file": "family6/v_FightingSail_08_com01.mp3",
+        "bytes": 15592,
+        "sha256": "0cd006dcf0a0f5d693787e3585d283126d929c5992e10aa1b5c4f3dd752d5271"
+      },
+      {
+        "file": "family6/v_FightingSail_08_com02.mp3",
+        "bytes": 16428,
+        "sha256": "bcd3c50e554e4c6a6376be6cddbe0b6ced18236b7f2a0c0eec020d8c68478064"
+      },
+      {
+        "file": "family6/v_FightingSail_08_spe01.mp3",
+        "bytes": 19354,
+        "sha256": "06bdc251cee3e191a6db1dd27b5cc0abae5062ab42e89e24c187c1d8badb6fa4"
+      },
+      {
+        "file": "family6/v_FightingSail_10_sel01.mp3",
+        "bytes": 18706,
+        "sha256": "0faedd6f2fe706ffc1994b1f0e1c8e5585f943d7218bdccf81d5c61271663ae4"
+      },
+      {
+        "file": "family6/v_FightingSail_10_com01.mp3",
+        "bytes": 13691,
+        "sha256": "c11a70e1e7ebc1c2cdcc2b2c8d4e3d829a22a2a60b786d02ae8974f16363e437"
+      },
+      {
+        "file": "family6/v_FightingSail_10_com02.mp3",
+        "bytes": 8257,
+        "sha256": "f6745798909139d6ce68e6e471c97206090c402f1e81579f11034306e9b882bd"
+      },
+      {
+        "file": "family6/v_FightingSail_10_spe01.mp3",
+        "bytes": 18706,
+        "sha256": "c8b3d7335e3f422c4f5b470062a277122430324a1c5ad349ae855ab9e53d64c9"
+      },
+      {
+        "file": "family6/Fx_Bld_Air_Defense_eng16.mp3",
+        "bytes": 35028,
+        "sha256": "c456e7c4271ac25a34f994c0aeb32c8f6964a1eb76311a398b4c630fd98f0ec7"
+      },
+      {
+        "file": "family6/Fx_Bld_Air_Defense2_15.mp3",
+        "bytes": 49898,
+        "sha256": "3b34dc4aa8b0952822c29df1fb10db133d7b3b13ace27d511f552a09dac5c9fb"
+      },
+      {
+        "file": "family6/Fx_Bld_Coastal_Defense.mp3",
+        "bytes": 26230,
+        "sha256": "f3578e1bda21c9e447f450fc6025b82e1dff812697b41387fffbdb8956be59aa"
+      },
+      {
+        "file": "family6/Fx_Bld_Coastal_Defense2_15.mp3",
+        "bytes": 17297,
+        "sha256": "6f156e86f2d8710c7ebb0a6c99c5604d25fcf830fc2c416f6759bd1e1228b54e"
+      }
+    ]
+  },
+  "verification": {
+    "candidateChecks": 7323,
+    "sourceChecks": 501,
+    "legacyAcknowledgmentResultsUnchanged": 3420,
+    "legacyRecordingChoicesAndGroupsUnchanged": 3420,
+    "legacyAudioSuites": "Both existing audio-test.mjs and original-audio-test.mjs pass with imports redirected solely to isolated candidate modules; full original39-voice/progression/recording/PCM source checks retained.",
+    "legacyManifestSha256": "ff67ba2de5ca7175449793786f9f95852eb469ed0e7b1a29ce518422b0e1a6ce",
+    "actualCandidateWasmMetadata": {
+      "path": "work/native-roster6/classic-candidate/builds/pre-placement-classic6.wasm",
+      "sha256": "e68cbe7a8b8187d1454d94a6773c8e514b7b49c7ae79dd3bc2fb69db198bdcf3",
+      "ruleset": 2,
+      "schema": 6,
+      "definitions": 61,
+      "flags": [
+        {
+          "id": 57,
+          "flags": 18
+        },
+        {
+          "id": 58,
+          "flags": 18
+        },
+        {
+          "id": 59,
+          "flags": 17
+        },
+        {
+          "id": 60,
+          "flags": 17
+        }
+      ],
+      "scope": "Read-only metadata check of isolated pre-placement candidate; this WASM is not activated by the audio task."
+    }
+  },
+  "api": [
+    "audio.configureOriginalDefinitions({wasm,bindings:originalModels.manifest.models}) stores explicit source-family rows and actual definition flags before or after audio unlock.",
+    "audio.acknowledge retains its existing(def,action,epoch) signature; building effects remain independent of voice toggle; all mobile definitions use the existing900ms application response throttle.",
+    "original-audio-bindings.js separates legacy-role compatibility metadata from typed assetKind0 rows. Unit100 and Resource100 never share a source-family binding. Native role comes from definition_flags, not numeric unit ranges.",
+    "New original-family player uses exact event arrays/recording bytes and native event volumes. Missing/unproven family responses return false; own local speech fallback remains visibly separate in audio.js."
+  ],
+  "promotionHandoff": {
+    "replace": [
+      "docs/audio.js",
+      "docs/original-audio.js"
+    ],
+    "add": [
+      "docs/original-audio-bindings.js",
+      "docs/local-original/audio/native-families.json",
+      "docs/local-original/audio/family6/*.mp3"
+    ],
+    "oldAudioManifest": "Do not rewrite docs/local-original/audio/manifest.json or old media. Supplemental family catalog remains separate.",
+    "mainPatch": "After originalModels loads: sfx.configureOriginalDefinitions({wasm,bindings:originalModels.manifest?.models||[]});",
+    "requiredModelFields": [
+      "assetKind:0",
+      "id:DefId",
+      "epoch:runtime zero-based",
+      "sourceFamily",
+      "sourceVisual",
+      "optional until exclusive"
+    ],
+    "importer": "Promote import_audio6.py as tools/extract_ee2_audio_families.py. It discovers candidate/production context and supports --out, --install, --resolved and repeatable --family ID:SourceFamily for the later132 roster. Default four-source output remains byte-identical.",
+    "portableChecker": "Extend its audio graph to native-families.json: all assets.file and events.file are relative to local-original/audio; validate file/hash/bytes plus event references and nonoverlapping0..15 family intervals. Media remain only under local-original and excluded from media-free Git/source packaging.",
+    "testPromotion": "Candidate tests currently import isolated modules and the immutable pre-placement61-WASM; adapt those paths only after root authorizes activation and rebind reports to the release artifacts."
+  },
+  "sourceFiles": [
+    {
+      "file": "docs/audio.js",
+      "sha256": "9c225e5b87325ea33990cd5f3aa6e03bff3b08a03b7b568986192ddc0cb7abb3"
+    },
+    {
+      "file": "docs/original-audio.js",
+      "sha256": "02cd8dcee8d2e3f385b2dc775e90154988290f0b80cd2c4c79bf578ded611bfc"
+    },
+    {
+      "file": "docs/original-audio-bindings.js",
+      "sha256": "6271658a613c5293a52efa3f7092a53b49b7550389e08d30cf84893af95c99f1"
+    },
+    {
+      "file": "import_audio6.py",
+      "sha256": "a9e8f9985a9ba8d036f6f62c7521349c5d34148eeeec981c71237891e53b3e25"
+    },
+    {
+      "file": "test.mjs",
+      "sha256": "77ae053cef9aca83799151f5d4d7d3e67c1b686938fd3b8201832661a80ea8f6"
+    },
+    {
+      "file": "test_sources.py",
+      "sha256": "c0fe61dc4ff702df73caa2fde3883f56b017bc8ea75df5ee4ae120ef9dd2d1b8"
+    },
+    {
+      "file": "legacy-audio-test.mjs",
+      "sha256": "bae1de6d77c88c97450b02ba59a34fce00cb18b89a7a40fbfe906758c609ffaf"
+    },
+    {
+      "file": "legacy-original-audio-test.mjs",
+      "sha256": "519508300858992ff7add98d36bc0d156039b68774b64520a8493c5c7ff2d0fc"
+    },
+    {
+      "file": "audio6-runtime.patch",
+      "sha256": "976a23e155323128702e13e310dc7434e660fdec791960219bf357159d277f92"
+    }
+  ],
+  "reports": [
+    {
+      "file": "native-audio6-source-evidence.json",
+      "sha256": "21430f596af3f27f1faa6c9cb1f0acf42a72bba95ecf4600a36ab417fb84b5ff"
+    },
+    {
+      "file": "native-audio6-source-tests.json",
+      "sha256": "0dd5696374042b7cd2b8e36c19847ad80bff0bb4f88c051a868966ad6239aed6"
+    },
+    {
+      "file": "native-audio6-candidate-tests.json",
+      "sha256": "1f68187779af06a406c37a6d298a03245c8df6047bdbe65252e570e98d142f73"
+    }
+  ],
+  "commands": [
+    "python work/native-audio6/import_audio6.py",
+    "node work/native-audio6/test.mjs",
+    "python work/native-audio6/test_sources.py",
+    "node work/native-audio6/legacy-audio-test.mjs",
+    "node work/native-audio6/legacy-original-audio-test.mjs"
+  ],
+  "limits": [
+    "No active Audio/Main/WASM/media changes in this candidate handoff. Final integration and artifact hashes remain root-owned.",
+    "Current native event arrays, empty-array carry-forward, channel roles, clip bytes and source volumes are proved.900ms throttle, round-robin response selection, voice gain.75, effect polyphony limits and WebAudio scheduling are application adapters; native audio timing/random-selection/mixer equivalence is not claimed.",
+    "Native max-instance/pitch/loop fields are retained; all current new records have loopfalse,pitchVariation0,maxInstances0. Further nonzero cases need implementation/proof before claiming those behaviors.",
+    "No new native build-response channel is fabricated. The old Citizen8 build-to-move acknowledgment adapter is preserved; new native-family build requests fall back only to separately identified own speech when available.",
+    "New source-family catalog covers only the four agreed families. Other future mobile definitions use declared flags for own fallback speech until explicit original family/event bindings are imported.",
+    "Tests execute the actual candidate modules and a real isolated61-definition WASM, with a substituted WebAudio graph/decoder/clock. They are not a browser/audio-device playback or original executable capture.",
+    "Language is not inferred from filenames or region labels; original recordings remain unchanged."
+  ]
+}

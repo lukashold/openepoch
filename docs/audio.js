@@ -1,6 +1,6 @@
 // The EE2 profile uses locally extracted original recordings when available.
 // Procedural sounds and local speech remain the fallback for the standalone game.
-import { createOriginalAudio } from './original-audio.js?v=graphics2';
+import { createOriginalAudio } from './original-audio.js?v=native61';
 const originals=createOriginalAudio();
 
 let ctx = null, master = null, noise = null;
@@ -60,20 +60,23 @@ const RESPONSE = {
 export function acknowledge(def, action, epoch=0) {
   if (muted || def < 0) return false;
   // Buildings use their original selection effect independently of the voice toggle.
-  if(def<8||def>=47)return originals.acknowledge(def,action,epoch);
+  const role=originals.role(def,epoch);if(!role)return false;
+  if(role.building)return originals.acknowledge(def,action,epoch);
+  if(!role.mobile)return false;
   if(!speechEnabled)return false;
   const now = performance.now(); if (now - lastSpeech < 900) return false;
   if(originals.acknowledge(def,action,epoch)){window.speechSynthesis?.cancel();lastSpeech=now;return true;}
-  if(def>46||!window.speechSynthesis||!window.SpeechSynthesisUtterance)return false;
+  if(!window.speechSynthesis||!window.SpeechSynthesisUtterance)return false;
   const voice = window.speechSynthesis.getVoices().find(v => /^de[-_]/i.test(v.lang) && v.localService);
   if (!voice) return false;
-  const options = RESPONSE[def === 8 ? 'worker' : 'soldier'][action] || RESPONSE.soldier.order;
+  const options = RESPONSE[role.worker ? 'worker' : 'soldier'][action] || RESPONSE.soldier.order;
   const utterance = new SpeechSynthesisUtterance(options[speechIndex++ % options.length]);
-  utterance.lang = 'de-DE'; utterance.voice = voice; utterance.rate = 1.08; utterance.pitch = def === 8 ? 1 : .85; utterance.volume = .8;
+  utterance.lang = 'de-DE'; utterance.voice = voice; utterance.rate = 1.08; utterance.pitch = role.worker ? 1 : .85; utterance.volume = .8;
   window.speechSynthesis.cancel(); window.speechSynthesis.speak(utterance); lastSpeech = now; return true;
 }
 export const isMuted = () => muted;
 export const originalAudioStatus = () => originals.status();
+export const configureOriginalDefinitions = settings => originals.setDefinitionBindings(settings);
 
 function env(g, t, peak, attack, decay) {
   g.gain.setValueAtTime(0.0001, t);

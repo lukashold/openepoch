@@ -1,0 +1,141 @@
+{
+  "status": "passed",
+  "format": "native-render6-renderer-ground-handoff-v1",
+  "stage": "isolated-no-active-runtime-change",
+  "integrationChecks": 59,
+  "contractTests": {
+    "status": "passed",
+    "format": "native-render6-namespace-contract-v1",
+    "checks": 297,
+    "wasm": {
+      "sha256": "095e5f4a6802e4cfafc3c3192caed7367747bae53e12c383d4367798fdf25a2c",
+      "bytes": 472073
+    },
+    "metadataRows": 81,
+    "files": {
+      "candidate/original-renderer.js": "8e35b2285098d4acb9cfd37524865b19dde9340c23f4bc60c10321bb76105911",
+      "candidate/original-ground.js": "9928799d00f182fd226e98f554b7500bfa6ffa9c4e8faf234ccdb75d95157fa1",
+      "candidate/original-render-namespace.js": "ac77c08f83fbf5b9919b6c59e3a192bbac704e71c74e429440fdb9b656cbd147",
+      "namespace-test.mjs": "068fd6223659fcdd45010eddab069262a7b4ed4a6ee9ac728465c009fa9a32e1"
+    },
+    "limits": [
+      "Synthetic source-bound material/LOD/farm/pick fixtures through actual renderer APIs; full actual-WASM world/GLES capture is separate.",
+      "Current source manifest role/resource inference is kept for old manifests; future roleIDs100..110 need explicit assetKind0."
+    ]
+  },
+  "legacyContractSuites": [
+    "legacy-original-renderer-test.mjs PASS",
+    "legacy-original-ground-test.mjs PASS"
+  ],
+  "copyFiles": {
+    "original-renderer.js": "8e35b2285098d4acb9cfd37524865b19dde9340c23f4bc60c10321bb76105911",
+    "original-ground.js": "9928799d00f182fd226e98f554b7500bfa6ffa9c4e8faf234ccdb75d95157fa1",
+    "original-render-namespace.js": "ac77c08f83fbf5b9919b6c59e3a192bbac704e71c74e429440fdb9b656cbd147"
+  },
+  "baseline": {
+    "original-ground.js": "9902abc52e4dec444cc72aa4dcc1a15a6099d5433cd9aff78a01542930c47ec5",
+    "original-lighting.js": "b352ef7390de9f86e05c6a7bc690518b449d06a2f0222041d111b8b8224dafe1",
+    "original-material.js": "2c0b2a0bb290ed78763a3330f43168a46a9c4258234fe590b3c12f794c8ee9c6",
+    "original-model-seasons.js": "c8fab385c06dbe93dd7f29fa80959d48dadd031801f6b315e9d7b9a77f3863a6",
+    "original-renderer.js": "c709512a7ec0bfc08a9b88beeea81e6e65382c34ebbd936a2db41270b7c5b899",
+    "original-scale.js": "4651e04fd4a0a61b8a47f2c4b8fb56df83bfd7864796011cf2648df6b992a947"
+  },
+  "sourceInputs": {
+    "local-original/models/manifest.json": "f681e82a0676d78c05590f3f1d736be665d7cb533346c73cc49dbe317d083d53",
+    "local-original/models/manifest-up15.json": "34c9265030903859a07b51727a78b79a57e66f27123a9d15879c0e719c0eb643",
+    "local-original/model-scales.json": "890394b80f99684b7bf571bd9426e191c9f97e8f90db891d74dd81a49d94961b",
+    "local-original/model-scales-up15.json": "3feb204c3270c762f87b8bc6ed355b6756176d21fe14dc25ff779bbf005a40f7",
+    "local-original/model-seasons.json": "17e4869e547f12eed82ea79a693677f4afebcd804dd1ea9a295d8d3079531e3c",
+    "local-original/farm-composites.json": "d85f3e229280734a583f6089ffe97c2df02e4104d7fae95aff60d1b9300f00bb",
+    "local-original/ground-decals.json": "eb407c403f1e22b997215f85b8f02e9cc62ae44facf31b7068c4312f8c8454f4"
+  },
+  "gpu": {
+    "world-frozen": {
+      "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-render6\\world-frozen-gpu.json",
+      "sha256": "e58b9ff77ba7d57d85685cd5efd5cb814d02dc8aec9628afa9f3d65f18e34feb",
+      "pngSha256": "52d0460f2bdd610bf516de1195ec8759f67e56efc2dbbc51fce5e2b6429c773b",
+      "captureSha256": "f5281ad81ac0ef3c67e6836503731280620e647e51ceb187f39f4062b326b58e",
+      "drawCalls": 51,
+      "wasmSha256": "1741020cd97f45d8393181bde50165d922debf4cb19f7d706a9969d03a7e1ebe"
+    },
+    "world-static": {
+      "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-render6\\world-static-gpu.json",
+      "sha256": "eca283d18747990f9bf983507c9f374c347f2805df7dd855aa6ec5dd57fe95ec",
+      "pngSha256": "52d0460f2bdd610bf516de1195ec8759f67e56efc2dbbc51fce5e2b6429c773b",
+      "captureSha256": "a1c288da6abba0634c1b01610ba54d8de4171246c2c05599acf82de5353fe09b",
+      "drawCalls": 51,
+      "wasmSha256": "095e5f4a6802e4cfafc3c3192caed7367747bae53e12c383d4367798fdf25a2c"
+    },
+    "world-legacy-control": {
+      "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-render6\\world-legacy-control-gpu.json",
+      "sha256": "55b019af9bf10a7595d877d5457340eda221230f3319ad329054dbc4121c0ca9",
+      "pngSha256": "52d0460f2bdd610bf516de1195ec8759f67e56efc2dbbc51fce5e2b6429c773b",
+      "captureSha256": "1a1c7ec5ab55d434adb8e7af620c46abc4414f469a0521d9a8bb818f7c5f6d4b",
+      "drawCalls": 51,
+      "wasmSha256": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51"
+    },
+    "world-legacy-candidate": {
+      "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-render6\\world-legacy-candidate-gpu.json",
+      "sha256": "2c3e46191d1afe3770792a218dfbc80b987199a225c7a2fbab1aedf78e39fcd3",
+      "pngSha256": "52d0460f2bdd610bf516de1195ec8759f67e56efc2dbbc51fce5e2b6429c773b",
+      "captureSha256": "e3e1d53e73670537904ef63c7139c348ded1eab3bf02060a186e4cb4078b57b6",
+      "drawCalls": 51,
+      "wasmSha256": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51"
+    },
+    "collision-original": {
+      "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-render6\\collision-original-gpu.json",
+      "sha256": "614548a9cd997e534b8d159609720468cbf773946f036a2cc3f09a3d772affa7",
+      "pngSha256": "b312f3cdad54d7e31c2d6630659d81a3302ac0d4a026b14c1c8963d14399f172",
+      "captureSha256": "d011cfc75c4894d39508a2b9be0562476f47e9e88948f40068e0c2ca1a71689e",
+      "drawCalls": 30,
+      "wasmSha256": "095e5f4a6802e4cfafc3c3192caed7367747bae53e12c383d4367798fdf25a2c"
+    },
+    "collision-fallback": {
+      "path": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-render6\\collision-fallback-gpu.json",
+      "sha256": "97a570d965e45ec73385e11da9fd1d626cd31fd9b766fbf947143e6a51a86d99",
+      "pngSha256": "ac8d18e9a69632b1f50528ec71591967c3646e859e6e6a7c17a57dba6e2a161c",
+      "captureSha256": "43271397589e68835ef4de3db28a1de313b63ce663d4fbf977e6b69b968d8b52",
+      "drawCalls": 25,
+      "wasmSha256": "095e5f4a6802e4cfafc3c3192caed7367747bae53e12c383d4367798fdf25a2c"
+    }
+  },
+  "pixelComparisons": [
+    {
+      "before": "world-legacy-control",
+      "after": "world-legacy-candidate",
+      "differentPixels": 0
+    },
+    {
+      "before": "world-legacy-candidate",
+      "after": "world-static",
+      "differentPixels": 0
+    },
+    {
+      "before": "world-frozen",
+      "after": "world-static",
+      "differentPixels": 0
+    }
+  ],
+  "api": {
+    "metadata": "createRenderAssetMapping(wasm) -> frozen array {renderId,kind,sourceId}, null for old schemas. Uses actual range-length and per-ID metadata exports; final static-ABI6 works before init. Preserved first1741020 binary needs init before its old range export.",
+    "models": "loadOriginalModels(gl,enabled,teams,onProgress,{...existingOptions,assetMapping})",
+    "ground": "loadOriginalGround(gl,enabled,{...existingOptions,assetMapping})",
+    "keys": "models/available/resourceRenderIds/ground.entries and range lookup use raw renderId; model variants retain sourceId, assetKind, scaleKey.",
+    "manifests": "Source IDs remain unchanged. Current untyped0..56 unit and100..110 resource inference preserves old exports. Explicit assetKind0/1 resolves future overlap.",
+    "scales": "Explicitly typed rows use kind:sourceId:epoch exclusively; untyped legacy rows retain sourceId:epoch.",
+    "urbanCallback": "isUrbanAt(x,z,team,sourceId,instanceIndex,rawRenderId); existing first5 argument semantics preserved.",
+    "fallback": "Root-owned render-namespace.js maps resource100..103 to existing trees/ore/berries and resource104..110 to generic ore102; projectiles use103+weaponkind1..6, decorations retain110/111. Native NIF acquisition only Unit/Resource by typed pair."
+  },
+  "preserved": [
+    "All source model/scale/season/farm/ground manifests unchanged.",
+    "Model shaders unchanged, source scale/origin, morph/team/season/LOD and inverse resource picking retained.",
+    "Source Farm plot transform and underlays retained; dynamic ranges independently exercised past legacy512 length.",
+    "Old schema default API and real legacy5 world image are unchanged pixel-for-pixel."
+  ],
+  "limits": [
+    "This is a render namespace adapter over57 existing roles; it does not add the complete native roster.",
+    "Future typed model rows require matching typed scale bindings; untyped scale fallback is deliberately unavailable for typed rows.",
+    "Collision scene uses explicit fixture instances with exact production fallback shaders/geometry; actual WASM Farm world is separately rendered.",
+    "No active Main/Renderer/Ground, model data, Rust, original installation or GitHub writes by this task."
+  ]
+}

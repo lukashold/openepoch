@@ -1,0 +1,117 @@
+{
+  "format": "native-joint7-paidqueue-metadata-readonly-v1",
+  "jointSha256": "25c832f13c1c8b4d8547eb6c65d78bd74c5fa50f45d9745328f8bb18ccbb146d",
+  "paidBaselineSha256": "2b2825b68243ed0c7b369e4470f2939f0c79f1fce31cf0f0525b4ca73153ecfd",
+  "scenes": [
+    {
+      "seed": 7,
+      "epoch": 0,
+      "ticks": 167,
+      "initialSaveSha256": "34478771cfcc2cdfd936f21d8d4c3dab731f5ffe83d0a7e269d01d0d97fce6ec",
+      "finalSaveSha256": "b0c3c15b5677446cad420959fec615d61aeda9328ade9678657995b4443ff939",
+      "instances": 5959
+    },
+    {
+      "seed": 7,
+      "epoch": 5,
+      "ticks": 167,
+      "initialSaveSha256": "407dd02f2507aaed6d35bfc7d4e530535e6f1ab1caef7b1523392c1c70b4c595",
+      "finalSaveSha256": "a3c67a167a133b6232598efbbf9c15abfb9cab6c8feb7a84de7b3ff9054d559f",
+      "instances": 5959
+    },
+    {
+      "seed": 7,
+      "epoch": 9,
+      "ticks": 167,
+      "initialSaveSha256": "f5c5f38c677507c88717b8d23927327a25bb270977871c0072e35901ed428ac9",
+      "finalSaveSha256": "c182c0946c05e40f7552a7a155de5bc3534fe7d6e225e4e831f8bc468a28656a",
+      "instances": 5959
+    },
+    {
+      "seed": 7,
+      "epoch": 14,
+      "ticks": 167,
+      "initialSaveSha256": "84054437ebe18287772ccd253077d02d620165471b5190e95fce04c175f362fa",
+      "finalSaveSha256": "8f8c51ca5450b5c727ed014e5f68167dd943f6642e8199b30b2d5798abe88680",
+      "instances": 5959
+    },
+    {
+      "seed": 41,
+      "epoch": 0,
+      "ticks": 167,
+      "initialSaveSha256": "249ef8b2f766d7601ce6d7ef14cb7b54b66d98c11fda66768d163e3cf39911fe",
+      "finalSaveSha256": "653b6711a169630d61d902c750423eab017f062d88c1ce3766f4ca3d7c8b2cfa",
+      "instances": 10294
+    },
+    {
+      "seed": 41,
+      "epoch": 5,
+      "ticks": 167,
+      "initialSaveSha256": "056465c2d7550814a4ec648cc20c2cef204479eb7ae22be418d86599056155cd",
+      "finalSaveSha256": "74dfee6b592a23bdc626c4fde8bec1d44b124e9d97261d87542f78c8d64eb413",
+      "instances": 10294
+    },
+    {
+      "seed": 41,
+      "epoch": 9,
+      "ticks": 167,
+      "initialSaveSha256": "16f589aa813b7fec25f9bf9f9a8562dd54ec1e62829c70640142459e30cb4f70",
+      "finalSaveSha256": "83e2585fd9250d45c7789d00b35429c513f0124dda5ffeaa563a6bc12cfb2f53",
+      "instances": 10294
+    },
+    {
+      "seed": 41,
+      "epoch": 14,
+      "ticks": 167,
+      "initialSaveSha256": "23d94097bc9a50fc5d91fdcc37ff143d58f684ed025f58d8229d37874047ff5f",
+      "finalSaveSha256": "5c054ddbab486741377edb5d8c244a29877f6176f86dec20d73fdb63b7c23284",
+      "instances": 10294
+    },
+    {
+      "seed": 97,
+      "epoch": 0,
+      "ticks": 167,
+      "initialSaveSha256": "eb1cc797bfd2c826a946dc073b18a2a61e118df23befad2154eb3ccbaabb267d",
+      "finalSaveSha256": "f0b704acd9fdc953f31ef54cfe182c38d60b86b3e7f0bfeac77385f0a28f0af4",
+      "instances": 8452
+    },
+    {
+      "seed": 97,
+      "epoch": 5,
+      "ticks": 167,
+      "initialSaveSha256": "70e541f93ed2b7429e849c878c9d11ea1f140d4c0d53ccc2fe0c15c813f04529",
+      "finalSaveSha256": "4826a6b7ce875e9ed80ec236a808d220ddfd323c4650ddb467a0567fb7f00d4d",
+      "instances": 8452
+    },
+    {
+      "seed": 97,
+      "epoch": 9,
+      "ticks": 167,
+      "initialSaveSha256": "e0f4fff826011dab32c1859426d937c014d910e1f528f6ce9756d4fdd7b170a8",
+      "finalSaveSha256": "17efc0eea2e27da8b015e3e5e347ebd5ae0ea10693a7f075f3caf313a17d4d9f",
+      "instances": 8452
+    },
+    {
+      "seed": 97,
+      "epoch": 14,
+      "ticks": 167,
+      "initialSaveSha256": "acf6a2e7a736813791e783bb4497ecd93832ee268e48cacd34223357a7dec891",
+      "finalSaveSha256": "6525635374b490d8dbf4dd9c87c91fd96dcb4985c9fcc762f8e7975bd29d24d5",
+      "instances": 8452
+    }
+  ],
+  "status": "PASS",
+  "checks": 3484057,
+  "rowsChecked": 495756,
+  "framesChecked": 84,
+  "sourceHashes": {
+    "Cargo.toml": "e590a11fc482f3bf5c622451759c05255ba9170978855a957d6d2be90660bba8",
+    "src/lib.rs": "b230fe9f5c156e1549ce11f57ad7f6e46cd4ba5f323ee4a5d37029346e8a4203",
+    "src/render.rs": "2359c1544baf5dc1eb2d85c476dae253c8876d3c3dbb24fc1e9698f368e292bf",
+    "src/render_meta7.rs": "87f3335b688481f26734534a60d46832213be44664b2d0338871d8fed4ff0fa7",
+    "src/paid_queue7.rs": "7c321d588f0d3684596a774ddcbc19995d8a375536f87e1c58b2fa7693daa742",
+    "src/game.rs": "5e0bb496b9ae7d14488c022b94311008524171d5c9ba2d11bc7b51c33276db99",
+    "src/save.rs": "76c3daf8028ab0f87ca23e7579e5471413732ea2b0b9179c879ed6b77dcc541b"
+  },
+  "scope": "Exact PQPv2/OEU7 baseline, not61v2. Full saves/hashes/instance/range bytes stay equal with readonly aligned64B actor metadata, explicit different render cadences and successful/failed load sessions. No migration/evolution assumption, no active files or original game execution."
+}

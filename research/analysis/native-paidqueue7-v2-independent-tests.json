@@ -1,0 +1,102 @@
+{
+  "format": "native-paidqueue7-v2-independent-review-v1",
+  "wasmSha256": "2b2825b68243ed0c7b369e4470f2939f0c79f1fce31cf0f0525b4ca73153ecfd",
+  "codecs": [
+    "duration NaN pos0",
+    "duration NaN pos1",
+    "duration inf pos0",
+    "duration inf pos1",
+    "duration negative pos0",
+    "duration negative pos1",
+    "duration too large pos0",
+    "duration too large pos1",
+    "pending duration 0",
+    "pending duration 1",
+    "pending duration 32.5",
+    "cold positive front duration",
+    "field@0",
+    "field@593776",
+    "field@593780",
+    "field@593928",
+    "field@593784",
+    "field@593788",
+    "field@593792",
+    "field@593796",
+    "field@593800",
+    "field@593800",
+    "field@593800",
+    "duplicate ordered tuple",
+    "reordered tuples",
+    "truncated1",
+    "truncated4",
+    "truncated8",
+    "truncated20",
+    "truncated52",
+    "truncated64",
+    "truncated65"
+  ],
+  "profiles": [
+    {
+      "name": "own",
+      "beforeSha256": "82ccbb1e17862d90ec6c242e9d1b9af029878c7a45b25f0f62b3e2f5e2caae9f",
+      "afterSha256": "d79e7a7d9a29d9b40f4baff4bca13f0f0950c84f36d4112366d459e1428c5aea",
+      "ticks": 320
+    },
+    {
+      "name": "base",
+      "beforeSha256": "1571c43a6ddd2d3382b4f72cdaf5c71b3d1b67761ac24bc15b8954ad48799a5c",
+      "afterSha256": "7ea0253f7abb8e58d223b3d8a52256b292e470154be03b72e91d722fe8fb6ecf",
+      "ticks": 320
+    },
+    {
+      "name": "up5",
+      "beforeSha256": "e6a2da2007940cd2ceabc6848de6443d8b7e94cffd432059571975b8de0faaa7",
+      "afterSha256": "d510876a430f4847898e498f51fae6f4a04386d93da8e23a3a29d68f6a016d9b",
+      "ticks": 320
+    },
+    {
+      "name": "classic6",
+      "beforeSha256": "3a71249f493c2cd73e2694ee0e1befb9f653a3100d43ebb9d78540a0cc71bdb0",
+      "afterSha256": "69b892b65bfea2df648f503de8904308c46e3344a8a9389d6c87af2b2859ce0a",
+      "ticks": 320
+    }
+  ],
+  "migrations": [
+    {
+      "name": "OEU5",
+      "sourceSha256": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51",
+      "ticks": 120,
+      "sourceSaveSha256": "bf42f1c10ea1a95bcf7b0a1927bcb54e910d807e7f20c06f0ea901aaf1d4dc37",
+      "migratedSaveSha256": "54b347209ea93025b348d2153dd5f8e77c9bb4c76db36c0903fd36f0724baa66"
+    },
+    {
+      "name": "OEU6",
+      "sourceSha256": "3a71249f493c2cd73e2694ee0e1befb9f653a3100d43ebb9d78540a0cc71bdb0",
+      "ticks": 120,
+      "sourceSaveSha256": "4fe3eddd1676374b37f62e6b7f7677d9739cbb0494949ac89922d7f496b1db33",
+      "migratedSaveSha256": "54b347209ea93025b348d2153dd5f8e77c9bb4c76db36c0903fd36f0724baa66"
+    }
+  ],
+  "network": {
+    "packets": 4,
+    "ticks": 320,
+    "restoredContinuationTicks": 80
+  },
+  "status": "PASS",
+  "checks": 2631,
+  "malformedCases": 34,
+  "sourceHashes": {
+    "src/paid_queue7.rs": "7c321d588f0d3684596a774ddcbc19995d8a375536f87e1c58b2fa7693daa742",
+    "src/game.rs": "5e0bb496b9ae7d14488c022b94311008524171d5c9ba2d11bc7b51c33276db99",
+    "src/save.rs": "76c3daf8028ab0f87ca23e7579e5471413732ea2b0b9179c879ed6b77dcc541b",
+    "src/save6.rs": "c6cb817bc80050cfda0359a940b327cfe7c5d168023563b5e37b9a1d8bdbfa8b",
+    "src/lib.rs": "1e593709e7a6afeffa0a425a5227620ab40b92e9d0503f1a895b2e5c556677d5"
+  },
+  "activationManifestSha256": "fc5c636ab7d67b5b92d048a406dbe220aaae8b233b53ad2185a7bbddc58e9977",
+  "limits": [
+    "UnitProduce source start-cache/.01 is checked; existing Research/Epoch timing and dynamic AreaEffect rates remain separate adapters.",
+    "Research-bit modification is an explicit own fixture; separate Camera tests use actual research gameplay.",
+    "Original x87 control-word lifetime and market arithmetic context remain conditional source scope, not a global native-bit claim.",
+    "Network tests use actual simulation transport; browser/WebRTC/protocol negotiation and own view-seat restoration are outside this review."
+  ]
+}

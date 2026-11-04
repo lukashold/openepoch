@@ -1,0 +1,181 @@
+{
+  "status": "passed",
+  "stage": "isolated-candidate",
+  "build": "native-terrain6-candidate",
+  "runtimeChanged": false,
+  "originalEngineExecuted": false,
+  "uiLaunched": false,
+  "sourceEngineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+  "sourceFiles": {
+    "native-terrain6-base-lightmap.c": "2fa8d5db71a9dacac5ae6ee98c62db653f1b265ae71f0d1eeba131c9740247c0",
+    "native-terrain6-light-binding.c": "fd3686043ddc69a4a812a22675a636cbb2407844d21fec330e4d5b8ec6a26311",
+    "native-terrain6-lightmap-extent.c": "9fc8b1bb9e3984f9858f94add28baf5ae50d2a8e2f829d2819b3a963bcc5d12f",
+    "native-terrain6-lightmap-init.c": "2e96a7d9b0b28c2a314784d5fdf8b172e66491f1518565d5c1512a988d0c7028",
+    "native-terrain6-lightmap-normal.c": "07421e079cc9818e8916f05a85ec9d10484139b2e1fa9dd4abea9003704445d2",
+    "native-terrain6-lightmap-uv.c": "720318134bc87ab2e3962a2328c9346838d641257f1feeb5805d0713988b9f87",
+    "native-terrain6-normalize-helper.c": "5d0c0c7d5e622eba910eae4322e4e8d0188a4f3186a3dff50fa5b7f408440469",
+    "native-terrain6-pass-order.c": "fd6884dab446e2a96487bc68734eadcda5cd8a9beef260779567581897c0d3b4",
+    "native-terrain6-water-shadow-params.c": "e78f53588887624584f5402273134e51f6047196c2adfc8ab3a26fb64ff0104e",
+    "gpu_test.py": "2f0e3f60751f8dc77dacf2f46f60f9a3559f4bc40d0d9c44b5656b24318c3e4e",
+    "report_candidate.py": "a988e214945ff7aa7287733f59e4a56e37a19b7c9ca008a85379df7979cfcc48",
+    "scan_sources.py": "8c5b26cde4300214b4bfbd87fe4b8c53d8e34da8655923892f917ea7ae3b7127",
+    "test_source.py": "a6fdb869598fd930f1fc5dff7f1db3d7576f6f4fa84e8f65704c56ba4c3b6488",
+    "test_world_adapter.py": "1f138beb7e953d34dea6135bfe080ddd99baf6ff65c2b4b2bccda7a9f46f0db7",
+    "world_candidate.py": "ee6b038af80bf272a6513029d0ef84e8bc83ea4a5e71d41f7b1d5cf663ec3332",
+    "native-terrain-lighting.js": "f39786a9d400a4f69242e54621933a1cfcf3d78774c4fd7727502de1f8d73205",
+    "terrain-shaders.js": "f3f59f1e508ea67102ecf694e85fef64eff1c5465b5ed00b31c934251e58ac25",
+    "export_fixture.mjs": "da10c86e719e15559c84544aef48c19bd212ed694ae95a4fec4667cf735b84be"
+  },
+  "runtime5Unchanged": {
+    "original-ground.js": "9902abc52e4dec444cc72aa4dcc1a15a6099d5433cd9aff78a01542930c47ec5",
+    "original-lighting.js": "b352ef7390de9f86e05c6a7bc690518b449d06a2f0222041d111b8b8224dafe1",
+    "original-renderer.js": "c709512a7ec0bfc08a9b88beeea81e6e65382c34ebbd936a2db41270b7c5b899",
+    "original-terrain.js": "647091f06fcc8e0831a695927b6290e5b5c57eaffa03432787d20b4101b4a090"
+  },
+  "tests": {
+    "pythonSourceAndGeometrySuites": 11,
+    "ownRayAgainstAllTriangleOracleCases": 392,
+    "pureChecks": 1009,
+    "gpuChecks": 1006,
+    "gpuCases": {
+      "lightmapCases": 560,
+      "filterCases": 275,
+      "normalCases": 75,
+      "stencilCases": 96
+    },
+    "worlds": 2
+  },
+  "evidence": {
+    "sequence": "006F3FE0: optional quality>=3 stencil-volume prepass006F3C20; base state006F3580; viewport-depth layer2; lightmap/shadow pass006F41D0; atmosphere fog006F4940; fog-of-war block pass; overlays; borders; restore depth layer0 and saved states.",
+    "emptyLights": "006F3580 builds empty effect-state lists and vertexMode0/lightingMode1.00942C40\u219200943080 disables previously active D3DLights; empty list enables no new light.006F41D0 sets white material ambient/diffuse, emission/specular0, and explicit packed ambient state. Diffuse raster is therefore packed ambient.",
+    "constants": "006F3520/3540/3560 compiled diffuseScale=f32(.85),ambientScale=.75,shadowScale=1. No active assignments found in installed cfg/ini files; misleading descriptive bracket1.0 comments do not override compiled defaults. Selected light Dimmer1.5 is already in context.sun/ambient.",
+    "lightmap": "006EDF30 allocates RGBA32 square data.006F81B0 supplies g_lightmapRes and span25.0.006F8190 initializes g_lightmapRes128; source resolution128\u00d7128 for each25-world-unit block.",
+    "normalAndUv": "006ED6B0 interpolates stored normals on00\u219211 diagonal;004EC580 normalizes length>0.006F8400 lightmap vertices below.05 receive(0,0,1), proved by initializer00A1DCC0, and UV=(world-origin)*(1-1/128)/25+.5/128.",
+    "rayAndFilter": "006EE3D0:0070F8E0(flag1) returns max(ground/cliffheight,0)+f32(.01); ray ends at start+towardsSun*1024;00710180 supplies intersection boolean.006EDAE0 weighted3\u00d73 centre4,axes2,corners1 \u2192visibility1-weightedOcclusion/16; edge indices clamp.",
+    "byteColour": "006EE070 clamps signed normal-dot-sun times truncated visibilityByte at0 and replicates resulting byte toRGB,alpha255.",
+    "lightStages": "006F41D0 TSS0=MODULATE2X(lightmap,packedDiffuse); TSS1=ADD(current,ambient diffuse raster); framebuffer blend DESTCOLOR/SRCCOLOR yields clamp(2*base*clamp(2*lightmap*diffuse8+ambient8)). Native8bit coefficients are truncated and clamped from source floats before use.",
+    "highStencil": "Quality>=3 and passflag bit2 clear:006F6050 alpha test>=128,STENCILPASS=INCR,writeMask0x3F.006F41D0 draws full light where lower6bits==0; second lightmap draw uses TFACTOR0 where lower6bits!=0, preserving ambient. Source overlap stencil operations are GPU-tested separately.",
+    "lowShadowBoundary": "006F6240 plus006F6880 select add/multiply-add stage path and per-shadow source/destination blend/colour.006F41D0 derives raw-float ambient/(2*towardsSunZ*diffuse+ambient) shadow ratio. Shadow record type/emitters, dynamic volume geometry and coverage textures are not yet bound end-to-end; not enabled in the candidate world.",
+    "shaderType": "00716F90 returns FVF0x112 (position/normal/UV);006F3580 clears programmable pixel shader. This native terrain path uses fixed-function stages, not a guessed NSF shader.",
+    "depthHelper": "00933B40 changes viewport min/max depth ranges and layer index; it is not a light-mode setter.",
+    "rejectedProbe": "One mistyped outside-image006F16040 probe produced NO FUNCTION and contributes no evidence. Actual00616040 is a trivial Terrain+38 getter; its virtual surface builder remains a separate binding."
+  },
+  "world": [
+    {
+      "profile": "base",
+      "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+      "captureSha256": "c6402dcb095a95dde314b6dd90d41986c67810dcf8e14a213c11872143e6e5bd",
+      "outputSha256": "0457445e23e54e24b57c533dbe262146ec90014ba455db9aa526f0c1a8a3d5bb",
+      "instances": 397,
+      "drawCalls": 38,
+      "changedPixels": 685302,
+      "metadata": {
+        "status": "candidate",
+        "format": "native-terrain6-wasm-world-candidate-v1",
+        "baselineCaptureSha256": "4dc33d0eeec33bb69d4c5a3393187ff82ffac9e284900388f31e5ebf3bce4d4d",
+        "sourceScriptSha256": "ee6b038af80bf272a6513029d0ef84e8bc83ea4a5e71d41f7b1d5cf663ec3332",
+        "resolution": 128,
+        "blockSpan": 25.0,
+        "blocksPerAxis": 11,
+        "layers": 121,
+        "lightmapSha256": "f1c14bea6d0bfce4fbe1a0e1f7cd4cc944ad19eaa03b436d8ea42d08b47a008d",
+        "lightmapBytes": 1982464,
+        "occludedSamples": 0,
+        "maxDdaSteps": 3,
+        "seconds": 1.2689573999959975,
+        "sourceDataSha256": "1b38767bd3ad11c2d45b816235ea009dae274c9e92df1e155599b8501f5fc872",
+        "originalShaderHashes": {
+          "vertex": "9f3482f9446fde6fa07f7ed0ca4219d2e35d92cf798ac9045e65f9a056ca999d",
+          "fragment": "e65d82001e7524fb422bf002f10bdbeaa14b40f24078f8bbc89ee595094e8dda"
+        },
+        "candidateShaderHashes": {
+          "vertex": "9f3482f9446fde6fa07f7ed0ca4219d2e35d92cf798ac9045e65f9a056ca999d",
+          "fragment": "197a69b8427dd3a2023c5ae82339c739d435eb2efa182539d4d4b11ad1e8e838"
+        },
+        "sourceCoefficients": {
+          "diffuseBytes": [
+            62,
+            56,
+            47
+          ],
+          "ambientBytes": [
+            78,
+            67,
+            87
+          ]
+        },
+        "limits": [
+          "Original native block sampling, normal interpolation, self-shadow filter, source lighting constants and lightmap-combine stages are transcribed.",
+          "Input generated heightfield/central-difference vertex normals and exact own triangle ray caster adapt this to the current WASM map. Native DEM/cliff queries and map generation remain separate unclosed input bindings.0070F8E0 flag1 max(height,0)+epsilon is source-bound.",
+          "Source high-quality stencil/soft shadow stage operations are separately GPU-tested; their native shadow-list emitters and geometry are not enabled in this world candidate. Existing runtime5 model shadow adapter is retained.",
+          "Own terrain texture/class blending and water/territory/fog adapters retained. No full native terrain or original-game screenshot equivalence claim; no active runtime6 edit."
+        ],
+        "activeRuntimeChanged": false
+      },
+      "sourceGeometryAnimationBuffersUnchanged": true,
+      "sourceNonterrainProgramsAndDrawsUnchanged": true,
+      "selfShadowObservation": "This smooth seed7 own terrain has0 occluded samples at the source afternoon sun. Actual self-shadow/kernel effects are exercised by independent ridge rays and275 GPU filter cases, not claimed visible in this scene."
+    },
+    {
+      "profile": "up15",
+      "wasmSha256": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51",
+      "captureSha256": "aee4a812588e6f00919d3c818840653a14bbbff9465bbd40c5274b8b2ab15749",
+      "outputSha256": "0457445e23e54e24b57c533dbe262146ec90014ba455db9aa526f0c1a8a3d5bb",
+      "instances": 397,
+      "drawCalls": 38,
+      "changedPixels": 685302,
+      "metadata": {
+        "status": "candidate",
+        "format": "native-terrain6-wasm-world-candidate-v1",
+        "baselineCaptureSha256": "627c6c0146f0f59403a8c758b0691012a3988327943acc8615e7049bd6ecd4f9",
+        "sourceScriptSha256": "ee6b038af80bf272a6513029d0ef84e8bc83ea4a5e71d41f7b1d5cf663ec3332",
+        "resolution": 128,
+        "blockSpan": 25.0,
+        "blocksPerAxis": 11,
+        "layers": 121,
+        "lightmapSha256": "f1c14bea6d0bfce4fbe1a0e1f7cd4cc944ad19eaa03b436d8ea42d08b47a008d",
+        "lightmapBytes": 1982464,
+        "occludedSamples": 0,
+        "maxDdaSteps": 3,
+        "seconds": 1.0878950000042096,
+        "sourceDataSha256": "1b38767bd3ad11c2d45b816235ea009dae274c9e92df1e155599b8501f5fc872",
+        "originalShaderHashes": {
+          "vertex": "9f3482f9446fde6fa07f7ed0ca4219d2e35d92cf798ac9045e65f9a056ca999d",
+          "fragment": "e65d82001e7524fb422bf002f10bdbeaa14b40f24078f8bbc89ee595094e8dda"
+        },
+        "candidateShaderHashes": {
+          "vertex": "9f3482f9446fde6fa07f7ed0ca4219d2e35d92cf798ac9045e65f9a056ca999d",
+          "fragment": "197a69b8427dd3a2023c5ae82339c739d435eb2efa182539d4d4b11ad1e8e838"
+        },
+        "sourceCoefficients": {
+          "diffuseBytes": [
+            62,
+            56,
+            47
+          ],
+          "ambientBytes": [
+            78,
+            67,
+            87
+          ]
+        },
+        "limits": [
+          "Original native block sampling, normal interpolation, self-shadow filter, source lighting constants and lightmap-combine stages are transcribed.",
+          "Input generated heightfield/central-difference vertex normals and exact own triangle ray caster adapt this to the current WASM map. Native DEM/cliff queries and map generation remain separate unclosed input bindings.0070F8E0 flag1 max(height,0)+epsilon is source-bound.",
+          "Source high-quality stencil/soft shadow stage operations are separately GPU-tested; their native shadow-list emitters and geometry are not enabled in this world candidate. Existing runtime5 model shadow adapter is retained.",
+          "Own terrain texture/class blending and water/territory/fog adapters retained. No full native terrain or original-game screenshot equivalence claim; no active runtime6 edit."
+        ],
+        "activeRuntimeChanged": false
+      },
+      "sourceGeometryAnimationBuffersUnchanged": true,
+      "sourceNonterrainProgramsAndDrawsUnchanged": true,
+      "selfShadowObservation": "This smooth seed7 own terrain has0 occluded samples at the source afternoon sun. Actual self-shadow/kernel effects are exercised by independent ridge rays and275 GPU filter cases, not claimed visible in this scene."
+    }
+  ],
+  "limits": [
+    "Own generated terrain, vertex normal input and DDA triangle queries are explicit adapters for native DEM/cliff data/intersections; native map generation is not recreated here.",
+    "World candidate fuses native RGB stage arithmetic into the existing terrain shader. Source lightmap minimum-height geometry and viewport-depth layering are recovered but existing world geometry/depth passes remain unchanged.",
+    "Native high stencil and low soft-shadow operations are tested, while shadow-list emitter/record binding and volume/coverage geometry remain incomplete; runtime5 projected model shadows remain in the world candidate.",
+    "Own material class/UV blending, territory/fog/water pipeline and performance setup remain adapters. No native executable, browser or original screenshot was run; no physical Mac/GPU or1:1 equivalence claim."
+  ]
+}

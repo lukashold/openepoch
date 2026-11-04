@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "checks": 681,
+  "sourcePlanes": 18,
+  "wasmSha256": "c8d1207fec111a5b47dbe24b75d51cf3f250f032dfdb4073e75113e65353c625",
+  "factorySha256": "b6d60140eec038f9f5225abbd791d6fb43a584a090d2949a2b1eec7e31a67f95",
+  "scope": "Actual Own-WASM portable factory: all18original source grids, direct frozen state/trace/RGBA comparison, stable shade snapshots, fresh post-growth getters, input-copy-before-allocation, disposal/stale-slot rejection, explicit arithmetic mode and invalid-input atomicity. No active game or native original executed."
+}

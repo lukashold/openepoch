@@ -15,9 +15,8 @@ NATIVE_TABLES={
 
 def default_manifest(root):
     """Resolve only known local extraction locations; never guess archive order."""
-    candidates=[root.parents[1]/'up-resolved-sources/effective-db-sources.json',
-                root.parents[1]/'work/up-resolved-sources/effective-db-sources.json']
-    found=[path for path in candidates if path.is_file()]
+    candidates=[ancestor/relative for ancestor in [root,*root.parents] for relative in ['up-resolved-sources/effective-db-sources.json','work/up-resolved-sources/effective-db-sources.json']]
+    found=sorted({path.resolve() for path in candidates if path.is_file()})
     if len(found)!=1:raise ValueError('Exactly one prepared effective source manifest required: '+str(candidates))
     return found[0]
 

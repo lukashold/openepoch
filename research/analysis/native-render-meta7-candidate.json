@@ -1,0 +1,164 @@
+{
+  "format": "native-render-meta7-candidate-v1",
+  "status": "isolated-candidate-PASS",
+  "sourceBaseline": "work/native-classic61v2/final/OpenEpoch overlays, with unchanged supplemental crate files from the frozen classic61v2 source tree; baseline.json records every input.",
+  "baselineWasmSha256": "3a71249f493c2cd73e2694ee0e1befb9f653a3100d43ebb9d78540a0cc71bdb0",
+  "feature": "ee2-render-meta7 -> ee2-roster6",
+  "wasm": {
+    "file": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-render-metadata7\\builds\\meta.wasm",
+    "sha256": "f7784ee37122a8bd1e281bf09c4a898cae081e752cd5f9649a2c1d09efa50bd5",
+    "bytes": 486618,
+    "feature": "ee2-render-meta7"
+  },
+  "integration": {
+    "existingFiles": [
+      "Cargo.toml",
+      "src/lib.rs",
+      "src/render.rs"
+    ],
+    "newFiles": [
+      "src/render_meta7.rs",
+      "src/render_meta7_tests.rs"
+    ],
+    "patch": "work/native-render-metadata7/integration.patch",
+    "patchSha256": "1c7a037dd6a1522cdf47af49407e29805592ea2ca5e4ab25130123be4ff81da5",
+    "abi": "work/native-render-metadata7/ABI.md",
+    "abiSha256": "e3455139aaa25666321177a408997addcc28345731ee6307cfaa0a7882c9c3e1"
+  },
+  "exports": {
+    "render_meta_version": 1,
+    "render_meta_stride": 64,
+    "render_meta_count": "last sorted instance count",
+    "render_meta_len": "count*64 bytes",
+    "render_meta_ptr": "contiguous record pointer,0 for empty",
+    "render_meta_session": "nonzero wrapping u32 changed only by init/successful load;0 before any world",
+    "render_meta_frame": "completed render calls in current session",
+    "entity_alive": "checked actual full generational entity handle, safe before init, not a Death event"
+  },
+  "fields64Bytes": [
+    [
+      "u32",
+      "handle"
+    ],
+    [
+      "u32",
+      "def"
+    ],
+    [
+      "u32",
+      "team"
+    ],
+    [
+      "u32",
+      "order"
+    ],
+    [
+      "f32",
+      "hpRatio"
+    ],
+    [
+      "f32",
+      "built"
+    ],
+    [
+      "f32",
+      "renderX"
+    ],
+    [
+      "f32",
+      "renderY"
+    ],
+    [
+      "f32",
+      "renderAltitude"
+    ],
+    [
+      "f32",
+      "simX"
+    ],
+    [
+      "f32",
+      "simY"
+    ],
+    [
+      "f32",
+      "velocityX"
+    ],
+    [
+      "f32",
+      "velocityY"
+    ],
+    [
+      "f32",
+      "renderYaw"
+    ],
+    [
+      "f32",
+      "renderTime"
+    ],
+    [
+      "u32",
+      "renderFlags"
+    ]
+  ],
+  "identity": "Captured directly at each successful entity main-mesh emission and carried through the identical counting-sort permutation. Handle0 is valid. FFFFFFFF identifies nonactor resource/projectile/ghost/scaffold/quad/deco rows. No position or animation-seed matching.",
+  "validation": {
+    "nativeRustFullSuiteObserved": 119,
+    "nativeRustFocused": 9,
+    "nativeRustFocusedLogSha256": "16587dcd04150a5ed505d8ecaef8ce7b693d4b2d3dcfdaf7e3d9ad61baf2584b",
+    "actualWasmChecks": 2172502,
+    "rowsChecked": 433140,
+    "framesChecked": 76,
+    "fourFeatureOffNonDataSectionsByteEqual": true,
+    "featureOffChangesOnlyData": [
+      {
+        "profile": "own",
+        "bytes": 119
+      },
+      {
+        "profile": "base",
+        "bytes": 129
+      },
+      {
+        "profile": "up5",
+        "bytes": 130
+      },
+      {
+        "profile": "classic",
+        "bytes": 131
+      }
+    ],
+    "migrationSources": [
+      "OEU5",
+      "OEU6_57"
+    ]
+  },
+  "preserved": {
+    "gameSourceSha256": "b0eca2397b476d0f0ccc6db886088f87e48f32b084788c74d04cfabf45537f8d",
+    "entGameLayout": "No fields or constructors changed",
+    "saveSourceSha256": "f4b25b6312e787f0663be9eb95c9ff5862d9ea76a2f20d1b889e71796e308431",
+    "save6SourceSha256": "c6cb817bc80050cfda0359a940b327cfe7c5d168023563b5e37b9a1d8bdbfa8b",
+    "simulationHashOrGameplayChanged": false,
+    "oldFeatureOffExportContractChanged": false,
+    "activeRuntimeModified": false,
+    "originalCodeExecuted": false
+  },
+  "reports": {
+    "native-render-meta7-actual-wasm-tests.json": "1c7af4581e867f515da1333cffb20249b93f892a5b16d9e119eb5237a1bbc9ba",
+    "native-render-meta7-feature-off-tests.json": "9ecf84382f1933deb397c376360d23bfc975fa6d4ab9f9e4a2b494513524b83c"
+  },
+  "candidateFiles": {
+    "Cargo.toml": "d9d740113f79f9408243143577a58d9cce05202a28f161bea7f8d9914fdb0676",
+    "src/lib.rs": "88655a2740461118cdd981ccf25ee95aeeb0c62cbf411dc597ad2cedd8b12a60",
+    "src/render.rs": "939b057397ec02778392112c57c41ca2b85ae04bfe865c5f4a0b8544127e6b01",
+    "src/render_meta7.rs": "87f3335b688481f26734534a60d46832213be44664b2d0338871d8fed4ff0fa7",
+    "src/render_meta7_tests.rs": "efd9429a84e12a7bce7997bd5376080f07336e091bf2c98208dc9411091bb228"
+  },
+  "limitations": [
+    "No cloth update or native visual lifecycle scheduler is activated. A missing visible row is not a despawn. entity_alive is not a native Death event.",
+    "Metadata views, instanced geometry and ranges must come from the same render call; reacquire views after memory growth and before another render replaces the frame.",
+    "Session tokens are instance-scoped wrapping u32 values; they are not globally unique or persistent save IDs.",
+    "The sidecar, like the existing GAME ABI, assumes single-threaded WASM access; native Rust test invocations are serialized.",
+    "Root will combine the three narrow cfg hooks and feature entry with the separate paidqueue7 branch after that branch freezes."
+  ]
+}

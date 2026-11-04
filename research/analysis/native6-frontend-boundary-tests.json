@@ -1,0 +1,80 @@
+{
+  "format": "native6-frontend-boundary-review-tests-v1",
+  "status": "passed",
+  "checks": 882,
+  "sourceHashes": {
+    "docs/original-assets.js": "564c42d8e3fc1bec0c48d4e4756b3b89708ba2cf4560b109609231dd1a8d4dc4",
+    "docs/audio.js": "cce3531dcdbeca92ebe67a71ed60d05d7759ed8f9a971b18cbbc659a4806b7ef",
+    "docs/original-audio.js": "9211856580cf48469eb3a7b681dea2ceceec895b43f7708fbd0d186d0b28c6e0",
+    "docs/research.js": "2b1b4f197bf030d2349222b381db4154d28c1dd4a159b0dedf68b70ab60b3057",
+    "docs/diplomacy.js": "d2413d1a808bfacfa667d51a075c1d02d38a5981ca7b9763b21d0196f2993838",
+    "docs/territory-panel.js": "ee04884c4381f4b7d2664868259ba49986e3e163c34a39893c4104c11816da48",
+    "docs/territory-help.js": "7ddd82d029a0f4866026b1bff68afa13d112d92bfda63e573f6891514bdc1ff2",
+    "docs/building-controls.js": "f5d76cb4bc3c7c6e2cc7a9bcc43223225b139b7f98f758a615ded080db6f2256",
+    "docs/rules-profile.js": "c341869d5a1e0755d6270efaca2a8dc965abf4201ad889f7d59aa34b4f300c91",
+    "docs/render-namespace.js": "949a191c9aca295a58ffef0c2431426638f09844edea2633c00f7fd797479307",
+    "docs/models.js": "fa5e64e1d4d17a83693e7640354b76cb006c140f8aefea1e0762baa9d8588cae",
+    "docs/atlas.js": "51a1977351bce7927af68f6dbe3c4b1d1c8a73e27a033e3ee3ea6e2204db397a",
+    "docs/main.js": "c7fe87add1ebc9d1db56938b023399c977bc6307ecb0abb222fec358753d2c0e"
+  },
+  "candidateSha256": "877361bb8717414032a888aa494e6a05bde8a9dff9eb007cf686a61668cacbf4",
+  "audioRoleRepro": [
+    {
+      "id": 8,
+      "nativeAttempted": true,
+      "speechFallback": true,
+      "acknowledged": true
+    },
+    {
+      "id": 46,
+      "nativeAttempted": true,
+      "speechFallback": true,
+      "acknowledged": true
+    },
+    {
+      "id": 47,
+      "nativeAttempted": true,
+      "speechFallback": false,
+      "acknowledged": false
+    },
+    {
+      "id": 56,
+      "nativeAttempted": true,
+      "speechFallback": false,
+      "acknowledged": false
+    },
+    {
+      "id": 57,
+      "nativeAttempted": true,
+      "speechFallback": false,
+      "acknowledged": false
+    },
+    {
+      "id": 64,
+      "nativeAttempted": true,
+      "speechFallback": false,
+      "acknowledged": false
+    },
+    {
+      "id": 100,
+      "nativeAttempted": true,
+      "speechFallback": false,
+      "acknowledged": false
+    },
+    {
+      "id": 132,
+      "nativeAttempted": true,
+      "speechFallback": false,
+      "acknowledged": false
+    }
+  ],
+  "legacyIconResultsCompared": 855,
+  "assetKindContract": {
+    "0": "unit/DefId",
+    "1": "resource/LegacySource100..110",
+    "2": "projectile",
+    "3": "quad",
+    "4": "deco"
+  },
+  "scope": "Source-only isolated original-assets candidate, actual active legacy-loader regression, actual research controller and exact active audio wrapper executed with deterministic image/audio/DOM transport. No active runtime write or browser/original process."
+}

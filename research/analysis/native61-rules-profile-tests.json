@@ -1,0 +1,70 @@
+{
+  "format": "openepoch-rules-profile-integration-tests-v2",
+  "passed": true,
+  "checks": 1367,
+  "productionUp15Enabled": true,
+  "sourceHashes": {
+    "main.js": "8add0032a04bfe676763a153812d7c39bb30654fed4c8cc389674e3a94619e09",
+    "index.html": "99bed0653387d2aca30ebc58322d669f7a36c4b93cd58144d53354b9deb3d610",
+    "rules-profile.js": "9d2e4287cc5a35484ecc5d30dacae69a3467434674baa6198af74b6856081a7e",
+    "net.js": "1bc4ee442253d48425527a36350becdb3f4aea56d0ecb362b5b5701b57ad0cc8",
+    "season-session.js": "2ba54f8c2c55b87034abd6ae79f730d816e0a98505ce4582c3c3b1111eaf7e07"
+  },
+  "binaries": {
+    "own": {
+      "file": "openepoch.wasm",
+      "bytes": 268821,
+      "sha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a"
+    },
+    "base": {
+      "file": "openepoch-ee2.wasm",
+      "bytes": 430146,
+      "sha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18"
+    },
+    "up15": {
+      "file": "openepoch-ee2-up15.wasm",
+      "bytes": 482478,
+      "sha256": "2f905ebd0ba69d155a7fdb2361f7a8f84642e8a3f2f908b9f133bfef7b7cefbc"
+    }
+  },
+  "network": [
+    {
+      "profile": "own",
+      "ruleset": 0,
+      "ticks": 180,
+      "packets": 183,
+      "commandPackets": 2,
+      "stateHash": 1244788054
+    },
+    {
+      "profile": "base",
+      "ruleset": 1,
+      "ticks": 180,
+      "packets": 183,
+      "commandPackets": 2,
+      "stateHash": 4286825450
+    },
+    {
+      "profile": "up15",
+      "ruleset": 2,
+      "ticks": 180,
+      "packets": 183,
+      "commandPackets": 2,
+      "stateHash": 2658483318
+    }
+  ],
+  "openedDatabases": [
+    "openepoch-v2",
+    "openepoch-ee2-reference-v2",
+    "openepoch-ee2-up15-v1",
+    "openepoch-v2-qa",
+    "openepoch-ee2-reference-v2-qa",
+    "openepoch-ee2-up15-v1-qa"
+  ],
+  "protocol": 12,
+  "scope": "Actual profile resolver/one-file WASM loader and actual main start/db/dbDo/save/load/Continue/channel functions evaluated in vm. Three real WASM rulesets and six same-profile Lockstep peers; DOM, IndexedDB storage-event transport and queued channel transport substituted. No browser/WebRTC socket/original EXE launched.",
+  "limitations": [
+    "The in-memory IndexedDB event adapter validates production namespace/transaction choices, not browser disk persistence.",
+    "Native HUD interaction/source crop checks are separate; this test checks that both EE2 numerical profiles keep native HUD loading."
+  ]
+}

@@ -44,7 +44,8 @@ def inherited_tokens(db,name):
     visit(name);return result
 
 def profile(project,profile_id,db):
-    audit_path=project/'docs'/('ee2-up15-units.json' if profile_id=='up15' else 'ee2-units.json')
+    roster_audit=project/'docs/ee2-roster6-units.json'
+    audit_path=roster_audit if profile_id=='up15' and roster_audit.is_file() else project/'docs'/('ee2-up15-units.json' if profile_id=='up15' else 'ee2-units.json')
     audit=json.loads(audit_path.read_text(encoding='utf8'))
     # A role/class audit from another installation must not silently supply
     # declaration tokens for the current source database.
@@ -85,7 +86,7 @@ def profile(project,profile_id,db):
                      'roleAdapter':bindings[row['id']].get('role_adapter',not bindings[row['id']].get('identity_verified',False)),
                      'name':values['displayName'],'plural':values.get('displayNamePlural',''),
                      'description':values.get('VerboseTooltip',''),'source':references})
-    return {'profile':profile_id,'ruleset':2 if profile_id=='up15' else 1,
+    return {'profile':profile_id,'ruleset':2 if profile_id=='up15' else 1,'definitionCount':max(bindings,default=-1)+1,
             'auditSha256':digest(audit_path),'rows':rows,'missing':missing,
             'scope':'Original text of the currently bound source class, including explicit role adapters; class behavior equivalence is not implied.'}
 

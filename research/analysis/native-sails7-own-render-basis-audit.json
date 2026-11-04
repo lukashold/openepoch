@@ -1,0 +1,192 @@
+{
+  "format": "native-sails7-own-render-basis-audit-v1",
+  "status": "PASS",
+  "checks": 26,
+  "models": [
+    {
+      "sourceNifSha256": "f3c70a79746d5f01f8749ab63d72d64525290736a1c998f444247d10ed012a39",
+      "effect": "CaravelSail",
+      "tags": [
+        {
+          "name": "tag_sail_4",
+          "node": 63,
+          "scales": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "name": "tag_sail_5",
+          "node": 65,
+          "scales": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "name": "tag_sail_6",
+          "node": 67,
+          "scales": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "name": "tag_sail_1",
+          "node": 69,
+          "scales": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "name": "tag_sail_2",
+          "node": 71,
+          "scales": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "name": "tag_sail_3",
+          "node": 73,
+          "scales": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      ]
+    },
+    {
+      "sourceNifSha256": "5af9ace81bc7c2d174c90673f2ffcc998653cb8c688cd76c4e304482e81fe1eb",
+      "effect": "ShipOfTheLineSail",
+      "tags": [
+        {
+          "name": "tag_sail_1",
+          "node": 176,
+          "scales": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "name": "tag_sail_2",
+          "node": 178,
+          "scales": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "name": "tag_sail_3",
+          "node": 180,
+          "scales": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "name": "tag_sail_4",
+          "node": 182,
+          "scales": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "name": "tag_sail_5",
+          "node": 184,
+          "scales": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "name": "tag_sail_6",
+          "node": 186,
+          "scales": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "name": "tag_sail_7",
+          "node": 188,
+          "scales": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "name": "tag_sail_8",
+          "node": 190,
+          "scales": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "name": "tag_sail_9",
+          "node": 192,
+          "scales": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "name": "tag_sail_10",
+          "node": 194,
+          "scales": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "name": "tag_sail_11",
+          "node": 196,
+          "scales": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        {
+          "name": "tag_sail_12",
+          "node": 198,
+          "scales": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        }
+      ]
+    }
+  ],
+  "axis": "A maps original[x,y,z] to own[x,z,-y]",
+  "algebra": "Current production VS rotates own coordinates as[x*c-z*s,y,x*s+z*c]. Therefore Rshader(yaw)*A=A*Rz(-yaw). The compatible source attachment rotation is Rz(-yaw)*TagR9, and source force inverse is its transpose.",
+  "scale": "All18authored sail-tag ancestor paths have exact Scale1 in the original NIF records. The current world3x3 therefore contains no authored uniform scale. Do not replace its authored near-orthogonal values by normalized rows/columns; future nonunit transforms need a separate source rotation/scale representation. Forces do not use inverse scale/translation.",
+  "limits": [
+    "This establishes algebraic compatibility with our production body shader and authored NIF scale, not a global original actor-heading/FPU trajectory.",
+    "GPU positions still require the full authored tag transform, parent normalization/origin/native model scale exactly once. Force rotation and render position transforms have different translation/scale roles."
+  ],
+  "sourceManifestSha256": "f744b0a4f25313963a3c4bbcd2d6249fc306a2eae9667d069da146114a349d2d",
+  "productionRendererSha256": "cb5e95de9f31eb46d1906706b764792dc7a994cf37bb86648721e5ded49f1ad9",
+  "activeRuntimeModified": false,
+  "originalCodeExecuted": false
+}

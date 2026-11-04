@@ -1,0 +1,147 @@
+{
+  "format": "native-sails7-source-tests-v1",
+  "status": "passed",
+  "checks": 200,
+  "models": [
+    {
+      "epoch": 5,
+      "bodyGeometry": [
+        {
+          "name": "Box01_LOD0",
+          "type": "NiTriShape"
+        },
+        {
+          "name": "Box01_LOD1",
+          "type": "NiTriShape"
+        },
+        {
+          "name": "Box01_LOD2",
+          "type": "NiTriShape"
+        }
+      ],
+      "attachmentOrder": [
+        "tag_sail_4",
+        "tag_sail_5",
+        "tag_sail_6",
+        "tag_sail_1",
+        "tag_sail_2",
+        "tag_sail_3"
+      ],
+      "clothVertices": 150
+    },
+    {
+      "epoch": 7,
+      "bodyGeometry": [
+        {
+          "name": "06ShipOfTheLine01_LOD0",
+          "type": "NiTriShape"
+        },
+        {
+          "name": "06ShipOfTheLine01_LOD1",
+          "type": "NiTriShape"
+        },
+        {
+          "name": "06ShipOfTheLine01_LOD2",
+          "type": "NiTriShape"
+        },
+        {
+          "name": "06ShipOfTheLine01_LOD3",
+          "type": "NiTriShape"
+        }
+      ],
+      "attachmentOrder": [
+        "tag_sail_1",
+        "tag_sail_2",
+        "tag_sail_3",
+        "tag_sail_4",
+        "tag_sail_5",
+        "tag_sail_6",
+        "tag_sail_7",
+        "tag_sail_8",
+        "tag_sail_9",
+        "tag_sail_10",
+        "tag_sail_11",
+        "tag_sail_12"
+      ],
+      "clothVertices": 281
+    },
+    {
+      "epoch": 9,
+      "bodyGeometry": [
+        {
+          "name": "Editable Mesh",
+          "type": "NiTriShape"
+        },
+        {
+          "name": "Editable Mesh",
+          "type": "NiTriShape"
+        },
+        {
+          "name": "Editable Mesh",
+          "type": "NiTriShape"
+        },
+        {
+          "name": "Editable Mesh",
+          "type": "NiTriShape"
+        },
+        {
+          "name": "Editable Mesh",
+          "type": "NiTriShape"
+        },
+        {
+          "name": "Editable Mesh",
+          "type": "NiTriShape"
+        },
+        {
+          "name": "Editable Mesh",
+          "type": "NiTriShape"
+        },
+        {
+          "name": "Editable Mesh",
+          "type": "NiTriShape"
+        },
+        {
+          "name": "Editable Mesh",
+          "type": "NiTriShape"
+        },
+        {
+          "name": "Editable Mesh",
+          "type": "NiTriShape"
+        },
+        {
+          "name": "Editable Mesh",
+          "type": "NiTriShape"
+        },
+        {
+          "name": "Editable Mesh",
+          "type": "NiTriShape"
+        },
+        {
+          "name": "Editable Mesh",
+          "type": "NiTriShape"
+        },
+        {
+          "name": "Editable Mesh",
+          "type": "NiTriShape"
+        }
+      ],
+      "attachmentOrder": [],
+      "clothVertices": 0
+    }
+  ],
+  "manifestSha256": "f744b0a4f25313963a3c4bbcd2d6249fc306a2eae9667d069da146114a349d2d",
+  "sourceHashes": {
+    "native-sail-attach-order.c": "6baf7bd4f45f76ca5663380d64ff4645f5749eb8f488d0d724771e9eae4871fe",
+    "native-sail-binding.c": "e1d5774b43c10a2fbf098a807a197e8059047ed7e67dacb6f6664302129195a6",
+    "native-sail-creation.c": "77a8aca2587d6f04ca4059ffad9eccdc8c57834fc0ced96cab35c98a8ee419e3",
+    "native-sail-events.c": "217d0b91e02e0977c3106c990b6f330fd6cf8deec573a780ab8fe9b1122a74de",
+    "native-sail-grid.c": "c0474cef02ba4713f04a011a0713813cae647df2c515a5dc5ee375462cc43dea",
+    "native-sail-light-getters.c": "972b721ecc5c1531e6fce4ff590dc21585a2144c6ba670748db94ff445f71425",
+    "native-sail-lighting.c": "e93243070400ece661bbf9d16ce96d2fbcb4198cf3be67dd31c0cec27ca9a542",
+    "native-sail-refs.c": "a4fc2675873cbd7738454339ccc7ed0bc6c5cbd61737fd7982f3c1b8760fd8ce",
+    "native-sail-runtime.c": "4e3ee90ab161f958cc16d0b29865af3b7066fdde04aabf13f881712f3585e07e",
+    "native-sail-updates.c": "d4b254c88fa9b970a4213cf1c7ab721a8e78bfae24d3717a37126dbbf81ea8a2"
+  },
+  "testSha256": "037361f9a1d5f344b9a68ad06aef387b3cd66448c48e5871e636df4ee0040e31",
+  "scope": "Original decoded RGBA, native initial grid/UV bits, indices, authored DFS attachments, independent source NIF matrices and native edge/corner pins. Initial pose only; no claim of native cloth dynamics."
+}

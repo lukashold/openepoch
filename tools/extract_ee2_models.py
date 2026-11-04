@@ -50,9 +50,13 @@ def sample_pose(animation,objects,t):
     nodes={o.get('Name'):o for o in objects if 'Translation' in o};pose={};duration=0.0
     for sequence in animation.objects:
         for cb in sequence.get('Controlled Blocks',[]):
-            name=cb.get('Target Name');ctrl=animation.objects[cb['Controller']];data=animation.objects[ctrl['Data']]
-            duration=max(duration,ctrl.get('Stop Time',0))
-            if name not in nodes:continue
+            name=cb.get('Target Name');controller=cb.get('Controller',-1)
+            if not 0<=controller<len(animation.objects):continue
+            ctrl=animation.objects[controller];duration=max(duration,ctrl.get('Stop Time',0))
+            if name not in nodes or 'Data'not in ctrl:continue
+            index=ctrl['Data']
+            if not 0<=index<len(animation.objects):continue
+            data=animation.objects[index]
             o=nodes[name];m=local_matrix(o);r=None
             if data.get('Rotation Type')==4:
                 xyz=[interpolate(g.get('Keys',[]),t) or 0.0 for g in data['XYZ Rotations']]
@@ -131,7 +135,7 @@ def mesh_pose(reader,i,world):
 
 def convert(raw,entry,archive,texture_archive,kind='building',pose=None,animations=None,lod='near',normalization=None,omit_static_animations=False):
     reader=Reader(raw).parse();world,props,selected,lods,culled=scene(reader,pose,lod)
-    if animations:
+    if animations and 'idle'in animations:
         pose,_=sample_pose(animations['idle']['reader'],reader.objects,0)
         world,props,selected,lods,culled=scene(reader,pose,lod)
     parents={child:o['_id'] for o in reader.objects for child in o.get('Children',[])}

@@ -1,0 +1,120 @@
+{
+  "format": "native-sails7-dynamic-lighting-helper-v1",
+  "status": "isolated-source-helper-PASS",
+  "engineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+  "api": "nativeClothVertexColors({positions,nx,ny},{ambient,diffuse,sunDirection},{rounding:chop53|nearest53,mode:normal|uniform,colors?}) -> {positions,colors,localNormals,sourceFunction,dirtyMask:5,rounding}",
+  "inputs": "Source binary32 local cloth grid positions, undimmed raw source ambient/diffuse RGB and the original source-axis ray. No tag/world rotation or NiLightDimmer1.5 is applied. Source model/tag scale is not mixed into local color arithmetic.",
+  "outputs": "Own copy of local positions plus RGBA32F colors. Optional separate color target retains its prior alpha; default source-initial alpha is1. Local normals are diagnostic temporaries, not a claimed native geometry normal buffer. No CPU clamp precedes the existing native Flag4x texture stage.",
+  "sourceFacts": [
+    "00619FB0 first copies each live source-cloth position through00A9DF80, then writes RGB only and marks geometry data dirty|5.",
+    "Interior/top uses right-self and right-down-left; the right column uses left-down-current and left-current. Both vectors pass through explicit binary32 temporary stores before005F9920.",
+    "005F9920 computes this×other. X/Y/Z each have their source binary32 output store; independent arithmetic is not reordered across a component sum.",
+    "Bottom row leaves right-self differences extended and stores only Y/Z of right-up-left. Bottom-right leaves left-self extended and stores X/Y, not Z, of left-up-current. These compiler store differences are retained.",
+    "00615970 and004EC580 use ASM sqrt((x*x+y*y)+z*z), followed by division and separate binary32 normalized-component stores. No decompiler-reversed order or extra binary32 length store is inserted.",
+    "First two regions dot in Z/X/Y order, bottom two in Z/Y/X order, then abs(dot) weights raw diffuse plus raw ambient before each RGB binary32 store.",
+    "00619F20 uniform quality copies positions, writes raw ambient+diffuse RGB without local-normal calculation, leaves alpha untouched and marks dirty|5.",
+    "006CD700/006CD6D0 raw-light getters omit the NiLight dimmer;006CD670 uses the source ray basis. Existing own selector supplies sourceAmbient/sourceDiffuse/sourceDirection without applying1.5 twice."
+  ],
+  "validation": {
+    "checks": 31981,
+    "pointStates": 71,
+    "lightingQualityStates": 426,
+    "pointSamples": 9516,
+    "rawRGBABits": "Exact, no epsilon, against independent Python Fraction/integer CHOP53 reconstruction.",
+    "normalComparison": "Exact diagnostic normal values, with signed-zero canonicalization only; these normals are not a source GPU attribute.",
+    "fixtures": "69 selected states across all18 original source sail grids, plus folded and degenerate controlled own grids;3 installed raw-atmosphere selections and2 source quality paths.",
+    "alphaAndBounds": "Retained nonunit prior alpha, invalid/aliased destinations rejected, source positions unchanged, no premature RGB clamp."
+  },
+  "files": {
+    "native-cloth-lighting.mjs": "18b8c32c91ba3c1f196cd049b9d2b9e4640f3291d00738b6212f823f3a161da6",
+    "chop53.mjs": "0941661ccc487907881d897cc6149c903fe6a74ac7d047c2f817071c84fa6393",
+    "reference_lighting.py": "659f114f745555033a7b8cab5d91f63f1fb93da8b9b0c76558a17dd4428701ee",
+    "make_lighting_inputs.mjs": "54555bfc0efe15758bea46a8d578341a6743ac5ae5e0a228efd4f48250caca15",
+    "test_lighting.mjs": "c7b2acd1f89aff04e3059ac04c1b25dd298b77ff913e081e5aea68e4cb062781"
+  },
+  "sourceExports": {
+    "native-sails7-dynamics-cross-product.c": "a222afc5c65306aa35e9e0ed926668a1259f256e3bf41bed4c3e609570c3d769",
+    "native-sails7-dynamics-lighting-normalize.c": "5d0c0c7d5e622eba910eae4322e4e8d0188a4f3186a3dff50fa5b7f408440469",
+    "native-sails7-lighting.c": "e93243070400ece661bbf9d16ce96d2fbcb4198cf3be67dd31c0cec27ca9a542",
+    "native-sails7-light-getters.c": "972b721ecc5c1531e6fce4ff590dc21585a2144c6ba670748db94ff445f71425"
+  },
+  "lightingSelection": {
+    "fixtures": [
+      {
+        "label": "native155/Temperate/Afternoon/Normal",
+        "rowKey": "Atm_Temperate_Aft_normal",
+        "ambient": [
+          0.13725490868091583,
+          0.11764706671237946,
+          0.15294118225574493
+        ],
+        "diffuse": [
+          0.19215688109397888,
+          0.1725490242242813,
+          0.14509804546833038
+        ],
+        "sunDirection": [
+          -0.5996103882789612,
+          0.2198571413755417,
+          -0.7695000171661377
+        ]
+      },
+      {
+        "label": "native155/Arid/Night/Normal",
+        "rowKey": "Atm_Arid_Nght_normal",
+        "ambient": [
+          0.0313725508749485,
+          0.0313725508749485,
+          0.05882353335618973
+        ],
+        "diffuse": [
+          0.19607844948768616,
+          0.2039215862751007,
+          0.33725491166114807
+        ],
+        "sunDirection": [
+          -0.5602241158485413,
+          0.6602641344070435,
+          -0.500200092792511
+        ]
+      },
+      {
+        "label": "native155/Tropical/Morning/Normal",
+        "rowKey": "Atm_Tropical_Morn_normal",
+        "ambient": [
+          0.13725490868091583,
+          0.1098039299249649,
+          0.1764705926179886
+        ],
+        "diffuse": [
+          0.2352941334247589,
+          0.18431372940540314,
+          0.1098039299249649
+        ],
+        "sunDirection": [
+          -0.7221697568893433,
+          0.6018081307411194,
+          -0.34102460741996765
+        ]
+      }
+    ],
+    "manifestSha256": "1b38767bd3ad11c2d45b816235ea009dae274c9e92df1e155599b8501f5fc872",
+    "selectorSha256": "e68347b9dfd16968fd92d6657ec238b7b2d7c65c6d3ab569920b444f941fbad0",
+    "scope": "Actual own application selector raw-source fields: undimmed atmosphere RGB and source-axis ray. This input selection is not proof of the original runtime FPU normalization context."
+  },
+  "testReport": {
+    "file": "native-sails7-dynamics-lighting-tests.json",
+    "sha256": "fdc70f7df0de0931c688fc55a1327c92b3a55c180d3a8be2932ab582c349db1d"
+  },
+  "fpuContextAudit": {
+    "file": "native-fpu-context-audit.json",
+    "sha256": "f5b904c583fb3d659cf9d426c93b72ab6e54e3bec1893f766978395e347cb240"
+  },
+  "remaining": [
+    "This module is not activated in the initial-sail renderer. Dynamic per-owner buffer upload and Flag varying-color interpolation still require source/GLES/world QA.",
+    "The actual source visual frame scheduler, moving/placed/death messages, temporal global FPU context and cloth save policy remain separate from these controlled arithmetic helpers.",
+    "The current render metadata supplies checked handles/HP/positions/velocity but does not manufacture native Death or movement lifecycle messages. No solver is stepped from a rendering/picking/reflection draw."
+  ],
+  "activeRuntimeModified": false,
+  "originalCodeExecuted": false
+}

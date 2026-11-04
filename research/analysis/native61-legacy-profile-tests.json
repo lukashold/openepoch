@@ -1,0 +1,189 @@
+{
+  "format": "native-classic6-legacy-isolation-v1",
+  "cases": [
+    {
+      "key": "own",
+      "seed": 7,
+      "epoch": 0,
+      "ticks": 1200,
+      "saveSha256": "7b1344246328e25684fdc6d45d2821c6c2b45a05b55b860ec267d3608be82046"
+    },
+    {
+      "key": "own",
+      "seed": 7,
+      "epoch": 2,
+      "ticks": 1200,
+      "saveSha256": "d073ac61947608b3035c9152ec192d5f955c4a6a5ab00947aec7c3b59466cca4"
+    },
+    {
+      "key": "own",
+      "seed": 7,
+      "epoch": 5,
+      "ticks": 1200,
+      "saveSha256": "74ec42a3eab7291f9e4b9162ed44df69c94163ca28cc09156c5ca2b602303fd9"
+    },
+    {
+      "key": "own",
+      "seed": 7,
+      "epoch": 7,
+      "ticks": 1200,
+      "saveSha256": "d2a1c35572682cf633269ef451d1a50f5da3b41edaaeb12dcd1901ef3f42a639"
+    },
+    {
+      "key": "own",
+      "seed": 41,
+      "epoch": 0,
+      "ticks": 1200,
+      "saveSha256": "a202155805d8e4e9e431528573817711235ad04ec45a1e75e5034f8e0164cd92"
+    },
+    {
+      "key": "own",
+      "seed": 41,
+      "epoch": 2,
+      "ticks": 1200,
+      "saveSha256": "d0d5834549ba6df202ab48e4e71abfaf5637b4173675d05c5ecd1ebb31c58a00"
+    },
+    {
+      "key": "own",
+      "seed": 41,
+      "epoch": 5,
+      "ticks": 1200,
+      "saveSha256": "ed25caf766078fd5857d7d34063d4eeb38986fc3dba5afc27047bd36194e0bcd"
+    },
+    {
+      "key": "own",
+      "seed": 41,
+      "epoch": 7,
+      "ticks": 1200,
+      "saveSha256": "9933614ea66ab2a884d1cb229772d921e511f62fc21304fb63f8368886fa015a"
+    },
+    {
+      "key": "base",
+      "seed": 7,
+      "epoch": 0,
+      "ticks": 1200,
+      "saveSha256": "8c1e0cc76a7aebe4a5598f2354e90b7e6e81d737212e7cf574d692bd1e01c6e5"
+    },
+    {
+      "key": "base",
+      "seed": 7,
+      "epoch": 5,
+      "ticks": 1200,
+      "saveSha256": "5857493cdb22ec4e94e9a5e8803c5014a98093dbc4ac7adbb61e4b3e12aeb3d5"
+    },
+    {
+      "key": "base",
+      "seed": 7,
+      "epoch": 10,
+      "ticks": 1200,
+      "saveSha256": "dcd535320fc81b79299f1e6d52237aa8d74b1913d519a3ae63738c7d9f379006"
+    },
+    {
+      "key": "base",
+      "seed": 7,
+      "epoch": 14,
+      "ticks": 1200,
+      "saveSha256": "37114e498c37049573ab713b081e5958191633db8edfb985a45e1e3aab49acc8"
+    },
+    {
+      "key": "base",
+      "seed": 41,
+      "epoch": 0,
+      "ticks": 1200,
+      "saveSha256": "4dcee12e75331f8a4bcca495c17a76a3012b8d719d5c6c1e34f04f4c6663afac"
+    },
+    {
+      "key": "base",
+      "seed": 41,
+      "epoch": 5,
+      "ticks": 1200,
+      "saveSha256": "9c68ec83a9c5f2d6fee1945c088078978c0a9015c4539438d19aab542f461620"
+    },
+    {
+      "key": "base",
+      "seed": 41,
+      "epoch": 10,
+      "ticks": 1200,
+      "saveSha256": "cbd93dab05b61409770649ca2d4ee1f5d41da5aa2f55c891cd0f585e3997b528"
+    },
+    {
+      "key": "base",
+      "seed": 41,
+      "epoch": 14,
+      "ticks": 1200,
+      "saveSha256": "e48eec3154c0284454f380833a6c2f949d7536be33e86c8083d941f71157bad3"
+    },
+    {
+      "key": "up5",
+      "seed": 7,
+      "epoch": 0,
+      "ticks": 1200,
+      "saveSha256": "d67aef727e0f8e863b5622d7ef2a75430bd2fbd30ec57426f24f98d2a936ad07"
+    },
+    {
+      "key": "up5",
+      "seed": 7,
+      "epoch": 5,
+      "ticks": 1200,
+      "saveSha256": "3f4d7c4a8c95994901492e0e8e2ce69653005e18f44ba4d467e742aeb252851d"
+    },
+    {
+      "key": "up5",
+      "seed": 7,
+      "epoch": 10,
+      "ticks": 1200,
+      "saveSha256": "aaf1fc498c18d5b72105d4c830444053ac6dcb5e4604b6659539391a54521a50"
+    },
+    {
+      "key": "up5",
+      "seed": 7,
+      "epoch": 14,
+      "ticks": 1200,
+      "saveSha256": "25bb3cec4cd57061197e23b855c609d8976e23af31ab71eb4ee7b771530fd93f"
+    },
+    {
+      "key": "up5",
+      "seed": 41,
+      "epoch": 0,
+      "ticks": 1200,
+      "saveSha256": "665a772efd5a343fb809224bd2f3da6478c6631c8ce4305b7e1e9138af448960"
+    },
+    {
+      "key": "up5",
+      "seed": 41,
+      "epoch": 5,
+      "ticks": 1200,
+      "saveSha256": "f59c34dbc2b8588af964ef70e2fc0d55d7cff0a42e42eb527eef9855320158a2"
+    },
+    {
+      "key": "up5",
+      "seed": 41,
+      "epoch": 10,
+      "ticks": 1200,
+      "saveSha256": "0d24f903739ef0e5a47709c6c7d2fe58eda316cef2d3c1c9c7ce266f0d59be58"
+    },
+    {
+      "key": "up5",
+      "seed": 41,
+      "epoch": 14,
+      "ticks": 1200,
+      "saveSha256": "d7835812e156e4348e027efe955c2a349b7b8d3d1d5166f2bb4e0c70676e2aa9"
+    }
+  ],
+  "binaries": {
+    "own": {
+      "frozen": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+      "rebuilt": "82ccbb1e17862d90ec6c242e9d1b9af029878c7a45b25f0f62b3e2f5e2caae9f"
+    },
+    "base": {
+      "frozen": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+      "rebuilt": "1571c43a6ddd2d3382b4f72cdaf5c71b3d1b67761ac24bc15b8954ad48799a5c"
+    },
+    "up5": {
+      "frozen": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51",
+      "rebuilt": "e6a2da2007940cd2ceabc6848de6443d8b7e94cffd432059571975b8de0faaa7"
+    }
+  },
+  "status": "PASS",
+  "checks": 1074
+}

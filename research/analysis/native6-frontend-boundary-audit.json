@@ -1,0 +1,211 @@
+{
+  "format": "native6-frontend-boundary-audit-v1",
+  "status": "read-only-review-complete-isolated-icon-fix-ready",
+  "createdUTC": "2026-11-04T14:21:45.938862+00:00",
+  "scope": "Review outside root-owned Main edits. Phase1 remains57 definitions; findings describe future expanded rosters and do not imply a current Phase1 simulation failure. No active runtime changes by this audit.",
+  "findings": [
+    {
+      "id": "audio-legacy-unit-range",
+      "priority": "future-integration-gap",
+      "files": [
+        "docs/audio.js:63",
+        "docs/audio.js:67",
+        "docs/original-audio.js:139"
+      ],
+      "finding": "audio.acknowledge treats every Def>=47 as a building/native-only path; local speech fallback and outer voice throttling are limited to8..46. A future mobile Def57/64/100/132 without an explicit native voice binding returns false. The original audio player itself uses general maps/epoch intervals, so expanded bindings can be added without ID truncation.",
+      "actualRepro": [
+        {
+          "id": 8,
+          "nativeAttempted": true,
+          "speechFallback": true,
+          "acknowledged": true
+        },
+        {
+          "id": 46,
+          "nativeAttempted": true,
+          "speechFallback": true,
+          "acknowledged": true
+        },
+        {
+          "id": 47,
+          "nativeAttempted": true,
+          "speechFallback": false,
+          "acknowledged": false
+        },
+        {
+          "id": 56,
+          "nativeAttempted": true,
+          "speechFallback": false,
+          "acknowledged": false
+        },
+        {
+          "id": 57,
+          "nativeAttempted": true,
+          "speechFallback": false,
+          "acknowledged": false
+        },
+        {
+          "id": 64,
+          "nativeAttempted": true,
+          "speechFallback": false,
+          "acknowledged": false
+        },
+        {
+          "id": 100,
+          "nativeAttempted": true,
+          "speechFallback": false,
+          "acknowledged": false
+        },
+        {
+          "id": 132,
+          "nativeAttempted": true,
+          "speechFallback": false,
+          "acknowledged": false
+        }
+      ],
+      "handoff": "Before enabling new mobile definitions, pass an explicit definition role plus source voice-family binding. Keep building selection effects independent of the speech toggle; preserve full source IDs. Do not move a numeric threshold to another arbitrary number.",
+      "tests": [
+        "Existing building47 selection remains a sound effect with speech disabled.",
+        "New mobile57/100 honors speech toggle and900ms response throttle.",
+        "Typed Unit100 voice binding never consults a resource/render ID100."
+      ]
+    },
+    {
+      "id": "initial-native-icons-ignored",
+      "priority": "future-correctness-gap",
+      "files": [
+        "docs/original-assets.js:69"
+      ],
+      "finding": "A present models array always makes models.filter(progressionBinding) win over epochIconBindings, including when the filtered result is empty. A new class with only an initial native sprite binding is ignored.",
+      "repro": "models:[{id:57,epoch:0,assetKind:0}], epochIconBindings:[{id:57,epoch:0,assetKind:0,url:native57.png}] => active originalIcon undefined, isolated candidate native57.png.",
+      "handoff": "Union explicit icon bindings and model progressions by id:epoch; explicit sprite wins and missing native sprites retain the existing associated-model fallback. Typed rows accept assetKind0 only; untyped legacy0..56 remain compatible. Both normal associated fallback and catch-path lookup restrict reusedFrom.id and direct class ID to authored legacy unit0..56; failed Unit100 sprites cannot return a Resource100 cell.",
+      "candidate": {
+        "file": "work/native6-frontend-audit/original-assets.js",
+        "sha256": "877361bb8717414032a888aa494e6a05bde8a9dff9eb007cf686a61668cacbf4",
+        "patch": "work/native6-frontend-audit/original-assets.patch",
+        "activeBeforeSha256": "564c42d8e3fc1bec0c48d4e4756b3b89708ba2cf4560b109609231dd1a8d4dc4"
+      },
+      "tests": {
+        "allLegacyIdEpochOutputsEqual": 855,
+        "totalAuditChecks": 882,
+        "newTypedUnit57": true,
+        "newTypedUnit100VersusResource100": true,
+        "unknownUntyped100NeverUsesResourceCell": true,
+        "associatedFallbackAndExactSpritePriority": true,
+        "newUntypedFallbackBoundaries": [
+          57,
+          64,
+          100,
+          132,
+          255,
+          65535
+        ],
+        "failedNativeUnit100NeverUsesResource100": true,
+        "reusedFromResource100RejectedBothSuccessAndCatchPaths": true,
+        "failedLegacyUnitFallbacksPreserved": true
+      }
+    },
+    {
+      "id": "procedural-unit-resource-alias",
+      "priority": "root-fix-in-progress",
+      "files": [
+        "docs/render-namespace.js:26",
+        "docs/models.js:368",
+        "docs/atlas.js:336"
+      ],
+      "finding": "The static procedural banks reserve100..110 for resources/projectiles/flags. Returning an extended unit DefId directly as a template ID aliases these templates.",
+      "handoff": "Reported to root. Current unitFallbackId now chooses explicit generic building0/citizen8/soldier15 from definition flags for IDs57+. Main icon fallback must call this only after native icon lookup fails. The static256-entry template arrays can remain fixed.",
+      "tests": [
+        "Synthetic typed Unit100 and Resource100 resolve different native rows and appropriate generic templates.",
+        "Missing native Unit255/65535 never draws a resource/projectile icon or indexes outside the static atlas."
+      ]
+    },
+    {
+      "id": "building-role-message-adapter",
+      "priority": "future-presentation-limit",
+      "files": [
+        "docs/building-controls.js:17",
+        "docs/building-controls.js:34"
+      ],
+      "finding": "Dock-specific placement error text and auto-coast button use canonical legacy Def5. Expanded naval buildings with another DefId would keep generic text and lack this convenience button. No cast/truncation or command-ID mutation occurs.",
+      "handoff": "Bind a source-proven dock/coast placement role if additional dock definitions are enabled; keep canonical5 behavior unchanged.",
+      "tests": [
+        "Rotate/place new building Def64 or132 without changing its full ID.",
+        "New dock role gets coast-specific UI without assuming all sea units are docks."
+      ]
+    }
+  ],
+  "clearedAreas": [
+    {
+      "files": [
+        "docs/research.js:16",
+        "docs/research.js:30"
+      ],
+      "conclusion": "No Def57/render255/queue64 assumptions: panel reads research_tree JSON and calls cmd_research(n.id) directly. Actual controller passed distinct IDs0/57/64/132/179 unchanged; host strings have a readable unknown-host fallback. Research node IDs remain a separate command namespace."
+    },
+    {
+      "files": [
+        "docs/diplomacy.js:102",
+        "docs/territory-panel.js:33",
+        "docs/territory-help.js:11"
+      ],
+      "conclusion": "Diplomacy commands use player/resource/territory fields, not definition IDs. territory owner255 and territory tile Uint8 storage belong to that existing map namespace; they must not be mechanically widened because unit Def IDs grow."
+    },
+    {
+      "files": [
+        "docs/main.js:628",
+        "docs/main.js:635",
+        "docs/main.js:650",
+        "docs/rules-profile.js:57"
+      ],
+      "conclusion": "No independent storage/input modules exist: storage is in Main and remains root-owned. IndexedDB saves a copy of raw WASM save bytes and restores the same bytes; no frontend DefId packing or Uint8 per-unit conversion was found. WASM load_apply rejects incompatible save schemas. Root tests handle profile/schema migration."
+    },
+    {
+      "files": [
+        "docs/net.js:34",
+        "docs/net.js:53"
+      ],
+      "conclusion": "Uint8Array is the opaque encoded command stream, not a list of definition IDs. No frontend reinterpretation or8-bit command-value coercion occurs here; core ABI/protocol tests own the encoded schema."
+    },
+    {
+      "files": [
+        "docs/cheats.js",
+        "docs/season-session.js",
+        "docs/territory-help.js"
+      ],
+      "conclusion": "No roster-sized arrays or hardcoded57/64 unit ranges found. Numeric resource/season/territory codes are separate domains."
+    }
+  ],
+  "assetContractConfirmedWithCamera": {
+    "assetKind": {
+      "0": "unit; id=DefId",
+      "1": "resource; id=LegacySource100..110",
+      "2": "projectile",
+      "3": "quad",
+      "4": "deco"
+    },
+    "newUnitRows": "assetKind:0 on model and epochIconBindings",
+    "legacyCompatibility": "Untagged0..56 units accepted. Untagged100..110 must never be interpreted as expanded unit IDs."
+  },
+  "activeSourceHashesAtReview": {
+    "docs/original-assets.js": "564c42d8e3fc1bec0c48d4e4756b3b89708ba2cf4560b109609231dd1a8d4dc4",
+    "docs/audio.js": "cce3531dcdbeca92ebe67a71ed60d05d7759ed8f9a971b18cbbc659a4806b7ef",
+    "docs/original-audio.js": "9211856580cf48469eb3a7b681dea2ceceec895b43f7708fbd0d186d0b28c6e0",
+    "docs/research.js": "2b1b4f197bf030d2349222b381db4154d28c1dd4a159b0dedf68b70ab60b3057",
+    "docs/diplomacy.js": "d2413d1a808bfacfa667d51a075c1d02d38a5981ca7b9763b21d0196f2993838",
+    "docs/territory-panel.js": "ee04884c4381f4b7d2664868259ba49986e3e163c34a39893c4104c11816da48",
+    "docs/territory-help.js": "7ddd82d029a0f4866026b1bff68afa13d112d92bfda63e573f6891514bdc1ff2",
+    "docs/building-controls.js": "f5d76cb4bc3c7c6e2cc7a9bcc43223225b139b7f98f758a615ded080db6f2256",
+    "docs/rules-profile.js": "c341869d5a1e0755d6270efaca2a8dc965abf4201ad889f7d59aa34b4f300c91",
+    "docs/render-namespace.js": "949a191c9aca295a58ffef0c2431426638f09844edea2633c00f7fd797479307",
+    "docs/models.js": "fa5e64e1d4d17a83693e7640354b76cb006c140f8aefea1e0762baa9d8588cae",
+    "docs/atlas.js": "51a1977351bce7927af68f6dbe3c4b1d1c8a73e27a033e3ee3ea6e2204db397a",
+    "docs/main.js": "c7fe87add1ebc9d1db56938b023399c977bc6307ecb0abb222fec358753d2c0e"
+  },
+  "testReport": {
+    "file": "native6-frontend-boundary-tests.json",
+    "sha256": "554479bc927a60da8c9f605230879c3f95973184ddc06878cb32c4dac1f24dee"
+  },
+  "testCommand": "node work/native6-frontend-audit/test.mjs",
+  "remainingOwnership": "Root owns Main/namespace/fallback/queue/worker/mobile changes. Materials owns Renderer/Ground kind adapters. Candidate original-assets patch is not active until root applies it."
+}

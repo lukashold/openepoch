@@ -1,0 +1,68 @@
+{
+  "format": "native61-independent-save-review-tests-v1",
+  "status": "passed",
+  "checks": 694,
+  "binaries": {
+    "frozen5": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51",
+    "classic61": "2f905ebd0ba69d155a7fdb2361f7a8f84642e8a3f2f908b9f133bfef7b7cefbc"
+  },
+  "migrationCases": [
+    {
+      "seed": 7,
+      "epoch": 0,
+      "ticks": 720,
+      "oldSaveSha256": "5c6596cd1cb968e964ecf28266daf0eaf5d03e9974e547d248676e6eec736d78",
+      "currentSaveSha256": "8b11387b74d775a02186d61c91e85d1eb9cddc115b6afc2d6ccd905e6b7ab06b"
+    },
+    {
+      "seed": 7,
+      "epoch": 7,
+      "ticks": 720,
+      "oldSaveSha256": "ae40d625ec80826247077809e978c0ce996fccdf64ffaf33e3ec2fb9f704c556",
+      "currentSaveSha256": "d0fbd92d8eef682f683b93d6ca056438359b041891f94ed3f65d693c8f1dd3c4"
+    },
+    {
+      "seed": 7,
+      "epoch": 14,
+      "ticks": 720,
+      "oldSaveSha256": "6a98d005031bf62889c8d8b4a126b38bf6a10d18504285620e26bd28a204ce77",
+      "currentSaveSha256": "92017e1800cf55134cb9d057fdfc0f4c969e6fde2aa6441406ed710cd30b4221"
+    },
+    {
+      "seed": 41,
+      "epoch": 0,
+      "ticks": 720,
+      "oldSaveSha256": "97176d48a1b6eaf0e8d9aa8e639883faca326f0f27ff0df1c69a5dbc856017ee",
+      "currentSaveSha256": "d7e4ceba0abf44fe4382af99fc7b2750e7fdcd38187446e5f7b562b47d77b096"
+    },
+    {
+      "seed": 41,
+      "epoch": 7,
+      "ticks": 720,
+      "oldSaveSha256": "0087ad1a66f4089806c614a2b25d0bc1231b9f2284903c1e53a757a861ea4a32",
+      "currentSaveSha256": "73efcf8266230bcbb5cae39a3d60af2585f024fd6bab56f9545c82d6022866f4"
+    },
+    {
+      "seed": 41,
+      "epoch": 14,
+      "ticks": 720,
+      "oldSaveSha256": "5246ed1c5fb06975742a3c6e8b526521c556a59e9a168da9dbee9695f7eca9a8",
+      "currentSaveSha256": "cdb0ed759b15d8e33b4701007084f3314f2af62255bec8dd2ef04c7e16321a5f"
+    }
+  ],
+  "typed57Migration": {
+    "previousWasmSha256": "1f13de2c11b2d935e6e669541ff9a2ef67a0bb4cf186c0f5f0694e6559adb324",
+    "oldSaveSha256": "0b817626bc40e7a04a0590955d80a3ae3c88b1afb92dad43c3d4517fe8e75aa5",
+    "currentSaveSha256": "9ac8a562ed370adfba09bfca963cda96c76c8d6cc760cb9f0610ab4fcae60ece",
+    "invalidNewFieldsRejected": 3
+  },
+  "actualScoutProduction": true,
+  "descriptorAtomicRejections": 4,
+  "sourceHashes": {
+    "save.rs": "f4b25b6312e787f0663be9eb95c9ff5862d9ea76a2f20d1b889e71796e308431",
+    "save6.rs": "c6cb817bc80050cfda0359a940b327cfe7c5d168023563b5e37b9a1d8bdbfa8b",
+    "roster6_registry.rs": "cce3a0126781d179dd95a4c14ff1e4a34c07217feadbac4f1ebb6dcb564fd8d2",
+    "roster6_classic_tests.rs": "ee553e4ae047ce88a094bbf8ae978eeb0525df73b740af6fd1b27ff4215de6c7"
+  },
+  "scope": "Six actual WASM5→61 migrations through720 ticks at verified0/7/14 epochs. Controlled baseline fixture switches both seats to human after initial setup so AI roster expansion cannot masquerade as codec drift; independently projected every148→176-byte entity field, player fields and complete trailing world/sidecars. Only reprC padding and transient flow slot are canonicalized. Count/fingerprint failures are atomic. No Rust/Main/active-runtime writes."
+}

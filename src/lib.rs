@@ -5,12 +5,19 @@
 //! networking and talks to it through the plain C ABI below.
 
 mod ai;
+mod ids;
 mod cmd;
 mod defs;
 mod economy;
-#[cfg(feature="ee2-up15")]
+#[cfg(all(feature="ee2-up15",not(feature="ee2-roster6")))]
 mod ee2_up15_economy;
-#[cfg(feature="ee2-up15")]
+#[cfg(feature="ee2-roster6")]
+#[path="ee2_roster6_economy.rs"]
+mod ee2_up15_economy;
+#[cfg(all(feature="ee2-up15",not(feature="ee2-roster6")))]
+mod ee2_up15_attack;
+#[cfg(feature="ee2-roster6")]
+#[path="ee2_roster6_attack.rs"]
 mod ee2_up15_attack;
 #[cfg(feature="ee2-up15")]
 mod native_attack_clock;
@@ -19,29 +26,57 @@ mod territory;
 mod placement;
 #[cfg(all(feature = "ee2-reference",not(feature="ee2-up15")))]
 mod ee2_profile;
-#[cfg(feature="ee2-up15")]
+#[cfg(all(feature="ee2-up15",not(feature="ee2-roster6")))]
 #[path="ee2_up15_profile.rs"]
+mod ee2_profile;
+#[cfg(feature="ee2-roster6")]
+#[path="ee2_roster6_profile.rs"]
 mod ee2_profile;
 #[cfg(all(feature = "ee2-reference",not(feature="ee2-up15")))]
 mod ee2_research;
-#[cfg(feature="ee2-up15")]
+#[cfg(all(feature="ee2-up15",not(feature="ee2-roster6")))]
 #[path="ee2_up15_research.rs"]
+mod ee2_research;
+#[cfg(feature="ee2-roster6")]
+#[path="ee2_roster6_research.rs"]
 mod ee2_research;
 #[cfg(all(feature = "ee2-reference",not(feature="ee2-up15")))]
 mod ee2_units;
-#[cfg(feature="ee2-up15")]
+#[cfg(all(feature="ee2-up15",not(feature="ee2-roster6")))]
 #[path="ee2_up15_units.rs"]
+mod ee2_units;
+#[cfg(feature="ee2-roster6")]
+#[path="ee2_roster6_units.rs"]
 mod ee2_units;
 #[cfg(all(feature = "ee2-reference",not(feature="ee2-up15")))]
 mod ee2_combat;
-#[cfg(feature="ee2-up15")]
+#[cfg(all(feature="ee2-up15",not(feature="ee2-roster6")))]
 #[path="ee2_up15_combat.rs"]
+mod ee2_combat;
+#[cfg(feature="ee2-roster6")]
+#[path="ee2_roster6_combat.rs"]
 mod ee2_combat;
 mod research;
 mod game;
 mod map;
 mod render;
+#[cfg(feature="ee2-render-meta7")]
+mod render_meta7;
 mod save;
+#[cfg(feature="ee2-roster6")]
+mod save6;
+#[cfg(feature="ee2-paidqueue7")]
+mod paid_queue7;
+#[cfg(feature="ee2-paidqueue7")]
+mod paid_queue7_main;
+#[cfg(feature="ee2-roster6")]
+mod roster6_registry;
+#[cfg(feature="ee2-roster6")]
+mod roster6_defs;
+#[cfg(feature="ee2-roster6")]
+mod roster6_placement;
+#[cfg(all(test,feature="ee2-roster6"))]
+mod roster6_queue_tests;
 #[cfg(feature="ee2-reference")]
 mod city_ground;
 #[cfg(all(test,feature="ee2-reference"))]
@@ -69,7 +104,7 @@ pub extern "C" fn unit_stat(id: u32, field: u32) -> f32 {
         7 => d.w[1].dmg,
         8 => {
             #[cfg(feature = "ee2-reference")]
-            { crate::ee2_profile::turn_rate(id as u8) }
+            { crate::ee2_profile::turn_rate(id as DefId) }
             #[cfg(not(feature = "ee2-reference"))]
             { 2.4 }
         },
@@ -86,6 +121,8 @@ fn g() -> &'static mut Game {
 pub extern "C" fn init(seed: u32, n_ai: u32, bench: u32, humans: u32, local: u32) {
     unsafe {
         *addr_of_mut!(GAME) = Some(Box::new(Game::new(seed, n_ai, bench, humans, local)));
+        #[cfg(feature="ee2-render-meta7")]
+        render_meta7::reset_session();
     }
 }
 
@@ -115,13 +152,13 @@ pub extern "C" fn combat_stat(attacker:u32,attacker_epoch:u32,defender:u32,defen
     #[cfg(feature="ee2-reference")]
     {
         if attacker>=57||defender>=57||attacker_epoch>=15||defender_epoch>=15{return -1.0;}
-        let a=ee2_combat::profile(attacker as u8,attacker_epoch as u8);
-        let d=ee2_combat::profile(defender as u8,defender_epoch as u8);
+        let a=ee2_combat::profile(attacker as DefId,attacker_epoch as u8);
+        let d=ee2_combat::profile(defender as DefId,defender_epoch as u8);
         return match field {
             0=>ee2_combat::base_percent(a,d).map(|value|value as f32*0.01),
             1=>ee2_combat::adjustment_percent(a,d).map(|value|value as f32*0.01),
             2=>ee2_combat::multiplier(a,d),
-            3=>ee2_combat::can_target(attacker as u8,attacker_epoch as u8,defender as u8,defender_epoch as u8).map(|value|value as u8 as f32),
+            3=>ee2_combat::can_target(attacker as DefId,attacker_epoch as u8,defender as DefId,defender_epoch as u8).map(|value|value as u8 as f32),
             _=>None,
         }.unwrap_or(-1.0);
     }
@@ -156,7 +193,14 @@ pub extern "C" fn epoch_name_len(index:u32)->u32 {EPOCH_NAMES.get(index as usize
 #[no_mangle]
 pub extern "C" fn skirmish_epoch(epoch:u32)->u32 {
     let game=g();if epoch>MAX_EPOCH as u32||game.tick!=0||game.net||game.bench>0{return 0;}
-    for t in 0..game.nplayers{game.players[t].epoch=epoch as u8;game.rebuild_modifiers(t as u8,true);}
+    #[cfg(feature="ee2-paidqueue7")]
+    if game.ents[..game.high].iter().any(|e|e.alive&&DEFS[e.def as usize].building&&e.qn>0){return 0;}
+    for t in 0..game.nplayers{
+        #[cfg(feature="ee2-paidqueue7")] let previous=game.players[t].epoch;
+        game.players[t].epoch=epoch as u8;
+        game.rebuild_modifiers(t as u8,true);
+        #[cfg(feature="ee2-paidqueue7")] game.apply_paid_main(t as u8,previous);
+    }
     game.build_grid();game.update_fog();1
 }
 #[no_mangle]
@@ -166,7 +210,7 @@ pub extern "C" fn resource_stat(team:u32,slot:u32)->f32 {if team>=4||slot as usi
 #[no_mangle]
 pub extern "C" fn resource_active(team:u32,slot:u32)->u32 {if team>=4||slot as usize>=economy::RESOURCE_COUNT{0}else{economy::unlocked(slot as usize,g().players[team as usize].epoch) as u32}}
 #[no_mangle]
-pub extern "C" fn unit_cost_stat(team:u32,id:u32,slot:u32)->f32 {if team>=4||id as usize>=DEFS.len()||slot>=9{-1.0}else{g().unit_cost(team as u8,id as u8)[slot as usize] as f32}}
+pub extern "C" fn unit_cost_stat(team:u32,id:u32,slot:u32)->f32 {if team>=4||id as usize>=DEFS.len()||slot>=9{-1.0}else{g().unit_cost(team as u8,id as DefId)[slot as usize] as f32}}
 #[no_mangle]
 pub extern "C" fn resource_kind(tile:u32)->u32 {g().map.res.get(tile as usize).copied().unwrap_or(0) as u32}
 
@@ -177,10 +221,37 @@ pub extern "C" fn unit_epoch(id: u32) -> u32 { DEFS.get(id as usize).map_or(u32:
 
 #[no_mangle]
 pub extern "C" fn render(alpha: f32, x0: f32, y0: f32, x1: f32, y1: f32, ghost: i32, gx: i32, gy: i32) -> u32 {
+    #[cfg(feature="ee2-render-meta7")]
+    unsafe { if (&*addr_of_mut!(GAME)).is_none() { render_meta7::begin_frame(); render_meta7::end_frame(); return 0; } }
     g().render(alpha, x0, y0, x1, y1, ghost, gx, gy)
 }
 #[no_mangle]
-pub extern "C" fn render_rotated(alpha:f32,x0:f32,y0:f32,x1:f32,y1:f32,ghost:i32,gx:i32,gy:i32,turn:u32)->u32{g().render_with_rotation(alpha,x0,y0,x1,y1,ghost,gx,gy,turn)}
+pub extern "C" fn render_rotated(alpha:f32,x0:f32,y0:f32,x1:f32,y1:f32,ghost:i32,gx:i32,gy:i32,turn:u32)->u32{
+    #[cfg(feature="ee2-render-meta7")]
+    unsafe { if (&*addr_of_mut!(GAME)).is_none() { render_meta7::begin_frame(); render_meta7::end_frame(); return 0; } }
+    g().render_with_rotation(alpha,x0,y0,x1,y1,ghost,gx,gy,turn)
+}
+
+/// Optional rendering-only metadata ABI. All getters are safe before init.
+#[cfg(feature="ee2-render-meta7")]
+#[no_mangle] pub extern "C" fn render_meta_version()->u32{1}
+#[cfg(feature="ee2-render-meta7")]
+#[no_mangle] pub extern "C" fn render_meta_stride()->u32{render_meta7::STRIDE}
+#[cfg(feature="ee2-render-meta7")]
+#[no_mangle] pub extern "C" fn render_meta_ptr()->*const render_meta7::Record{render_meta7::ptr()}
+#[cfg(feature="ee2-render-meta7")]
+#[no_mangle] pub extern "C" fn render_meta_count()->u32{render_meta7::count()}
+#[cfg(feature="ee2-render-meta7")]
+#[no_mangle] pub extern "C" fn render_meta_len()->u32{render_meta7::count()*render_meta7::STRIDE}
+#[cfg(feature="ee2-render-meta7")]
+#[no_mangle] pub extern "C" fn render_meta_session()->u32{render_meta7::session()}
+#[cfg(feature="ee2-render-meta7")]
+#[no_mangle] pub extern "C" fn render_meta_frame()->u32{render_meta7::frame()}
+/// Liveness of an opaque full generational handle. It is not a Death event.
+#[cfg(feature="ee2-render-meta7")]
+#[no_mangle] pub extern "C" fn entity_alive(handle:u32)->u32{
+    unsafe{(&*addr_of_mut!(GAME)).as_ref().is_some_and(|game|game.get(handle).is_some())as u32}
+}
 
 #[no_mangle]
 pub extern "C" fn inst_ptr() -> *const f32 {
@@ -289,6 +360,8 @@ pub extern "C" fn load_apply() -> u32 {
         match Game::load(&*addr_of_mut!(LOADBUF)) {
             Some(game) => {
                 *addr_of_mut!(GAME) = Some(Box::new(game));
+                #[cfg(feature="ee2-render-meta7")]
+                render_meta7::reset_session();
                 1
             }
             None => 0,
@@ -628,28 +701,28 @@ pub extern "C" fn place_error(def: u32, tx: i32, ty: i32) -> u32 {
 #[no_mangle]
 pub extern "C" fn place_error_rotated(def:u32,tx:i32,ty:i32,turn:u32)->u32{
     if def>=DEFS.len()as u32||turn>=placement::ROTATION_STEPS{return 1;}
-    let game=g();let ids=selected(game);game.placement_error_for(game.local,def as u8,tx,ty,turn,&ids,true)
+    let game=g();let ids=selected(game);game.placement_error_for(game.local,def as DefId,tx,ty,turn,&ids,true)
 }
 #[no_mangle]
-pub extern "C" fn footprint_size(def:u32,turn:u32)->u32{if def>=DEFS.len()as u32{return 0;}Game::footprint_side(def as u8,turn)as u32}
+pub extern "C" fn footprint_size(def:u32,turn:u32)->u32{if def>=DEFS.len()as u32{return 0;}Game::footprint_side(def as DefId,turn)as u32}
 #[no_mangle]
 pub extern "C" fn dock_orientation(tx:i32,ty:i32)->u32{g().dock_auto_turn(tx,ty)}
 #[no_mangle]
 pub extern "C" fn placement_time_multiplier(def:u32,tx:i32,ty:i32,turn:u32)->f32{
-    if def>=DEFS.len()as u32{return 0.0;}let side=Game::footprint_side(def as u8,turn);if side==0||tx<0||ty<0||tx>N as i32-side||ty>N as i32-side{return 0.0;}let game=g();if def==TC as u32{return 1.0;}let owner=game.towner[game.map.terr[(ty+side/2)as usize*N+(tx+side/2)as usize]as usize];if owner==game.local{1.0}else if owner==255{2.0}else{3.0}
+    if def>=DEFS.len()as u32{return 0.0;}let side=Game::footprint_side(def as DefId,turn);if side==0||tx<0||ty<0||tx>N as i32-side||ty>N as i32-side{return 0.0;}let game=g();if def==TC as u32{return 1.0;}let owner=game.towner[game.map.terr[(ty+side/2)as usize*N+(tx+side/2)as usize]as usize];if owner==game.local{1.0}else if owner==255{2.0}else{3.0}
 }
 #[no_mangle]
 pub extern "C" fn cmd_place(def:u32,tx:i32,ty:i32)->u32{cmd_place_rotated(def,tx,ty,0)}
 #[no_mangle]
 pub extern "C" fn cmd_place_rotated(def:u32,tx:i32,ty:i32,turn:u32)->u32{
-    if place_error_rotated(def,tx,ty,turn)!=0{return 0;}let game=g();let hs=handles(game,&selected(game));let kind=if turn==0{C_PLACE}else{C_PLACE_ROTATED};game.submit(kind,tx as f32,ty as f32,(def|(turn<<8))as i32,&hs);1
+    if place_error_rotated(def,tx,ty,turn)!=0{return 0;}let game=g();let hs=handles(game,&selected(game));let kind=if turn==0{C_PLACE}else{C_PLACE_ROTATED};game.submit(kind,tx as f32,ty as f32,(def|(turn<<if cfg!(feature="ee2-roster6"){16}else{8}))as i32,&hs);1
 }
 
 #[no_mangle]
 pub extern "C" fn cmd_train(def: u32) -> u32 {
-    if def>255 {return 0;}
+    if def>if cfg!(feature="ee2-roster6"){u16::MAX as u32}else{255} {return 0;}
     let g = g();
-    let def = def as u8;
+    let def = def as QueueItem;
     // spread the order over the selected buildings: shortest queue first
     let best = selected(g).into_iter().filter(|&i| g.can_train(i, def)).min_by_key(|&i| g.ents[i].qn);
     match best {
@@ -711,7 +784,7 @@ pub extern "C" fn cmd_research(k: u32) -> u32 {
     #[cfg(feature = "ee2-reference")]
     {
         if k>=180 { return 0; }
-        let game=g(); let item=ORIGINAL_RESEARCH0+k as u8;
+        let game=g(); let item=ORIGINAL_RESEARCH0+k as QueueItem;
         let selected=selected(game);
         let b=selected.iter().copied().chain(0..game.high).find(|&i| game.ents[i].alive && game.ents[i].team==game.local && game.can_train(i,item));
         if let Some(i)=b { let h=game.h(i);game.submit(C_TRAIN,0.0,0.0,item as i32,&[h]);return 1; }
@@ -726,7 +799,7 @@ pub extern "C" fn research_stat(team: u32, field: u32, k: u32) -> f32 {
     match field {
         0=>game.research_points[t], 1=>game.research_count(team as u8,game.players[t].epoch) as f32,
         2=>game.has_research(team as u8,k as usize) as u32 as f32,
-        3=>if (k as usize)<DEFS.len() {game.max_hp(team as u8,k as u8)}else{-1.0},
+        3=>if (k as usize)<DEFS.len() {game.max_hp(team as u8,k as DefId)}else{-1.0},
         _=>-1.0
     }
 }
@@ -740,7 +813,7 @@ pub extern "C" fn research_tree() -> *const u8 {
         for (k,n) in crate::ee2_research::NODES.iter().enumerate() {
             let researched=game.has_research(game.local,k); let busy=game.research_busy(game.local,k);
             let host=game.ents[..game.high].iter().any(|e| e.alive && e.team==game.local && e.def==n.host && e.built>=1.0);
-            let can=game.ents[..game.high].iter().enumerate().any(|(i,e)| e.alive && e.team==game.local && game.can_train(i,ORIGINAL_RESEARCH0+k as u8));
+            let can=game.ents[..game.high].iter().enumerate().any(|(i,e)| e.alive && e.team==game.local && game.can_train(i,ORIGINAL_RESEARCH0+k as QueueItem));
             let _=write!(s,"{}{{\"id\":{},\"name\":\"{}\",\"effect\":\"{}\",\"epoch\":{},\"branch\":{},\"host\":\"{}\",\"cost\":{},\"done\":{},\"busy\":{},\"hostBuilt\":{},\"ok\":{}}}",if k>0 {","}else{""},k,n.name,n.note,n.epoch,n.branch,DEFS[n.host as usize].name,n.cost,researched,busy,host,can);
         }
     }
@@ -812,25 +885,27 @@ pub extern "C" fn territory_stat(id:u32,field:u32)->f32{let game=g();if id>=game
 #[no_mangle]
 pub extern "C" fn territory_offer_stat(from:u32,to:u32,field:u32)->u32{let game=g();if from>=game.nplayers as u32||to>=game.nplayers as u32{return u32::MAX;}let o=game.territory.offers[from as usize*4+to as usize];match field{0=>o.active as u32,1=>if o.active{o.give as u32}else{u32::MAX},2=>if o.active{o.want as u32}else{u32::MAX},3=>if o.active{1200-game.tick.saturating_sub(o.tick).min(1200)}else{0},4=>o.cooldown.saturating_sub(game.tick),5=>o.tick,_=>u32::MAX}}
 
-#[cfg(all(test,feature="ee2-up15"))]
+#[cfg(all(test,feature="ee2-up15",not(feature="ee2-roster6")))]
 mod ee2_up15_oracle_tests;
+#[cfg(all(test,feature="ee2-roster6"))]
+mod ee2_roster6_oracle_tests;
 
 /// Candidate-only read-only diagnostics for source-oracle verification.
 #[cfg(feature="ee2-up15")]
 #[no_mangle]
 pub extern "C" fn up15_stat(team:u32,id:u32,field:u32)->f32{
-    let game=g();if team as usize>=game.nplayers||id>=57{return -1.0;}
+    let game=g();if team as usize>=game.nplayers||id as usize>=DEFS.len(){return -1.0;}
     let epoch=game.players[team as usize].epoch;
-    let Some(row)=ee2_units::lookup_class(id as u8,epoch) else{return -1.0;};
+    let Some(row)=ee2_units::lookup_class(id as DefId,epoch) else{return -1.0;};
     let d=&DEFS[id as usize];let m=game.modifiers[team as usize][id as usize];
     match field{
-        0=>game.max_hp(team as u8,id as u8),1=>game.production_time(team as u8,id as u8),
+        0=>game.max_hp(team as u8,id as DefId),1=>game.production_time(team as u8,id as DefId),
         2=>m[5],3=>m[2],4=>d.w[0].range+m[6],5=>row.reload.unwrap_or(-1.0),
-        6=>d.w[0].dmg*m[1],7=>economy::population(id as u8,epoch) as f32,
-        8=>m[18],9=>game.cargo_capacity(team as u8,id as u8) as f32,
+        6=>game.effective_weapon_damage(team as u8,id as DefId,d.w[0].dmg),7=>economy::population(id as DefId,epoch) as f32,
+        8=>m[18],9=>game.cargo_capacity(team as u8,id as DefId) as f32,
         10=>row.generation.unwrap_or(-1.0),11=>row.farm_rate.unwrap_or(-1.0),
         12=>row.carry.unwrap_or(-1.0),13=>row.farm_carry.unwrap_or(-1.0),
-        14=>ee2_up15_economy::lookup(id as u8,epoch).and_then(|r|r.dropoff_bonus).unwrap_or(-1.0),
+        14=>ee2_up15_economy::lookup(id as DefId,epoch).and_then(|r|r.dropoff_bonus).unwrap_or(-1.0),
         20..=28=>row.gather.map(|v|v[(field-20)as usize]).unwrap_or(-1.0),_=>-1.0,
     }
 }
@@ -839,8 +914,8 @@ pub extern "C" fn up15_stat(team:u32,id:u32,field:u32)->f32{
 #[cfg(feature="ee2-up15")]
 #[no_mangle]
 pub extern "C" fn native_attack_stat(id:u32,epoch:u32,field:u32)->f32{
-    if id>=57||epoch>=15{return -1.0;}
-    let Some(a)=ee2_up15_attack::lookup(id as u8,epoch as u8) else{return -1.0;};
+    if id as usize>=DEFS.len()||epoch>=15{return -1.0;}
+    let Some(a)=ee2_up15_attack::lookup(id as DefId,epoch as u8) else{return -1.0;};
     match field{0=>a.present as u8 as f32,1=>a.min_mobile,2=>a.min_immobile,3=>a.angle,
         4=>a.apply_time,5=>a.pack_time,6=>a.unpack_time,7=>a.splash,8=>a.friendly,
         9=>a.missile as u8 as f32,10=>a.attack_on_move as u8 as f32,
@@ -848,3 +923,58 @@ pub extern "C" fn native_attack_stat(id:u32,epoch:u32,field:u32)->f32{
         14=>a.projectile_speed.unwrap_or(-1.0),15=>a.visual_kind as f32,
         16=>a.mobile as u8 as f32,17=>a.air as u8 as f32,_=>-1.0}
 }
+
+#[cfg(feature="ee2-roster6")]
+#[no_mangle] pub extern "C" fn schema_revision()->u32{if cfg!(feature="ee2-paidqueue7"){7}else{6}}
+#[cfg(feature="ee2-paidqueue7")]
+#[no_mangle] pub extern "C" fn queue_price(handle:u32,position:u32,native_resource:u32)->f32{
+    let game=g();let Some(b)=game.get(handle)else{return -1.0;};
+    if position>=game.ents[b].qn as u32||native_resource>=11||!DEFS[game.ents[b].def as usize].building{return -1.0;}
+    game.queue_payment(b,position as usize).price[native_resource as usize]
+}
+#[cfg(feature="ee2-paidqueue7")]
+#[no_mangle] pub extern "C" fn queue_price_flags(handle:u32,position:u32)->u32{
+    let game=g();let Some(b)=game.get(handle)else{return u32::MAX;};
+    if position>=game.ents[b].qn as u32||!DEFS[game.ents[b].def as usize].building{return u32::MAX;}
+    let p=game.queue_payment(b,position as usize);p.inferred as u32|((p.purchased as u32)<<1)
+}
+#[cfg(feature="ee2-paidqueue7")]
+#[no_mangle] pub extern "C" fn queue_duration_raw(handle:u32,position:u32)->f32{
+    let game=g();let Some(b)=game.get(handle)else{return -2.0;};
+    if position>=game.ents[b].qn as u32||!DEFS[game.ents[b].def as usize].building{return -2.0;}
+    game.queue_payment(b,position as usize).duration
+}
+#[cfg(feature="ee2-roster6")]
+#[no_mangle] pub extern "C" fn ranges_len()->u32{(ids::render_capacity()*2)as u32}
+#[cfg(feature="ee2-roster6")]
+#[no_mangle] pub extern "C" fn render_asset_kind(id:u32)->u32{ids::render_kind(id)}
+#[cfg(feature="ee2-roster6")]
+#[no_mangle] pub extern "C" fn render_asset_source_id(id:u32)->u32{ids::render_source(id)}
+#[cfg(feature="ee2-roster6")]
+#[no_mangle] pub extern "C" fn queue_job_encode(kind:u32,id:u32)->u32{ids::encode_job(kind,id).unwrap_or(u32::MAX)}
+#[cfg(feature="ee2-roster6")]
+#[no_mangle] pub extern "C" fn cmd_epoch()->u32{cmd_queue_job(ids::EPOCH_JOB)}
+
+/// Selected action buttons retain the original shortest selected producer rule.
+/// The full research tree separately keeps cmd_research's global host fallback.
+#[cfg(feature="ee2-roster6")]
+#[no_mangle] pub extern "C" fn cmd_queue_job(item:u32)->u32{
+    if ids::decode_job(item).is_none(){return 0;}
+    submit_selected_queue_job(g(),item)
+}
+#[cfg(feature="ee2-roster6")]
+fn submit_selected_queue_job(game:&mut Game,item:QueueItem)->u32{
+    let best=selected(game).into_iter().filter(|&i|game.can_train(i,item)).min_by_key(|&i|game.ents[i].qn);
+    if let Some(i)=best{let h=game.h(i);game.submit(C_TRAIN,0.0,0.0,item as i32,&[h]);1}else{0}
+}
+
+#[cfg(feature="ee2-roster6")]
+#[no_mangle] pub extern "C" fn render_range_len()->u32{(ids::render_capacity()*2)as u32}
+#[cfg(feature="ee2-roster6")]
+#[no_mangle] pub extern "C" fn queue_item_kind(item:u32)->u32{ids::decode_job(item).map_or(u32::MAX,|v|v.0)}
+#[cfg(feature="ee2-roster6")]
+#[no_mangle] pub extern "C" fn queue_item_value(item:u32)->u32{ids::decode_job(item).map_or(u32::MAX,|v|v.1)}
+#[cfg(feature="ee2-roster6")]
+#[no_mangle] pub extern "C" fn definition_count()->u32{DEFS.len()as u32}
+#[cfg(feature="ee2-roster6")]
+#[no_mangle] pub extern "C" fn definition_flags(id:u32)->u32{let Some(d)=DEFS.get(id as usize)else{return u32::MAX;};d.building as u32|((!d.building&&d.speed>0.0)as u32)<<1|(d.has(F_WORKER)as u32)<<2|(d.has(F_TRANSPORT)as u32)<<3|(d.armed()as u32)<<4}

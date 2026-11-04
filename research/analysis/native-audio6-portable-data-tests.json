@@ -1,0 +1,418 @@
+{
+  "format": "native-audio6-portable-data-tests-v1",
+  "status": "passed",
+  "stats": {
+    "native-family-audio-manifest": 1,
+    "native-family-audio-asset": 28,
+    "native-family-audio-event": 28,
+    "nativeFamilyAudioAssets": 28,
+    "nativeFamilyAudioEvents": 28,
+    "nativeFamilyAudioFamilies": 4,
+    "nativeFamilyAudioIntervals": 16
+  },
+  "checkerSha256": "9c63d97a988bef548a40a48e944ea2e13e28dba4b5e43bc1ae705f4d9653c1ae",
+  "manifestSha256": "7aa92154cbd1e760be5b08658546da74d1d3cc304463f9d2bd07221efb4f43da",
+  "errors": [],
+  "references": [
+    {
+      "url": "local-original/audio/native-families.json",
+      "resolved": "local-original/audio/native-families.json",
+      "source": "original-audio.js",
+      "group": "native-family-audio-manifest",
+      "directory": false
+    },
+    {
+      "url": "family6/v_Spy_07_sel01.mp3",
+      "resolved": "local-original/audio/family6/v_Spy_07_sel01.mp3",
+      "source": "local-original/audio/native-families.json.assets.family6/v_Spy_07_sel01.mp3",
+      "group": "native-family-audio-asset",
+      "directory": false
+    },
+    {
+      "url": "family6/v_Spy_07_com01.mp3",
+      "resolved": "local-original/audio/family6/v_Spy_07_com01.mp3",
+      "source": "local-original/audio/native-families.json.assets.family6/v_Spy_07_com01.mp3",
+      "group": "native-family-audio-asset",
+      "directory": false
+    },
+    {
+      "url": "family6/v_Spy_07_com02.mp3",
+      "resolved": "local-original/audio/family6/v_Spy_07_com02.mp3",
+      "source": "local-original/audio/native-families.json.assets.family6/v_Spy_07_com02.mp3",
+      "group": "native-family-audio-asset",
+      "directory": false
+    },
+    {
+      "url": "family6/v_Spy_07_spe01.mp3",
+      "resolved": "local-original/audio/family6/v_Spy_07_spe01.mp3",
+      "source": "local-original/audio/native-families.json.assets.family6/v_Spy_07_spe01.mp3",
+      "group": "native-family-audio-asset",
+      "directory": false
+    },
+    {
+      "url": "family6/v_Spy_13_sel01.mp3",
+      "resolved": "local-original/audio/family6/v_Spy_13_sel01.mp3",
+      "source": "local-original/audio/native-families.json.assets.family6/v_Spy_13_sel01.mp3",
+      "group": "native-family-audio-asset",
+      "directory": false
+    },
+    {
+      "url": "family6/v_Spy_13_com01.mp3",
+      "resolved": "local-original/audio/family6/v_Spy_13_com01.mp3",
+      "source": "local-original/audio/native-families.json.assets.family6/v_Spy_13_com01.mp3",
+      "group": "native-family-audio-asset",
+      "directory": false
+    },
+    {
+      "url": "family6/v_Spy_13_com02.mp3",
+      "resolved": "local-original/audio/family6/v_Spy_13_com02.mp3",
+      "source": "local-original/audio/native-families.json.assets.family6/v_Spy_13_com02.mp3",
+      "group": "native-family-audio-asset",
+      "directory": false
+    },
+    {
+      "url": "family6/v_Spy_13_spe01.mp3",
+      "resolved": "local-original/audio/family6/v_Spy_13_spe01.mp3",
+      "source": "local-original/audio/native-families.json.assets.family6/v_Spy_13_spe01.mp3",
+      "group": "native-family-audio-asset",
+      "directory": false
+    },
+    {
+      "url": "family6/v_spy_04_sel01.mp3",
+      "resolved": "local-original/audio/family6/v_spy_04_sel01.mp3",
+      "source": "local-original/audio/native-families.json.assets.family6/v_spy_04_sel01.mp3",
+      "group": "native-family-audio-asset",
+      "directory": false
+    },
+    {
+      "url": "family6/v_spy_04_com01.mp3",
+      "resolved": "local-original/audio/family6/v_spy_04_com01.mp3",
+      "source": "local-original/audio/native-families.json.assets.family6/v_spy_04_com01.mp3",
+      "group": "native-family-audio-asset",
+      "directory": false
+    },
+    {
+      "url": "family6/v_spy_04_com02.mp3",
+      "resolved": "local-original/audio/family6/v_spy_04_com02.mp3",
+      "source": "local-original/audio/native-families.json.assets.family6/v_spy_04_com02.mp3",
+      "group": "native-family-audio-asset",
+      "directory": false
+    },
+    {
+      "url": "family6/v_spy_04_spe01.mp3",
+      "resolved": "local-original/audio/family6/v_spy_04_spe01.mp3",
+      "source": "local-original/audio/native-families.json.assets.family6/v_spy_04_spe01.mp3",
+      "group": "native-family-audio-asset",
+      "directory": false
+    },
+    {
+      "url": "family6/v_fightingsail_06_sel01.mp3",
+      "resolved": "local-original/audio/family6/v_fightingsail_06_sel01.mp3",
+      "source": "local-original/audio/native-families.json.assets.family6/v_fightingsail_06_sel01.mp3",
+      "group": "native-family-audio-asset",
+      "directory": false
+    },
+    {
+      "url": "family6/v_fightingsail_06_com01.mp3",
+      "resolved": "local-original/audio/family6/v_fightingsail_06_com01.mp3",
+      "source": "local-original/audio/native-families.json.assets.family6/v_fightingsail_06_com01.mp3",
+      "group": "native-family-audio-asset",
+      "directory": false
+    },
+    {
+      "url": "family6/v_fightingsail_06_com02.mp3",
+      "resolved": "local-original/audio/family6/v_fightingsail_06_com02.mp3",
+      "source": "local-original/audio/native-families.json.assets.family6/v_fightingsail_06_com02.mp3",
+      "group": "native-family-audio-asset",
+      "directory": false
+    },
+    {
+      "url": "family6/v_fightingsail_06_spe01.mp3",
+      "resolved": "local-original/audio/family6/v_fightingsail_06_spe01.mp3",
+      "source": "local-original/audio/native-families.json.assets.family6/v_fightingsail_06_spe01.mp3",
+      "group": "native-family-audio-asset",
+      "directory": false
+    },
+    {
+      "url": "family6/v_FightingSail_08_sel01.mp3",
+      "resolved": "local-original/audio/family6/v_FightingSail_08_sel01.mp3",
+      "source": "local-original/audio/native-families.json.assets.family6/v_FightingSail_08_sel01.mp3",
+      "group": "native-family-audio-asset",
+      "directory": false
+    },
+    {
+      "url": "family6/v_FightingSail_08_com01.mp3",
+      "resolved": "local-original/audio/family6/v_FightingSail_08_com01.mp3",
+      "source": "local-original/audio/native-families.json.assets.family6/v_FightingSail_08_com01.mp3",
+      "group": "native-family-audio-asset",
+      "directory": false
+    },
+    {
+      "url": "family6/v_FightingSail_08_com02.mp3",
+      "resolved": "local-original/audio/family6/v_FightingSail_08_com02.mp3",
+      "source": "local-original/audio/native-families.json.assets.family6/v_FightingSail_08_com02.mp3",
+      "group": "native-family-audio-asset",
+      "directory": false
+    },
+    {
+      "url": "family6/v_FightingSail_08_spe01.mp3",
+      "resolved": "local-original/audio/family6/v_FightingSail_08_spe01.mp3",
+      "source": "local-original/audio/native-families.json.assets.family6/v_FightingSail_08_spe01.mp3",
+      "group": "native-family-audio-asset",
+      "directory": false
+    },
+    {
+      "url": "family6/v_FightingSail_10_sel01.mp3",
+      "resolved": "local-original/audio/family6/v_FightingSail_10_sel01.mp3",
+      "source": "local-original/audio/native-families.json.assets.family6/v_FightingSail_10_sel01.mp3",
+      "group": "native-family-audio-asset",
+      "directory": false
+    },
+    {
+      "url": "family6/v_FightingSail_10_com01.mp3",
+      "resolved": "local-original/audio/family6/v_FightingSail_10_com01.mp3",
+      "source": "local-original/audio/native-families.json.assets.family6/v_FightingSail_10_com01.mp3",
+      "group": "native-family-audio-asset",
+      "directory": false
+    },
+    {
+      "url": "family6/v_FightingSail_10_com02.mp3",
+      "resolved": "local-original/audio/family6/v_FightingSail_10_com02.mp3",
+      "source": "local-original/audio/native-families.json.assets.family6/v_FightingSail_10_com02.mp3",
+      "group": "native-family-audio-asset",
+      "directory": false
+    },
+    {
+      "url": "family6/v_FightingSail_10_spe01.mp3",
+      "resolved": "local-original/audio/family6/v_FightingSail_10_spe01.mp3",
+      "source": "local-original/audio/native-families.json.assets.family6/v_FightingSail_10_spe01.mp3",
+      "group": "native-family-audio-asset",
+      "directory": false
+    },
+    {
+      "url": "family6/Fx_Bld_Air_Defense_eng16.mp3",
+      "resolved": "local-original/audio/family6/Fx_Bld_Air_Defense_eng16.mp3",
+      "source": "local-original/audio/native-families.json.assets.family6/Fx_Bld_Air_Defense_eng16.mp3",
+      "group": "native-family-audio-asset",
+      "directory": false
+    },
+    {
+      "url": "family6/Fx_Bld_Air_Defense2_15.mp3",
+      "resolved": "local-original/audio/family6/Fx_Bld_Air_Defense2_15.mp3",
+      "source": "local-original/audio/native-families.json.assets.family6/Fx_Bld_Air_Defense2_15.mp3",
+      "group": "native-family-audio-asset",
+      "directory": false
+    },
+    {
+      "url": "family6/Fx_Bld_Coastal_Defense.mp3",
+      "resolved": "local-original/audio/family6/Fx_Bld_Coastal_Defense.mp3",
+      "source": "local-original/audio/native-families.json.assets.family6/Fx_Bld_Coastal_Defense.mp3",
+      "group": "native-family-audio-asset",
+      "directory": false
+    },
+    {
+      "url": "family6/Fx_Bld_Coastal_Defense2_15.mp3",
+      "resolved": "local-original/audio/family6/Fx_Bld_Coastal_Defense2_15.mp3",
+      "source": "local-original/audio/native-families.json.assets.family6/Fx_Bld_Coastal_Defense2_15.mp3",
+      "group": "native-family-audio-asset",
+      "directory": false
+    },
+    {
+      "url": "family6/v_Spy_07_sel01.mp3",
+      "resolved": "local-original/audio/family6/v_Spy_07_sel01.mp3",
+      "source": "local-original/audio/native-families.json.events.v_spy_07_sel01",
+      "group": "native-family-audio-event",
+      "directory": false
+    },
+    {
+      "url": "family6/v_Spy_07_com01.mp3",
+      "resolved": "local-original/audio/family6/v_Spy_07_com01.mp3",
+      "source": "local-original/audio/native-families.json.events.v_spy_07_com01",
+      "group": "native-family-audio-event",
+      "directory": false
+    },
+    {
+      "url": "family6/v_Spy_07_com02.mp3",
+      "resolved": "local-original/audio/family6/v_Spy_07_com02.mp3",
+      "source": "local-original/audio/native-families.json.events.v_spy_07_com02",
+      "group": "native-family-audio-event",
+      "directory": false
+    },
+    {
+      "url": "family6/v_Spy_07_spe01.mp3",
+      "resolved": "local-original/audio/family6/v_Spy_07_spe01.mp3",
+      "source": "local-original/audio/native-families.json.events.v_spy_07_spe01",
+      "group": "native-family-audio-event",
+      "directory": false
+    },
+    {
+      "url": "family6/v_Spy_13_sel01.mp3",
+      "resolved": "local-original/audio/family6/v_Spy_13_sel01.mp3",
+      "source": "local-original/audio/native-families.json.events.v_spy_13_sel01",
+      "group": "native-family-audio-event",
+      "directory": false
+    },
+    {
+      "url": "family6/v_Spy_13_com01.mp3",
+      "resolved": "local-original/audio/family6/v_Spy_13_com01.mp3",
+      "source": "local-original/audio/native-families.json.events.v_spy_13_com01",
+      "group": "native-family-audio-event",
+      "directory": false
+    },
+    {
+      "url": "family6/v_Spy_13_com02.mp3",
+      "resolved": "local-original/audio/family6/v_Spy_13_com02.mp3",
+      "source": "local-original/audio/native-families.json.events.v_spy_13_com02",
+      "group": "native-family-audio-event",
+      "directory": false
+    },
+    {
+      "url": "family6/v_Spy_13_spe01.mp3",
+      "resolved": "local-original/audio/family6/v_Spy_13_spe01.mp3",
+      "source": "local-original/audio/native-families.json.events.v_spy_13_spe01",
+      "group": "native-family-audio-event",
+      "directory": false
+    },
+    {
+      "url": "family6/v_spy_04_sel01.mp3",
+      "resolved": "local-original/audio/family6/v_spy_04_sel01.mp3",
+      "source": "local-original/audio/native-families.json.events.v_spy_04_sel01",
+      "group": "native-family-audio-event",
+      "directory": false
+    },
+    {
+      "url": "family6/v_spy_04_com01.mp3",
+      "resolved": "local-original/audio/family6/v_spy_04_com01.mp3",
+      "source": "local-original/audio/native-families.json.events.v_spy_04_com01",
+      "group": "native-family-audio-event",
+      "directory": false
+    },
+    {
+      "url": "family6/v_spy_04_com02.mp3",
+      "resolved": "local-original/audio/family6/v_spy_04_com02.mp3",
+      "source": "local-original/audio/native-families.json.events.v_spy_04_com02",
+      "group": "native-family-audio-event",
+      "directory": false
+    },
+    {
+      "url": "family6/v_spy_04_spe01.mp3",
+      "resolved": "local-original/audio/family6/v_spy_04_spe01.mp3",
+      "source": "local-original/audio/native-families.json.events.v_spy_04_spe01",
+      "group": "native-family-audio-event",
+      "directory": false
+    },
+    {
+      "url": "family6/v_fightingsail_06_sel01.mp3",
+      "resolved": "local-original/audio/family6/v_fightingsail_06_sel01.mp3",
+      "source": "local-original/audio/native-families.json.events.v_fightingsail_06_sel01",
+      "group": "native-family-audio-event",
+      "directory": false
+    },
+    {
+      "url": "family6/v_fightingsail_06_com01.mp3",
+      "resolved": "local-original/audio/family6/v_fightingsail_06_com01.mp3",
+      "source": "local-original/audio/native-families.json.events.v_fightingsail_06_com01",
+      "group": "native-family-audio-event",
+      "directory": false
+    },
+    {
+      "url": "family6/v_fightingsail_06_com02.mp3",
+      "resolved": "local-original/audio/family6/v_fightingsail_06_com02.mp3",
+      "source": "local-original/audio/native-families.json.events.v_fightingsail_06_com02",
+      "group": "native-family-audio-event",
+      "directory": false
+    },
+    {
+      "url": "family6/v_fightingsail_06_spe01.mp3",
+      "resolved": "local-original/audio/family6/v_fightingsail_06_spe01.mp3",
+      "source": "local-original/audio/native-families.json.events.v_fightingsail_06_spe01",
+      "group": "native-family-audio-event",
+      "directory": false
+    },
+    {
+      "url": "family6/v_FightingSail_08_sel01.mp3",
+      "resolved": "local-original/audio/family6/v_FightingSail_08_sel01.mp3",
+      "source": "local-original/audio/native-families.json.events.v_fightingsail_08_sel01",
+      "group": "native-family-audio-event",
+      "directory": false
+    },
+    {
+      "url": "family6/v_FightingSail_08_com01.mp3",
+      "resolved": "local-original/audio/family6/v_FightingSail_08_com01.mp3",
+      "source": "local-original/audio/native-families.json.events.v_fightingsail_08_com01",
+      "group": "native-family-audio-event",
+      "directory": false
+    },
+    {
+      "url": "family6/v_FightingSail_08_com02.mp3",
+      "resolved": "local-original/audio/family6/v_FightingSail_08_com02.mp3",
+      "source": "local-original/audio/native-families.json.events.v_fightingsail_08_com02",
+      "group": "native-family-audio-event",
+      "directory": false
+    },
+    {
+      "url": "family6/v_FightingSail_08_spe01.mp3",
+      "resolved": "local-original/audio/family6/v_FightingSail_08_spe01.mp3",
+      "source": "local-original/audio/native-families.json.events.v_fightingsail_08_spe01",
+      "group": "native-family-audio-event",
+      "directory": false
+    },
+    {
+      "url": "family6/v_FightingSail_10_sel01.mp3",
+      "resolved": "local-original/audio/family6/v_FightingSail_10_sel01.mp3",
+      "source": "local-original/audio/native-families.json.events.v_fightingsail_10_sel01",
+      "group": "native-family-audio-event",
+      "directory": false
+    },
+    {
+      "url": "family6/v_FightingSail_10_com01.mp3",
+      "resolved": "local-original/audio/family6/v_FightingSail_10_com01.mp3",
+      "source": "local-original/audio/native-families.json.events.v_fightingsail_10_com01",
+      "group": "native-family-audio-event",
+      "directory": false
+    },
+    {
+      "url": "family6/v_FightingSail_10_com02.mp3",
+      "resolved": "local-original/audio/family6/v_FightingSail_10_com02.mp3",
+      "source": "local-original/audio/native-families.json.events.v_fightingsail_10_com02",
+      "group": "native-family-audio-event",
+      "directory": false
+    },
+    {
+      "url": "family6/v_FightingSail_10_spe01.mp3",
+      "resolved": "local-original/audio/family6/v_FightingSail_10_spe01.mp3",
+      "source": "local-original/audio/native-families.json.events.v_fightingsail_10_spe01",
+      "group": "native-family-audio-event",
+      "directory": false
+    },
+    {
+      "url": "family6/Fx_Bld_Air_Defense_eng16.mp3",
+      "resolved": "local-original/audio/family6/Fx_Bld_Air_Defense_eng16.mp3",
+      "source": "local-original/audio/native-families.json.events.AirDefense_select",
+      "group": "native-family-audio-event",
+      "directory": false
+    },
+    {
+      "url": "family6/Fx_Bld_Air_Defense2_15.mp3",
+      "resolved": "local-original/audio/family6/Fx_Bld_Air_Defense2_15.mp3",
+      "source": "local-original/audio/native-families.json.events.AirDefense_select2",
+      "group": "native-family-audio-event",
+      "directory": false
+    },
+    {
+      "url": "family6/Fx_Bld_Coastal_Defense.mp3",
+      "resolved": "local-original/audio/family6/Fx_Bld_Coastal_Defense.mp3",
+      "source": "local-original/audio/native-families.json.events.CoastalDefense_select",
+      "group": "native-family-audio-event",
+      "directory": false
+    },
+    {
+      "url": "family6/Fx_Bld_Coastal_Defense2_15.mp3",
+      "resolved": "local-original/audio/family6/Fx_Bld_Coastal_Defense2_15.mp3",
+      "source": "local-original/audio/native-families.json.events.CoastalDefense_select2",
+      "group": "native-family-audio-event",
+      "directory": false
+    }
+  ],
+  "scope": "Actual supplemental audio catalog and every imported recording verified by the production exact-case/hash/size/event/interval portable checker. No original installation or playback process required."
+}

@@ -1,0 +1,136 @@
+{
+  "format": "cloth-fast7-paired-benchmark-v1",
+  "runtime": "v22.23.4",
+  "platform": "win32",
+  "arch": "x64",
+  "wasmSha256": "c8d1207fec111a5b47dbe24b75d51cf3f250f032dfdb4073e75113e65353c625",
+  "rows": [
+    {
+      "ships": 1,
+      "sails": 6,
+      "vertices": 150,
+      "samples": 3,
+      "updatesPerSample": 30,
+      "frozenMs": [
+        1.4746233333333312,
+        1.1051366666666658,
+        1.0159566666666668
+      ],
+      "wasmMs": [
+        0.256413333333334,
+        0.28138666666666645,
+        0.278133333333335
+      ],
+      "frozenMedianMs": 1.1051366666666658,
+      "wasmMedianMs": 0.278133333333335,
+      "ratio": 3.9734060402684293,
+      "finalStateSha256": "decf2eca97da436208d8b4dd42fd0cf536ee9c72326b4a3f93819a8cd459f1d0"
+    },
+    {
+      "ships": 2,
+      "sails": 18,
+      "vertices": 431,
+      "samples": 3,
+      "updatesPerSample": 30,
+      "frozenMs": [
+        2.857233333333333,
+        1.9048166666666664,
+        2.000916666666664
+      ],
+      "wasmMs": [
+        0.7353333333333353,
+        0.7683266666666668,
+        0.7495866666666681
+      ],
+      "frozenMedianMs": 2.000916666666664,
+      "wasmMedianMs": 0.7495866666666681,
+      "ratio": 2.669360002846004,
+      "finalStateSha256": "014ee19b001de585d66cde4cca0876374c12b1185401c5495e98687b80f4f4e0"
+    },
+    {
+      "ships": 5,
+      "sails": 42,
+      "vertices": 1012,
+      "samples": 3,
+      "updatesPerSample": 30,
+      "frozenMs": [
+        6.0916999999999994,
+        4.568153333333331,
+        4.772076666666665
+      ],
+      "wasmMs": [
+        1.735103333333336,
+        1.731880000000001,
+        1.662149999999997
+      ],
+      "frozenMedianMs": 4.772076666666665,
+      "wasmMedianMs": 1.731880000000001,
+      "ratio": 2.7554314771616175,
+      "finalStateSha256": "46a69a6c9428c7e82a1447fe69c6f703e0d49ced98c8abddb6bf10c2740f9bf9"
+    },
+    {
+      "ships": 10,
+      "sails": 90,
+      "vertices": 2155,
+      "samples": 3,
+      "updatesPerSample": 30,
+      "frozenMs": [
+        11.703026666666672,
+        11.326246666666671,
+        11.686776666666658
+      ],
+      "wasmMs": [
+        3.4019433333333304,
+        3.50015,
+        3.6126633333333453
+      ],
+      "frozenMedianMs": 11.686776666666658,
+      "wasmMedianMs": 3.50015,
+      "ratio": 3.3389359503640295,
+      "finalStateSha256": "7e6e60d5adc779efb5e254656c32e4541f3fbdc41c9fb55eba91a89b02f6d3ca"
+    },
+    {
+      "ships": 20,
+      "sails": 180,
+      "vertices": 4310,
+      "samples": 3,
+      "updatesPerSample": 30,
+      "frozenMs": [
+        24.52975999999999,
+        28.85694333333334,
+        28.990116666666655
+      ],
+      "wasmMs": [
+        7.147696666666676,
+        7.363983333333333,
+        7.791179999999986
+      ],
+      "frozenMedianMs": 28.85694333333334,
+      "wasmMedianMs": 7.363983333333333,
+      "ratio": 3.918659511722597,
+      "finalStateSha256": "8748959a42a28baaa9b814cf86e881699ccaf21066f1caa1a700adbe8705f65b"
+    },
+    {
+      "ships": 50,
+      "sails": 450,
+      "vertices": 10775,
+      "samples": 3,
+      "updatesPerSample": 30,
+      "frozenMs": [
+        66.90499333333331,
+        75.10247,
+        81.02001
+      ],
+      "wasmMs": [
+        18.480140000000027,
+        18.034613333333315,
+        20.576586666666664
+      ],
+      "frozenMedianMs": 75.10247,
+      "wasmMedianMs": 18.480140000000027,
+      "ratio": 4.063955684318403,
+      "finalStateSha256": "8778392d142711b2141f36659ada352ec904b796d0b2a31b528706a7cee4e1cb"
+    }
+  ],
+  "scope": "Serial alternating backend batches in one process, separate monomorphic step callsites,120warmup frames, identical source ship grids and forces,90updates per ship count with matching complete state hashes. Excludes setup, hashes, lighting, GPU and gameplay. Host background load can vary; no global speed/frame-rate guarantee."
+}

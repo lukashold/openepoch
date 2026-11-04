@@ -1,0 +1,15 @@
+{
+  "format": "native-paidqueue7-duration-wasm-v2",
+  "status": "PASS",
+  "checks": 426,
+  "wasmSha256": "25c832f13c1c8b4d8547eb6c65d78bd74c5fa50f45d9745328f8bb18ccbb146d",
+  "originalActiveTime": 32.5,
+  "newlyResearchedTime": 29.25,
+  "elapsedAtResearch": 15.060039520263672,
+  "hudProgress": 0.46,
+  "source": "Controlled old-loader second host; actual cmd_queue_job, cmd_research, tick, save/load and readonly UI/duration exports.",
+  "limits": [
+    "UnitProduce start-cache source is proven. Research/Epoch retain their separate existing time/host adapters.",
+    "No native area-effect production-rate simulation is newly claimed."
+  ]
+}

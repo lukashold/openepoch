@@ -32,7 +32,7 @@ pub const O_UNLOAD: u8 = 7;
 /// Marker in `Ent::stuck`: the unit walked onto a transport, remove it without an explosion.
 const BOARDED: u8 = 255;
 
-pub const RESEARCH: u8 = 255;
+pub const RESEARCH: QueueItem = crate::ids::EPOCH_JOB;
 const GC: usize = 64; // grid cells per axis
 const CELL: f32 = 4.0;
 
@@ -40,7 +40,7 @@ const CELL: f32 = 4.0;
 #[derive(Clone, Copy)]
 pub struct Ent {
     pub alive: bool,
-    pub def: u8,
+    pub def:DefId,
     pub team: u8,
     pub gen: u16,
     pub x: f32,
@@ -65,7 +65,7 @@ pub struct Ent {
     /// Construction progress, 1.0 = finished.
     pub built: f32,
     /// Buildings: production queue. Workers: `q[0]` = resource kind being gathered.
-    pub q: [u8; 5],
+    pub q: [QueueItem; 5],
     pub qn: u8,
     pub qt: f32,
     pub rx: f32,
@@ -79,12 +79,12 @@ pub struct Ent {
     /// Workers: resource kind they were gathering before being pulled off to build.
     pub prev: u8,
     /// Transports: unit type and health (percent) of each passenger.
-    pub cargo: [u8; CARGO_MAX],
+    pub cargo: [DefId; CARGO_MAX],
     pub cargo_hp: [u8; CARGO_MAX],
     pub ncargo: u8,
 }
 
-const E0: Ent = Ent {
+pub(crate) const E0: Ent = Ent {
     alive: false, def: 0, team: 0, gen: 0, x: 0.0, y: 0.0, px: 0.0, py: 0.0, vx: 0.0, vy: 0.0, rot: 0.0, prot: 0.0, hp: 0.0, cd: 0.0,
     order: O_IDLE, ox: 0.0, oy: 0.0, otgt: NONE, otile: 0, tgt: NONE, fkey: 0, fslot: u16::MAX, sel: false, built: 1.0, q: [0; 5], qn: 0,
     qt: 0.0, rx: -1.0, ry: -1.0, revealed: 0, reveal_t: 0.0, stuck: 0, carry: 0.0, flash: 0.0, prev: 0, cargo: [0; CARGO_MAX], cargo_hp: [0; CARGO_MAX], ncargo: 0,
@@ -213,6 +213,8 @@ pub struct Game {
     pub city_ground: Vec<crate::city_ground::CityBand>,
     #[cfg(feature="ee2-up15")]
     pub attack_clock:Vec<crate::native_attack_clock::Clock>,
+    #[cfg(feature="ee2-paidqueue7")]
+    pub queue_prices:Vec<crate::paid_queue7::Payment>,
     pub inst: Vec<f32>,
     pub mini: Vec<u8>,
     pub ui: String,
@@ -277,6 +279,8 @@ impl Game {
             city_ground: vec![crate::city_ground::EMPTY; MAXE],
             #[cfg(feature="ee2-up15")]
             attack_clock:vec![crate::native_attack_clock::EMPTY;MAXE],
+            #[cfg(feature="ee2-paidqueue7")]
+            queue_prices:Vec::new(),
             inst: Vec::with_capacity(8 * 16384),
             mini: vec![0; NN * 4],
             ui: String::with_capacity(4096),
@@ -301,7 +305,7 @@ impl Game {
             inbox: Vec::new(),
             savebuf: Vec::new(),
             tmp: Vec::with_capacity(12 * 16384),
-            ranges: vec![0; 512],
+            ranges: vec![0; crate::ids::render_capacity()*2],
             eye: [0.0; 3],
             placement_cache:crate::placement::PlacementCache::default(),
         };
@@ -353,10 +357,10 @@ impl Game {
         if e.alive && e.gen as u32 == h >> 16 { Some(i) } else { None }
     }
 
-    pub fn spawn(&mut self, def: u8, team: u8, x: f32, y: f32) -> usize {
+    pub fn spawn(&mut self, def:DefId, team: u8, x: f32, y: f32) -> usize {
         self.spawn_oriented(def,team,x,y,0.0)
     }
-    pub fn spawn_oriented(&mut self,def:u8,team:u8,x:f32,y:f32,angle:f32)->usize {
+    pub fn spawn_oriented(&mut self,def:DefId,team:u8,x:f32,y:f32,angle:f32)->usize {
         let i = match self.free.pop() {
             Some(i) => i as usize,
             None => return NOIDX,
@@ -364,6 +368,7 @@ impl Game {
         if i + 1 > self.high {
             self.high = i + 1;
         }
+        #[cfg(feature="ee2-paidqueue7")] self.clear_queue_payments(i);
         let d = &DEFS[def as usize];
         let gen = self.ents[i].gen;
         self.ents[i] = Ent { alive: true, def, team, gen, x, y, px: x, py: y, ox: x, oy: y, hp: self.max_hp(team,def), rot:angle,prot:angle,..E0 };
@@ -385,6 +390,7 @@ impl Game {
     }
 
     fn kill(&mut self, i: usize) {
+        #[cfg(feature="ee2-paidqueue7")] self.clear_queue_payments(i);
         let e = self.ents[i];
         let d = &DEFS[e.def as usize];
         if d.building {
@@ -441,11 +447,16 @@ impl Game {
     }
 
     /// `tx,ty` is the top-left tile of the footprint.
-    pub fn can_place(&self,def:u8,tx:i32,ty:i32,team:u8)->bool{self.placement_geometry_error(team,def,tx,ty,0)==0}
-    pub fn place(&mut self,def:u8,tx:i32,ty:i32,team:u8)->usize{self.place_with_rotation(def,tx,ty,team,0)}
+    pub fn can_place(&self,def:DefId,tx:i32,ty:i32,team:u8)->bool{self.placement_geometry_error(team,def,tx,ty,0)==0}
+    pub fn place(&mut self,def:DefId,tx:i32,ty:i32,team:u8)->usize{self.place_with_rotation(def,tx,ty,team,0)}
 
     /// Would `train(b, def)` succeed right now?
-    pub fn can_train(&self, b: usize, def: u8) -> bool {
+    pub fn can_train(&self, b: usize, def:QueueItem) -> bool {
+        // The installed UP profile exposes native research, never the separate
+        // independent game's technologies. Their wide wire namespace is kept
+        // distinct but must not become newly accessible through a crafted job.
+        #[cfg(feature="ee2-roster6")]
+        if crate::ids::decode_job(def).is_none_or(|(kind,_)|kind==2){return false;}
         let e = &self.ents[b];
         let p = &self.players[e.team as usize];
         if !DEFS[e.def as usize].building || e.built < 1.0 || e.qn >= 5 {
@@ -462,15 +473,17 @@ impl Game {
             let k = (def - TECH0) as usize;
             k < TECHS.len() && TECHS[k].at == e.def && TECHS[k].epoch <= p.epoch && (p.tech | p.tech_busy) >> k & 1 == 0 && self.afford(e.team, &TECHS[k].cost)
         } else {
-            (def as usize) < DEFS.len() && DEFS[def as usize].made_at == e.def && DEFS[def as usize].epoch <= p.epoch && DEFS[def as usize].until > p.epoch && self.afford(e.team, &self.unit_cost(e.team,def)) && p.pop + crate::economy::population(def,p.epoch) <= p.cap
+            (def as usize) < DEFS.len() && DEFS[def as usize].made_at == e.def && DEFS[def as usize].epoch <= p.epoch && DEFS[def as usize].until > p.epoch && self.afford(e.team, &self.unit_cost(e.team,def as DefId)) && p.pop + crate::economy::population(def as DefId,p.epoch) <= p.cap
         }
     }
 
-    pub fn train(&mut self, b: usize, def: u8) -> bool {
+    pub fn train(&mut self, b: usize, def:QueueItem) -> bool {
         if !self.can_train(b, def) {
             return false;
         }
         let team = self.ents[b].team;
+        #[cfg(feature="ee2-paidqueue7")]
+        let paid=self.quote_paid_job(b,self.ents[b].qn as usize,def,false);
         if def == RESEARCH {
             self.advance_payment(team,1.0);
             self.players[team as usize].researching = true;
@@ -481,15 +494,24 @@ impl Game {
             self.pay(team, &TECHS[(def - TECH0) as usize].cost, 1.0);
             self.players[team as usize].tech_busy |= 1 << (def - TECH0);
         } else {
-            self.pay(team, &self.unit_cost(team,def), 1.0);
+            self.pay(team, &self.unit_cost(team,def as DefId), 1.0);
         }
+        #[cfg(feature="ee2-paidqueue7")] self.record_queue_payment(paid);
         let e = &mut self.ents[b];
         e.q[e.qn as usize] = def;
         e.qn += 1;
+        #[cfg(feature="ee2-paidqueue7")] self.recount_paid_players();
         true
     }
 
     pub fn cancel(&mut self, b: usize) {
+        #[cfg(feature="ee2-paidqueue7")]
+        {if self.ents[b].qn>0{self.cancel_paid_job(b,self.ents[b].qn as usize-1);}return;}
+        #[cfg(not(feature="ee2-paidqueue7"))]
+        self.cancel_legacy(b);
+    }
+    #[cfg(not(feature="ee2-paidqueue7"))]
+    fn cancel_legacy(&mut self,b:usize){
         let e = self.ents[b];
         if e.qn == 0 {
             return;
@@ -505,7 +527,7 @@ impl Game {
             self.pay(e.team, &TECHS[(item - TECH0) as usize].cost, -1.0);
             self.players[e.team as usize].tech_busy &= !(1 << (item - TECH0));
         } else {
-            self.pay(e.team, &self.unit_cost(e.team,item), -1.0);
+            self.pay(e.team, &self.unit_cost(e.team,item as DefId), -1.0);
         }
         let e = &mut self.ents[b];
         e.qn -= 1;
@@ -602,13 +624,13 @@ impl Game {
                 continue;
             }
             e.order = O_GATHER;
-            if cfg!(feature="ee2-reference")&&e.carry>0.0&&e.q[0]!=kind {if e.q[2]==0{e.q[2]=e.q[0];}e.q[1]=1;}
+            if cfg!(feature="ee2-reference")&&e.carry>0.0&&e.q[0]!=kind as QueueItem {if e.q[2]==0{e.q[2]=e.q[0];}e.q[1]=1;}
             e.otile = tile as u32;
             e.otgt = NONE;
             #[cfg(feature="ee2-up15")]
             crate::native_attack_clock::stop(&mut self.attack_clock[i].flags);
             e.tgt = NONE;
-            e.q[0] = kind;
+            e.q[0] = kind as QueueItem;
             e.fkey = key;
             e.stuck = 0;
         }
@@ -621,7 +643,7 @@ impl Game {
         let(tx,ty,side)=Self::building_bounds(&b);self.prepare_build_routes(tx,ty,side);
         let assignments:Vec<(usize,u32)>=ids.iter().copied().filter_map(|i|{let e=*self.ents.get(i)?;if !e.alive||e.team!=b.team||!DEFS[e.def as usize].has(F_WORKER){return None;}let route=self.placement_cache.approach[tile_of(e.x,e.y)];
             let route=if route==NONE&&e.x>=tx as f32&&e.x<(tx+side)as f32&&e.y>=ty as f32&&e.y<(ty+side)as f32{self.map.snap(e.x,e.y,0)as u32}else{route};(route!=NONE).then_some((i,route))}).collect();
-        for(i,key)in assignments{let e=&mut self.ents[i];e.prev=match e.order{O_GATHER if e.otgt==NONE=>e.q[0],O_BUILD=>e.prev,_=>0};e.order=if b.built<1.0{O_BUILD}else{O_GATHER};e.q[0]=R_FOOD;e.otgt=h;e.tgt=NONE;e.fkey=key;e.fslot=u16::MAX;e.stuck=0;}
+        for(i,key)in assignments{let e=&mut self.ents[i];e.prev=match e.order{O_GATHER if e.otgt==NONE=>e.q[0] as u8,O_BUILD=>e.prev,_=>0};e.order=if b.built<1.0{O_BUILD}else{O_GATHER};e.q[0]=R_FOOD as QueueItem;e.otgt=h;e.tgt=NONE;e.fkey=key;e.fslot=u16::MAX;e.stuck=0;}
     }
 
     /// Land units walk to a transport ship and climb aboard.
@@ -772,7 +794,7 @@ impl Game {
         }
         for e in &self.ents[..self.high] {
             if e.alive {
-                mix(e.def as u32 | (e.team as u32) << 8 | (e.order as u32) << 16 | (e.ncargo as u32) << 24);
+                if cfg!(feature="ee2-roster6"){mix(e.def as u32);mix(e.team as u32 |(e.order as u32)<<8|(e.ncargo as u32)<<16);}else{mix(e.def as u32 | (e.team as u32) << 8 | (e.order as u32) << 16 | (e.ncargo as u32) << 24);}
                 mix(e.x.to_bits());
                 mix(e.y.to_bits());
                 mix(e.hp.to_bits());
@@ -783,7 +805,7 @@ impl Game {
 
                 mix(e.qn as u32);
                 if DEFS[e.def as usize].building {for q in &e.q[..e.qn as usize] {mix(*q as u32);}}
-                for k in 0..e.ncargo as usize {mix(e.cargo[k] as u32 | (e.cargo_hp[k] as u32)<<8);}
+                for k in 0..e.ncargo as usize {if cfg!(feature="ee2-roster6"){mix(e.cargo[k]as u32);mix(e.cargo_hp[k]as u32);}else{mix(e.cargo[k] as u32 | (e.cargo_hp[k] as u32)<<8);}}
             }
         }
         #[cfg(feature="ee2-reference")]
@@ -796,6 +818,8 @@ impl Game {
         }
         #[cfg(feature="ee2-up15")]
         {mix(crate::native_attack_clock::MAGIC);for i in 0..self.high{let c=self.attack_clock[i];if self.ents[i].alive&&c.handle==self.h(i){mix(c.handle);mix(c.next.to_bits());mix(c.flags as u32);}}}
+        #[cfg(feature="ee2-paidqueue7")]
+        {mix(crate::paid_queue7::MAGIC);for p in self.canonical_queue_payments(){mix(p.handle);mix(p.position);mix(p.job);mix(p.inferred as u32|((p.purchased as u32)<<1));for v in p.price{mix(v.to_bits());}mix(p.duration.to_bits());}}
         h
     }
 
@@ -908,7 +932,7 @@ impl Game {
                 }
                 for &q in &e.q[..e.qn as usize] {
                     if (q as usize) < DEFS.len() {
-                        pop[t] += crate::economy::population(q,self.players[t].epoch);
+                        pop[t] += crate::economy::population(q as DefId,self.players[t].epoch);
                     }
                 }
             }
@@ -1065,7 +1089,7 @@ impl Game {
         if d.has(F_STEALTH) {
             e.reveal_t = 3.0;
         }
-        let dmg = w.dmg * self.players[e.team as usize].atk[class_of(d)] * self.modifiers[e.team as usize][e.def as usize][1] * (1.0+self.fortress_attack_bonus(e));
+        let dmg = self.scaled_weapon_damage(e.team,e.def,w.dmg,self.players[e.team as usize].atk[class_of(d)]) * (1.0+self.fortress_attack_bonus(e));
         self.ev(if w.kind == W_MELEE { 7.0 } else { w.kind as f32 }, e.x, e.y);
         let direct={
             #[cfg(feature="ee2-up15")] {attack.map(|a|!a.missile).unwrap_or(w.kind==W_MELEE)}
@@ -1297,16 +1321,28 @@ impl Game {
                 let whole=e.carry.floor();if whole>=1.0{self.add_resource(e.team,kind as usize-1,whole);e.carry-=whole;}
             }else{e.carry=0.0;}
         }
-        if e.qn > 0 {
+        #[cfg(feature="ee2-paidqueue7")] let paid_ready=self.purchase_front_job(i);
+        #[cfg(not(feature="ee2-paidqueue7"))] let paid_ready=true;
+        if e.qn > 0 && paid_ready {
             let item = e.q[0];
+            #[cfg(feature="ee2-paidqueue7")] let(job_limit,job_start)=self.begin_paid_job(i);
             let team = e.team as usize;
             let mut done = false;
             if item == RESEARCH {
                 e.qt += DT;
-                if e.qt >= EPOCH_TIME {
+                if e.qt >= {
+                    #[cfg(feature="ee2-paidqueue7")] {job_limit}
+                    #[cfg(not(feature="ee2-paidqueue7"))] {EPOCH_TIME}
+                } {
+                    #[cfg(feature="ee2-paidqueue7")] let previous_epoch=self.players[team].epoch;
                     self.players[team].epoch += 1;
                     self.players[team].researching = false;
                     let old=self.max_hp(e.team,e.def);self.rebuild_modifiers(e.team,true);e.hp*=self.max_hp(e.team,e.def)/old.max(0.01);
+                    #[cfg(feature="ee2-paidqueue7")] self.apply_paid_main(team as u8,previous_epoch);
+                    // Main may reprice/remove this city's pending jobs while
+                    // update_building holds its active order in a local copy.
+                    #[cfg(feature="ee2-paidqueue7")]
+                    {e.q=self.ents[i].q;e.qn=self.ents[i].qn;}
                     done = true;
                 }
             } else if original_research(item) {
@@ -1314,7 +1350,10 @@ impl Game {
                 {
                     let k=(item-ORIGINAL_RESEARCH0) as usize;
                     e.qt += DT;
-                    if e.qt + 0.00001 >= crate::ee2_research::NODES[k].time {
+                    if e.qt + 0.00001 >= {
+                        #[cfg(feature="ee2-paidqueue7")] {job_limit}
+                        #[cfg(not(feature="ee2-paidqueue7"))] {crate::ee2_research::NODES[k].time}
+                    } {
                         self.researched[team][k/32] |= 1 << (k%32);
                         let old=self.max_hp(e.team,e.def);
                         self.rebuild_modifiers(e.team,true);
@@ -1339,15 +1378,17 @@ impl Game {
                 }
             } else {
                 let ud = &DEFS[item as usize];
-                let time=self.production_time(e.team,item);
+                #[cfg(feature="ee2-paidqueue7")] let time=job_limit;
+                #[cfg(not(feature="ee2-paidqueue7"))] let time=self.production_time(e.team,item as DefId);
                 if instant { e.qt = time; }
                 if e.qt < time {
-                    e.qt += DT;
+                    #[cfg(feature="ee2-paidqueue7")] {e.qt=(e.qt+if job_start{0.009999999776482582_f32}else{DT}).min(time);}
+                    #[cfg(not(feature="ee2-paidqueue7"))] {e.qt+=DT;}
                 }
                 // population was already reserved when queued; cap can still drop if houses die
                 if e.qt >= time && (self.players[team].pop <= self.players[team].cap || self.bench > 0) {
                     let (sx, sy) = self.spawn_point(e, d, ud);
-                    let u = self.spawn(item, e.team, sx, sy);
+                    let u = self.spawn(item as DefId, e.team, sx, sy);
                     if u != NOIDX && e.rx >= 0.0 {
                         let rt = tile_of(e.rx, e.ry);
                         if ud.has(F_WORKER) && self.map.res[rt] != R_NONE {
@@ -1363,6 +1404,7 @@ impl Game {
                 if e.team == self.local {
                     self.ev(if original_research(item) || item >= TECH0 { 13.0 } else { 12.0 }, e.x, e.y);
                 }
+                #[cfg(feature="ee2-paidqueue7")] self.remove_queue_payment(((e.gen as u32)<<16)|i as u32,0);
                 e.q.copy_within(1.., 0);
                 e.qn -= 1;
                 e.qt = 0.0;
@@ -1647,8 +1689,8 @@ impl Game {
     }
 
     fn do_gather(&mut self, index:usize,e: &mut Ent, d: &Def, want: &mut (f32, f32), moving: &mut bool) {
-        let kind = e.q[0];
-        if cfg!(feature="ee2-reference")&&e.carry>0.0&&e.q[2]>0&&e.q[2]!=kind {e.q[1]=1;}
+        let kind=e.q[0] as u8;
+        if cfg!(feature="ee2-reference")&&e.carry>0.0&&e.q[2]>0&&e.q[2]!=kind as QueueItem {e.q[1]=1;}
         if cfg!(feature="ee2-reference")&&e.q[1]==1{self.return_cargo(e,d,want,moving);return;}
         if !self.citizen_can_gather(e.team,kind){e.carry=0.0;e.q[2]=0;Self::set_idle(e);return;}
         let (cx, cy, reach, farm) = if e.otgt != NONE {
@@ -1701,7 +1743,7 @@ impl Game {
                 #[cfg(feature="ee2-up15")] {crate::ee2_units::lookup_class(e.def,p.epoch).and_then(|r|if farm!=NOIDX{r.farm_carry}else{r.carry}).unwrap_or(0.0)}
                 #[cfg(not(feature="ee2-up15"))] {15.0}
             };
-            let previous=e.carry.floor();e.carry=(e.carry+amount).min(carry_limit);e.q[2]=kind;
+            let previous=e.carry.floor();e.carry=(e.carry+amount).min(carry_limit);e.q[2]=kind as QueueItem;
             if farm==NOIDX {
                 let t=e.otile as usize;let removed=(e.carry.floor()-previous) as u16;
                 self.map.amt[t]=self.map.amt[t].saturating_sub(removed);
@@ -1753,13 +1795,13 @@ impl Game {
             let farm_staffed=cfg!(feature="ee2-reference")&&self.ents[..self.high].iter().any(|w|w.alive&&w.def==WORKER&&w.order==O_GATHER&&w.otgt==e.otgt);
             if b.def == FARM&&!farm_staffed {
                 e.order = O_GATHER;
-                e.q[0] = R_FOOD;
+                e.q[0] = R_FOOD as QueueItem;
             } else if e.prev != R_NONE {
                 // job done: go back to the resource we were working before
                 let t = e.otile as usize;
                 e.order = O_GATHER;
                 e.otgt = NONE;
-                e.q[0] = e.prev;
+                e.q[0] = e.prev as QueueItem;
                 e.fkey = self.key_for(LAND, (t % N) as f32 + 0.5, (t / N) as f32 + 0.5);
             } else {
                 Self::set_idle(e);
@@ -1917,20 +1959,20 @@ impl Game {
                     continue;
                 }
                 // pick a random late-game unit of the matching domain
-                let mut def = 0u8;
+                let mut def = 0 as DefId;
                 for _ in 0..40 {
                     let k = WORKER as u32 + 1 + self.rng.range(DEFS.len() as u32 - WORKER as u32 - 1);
                     let dd = &DEFS[k as usize];
                     let dom = if dd.dom == SUB { SEA } else { dd.dom };
                     if dom == want && dd.epoch >= 4 {
-                        def = k as u8;
+                        def = k as DefId;
                         break;
                     }
                 }
                 if def == 0 {
                     continue;
                 }
-                let u = self.spawn(def, team as u8, x, y);
+                let u = self.spawn(def as DefId, team as u8, x, y);
                 if u == NOIDX {
                     break;
                 }
@@ -1973,7 +2015,7 @@ mod diplomacy_combat_tests {
     #[test]
     fn revealed_display_does_not_expose_undetected_stealth(){
         let mut g=Game::new(7,0,0,2,0);let def=DEFS.iter().position(|d|d.has(F_STEALTH)).unwrap() as u8;
-        let j=g.spawn(def,1,120.0,120.0);g.diplomacy.visibility=2;g.refresh_display_fog();
+        let j=g.spawn(def as DefId,1,120.0,120.0);g.diplomacy.visibility=2;g.refresh_display_fog();
         assert!(!g.visible(j));g.ents[j].revealed=1;assert!(g.visible(j));assert!(!g.can_see(0,j));
     }
     #[test]
@@ -2025,11 +2067,17 @@ mod territory_resource_epoch_tests{
   }
  }
  #[test]fn gifted_worker_discards_expired_cargo_like_normal_return_cargo(){
-  let mut g=Game::new(7,0,0,2,0);g.players[0].epoch=6;g.players[1].epoch=9;for t in 0..2{g.rebuild_modifiers(t,false);}let id=g.map.terr[tile_of(g.ents[0].x,g.ents[0].y)];let workers:Vec<usize>=g.ents[..g.high].iter().enumerate().filter(|(_,e)|e.alive&&e.team==0&&e.def==WORKER).map(|(i,_)|i).collect();let iron=workers[0];let wood=workers[1];g.ents[iron].carry=12.0;g.ents[iron].q[1]=1;g.ents[iron].q[2]=R_METAL;g.ents[wood].carry=9.0;g.ents[wood].q[1]=1;g.ents[wood].q[2]=R_WOOD;let bank=g.resource(1,R_METAL as usize-1);
-  assert!(g.apply_territory(0,1,0,id as u32,NONE));assert_eq!(g.ents[iron].carry,0.0);assert_eq!(g.ents[iron].q[1],0);assert_eq!(g.ents[iron].q[2],0);assert_eq!(g.resource(1,R_METAL as usize-1),bank);assert_eq!(g.ents[wood].carry,9.0);assert_eq!(g.ents[wood].q[2],R_WOOD);
+  let mut g=Game::new(7,0,0,2,0);g.players[0].epoch=6;g.players[1].epoch=9;for t in 0..2{g.rebuild_modifiers(t,false);}let id=g.map.terr[tile_of(g.ents[0].x,g.ents[0].y)];let workers:Vec<usize>=g.ents[..g.high].iter().enumerate().filter(|(_,e)|e.alive&&e.team==0&&e.def==WORKER).map(|(i,_)|i).collect();let iron=workers[0];let wood=workers[1];g.ents[iron].carry=12.0;g.ents[iron].q[1]=1;g.ents[iron].q[2]=R_METAL as QueueItem;g.ents[wood].carry=9.0;g.ents[wood].q[1]=1;g.ents[wood].q[2]=R_WOOD as QueueItem;let bank=g.resource(1,R_METAL as usize-1);
+  assert!(g.apply_territory(0,1,0,id as u32,NONE));assert_eq!(g.ents[iron].carry,0.0);assert_eq!(g.ents[iron].q[1],0);assert_eq!(g.ents[iron].q[2],0);assert_eq!(g.resource(1,R_METAL as usize-1),bank);assert_eq!(g.ents[wood].carry,9.0);assert_eq!(g.ents[wood].q[2],R_WOOD as QueueItem);
  }
 }
 
 #[cfg(all(test,feature="ee2-up15"))]
 #[path="native_attack_tests.rs"]
 mod native_attack_tests;
+#[cfg(all(test,feature="ee2-roster6"))]
+#[path="roster6_classic_tests.rs"]
+mod roster6_classic_tests;
+#[cfg(all(test,feature="ee2-paidqueue7"))]
+#[path="paid_queue7_tests.rs"]
+mod paid_queue7_tests;

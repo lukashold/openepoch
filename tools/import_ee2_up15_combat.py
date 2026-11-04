@@ -3,6 +3,7 @@ import argparse,csv,hashlib,json,pathlib,re,struct
 from import_ee2_units import clean_comments,scalar,sections
 from up15_source_database import ActiveDatabase,default_manifest
 MANIFEST=default_manifest(pathlib.Path(__file__).resolve().parents[1])
+from roster6_codegen import rust_identities
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 INSTALL=pathlib.Path(r'C:\Program Files (x86)\GOG.com\Empire Earth II')
 UNKNOWN=65535
@@ -10,7 +11,7 @@ normalize=lambda value:re.sub(r'[^a-z0-9]','',value.lower())
 sha=lambda raw:hashlib.sha256(raw).hexdigest()
 def source(archive,entry,raw,**extra):return {'archive':archive,'entry':entry,'sha256':sha(raw),**extra}
 
-def collect(installation=INSTALL):
+def collect(installation=INSTALL,prefix="ee2-up15"):
  db=ActiveDatabase(MANIFEST)
  try:
   def source(_archive,entry,raw,**extra):
@@ -57,7 +58,7 @@ def collect(installation=INSTALL):
     # 0052ffe0 appends in row order; 0052ff40 returns the FIRST equal pair.
     # Preserve later duplicates in audit, never reverse the native priority.
     adjust_pairs.setdefault(key,value)
-  unit_audit_blob=(ROOT/'docs/ee2-up15-units.json').read_bytes();unit_audit=json.loads(unit_audit_blob)
+  unit_audit_blob=(ROOT/('docs/'+prefix+'-units.json')).read_bytes();unit_audit=json.loads(unit_audit_blob)
   rps_cache={}
   def unit_rps(name,stack=()):
    if name in rps_cache:return rps_cache[name]
@@ -72,7 +73,7 @@ def collect(installation=INSTALL):
    result=(enum_map[normalize(own)],own,[ref]) if own else inherited
    assert result,'No native RPS class for '+name
    rps_cache[name]=result;return result
-  profiles=[];lookup=[[UNKNOWN]*15 for _ in range(57)]
+  profiles=[];lookup=[[UNKNOWN]*15 for _ in range(len(unit_audit["bindings"]))]
   for native in unit_audit['class_rows']:
    source_lines={ref['line'] for field in native['fields'].values() for ref in field.get('sources',[]) if ref.get('virtual_path','').lower()=='db/techtree/upgrade_unittype5.csv'}
    candidates=[by_source_line[line] for line in source_lines if line in by_source_line and by_source_line[line]['UNIT']==native['source_unit'] and int(by_source_line[line]['EPOCH'])==native['source_epoch']]
@@ -113,7 +114,7 @@ def generate(data):
   'pub const RPS_PERCENT:[[u16;35];35]=[']
  lines += [' ['+','.join(map(str,row))+'],' for row in data['matrix']];lines+= ['];',f"pub const PROFILES:[CombatProfile;{len(data['profiles'])}]=["]
  lines += [f" CombatProfile{{rps:{row['rps']},upgrade:{row['upgradeIndex']}}}, // {row['id']} E{row['epoch']+1}..{row['until']} {row['sourceUnit']} {row['upgrade']}" for row in data['profiles']]
- lines += ['];','pub const PROFILE_BY_DEF_EPOCH:[[u16;15];57]=[']
+ lines += ['];',f'pub const PROFILE_BY_DEF_EPOCH:[[u16;15];{len(data["lookup"])}]=[']
  lines += [' ['+','.join('UNKNOWN_PROFILE' if value==UNKNOWN else str(value) for value in row)+'],' for row in data['lookup']]
  lines += ['];',f"const ADJUSTMENTS:[(u32,u16);{len(data['adjustments'])}]=["]
  lines += [f' ({(attacker<<16)|defender},{value}),' for attacker,defender,value in data['adjustments']]
@@ -149,10 +150,10 @@ pub fn adjustment_percent(attacker_profile:u16,defender_profile:u16)->Option<u16
 }
 
 ''']
- return '\n'.join(lines)
+ return rust_identities('\n'.join(lines))
 
-def run(installation=INSTALL):
- data=collect(installation)
+def run(installation=INSTALL,prefix="ee2-up15"):
+ data=collect(installation,prefix)
  # A UnitType's inherited RPS exists before its production upgrade. Captured,
  # scenario or cheat-spawned future units must not lose known class eligibility
  # merely because their new owner's epoch precedes production availability.
@@ -168,7 +169,7 @@ def run(installation=INSTALL):
   data['profiles'].append(base)
   for epoch in absent:lookup[epoch]=index
  data['baseTypeScope']='Every bound source UnitType retains its proven inherited RPS before production availability; missing upgrade identity uses native default adjustment100.'
- targets=[(ROOT/'src/ee2_up15_combat.rs',generate(data)),(ROOT/'docs/ee2-up15-combat.json',json.dumps(data,indent=2)+'\n')]
+ targets=[(ROOT/('src/'+prefix.replace('-','_')+'_combat.rs'),generate(data)),(ROOT/('docs/'+prefix+'-combat.json'),json.dumps(data,indent=2)+'\n')]
  for path,text in targets:
   temporary=path.with_suffix(path.suffix+'.tmp');temporary.write_text(text,encoding='utf8');temporary.replace(path)
  print(json.dumps({'profiles':len(data['profiles']),'rpsTypes':len(data['rpsNames']),'matchups':35*35,'upgradeAdjustments':len(data['adjustments']),'duplicatePairs':len(data['duplicateAdjustmentPairs'])}))

@@ -321,5 +321,5 @@ pub const fn apply(mut d:[Def;57])->[Def;57]{
  crate::economy::apply_original_defs(d)
 }
 // Unknown angular speeds retain explicit independent input adapter until bound.
-pub fn turn_rate_at(id:u8,epoch:u8)->f32{crate::ee2_up15_economy::lookup(id,epoch).and_then(|r|r.angular_speed).map(|v|v*0.01745329238474369_f32).unwrap_or(2.4)}
-pub fn turn_rate(id:u8)->f32{let epoch=crate::ee2_up15_economy::ROWS.iter().find(|r|r.id==id).map(|r|r.epoch).unwrap_or(0);turn_rate_at(id,epoch)}
+pub fn turn_rate_at(id:DefId,epoch:u8)->f32{crate::ee2_up15_economy::lookup(id,epoch).and_then(|r|r.angular_speed).map(|v|v*0.01745329238474369_f32).unwrap_or(2.4)}
+pub fn turn_rate(id:DefId)->f32{let epoch=crate::ee2_up15_economy::ROWS.iter().find(|r|r.id==id).map(|r|r.epoch).unwrap_or(0);turn_rate_at(id,epoch)}

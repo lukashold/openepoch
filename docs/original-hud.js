@@ -139,7 +139,12 @@ export async function loadNativeHud(assets,enabled,options={}){
   place(resourceList,layout.get('game_resources'));place(name,layout.get('game_playerinfo_name'));place(mode,layout.get('game_playerinfo_civ'));place(epoch,layout.get('game_playerinfo_epoch'));
   place(clock,layout.get('game_top_clock'));place(calendar,layout.get('game_calendar'));
  }
- const api={enabled:true,resize,update(ui,seasonSettings){
+ const api={enabled:true,resize,fontBindings(){
+  const labels=[{element:name,widget:'game_playerinfo_name'},{element:mode,widget:'game_playerinfo_civ'},{element:epoch,widget:'game_playerinfo_epoch'},{element:clock,widget:'game_top_clock'},
+   {element:calendar,widget:'game_top_clock',role:'calendar-label-adapter'}];
+  const resources=['pop','science',...Array.from({length:9},(_,slot)=>'r'+slot)].map(id=>{const element=get(id),row=element?.closest('.native-resource-row');return row?.parentElement===resourceList?{element,row}:null;}).filter(Boolean);
+  return {source:manifest,meta:meta||1,labels,resources};
+ },update(ui,seasonSettings){
   lastUi=ui;theme(nativeMetaEpoch(ui.epoch||0));epoch.textContent=String((ui.epoch||0)+1);epoch.title=ui.ename||'Epoche und Forschung';
   name.textContent='Spieler '+((ui.local??0)+1);mode.textContent=ui.net?'Mehrspieler':'Scharmützel';
   if(typeof ui.paused==='boolean')get('pause')?.setAttribute('aria-pressed',String(ui.paused));

@@ -1,0 +1,171 @@
+{
+  "format": "render-meta7-actual-wasm-tests-v1",
+  "profiles": {
+    "meta": {
+      "sha256": "f7784ee37122a8bd1e281bf09c4a898cae081e752cd5f9649a2c1d09efa50bd5",
+      "bytes": 486618
+    },
+    "classic": {
+      "sha256": "755386dc620f04bfb437703c7cd490a3b7ff9261032083dd29ce399b88942e59",
+      "bytes": 482478
+    },
+    "own": {
+      "sha256": "aba64ef67734b0121b799afa4335f6a8b2c4e9f333ffecc8140f9055ec31df7b",
+      "bytes": 269075
+    },
+    "base": {
+      "sha256": "3c60ebcb7bf1079118b912c52775b476e7eb68e2c4b7c94c96ab220968b890ad",
+      "bytes": 430411
+    },
+    "up5": {
+      "sha256": "34a8062a7a8caf86bdc93c3b61728a51f485f22ceb2251b681ebb6c849119de0",
+      "bytes": 460629
+    }
+  },
+  "scenes": [
+    {
+      "seed": 7,
+      "epoch": 0,
+      "frames": 6,
+      "ticks": 120,
+      "saveSha256": "8ce3c02b9209d9dce13ed2c713a5fb163a3d4604fba49b0cc603a1d9f5c38f40"
+    },
+    {
+      "seed": 7,
+      "epoch": 5,
+      "frames": 6,
+      "ticks": 120,
+      "saveSha256": "65d86ff732831fecbde037df603ee588725b149b920d4a1e198764373646f8c8"
+    },
+    {
+      "seed": 7,
+      "epoch": 9,
+      "frames": 6,
+      "ticks": 120,
+      "saveSha256": "1a83bc18ff8cafe17e391ca1379588c4b2576aa423d9feafbffbd2efef0a0abb"
+    },
+    {
+      "seed": 7,
+      "epoch": 14,
+      "frames": 6,
+      "ticks": 120,
+      "saveSha256": "f24476239b058102f26e4e042aa0c4dcdda03084cc08f45d5d6018043084a4b1"
+    },
+    {
+      "seed": 41,
+      "epoch": 0,
+      "frames": 6,
+      "ticks": 120,
+      "saveSha256": "3ebaaabfcb85f8d2c315ddde3f41e656f9db5d38ca78d8f47a695e71bb97f4cb"
+    },
+    {
+      "seed": 41,
+      "epoch": 5,
+      "frames": 6,
+      "ticks": 120,
+      "saveSha256": "f72809ab1dd95b8da0e03167bdc6bdb54f7a2eeede4956371fa8e17235c36d0d"
+    },
+    {
+      "seed": 41,
+      "epoch": 9,
+      "frames": 6,
+      "ticks": 120,
+      "saveSha256": "90da8694e3df831e6853608886a8849c700b74045ba78c591897584a66a23138"
+    },
+    {
+      "seed": 41,
+      "epoch": 14,
+      "frames": 6,
+      "ticks": 120,
+      "saveSha256": "013e6e78c70ba4169c7ffd2725dc5e013b07987536566de5394292f964c29f8a"
+    },
+    {
+      "seed": 97,
+      "epoch": 0,
+      "frames": 6,
+      "ticks": 120,
+      "saveSha256": "7eb15cc4ff1bff98b2cb38574e1db2ed2af02c4f4c616e2c6b898193c92bcab9"
+    },
+    {
+      "seed": 97,
+      "epoch": 5,
+      "frames": 6,
+      "ticks": 120,
+      "saveSha256": "0bfb4b632d81ca995257190d23347dddb6faa39c5c7197f34033f21d327a5481"
+    },
+    {
+      "seed": 97,
+      "epoch": 9,
+      "frames": 6,
+      "ticks": 120,
+      "saveSha256": "947f811548522ff860ea613fadcf4feb81a2a80a898ccc4cacde330c22343f02"
+    },
+    {
+      "seed": 97,
+      "epoch": 14,
+      "frames": 6,
+      "ticks": 120,
+      "saveSha256": "cab462def26b254f23f09acf2d6bcaf979a6e602e8d4d9c5e06d29560fde480f"
+    }
+  ],
+  "legacyProfiles": [
+    {
+      "name": "classic",
+      "frozenSha256": "3a71249f493c2cd73e2694ee0e1befb9f653a3100d43ebb9d78540a0cc71bdb0",
+      "candidateSha256": "755386dc620f04bfb437703c7cd490a3b7ff9261032083dd29ce399b88942e59",
+      "ticks": 320
+    },
+    {
+      "name": "own",
+      "frozenSha256": "82ccbb1e17862d90ec6c242e9d1b9af029878c7a45b25f0f62b3e2f5e2caae9f",
+      "candidateSha256": "aba64ef67734b0121b799afa4335f6a8b2c4e9f333ffecc8140f9055ec31df7b",
+      "ticks": 320
+    },
+    {
+      "name": "base",
+      "frozenSha256": "1571c43a6ddd2d3382b4f72cdaf5c71b3d1b67761ac24bc15b8954ad48799a5c",
+      "candidateSha256": "3c60ebcb7bf1079118b912c52775b476e7eb68e2c4b7c94c96ab220968b890ad",
+      "ticks": 320
+    },
+    {
+      "name": "up5",
+      "frozenSha256": "e6a2da2007940cd2ceabc6848de6443d8b7e94cffd432059571975b8de0faaa7",
+      "candidateSha256": "34a8062a7a8caf86bdc93c3b61728a51f485f22ceb2251b681ebb6c849119de0",
+      "ticks": 320
+    }
+  ],
+  "migrations": [
+    {
+      "source": "OEU5",
+      "sourceWasmSha256": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51",
+      "ticks": 80,
+      "currentSaveSha256": "94c0863e4d821c52ec81a9061982580ce5c51bfab4c9058705b928fc58e80b29"
+    },
+    {
+      "source": "OEU6_57",
+      "sourceWasmSha256": "1f13de2c11b2d935e6e669541ff9a2ef67a0bb4cf186c0f5f0694e6559adb324",
+      "ticks": 80,
+      "currentSaveSha256": "94c0863e4d821c52ec81a9061982580ce5c51bfab4c9058705b928fc58e80b29"
+    }
+  ],
+  "status": "PASS",
+  "checks": 2172502,
+  "rowsChecked": 433140,
+  "framesChecked": 76,
+  "sourceHashes": {
+    "OpenEpoch/Cargo.toml": "d9d740113f79f9408243143577a58d9cce05202a28f161bea7f8d9914fdb0676",
+    "OpenEpoch/src/lib.rs": "88655a2740461118cdd981ccf25ee95aeeb0c62cbf411dc597ad2cedd8b12a60",
+    "OpenEpoch/src/render.rs": "939b057397ec02778392112c57c41ca2b85ae04bfe865c5f4a0b8544127e6b01",
+    "OpenEpoch/src/render_meta7.rs": "87f3335b688481f26734534a60d46832213be44664b2d0338871d8fed4ff0fa7",
+    "OpenEpoch/src/render_meta7_tests.rs": "efd9429a84e12a7bce7997bd5376080f07336e091bf2c98208dc9411091bb228",
+    "ABI.md": "e3455139aaa25666321177a408997addcc28345731ee6307cfaa0a7882c9c3e1",
+    "test_wasm.mjs": "d48319315e09dac6c946b244cb207b09fb7bd97da613f6e08b0273e104fba3ad",
+    "baseline.json": "58ed7376ec3bb3e5d6c21710c75dcb2f31ee6f866775fc4397e5ac8371c09b3f"
+  },
+  "scope": [
+    "Read-only metadata only; full save/hash/render buffers compared to frozen61v2 and all four feature-off profiles.",
+    "Own entities and fixture-controlled state, never execution of the original game.",
+    "No native Death or other native visual lifecycle event is inferred from liveness, culling, HP, seed or position.",
+    "No cloth controller, visual scheduler, save schema or actual game simulation field was added."
+  ]
+}

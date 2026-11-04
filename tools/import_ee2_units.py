@@ -454,7 +454,7 @@ def write_rust(rows, class_rows, production_from, path):
     temporary.replace(path)
 
 
-def run(installation=DEFAULT_INSTALL):
+def run(installation=DEFAULT_INSTALL, extra_bindings=()):
     db = Database(pathlib.Path(installation) / 'zips/db.zip')
     try:
         upgrades = db.table('db/TechTree/upgrade_unittypes.csv')
@@ -473,6 +473,9 @@ def run(installation=DEFAULT_INSTALL):
             definition_names += ['OilDerrick', 'UraniumMine', 'HercFacility','Fortress'][max(0, len(definition_names)-53):]
         if len(definition_names) != 57:
             raise ValueError('Expected the explicitly mapped 57-definition EE2 roster')
+        extras = {b['id']: b for b in extra_bindings}
+        assert sorted(extras) == list(range(57,57+len(extras)))
+        definition_names += [extras[i]['definition_name'] for i in sorted(extras)]
         visual_models = {}
         for data in db.blocks.values():
             if data['kind'] == 'UnitModel':
@@ -493,7 +496,12 @@ def run(installation=DEFAULT_INSTALL):
             identity = identifier not in ADAPTERS
             reason = ADAPTERS.get(identifier, '')
             model_verified = True
-            if identifier in BUILDINGS:
+            if identifier in extras:
+                original = extras[identifier]['source_unit']
+                identity, reason = True, 'Explicit source family, not an inferred legacy role alias'
+                model_verified = bool(base_model and base_model.get('verified'))
+                mapped = sorted(by_unit.get(original, []), key=lambda item: int(item['EPOCH'])) or [None]
+            elif identifier in BUILDINGS:
                 original, identity, reason = BUILDINGS[identifier]
                 model_verified = bool(base_model and base_model.get('verified'))
                 mapped = sorted(by_unit.get(original, []), key=lambda item: int(item['EPOCH']))

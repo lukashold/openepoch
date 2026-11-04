@@ -4,13 +4,23 @@ use crate::game::*;
 #[cfg(feature = "ee2-reference")]
 use crate::ee2_research::{NODES, ADVANCE_COST};
 
-pub const DEF_COUNT: usize = if cfg!(feature="ee2-reference") {57} else {53};
+pub const DEF_COUNT: usize = if cfg!(feature="ee2-roster6"){crate::defs::DEFS.len()}else if cfg!(feature="ee2-reference") {57} else {53};
 pub type Modifiers = [[f32; 19]; DEF_COUNT];
 
 impl Game {
-    pub fn max_hp(&self, team: u8, def: u8) -> f32 { self.modifiers[team as usize][def as usize][0] }
-    pub fn production_time(&self, team: u8, def: u8) -> f32 { self.modifiers[team as usize][def as usize][3] }
-    pub fn unit_cost(&self, team: u8, def: u8) -> [u16;9] {
+    /// New exact source families store native absolute Damage, avoiding v/base*base.
+    /// Legacy role definitions keep their established multiplier representation.
+    pub fn effective_weapon_damage(&self,team:u8,def:DefId,weapon_base:f32)->f32 {
+        let value=self.modifiers[team as usize][def as usize][1];
+        if cfg!(feature="ee2-roster6")&&def>=57 {value}else{weapon_base*value}
+    }
+    pub fn scaled_weapon_damage(&self,team:u8,def:DefId,weapon_base:f32,player_factor:f32)->f32 {
+        let value=self.modifiers[team as usize][def as usize][1];
+        if cfg!(feature="ee2-roster6")&&def>=57 {value*player_factor}else{weapon_base*player_factor*value}
+    }
+    pub fn max_hp(&self, team: u8, def:DefId) -> f32 { self.modifiers[team as usize][def as usize][0] }
+    pub fn production_time(&self, team: u8, def:DefId) -> f32 { self.modifiers[team as usize][def as usize][3] }
+    pub fn unit_cost(&self, team: u8, def:DefId) -> [u16;9] {
         let d = &DEFS[def as usize];
         let m = self.modifiers[team as usize][def as usize][4];
         let mut cost=[0u16;9];cost[..3].copy_from_slice(&d.cost);
@@ -18,7 +28,7 @@ impl Game {
         if let Some(row)=crate::ee2_units::lookup_class(def,self.players[team as usize].epoch){if let Some(value)=row.cost9{cost=value;}}
         cost.map(|v|(v as f32*m).round().clamp(0.0,65535.0) as u16)
     }
-    pub fn cargo_capacity(&self, team: u8, def: u8) -> usize {
+    pub fn cargo_capacity(&self, team: u8, def:DefId) -> usize {
         if DEFS[def as usize].has(F_RESEARCH|F_EXTRACT|F_DROPOFF|F_GARRISON) {
             self.modifiers[team as usize][def as usize][11].round().clamp(0.0, CARGO_MAX as f32) as usize
         } else { CARGO_MAX }
@@ -26,7 +36,7 @@ impl Game {
     /// Native 007e63b0 uses one place for Leaders, otherwise UnitType+A0.
     /// 0053a0f0 binds table C14970 ('popCount') through C14974, and 0053acfe
     /// writes that inherited property to +A0. Eligibility comes from Garrisonable.
-    pub fn fortress_slot_cost(&self,team:u8,def:u8)->Option<usize> {
+    pub fn fortress_slot_cost(&self,team:u8,def:DefId)->Option<usize> {
         #[cfg(feature="ee2-reference")]
         {
             let row=crate::ee2_units::lookup_class(def,self.players[team as usize].epoch)
@@ -66,7 +76,7 @@ impl Game {
     }
     #[cfg(feature = "ee2-reference")]
     pub fn research_busy(&self, team: u8, k: usize) -> bool {
-        self.ents[..self.high].iter().any(|e| e.alive && e.team == team && e.q[..e.qn as usize].contains(&(ORIGINAL_RESEARCH0+k as u8)))
+        self.ents[..self.high].iter().any(|e| e.alive && e.team == team && e.q[..e.qn as usize].contains(&(ORIGINAL_RESEARCH0+k as QueueItem)))
     }
     pub fn can_advance(&self, team: u8) -> bool {
         let p=&self.players[team as usize];
@@ -84,7 +94,7 @@ impl Game {
         { self.pay(team,&EPOCH_COST[ep+1],sign); }
     }
     #[cfg(feature = "ee2-reference")]
-    pub fn can_original_research(&self, b: usize, item: u8) -> bool {
+    pub fn can_original_research(&self, b: usize, item:QueueItem) -> bool {
         let e=&self.ents[b]; let k=(item-ORIGINAL_RESEARCH0) as usize; let n=&NODES[k];
         n.host == e.def && n.epoch <= self.players[e.team as usize].epoch &&
         !self.has_research(e.team,k) && !self.research_busy(e.team,k) &&
@@ -95,12 +105,13 @@ impl Game {
         let mut m=[[1.0;19];DEF_COUNT];
         for (i,d) in DEFS.iter().enumerate() {
             m[i][..12].copy_from_slice(&[d.hp,1.0,d.speed,d.time,1.0,d.sight,0.0,1.0,1.0,1.0,1.0,if d.has(F_EXTRACT){6.0}else{UNIVERSITY_SLOTS as f32}]);
-            m[i][18]=crate::economy::population_capacity(i as u8,self.players[team as usize].epoch) as f32;
+            if cfg!(feature="ee2-roster6")&&i>=57 {m[i][1]=d.w[0].dmg;}
+            m[i][18]=crate::economy::population_capacity(i as DefId,self.players[team as usize].epoch) as f32;
             #[cfg(feature="ee2-reference")]
-            if let Some(row)=crate::ee2_units::lookup_class(i as u8,self.players[team as usize].epoch){
+            if let Some(row)=crate::ee2_units::lookup_class(i as DefId,self.players[team as usize].epoch){
                 if let Some(v)=row.hp{m[i][0]=v;}if let Some(v)=row.buildtime{m[i][3]=v;}
                 if let Some(v)=row.sight{m[i][5]=v;}if let Some(v)=row.garrison_slots{m[i][11]=v as f32;}
-                if let Some(v)=row.damage{if d.w[0].dmg>0.0{m[i][1]=v/d.w[0].dmg;}}
+                if let Some(v)=row.damage{if cfg!(feature="ee2-roster6")&&i>=57 {m[i][1]=v;}else if d.w[0].dmg>0.0{m[i][1]=v/d.w[0].dmg;}}
                 if cfg!(feature="ee2-up15") {if let Some(v)=row.raw_speed {m[i][2]=v;}}
                 if cfg!(feature="ee2-up15")||i==FORTRESS as usize {if let Some(v)=row.range {m[i][6]=v-d.w[0].range;}}
             }
@@ -111,7 +122,7 @@ impl Game {
             if !self.has_research(team,k) { continue; }
             for ef in n.effects {
                 for (i,row) in m.iter_mut().enumerate() {
-                    if ef.mask >> i & 1 == 0 { continue; }
+                    if !crate::ids::mask_has(ef.mask,i as DefId) { continue; }
                     let f=ef.field as usize; let d=&DEFS[i];
                     let base=if f==6 {d.w[0].range+baseline[i][6]}else{baseline[i][f]};
                     match ef.method {0=>row[f]+=base*ef.value*0.01,1=>row[f]+=ef.value,_=>row[f]=ef.value}

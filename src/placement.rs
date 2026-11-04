@@ -17,7 +17,7 @@ impl Default for PlacementCache {
     }
 }
 impl Game {
-    pub fn footprint_side(def: u8, turn: u32) -> i32 {
+    pub fn footprint_side(def:DefId, turn: u32) -> i32 {
         let Some(d) = DEFS.get(def as usize) else {
             return 0;
         };
@@ -53,7 +53,7 @@ impl Game {
             DEFS[e.def as usize].rad()
         }
     }
-    pub fn footprint_known(&self, team: u8, def: u8, tx: i32, ty: i32, turn: u32) -> bool {
+    pub fn footprint_known(&self, team: u8, def:DefId, tx: i32, ty: i32, turn: u32) -> bool {
         let s = Self::footprint_side(def, turn);
         if s == 0 || tx < 0 || ty < 0 || tx > N as i32 - s || ty > N as i32 - s {
             return false;
@@ -64,7 +64,7 @@ impl Game {
         (ty..ty + s)
             .all(|y| (tx..tx + s).all(|x| self.real_fog(team, y as usize * N + x as usize) > 0))
     }
-    pub fn placement_geometry_error(&self, team: u8, def: u8, tx: i32, ty: i32, turn: u32) -> u32 {
+    pub fn placement_geometry_error(&self, team: u8, def:DefId, tx: i32, ty: i32, turn: u32) -> u32 {
         let s = Self::footprint_side(def, turn);
         if s == 0
             || team as usize >= self.nplayers
@@ -104,6 +104,8 @@ impl Game {
         }
         let mut water = 0u32;
         let mut land = 0u32;
+        #[cfg(feature="ee2-roster6")]
+        if def==60 && !crate::roster6_placement::near_accepted_water(&self.map,tx as f32+s as f32*0.5,ty as f32+s as f32*0.5){return 1;}
         for y in ty..ty + s {
             for x in tx..tx + s {
                 let t = y as usize * N + x as usize;
@@ -211,7 +213,7 @@ impl Game {
     pub fn placement_error_for(
         &mut self,
         team: u8,
-        def: u8,
+        def:DefId,
         tx: i32,
         ty: i32,
         turn: u32,
@@ -259,7 +261,7 @@ impl Game {
     pub fn begin_construction(
         &mut self,
         team: u8,
-        def: u8,
+        def:DefId,
         tx: i32,
         ty: i32,
         turn: u32,
@@ -287,12 +289,12 @@ impl Game {
         for (i, tile) in builders {
             let e = &mut self.ents[i];
             e.prev = match e.order {
-                O_GATHER if e.otgt == NONE => e.q[0],
+                O_GATHER if e.otgt == NONE => e.q[0] as u8,
                 O_BUILD => e.prev,
                 _ => 0,
             };
             e.order = O_BUILD;
-            e.q[0] = R_FOOD;
+            e.q[0] = R_FOOD as QueueItem;
             e.otgt = handle;
             e.tgt = NONE;
             e.fkey = tile;
@@ -332,7 +334,7 @@ impl Game {
         }
         bi
     }
-    pub fn place_with_rotation(&mut self, def: u8, tx: i32, ty: i32, team: u8, turn: u32) -> usize {
+    pub fn place_with_rotation(&mut self, def:DefId, tx: i32, ty: i32, team: u8, turn: u32) -> usize {
         if self.placement_geometry_error(team, def, tx, ty, turn) != 0
             || DEFS[def as usize].epoch > self.players[team as usize].epoch
         {
@@ -455,7 +457,7 @@ mod tests {
         g.refresh_display_fog();
         g
     }
-    fn site(g: &Game, def: u8, turn: u32) -> (i32, i32) {
+    fn site(g: &Game, def:DefId, turn: u32) -> (i32, i32) {
         let side = Game::footprint_side(def, turn);
         let (x, y) = g.map.starts[3];
         (x as i32 - side / 2, y as i32 - side / 2)
@@ -542,7 +544,7 @@ mod tests {
                 0,
                 0,
             );
-            let row = g.inst.chunks(12).find(|p| p[4] == HOUSE as f32).unwrap();
+            let row = g.inst.chunks(12).find(|p| p[4] == crate::ids::unit_render(HOUSE)).unwrap();
             assert_eq!(row[3], g.ents[i].rot);
             let scaffold = g
                 .inst

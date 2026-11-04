@@ -1,0 +1,7 @@
+{
+  "format": "openepoch-label-main-tests-v2",
+  "status": "passed",
+  "checks": 142,
+  "mainSha256": "eebee3010370cb2d4ceb8eab0ec726a9c968ffef37dc823926ee1e7a7560c574",
+  "scope": "Actual Main HUD updater and button/hover/cancel handlers executed in vm; DOM, WASM UI transport and rendering surfaces substituted. No browser or original executable launched."
+}

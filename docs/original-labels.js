@@ -3,13 +3,14 @@ export function escapeLabelHtml(value){
  return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 }
 
-function checkedRows(data,profile){
+function checkedRows(data,profile,definitionCount){
+ if(!Number.isInteger(definitionCount)||definitionCount<1||definitionCount>65536)throw new Error('Invalid label definition count');
  if(data?.format!=='ee2-native-labels-v1'||data.language!=='de')throw new Error('Unsupported original-label manifest');
  const source=data.profiles?.[profile.id];
  if(!source||source.profile!==profile.id||source.ruleset!==profile.ruleset||!Array.isArray(source.rows))throw new Error('Original-label profile differs');
  const rows=new Map();
  for(const row of source.rows){
-  if(!Number.isInteger(row.id)||row.id<0||row.id>=57||!Number.isInteger(row.epoch)||!Number.isInteger(row.until)||row.epoch<0||row.until>15||row.epoch>=row.until||typeof row.name!=='string'||!row.name||typeof row.plural!=='string'||typeof row.description!=='string')throw new Error('Invalid original-label row');
+  if(!Number.isInteger(row.id)||row.id<0||row.id>=definitionCount||!Number.isInteger(row.epoch)||!Number.isInteger(row.until)||row.epoch<0||row.until>15||row.epoch>=row.until||typeof row.name!=='string'||!row.name||typeof row.plural!=='string'||typeof row.description!=='string')throw new Error('Invalid original-label row');
   const list=rows.get(row.id)||[];
   if(list.some(other=>row.epoch<other.until&&other.epoch<row.until))throw new Error('Overlapping original-label class intervals');
   list.push(Object.freeze({...row}));rows.set(row.id,list);
@@ -17,8 +18,8 @@ function checkedRows(data,profile){
  return rows;
 }
 
-export function originalLabelCatalog(data,profile){
- const rows=profile?.reference?checkedRows(data,profile):new Map();
+export function originalLabelCatalog(data,profile,{definitionCount=57}={}){
+ const rows=profile?.reference?checkedRows(data,profile,definitionCount):new Map();
  const lookup=(id,epoch)=>Number.isInteger(id)&&Number.isInteger(epoch)&&epoch>=0&&epoch<15?
   rows.get(id)?.find(row=>epoch>=row.epoch&&epoch<row.until):undefined;
  return Object.freeze({enabled:rows.size>0,profile:profile.id,
@@ -31,12 +32,12 @@ export function originalLabelCatalog(data,profile){
  });
 }
 
-export async function loadOriginalLabels(profile,{fetchImpl=globalThis.fetch,base=import.meta.url}={}){
- if(!profile?.reference)return originalLabelCatalog(null,profile);
+export async function loadOriginalLabels(profile,{fetchImpl=globalThis.fetch,base=import.meta.url,definitionCount=57}={}){
+ if(!profile?.reference)return originalLabelCatalog(null,profile,{definitionCount});
  try{
   const response=await fetchImpl(new URL('./local-original/labels-native.json',base),{cache:'no-store'});
   if(!response.ok)throw new Error('Original labels: HTTP '+response.status);
-  return originalLabelCatalog(await response.json(),profile);
+  return originalLabelCatalog(await response.json(),profile,{definitionCount});
  }catch(error){
   console.warn('Originalnamen konnten nicht vollständig geladen werden:',error);
   return Object.freeze({enabled:false,profile:profile.id,name:(_id,_epoch,fallback)=>fallback,description:()=>''});

@@ -1,0 +1,2965 @@
+{
+  "format": "native-sails7-gles-v1",
+  "status": "passed",
+  "checks": 118,
+  "pixels": [
+    {
+      "source": "local-original/sails-native/textures/nfs8_shipoftheline_sail02.png",
+      "xy": [
+        0,
+        0
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        24,
+        36,
+        41,
+        119
+      ],
+      "expected": [
+        24,
+        36,
+        41,
+        119
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nfs8_shipoftheline_sail02.png",
+      "xy": [
+        0,
+        0
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        73,
+        17,
+        119
+      ],
+      "expected": [
+        67,
+        73,
+        17,
+        119
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nfs8_shipoftheline_sail02.png",
+      "xy": [
+        128,
+        64
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nfs8_shipoftheline_sail02.png",
+      "xy": [
+        128,
+        64
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nfs8_shipoftheline_sail02.png",
+      "xy": [
+        255,
+        127
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nfs8_shipoftheline_sail02.png",
+      "xy": [
+        255,
+        127
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nfs8_shipoftheline_sail02.png",
+      "xy": [
+        85,
+        32
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        67,
+        119,
+        158,
+        149
+      ],
+      "expected": [
+        67,
+        119,
+        158,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nfs8_shipoftheline_sail02.png",
+      "xy": [
+        85,
+        32
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        63,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        63,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nfs8_shipoftheline_sail01.png",
+      "xy": [
+        0,
+        0
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nfs8_shipoftheline_sail01.png",
+      "xy": [
+        0,
+        0
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nfs8_shipoftheline_sail01.png",
+      "xy": [
+        128,
+        64
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        67,
+        119,
+        158,
+        149
+      ],
+      "expected": [
+        67,
+        119,
+        158,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nfs8_shipoftheline_sail01.png",
+      "xy": [
+        128,
+        64
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        63,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        63,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nfs8_shipoftheline_sail01.png",
+      "xy": [
+        255,
+        127
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        15,
+        24,
+        23,
+        129
+      ],
+      "expected": [
+        15,
+        24,
+        23,
+        129
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nfs8_shipoftheline_sail01.png",
+      "xy": [
+        255,
+        127
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        48,
+        49,
+        9,
+        129
+      ],
+      "expected": [
+        48,
+        49,
+        9,
+        129
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nfs8_shipoftheline_sail01.png",
+      "xy": [
+        85,
+        32
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        63,
+        105,
+        138,
+        149
+      ],
+      "expected": [
+        63,
+        105,
+        138,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nfs8_shipoftheline_sail01.png",
+      "xy": [
+        85,
+        32
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        55,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        55,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nfs8_shipoftheline_sail03.png",
+      "xy": [
+        0,
+        0
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        24,
+        40,
+        54,
+        129
+      ],
+      "expected": [
+        24,
+        40,
+        54,
+        129
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nfs8_shipoftheline_sail03.png",
+      "xy": [
+        0,
+        0
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        80,
+        22,
+        129
+      ],
+      "expected": [
+        67,
+        80,
+        22,
+        129
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nfs8_shipoftheline_sail03.png",
+      "xy": [
+        128,
+        64
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nfs8_shipoftheline_sail03.png",
+      "xy": [
+        128,
+        64
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nfs8_shipoftheline_sail03.png",
+      "xy": [
+        255,
+        127
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        48,
+        82,
+        109,
+        149
+      ],
+      "expected": [
+        48,
+        82,
+        109,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nfs8_shipoftheline_sail03.png",
+      "xy": [
+        255,
+        127
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        44,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        44,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nfs8_shipoftheline_sail03.png",
+      "xy": [
+        85,
+        32
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nfs8_shipoftheline_sail03.png",
+      "xy": [
+        85,
+        32
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nf6_barque_sail_1.png",
+      "xy": [
+        0,
+        0
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        54,
+        99,
+        138,
+        149
+      ],
+      "expected": [
+        54,
+        99,
+        138,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nf6_barque_sail_1.png",
+      "xy": [
+        0,
+        0
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        55,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        55,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nf6_barque_sail_1.png",
+      "xy": [
+        128,
+        64
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        58,
+        107,
+        155,
+        149
+      ],
+      "expected": [
+        58,
+        107,
+        155,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nf6_barque_sail_1.png",
+      "xy": [
+        128,
+        64
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        62,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        62,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nf6_barque_sail_1.png",
+      "xy": [
+        255,
+        127
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        58,
+        109,
+        164,
+        149
+      ],
+      "expected": [
+        58,
+        109,
+        164,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nf6_barque_sail_1.png",
+      "xy": [
+        255,
+        127
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        66,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        66,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nf6_barque_sail_1.png",
+      "xy": [
+        85,
+        32
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        61,
+        114,
+        168,
+        149
+      ],
+      "expected": [
+        61,
+        114,
+        168,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nf6_barque_sail_1.png",
+      "xy": [
+        85,
+        32
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        67,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        67,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nf6_barque_sail_2.png",
+      "xy": [
+        0,
+        0
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nf6_barque_sail_2.png",
+      "xy": [
+        0,
+        0
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nf6_barque_sail_2.png",
+      "xy": [
+        128,
+        64
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        64,
+        115,
+        161,
+        149
+      ],
+      "expected": [
+        64,
+        115,
+        162,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nf6_barque_sail_2.png",
+      "xy": [
+        128,
+        64
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        65,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        65,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nf6_barque_sail_2.png",
+      "xy": [
+        255,
+        127
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nf6_barque_sail_2.png",
+      "xy": [
+        255,
+        127
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nf6_barque_sail_2.png",
+      "xy": [
+        85,
+        32
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        64,
+        116,
+        170,
+        149
+      ],
+      "expected": [
+        64,
+        116,
+        170,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/nf6_barque_sail_2.png",
+      "xy": [
+        85,
+        32
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        68,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        68,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage00.png",
+      "xy": [
+        0,
+        0
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        67,
+        129,
+        203,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        203,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage00.png",
+      "xy": [
+        0,
+        0
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        81,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        81,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage00.png",
+      "xy": [
+        32,
+        32
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        67,
+        129,
+        203,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        203,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage00.png",
+      "xy": [
+        32,
+        32
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        81,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        81,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage00.png",
+      "xy": [
+        63,
+        63
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        67,
+        129,
+        203,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        203,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage00.png",
+      "xy": [
+        63,
+        63
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        81,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        81,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage00.png",
+      "xy": [
+        21,
+        16
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        67,
+        129,
+        203,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        203,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage00.png",
+      "xy": [
+        21,
+        16
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        81,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        81,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage01.png",
+      "xy": [
+        0,
+        0
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        67,
+        129,
+        203,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        203,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage01.png",
+      "xy": [
+        0,
+        0
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        81,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        81,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage01.png",
+      "xy": [
+        32,
+        32
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        67,
+        129,
+        203,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        203,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage01.png",
+      "xy": [
+        32,
+        32
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        81,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        81,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage01.png",
+      "xy": [
+        63,
+        63
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        67,
+        129,
+        203,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        203,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage01.png",
+      "xy": [
+        63,
+        63
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        81,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        81,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage01.png",
+      "xy": [
+        21,
+        16
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        67,
+        129,
+        203,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        203,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage01.png",
+      "xy": [
+        21,
+        16
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        81,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        81,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage02.png",
+      "xy": [
+        0,
+        0
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        67,
+        129,
+        203,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        203,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage02.png",
+      "xy": [
+        0,
+        0
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        81,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        81,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage02.png",
+      "xy": [
+        32,
+        32
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        65,
+        123,
+        190,
+        149
+      ],
+      "expected": [
+        65,
+        123,
+        190,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage02.png",
+      "xy": [
+        32,
+        32
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        76,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        76,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage02.png",
+      "xy": [
+        63,
+        63
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        60,
+        110,
+        165,
+        149
+      ],
+      "expected": [
+        60,
+        110,
+        166,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage02.png",
+      "xy": [
+        63,
+        63
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        66,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        66,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage02.png",
+      "xy": [
+        21,
+        16
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        67,
+        129,
+        203,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        203,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage02.png",
+      "xy": [
+        21,
+        16
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        81,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        81,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage03.png",
+      "xy": [
+        0,
+        0
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        67,
+        129,
+        203,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        203,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage03.png",
+      "xy": [
+        0,
+        0
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        81,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        81,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage03.png",
+      "xy": [
+        32,
+        32
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        60,
+        115,
+        179,
+        149
+      ],
+      "expected": [
+        60,
+        115,
+        179,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage03.png",
+      "xy": [
+        32,
+        32
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        72,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        72,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage03.png",
+      "xy": [
+        63,
+        63
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        58,
+        110,
+        165,
+        149
+      ],
+      "expected": [
+        58,
+        110,
+        166,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage03.png",
+      "xy": [
+        63,
+        63
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        66,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        66,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage03.png",
+      "xy": [
+        21,
+        16
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        67,
+        129,
+        203,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        203,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage03.png",
+      "xy": [
+        21,
+        16
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        81,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        81,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage04.png",
+      "xy": [
+        0,
+        0
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        67,
+        129,
+        203,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        203,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage04.png",
+      "xy": [
+        0,
+        0
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        81,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        81,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage04.png",
+      "xy": [
+        32,
+        32
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        65,
+        123,
+        190,
+        149
+      ],
+      "expected": [
+        65,
+        123,
+        190,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage04.png",
+      "xy": [
+        32,
+        32
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        76,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        76,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage04.png",
+      "xy": [
+        63,
+        63
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        57,
+        106,
+        161,
+        149
+      ],
+      "expected": [
+        57,
+        106,
+        162,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage04.png",
+      "xy": [
+        63,
+        63
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        65,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        65,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage04.png",
+      "xy": [
+        21,
+        16
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        58,
+        110,
+        174,
+        149
+      ],
+      "expected": [
+        58,
+        110,
+        174,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage04.png",
+      "xy": [
+        21,
+        16
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        70,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        70,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage05.png",
+      "xy": [
+        0,
+        0
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        67,
+        129,
+        203,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        203,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage05.png",
+      "xy": [
+        0,
+        0
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        81,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        81,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage05.png",
+      "xy": [
+        32,
+        32
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        65,
+        125,
+        190,
+        149
+      ],
+      "expected": [
+        65,
+        125,
+        190,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage05.png",
+      "xy": [
+        32,
+        32
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        76,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        76,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage05.png",
+      "xy": [
+        63,
+        63
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        55,
+        102,
+        153,
+        149
+      ],
+      "expected": [
+        55,
+        102,
+        153,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage05.png",
+      "xy": [
+        63,
+        63
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        61,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        61,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage05.png",
+      "xy": [
+        21,
+        16
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        53,
+        99,
+        150,
+        149
+      ],
+      "expected": [
+        53,
+        99,
+        150,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage05.png",
+      "xy": [
+        21,
+        16
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        60,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        60,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage06.png",
+      "xy": [
+        0,
+        0
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        63,
+        121,
+        190,
+        149
+      ],
+      "expected": [
+        63,
+        121,
+        190,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage06.png",
+      "xy": [
+        0,
+        0
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        76,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        76,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage06.png",
+      "xy": [
+        32,
+        32
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        56,
+        105,
+        158,
+        149
+      ],
+      "expected": [
+        56,
+        105,
+        158,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage06.png",
+      "xy": [
+        32,
+        32
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        63,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        63,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage06.png",
+      "xy": [
+        63,
+        63
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        55,
+        102,
+        150,
+        149
+      ],
+      "expected": [
+        55,
+        102,
+        150,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage06.png",
+      "xy": [
+        63,
+        63
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        60,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        60,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage06.png",
+      "xy": [
+        21,
+        16
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        50,
+        96,
+        144,
+        149
+      ],
+      "expected": [
+        50,
+        96,
+        144,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage06.png",
+      "xy": [
+        21,
+        16
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        58,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        58,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage07.png",
+      "xy": [
+        0,
+        0
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        58,
+        113,
+        177,
+        149
+      ],
+      "expected": [
+        58,
+        113,
+        177,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage07.png",
+      "xy": [
+        0,
+        0
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        71,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        71,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage07.png",
+      "xy": [
+        32,
+        32
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        52,
+        99,
+        150,
+        149
+      ],
+      "expected": [
+        52,
+        99,
+        150,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage07.png",
+      "xy": [
+        32,
+        32
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        60,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        60,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage07.png",
+      "xy": [
+        63,
+        63
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        55,
+        103,
+        153,
+        149
+      ],
+      "expected": [
+        55,
+        103,
+        153,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage07.png",
+      "xy": [
+        63,
+        63
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        61,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        61,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage07.png",
+      "xy": [
+        21,
+        16
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        48,
+        91,
+        137,
+        149
+      ],
+      "expected": [
+        48,
+        91,
+        137,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage07.png",
+      "xy": [
+        21,
+        16
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        55,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        55,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage08.png",
+      "xy": [
+        0,
+        0
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        58,
+        113,
+        177,
+        149
+      ],
+      "expected": [
+        58,
+        113,
+        177,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage08.png",
+      "xy": [
+        0,
+        0
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        71,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        71,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage08.png",
+      "xy": [
+        32,
+        32
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        50,
+        92,
+        138,
+        149
+      ],
+      "expected": [
+        50,
+        92,
+        138,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage08.png",
+      "xy": [
+        32,
+        32
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        55,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        55,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage08.png",
+      "xy": [
+        63,
+        63
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        55,
+        103,
+        153,
+        149
+      ],
+      "expected": [
+        55,
+        103,
+        153,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage08.png",
+      "xy": [
+        63,
+        63
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        61,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        61,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage08.png",
+      "xy": [
+        21,
+        16
+      ],
+      "diffuse": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "pixel": [
+        48,
+        90,
+        137,
+        149
+      ],
+      "expected": [
+        48,
+        90,
+        137,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "source": "local-original/sails-native/textures/fx_flag_damage08.png",
+      "xy": [
+        21,
+        16
+      ],
+      "diffuse": [
+        0.8,
+        0.5,
+        0.1
+      ],
+      "pixel": [
+        67,
+        129,
+        55,
+        149
+      ],
+      "expected": [
+        67,
+        129,
+        55,
+        149
+      ],
+      "rgba8Tolerance": 1
+    },
+    {
+      "case": "dark alpha0 discards",
+      "pixel": [
+        17,
+        31,
+        47,
+        255
+      ],
+      "expected": [
+        17,
+        31,
+        47,
+        255
+      ]
+    },
+    {
+      "case": "smallest positive alpha passes",
+      "pixel": [
+        255,
+        255,
+        255,
+        1
+      ],
+      "expected": [
+        255,
+        255,
+        255,
+        1
+      ]
+    },
+    {
+      "case": "source clamp",
+      "uv": [
+        -1,
+        -1
+      ],
+      "pixel": [
+        90,
+        72,
+        52,
+        204
+      ],
+      "expected": [
+        90,
+        72,
+        52,
+        204
+      ]
+    },
+    {
+      "case": "source clamp",
+      "uv": [
+        2,
+        -1
+      ],
+      "pixel": [
+        181,
+        163,
+        137,
+        255
+      ],
+      "expected": [
+        181,
+        163,
+        137,
+        255
+      ]
+    },
+    {
+      "case": "source clamp",
+      "uv": [
+        -1,
+        2
+      ],
+      "pixel": [
+        90,
+        79,
+        68,
+        221
+      ],
+      "expected": [
+        90,
+        79,
+        68,
+        221
+      ]
+    },
+    {
+      "case": "source clamp",
+      "uv": [
+        2,
+        2
+      ],
+      "pixel": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "context": {
+    "egl": [
+      1,
+      5
+    ],
+    "vendor": "Google Inc. (AMD)",
+    "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11-31.0.21924.61)",
+    "version": "OpenGL ES 3.0 (ANGLE 2.1 git hash: unknown hash)",
+    "libraryDirectory": "C:\\Program Files\\Mozilla Firefox",
+    "surface": [
+      768,
+      768
+    ],
+    "uiLaunched": false,
+    "framebuffer": "RGBA8 texture + DEPTH24_STENCIL8 renderbuffer"
+  },
+  "previews": [
+    {
+      "file": "work/native-sails7/ship-5-body-only.png",
+      "sha256": "e0c1bbc95135444249b2daac2920435a7ca3f136ca50eec6692d25a8e945b019",
+      "sails": false,
+      "epoch": 5
+    },
+    {
+      "file": "work/native-sails7/ship-5-initial-sails.png",
+      "sha256": "896dd4d5d2ce7fa4cd3de657036c93df38102beb4f7b85ffab7dde7c6276ac68",
+      "sails": true,
+      "epoch": 5
+    },
+    {
+      "file": "work/native-sails7/ship-7-body-only.png",
+      "sha256": "0c33c7216d47ca4ffa2b6091c8cadd5d990c2038a2b71fc18f4ccf25e7824153",
+      "sails": false,
+      "epoch": 7
+    },
+    {
+      "file": "work/native-sails7/ship-7-initial-sails.png",
+      "sha256": "20256a83b47ee2f365d5e3afb79a036a3916bf46d82fc7a1bd010afc0b90747e",
+      "sails": true,
+      "epoch": 7
+    }
+  ],
+  "manifestSha256": "f744b0a4f25313963a3c4bbcd2d6249fc306a2eae9667d069da146114a349d2d",
+  "shaderHashes": {
+    "vertex": "31fc0acb987020f5b454b99b341a23ddcfe11f43364992ea6489bee75e5c9b47",
+    "fragment": "b69e97503e9be8135c7259344088f4f2d7c2125807ae25641da65d6ef43d3539"
+  },
+  "limits": [
+    "Exact source Flag texture-stage arithmetic checked with real original images and controlled arithmetic operands; one RGBA8 quantization unit allowed.",
+    "Geometry inspection uses neutralDiffuse.25 to show unchanged source texture RGB; it does not claim native climate illumination, native cloth dynamics, complete production integration or an original-game capture.",
+    "Views use native initial grids and authored attachment matrices. No default wake, extra particle or guessed sail is generated."
+  ]
+}

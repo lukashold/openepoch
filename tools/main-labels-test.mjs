@@ -4,7 +4,9 @@ import vm from 'node:vm';
 import {readFile,writeFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {originalLabelCatalog,escapeLabelHtml} from '../docs/original-labels.js';
-const mainFile=process.argv[2]?new URL(process.argv[2],'file:///'+process.cwd().replaceAll('\\','/')+'/'):new URL('../docs/main.js',import.meta.url);
+import {createFrontendNamespace} from '../docs/render-namespace.js';
+const mainArg=process.argv.slice(2).find(arg=>!arg.startsWith('--'));
+const mainFile=mainArg?new URL(mainArg,'file:///'+process.cwd().replaceAll('\\','/')+'/'):new URL('../docs/main.js',import.meta.url);
 const bytes=await readFile(mainFile),source=bytes.toString();
 const section=source.slice(source.indexOf("const HOT ="),source.indexOf('\nfunction doAct(i)'));
 assert.ok(section.includes('originalLabels.name')&&section.includes('escapeLabelHtml'));
@@ -16,13 +18,14 @@ class Node{
  append(...nodes){this.children.push(...nodes);}getContext(){return {drawImage(){}};}
 }
 for(const profile of [{id:'base',ruleset:1,reference:true},{id:'up15',ruleset:2,reference:true},{id:'own',ruleset:0,reference:false}]){
+ const catalogOptions={definitionCount:data.profiles?.[profile.id]?.definitionCount??57};
  const nodes=new Map(['r0','r1','r2','pop','epoch','science','terr','idle','perf','info','acts','tip','diplomacy-button','end','endtext'].map(id=>[id,new Node()]));
  let payload,ordered=[],cancels=0;
  const context=vm.createContext({document:{createElement:tag=>new Node(tag)},$:id=>nodes.get(id),originalLabelCatalog,escapeLabelHtml,
-  originalLabels:originalLabelCatalog(data,profile),originalAssets:{},originalIcon:()=>null,iconAtlas:{},CELL:64,
+  originalLabels:originalLabelCatalog(data,profile,catalogOptions),originalAssets:{},originalIcon:()=>null,iconAtlas:{},CELL:64,renderNamespace:createFrontendNamespace({},{referenceMode:profile.reference}),
   wasm:{ui:()=>0,ui_len:()=>0,cmd_cancel(){cancels++;}},u8:()=>new TextEncoder().encode(JSON.stringify(payload)),dec:new TextDecoder(),
   referenceMode:profile.reference,RESOURCE_NAMES:['Nahrung','Holz','Eisen'],frameMs:16,worstMs:17,simMs:0.1,bench:0,net:null,
-  economyBar:{update(){}},sciencePanel:{refresh(){}},diplomacy:{refresh(){},close(){}},nativeHud:{update(){}},seasonSession:{settings:{}},
+  economyBar:{update(){}},sciencePanel:{refresh(){}},diplomacy:{refresh(){},close(){}},nativeHud:{update(){}},nativeBitmapFonts:{update(){}},seasonSession:{settings:{}},
   doAct:index=>ordered.push(index),sfx:{play(){}},console});
  vm.runInContext('let ui=null,actSig="";'+section+'\nglobalThis.refresh=()=>updateUi(0,0);',context);
  function update(epoch,id,count=1,types=[[id,count,'Musketeer']]){
@@ -32,7 +35,7 @@ for(const profile of [{id:'base',ruleset:1,reference:true},{id:'up15',ruleset:2,
   context.refresh();return nodes.get('info').innerHTML;
  }
  for(const epoch of [0,2,6,10,14]){
-  const html=update(epoch,15),catalog=originalLabelCatalog(data,profile),name=catalog.name(15,epoch,'Musketeer');
+  const html=update(epoch,15),catalog=originalLabelCatalog(data,profile,catalogOptions),name=catalog.name(15,epoch,'Musketeer');
   check(html.includes('<h3>'+escapeLabelHtml(name)+'</h3>'),profile.id+' actual selection name at epoch'+epoch);
   const buttons=nodes.get('acts').children;
   check(buttons[0].children[1].textContent===name,'actual production-button name');
@@ -44,13 +47,15 @@ for(const profile of [{id:'base',ruleset:1,reference:true},{id:'up15',ruleset:2,
   buttons[0].onmouseleave();check(nodes.get('tip').style.display==='none','mouseleave preserved');
   let prevented=false;buttons[0].oncontextmenu({preventDefault(){prevented=true;}});check(prevented&&cancels>0,'cancel listener preserved');
  }
- const catalog=originalLabelCatalog(data,profile);
+ const catalog=originalLabelCatalog(data,profile,catalogOptions);
  check(update(10,15,3).includes(escapeLabelHtml(catalog.name(15,10,'Musketeer',3))+' ×3'),'selection plural uses source class');
  const mixed=update(10,15,3,[[15,2,'Musketeer'],[8,1,'Worker']]);
  check(mixed.includes('<h3>3 Einheiten</h3>'),'mixed-selection heading retained');
  check(mixed.includes(escapeLabelHtml(catalog.name(15,10,'Musketeer',2))+' ×2'),'mixed-selection type resolves by ID');
  payload.sel.n=0;payload.techs=[];context.refresh();check(nodes.get('info').innerHTML.includes('Keine Einheit ausgewählt'),'empty selection preserved');
 }
-const report={format:'openepoch-native5-label-main-tests-v1',status:'passed',checks,mainSha256:createHash('sha256').update(bytes).digest('hex'),
+const report={format:'openepoch-label-main-tests-v2',status:'passed',checks,mainSha256:createHash('sha256').update(bytes).digest('hex'),
  scope:'Actual Main HUD updater and button/hover/cancel handlers executed in vm; DOM, WASM UI transport and rendering surfaces substituted. No browser or original executable launched.'};
-await writeFile(new URL('../../EE2-Research/analysis/native5-label-main-tests.json',import.meta.url),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));
+const reportArg=process.argv.find(arg=>arg.startsWith('--report=')),reportName=reportArg?.slice(9)||'label-main-tests.json';
+if(!/^[a-zA-Z0-9-]+\.json$/.test(reportName))throw Error('Invalid report filename');
+await writeFile(new URL('../../EE2-Research/analysis/'+reportName,import.meta.url),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));

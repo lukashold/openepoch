@@ -1,11 +1,18 @@
 """Independently verify every imported text against raw source lines and columns."""
 from pathlib import Path
-import csv,hashlib,json,re,sys,zipfile
+import argparse,csv,hashlib,json,re,sys,zipfile
 
 PROJECT=Path(__file__).resolve().parents[1];ROOT=PROJECT.parents[1]
 sys.path.insert(0,str(PROJECT/'tools'))
 from resolved_archive_reader import ResolvedArchiveReader
-data_path=PROJECT/'docs/local-original/labels-native.json'
+parser=argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--data',type=Path,default=PROJECT/'docs/local-original/labels-native.json')
+parser.add_argument('--up-audit',type=Path)
+parser.add_argument('--report',default='label-source-tests.json')
+args=parser.parse_args()
+if args.up_audit is None:args.up_audit=PROJECT/'docs'/('ee2-roster6-units.json' if (PROJECT/'docs/ee2-roster6-units.json').is_file() else 'ee2-up15-units.json')
+if not re.fullmatch(r'[a-zA-Z0-9-]+\.json',args.report):raise ValueError('Invalid report filename')
+data_path=args.data.resolve()
 data=json.loads(data_path.read_text(encoding='utf8'))
 install=Path(r'C:\Program Files (x86)\GOG.com\Empire Earth II')
 base=zipfile.ZipFile(install/'zips/db.zip')
@@ -28,15 +35,16 @@ def source_bytes(profile,source):
 
 def text_source(profile,ref,token,expected):
     raw=source_bytes(profile,ref);line=raw.decode('utf-8-sig').replace('\r','').splitlines()[ref['line']-1]
-    # Separate parser from the csv-based importer: these native rows use the
-    # triple-quoted text representation. Preserve inner quotes exactly.
+    # Separate parser from the csv-based importer. Sources contain both plain
+    # quoted and triple-quoted text rows. Preserve inner quotes exactly.
     match=re.fullmatch(r'([^,]+),[ \t]*"""(.*)"""[ \t]*',line)
-    check(match is not None,'native triple-quoted text row '+token+' '+repr(line[:180]))
+    if match is None:match=re.match(r'^([^,]+),"(.*)"\s*$',line)
+    check(match is not None,'native quoted text row '+token+' '+repr(line[:180]))
     check(match[1]==token,'native text token')
     check(match[2].replace('""','"')==expected,'native original text bytes')
 
 for profile,record in data['profiles'].items():
-    path=PROJECT/'docs'/('ee2-up15-units.json' if profile=='up15' else 'ee2-units.json')
+    path=args.up_audit.resolve() if profile=='up15' else PROJECT/'docs/ee2-units.json'
     audit=json.loads(path.read_text(encoding='utf8'))
     check(record['auditSha256']==hashlib.sha256(path.read_bytes()).hexdigest(),'bound audit digest')
     classes={(r['id'],r['epoch'],r['until']):r for r in audit['class_rows']}
@@ -66,9 +74,9 @@ for profile,record in data['profiles'].items():
             text_source(profile,reference['text'],token,row[target])
     counts[profile]={'classIntervals':len(record['rows']),'resolvedFields':text_count,'missing':record['missing']}
 base.close();up.close()
-report={'format':'openepoch-native5-label-source-checks-v1','status':'passed','checks':checks,
+report={'format':'openepoch-label-source-checks-v2','status':'passed','checks':checks,
         'dataSha256':hashlib.sha256(data_path.read_bytes()).hexdigest(),'profiles':counts,'sourceFileSha256':source_files,
         'originalExeOrDllExecuted':False,'originalFilesModified':False,
         'scope':'All text values independently decoded from raw original rows; actual CSV columns or inherited DDF source chains and audited class intervals.'}
-out=ROOT/'outputs/EE2-Research/analysis/native5-label-source-tests.json';out.write_text(json.dumps(report,indent=2)+'\n',encoding='utf8')
+out=ROOT/'outputs/EE2-Research/analysis'/args.report;out.write_text(json.dumps(report,indent=2)+'\n',encoding='utf8')
 print(json.dumps({k:v for k,v in report.items()if k not in ['sourceFileSha256','profiles']}))

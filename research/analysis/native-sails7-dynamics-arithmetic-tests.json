@@ -1,0 +1,8 @@
+{
+  "format": "native-cloth-arithmetic-tests-v1",
+  "status": "passed",
+  "checks": 2448,
+  "oracleSha256": "77fc0208270fc9fab7c98ff01394e6e1763f0911b80acee4f55165081558130a",
+  "moduleSha256": "0941661ccc487907881d897cc6149c903fe6a74ac7d047c2f817071c84fa6393",
+  "scope": "Exact Fraction/integer truncation for binary53 and FSTP32; sqrt uses integer square root. No original engine or native routine executed."
+}

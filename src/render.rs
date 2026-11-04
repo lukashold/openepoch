@@ -10,17 +10,17 @@ use crate::game::*;
 use crate::map::*;
 use std::fmt::Write;
 
-pub const S_TREE: f32 = 100.0;
-pub const S_ORE: f32 = 102.0;
-pub const S_BERRY: f32 = 103.0;
-pub const S_PROJ: f32 = 103.0; // + weapon kind (1..=6)
-pub const S_FLAG: f32 = 110.0;
-pub const S_SCAFFOLD: f32 = 111.0;
+pub const S_TREE: f32 = if cfg!(feature="ee2-roster6"){0.0}else{100.0};
+pub const S_ORE: f32 = if cfg!(feature="ee2-roster6"){2.0}else{102.0};
+pub const S_BERRY: f32 = if cfg!(feature="ee2-roster6"){3.0}else{103.0};
+pub const S_PROJ: f32 = if cfg!(feature="ee2-roster6"){16.0}else{103.0}; // + weapon kind (1..=6)
+pub const S_FLAG: f32 = if cfg!(feature="ee2-roster6"){32.0}else{110.0};
+pub const S_SCAFFOLD: f32 = if cfg!(feature="ee2-roster6"){33.0}else{111.0};
 // ids from 240 are flat or camera-facing quads rather than models
-pub const S_RING: f32 = 240.0;
-pub const S_BAR: f32 = 241.0;
-pub const S_BOOM: f32 = 242.0;
-pub const S_SHADOW: f32 = 243.0;
+pub const S_RING: f32 = if cfg!(feature="ee2-roster6"){40.0}else{240.0};
+pub const S_BAR: f32 = if cfg!(feature="ee2-roster6"){41.0}else{241.0};
+pub const S_BOOM: f32 = if cfg!(feature="ee2-roster6"){42.0}else{242.0};
+pub const S_SHADOW: f32 = if cfg!(feature="ee2-roster6"){43.0}else{243.0};
 
 pub const FL_FLASH: f32 = 4.0;
 pub const FL_GHOST_OK: f32 = 8.0;
@@ -39,7 +39,7 @@ fn put(o: &mut Vec<f32>, x: f32, y: f32, alt: f32, rot: f32, model: f32, team: f
     }
 }
 
-pub fn qtime(item: u8) -> f32 {
+pub fn qtime(item: QueueItem) -> f32 {
     if item == RESEARCH {
         EPOCH_TIME
     } else if original_research(item) {
@@ -74,11 +74,11 @@ impl Game {
                 (target.x, target.y, DEFS[target.def as usize].size * 0.5 + 0.95)
             } else {
                 let t = e.otile as usize;
-                if t >= NN || self.map.res[t] != e.q[0] { return (ACT_IDLE, e.rot); }
+                if t >= NN || self.map.res[t] != e.q[0] as u8 { return (ACT_IDLE, e.rot); }
                 ((t % N) as f32 + 0.5, (t / N) as f32 + 0.5, 1.45)
             };
             if (tx-e.x).abs().max((ty-e.y).abs()) <= reach {
-                let activity = match e.q[0] { R_WOOD => ACT_WOOD, R_FOOD => ACT_FOOD, _ => ACT_MINE };
+                let activity = match e.q[0] as u8 { R_WOOD => ACT_WOOD, R_FOOD => ACT_FOOD, _ => ACT_MINE };
                 return (activity, (ty-e.y).atan2(tx-e.x));
             }
         }
@@ -104,7 +104,7 @@ impl Game {
     }
 
     /// Is every tile of this footprint explored by the local player?
-    pub fn explored(&self, def: u8, tx: i32, ty: i32) -> bool {
+    pub fn explored(&self, def:DefId, tx: i32, ty: i32) -> bool {
         self.footprint_explored(self.local,def,tx,ty)
     }
 
@@ -114,6 +114,8 @@ impl Game {
     }
     #[allow(clippy::too_many_arguments)]
     pub fn render_with_rotation(&mut self,alpha:f32,x0:f32,y0:f32,x1:f32,y1:f32,ghost:i32,gx:i32,gy:i32,turn:u32)->u32{
+        #[cfg(feature="ee2-render-meta7")]
+        crate::render_meta7::begin_frame();
         let mut o = std::mem::take(&mut self.tmp);
         o.clear();
         let far = x1 - x0 > 130.0;
@@ -136,11 +138,11 @@ impl Game {
                 let alt = self.map.height(cx, cy).max(0.0);
                 let rot = (h >> 16) as f32 * 0.001;
                 let hidden=cfg!(feature="ee2-reference")&&self.players[self.local as usize].epoch<crate::economy::REVEAL_EPOCH[r as usize-1];
-                if hidden{put(&mut o,cx,cy,alt,rot,110.0,0.0,0.0,0.0,1.0);continue;}
+                if hidden{put(&mut o,cx,cy,alt,rot,crate::ids::resource_render(110),0.0,0.0,0.0,1.0);continue;}
                 match r {
                     R_WOOD => put(&mut o, cx, cy, alt, rot, S_TREE + ((h >> 20) & 1) as f32, 0.0, 0.0, 0.0, 1.0 + jx * 0.35),
                     R_METAL => put(&mut o, cx, cy, alt, rot, S_ORE, 0.0, 0.0, 0.0, 1.0),
-                    R_STONE..=R_URANIUM => put(&mut o,cx,cy,alt,rot,104.0+(r-R_STONE) as f32,0.0,0.0,0.0,1.0),
+                    R_STONE..=R_URANIUM => put(&mut o,cx,cy,alt,rot,crate::ids::resource_render(104+(r-R_STONE)as u32),0.0,0.0,0.0,1.0),
                     _ => put(&mut o, cx, cy, alt, rot, S_BERRY, 0.0, 0.0, 0.0, 1.0),
                 }
             }
@@ -192,8 +194,10 @@ impl Game {
                         put(&mut o, e.rx, e.ry, self.map.height(e.rx, e.ry).max(0.0), 0.0, S_FLAG, team, 0.0, FL_NOFOG, 1.0);
                     }
                 }
-                let before=o.len();put(&mut o, x, y, a, rot, e.def as f32, team, e.built, fl + FL_BUILDING, d.size);
+                let before=o.len();put(&mut o, x, y, a, rot, crate::ids::unit_render(e.def), team, e.built, fl + FL_BUILDING, d.size);
                 if o.len()>before {o[before+10]=(self.tick as f32+alpha)*DT;o[before+11]=if d.has(F_EXTRACT)&&e.ncargo>0&&self.resource_unlocked(e.team,Self::extractor_kind(e.def)) {ACT_MINE as f32}else{ACT_IDLE as f32};}
+                #[cfg(feature="ee2-render-meta7")]
+                if o.len()>before {crate::render_meta7::actor(before/STRIDE,self.h(i),e,self.max_hp(e.team,e.def));}
                 if e.built < 1.0 && !far {
                     put(&mut o, x, y, a, rot, S_SCAFFOLD, team, e.built, fl, d.size);
                 }
@@ -221,13 +225,15 @@ impl Game {
                 let (activity, facing) = self.render_activity(e, d, speed);
                 let pose_rot = if (8..=17).contains(&e.def) && activity >= ACT_WOOD { facing } else { rot };
                 let before = o.len();
-                put(&mut o, x, y, a, pose_rot, e.def as f32, team, 0.0, fl, d.size * k);
+                put(&mut o, x, y, a, pose_rot, crate::ids::unit_render(e.def), team, 0.0, fl, d.size * k);
                 if o.len() > before {
                     // Stable visual animation phase; independent of movement and simulation state.
                     o[before + 6] = (i as f32 * 0.75487766 + e.gen as f32 * 0.38196602).fract();
                     o[before + 9] = speed;
                     o[before + 10] = (self.tick as f32 + alpha) * DT;
                     o[before + 11] = activity;
+                    #[cfg(feature="ee2-render-meta7")]
+                    crate::render_meta7::actor(before/STRIDE,self.h(i),e,self.max_hp(e.team,e.def));
                 }
                 (a.max(0.0), d.size * 0.5 + 0.6)
             };
@@ -242,33 +248,39 @@ impl Game {
         }
 
         if ghost>=0&&(ghost as usize)<DEFS.len()&&turn<crate::placement::ROTATION_STEPS{
-            let d=&DEFS[ghost as usize];let side=Self::footprint_side(ghost as u8,turn);
-            if side>0{let ids:Vec<usize>=(0..self.high).filter(|&i|self.ents[i].alive&&self.ents[i].sel&&self.ents[i].team==me).collect();let ok=self.placement_error_for(me,ghost as u8,gx,gy,turn,&ids,true)==0;
-                let(cx,cy)=(gx as f32+side as f32*0.5,gy as f32+side as f32*0.5);let a=if ghost as u8==DOCK{0.0}else{self.map.height(cx,cy).max(0.0)};
-                put(&mut o,cx,cy,a,Self::angle_for_turn(turn),ghost as f32,me as f32,1.0,FL_NOFOG+if ok{FL_GHOST_OK}else{FL_GHOST_BAD},d.size);
+            let d=&DEFS[ghost as usize];let side=Self::footprint_side(ghost as DefId,turn);
+            if side>0{let ids:Vec<usize>=(0..self.high).filter(|&i|self.ents[i].alive&&self.ents[i].sel&&self.ents[i].team==me).collect();let ok=self.placement_error_for(me,ghost as DefId,gx,gy,turn,&ids,true)==0;
+                let(cx,cy)=(gx as f32+side as f32*0.5,gy as f32+side as f32*0.5);let a=if ghost as DefId==DOCK{0.0}else{self.map.height(cx,cy).max(0.0)};
+                put(&mut o,cx,cy,a,Self::angle_for_turn(turn),crate::ids::unit_render(ghost as DefId),me as f32,1.0,FL_NOFOG+if ok{FL_GHOST_OK}else{FL_GHOST_BAD},d.size);
             }
         }
 
         // ---- counting sort by model id
         let n = o.len() / STRIDE;
-        let mut count = [0u32; 257];
+        let capacity=crate::ids::render_capacity();let mut count = vec![0u32;capacity+1];
         for k in 0..n {
-            count[(o[k * STRIDE + 4] as usize & 255) + 1] += 1;
+            count[o[k * STRIDE + 4] as usize + 1] += 1;
         }
-        for m in 0..256 {
+        for m in 0..capacity {
             self.ranges[m * 2] = count[m];
             self.ranges[m * 2 + 1] = count[m + 1];
             count[m + 1] += count[m];
         }
         self.inst.clear();
         self.inst.resize(o.len(), 0.0);
+        #[cfg(feature="ee2-render-meta7")]
+        crate::render_meta7::prepare_sort(n);
         for k in 0..n {
-            let m = o[k * STRIDE + 4] as usize & 255;
+            let m = o[k * STRIDE + 4] as usize;
             let dst = count[m] as usize * STRIDE;
             count[m] += 1;
             self.inst[dst..dst + STRIDE].copy_from_slice(&o[k * STRIDE..(k + 1) * STRIDE]);
+            #[cfg(feature="ee2-render-meta7")]
+            crate::render_meta7::sorted_row(k,dst/STRIDE,&o[k*STRIDE..(k+1)*STRIDE]);
         }
         self.tmp = o;
+        #[cfg(feature="ee2-render-meta7")]
+        crate::render_meta7::end_frame();
         n as u32
     }
 
@@ -356,7 +368,7 @@ impl Game {
         let mut cargo = 0;
         let mut cargo_units = 0;
         let mut cargo_max = 0;
-        let mut types: Vec<(u8, u32)> = Vec::new();
+        let mut types: Vec<(DefId, u32)> = Vec::new();
         let mut idle_workers = 0;
         for i in 0..self.high {
             let e = &self.ents[i];
@@ -396,14 +408,17 @@ impl Game {
             for k in 0..e.qn as usize {
                 let _ = write!(s, "{}{}", if k > 0 { "," } else { "" }, e.q[k]);
             }
-            let qt = if e.qn > 0 { e.qt / if (e.q[0] as usize) < DEFS.len() {self.production_time(e.team,e.q[0])} else {qtime(e.q[0])} } else { 0.0 };
+            #[cfg(not(feature="ee2-paidqueue7"))]
+            let qt = if e.qn > 0 { e.qt / if (e.q[0] as usize) < DEFS.len() {self.production_time(e.team,e.q[0] as DefId)} else {qtime(e.q[0])} } else { 0.0 };
+            #[cfg(feature="ee2-paidqueue7")]
+            let qt=if e.qn>0{let limit=self.queue_time_limit(first,0);if limit>0.0{e.qt/limit}else{1.0}}else{0.0};
             let _ = write!(s, "],\"qp\":{:.2},\"types\":[", qt);
             for (k, t) in types.iter().take(10).enumerate() {
                 let _ = write!(s, "{}[{},{},\"{}\"]", if k > 0 { "," } else { "" }, t.0, t.1, DEFS[t.0 as usize].name);
             }
             s.push(']');
             if d.armed() {
-                let _ = write!(s, ",\"dmg\":{},\"rng\":{:.1}", (d.w[0].dmg * p.atk[class_of(d)] * self.modifiers[me as usize][e.def as usize][1]) as i32, d.w[0].range+self.modifiers[me as usize][e.def as usize][6]);
+                let _ = write!(s, ",\"dmg\":{},\"rng\":{:.1}", (self.scaled_weapon_damage(me,e.def,d.w[0].dmg,p.atk[class_of(d)])) as i32, d.w[0].range+self.modifiers[me as usize][e.def as usize][6]);
             }
             if cargo_max > 0 {
                 let _ = write!(s, ",\"cargo\":{},\"cargomax\":{}", cargo, cargo_max);
@@ -412,9 +427,9 @@ impl Game {
         }
         s.push_str("},\"act\":[");
         let mut k = 0;
-        let mut act = |s: &mut String, kind: &str, id: u8, name: &str, cost: &[u16], ok: bool, size: f32, tip: &str| {
+        let mut act = |s: &mut String, kind: &str, id:QueueItem, name: &str, cost: &[u16], ok: bool, size: f32, tip: &str| {
             #[cfg(feature = "ee2-reference")]
-            let tp = if kind == "e" {crate::ee2_research::ADVANCE_COST[ep as usize+1]} else if original_research(id) {crate::ee2_research::NODES[(id-ORIGINAL_RESEARCH0) as usize].cost} else {0.0};
+            let tp = if kind == "e" {crate::ee2_research::ADVANCE_COST[ep as usize+1]} else if original_research(id as QueueItem) {crate::ee2_research::NODES[(id as QueueItem-ORIGINAL_RESEARCH0) as usize].cost} else {0.0};
             #[cfg(not(feature = "ee2-reference"))]
             let tp=0.0;
             let _ = write!(s, "{}{{\"k\":\"{}\",\"id\":{},\"name\":\"{}\",\"cost\":[", if k > 0 { "," } else { "" }, kind, id, name);
@@ -427,8 +442,8 @@ impl Game {
             for (id, d) in DEFS.iter().enumerate() {
                 if d.building && d.epoch <= ep {
                     tip.clear();
-                    let _ = write!(tip, "{} HP", self.max_hp(me,id as u8) as i32);
-                    tip.push_str(match id as u8 {
+                    let _ = write!(tip, "{} HP", self.max_hp(me,id as DefId) as i32);
+                    tip.push_str(match id as DefId {
                         TC if cfg!(feature="ee2-reference") => " · angrenzendes freies Gebiet: fertiges Stadtzentrum · entferntes Gebiet: zusätzlich fertige Festung",
                         TC => " \u{b7} claims a free territory \u{b7} +15 population",
                         HOUSE => " \u{b7} +10 population",
@@ -438,11 +453,11 @@ impl Game {
                         FORTRESS => " · sichert entfernte Gebietsansprüche · Besatzung mit Rechtsklick · 10 Plätze · 3 Prozent Angriff je belegtem Platz",
                         _ => "",
                     });
-                    if id as u8 != TC {
+                    if id as DefId != TC {
                         tip.push_str(if cfg!(feature="ee2-reference") {" · neutrales Land: doppelte Bauzeit"} else {" \u{b7} only inside your territory"});
                     }
-                    let cost=self.unit_cost(me,id as u8);
-                    act(&mut s, "b", id as u8, d.name, &cost, self.afford(me, &cost), d.size, &tip);
+                    let cost=self.unit_cost(me,id as DefId);
+                    act(&mut s, "b", id as QueueItem, d.name, &cost, self.afford(me, &cost), d.size, &tip);
                 }
             }
         } else if first != NOIDX && DEFS[self.ents[first].def as usize].building && self.ents[first].built >= 1.0 {
@@ -470,21 +485,21 @@ impl Game {
                     if d.has(F_TRANSPORT) {
                         tip.push_str(" \u{b7} carries 10 land units: right-click it to board, right-click a shore to land");
                     }
-                    let cost=self.unit_cost(me,id as u8);
-                    act(&mut s, "t", id as u8, d.name, &cost, self.can_train(first,id as u8), 0.0, &tip);
+                    let cost=self.unit_cost(me,id as DefId);
+                    act(&mut s, "t", id as QueueItem, d.name, &cost, self.can_train(first,id as QueueItem), 0.0, &tip);
                 }
             }
             #[cfg(not(feature = "ee2-reference"))]
             for (id, t) in TECHS.iter().enumerate() {
                 if t.at == bdef && t.epoch <= ep && p.tech >> id & 1 == 0 {
                     let busy = p.tech_busy >> id & 1 == 1;
-                    act(&mut s, "r", TECH0 + id as u8, t.name, &t.cost, self.afford(me, &t.cost) && !busy, 0.0, if busy { "Research in progress" } else { t.desc });
+                    act(&mut s, "r", TECH0 + id as DefId, t.name, &t.cost, self.afford(me, &t.cost) && !busy, 0.0, if busy { "Research in progress" } else { t.desc });
                 }
             }
             #[cfg(feature = "ee2-reference")]
             for (id,t) in crate::ee2_research::NODES.iter().enumerate() {
                 if t.host == bdef && t.epoch == ep && !self.has_research(me,id) {
-                    let item=ORIGINAL_RESEARCH0+id as u8;
+                    let item=ORIGINAL_RESEARCH0+id as QueueItem;
                     let busy=self.research_busy(me,id);
                     act(&mut s,"r",item,t.name,&[0,0,0],self.can_train(first,item),0.0,if busy {"Forschung läuft"} else {"15 Sekunden Forschung · zählt für den Epochenwechsel"});
                 }

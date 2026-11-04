@@ -1,0 +1,14 @@
+{
+  "format": "native6-font-cache-independent-tests-v1",
+  "passed": true,
+  "checks": 6441,
+  "fontPairs": 140,
+  "originalRgbaPixels": 4259840,
+  "originalGlyphRecords": 5740,
+  "originalKerningRecords": 9100,
+  "sourceBytes": 8741500,
+  "malformedRejected": 2578,
+  "manifestSha256": "294bb28b9aeedff056102a9932db2b601eaf1e9e0ec20ada4d21bf80a1c49d12",
+  "testSha256": "dbe7bb04d8d74f3602f71dccd125a7b41a03d6112489059fa8f0ff60c4c0be32",
+  "scope": "Independent fixed-offset native glyph/kerning record oracle; every original16bit atlas pixel versus exportedPNG; strict full-cache/truncation handling. No active runtime change."
+}

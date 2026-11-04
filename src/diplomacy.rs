@@ -111,7 +111,7 @@ impl Game {
         v
     }
 
-    pub fn footprint_explored(&self, team: u8, def: u8, tx: i32, ty: i32) -> bool {
+    pub fn footprint_explored(&self, team: u8, def:DefId, tx: i32, ty: i32) -> bool {
         self.footprint_known(team,def,tx,ty,0)
     }
 

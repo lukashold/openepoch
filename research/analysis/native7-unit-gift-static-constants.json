@@ -1,0 +1,76 @@
+{
+  "format": "native7-unit-gift-static-constants-v1",
+  "status": "passed",
+  "engineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+  "originalExeOrDllExecuted": false,
+  "rawPEOnly": true,
+  "constants": {
+    "DAT_00c06cec": {
+      "ascii4": "Farm",
+      "hex": "4661726d"
+    },
+    "DAT_00c47ce4": "Leaders",
+    "DAT_00b4038c": 0.0
+  },
+  "unitTypeAttribute": {
+    "sourceSha256": "c2fd2ef87d9927872b913a30eaaf267a096b7e4c5221e145020a7173afeb79e9",
+    "bits": 96,
+    "isWonderBit": 93,
+    "isWonderWord": 2,
+    "isWonderMask": "0x20000000"
+  },
+  "poolIdentification": {
+    "global": "00c65aa8",
+    "strings": {
+      "00c22b70": "Game::Term() calling diversion manager term\n",
+      "00c23794": "Calling DiversionManager::Init()\n",
+      "00c24150": "DvMn"
+    },
+    "note": "Global is bound to the diversion-manager lifecycle and serializer; eligibility excludes its tracked units. No generic invulnerability/cheat interpretation is assumed."
+  },
+  "capitalCityIdentification": {
+    "global": "00c643f4",
+    "strings": {
+      "00c24060": "CtyM",
+      "00c23358": "Calling CityManager::Init()\n",
+      "00c6448c": "m_CenterUnit",
+      "00c6453c": "capitolCityID"
+    },
+    "serializationThisOffset": 12,
+    "serializedArrayOffset": 24,
+    "globalCapitalArrayOffset": 36,
+    "capitalSlots": 16,
+    "cityCenterActorOffset": 60,
+    "note": "Serializer receives global+0x0c, walks16 entries at this+0x18 and names each capitolCityID. Eligibility walks the same global+0x24 array and excludes the actor at each City+0x3c. Ordinary non-capital city centers are not excluded by this specific check."
+  },
+  "sourceClosed": [
+    "Native00857500 compares UnitType+2d0 with C69E34; native initializer in fortress-type-adjacency.c binds KingRegicide to C69E34.",
+    "Native008575B0 compares UnitType+2d0 with C69E38; the same initializer binds KingOfTheHill to C69E38.",
+    "DbAbilityDefs.h enumerates Construction4 and Connect6; the direct native ability-table+10 rejection in0054FED0 is therefore the construction slot.",
+    "Connect descriptor0/1 are roads,2bridge,3..7walls/connectors/fragments/gates/towers, as independently named by DbUnitDefEnums.h.",
+    "Native00872E70 compares exactly four bytes of UnitType.name with DAT_00C06CEC; the prefix bytes are read directly from the verified PE.",
+    "Native00856320 pushes C47CE4(Leaders) and D0125C into008561C0; that helper resolves the named UnitTypeAttribute and constructs its bitset. Effective Leaders DDF restricts UnitTypeFamilies to Leader.",
+    "Native00823E10 builds the query at originalESP+8 and ORs0x20000000 into originalESP+10 (third word), sets All-mask mode0 and Anybody player mode0;0086AFE0 checks all three query words. Header bit93 therefore proves IsWonder rejection.",
+    "Native0054FF7D passes C65AA8 as this to UnitRefSet-style membership008259B0; GameInit/Term labels and serialization identify this as the diversion manager.",
+    "Native842C20 clamps the stored Actor+58 value to PE constants0..1. Native826630 snapshots that fraction, creates the new actor and restores it through842C20; ownership transfer preserves health fraction, not the old raw hit-point count. Native8423B0 derives maximum HP from UnitType+8c and source/player factors.",
+    "Native59BA01..59BA0B passes CityManager global+0x0c into serialization. Native814D14 uses serializerThis+0x18, walks16 records and serializes each under capitolCityID;814D2B reads City+0x3c as the center actor and then Actor+0x3c as its ID. City serializer812C47 binds City+0x3c to m_CenterUnit. Therefore0054FED0 excludes capital city centers, not every town center and not player leader pointers."
+  ],
+  "stillRequiresInstructionProof": [
+    "Diversion-manager membership is identified; its exact decoy lifecycle and future simulation representation remain unimplemented.",
+    "Native ownership conversion008265B0 and associated container/player callbacks need complete old/new owner state semantics before implementing unit tribute.",
+    "Capital reassignment and individual-city gifting need the native CityManager lifecycle; the capital eligibility array alone does not prove the reassignment rules."
+  ],
+  "simulationChanged": false,
+  "evidenceFiles": {
+    "territory-transfer-filters.c": "b2c34f9854b0084fb76749a488d92c1786b938db005c8a26c5491d3f11ead596",
+    "territory-owner-ui.c": "5afda62030982580a11be486368e30012f4617355df2add9a66fd682bf174b8c",
+    "fortress-type-adjacency.c": "70d03e695b759dd17edefda92810b7da854c90d8933cc0887cd18eabf938f61e",
+    "native7-unitgift-owner-attribute.c": "5bc5b5cb7c851c04198b69371c9a4f04f0e5603c2dee8920a9386fae76bc8b0f",
+    "native7-unitgift-pool.c": "399348c20850bd7ab468d4cc3be24dc42772fe616700e8cbf3efa78caad20423",
+    "native7-unitgift-conversion.c": "04a5a0702c3458c243083537da5691af9935e1dadda13951e713b1b03f72ab43",
+    "native7-unitgift-owner-core.c": "7606dc2086b692b8762c4aae1a54451a3456a74ccf979c03bd19b6115bab254f",
+    "native7-unitgift-health.c": "2149faa93d938022f6a630357c184e74e96fba6ce0ecece925ee636bfbca5263",
+    "native7-unitgift-pool-cheat.c": "cc119f29c55e1527e14bc797da9cd0da1334ac33c6dcb15f14ee23648c26178f",
+    "ground-city-registration.c": "8494d1b22f75545bb0c6003c889a8024e51d4f3e2a403fc2aa873890294d74f6"
+  }
+}

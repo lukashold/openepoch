@@ -1,0 +1,53 @@
+{
+  "format": "openepoch-season-session-tests-v1",
+  "passed": true,
+  "checks": 425,
+  "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+  "sources": {
+    "docs/main.js": "eebee3010370cb2d4ceb8eab0ec726a9c968ffef37dc823926ee1e7a7560c574",
+    "docs/season-session.js": "2ba54f8c2c55b87034abd6ae79f730d816e0a98505ce4582c3c3b1111eaf7e07",
+    "docs/net.js": "0fa77829bf3b5b5f4e1114aad15e9e977a839f0aa35195c07db047fce278f6bf",
+    "docs/index.html": "9777c4d4c546ac06bb3c98bba4117e3a6279bc0cf030cc7874a2d88fec1ba400",
+    "docs/original-seasons.js": "fb4001470974e86ed297465309933305bef3bd8c54c8c603f6e39d18b2e63492",
+    "docs/original-terrain.js": "32bb7736a323f4069524b6fd08892dbcda15d0314a8f25f40e4fd28a5a12fb0a",
+    "docs/original-ground.js": "9928799d00f182fd226e98f554b7500bfa6ffa9c4e8faf234ccdb75d95157fa1"
+  },
+  "protocol": 11,
+  "sourceExtraction": {
+    "channelSha256": "842c095b00e50546c1609ed2b3177c9e284d7924352a80d563a41f3571fbdc6b",
+    "controlsSha256": "4878a04ddea124fd043fb31bd08da6fd0803f8178a65b485e4384b41aab93434",
+    "advanceSha256": "e8a231fdb97eea42c14590c1fd6585e37fe7f0a1fcb64664b9724bc9a01a2ab4",
+    "pauseSha256": "c12f50c30afc998569a4cc7531ddce74177ee5ba334f4d1020f1de90f3f5f53d"
+  },
+  "hostSettings": {
+    "cycle": true,
+    "startMonth": 2,
+    "minutesPerSeason": 1
+  },
+  "guestMenuBefore": {
+    "cycle": false,
+    "startMonth": 10,
+    "minutesPerSeason": 30
+  },
+  "transferredSettings": {
+    "cycle": true,
+    "startMonth": 2,
+    "minutesPerSeason": 1
+  },
+  "traffic": {
+    "json": 3,
+    "binary": 904,
+    "binaryCommandPackets": 2
+  },
+  "rejectedCases": 27,
+  "actualNetworkTick": 904,
+  "actualSaveTick": 905,
+  "legacyFixedSummer": true,
+  "sourceSaveLoadPhaseStable": true,
+  "scope": "Actual main.js channel, controls, seed, pause and advance functions evaluated in vm; two real WASMs and two production Net.Locksteps. Production calendar and terrain/ground session methods execute. DOM/status/begin/camera surfaces and queued transport are substituted; no browser, WebRTC sockets, original executable or GUI is launched.",
+  "limitations": [
+    "Actual WASM serializer and production season metadata helpers are tested; IndexedDB/browser save-dialog interaction is not.",
+    "Queued transport validates channel protocol and lockstep behavior, not Internet/WebRTC connectivity.",
+    "Rendering modules use the recording GL adapter here; separate native GLES world/pixel tests cover actual GPU rendering."
+  ]
+}

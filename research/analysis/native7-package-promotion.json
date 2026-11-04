@@ -1,0 +1,23 @@
+{
+  "format": "openepoch-native7-package-promotion-v1",
+  "status": "passed",
+  "createdUTC": "2026-11-04T19:07:15.433908+00:00",
+  "file": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\OpenEpoch-Mac-Komplett.zip",
+  "sha256": "61c21b51e4b07b35b715b396e5d62682bae32b1ee9da1844a1476ecadff1fd23",
+  "bytes": 1250396554,
+  "previousPackages": {
+    "OpenEpoch-Mac-Komplett.zip": {
+      "sha256": "a1d5df4966675b2a2fa70e1d4143dff1a319962101a82efac2124533a5232f91",
+      "bytes": 1237014952,
+      "preserved": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native7-preactivation\\packages\\OpenEpoch-Mac-Komplett.zip"
+    },
+    "OpenEpoch-Scharmuetzel.zip": {
+      "sha256": "932d529d3df4342bbc39f58b1430a3d7fcbaf847ecb31ab0da1b1146a7647cd4",
+      "bytes": 11679523,
+      "preserved": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native7-preactivation\\packages\\OpenEpoch-Scharmuetzel.zip"
+    }
+  },
+  "originalMediaIncludedLocally": true,
+  "uploadedOriginalMedia": false,
+  "sourceZipWillBeRebuiltSeparately": true
+}

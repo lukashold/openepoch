@@ -1,3 +1,4 @@
+import {createTypedAudioBindings} from './original-audio-bindings.js?v=native61';
 // Playback of original assets extracted from the user's local EE2 installation.
 // Metadata and byte-for-byte source hashes live beside those assets. This module
 // contains no recordings and remains usable when local-original is absent.
@@ -11,13 +12,15 @@ export function createOriginalAudio(options={}) {
   const buffers=new Map(),pending=new Map(),failed=new Set(),live=new Set(),counters=new Map();
   let musicSource=null,musicBuffer=null,musicFile=null,musicOffset=0,musicStarted=0,musicIndex=0,musicGeneration=0,musicPendingFile=null;
   let ambientSource=null,nextBird=0,currentEpoch=0,previousPeriod=-1;
+  let familyManifest=options.familyManifest||null,definitionSettings={wasm:null,bindings:[]},typed=createTypedAudioBindings({familyManifest});
+  function setDefinitionBindings({wasm=null,bindings=[]}={}){definitionSettings={wasm,bindings};typed=createTypedAudioBindings({...definitionSettings,familyManifest});if(manifest)for(const file of typed.usedFiles())load(file);}
   const stats={voicePlays:0,effectPlays:0,musicStarts:0,ambientStarts:0};
 
   function load(file) {
     if(!file||!ctx||failed.has(file))return Promise.resolve(null);
     if(buffers.has(file))return Promise.resolve(buffers.get(file));
     if(pending.has(file))return pending.get(file);
-    const url=new URL(file,base),hash=manifest?.assets?.[file.toLowerCase()]?.sha256;
+    const url=new URL(file,base),hash=manifest?.assets?.[file.toLowerCase()]?.sha256||familyManifest?.assets?.[file]?.sha256;
     if(hash)url.searchParams.set('v',hash.slice(0,16));
     const p=fetchFile(url,{cache:'force-cache'})
       .then(r=>{if(!r.ok)throw Error('Original audio unavailable');return r.arrayBuffer();})
@@ -95,23 +98,39 @@ export function createOriginalAudio(options={}) {
       if(buffer)start(buffer,.11,(Math.random()-.5)*1.4,'ambient');else load(bird);
     }
   }
+  async function prepareFamilyBindings(){
+    if(!familyManifest){try{const response=await fetchFile(new URL('native-families.json',base),{cache:'no-cache'});if(response.ok)familyManifest=await response.json();}catch{}}
+    try{typed=createTypedAudioBindings({...definitionSettings,familyManifest});}catch{familyManifest=null;typed=createTypedAudioBindings(definitionSettings);}
+    for(const file of typed.usedFiles())load(file);
+  }
   async function prepare(context,destination) {
     if(!enabled||typeof context?.decodeAudioData!=='function')return false;
     ctx=context;master=destination;
     if(loading)return loading;
     loading=fetchFile(new URL('manifest.json',base),{cache:'no-cache'})
       .then(r=>{if(!r.ok)throw Error('No local originals');return r.json();})
-      .then(data=>{
+      .then(async data=>{
         if(data.version!==1||!data.effects||!data.voices)throw Error('Unsupported local audio manifest');
         manifest=data;
         const warm=[...[...Object.values(data.voices),...(data.voiceVariants||[])].flatMap(voice=>[...(voice.select||[]),...(voice.order||[]),...(voice.attack||[])]),...Object.values(data.effects).map(x=>x.file),...Object.values(data.buildingSelections||{}).map(x=>typeof x==='string'?x:x.file),data.ambient?.loop,...(data.ambient?.birds||[])];
         for(const file of new Set(warm))load(file);
+        await prepareFamilyBindings();
         return true;
       }).catch(()=>false);
     return loading;
   }
   function acknowledge(def,action,epoch=0) {
     if(!manifest||muted||ctx?.state!=='running')return false;
+    const plan=typed.resolve(def,action,epoch);
+    if(plan){
+      if(plan.group==='voice'&&!speech)return false;
+      const index=counters.get(plan.key)||0,record=plan.records[index%plan.records.length],buffer=buffers.get(record.file);
+      if(!buffer){load(record.file);return false;}
+      if(plan.group==='voice')stopVoices();
+      const source=start(buffer,plan.gain*record.volume,0,plan.group);if(!source)return false;
+      counters.set(plan.key,index+1);if(plan.group==='voice')stats.voicePlays++;else stats.effectPlays++;return true;
+    }
+    if(!typed.isLegacy(def))return false;
     if(action==='select'&&manifest.buildingSelections?.[def]){
       const record=manifest.buildingSelections[def];
       const file=typeof record==='string'?record:record.file;const buffer=buffers.get(file);
@@ -144,10 +163,10 @@ export function createOriginalAudio(options={}) {
     return !musicEnabled||!!tracks?.some(file=>!failed.has(file));
   }
   return {
-    prepare,acknowledge,effect,music,
+    prepare,acknowledge,effect,music,setDefinitionBindings,role:(id,epoch)=>typed.role(id,epoch),
     setMuted(value){muted=value;if(value){stopMusic();stopAmbient();for(const source of [...live])stop(source);}},
     setSpeechEnabled(value){speech=value;if(!value)stopVoices();},
     setMusicEnabled(value){musicEnabled=value;if(!value)stopMusic();},
-    status(){return {enabled,ready:!!manifest,buffers:buffers.size,failed:[...failed],activeVoices:[...live].filter(x=>x.originalGroup==='voice').length,music:!!musicSource,ambient:!!ambientSource,...stats};}
+    status(){return {typedAudio:typed.status(),enabled,ready:!!manifest,buffers:buffers.size,failed:[...failed],activeVoices:[...live].filter(x=>x.originalGroup==='voice').length,music:!!musicSource,ambient:!!ambientSource,...stats};}
   };
 }

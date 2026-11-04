@@ -2,7 +2,7 @@
   "format": "openepoch-native5-release-v1",
   "status": "passed",
   "build": "native-ui5",
-  "createdUTC": "2026-11-04T12:59:21.785500+00:00",
+  "createdUTC": "2026-11-04T13:15:09.958308+00:00",
   "networkProtocol": 10,
   "profiles": {
     "own": {
@@ -55,12 +55,12 @@
     "liveFilesCompared": 38
   },
   "evidenceReports": {
-    "native5-frontend-integration.json": "34687022c7722c6b3fde968c71604948c7109e686894616155e5a420d82fd4cd",
+    "native5-frontend-integration.json": "3275ce757e1ebd14805a5f12532717187e7d1c660048b4c475e6d77484e1665d",
     "native5-package-extraction.json": "998ad89576b7449fd059fd4e95f92f0078b645eb6c4f51a6d2d9f71d5144d7d9",
     "native5-package-portable-assets.json": "c08506ee0ae1d695ba270c4c6803df12795e85e70e36fb2d85bfd52deedcdaf2",
     "native5-http-tests.json": "1e40aa9c02ee3b23f6ad777adeb2804101952bc5e19589bdd03e6a17a786255e",
     "native5-live-http.json": "88a3e4e1502a78fc3b824e44501da0f3f4fb4581834af13f40d946bf33f3f768",
-    "original-parity-audit.json": "ba78f6a26b110b332aebeeb5084a6fd8625225c96d481af7ba7a5f2760973421"
+    "original-parity-audit.json": "458415cb46cb04ff7cfef606b64a5e190549e69fb753dd9c8a6aacdb096aff0c"
   },
   "currentRuntimeFiles": {
     "main.js": "27cca83a8633cfd71d5ea3607af258f088b929239ed0bcf60d30a479c2f2924e",
@@ -82,9 +82,11 @@
   },
   "liveUrl": "http://127.0.0.1:8125/?rules=ee2&build=native-ui5",
   "github": {
-    "currentCheckpointPublished": false,
+    "currentCheckpointPublished": true,
     "previousCommit": "3d2c5e14d82e747a8c957043a9b39c13ac01af20",
-    "originalMediaIncluded": false
+    "originalMediaIncluded": false,
+    "commit": "c07e3571bd045b54b404b352696dcc6655319e29",
+    "tree": "432a2fa878be961da1289ea058e69dbc4f1f1998"
   },
   "fullOriginalParity": false,
   "limits": [

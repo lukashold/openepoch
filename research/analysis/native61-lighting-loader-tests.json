@@ -1,0 +1,12 @@
+{
+  "status": "passed",
+  "build": "native5",
+  "format": "ee2-native-lighting-loader-test-v1",
+  "checks": 49,
+  "sourceHashes": {
+    "renderer": "cb5e95de9f31eb46d1906706b764792dc7a994cf37bb86648721e5ded49f1ad9",
+    "lighting": "e68347b9dfd16968fd92d6657ec238b7b2d7c65c6d3ab569920b444f941fbad0",
+    "data": "1b38767bd3ad11c2d45b816235ea009dae274c9e92df1e155599b8501f5fc872"
+  },
+  "scope": "Production loader and draw calls: source light defaults, static/skinned stages, nativeHigh/Low changes, explicit legacy draw/set overrides, disabled/older asset paths and alternate model/scale manifest options. No UI launch."
+}

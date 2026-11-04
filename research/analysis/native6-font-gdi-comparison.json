@@ -1,0 +1,1916 @@
+{
+  "format": "native6-font-all-western-current-gdi-comparison-v1",
+  "status": "measured",
+  "westernFonts": 70,
+  "glyphs": 5600,
+  "metricDifferences": 0,
+  "baselineDifferences": 0,
+  "comparedPixels": 1394810,
+  "differentPixels": 3113,
+  "exactFonts": 5,
+  "rows": [
+    {
+      "font": "fv8W_Arial_12_0_bo_kr_ascii_0_64x64",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 87,
+          "pixels": 1
+        },
+        {
+          "cp": 127,
+          "pixels": 20
+        }
+      ],
+      "comparedPixels": 7656
+    },
+    {
+      "font": "fv8W_Arial_12_0_bo_kr_ascii_1_128x64",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 87,
+          "pixels": 1
+        },
+        {
+          "cp": 127,
+          "pixels": 20
+        }
+      ],
+      "comparedPixels": 7656
+    },
+    {
+      "font": "fv8W_Arial_12_0_kr_ascii_0_64x64",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 127,
+          "pixels": 20
+        }
+      ],
+      "comparedPixels": 6816
+    },
+    {
+      "font": "fv8W_Arial_12_0_kr_ascii_1_128x64",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 127,
+          "pixels": 20
+        }
+      ],
+      "comparedPixels": 6816
+    },
+    {
+      "font": "fv8W_Arial_12_0_ou_kr_ascii_1_128x64",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 65,
+          "pixels": 2
+        },
+        {
+          "cp": 86,
+          "pixels": 3
+        },
+        {
+          "cp": 106,
+          "pixels": 2
+        },
+        {
+          "cp": 127,
+          "pixels": 52
+        }
+      ],
+      "comparedPixels": 9296
+    },
+    {
+      "font": "fv8W_Arial_13_0_bo_kr_ascii_0_64x64",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 87,
+          "pixels": 1
+        },
+        {
+          "cp": 127,
+          "pixels": 26
+        }
+      ],
+      "comparedPixels": 8294
+    },
+    {
+      "font": "fv8W_Arial_13_0_kr_ascii_0_64x64",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 75,
+          "pixels": 6
+        },
+        {
+          "cp": 90,
+          "pixels": 4
+        },
+        {
+          "cp": 127,
+          "pixels": 34
+        }
+      ],
+      "comparedPixels": 8099
+    },
+    {
+      "font": "fv8W_Arial_15_0_bo_kr_ascii_0_64x64",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 87,
+          "pixels": 1
+        },
+        {
+          "cp": 127,
+          "pixels": 38
+        }
+      ],
+      "comparedPixels": 10785
+    },
+    {
+      "font": "fv8W_Arial_15_0_bo_kr_ascii_1_128x64",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 87,
+          "pixels": 1
+        },
+        {
+          "cp": 127,
+          "pixels": 38
+        }
+      ],
+      "comparedPixels": 10785
+    },
+    {
+      "font": "fv8W_Arial_15_0_kr_ascii_0_64x64",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 127,
+          "pixels": 38
+        }
+      ],
+      "comparedPixels": 10545
+    },
+    {
+      "font": "fv8W_Arial_15_0_kr_ascii_1_128x64",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 127,
+          "pixels": 38
+        }
+      ],
+      "comparedPixels": 10545
+    },
+    {
+      "font": "fv8W_Arial_15_0_ou_kr_ascii_1_128x64",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 127,
+          "pixels": 81
+        }
+      ],
+      "comparedPixels": 13583
+    },
+    {
+      "font": "fv8W_Arial_17_0_bo_kr_ascii_1_128x64",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 127,
+          "pixels": 34
+        }
+      ],
+      "comparedPixels": 14348
+    },
+    {
+      "font": "fv8W_Arial_17_0_kr_ascii_1_128x64",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 47,
+          "pixels": 1
+        },
+        {
+          "cp": 87,
+          "pixels": 1
+        },
+        {
+          "cp": 88,
+          "pixels": 1
+        },
+        {
+          "cp": 127,
+          "pixels": 50
+        }
+      ],
+      "comparedPixels": 14195
+    },
+    {
+      "font": "fv8W_Arial_17_0_ou_kr_ascii_1_128x64",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 47,
+          "pixels": 2
+        },
+        {
+          "cp": 87,
+          "pixels": 2
+        },
+        {
+          "cp": 88,
+          "pixels": 1
+        },
+        {
+          "cp": 127,
+          "pixels": 107
+        }
+      ],
+      "comparedPixels": 17689
+    },
+    {
+      "font": "fv8W_Arial_18_0_bo_kr_ascii_0_64x64",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 89,
+          "pixels": 1
+        },
+        {
+          "cp": 127,
+          "pixels": 66
+        }
+      ],
+      "comparedPixels": 15822
+    },
+    {
+      "font": "fv8W_Arial_18_0_kr_ascii_0_64x64",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 119,
+          "pixels": 1
+        },
+        {
+          "cp": 121,
+          "pixels": 1
+        },
+        {
+          "cp": 127,
+          "pixels": 52
+        }
+      ],
+      "comparedPixels": 15984
+    },
+    {
+      "font": "fv8W_Arial_20_0_bo_kr_ascii_1_128x64",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 38,
+          "pixels": 1
+        },
+        {
+          "cp": 87,
+          "pixels": 1
+        },
+        {
+          "cp": 127,
+          "pixels": 54
+        }
+      ],
+      "comparedPixels": 19560
+    },
+    {
+      "font": "fv8W_Arial_20_0_kr_ascii_1_128x64",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 47,
+          "pixels": 4
+        },
+        {
+          "cp": 87,
+          "pixels": 4
+        },
+        {
+          "cp": 121,
+          "pixels": 1
+        },
+        {
+          "cp": 127,
+          "pixels": 38
+        }
+      ],
+      "comparedPixels": 18600
+    },
+    {
+      "font": "fv8W_Arial_20_0_ou_kr_ascii_1_128x64",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 47,
+          "pixels": 8
+        },
+        {
+          "cp": 87,
+          "pixels": 8
+        },
+        {
+          "cp": 121,
+          "pixels": 1
+        },
+        {
+          "cp": 127,
+          "pixels": 103
+        }
+      ],
+      "comparedPixels": 22572
+    },
+    {
+      "font": "fv8W_Arial_24_0_bo_kr_ascii_1_128x64",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 65,
+          "pixels": 1
+        },
+        {
+          "cp": 82,
+          "pixels": 2
+        },
+        {
+          "cp": 92,
+          "pixels": 1
+        },
+        {
+          "cp": 127,
+          "pixels": 92
+        }
+      ],
+      "comparedPixels": 27648
+    },
+    {
+      "font": "fv8W_Arial_24_0_kr_ascii_1_128x64",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 35,
+          "pixels": 1
+        },
+        {
+          "cp": 53,
+          "pixels": 1
+        },
+        {
+          "cp": 86,
+          "pixels": 5
+        },
+        {
+          "cp": 127,
+          "pixels": 68
+        }
+      ],
+      "comparedPixels": 27672
+    },
+    {
+      "font": "fv8W_Arial_24_0_ou_kr_ascii_1_128x64",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 35,
+          "pixels": 2
+        },
+        {
+          "cp": 53,
+          "pixels": 1
+        },
+        {
+          "cp": 86,
+          "pixels": 10
+        },
+        {
+          "cp": 127,
+          "pixels": 148
+        }
+      ],
+      "comparedPixels": 32474
+    },
+    {
+      "font": "fv8W_Arial_9_0_bo_kr_ascii_0_64x64",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 35,
+          "pixels": 2
+        },
+        {
+          "cp": 47,
+          "pixels": 1
+        },
+        {
+          "cp": 90,
+          "pixels": 6
+        },
+        {
+          "cp": 127,
+          "pixels": 16
+        }
+      ],
+      "comparedPixels": 4194
+    },
+    {
+      "font": "fv8W_Arial_9_0_kr_ascii_0_64x64",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 35,
+          "pixels": 1
+        },
+        {
+          "cp": 47,
+          "pixels": 1
+        },
+        {
+          "cp": 82,
+          "pixels": 2
+        },
+        {
+          "cp": 86,
+          "pixels": 2
+        },
+        {
+          "cp": 90,
+          "pixels": 3
+        },
+        {
+          "cp": 127,
+          "pixels": 14
+        }
+      ],
+      "comparedPixels": 4095
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_14_0_aa_kr_alnum_2_128x128",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 65,
+          "pixels": 2
+        },
+        {
+          "cp": 86,
+          "pixels": 1
+        },
+        {
+          "cp": 119,
+          "pixels": 1
+        }
+      ],
+      "comparedPixels": 6160
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_14_0_bo_aa_kr_alnum_2_128x128",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 75,
+          "pixels": 1
+        },
+        {
+          "cp": 87,
+          "pixels": 1
+        },
+        {
+          "cp": 89,
+          "pixels": 1
+        },
+        {
+          "cp": 118,
+          "pixels": 1
+        },
+        {
+          "cp": 120,
+          "pixels": 1
+        }
+      ],
+      "comparedPixels": 6216
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_14_11_sc_aa_kr_alnum_2_128x128",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 2,
+      "baselineCurrent": 2,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 65,
+          "pixels": 2
+        },
+        {
+          "cp": 86,
+          "pixels": 1
+        },
+        {
+          "cp": 119,
+          "pixels": 1
+        },
+        {
+          "cp": 122,
+          "pixels": 1
+        }
+      ],
+      "comparedPixels": 6244
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_16_0_bo_ou_aa_kr_alnum_3_256x128",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 65,
+          "pixels": 1
+        },
+        {
+          "cp": 73,
+          "pixels": 5
+        },
+        {
+          "cp": 74,
+          "pixels": 3
+        },
+        {
+          "cp": 75,
+          "pixels": 2
+        },
+        {
+          "cp": 82,
+          "pixels": 2
+        },
+        {
+          "cp": 102,
+          "pixels": 7
+        },
+        {
+          "cp": 103,
+          "pixels": 7
+        },
+        {
+          "cp": 107,
+          "pixels": 2
+        },
+        {
+          "cp": 114,
+          "pixels": 5
+        },
+        {
+          "cp": 117,
+          "pixels": 2
+        },
+        {
+          "cp": 118,
+          "pixels": 3
+        },
+        {
+          "cp": 121,
+          "pixels": 3
+        }
+      ],
+      "comparedPixels": 10296
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_16_0_ou_aa_kr_alnum_3_256x128",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 79,
+          "pixels": 4
+        },
+        {
+          "cp": 81,
+          "pixels": 6
+        },
+        {
+          "cp": 84,
+          "pixels": 4
+        },
+        {
+          "cp": 85,
+          "pixels": 3
+        },
+        {
+          "cp": 98,
+          "pixels": 3
+        },
+        {
+          "cp": 99,
+          "pixels": 5
+        },
+        {
+          "cp": 105,
+          "pixels": 3
+        },
+        {
+          "cp": 106,
+          "pixels": 3
+        },
+        {
+          "cp": 108,
+          "pixels": 3
+        }
+      ],
+      "comparedPixels": 10206
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_16_12_sc_aa_kr_ascii_3_256x128",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 3,
+      "baselineCurrent": 3,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 37,
+          "pixels": 1
+        },
+        {
+          "cp": 122,
+          "pixels": 1
+        },
+        {
+          "cp": 127,
+          "pixels": 47
+        }
+      ],
+      "comparedPixels": 11056
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_16_12_sc_bo_aa_kr_ascii_3_256x128",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 3,
+      "baselineCurrent": 3,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 65,
+          "pixels": 1
+        },
+        {
+          "cp": 75,
+          "pixels": 1
+        },
+        {
+          "cp": 97,
+          "pixels": 1
+        },
+        {
+          "cp": 127,
+          "pixels": 70
+        }
+      ],
+      "comparedPixels": 11280
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_18_0_aa_kr_alnum_2_128x128",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [],
+      "comparedPixels": 9882
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_18_0_bo_aa_kr_alnum_2_128x128",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 87,
+          "pixels": 2
+        },
+        {
+          "cp": 118,
+          "pixels": 1
+        },
+        {
+          "cp": 119,
+          "pixels": 1
+        }
+      ],
+      "comparedPixels": 10224
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_18_14_sc_aa_kr_alnum_2_128x128",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 3,
+      "baselineCurrent": 3,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 97,
+          "pixels": 2
+        },
+        {
+          "cp": 118,
+          "pixels": 1
+        }
+      ],
+      "comparedPixels": 10026
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_21_0_aa_kr_alnum_2_128x128",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 65,
+          "pixels": 1
+        }
+      ],
+      "comparedPixels": 13356
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_21_0_bo_aa_kr_alnum_2_128x128",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 86,
+          "pixels": 1
+        },
+        {
+          "cp": 87,
+          "pixels": 1
+        },
+        {
+          "cp": 89,
+          "pixels": 1
+        },
+        {
+          "cp": 90,
+          "pixels": 1
+        },
+        {
+          "cp": 107,
+          "pixels": 1
+        },
+        {
+          "cp": 122,
+          "pixels": 2
+        }
+      ],
+      "comparedPixels": 13629
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_21_0_bo_ou_aa_kr_alnum_3_256x128",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 86,
+          "pixels": 1
+        },
+        {
+          "cp": 87,
+          "pixels": 5
+        },
+        {
+          "cp": 89,
+          "pixels": 4
+        },
+        {
+          "cp": 90,
+          "pixels": 2
+        },
+        {
+          "cp": 100,
+          "pixels": 2
+        },
+        {
+          "cp": 103,
+          "pixels": 7
+        },
+        {
+          "cp": 107,
+          "pixels": 3
+        },
+        {
+          "cp": 113,
+          "pixels": 2
+        },
+        {
+          "cp": 117,
+          "pixels": 2
+        },
+        {
+          "cp": 118,
+          "pixels": 3
+        },
+        {
+          "cp": 121,
+          "pixels": 3
+        },
+        {
+          "cp": 122,
+          "pixels": 4
+        }
+      ],
+      "comparedPixels": 16399
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_21_0_ou_aa_kr_alnum_3_256x128",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 65,
+          "pixels": 2
+        },
+        {
+          "cp": 75,
+          "pixels": 3
+        },
+        {
+          "cp": 80,
+          "pixels": 4
+        },
+        {
+          "cp": 82,
+          "pixels": 3
+        },
+        {
+          "cp": 88,
+          "pixels": 3
+        },
+        {
+          "cp": 89,
+          "pixels": 2
+        },
+        {
+          "cp": 101,
+          "pixels": 4
+        },
+        {
+          "cp": 102,
+          "pixels": 5
+        },
+        {
+          "cp": 106,
+          "pixels": 3
+        }
+      ],
+      "comparedPixels": 16100
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_21_15_sc_aa_kr_ascii_3_256x128",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 5,
+      "baselineCurrent": 5,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 35,
+          "pixels": 1
+        },
+        {
+          "cp": 65,
+          "pixels": 1
+        },
+        {
+          "cp": 118,
+          "pixels": 1
+        },
+        {
+          "cp": 119,
+          "pixels": 1
+        },
+        {
+          "cp": 127,
+          "pixels": 80
+        }
+      ],
+      "comparedPixels": 18312
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_21_15_sc_bo_aa_kr_ascii_3_256x128",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 5,
+      "baselineCurrent": 5,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 35,
+          "pixels": 1
+        },
+        {
+          "cp": 38,
+          "pixels": 1
+        },
+        {
+          "cp": 47,
+          "pixels": 1
+        },
+        {
+          "cp": 86,
+          "pixels": 1
+        },
+        {
+          "cp": 87,
+          "pixels": 1
+        },
+        {
+          "cp": 89,
+          "pixels": 1
+        },
+        {
+          "cp": 90,
+          "pixels": 1
+        },
+        {
+          "cp": 94,
+          "pixels": 1
+        },
+        {
+          "cp": 107,
+          "pixels": 1
+        },
+        {
+          "cp": 119,
+          "pixels": 1
+        },
+        {
+          "cp": 127,
+          "pixels": 113
+        }
+      ],
+      "comparedPixels": 18606
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_21_16_sc_aa_kr_alnum_2_128x128",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 4,
+      "baselineCurrent": 4,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 65,
+          "pixels": 1
+        }
+      ],
+      "comparedPixels": 13461
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_23_0_aa_kr_alnum_2_128x128",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [],
+      "comparedPixels": 15916
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_23_0_bo_aa_kr_alnum_2_128x128",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 77,
+          "pixels": 2
+        },
+        {
+          "cp": 87,
+          "pixels": 2
+        },
+        {
+          "cp": 118,
+          "pixels": 1
+        },
+        {
+          "cp": 119,
+          "pixels": 2
+        }
+      ],
+      "comparedPixels": 15916
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_23_0_bo_ou_aa_kr_alnum_3_256x128",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 55,
+          "pixels": 4
+        },
+        {
+          "cp": 74,
+          "pixels": 3
+        },
+        {
+          "cp": 77,
+          "pixels": 4
+        },
+        {
+          "cp": 84,
+          "pixels": 5
+        },
+        {
+          "cp": 87,
+          "pixels": 3
+        },
+        {
+          "cp": 89,
+          "pixels": 3
+        },
+        {
+          "cp": 97,
+          "pixels": 3
+        },
+        {
+          "cp": 102,
+          "pixels": 8
+        },
+        {
+          "cp": 103,
+          "pixels": 9
+        },
+        {
+          "cp": 104,
+          "pixels": 3
+        },
+        {
+          "cp": 107,
+          "pixels": 3
+        },
+        {
+          "cp": 110,
+          "pixels": 3
+        },
+        {
+          "cp": 114,
+          "pixels": 5
+        },
+        {
+          "cp": 118,
+          "pixels": 5
+        },
+        {
+          "cp": 119,
+          "pixels": 2
+        },
+        {
+          "cp": 120,
+          "pixels": 6
+        },
+        {
+          "cp": 121,
+          "pixels": 3
+        }
+      ],
+      "comparedPixels": 18900
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_23_0_ou_aa_kr_alnum_3_256x128",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 74,
+          "pixels": 3
+        },
+        {
+          "cp": 75,
+          "pixels": 3
+        },
+        {
+          "cp": 82,
+          "pixels": 3
+        },
+        {
+          "cp": 84,
+          "pixels": 7
+        },
+        {
+          "cp": 85,
+          "pixels": 3
+        },
+        {
+          "cp": 86,
+          "pixels": 3
+        },
+        {
+          "cp": 88,
+          "pixels": 3
+        },
+        {
+          "cp": 89,
+          "pixels": 3
+        },
+        {
+          "cp": 98,
+          "pixels": 3
+        },
+        {
+          "cp": 103,
+          "pixels": 2
+        },
+        {
+          "cp": 106,
+          "pixels": 5
+        },
+        {
+          "cp": 107,
+          "pixels": 3
+        },
+        {
+          "cp": 117,
+          "pixels": 3
+        }
+      ],
+      "comparedPixels": 18900
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_23_17_sc_aa_kr_ascii_3_256x128",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 5,
+      "baselineCurrent": 5,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 97,
+          "pixels": 1
+        },
+        {
+          "cp": 127,
+          "pixels": 97
+        }
+      ],
+      "comparedPixels": 21988
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_23_17_sc_bo_aa_kr_ascii_3_256x128",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 5,
+      "baselineCurrent": 5,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 35,
+          "pixels": 1
+        },
+        {
+          "cp": 77,
+          "pixels": 2
+        },
+        {
+          "cp": 87,
+          "pixels": 2
+        },
+        {
+          "cp": 97,
+          "pixels": 1
+        },
+        {
+          "cp": 107,
+          "pixels": 1
+        },
+        {
+          "cp": 109,
+          "pixels": 1
+        },
+        {
+          "cp": 119,
+          "pixels": 1
+        },
+        {
+          "cp": 127,
+          "pixels": 119
+        }
+      ],
+      "comparedPixels": 21919
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_23_18_sc_aa_kr_alnum_2_128x128",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 4,
+      "baselineCurrent": 4,
+      "baselineEqual": true,
+      "differentGlyphs": [],
+      "comparedPixels": 16031
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_24_18_sc_aa_kr_alnum_4_256x256",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 5,
+      "baselineCurrent": 5,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 65,
+          "pixels": 1
+        }
+      ],
+      "comparedPixels": 17232
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_24_18_sc_bo_aa_kr_alnum_4_256x256",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 5,
+      "baselineCurrent": 5,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 75,
+          "pixels": 2
+        },
+        {
+          "cp": 89,
+          "pixels": 1
+        },
+        {
+          "cp": 119,
+          "pixels": 2
+        }
+      ],
+      "comparedPixels": 17904
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_26_0_bo_ou_aa_kr_alnum_3_256x128",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 74,
+          "pixels": 5
+        },
+        {
+          "cp": 75,
+          "pixels": 4
+        },
+        {
+          "cp": 86,
+          "pixels": 3
+        },
+        {
+          "cp": 87,
+          "pixels": 3
+        },
+        {
+          "cp": 102,
+          "pixels": 8
+        },
+        {
+          "cp": 114,
+          "pixels": 5
+        },
+        {
+          "cp": 116,
+          "pixels": 6
+        },
+        {
+          "cp": 119,
+          "pixels": 3
+        }
+      ],
+      "comparedPixels": 24304
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_26_0_ou_aa_kr_alnum_3_256x128",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 74,
+          "pixels": 4
+        },
+        {
+          "cp": 99,
+          "pixels": 6
+        },
+        {
+          "cp": 102,
+          "pixels": 5
+        },
+        {
+          "cp": 106,
+          "pixels": 3
+        }
+      ],
+      "comparedPixels": 23520
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_26_20_sc_aa_kr_ascii_3_256x128",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 4,
+      "baselineCurrent": 4,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 35,
+          "pixels": 1
+        },
+        {
+          "cp": 47,
+          "pixels": 2
+        },
+        {
+          "cp": 92,
+          "pixels": 1
+        },
+        {
+          "cp": 127,
+          "pixels": 121
+        }
+      ],
+      "comparedPixels": 28184
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_26_20_sc_bo_aa_kr_ascii_3_256x128",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 5,
+      "baselineCurrent": 5,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 75,
+          "pixels": 2
+        },
+        {
+          "cp": 86,
+          "pixels": 2
+        },
+        {
+          "cp": 87,
+          "pixels": 1
+        },
+        {
+          "cp": 92,
+          "pixels": 3
+        },
+        {
+          "cp": 94,
+          "pixels": 1
+        },
+        {
+          "cp": 97,
+          "pixels": 1
+        },
+        {
+          "cp": 119,
+          "pixels": 1
+        },
+        {
+          "cp": 121,
+          "pixels": 1
+        },
+        {
+          "cp": 127,
+          "pixels": 163
+        }
+      ],
+      "comparedPixels": 28730
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_28_0_aa_kr_alnum_2_128x128",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 65,
+          "pixels": 1
+        }
+      ],
+      "comparedPixels": 23212
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_28_0_bo_aa_kr_alnum_2_128x128",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 65,
+          "pixels": 1
+        },
+        {
+          "cp": 77,
+          "pixels": 1
+        },
+        {
+          "cp": 82,
+          "pixels": 1
+        }
+      ],
+      "comparedPixels": 23744
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_28_21_sc_aa_kr_alnum_2_128x128",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 6,
+      "baselineCurrent": 6,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 65,
+          "pixels": 1
+        },
+        {
+          "cp": 97,
+          "pixels": 1
+        }
+      ],
+      "comparedPixels": 23156
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_30_22_sc_aa_kr_alnum_4_256x256",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 6,
+      "baselineCurrent": 6,
+      "baselineEqual": true,
+      "differentGlyphs": [],
+      "comparedPixels": 26520
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_30_22_sc_bo_aa_kr_alnum_4_256x256",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 6,
+      "baselineCurrent": 6,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 87,
+          "pixels": 1
+        },
+        {
+          "cp": 119,
+          "pixels": 4
+        }
+      ],
+      "comparedPixels": 26940
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_32_0_bo_ou_aa_kr_alnum_3_256x128",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 65,
+          "pixels": 2
+        },
+        {
+          "cp": 86,
+          "pixels": 3
+        },
+        {
+          "cp": 90,
+          "pixels": 3
+        },
+        {
+          "cp": 102,
+          "pixels": 4
+        },
+        {
+          "cp": 107,
+          "pixels": 3
+        },
+        {
+          "cp": 114,
+          "pixels": 6
+        },
+        {
+          "cp": 119,
+          "pixels": 4
+        },
+        {
+          "cp": 121,
+          "pixels": 4
+        }
+      ],
+      "comparedPixels": 34952
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_32_0_ou_aa_kr_alnum_3_256x128",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 0,
+      "baselineCurrent": 0,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 75,
+          "pixels": 3
+        },
+        {
+          "cp": 84,
+          "pixels": 6
+        },
+        {
+          "cp": 98,
+          "pixels": 3
+        },
+        {
+          "cp": 99,
+          "pixels": 7
+        },
+        {
+          "cp": 106,
+          "pixels": 3
+        },
+        {
+          "cp": 113,
+          "pixels": 3
+        }
+      ],
+      "comparedPixels": 33966
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_32_24_sc_aa_kr_ascii_3_256x128",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 6,
+      "baselineCurrent": 6,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 35,
+          "pixels": 2
+        },
+        {
+          "cp": 47,
+          "pixels": 1
+        },
+        {
+          "cp": 92,
+          "pixels": 3
+        },
+        {
+          "cp": 97,
+          "pixels": 1
+        },
+        {
+          "cp": 127,
+          "pixels": 172
+        }
+      ],
+      "comparedPixels": 41536
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_32_24_sc_bo_aa_kr_ascii_3_256x128",
+      "glyphs": 96,
+      "metricsDifferent": [],
+      "baselineSource": 6,
+      "baselineCurrent": 6,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 38,
+          "pixels": 1
+        },
+        {
+          "cp": 65,
+          "pixels": 2
+        },
+        {
+          "cp": 90,
+          "pixels": 2
+        },
+        {
+          "cp": 94,
+          "pixels": 1
+        },
+        {
+          "cp": 107,
+          "pixels": 2
+        },
+        {
+          "cp": 121,
+          "pixels": 1
+        },
+        {
+          "cp": 127,
+          "pixels": 237
+        }
+      ],
+      "comparedPixels": 42656
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_35_26_sc_aa_kr_alnum_4_256x256",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 7,
+      "baselineCurrent": 7,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 65,
+          "pixels": 1
+        }
+      ],
+      "comparedPixels": 35700
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_35_26_sc_bo_aa_kr_alnum_4_256x256",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 7,
+      "baselineCurrent": 7,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 65,
+          "pixels": 1
+        },
+        {
+          "cp": 86,
+          "pixels": 1
+        },
+        {
+          "cp": 87,
+          "pixels": 4
+        },
+        {
+          "cp": 107,
+          "pixels": 2
+        },
+        {
+          "cp": 118,
+          "pixels": 2
+        },
+        {
+          "cp": 119,
+          "pixels": 1
+        }
+      ],
+      "comparedPixels": 36890
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_40_30_sc_aa_kr_alnum_4_256x256",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 7,
+      "baselineCurrent": 7,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 65,
+          "pixels": 2
+        }
+      ],
+      "comparedPixels": 46560
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_40_30_sc_bo_aa_kr_alnum_4_256x256",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 7,
+      "baselineCurrent": 7,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 77,
+          "pixels": 1
+        },
+        {
+          "cp": 86,
+          "pixels": 2
+        },
+        {
+          "cp": 87,
+          "pixels": 3
+        },
+        {
+          "cp": 119,
+          "pixels": 1
+        }
+      ],
+      "comparedPixels": 47520
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_48_36_sc_aa_kr_alnum_4_256x256",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 9,
+      "baselineCurrent": 9,
+      "baselineEqual": true,
+      "differentGlyphs": [],
+      "comparedPixels": 66624
+    },
+    {
+      "font": "fv8W_Palatino_Linotype_48_36_sc_bo_aa_kr_alnum_4_256x256",
+      "glyphs": 64,
+      "metricsDifferent": [],
+      "baselineSource": 10,
+      "baselineCurrent": 10,
+      "baselineEqual": true,
+      "differentGlyphs": [
+        {
+          "cp": 77,
+          "pixels": 1
+        },
+        {
+          "cp": 86,
+          "pixels": 2
+        },
+        {
+          "cp": 87,
+          "pixels": 7
+        },
+        {
+          "cp": 118,
+          "pixels": 7
+        },
+        {
+          "cp": 119,
+          "pixels": 2
+        },
+        {
+          "cp": 122,
+          "pixels": 1
+        }
+      ],
+      "comparedPixels": 68208
+    }
+  ],
+  "rasterSha256": "2e0cc199c929fd1a521432ed7344a435d79143117a76efbf471541018ecebb3d",
+  "scope": "All70 Western source cache styles/sizes against source-derived nativeDDB current-system GDI branch, including native4xAA/smallcaps/outline. Original cached glyphs remain authoritative; this measurement never licenses silently regenerating them."
+}

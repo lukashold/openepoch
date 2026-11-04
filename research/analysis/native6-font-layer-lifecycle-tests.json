@@ -1,0 +1,7 @@
+{
+  "format": "native6-font-layer-lifecycle-tests-v1",
+  "status": "passed",
+  "checks": 29,
+  "runtimeSha256": "0ba484a3748b41e3853b0aa223ec69aae2d2d0442f3e266acb51f4edf5f7e6fe",
+  "scope": "Browser-like geometry keeps visibility-hidden rectangles and detached child-parent links; inverse CSS/DPR, explicit narrow-counter text fields, overflow fallback, external refresh, reparenting and dispose. DOM transport only; no browser/original process."
+}

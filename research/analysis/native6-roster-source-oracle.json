@@ -1,0 +1,11 @@
+{
+  "format": "ee2-up15-independent-source-oracles-v1",
+  "checks": 115192,
+  "source_manifest_sha256": "eabf590cacef634646eb4e8e47eb58e29a44ca8a6ac1d914a012e1b91b9f87f3",
+  "profiles": 313,
+  "compiled_matchups": 97969,
+  "compiled_unit_csv_records": 271,
+  "research_nodes": 180,
+  "originals_modified": false,
+  "dll_or_exe_executed": false
+}

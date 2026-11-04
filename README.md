@@ -4,11 +4,42 @@ GitHub enthält Quellcode, fertige WASM-Builds, Tests und Importwerkzeuge.
 Originalmedien im ignorierten Ordner `docs/local-original/` werden lokal importiert
 oder aus dem separaten vollständigen Spielpaket übernommen.
 
-Arbeitsstand 04.11.2026 · native-ui5. Das lokale EE2-Profil verbindet die eigene Rust-/WASM-Simulation
+Arbeitsstand 04.11.2026 · native7. Das lokale EE2-Profil verbindet die eigene Rust-/WASM-Simulation
 mit Originalgrafiken, Originalton und quellbelegten Wirtschafts- und Einheitenwerten.
 Der aktuelle Ausbau ist weiterhin kein vollständiges, regelgleiches Empire Earth II.
 
+Im aktiven Arbeitsordner sind Bitmap-Schrift für HUD und Diplomatie sowie die
+quellbelegten Terrain-Lichtstufen hinzugekommen. Unter UP sind jetzt61 Rollen
+mit getrennten16-Bit-Einheiten-, Produktions- und Renderkennungen aktiv.
+Späher, Segelkriegsschiff, Luftabwehr und Küstenverteidigung verwenden ihre
+Originalwerte, Modellwechsel, deutschen Texte und belegten Originalsounds.
+Das Produktionssystem speichert jetzt den bezahlten Preis und die beim Arbeitsbeginn
+festgelegte Dauer. Abbruch erstattet den gespeicherten Preis. Bei Klassenwechseln
+werden wartende Aufträge neu berechnet; der laufende Auftrag behält seinen Preis
+und seine Dauer. Nicht mehr verfügbare Aufträge werden entsprechend entfernt.
+Die vorhandenen eigenen/Basis-WASMs bleiben erhalten. Alte UP-Spielstände werden
+in OEU7 eingelesen; ihre nicht gespeicherte Preis-/Zeitgeschichte bleibt ausdrücklich
+rekonstruiert. Netzwerkprotokoll14 trennt ältere Simulationsstände.
+Von132 klassischen Quellenfamilien sind43 angebunden; die übrigen89 sowie
+weitere Fähigkeiten und Zivilisationsregeln werden weiterhin rekonstruiert.
+
+Karavellen und Linienschiffe verwenden die originalen sechs beziehungsweise zwölf
+Segelflächen mit getrennten Bewegungszuständen pro Schiff, lokalen Lichtfarben
+und Schadensmasken. Alle Bilddurchläufe einschließlich Wasserreflexion verwenden
+denselben vorbereiteten Zustand. Pause und Netzwerk-Wartezeit halten die Bewegung
+an. Originale lokale Raster und Rechenfolgen sind belegt; Zeittakt, Sichtauswahl
+und die Zuordnung zur eigenen Welt bleiben ausdrücklich Adapter.
+
+Die gemeinsamen Prüfungen und der genaue Restumfang werden unter
+`research/analysis/native7-*.json` dokumentiert. Die Dateien `native6-*.json`
+und `native61-*.json` enthalten die davor geprüften Ausbaustufen.
+Browserbedienung und ein physischer Mac wurden dabei nicht ausgeführt.
+
 ## Komplettpaket für den Mac
+
+Das native7-Komplettpaket enthält den gemeinsam geprüften Laufzeitstand mit
+Originalmedien. Das zugehörige Quellpaket enthält eigenen Code, WASM-Builds und
+Prüfungen. Die vollständige Originalübereinstimmung wird weiter erarbeitet.
 
 `OpenEpoch-Mac-Komplett.zip` enthält den fertigen Laufzeitordner einschließlich
 aller importierten Originaldateien unter `docs/local-original`.
@@ -26,7 +57,7 @@ Eine tatsächliche macOS-Ausführung wurde hier nicht getestet.
 `OpenEpoch-Scharmuetzel.zip` ist das separate Quellpaket
 ohne Originalmedien. Für den Mac-Transfer das neue **Komplettpaket** verwenden.
 
-## Originales Bedienfeld, Diplomatie, Kampf und Beleuchtung · native-ui5
+## Enthaltener vorheriger Ausbau · native-ui5
 
 Das Bedienfeld verwendet51 originale Widgetdefinitionen und129 hochauflösende
 Originalgrafiken. Minikarte, Befehlsraster, Einheiteninfo, Rohstoffe und Epochenleiste
@@ -84,7 +115,7 @@ Nachmittag bei normalem Wetter gewählt. Die vollständige native Tageszeit-,
 Wetter- und Terrain-Lichtsteuerung ist noch offen.
 
 Die folgenden Abschnitte dokumentieren frühere Ausbaustände; maßgeblich ist
-der oben beschriebene Stand native-ui5.
+der oben beschriebene Stand native7.
 
 ## Saisonale Modelle, Wasserreflexionen und Kameradrehung · visual-seasons2
 

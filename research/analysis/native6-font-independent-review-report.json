@@ -1,0 +1,479 @@
+{
+  "format": "native6-fonts-independent-review-v1",
+  "status": "passed",
+  "moduleSha256": "22ac2db9ff78cc33dc11971347f4a7cab3450d07dee2f4d2753bf175109ca6c7",
+  "tests": {
+    "lifecycle": {
+      "format": "native6-fonts-independent-layer-review-v1",
+      "status": "passed",
+      "runtimeSha256": "22ac2db9ff78cc33dc11971347f4a7cab3450d07dee2f4d2753bf175109ca6c7",
+      "observations": [
+        {
+          "name": "visibility:hidden suppresses sibling bitmap",
+          "wanted": true,
+          "actual": true,
+          "passed": true
+        },
+        {
+          "name": "removing ancestor prunes disconnected control",
+          "wanted": 0,
+          "actual": 0,
+          "passed": true
+        },
+        {
+          "name": "DPR change redraws even when pixel dimensions equal",
+          "wanted": 2,
+          "actual": 2,
+          "passed": true
+        },
+        {
+          "name": "DPR transform matches current ratio",
+          "wanted": 2,
+          "actual": 2,
+          "passed": true
+        },
+        {
+          "name": "event listener identity",
+          "wanted": true,
+          "actual": true,
+          "passed": true
+        },
+        {
+          "name": "accessible text retained",
+          "wanted": "A",
+          "actual": "A",
+          "passed": true
+        },
+        {
+          "name": "pointer events cannot intercept original control",
+          "wanted": "none",
+          "actual": "none",
+          "passed": true
+        },
+        {
+          "name": "HTML hidden suppresses overlay",
+          "wanted": true,
+          "actual": true,
+          "passed": true
+        },
+        {
+          "name": "display:none suppresses overlay",
+          "wanted": true,
+          "actual": true,
+          "passed": true
+        },
+        {
+          "name": "dispose removes overlay only",
+          "wanted": 1,
+          "actual": 1,
+          "passed": true
+        },
+        {
+          "name": "dispose restores original text colour",
+          "wanted": "red",
+          "actual": "red",
+          "passed": true
+        },
+        {
+          "name": "dispose retains listener",
+          "wanted": true,
+          "actual": true,
+          "passed": true
+        }
+      ],
+      "scope": "Independent DOM transport with browser geometry semantics: visibility:hidden retains a rectangle; detached subtrees have empty rectangles; inverse CSS/DPR changes retain physical canvas dimensions. No browser, GUI, original program or candidate-source edit."
+    },
+    "rgbaTint": {
+      "status": "passed",
+      "format": "native6-independent-cache-tint-review-v1",
+      "runtimeSha256": "22ac2db9ff78cc33dc11971347f4a7cab3450d07dee2f4d2753bf175109ca6c7",
+      "sourceAtlases": 6,
+      "colourCases": 24,
+      "bytesChecked": 2621440,
+      "blackPixelChecks": 67324,
+      "alphaChecks": 655360,
+      "copies": 20,
+      "puts": 20,
+      "cases": [
+        {
+          "font": "font55",
+          "colour": [
+            255,
+            255,
+            255
+          ],
+          "atlas": "fv8W_Palatino_Linotype_16_0_ou_aa_kr_alnum_3_256x128.png",
+          "expectedSha256": "609842d6efaa60cbacf1aaa8bf9884a4c4f6336d3ece87c11ebda4ae3c0f4a2b",
+          "actualSha256": "609842d6efaa60cbacf1aaa8bf9884a4c4f6336d3ece87c11ebda4ae3c0f4a2b"
+        },
+        {
+          "font": "font55",
+          "colour": [
+            200,
+            100,
+            20
+          ],
+          "atlas": "fv8W_Palatino_Linotype_16_0_ou_aa_kr_alnum_3_256x128.png",
+          "expectedSha256": "5d71cff474d5dda6723df75d452be67817e670fc03582c625617236622358e9b",
+          "actualSha256": "5d71cff474d5dda6723df75d452be67817e670fc03582c625617236622358e9b"
+        },
+        {
+          "font": "font55",
+          "colour": [
+            0,
+            255,
+            64
+          ],
+          "atlas": "fv8W_Palatino_Linotype_16_0_ou_aa_kr_alnum_3_256x128.png",
+          "expectedSha256": "d7b0981c69767765ee131121e5b73291935f8bc79624479a6d0bb3850cb57cda",
+          "actualSha256": "d7b0981c69767765ee131121e5b73291935f8bc79624479a6d0bb3850cb57cda"
+        },
+        {
+          "font": "font55",
+          "colour": [
+            0,
+            0,
+            0
+          ],
+          "atlas": "fv8W_Palatino_Linotype_16_0_ou_aa_kr_alnum_3_256x128.png",
+          "expectedSha256": "e7939d30564d37b0cfd52f49505e2d2a78551f0cb231b4c8e6fd1bd09f45150a",
+          "actualSha256": "e7939d30564d37b0cfd52f49505e2d2a78551f0cb231b4c8e6fd1bd09f45150a"
+        },
+        {
+          "font": "font56",
+          "colour": [
+            255,
+            255,
+            255
+          ],
+          "atlas": "fv8W_Palatino_Linotype_21_0_ou_aa_kr_alnum_3_256x128.png",
+          "expectedSha256": "db312a66d233c7d09016947727fca948d34b56368b0d0deb420891c73f89b76c",
+          "actualSha256": "db312a66d233c7d09016947727fca948d34b56368b0d0deb420891c73f89b76c"
+        },
+        {
+          "font": "font56",
+          "colour": [
+            200,
+            100,
+            20
+          ],
+          "atlas": "fv8W_Palatino_Linotype_21_0_ou_aa_kr_alnum_3_256x128.png",
+          "expectedSha256": "d31d1ed6a71cefa1eff89b19ae2d74b8688f104d117da009ee2ed3658650e448",
+          "actualSha256": "d31d1ed6a71cefa1eff89b19ae2d74b8688f104d117da009ee2ed3658650e448"
+        },
+        {
+          "font": "font56",
+          "colour": [
+            0,
+            255,
+            64
+          ],
+          "atlas": "fv8W_Palatino_Linotype_21_0_ou_aa_kr_alnum_3_256x128.png",
+          "expectedSha256": "7a48bca39fbe74934c2b0ee95d9c37be2d427047e85705d633c076548e022b97",
+          "actualSha256": "7a48bca39fbe74934c2b0ee95d9c37be2d427047e85705d633c076548e022b97"
+        },
+        {
+          "font": "font56",
+          "colour": [
+            0,
+            0,
+            0
+          ],
+          "atlas": "fv8W_Palatino_Linotype_21_0_ou_aa_kr_alnum_3_256x128.png",
+          "expectedSha256": "efb4d4183785773fcda69d3b7f03edec2f1bf6f2da64e3fb9af0be9aa5db3f9b",
+          "actualSha256": "efb4d4183785773fcda69d3b7f03edec2f1bf6f2da64e3fb9af0be9aa5db3f9b"
+        },
+        {
+          "font": "font60",
+          "colour": [
+            255,
+            255,
+            255
+          ],
+          "atlas": "fv8W_Palatino_Linotype_16_0_bo_ou_aa_kr_alnum_3_256x128.png",
+          "expectedSha256": "d608d77514cf425506677aa815a26d2c75fc9f77448751dd55a5ee8d62a0b2b9",
+          "actualSha256": "d608d77514cf425506677aa815a26d2c75fc9f77448751dd55a5ee8d62a0b2b9"
+        },
+        {
+          "font": "font60",
+          "colour": [
+            200,
+            100,
+            20
+          ],
+          "atlas": "fv8W_Palatino_Linotype_16_0_bo_ou_aa_kr_alnum_3_256x128.png",
+          "expectedSha256": "84688f5fb8735b7290ad1af66656d28e726506ae1383f569e407c47a3f754897",
+          "actualSha256": "84688f5fb8735b7290ad1af66656d28e726506ae1383f569e407c47a3f754897"
+        },
+        {
+          "font": "font60",
+          "colour": [
+            0,
+            255,
+            64
+          ],
+          "atlas": "fv8W_Palatino_Linotype_16_0_bo_ou_aa_kr_alnum_3_256x128.png",
+          "expectedSha256": "b6407324cf573475949ce947d2df8bd99ab50cb25365a33c5c47bde1bd79b70e",
+          "actualSha256": "b6407324cf573475949ce947d2df8bd99ab50cb25365a33c5c47bde1bd79b70e"
+        },
+        {
+          "font": "font60",
+          "colour": [
+            0,
+            0,
+            0
+          ],
+          "atlas": "fv8W_Palatino_Linotype_16_0_bo_ou_aa_kr_alnum_3_256x128.png",
+          "expectedSha256": "dbb0ed97bad6fc1169df2f5c9702d93fe967e0b8686f43a209f030277799d08e",
+          "actualSha256": "dbb0ed97bad6fc1169df2f5c9702d93fe967e0b8686f43a209f030277799d08e"
+        },
+        {
+          "font": "font61",
+          "colour": [
+            255,
+            255,
+            255
+          ],
+          "atlas": "fv8W_Palatino_Linotype_21_0_bo_ou_aa_kr_alnum_3_256x128.png",
+          "expectedSha256": "47d2eafb528f64e21499b97e91d5db2c3e8644b2ee74a2ad719f77ab149911b0",
+          "actualSha256": "47d2eafb528f64e21499b97e91d5db2c3e8644b2ee74a2ad719f77ab149911b0"
+        },
+        {
+          "font": "font61",
+          "colour": [
+            200,
+            100,
+            20
+          ],
+          "atlas": "fv8W_Palatino_Linotype_21_0_bo_ou_aa_kr_alnum_3_256x128.png",
+          "expectedSha256": "2978a3b9bae5a2c9a5e20d477db05bea521fa65166938e127a6aba36dec9b609",
+          "actualSha256": "2978a3b9bae5a2c9a5e20d477db05bea521fa65166938e127a6aba36dec9b609"
+        },
+        {
+          "font": "font61",
+          "colour": [
+            0,
+            255,
+            64
+          ],
+          "atlas": "fv8W_Palatino_Linotype_21_0_bo_ou_aa_kr_alnum_3_256x128.png",
+          "expectedSha256": "a03f851843a54f28969e65093a13d1a97d285c4ac3daaf7893f2a47e37129709",
+          "actualSha256": "a03f851843a54f28969e65093a13d1a97d285c4ac3daaf7893f2a47e37129709"
+        },
+        {
+          "font": "font61",
+          "colour": [
+            0,
+            0,
+            0
+          ],
+          "atlas": "fv8W_Palatino_Linotype_21_0_bo_ou_aa_kr_alnum_3_256x128.png",
+          "expectedSha256": "d34dffce55946b82b5e256573403b95d0168d5cf4b6c18b95c7fbb1bf35ef650",
+          "actualSha256": "d34dffce55946b82b5e256573403b95d0168d5cf4b6c18b95c7fbb1bf35ef650"
+        },
+        {
+          "font": "font65",
+          "colour": [
+            255,
+            255,
+            255
+          ],
+          "atlas": "fv8W_Arial_12_0_ou_kr_ascii_1_128x64.png",
+          "expectedSha256": "87a604fe439864710ede1c3884a77def13c9c1b9f721294806ae50b4d0b90e72",
+          "actualSha256": "87a604fe439864710ede1c3884a77def13c9c1b9f721294806ae50b4d0b90e72"
+        },
+        {
+          "font": "font65",
+          "colour": [
+            200,
+            100,
+            20
+          ],
+          "atlas": "fv8W_Arial_12_0_ou_kr_ascii_1_128x64.png",
+          "expectedSha256": "bc0da86346dc99f8759caef56f2515710dd1eeef686d4c6e86b037dffa5d8071",
+          "actualSha256": "bc0da86346dc99f8759caef56f2515710dd1eeef686d4c6e86b037dffa5d8071"
+        },
+        {
+          "font": "font65",
+          "colour": [
+            0,
+            255,
+            64
+          ],
+          "atlas": "fv8W_Arial_12_0_ou_kr_ascii_1_128x64.png",
+          "expectedSha256": "6f6b4302aeb25e4505709626c9ea18de59139f0cf55b50f6948998f5f055f45d",
+          "actualSha256": "6f6b4302aeb25e4505709626c9ea18de59139f0cf55b50f6948998f5f055f45d"
+        },
+        {
+          "font": "font65",
+          "colour": [
+            0,
+            0,
+            0
+          ],
+          "atlas": "fv8W_Arial_12_0_ou_kr_ascii_1_128x64.png",
+          "expectedSha256": "161a137204ebcb5f81310c503e74eeaf33c8258783ba6d2b3e2e069fbb11f847",
+          "actualSha256": "161a137204ebcb5f81310c503e74eeaf33c8258783ba6d2b3e2e069fbb11f847"
+        },
+        {
+          "font": "font66",
+          "colour": [
+            255,
+            255,
+            255
+          ],
+          "atlas": "fv8W_Arial_15_0_ou_kr_ascii_1_128x64.png",
+          "expectedSha256": "b80cb32dd3d8b92c7da8cd17fb145cf5020afdd02fbff59ebc1974059a2a001a",
+          "actualSha256": "b80cb32dd3d8b92c7da8cd17fb145cf5020afdd02fbff59ebc1974059a2a001a"
+        },
+        {
+          "font": "font66",
+          "colour": [
+            200,
+            100,
+            20
+          ],
+          "atlas": "fv8W_Arial_15_0_ou_kr_ascii_1_128x64.png",
+          "expectedSha256": "98f99f7e6cfc3f12093cd498723f1d10275d0e30fb473a97554f8c79230f5d53",
+          "actualSha256": "98f99f7e6cfc3f12093cd498723f1d10275d0e30fb473a97554f8c79230f5d53"
+        },
+        {
+          "font": "font66",
+          "colour": [
+            0,
+            255,
+            64
+          ],
+          "atlas": "fv8W_Arial_15_0_ou_kr_ascii_1_128x64.png",
+          "expectedSha256": "a5cb683becc27ed6f09d150e678f870a3e718190e4a0e99f670d128e68dce995",
+          "actualSha256": "a5cb683becc27ed6f09d150e678f870a3e718190e4a0e99f670d128e68dce995"
+        },
+        {
+          "font": "font66",
+          "colour": [
+            0,
+            0,
+            0
+          ],
+          "atlas": "fv8W_Arial_15_0_ou_kr_ascii_1_128x64.png",
+          "expectedSha256": "794a8597dcc476b0386b2bda33838497d937ebad161d530e908c088ffa81f748",
+          "actualSha256": "794a8597dcc476b0386b2bda33838497d937ebad161d530e908c088ffa81f748"
+        }
+      ],
+      "styleAlphaCases": [
+        {
+          "style": "fs_std_med_black",
+          "sourceBinding": true,
+          "globalAlpha": 0.501960813999176,
+          "overlayOpacity": 1,
+          "effectiveAlpha": 0.501960813999176,
+          "expected": 0.501960813999176
+        },
+        {
+          "style": "fs_std_med_white",
+          "sourceBinding": true,
+          "globalAlpha": 1,
+          "overlayOpacity": 1,
+          "effectiveAlpha": 1,
+          "expected": 1
+        },
+        {
+          "style": "app",
+          "sourceBinding": false,
+          "globalAlpha": 1,
+          "overlayOpacity": 0.5,
+          "effectiveAlpha": 0.5,
+          "expected": 0.5
+        }
+      ],
+      "scope": "Real shipped outline cache RGBA from6actual declared font atlases passes through candidate loadBitmapFonts.image\u00e2\u2020\u2019Canvas drawImage/getImageData\u00e2\u2020\u2019tintFontRGBA\u00e2\u2020\u2019putImageData\u00e2\u2020\u2019glyph drawImage using a raw-RGBA Canvas transport. Independent Python integer RGB\u00c3\u2014widget colour oracle matches every output byte; visible black outline pixels stay black and alpha is unchanged.",
+      "limits": "Canvas transport preserves unpremultiplied RGBA. This proves candidate RGB modulation/data flow and rejects source-in/fill-all-alpha behaviour; it does not assert a real browserCanvas premultiplication/colour-management pixel comparison or native drop-shadow style binding."
+    },
+    "native5UiComposition": {
+      "format": "native6-bitmap-font-native5-ui-composition-v1",
+      "status": "passed",
+      "checks": 1139,
+      "scenes": [
+        {
+          "name": "hud",
+          "bitmapLabels": 12,
+          "unsupported": []
+        },
+        {
+          "name": "relations",
+          "bitmapLabels": 22,
+          "unsupported": []
+        },
+        {
+          "name": "resources",
+          "bitmapLabels": 31,
+          "unsupported": []
+        },
+        {
+          "name": "proposal",
+          "bitmapLabels": 30,
+          "unsupported": []
+        },
+        {
+          "name": "territories",
+          "bitmapLabels": 25,
+          "unsupported": []
+        }
+      ],
+      "wasmSha256": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51",
+      "wasmRuleset": 2,
+      "sourceHashes": {
+        "docs/original-hud.js": "b777e9a3f56a50fc04389a010368830f75098861796704bac658748b95339f15",
+        "docs/original-hud-layout.js": "dd7c84000e04cfa0708539b426d365872845ff26f8b2e322de4438f23ad762b5",
+        "docs/economy-bar.js": "8b5442150c1ed288d87cf34ef30d85bc36aa2e0fe121fe90f7770944ac952d44",
+        "docs/original-diplomacy.js": "7be5a20e894e6143f3787c43e21ba1b3e6d335a53761616b085cd060c308198e",
+        "docs/original-diplomacy-layout.js": "9e119882f4e90950aa6193f7f680b35109ab98191924fb9d136926ef46a5b80c",
+        "docs/local-original/hud-native/manifest.json": "2b5c66a91b27cf7c3833d00db063a74c0b8e8dfedc2d0a67504d3bd6b4d6db6a",
+        "docs/local-original/diplomacy-native/manifest.json": "fb527824c257e1dd23caf70666507b5f6c883a81628fda3495af54dff76abd2f",
+        "docs/local-original/textures.json": "0eff6e13abfe7296637d6ff36f5e116b180825710dbf1e1d5292994833f64a55"
+      },
+      "fontModuleSha256": "22ac2db9ff78cc33dc11971347f4a7cab3450d07dee2f4d2753bf175109ca6c7",
+      "fontManifestSha256": "a9d019cb0ac457d4265f5eda81a63cd606329ce7b6243651409c37ace81991fe",
+      "limits": [
+        "Production HUD/diplomacy controllers, real WASM and actual candidate text placements are used; this is not a browser/CSS raster or original executable capture.",
+        "Resource-row CSS flow is explicitly represented from Native5 CSS declarations. Resource typography and newly added calendar label font are identified application bindings.",
+        "Legacy proposal/territory form flow and unbound alternate-font glyphs keep their previous presentation. No active runtime changed."
+      ]
+    }
+  },
+  "review": {
+    "sourceCache": "Original cached glyph pixels and complete cached kerning tables retained; current-GDI supplemental glyphs are separately labelled, not claimed pixel-identical to historical raster.",
+    "metrics": "Native kerning order, glyph width/height, trailing spacing, smallcaps inverse mapping and line height compared to exported painter and loader source.",
+    "controls": "Original controls, text, onclick handlers, disabled state and accessible labels retained. Canvas overlays use pointer-events:none.",
+    "resourceCounters": "Real narrow intrinsic B-box retained; separate row-minus-icon/padding callback supplies bitmap text bounds. 1139 production-controller/WASM checks include counter width, digits and fit.",
+    "rgba": "Six original outlined atlases, 24 colours; RGB multiplication preserves black outlines and source alpha. Native disabled alpha128 uses float32 byte*(1/255), Canvas alpha .501960813999176 and source overlay CSS opacity1. App bindings retain CSS opacity."
+  },
+  "fixedFindings": [
+    "Hidden sibling overlay persisted for visibility:hidden",
+    "Detached ancestor records leaked",
+    "Equal-physical-size DPR change retained old transform",
+    "Source RGBA alpha was dropped",
+    "Resource fixture widened B-box instead of supplying explicit bounds"
+  ],
+  "sourceEvidence": {
+    "alpha": {
+      "path": "work\\native-fonts6-review\\native-fonts-alpha.c",
+      "sha256": "552d35a33160b73762c65f7ec5666c2a12ec18d4f246ddd816e1172432c11dc9",
+      "functions": [
+        "00A303E0",
+        "00A83010",
+        "00914700"
+      ]
+    },
+    "capture": {
+      "path": "work/native-fonts6/capture-ui.mjs",
+      "sha256": "cb36ab68685297bcb0a7fe4619657a86e35453f0b5c27c622a4086ddcad13612"
+    }
+  },
+  "limits": [
+    "Independent DOM and raw Canvas transport; no browser CSS raster, colour-management or premultiplication equivalence claim.",
+    "Source drop-shadow binding, arbitrary wrapping and alternate-font glyph coverage remain explicitly unbound.",
+    "Current-GDI supplemental glyph raster has measured pixel differences to historical source cache.",
+    "Review made no active runtime, original installation or font candidate edits."
+  ]
+}

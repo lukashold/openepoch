@@ -1,0 +1,311 @@
+{
+  "format": "native6-font-integration-v1",
+  "build": "native6",
+  "status": "active-and-verified",
+  "createdUTC": "2026-11-04T14:13:52.978018+00:00",
+  "scope": "Portable native bitmap-font presentation. Main/HUD/diplomacy getter hooks applied by root; actual active components tested directly. No original executable, window or browser process launched; no TTF copied, installed or packaged.",
+  "assets": {
+    "files": 212,
+    "bytes": 7891515,
+    "originalCacheAtlases": 140,
+    "currentGdiAtlases": 70,
+    "fontVariants": 70,
+    "fontNames": 14,
+    "resolutionBindings": 84,
+    "fontStyles": 53,
+    "shippedGlyphBindings": 2240,
+    "currentGdiGlyphBindings": 11144,
+    "systemFontFilesCopied": 0,
+    "all210PngsEqualIndependentlyReviewedCandidate": true,
+    "cacheManifestSha256": "294bb28b9aeedff056102a9932db2b601eaf1e9e0ec20ada4d21bf80a1c49d12",
+    "bitmapManifestSha256": "ff12ad34c6940c32f4993290a3c9f3e6f85c0bb5ee418f4b77d5cd0dce05c82c"
+  },
+  "provenance": {
+    "engineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+    "fontTable": "Installed effective db_156_autofonts db/UI/dbfont.csv, sha256 4a8aa77c08b3560308dabb2e7ae3a83d35f6a2faf77e649422ff6afb6ca511e4. This is the installed effective font table, not an assertion that historical BASE sizes are identical.",
+    "sourceCache": "Installed EE2 fonts.zip: 140 original cache pairs, all exported exactly. Source Western caches contain no codepoint above127; German glyphs require the native dynamic path.",
+    "sourceProofs": [
+      {
+        "function": "00A9AFD0 / 00A9B4E0",
+        "fact": "Version8 exact cache record reader/writer: object fields, 12-byte Unicode glyph records, 8-byte kerning records and shelf packing."
+      },
+      {
+        "function": "00A98890 / 00A99B40",
+        "fact": "Precache sets and cache misses: GDI dynamically creates uncached glyphs; existing source cache cells are reused."
+      },
+      {
+        "function": "00ABE4D0 / 00ABED10 / 00ABF6D0 / 00ABF550",
+        "fact": "Memory DC, native monochrome DDB, positive cell height, source flags/quality2 and opaque one-code-unit ExtTextOutW path."
+      },
+      {
+        "function": "00ABEDB0 / 00ABEE80 / 00ABF020 / 00ABF210",
+        "fact": "Binary, 4x4 antialias and outline branches with A4R4G4B4 color/coverage quantization."
+      },
+      {
+        "function": "00A9AD30 / 00A9AB90",
+        "fact": "SmallCaps uses native codepoint mapping; German umlauts map to capitals; sharpS is not expanded to SS."
+      },
+      {
+        "function": "00A995F0 / 00A99820 / 00A83010",
+        "fact": "Previous/current kerning, stored width/spacing/line-height bounds and glyph draw advance are preserved."
+      },
+      {
+        "function": "00A303E0 / 00A83010 / 00914700",
+        "fact": "Native packed color byte3 becomes float alpha and is stored in every glyph quad; source disabled-alpha128 is preserved once, without duplicate CSS opacity."
+      }
+    ],
+    "boundedGhidraExports": [
+      {
+        "file": "native6-fonts-alpha.c",
+        "sha256": "552d35a33160b73762c65f7ec5666c2a12ec18d4f246ddd816e1172432c11dc9"
+      },
+      {
+        "file": "native6-fonts-constructor.c",
+        "sha256": "6f9c48671d129f39e4a9124b473978e99c296a09acb4a4fbf3f5ac20b9fc5eeb"
+      },
+      {
+        "file": "native6-fonts-dc-native.c",
+        "sha256": "360ff4276b5c622a7a1f6c42382a9f5b52b7b42fde30e73fefeffda8e68b1013"
+      },
+      {
+        "file": "native6-fonts-dc.c",
+        "sha256": "578a0d6ea240e10d7f4c28a28b4efb8e46e4b7d6cc3bfaf8bce2c85c7e270b0e"
+      },
+      {
+        "file": "native6-fonts-gdi.c",
+        "sha256": "0862c73b3d9f0600a6a811d181c3279f2269fe56b654bf9ee99414d9ba5528c6"
+      },
+      {
+        "file": "native6-fonts-kerning.c",
+        "sha256": "6f3da546a663ee88afef33cbea2fc5f4cd643274a510b9a8d1f720855bd1a2d9"
+      },
+      {
+        "file": "native6-fonts-loader.c",
+        "sha256": "5e117148925a0c4c80d412753cc8ef3e02a728785145c9ee4e2aa7abce1663f4"
+      },
+      {
+        "file": "native6-fonts-measure.c",
+        "sha256": "afc89dbc094fa6de436d810f69a90dff2ef289a5f34f54a3fc39111c5fcfc1bd"
+      },
+      {
+        "file": "native6-fonts-raster.c",
+        "sha256": "7ac24c7c5b01abea33eb751a4ecf5673d2d047e2e2da66d860ca35353eca4d64"
+      },
+      {
+        "file": "native6-fonts-rasterizer-constructor.c",
+        "sha256": "1be7979bff4adf1a7de1dffce93b5fbd314ab1b6c2e98a20e6f776b657249d75"
+      },
+      {
+        "file": "native6-fonts-text-lookup.c",
+        "sha256": "02a5bb78f10e76e22aa56499cebca2e99911a6e7fe9ea45780a20687ddb25061"
+      },
+      {
+        "file": "native6-fonts-text-painter.c",
+        "sha256": "d54fb5f6b0f92390e66efeb9e6ef7a7ca81eca13f421766dcc1d37f9fe8c3c2a"
+      }
+    ]
+  },
+  "productionPromotion": {
+    "reviewedCandidateSha256": "22ac2db9ff78cc33dc11971347f4a7cab3450d07dee2f4d2753bf175109ca6c7",
+    "activeSha256": "0ba484a3748b41e3853b0aa223ec69aae2d2d0442f3e266acb51f4edf5f7e6fe",
+    "exactChanges": [
+      "Header comment identifies production module.",
+      "Manifest version renamed from ee2-bitmap-font-candidate-v1 to ee2-native-bitmap-font-v1."
+    ],
+    "allOtherRuntimeTextEqual": true
+  },
+  "verification": {
+    "runtimeChecks": 1958,
+    "independentMetricCases": 910,
+    "layerLifecycleChecks": 29,
+    "originalPreservationAndImageChecks": 329889,
+    "cacheChecks": 6441,
+    "cacheMalformedRejected": 2578,
+    "unchangedSourceRgbaPixels": 4259840,
+    "liveUiCoordinatorChecks": 1040,
+    "liveUiScenes": 5,
+    "componentHooks": "active direct imports, no proposed hook adapter",
+    "sourceCacheAndGdiRegenerationFiles": 212,
+    "regenerationFilesChanged": 0,
+    "portableSelfTests": 27,
+    "portableSnapshot": {
+      "fileCount": 4902,
+      "runtimeReferenceCount": 21819,
+      "uniqueRuntimeTargets": 4778,
+      "status": "passed"
+    },
+    "currentGdiComparison": {
+      "westernFonts": 70,
+      "glyphs": 5600,
+      "metricDifferences": 0,
+      "smallcapsBaselineDifferences": 0,
+      "differentPixels": 3113,
+      "comparedPixels": 1394810
+    },
+    "independentGetPixelBulkReadback": {
+      "glyphs": 160,
+      "pixels": 12976,
+      "differences": 0
+    }
+  },
+  "activeUiSnapshot": {
+    "sourceHashes": {
+      "docs/original-fonts.js": "0ba484a3748b41e3853b0aa223ec69aae2d2d0442f3e266acb51f4edf5f7e6fe",
+      "docs/original-font-ui.js": "113c703adc3a094e863741a2f8de83a770229dbb14147e130debb551fe0c7f7b",
+      "docs/main.js": "c7fe87add1ebc9d1db56938b023399c977bc6307ecb0abb222fec358753d2c0e",
+      "docs/index.html": "270bfdd9bd2052597b34b2ff035b7998f717c73a61ca562a972ad81b800d3795",
+      "docs/original-hud.js": "12214361f25f9f840d12a56644a4f0835fe93ec6ae6a4a16db037f174887f794",
+      "docs/original-hud-layout.js": "dd7c84000e04cfa0708539b426d365872845ff26f8b2e322de4438f23ad762b5",
+      "docs/economy-bar.js": "8b5442150c1ed288d87cf34ef30d85bc36aa2e0fe121fe90f7770944ac952d44",
+      "docs/original-diplomacy.js": "4028328ea35edec0ae5346f53c6e18dca3fe8a162f7a8bb9d209313d7db488a8",
+      "docs/original-diplomacy-layout.js": "9e119882f4e90950aa6193f7f680b35109ab98191924fb9d136926ef46a5b80c",
+      "docs/local-original/hud-native/manifest.json": "2b5c66a91b27cf7c3833d00db063a74c0b8e8dfedc2d0a67504d3bd6b4d6db6a",
+      "docs/local-original/diplomacy-native/manifest.json": "fb527824c257e1dd23caf70666507b5f6c883a81628fda3495af54dff76abd2f",
+      "docs/local-original/textures.json": "0eff6e13abfe7296637d6ff36f5e116b180825710dbf1e1d5292994833f64a55"
+    },
+    "wasmSha256": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51",
+    "wasmRuleset": 2,
+    "note": "Main/core remain root-owned; later namespace changes require the parent to rerun this test to bind its release snapshot."
+  },
+  "sourceFiles": [
+    {
+      "file": "docs/original-fonts.js",
+      "sha256": "0ba484a3748b41e3853b0aa223ec69aae2d2d0442f3e266acb51f4edf5f7e6fe"
+    },
+    {
+      "file": "docs/original-font-ui.js",
+      "sha256": "113c703adc3a094e863741a2f8de83a770229dbb14147e130debb551fe0c7f7b"
+    },
+    {
+      "file": "tools/extract_ee2_fonts.py",
+      "sha256": "cba0e17e3dbb2bb35b42da166588a44a7df77cc4ebc2ae69bc55f69fd762b0ec"
+    },
+    {
+      "file": "tools/original-fonts-test.mjs",
+      "sha256": "d503a5a6ad6ba87d99615290f57999c207d053f861a85d1bf1909e596c7f7ea4"
+    },
+    {
+      "file": "tools/original-font-layer-test.mjs",
+      "sha256": "d85c9d01eed3e37e8b7d48e68098eab914cfb622770c31158a2ebc3613ea3128"
+    },
+    {
+      "file": "tools/original-fonts-images-test.py",
+      "sha256": "7b3738df64d719400d127d8f121e43b74aaa7d0dd83b039f96dac44f6f727dbd"
+    },
+    {
+      "file": "tools/original-font-cache-test.py",
+      "sha256": "dbe7bb04d8d74f3602f71dccd125a7b41a03d6112489059fa8f0ff60c4c0be32"
+    },
+    {
+      "file": "tools/original-font-ui-test.mjs",
+      "sha256": "ae0ea1824a7001a2310f2d34a86ae72619f7a787ec38725106e64c76db3a78a0"
+    },
+    {
+      "file": "tools/original-font-ui-images.py",
+      "sha256": "d408f72be7284710af0fe4ef9d7b8c6c0ec2ed32f246ce9e5847733f1f1862d9"
+    },
+    {
+      "file": "tools/fixtures/native6-font-metrics.json",
+      "sha256": "ddadfee7be8137fac6a2c32d13dee9e256d83ef284f0b26cad901d0679f5ff20"
+    },
+    {
+      "file": "tools/portable-assets-test.py",
+      "sha256": "dbe062db28845d59309d3b330456ed5be4dd9314d131ddfd94da853096904aa3"
+    },
+    {
+      "file": "tools/ee2_fonts/font_bitmap.py",
+      "sha256": "4c90d7c1bd8b6c2bb560dacbbcd4102bf5e18c5fe99467c48fbc3f96b6096517"
+    },
+    {
+      "file": "tools/ee2_fonts/font_cache.py",
+      "sha256": "37fb165b89d530be6fd58a32f379774886e82af7587c85c312ba7790c8d60160"
+    },
+    {
+      "file": "tools/ee2_fonts/font_raster.py",
+      "sha256": "d5e9b1f0b02256ee8f146fd045e8a0a35939902677019cf8dc7c5a89ede26957"
+    },
+    {
+      "file": "tools/ee2_fonts/font_sources.py",
+      "sha256": "020ebebfa8c5c8e4e4f716b05abeaf112e235f13dc5ab9754fffbd100931431b"
+    },
+    {
+      "file": "tools/ee2_fonts/gdi_api.py",
+      "sha256": "13530677907c7ef8c36a6aa747413d652356cf30658a93fb818d3190667c5424"
+    },
+    {
+      "file": "tools/ee2_fonts/__init__.py",
+      "sha256": "be2464996385d76752d01eb6e16b8e4d686a4813f63b03c29448b0698d198c52"
+    }
+  ],
+  "reports": [
+    {
+      "file": "native6-font-runtime-tests.json",
+      "sha256": "445a6f8288ba5693d1284c23dd9ad091d30f40ceb516ab33f677180ef2481a75"
+    },
+    {
+      "file": "native6-font-layer-lifecycle-tests.json",
+      "sha256": "b793766a6f77904bd9db662835f27ebb39573d6cc6566fc28dcda50c5de004ba"
+    },
+    {
+      "file": "native6-font-images-tests.json",
+      "sha256": "6e15f3ca1de14ffc080d7344623789afa264fbee674dbb9d156ef610750a0d68"
+    },
+    {
+      "file": "native6-font-cache-tests.json",
+      "sha256": "d24897e41a15af6adf650fc33a6ac9232e16ebebe8e575e494cfb94528dc999f"
+    },
+    {
+      "file": "native6-font-ui-tests.json",
+      "sha256": "24e848cf8287e115ddc39db613a344b7b022e04773a3522089222697f3017e97"
+    },
+    {
+      "file": "native6-font-ui-images.json",
+      "sha256": "35012bcb7d849083442a06961b6eb947c98a7dca30d3c79d1833c1cfb43e417b"
+    },
+    {
+      "file": "native6-font-regeneration-tests.json",
+      "sha256": "357396dcdbcee90a516e133ee0327ba9628c59bfb301ddfa4991886f6c859ff7"
+    },
+    {
+      "file": "native6-font-portable-assets-check.json",
+      "sha256": "5bb9a32123e6d03461a9fb1b74e4c88353ca0e60d05a37b7d80c46068801b809"
+    },
+    {
+      "file": "native6-font-gdi-comparison.json",
+      "sha256": "d1987103f8585989bc3b51531884171771571b1eb770d538325eaa659340fe24"
+    },
+    {
+      "file": "native6-font-gdi-readback.json",
+      "sha256": "913f55d02ffd41b63e8691703ef60cd9a2fa9378a83318e69d3baeda3e42c2c5"
+    },
+    {
+      "file": "native6-font-independent-review-report.json",
+      "sha256": "35c881eaae3efea5078f6a8f9ba063ad4a897ed7b9c4fc7f803b7e2820d301e9"
+    },
+    {
+      "file": "native6-font-independent-layer-review.json",
+      "sha256": "46498c69a1447e40fab9c6bb279efc2c851caa6619d75c779a99a1efb0b0a9f0"
+    },
+    {
+      "file": "native6-font-independent-tint-review.json",
+      "sha256": "357b8349e9604d8be4d3714cb86345c3ffc6b7016b07a3de47df01602705f6fb"
+    }
+  ],
+  "rerun": [
+    "node tools/original-fonts-test.mjs",
+    "node tools/original-font-layer-test.mjs",
+    "python tools/original-fonts-images-test.py",
+    "python tools/original-font-cache-test.py",
+    "node tools/original-font-ui-test.mjs",
+    "python tools/original-font-ui-images.py",
+    "python tools/extract_ee2_fonts.py --verify",
+    "python tools/portable-assets-test.py --self-test --report ../EE2-Research/analysis/native6-font-portable-assets-check.json --label native6-font-active"
+  ],
+  "limits": [
+    "Original cache glyph cells and complete original kerning are authoritative. Current-GDI supplements carry per-font/per-glyph provenance and are not claimed to match historical shipped raster pixels. Four initial Palatino alpha-nibble differences and the DEL127 difference are retained as measured comparison boundaries.",
+    "Native text wrapping, font-style shadow dispatch and native alternate-face layers above U+052F remain unbound. Unsupported glyphs retain existing control text; current em-dash placeholders are reported.",
+    "Bitmap siblings preserve existing nodes, accessible text, pointer/onclick/disabled behavior, OS inputs and selects. Canvas placement/clipping, HUD resource typography and the added calendar font role are explicit application adapters.",
+    "Five previews replay positioned production source widgets and active glyph draw calls over a separately captured Native5 world. They are not browser CSS rasters or same-frame original screenshots; legacy flowing forms stay outside this raster transport.",
+    "No full game or text-engine 1:1 parity claim. Native4/5 source and release snapshots remain historical and untouched."
+  ]
+}

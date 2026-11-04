@@ -1,0 +1,305 @@
+{
+  "format": "openepoch-production-world-gles-replay-v1",
+  "passed": true,
+  "context": {
+    "egl": [
+      1,
+      5
+    ],
+    "vendor": "Google Inc. (AMD)",
+    "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11-31.0.21924.61)",
+    "version": "OpenGL ES 3.0 (ANGLE 2.1 git hash: unknown hash)",
+    "libraryDirectory": "C:\\Program Files\\Mozilla Firefox",
+    "surface": [
+      1280,
+      1280
+    ],
+    "uiLaunched": false,
+    "framebuffer": "RGBA8 texture + DEPTH24_STENCIL8 renderbuffer"
+  },
+  "capture": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\world-0-town-month0-reflection-profile-up15-native-ui6.json",
+  "captureSha256": "03ac8c8461236079ff04781f49b645e89ad354c88cf4d8d1dbb555c6a27a1946",
+  "sourceEpoch": 1,
+  "scene": "town",
+  "wasmInstances": 397,
+  "size": [
+    1280,
+    720
+  ],
+  "stats": {
+    "drawCalls": 38,
+    "instancedCalls": 24,
+    "drawnInstances": 1187,
+    "triangles": 671278,
+    "bufferBytes": 6696208,
+    "textureBytes": 39245836
+  },
+  "compiledPrograms": [
+    {
+      "id": "1",
+      "compiled": true,
+      "linked": true,
+      "vertexSha256": "9f3482f9446fde6fa07f7ed0ca4219d2e35d92cf798ac9045e65f9a056ca999d",
+      "fragmentSha256": "0bb30f98001b9b186e3bd990907b3c5b7a6d3f68eb956017a168511037d82139"
+    },
+    {
+      "id": "4",
+      "compiled": true,
+      "linked": true,
+      "vertexSha256": "b72acea400e56c4c93b4d842cb1d7d7d440adbf2403f967553e9053df55ffd46",
+      "fragmentSha256": "7efe2d142aa91825d2be67fdb51420ef1746e44bd68a1c137bdc1b46bd70e866"
+    },
+    {
+      "id": "23",
+      "compiled": true,
+      "linked": true,
+      "vertexSha256": "7a1f879ffb93822a6095f8c86bd846a85cd60b2f7068460f877250b1e77e041c",
+      "fragmentSha256": "a5c8d0726c130e313a374f21394c040c5c222753b35d747536e06e470e23216d"
+    },
+    {
+      "id": "223",
+      "compiled": true,
+      "linked": true,
+      "vertexSha256": "9535f328c82af94214709f53f614a30577e270b714d52a2465e1fe37b76ca9c0",
+      "fragmentSha256": "846d396c976f2420073fb76bce272341fc4bc95664f3d52fdc135633c134ee13"
+    },
+    {
+      "id": "237",
+      "compiled": true,
+      "linked": true,
+      "vertexSha256": "1d47141ee3d6b2812f526b348b455a4836e50e10ec8be438bd0b9d8a558ef85e",
+      "fragmentSha256": "ecda9fb2699e29a50b3d9234679db3d9ac2bcf60adf7817bb7dd717faabc3a5d"
+    },
+    {
+      "id": "240",
+      "compiled": true,
+      "linked": true,
+      "vertexSha256": "3b1e2d3fe88867371c45fd6de96100778d40092c444d470e91838b32ba382bb1",
+      "fragmentSha256": "b10cd648b9f92848f471809c82b876fc3cacd8f66001f4ec9fca197ac07f1adb"
+    }
+  ],
+  "output": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\OpenEpoch\\native6-world-winter.png",
+  "pngSha256": "90b27034bd0af9ec5894ff85336f88bd0df47cf5f2e4a7a4b35f66ed1ddb814a",
+  "colorHistogramBins": 765,
+  "scope": "WASM seed7 world, production simulation-tick calendar, camera/loaders/material, epoch/urban/seasonal building ground, terrain-conforming stencil shadows and terrain/water draw calls. World-only native GLES replay; no HUD, browser, native executable or original-game visual equality claim.",
+  "uiLaunched": false,
+  "reflectionTargets": [
+    {
+      "framebuffer": "258",
+      "texture": 257,
+      "size": [
+        1280,
+        720
+      ],
+      "output": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\OpenEpoch\\native6-world-winter-reflection-258.png",
+      "pngSha256": "4e2d05cb482e233cccc2f7b745092a2037a8f911ec868eee64c8d65d7e6b4e54"
+    }
+  ],
+  "limitation": "GPU replay of captured production world passes; not a browser/full HUD interaction test or a claim of original-game visual equality.",
+  "sourceHashes": {
+    "wasmSha256": "3a71249f493c2cd73e2694ee0e1befb9f653a3100d43ebb9d78540a0cc71bdb0",
+    "captureScriptSha256": "4561104bda63e94485d0bb4892ff7c2fb295cdd6f615ec2af5cd427d08a293e9",
+    "auxiliary": {
+      "tools/native5-production-showcase.mjs": "62d12fa1b60e656e1ac8c922aefbe840e899b9846c03215aa685159031a8264c",
+      "tools/ordinary-classic-fixture.mjs": "296fcaf707dc9ffd7daf1f973430de47047dd1b66d08ffc4b8d24fc572120e2c",
+      "tools/ordinary-sail-fixture.mjs": "e6d8fe8e23e203c5f83251903dc7cc937e894d0b7f5a6edca7f47c80f1adb2ef"
+    },
+    "files": {
+      "main.js": "159c31e73f72bf6b6922ac51779681a5c3df6f42e42069261e4caa982530b381",
+      "index.html": "f4aadb2fd13e7e7b9195a1345f026ab08fc1bd328f19c8884214e4334bd760c9",
+      "rules-profile.js": "65f3129cb39e131c07a31a14a09d3f6bc25e4eb5f539fd25e26e813883af3ee6",
+      "season-session.js": "2ba54f8c2c55b87034abd6ae79f730d816e0a98505ce4582c3c3b1111eaf7e07",
+      "original-terrain.js": "32bb7736a323f4069524b6fd08892dbcda15d0314a8f25f40e4fd28a5a12fb0a",
+      "native-terrain-lightmap.js": "8310245a5b4d94ab36fd4d764bc26ce1d5384aa7386b90c4c3016caa46f7bc02",
+      "native-terrain-lighting.js": "87b9dbddcdbb6dfd240d0f44bc105f4b8a2a7d6b0deab4ef306fe1e7d17053fd",
+      "original-render-namespace.js": "ac77c08f83fbf5b9919b6c59e3a192bbac704e71c74e429440fdb9b656cbd147",
+      "render-namespace.js": "949a191c9aca295a58ffef0c2431426638f09844edea2633c00f7fd797479307",
+      "original-water.js": "4692e5e0031d5bd31b08ba7a28c7402c7cd01fd59fe0e7120eecd849ed6bd268",
+      "original-ground.js": "9928799d00f182fd226e98f554b7500bfa6ffa9c4e8faf234ccdb75d95157fa1",
+      "original-ground-native.js": "cc92743ca43a227527e58cb75c87905457961c8eb3067cc5ec7f8bf1ae331093",
+      "original-scale.js": "4651e04fd4a0a61b8a47f2c4b8fb56df83bfd7864796011cf2648df6b992a947",
+      "original-renderer.js": "cb5e95de9f31eb46d1906706b764792dc7a994cf37bb86648721e5ded49f1ad9",
+      "original-lighting.js": "e68347b9dfd16968fd92d6657ec238b7b2d7c65c6d3ab569920b444f941fbad0",
+      "original-model-seasons.js": "c8fab385c06dbe93dd7f29fa80959d48dadd031801f6b315e9d7b9a77f3863a6",
+      "original-camera.js": "ffc6ecdcebcace98b73918a15e9cc5e90af6685e724708b82c2a46247eab1954",
+      "original-seasons.js": "fb4001470974e86ed297465309933305bef3bd8c54c8c603f6e39d18b2e63492",
+      "original-reflection.js": "f3506a9b55e880b5b17b63bb329f28a80eaf2ff47cfa7b9abea4f51842b6c131",
+      "original-hud.js": "12214361f25f9f840d12a56644a4f0835fe93ec6ae6a4a16db037f174887f794",
+      "original-hud-layout.js": "dd7c84000e04cfa0708539b426d365872845ff26f8b2e322de4438f23ad762b5",
+      "local-original/terrain-native/manifest.json": "c7cf660ff198a5f3e7b9c0aa2391b27f38ec7afb116b9541fa09019223c0359a",
+      "local-original/water-native/manifest.json": "1739c08538f09c0279dd4ecdef44019e9b2fed4e9e0149e60a04ad4b88d50bc7",
+      "local-original/ground-decals.json": "eb407c403f1e22b997215f85b8f02e9cc62ae44facf31b7068c4312f8c8454f4",
+      "local-original/models/manifest.json": "f681e82a0676d78c05590f3f1d736be665d7cb533346c73cc49dbe317d083d53",
+      "local-original/models/manifest-up15.json": "34c9265030903859a07b51727a78b79a57e66f27123a9d15879c0e719c0eb643",
+      "local-original/models/manifest-roster6.json": "b836d79292c77af4c812e0b2a0053c0f524c0b2f6d6fd6b3045489cdbc48bf3c",
+      "local-original/model-scales.json": "890394b80f99684b7bf571bd9426e191c9f97e8f90db891d74dd81a49d94961b",
+      "local-original/model-scales-up15.json": "3feb204c3270c762f87b8bc6ed355b6756176d21fe14dc25ff779bbf005a40f7",
+      "local-original/model-scales-roster6.json": "0dc750350a14fef2262eaa72a3403feb85faf304c7a428024a4a2fb11e7d34ba",
+      "local-original/climate-lighting.json": "1b38767bd3ad11c2d45b816235ea009dae274c9e92df1e155599b8501f5fc872",
+      "local-original/model-seasons.json": "17e4869e547f12eed82ea79a693677f4afebcd804dd1ea9a295d8d3079531e3c",
+      "local-original/farm-composites.json": "d85f3e229280734a583f6089ffe97c2df02e4104d7fae95aff60d1b9300f00bb",
+      "local-original/hud-native/manifest.json": "2b5c66a91b27cf7c3833d00db063a74c0b8e8dfedc2d0a67504d3bd6b4d6db6a",
+      "local-original/season-model-textures/team/manifest.json": "269bd404054013b2431d32ec308d0056aa43a51055a68502f4c387d942be3113",
+      "local-original/team-textures/manifest.json": "e9d618ca90a3cc583bc95d911b887a4a15f468fc398516b0b269130d6fb4a5df",
+      "original-sail-composite.js": "069216a8be06ee0ade682e880231674acbc598eaa1c25b42e5ab23dd02dafaa5",
+      "local-original/sails-native/manifest.json": "f744b0a4f25313963a3c4bbcd2d6249fc306a2eae9667d069da146114a349d2d"
+    },
+    "shaders": {
+      "1": {
+        "vertexSha256": "9f3482f9446fde6fa07f7ed0ca4219d2e35d92cf798ac9045e65f9a056ca999d",
+        "fragmentSha256": "0bb30f98001b9b186e3bd990907b3c5b7a6d3f68eb956017a168511037d82139"
+      },
+      "4": {
+        "vertexSha256": "b72acea400e56c4c93b4d842cb1d7d7d440adbf2403f967553e9053df55ffd46",
+        "fragmentSha256": "7efe2d142aa91825d2be67fdb51420ef1746e44bd68a1c137bdc1b46bd70e866"
+      },
+      "23": {
+        "vertexSha256": "7a1f879ffb93822a6095f8c86bd846a85cd60b2f7068460f877250b1e77e041c",
+        "fragmentSha256": "a5c8d0726c130e313a374f21394c040c5c222753b35d747536e06e470e23216d"
+      },
+      "223": {
+        "vertexSha256": "9535f328c82af94214709f53f614a30577e270b714d52a2465e1fe37b76ca9c0",
+        "fragmentSha256": "846d396c976f2420073fb76bce272341fc4bc95664f3d52fdc135633c134ee13"
+      },
+      "237": {
+        "vertexSha256": "1d47141ee3d6b2812f526b348b455a4836e50e10ec8be438bd0b9d8a558ef85e",
+        "fragmentSha256": "ecda9fb2699e29a50b3d9234679db3d9ac2bcf60adf7817bb7dd717faabc3a5d"
+      },
+      "240": {
+        "vertexSha256": "3b1e2d3fe88867371c45fd6de96100778d40092c444d470e91838b32ba382bb1",
+        "fragmentSha256": "b10cd648b9f92848f471809c82b876fc3cacd8f66001f4ec9fca197ac07f1adb"
+      }
+    }
+  },
+  "season": {
+    "requestedMonthPosition": 0,
+    "actualSimulationTick": 0,
+    "tickSource": "WASM game_tick",
+    "steppedTicks": 0,
+    "month0": 0,
+    "month1": 1,
+    "blend": 0,
+    "monthPosition": 0,
+    "monthName": "Januar",
+    "secondsPerYear": 1200,
+    "ticksPerYear": 24000,
+    "settings": {
+      "cycle": true,
+      "startMonth": 0,
+      "minutesPerSeason": 5
+    }
+  },
+  "ground": {
+    "enabled": true,
+    "policy": "native-epoch-slots; CityManager callback, explicit rural fallback when absent",
+    "entries": 14,
+    "metrics": {
+      "calls": 1,
+      "instances": 1
+    },
+    "urbanSource": "WASM ground_urban_at; active source-backed Town Center city bands",
+    "urbanQueries": [
+      {
+        "x": 51,
+        "z": 51,
+        "team": 0,
+        "id": 0,
+        "index": 391,
+        "urban": true
+      }
+    ]
+  },
+  "epochs": [
+    0,
+    0,
+    0,
+    0
+  ],
+  "reflection": {
+    "enabled": true,
+    "draws": 12,
+    "width": 1280,
+    "height": 720,
+    "vp": [
+      1.8114968538284302,
+      0,
+      0,
+      0,
+      0,
+      -2.0825045108795166,
+      0.7678871154785156,
+      0.7627848386764526,
+      0,
+      -2.4565019607543945,
+      -0.6509777903556824,
+      -0.646652340888977,
+      -92.38634490966797,
+      124.76239776611328,
+      63.19599914550781,
+      64.76944732666016
+    ],
+    "eye": [
+      51,
+      -24.35331956087863,
+      71.43421427293266
+    ],
+    "clipPlane": [
+      0,
+      1,
+      0,
+      0
+    ],
+    "texture": 257,
+    "policy": "Planar world-y0 reflection, terrain and object clip; framebuffer resolution and shader discard are WebGL adapters."
+  },
+  "modelSeason": {
+    "available": true,
+    "metrics": {
+      "colorMs": 1.3238000000000056,
+      "shadowMs": 1.3648000000000593,
+      "calls": 11,
+      "triangles": 86786,
+      "gpuMs": 0
+    }
+  },
+  "nativeWater": {
+    "enabled": true,
+    "metrics": {
+      "baseCalls": 1,
+      "reflectionCalls": 1,
+      "triangles": 73364,
+      "classification": "own-archipelago-class-adapter"
+    },
+    "material": "Source Skin1/2/4 product/lerp vertex channels; separate reflection alpha0.32 overlay",
+    "adapters": {
+      "uvScale": [
+        0.08333333333333333,
+        0.08333333333333333
+      ],
+      "normalUvScale": [
+        0.125,
+        0.125
+      ],
+      "ownClassToMovement": [
+        7,
+        5,
+        0,
+        0,
+        4,
+        3
+      ],
+      "reason": "Own archipelago shallow class maps to coast; native river class requires explicit movement input. UV scales and map-class mapping are adapters, not recovered defaults."
+    }
+  },
+  "farmFixture": null,
+  "rulesProfile": {
+    "id": "up15",
+    "ruleset": 2,
+    "label": "EE2 \u00b7 installierte UP-Regeln",
+    "wasm": "openepoch-ee2-up15.wasm?v=native61v2",
+    "schemaRevision": 6,
+    "database": "openepoch-ee2-up15-v1",
+    "reference": true,
+    "qa": false
+  }
+}

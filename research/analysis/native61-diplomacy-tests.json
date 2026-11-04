@@ -1,0 +1,34 @@
+{
+  "format": "ee2-native-diplomacy-tests-v1",
+  "passed": true,
+  "checks": 1618,
+  "widgets": 236,
+  "sprites": 151,
+  "actualWasmTribute": [
+    {
+      "file": "openepoch-ee2.wasm",
+      "ruleset": 1,
+      "sha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18"
+    },
+    {
+      "file": "openepoch-ee2-up15.wasm",
+      "ruleset": 2,
+      "sha256": "2f905ebd0ba69d155a7fdb2361f7a8f84642e8a3f2f908b9f133bfef7b7cefbc"
+    }
+  ],
+  "sourceHashes": {
+    "original-diplomacy.js": "4028328ea35edec0ae5346f53c6e18dca3fe8a162f7a8bb9d209313d7db488a8",
+    "original-diplomacy-layout.js": "9e119882f4e90950aa6193f7f680b35109ab98191924fb9d136926ef46a5b80c",
+    "original-hud-layout.js": "dd7c84000e04cfa0708539b426d365872845ff26f8b2e322de4438f23ad762b5",
+    "local-original/diplomacy-native/manifest.json": "fb527824c257e1dd23caf70666507b5f6c883a81628fda3495af54dff76abd2f"
+  },
+  "productionControllers": {
+    "diplomacy.js": "d2413d1a808bfacfa667d51a075c1d02d38a5981ca7b9763b21d0196f2993838",
+    "territory-panel.js": "ee04884c4381f4b7d2664868259ba49986e3e163c34a39893c4104c11816da48"
+  },
+  "scope": "Actual existing diplomacy/territory controller DOM nodes and handlers, native presentation, source-centered geometry and source-declared font styles; DOM/canvas transport substituted. All existing command types exercised against spies, plus actual BASE1/UP2 stock debit through two production WASMs. No browser, original executable or UI automation launched.",
+  "limits": [
+    "Browser/CSS raster is not simulated by this DOM transport; exact source crop previews and independent image tests are separate.",
+    "Complete native treaty simulation, unit tribute and civilization/team data remain unbound. This controller suite does not load the separate active bitmap-font layer; native6-font-ui-tests covers that integration."
+  ]
+}

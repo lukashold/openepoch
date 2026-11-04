@@ -1,0 +1,13 @@
+{
+  "format": "native-paidqueue7-network-wasm-v1",
+  "status": "PASS",
+  "checks": 1031,
+  "packets": 4,
+  "ticks": 1000,
+  "wasmSha256": "25c832f13c1c8b4d8547eb6c65d78bd74c5fa50f45d9745328f8bb18ccbb146d",
+  "source": "Actual humans2/local0+1, outbox/inbox/net_apply command transport. No memory or save modifications.",
+  "limits": [
+    "This exercises the simulation transport; WebRTC/browser negotiation and protocol fingerprint are integrated separately by Root.",
+    "Local display fog and selection are client-owned; peer equivalence compares simulation hash and the complete financial ledger."
+  ]
+}

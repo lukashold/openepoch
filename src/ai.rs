@@ -6,7 +6,7 @@ use crate::map::*;
 
 impl Game {
     /// Find a free site near `(bx, by)` and start construction with a few workers.
-    fn ai_build(&mut self, team: u8, def: u8, bx: i32, by: i32, builders: &[usize]) -> bool {
+    fn ai_build(&mut self, team: u8, def:DefId, bx: i32, by: i32, builders: &[usize]) -> bool {
         let d = &DEFS[def as usize];
         if d.epoch>self.players[team as usize].epoch{return false;}
         if !self.afford(team, &self.unit_cost(team,def)) {
@@ -155,7 +155,7 @@ impl Game {
         // ---- workers
         let want_workers = ((if cfg!(feature="ee2-reference"){18}else{12}) + 6 * ep as u32).min((p.population_limit / 6).clamp(24, 60));
         if tc != NOIDX && (workers.len() as u32) < want_workers && self.ents[tc].qn < 2 && p.pop < p.cap {
-            self.train(tc, WORKER);
+            self.train(tc, WORKER as QueueItem);
         }
         let weights = [0.0,4.0,3.0,1.0+ep as f32*0.9,3.0,2.5,2.5,2.5,0.0,0.0];
         for &w in &idle {
@@ -186,7 +186,7 @@ impl Game {
         // ---- construction (one project at a time)
         if unfinished.is_empty() && !workers.is_empty() {
             let crew: Vec<usize> = workers.iter().copied().filter(|&w| !matches!(self.ents[w].order,O_BUILD|O_BOARD)).take(3).collect();
-            let c = |d: u8| count[d as usize];
+            let c = |d: DefId| count[d as usize];
             let farm_slots = farms.iter().filter(|f| f.1 < if cfg!(feature="ee2-reference"){1}else{4}).count();
             let pending_fort=if cfg!(feature="ee2-reference") {finished.iter().copied().find(|&b| {
                 let e=self.ents[b];let id=self.map.terr[tile_of(e.x,e.y)] as usize;
@@ -284,18 +284,18 @@ impl Game {
                 }
                 let bdef = self.ents[b].def;
                 // prefer the newest unit this building can make, with a little variety
-                let mut pick = 0u8;
+                let mut pick = 0 as DefId;
                 let mut seen = 0;
                 for (k, d) in DEFS.iter().enumerate() {
                     if d.made_at == bdef && d.epoch <= ep && d.until > ep && d.armed() {
                         seen += 1;
                         if self.rng.range(seen) == 0 {
-                            pick = k as u8;
+                            pick = k as DefId;
                         }
                     }
                 }
                 if pick != 0 {
-                    self.train(b, pick);
+                    self.train(b, pick as QueueItem);
                 }
             }
         }
@@ -308,7 +308,7 @@ impl Game {
                 let rich = (0..3).all(|c| r[c] >= t.cost[c] as f32 * 1.6 + 100.0);
                 if rich && t.epoch <= ep && (self.players[ti].tech | self.players[ti].tech_busy) >> k & 1 == 0 {
                     if let Some(&b) = finished.iter().find(|&&b| self.ents[b].def == t.at && self.ents[b].qn < 2) {
-                        self.train(b, TECH0 + k as u8);
+                        self.train(b, TECH0 + k as QueueItem);
                         break;
                     }
                 }
@@ -319,8 +319,8 @@ impl Game {
             for (k,n) in crate::ee2_research::NODES.iter().enumerate() {
                 if n.epoch!=ep || self.has_research(team,k) {continue;}
                 if self.research_count(team,ep)>=6 {break;}
-                if let Some(&b)=finished.iter().find(|&&b| self.ents[b].def==n.host && self.ents[b].qn<2 && self.can_train(b,ORIGINAL_RESEARCH0+k as u8)) {
-                    self.train(b,ORIGINAL_RESEARCH0+k as u8);break;
+                if let Some(&b)=finished.iter().find(|&&b| self.ents[b].def==n.host && self.ents[b].qn<2 && self.can_train(b,ORIGINAL_RESEARCH0+k as QueueItem)) {
+                    self.train(b,ORIGINAL_RESEARCH0+k as QueueItem);break;
                 }
             }
         }

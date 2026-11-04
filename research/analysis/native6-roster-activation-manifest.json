@@ -1,0 +1,298 @@
+{
+  "format": "native-roster6-phase1-activation-manifest-v1",
+  "status": "PASS",
+  "sourceOnlyCandidate": true,
+  "activeFilesModified": false,
+  "sourceFrozenUnder": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch",
+  "tests": {
+    "rust": 97,
+    "actualWasm": 1893,
+    "independentBeforeABIAdditions": 3150,
+    "oldProfileHashAndSaveByteCases": 24,
+    "migrationCases": 8
+  },
+  "files": [
+    {
+      "path": "Cargo.toml",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\Cargo.toml",
+      "bytes": 415,
+      "sha256": "7c8175ed64ae980675efcac90dcfb20cfec3685b549b5e8c2f2905db7523e53d"
+    },
+    {
+      "path": "src/ai.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\src\\ai.rs",
+      "bytes": 17362,
+      "sha256": "b8b78f8bfa8d5a2dcf0bec1c8b8af11202b54ce8dbb221c19f1dad1690a7d66c"
+    },
+    {
+      "path": "src/city_ground.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\src\\city_ground.rs",
+      "bytes": 6170,
+      "sha256": "8f5cd7affd5e5cd6fe62b75f692030dc54787671a5f123861705784857c92c44"
+    },
+    {
+      "path": "src/cmd.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\src\\cmd.rs",
+      "bytes": 6803,
+      "sha256": "502e2310393920b39304e57a0342b4b1a83c85f3c59efda845bf77fdf73e6bea"
+    },
+    {
+      "path": "src/defs.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\src\\defs.rs",
+      "bytes": 17542,
+      "sha256": "e8f08c4caf0f8c804a8302b4ec47a1ea83df43fed932c5822f5c4d76b6979383"
+    },
+    {
+      "path": "src/diplomacy.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\src\\diplomacy.rs",
+      "bytes": 36519,
+      "sha256": "759eecdb24ade2c66f6ae14873286caf0e4a6b59157f7c6baf933ab752be97b0"
+    },
+    {
+      "path": "src/economy.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\src\\economy.rs",
+      "bytes": 5287,
+      "sha256": "8fe7aed9f289539a47911c3630ce05e2449077ad14e8c09c1e5063be312ec703"
+    },
+    {
+      "path": "src/ee2_up15_attack.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\src\\ee2_up15_attack.rs",
+      "bytes": 97744,
+      "sha256": "a08a54b67b921c68d7bd1752bdad7bb297d14a80fcc64387ef2d5c95f4929741"
+    },
+    {
+      "path": "src/ee2_up15_combat.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\src\\ee2_up15_combat.rs",
+      "bytes": 44608,
+      "sha256": "99a91ffa3895d89cd94492022875dab587366aebff4119d3b91f95e563b59fe3"
+    },
+    {
+      "path": "src/ee2_up15_economy.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\src\\ee2_up15_economy.rs",
+      "bytes": 22402,
+      "sha256": "7e2239d5f02554d6f79ed0e3efe15643db1ac3fd81c95a25e5a6b0122322762e"
+    },
+    {
+      "path": "src/ee2_up15_oracle_tests.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\src\\ee2_up15_oracle_tests.rs",
+      "bytes": 107457,
+      "sha256": "393971ba32fd02726e7cf524d46a52340f856faf33b08252a083f94044301f34"
+    },
+    {
+      "path": "src/ee2_up15_profile.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\src\\ee2_up15_profile.rs",
+      "bytes": 14889,
+      "sha256": "df8cd5006fecb9525706bb42650308d1face60b6d0e92b4a4cb54b433090d16d"
+    },
+    {
+      "path": "src/ee2_up15_research.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\src\\ee2_up15_research.rs",
+      "bytes": 44410,
+      "sha256": "5de764d8f3f19d08e9e0aef8b3b8efccd04f274149f0a932f90240acbe861cb0"
+    },
+    {
+      "path": "src/ee2_up15_units.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\src\\ee2_up15_units.rs",
+      "bytes": 287525,
+      "sha256": "49f802ed91ca4e4bdfd28ca61e4a505273504115db785312e9b9bfc6f2be2555"
+    },
+    {
+      "path": "src/fortress_tests.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\src\\fortress_tests.rs",
+      "bytes": 4222,
+      "sha256": "db544d7ec40d825a46e807a9896491025ccc3749db86a68d441ce2cb6e0656c8"
+    },
+    {
+      "path": "src/game.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\src\\game.rs",
+      "bytes": 93985,
+      "sha256": "cad0ed64c236e31c3a3a3641312c0e668d7e90fad4cd3c71ba23a92c13b8d7fd"
+    },
+    {
+      "path": "src/ids.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\src\\ids.rs",
+      "bytes": 6502,
+      "sha256": "a0faa35d5e339f9cda9e59ac3fbecbc220f02c957fccd838e5345768a17f511f"
+    },
+    {
+      "path": "src/lib.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\src\\lib.rs",
+      "bytes": 35120,
+      "sha256": "1798abbd5a9875582be7519b8847735155733432b34136efdb9efb00f769ea1c"
+    },
+    {
+      "path": "src/map.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\src\\map.rs",
+      "bytes": 22796,
+      "sha256": "55a31ded8f7da29f0d9413f698b347d71e50125ba0d09d84cf30dba282f06e45"
+    },
+    {
+      "path": "src/native_attack_clock.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\src\\native_attack_clock.rs",
+      "bytes": 5665,
+      "sha256": "2b0fcef988ce1a05c403018ac7019df7e3397775ff20189edd106813c9fabf5b"
+    },
+    {
+      "path": "src/native_attack_tests.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\src\\native_attack_tests.rs",
+      "bytes": 5510,
+      "sha256": "eb97aaad71fa90b3f3a374a0684596d803f794b997c4de3ecdd0597f599fd484"
+    },
+    {
+      "path": "src/placement.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\src\\placement.rs",
+      "bytes": 24366,
+      "sha256": "2076c7141c277d434948d4fcc06d900541895bad78f0a3bb2908078a876a6aca"
+    },
+    {
+      "path": "src/render.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\src\\render.rs",
+      "bytes": 28093,
+      "sha256": "5a0b8d42897ed25c617e690b3c424ad99d9668ce91759754dbf8040b7bdc0aef"
+    },
+    {
+      "path": "src/research.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\src\\research.rs",
+      "bytes": 7358,
+      "sha256": "d24e8fda2c4d6c27da89e013fbe1b06be6d4e4d4570ca2cf3117eefa29e2d605"
+    },
+    {
+      "path": "src/roster6_queue_tests.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\src\\roster6_queue_tests.rs",
+      "bytes": 2723,
+      "sha256": "72b2a07fd6353e0cb6854f4f4414437df92b7d9abb27dfa524951665bda9b52b"
+    },
+    {
+      "path": "src/roster6_registry.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\src\\roster6_registry.rs",
+      "bytes": 287,
+      "sha256": "1f1d155ba09b532bc4e12007b89eaadbd913d3654a68762a361b6a19b2fbccf2"
+    },
+    {
+      "path": "src/save.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\src\\save.rs",
+      "bytes": 12779,
+      "sha256": "5e9e6629d36685e058cb3bbb451581f9e6d894fa957b1f50c496db5022a841a4"
+    },
+    {
+      "path": "src/save6.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\src\\save6.rs",
+      "bytes": 8975,
+      "sha256": "9fc6860ed4a34a4fde94973f6862f7990d024bee48b83de01916c9c4e83a0868"
+    },
+    {
+      "path": "src/territory.rs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\src\\territory.rs",
+      "bytes": 45347,
+      "sha256": "ae727f270e928888a2de856f4299a00bb6090b97d442334b96814175ad7dad23"
+    },
+    {
+      "path": "tools/bind_candidate_visual_progression.py",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\tools\\bind_candidate_visual_progression.py",
+      "bytes": 1749,
+      "sha256": "2429ebf2738dbb464ee9829c62c71c80fd7a943166c767544a7cde76f56db8af"
+    },
+    {
+      "path": "tools/generate_native_attack.py",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\tools\\generate_native_attack.py",
+      "bytes": 7657,
+      "sha256": "43541c65c2f9a647beb8060899a3cfae362341c15f9e971527108c139b1dd3e8"
+    },
+    {
+      "path": "tools/generate_roster6_registry.py",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\tools\\generate_roster6_registry.py",
+      "bytes": 1936,
+      "sha256": "3576cede6abf40fa5cc60b9519abbdf5b2a6b0abbb58c61cd3b7c96e99e23985"
+    },
+    {
+      "path": "tools/import_ee2_up15_combat.py",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\tools\\import_ee2_up15_combat.py",
+      "bytes": 13009,
+      "sha256": "33121c44ab3451d6884b0fd6de29f6b2bb783edb29537c57de0cfc22a0efa8a7"
+    },
+    {
+      "path": "tools/import_ee2_up15_profile.py",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\tools\\import_ee2_up15_profile.py",
+      "bytes": 3673,
+      "sha256": "eb83bb0145c21b1787a724338c2fab0c832508887ff35f23274ab153e1e3f06c"
+    },
+    {
+      "path": "tools/import_ee2_up15_research.py",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\tools\\import_ee2_up15_research.py",
+      "bytes": 10628,
+      "sha256": "76d4afb24a0c0a6860c79fdd2547b31933fe4496935a35ba45691c26c6c5bf82"
+    },
+    {
+      "path": "tools/import_ee2_up15_units.py",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\tools\\import_ee2_up15_units.py",
+      "bytes": 8440,
+      "sha256": "6dc5fd4386cb00c345e38076987b12edafd2401f5febb119eabd7c353090ea30"
+    },
+    {
+      "path": "tools/roster6-state.mjs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\tools\\roster6-state.mjs",
+      "bytes": 2373,
+      "sha256": "3295a9f8cf529760debadbe97bbd3a305fdb977edd8b9510a82177b2575ac4ea"
+    },
+    {
+      "path": "tools/roster6_codegen.py",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\tools\\roster6_codegen.py",
+      "bytes": 1585,
+      "sha256": "8136602f977ee935110d7b37a0f982d51d51c29b8e7f595bc1d8c5c3c13965c2"
+    },
+    {
+      "path": "tools/save-fixture.mjs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\tools\\save-fixture.mjs",
+      "bytes": 7319,
+      "sha256": "49095dfac1fbe1ca3b7dba34bb5face248ae687426dfde8b98a6be568dbd2600"
+    },
+    {
+      "path": "tools/test_ee2_up15_sources.py",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\tools\\test_ee2_up15_sources.py",
+      "bytes": 12773,
+      "sha256": "d91bf49ab34d2df03d188db840ea757f590fd1faf36e9f36ab7a66b91878e838"
+    },
+    {
+      "path": "tools/test_roster6_wasm.mjs",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\tools\\test_roster6_wasm.mjs",
+      "bytes": 8145,
+      "sha256": "92053b4b0cb659254da53f12ad5af3ebd51afba5ac8b17daf6ce8b335373a5c2"
+    },
+    {
+      "path": "docs/roster6-registry57.json",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\docs\\roster6-registry57.json",
+      "bytes": 4872,
+      "sha256": "9d62e9fb0ed9ba38c483510f2c5ac3da28752129b5c6ab3b39b60ed58225ac00"
+    },
+    {
+      "path": "docs/roster6-api.json",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\docs\\roster6-api.json",
+      "bytes": 2477,
+      "sha256": "050fda4329d8324fb91830564addaafc693e026bb9c40d118a09933507f47d7b"
+    },
+    {
+      "path": "docs/ROSTER6-ABI.md",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\docs\\ROSTER6-ABI.md",
+      "bytes": 3793,
+      "sha256": "317e12d30a6cf83b12108e0835f81d876e390c63cac94c0a0d081196a67c6e99"
+    },
+    {
+      "path": "docs/openepoch-ee2-roster6.wasm",
+      "source": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-roster6\\phase1-final\\OpenEpoch\\docs\\openepoch-ee2-roster6.wasm",
+      "bytes": 472065,
+      "sha256": "1f13de2c11b2d935e6e669541ff9a2ef67a0bb4cf186c0f5f0694e6559adb324"
+    }
+  ],
+  "excluded": [
+    "docs/main.js",
+    "docs/index.html",
+    "docs/net.js",
+    "existing docs/*.wasm",
+    "original media",
+    "unchanged generated numerical audits",
+    "tools/headless-world-capture.mjs",
+    "tools/main-labels-test.mjs",
+    "tools/original-labels-test.mjs",
+    "tools/portable-assets-test.py"
+  ]
+}

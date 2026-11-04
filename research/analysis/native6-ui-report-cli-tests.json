@@ -1,0 +1,64 @@
+{
+  "format": "native6-original-ui-report-cli-tests-v1",
+  "status": "passed",
+  "checks": 14,
+  "runs": [
+    {
+      "script": "original-hud-test.mjs",
+      "kind": "custom",
+      "report": "native6-hud-tests.json",
+      "checks": 6029,
+      "sourceHashes": {
+        "original-hud.js": "12214361f25f9f840d12a56644a4f0835fe93ec6ae6a4a16db037f174887f794",
+        "original-hud-layout.js": "dd7c84000e04cfa0708539b426d365872845ff26f8b2e322de4438f23ad762b5",
+        "original-seasons.js": "fb4001470974e86ed297465309933305bef3bd8c54c8c603f6e39d18b2e63492",
+        "local-original/hud-native/manifest.json": "2b5c66a91b27cf7c3833d00db063a74c0b8e8dfedc2d0a67504d3bd6b4d6db6a"
+      }
+    },
+    {
+      "script": "original-hud-test.mjs",
+      "kind": "default",
+      "report": "original-hud-tests.json",
+      "checks": 6029,
+      "sourceHashes": {
+        "original-hud.js": "12214361f25f9f840d12a56644a4f0835fe93ec6ae6a4a16db037f174887f794",
+        "original-hud-layout.js": "dd7c84000e04cfa0708539b426d365872845ff26f8b2e322de4438f23ad762b5",
+        "original-seasons.js": "fb4001470974e86ed297465309933305bef3bd8c54c8c603f6e39d18b2e63492",
+        "local-original/hud-native/manifest.json": "2b5c66a91b27cf7c3833d00db063a74c0b8e8dfedc2d0a67504d3bd6b4d6db6a"
+      }
+    },
+    {
+      "script": "original-diplomacy-test.mjs",
+      "kind": "custom",
+      "report": "native6-diplomacy-ui-tests.json",
+      "checks": 1618,
+      "sourceHashes": {
+        "original-diplomacy.js": "4028328ea35edec0ae5346f53c6e18dca3fe8a162f7a8bb9d209313d7db488a8",
+        "original-diplomacy-layout.js": "9e119882f4e90950aa6193f7f680b35109ab98191924fb9d136926ef46a5b80c",
+        "original-hud-layout.js": "dd7c84000e04cfa0708539b426d365872845ff26f8b2e322de4438f23ad762b5",
+        "local-original/diplomacy-native/manifest.json": "fb527824c257e1dd23caf70666507b5f6c883a81628fda3495af54dff76abd2f"
+      }
+    },
+    {
+      "script": "original-diplomacy-test.mjs",
+      "kind": "default",
+      "report": "original-diplomacy-tests.json",
+      "checks": 1618,
+      "sourceHashes": {
+        "original-diplomacy.js": "4028328ea35edec0ae5346f53c6e18dca3fe8a162f7a8bb9d209313d7db488a8",
+        "original-diplomacy-layout.js": "9e119882f4e90950aa6193f7f680b35109ab98191924fb9d136926ef46a5b80c",
+        "original-hud-layout.js": "dd7c84000e04cfa0708539b426d365872845ff26f8b2e322de4438f23ad762b5",
+        "local-original/diplomacy-native/manifest.json": "fb527824c257e1dd23caf70666507b5f6c883a81628fda3495af54dff76abd2f"
+      }
+    }
+  ],
+  "sourceHashes": {
+    "original-hud-test.mjs": "29cd73dba4e71e2b0e340da486d62b7a5d9c3a2140c429823d6133f1bbca882b",
+    "original-diplomacy-test.mjs": "9d6654dd260a515ed2421c47215645d2806e0159ab0a628d8a7773b567552542"
+  },
+  "historicalReportsUnchanged": {
+    "native4-hud-tests.json": "a418fa99ef1db0a3229c0941b91c7e5c208954b92ab1e3755817638ddbc354cd",
+    "native5-diplomacy-ui-tests.json": "ffd835e587b06d3b38f2cd9b3f9850008c33e47d334f5e779886433dfe4f59fa"
+  },
+  "scope": "Runs the actual HUD/diplomacy test programs with default and custom report names; rejects unsafe/non-JSON basenames before any suite writes. Native4/5 report bytes remain unchanged."
+}

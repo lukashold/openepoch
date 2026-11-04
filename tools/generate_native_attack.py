@@ -3,13 +3,14 @@ Runtime binder quirks are proved in native-attack-ability-phase3.c (007da1c0).
 """
 from pathlib import Path
 import hashlib,json,re,struct
+from roster6_codegen import rust_identities
 from up15_source_database import ActiveDatabase,default_manifest
 from up15_unit_upgrade_refs import apply_refs
 from import_ee2_units import scalar,sections,numeric_assignments
 ROOT=Path(__file__).resolve().parents[1]
 F32=lambda v:struct.unpack('<f',struct.pack('<f',float(v)))[0]
-def run():
-    db=ActiveDatabase(default_manifest(ROOT));units=json.loads((ROOT/'docs/ee2-up15-units.json').read_text(encoding='utf8'));rows=[]
+def run(prefix="ee2-up15"):
+    db=ActiveDatabase(default_manifest(ROOT));units=json.loads((ROOT/('docs/'+prefix+'-units.json')).read_text(encoding='utf8'));rows=[]
     def raw_ability(name,ability):
         declaration=db.block('UnitType',name)
         if not declaration:return {}
@@ -71,9 +72,9 @@ def run():
         out.append('Attack{'+f'id:{r["id"]},epoch:{r["epoch"]},until:{r["until"]},present:{boolean("present")},missile:{str(bool(r["missile"])).lower()},visual_kind:{r["visualKind"]},min_mobile:{r["minMobile"]}_f32,min_immobile:{r["minImmobile"]}_f32,angle:{r["angularRange"]}_f32,apply_time:{r["applyTime"]}_f32,pack_time:{r["packTime"]}_f32,unpack_time:{r["unpackTime"]}_f32,splash:{r["splashRadius"]}_f32,friendly:{r["friendlyRatio"]}_f32,latent:{boolean("latent")},auto_target:{str(not r["disableAutoTarget"]).lower()},attack_on_move:{boolean("attackOnMove")},ordnance:{r["ordnance"]},air:{boolean("air")},mobile:{boolean("mobile")},projectile_speed:{speed}'+'},')
     out+= ['];',"pub fn lookup(id:u8,epoch:u8)->Option<&'static Attack>{ROWS.iter().find(|r|r.id==id&&epoch>=r.epoch&&epoch<r.until)}",
        'pub fn min_range(a:&Attack,target_mobile:bool)->f32{let r=if target_mobile{a.min_mobile}else{a.min_immobile};if r==0.0&&a.splash>0.0&&!a.air{a.splash}else{r}}']
-    (ROOT/'src/ee2_up15_attack.rs').write_text('\n'.join(out)+'\n')
+    (ROOT/('src/'+prefix.replace('-','_')+'_attack.rs')).write_text(rust_identities('\n'.join(out)+'\n'))
     audit={'format':'native-up15-attack-fields-candidate-v1','rows':rows,'nativeBinder':'007da1c0: 18dword copy; degrees->radians; angular0->.52; pack/unpack0->1; friendlyRatio kept only when exactly1.0.','runtimeSource':'native-attack-ability-phase1/2/3.c','limits':['Latent gate modifier-default polarity not yet resolved; never enable houses merely from positive damage.','DB WeaponType is visual/death explosion type, not weapon/armor damage multiplier.','Pack/unpack application state, firing banks and ordnance/rearm are pending runtime proof.']}
-    (ROOT/'docs/native-up15-attack.json').write_text(json.dumps(audit,indent=2)+'\n')
+    (ROOT/('docs/native-'+prefix.removeprefix('ee2-')+'-attack.json')).write_text(json.dumps(audit,indent=2)+'\n')
     print(json.dumps({'rows':len(rows),'attacking':sum(r['present'] for r in rows),'latent_ids':sorted({r['id'] for r in rows if r['latent']}),'splash_rows':sum(r['splashRadius']>0 for r in rows),'projectile_speeds':sum(r['projectileSpeed'] is not None for r in rows)}))
     db.close();return audit
 if __name__=='__main__':run()

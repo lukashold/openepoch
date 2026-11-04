@@ -1,5 +1,6 @@
 //! Static game data: every building and unit, its stats and its weapons.
 //! All names and numbers are original to this project.
+pub use crate::ids::{DefId,QueueItem,ResearchId};
 
 // Movement / targeting domains (bit flags so weapons can list several).
 pub const LAND: u8 = 1;
@@ -83,7 +84,7 @@ pub struct Def {
     pub cost: [u16; 3],
     pub time: f32,
     pub pop: u8,
-    pub made_at: u8,
+    pub made_at: DefId,
     pub flags: u16,
     pub w: [Wpn; 2],
 }
@@ -125,26 +126,26 @@ impl Def {
 }
 
 // Building ids (also their index in `DEFS`).
-pub const TC: u8 = 0;
-pub const HOUSE: u8 = 1;
-pub const FARM: u8 = 2;
-pub const BARRACKS: u8 = 3;
-pub const WORKSHOP: u8 = 4;
-pub const DOCK: u8 = 5;
-pub const AIRFIELD: u8 = 6;
-pub const TOWER: u8 = 7;
-pub const WORKER: u8 = 8;
-pub const UNIVERSITY: u8 = 47;
-pub const MILL: u8 = 48;
-pub const STABLE: u8 = 49;
-pub const MARKET: u8 = 50;
-pub const TEMPLE: u8 = 51;
-pub const WAREHOUSE: u8 = 52;
-pub const OIL_RIG: u8 = 53;
-pub const URANIUM_MINE: u8 = 54;
-pub const HERC_FACILITY:u8=55;
-pub const FORTRESS:u8=56;
-pub const BUILT_BY_WORKER: u8 = 255;
+pub const TC:DefId = 0;
+pub const HOUSE:DefId = 1;
+pub const FARM:DefId = 2;
+pub const BARRACKS:DefId = 3;
+pub const WORKSHOP:DefId = 4;
+pub const DOCK:DefId = 5;
+pub const AIRFIELD: DefId = 6;
+pub const TOWER:DefId = 7;
+pub const WORKER:DefId = 8;
+pub const UNIVERSITY:DefId = 47;
+pub const MILL:DefId = 48;
+pub const STABLE:DefId = 49;
+pub const MARKET:DefId = 50;
+pub const TEMPLE:DefId = 51;
+pub const WAREHOUSE:DefId = 52;
+pub const OIL_RIG:DefId = 53;
+pub const URANIUM_MINE:DefId = 54;
+pub const HERC_FACILITY:DefId=55;
+pub const FORTRESS:DefId=56;
+pub const BUILT_BY_WORKER:DefId = crate::ids::DEF_NONE;
 
 #[cfg(not(feature = "ee2-reference"))]
 pub const EPOCH_NAMES: [&str; 8] = ["Steinzeit", "Bronzezeit", "Mittelalter", "Industriezeitalter", "Moderne", "Atomzeitalter", "Synthetisches Zeitalter", "Nanozeitalter"];
@@ -154,8 +155,8 @@ pub use crate::ee2_research::EPOCH_NAMES;
 pub const EPOCH_COST: [[u16; 3]; 8] = [[0, 0, 0], [400, 300, 0], [800, 600, 300], [1200, 900, 700], [1800, 1200, 1300], [2500, 1800, 2200], [3500, 2500, 3000], [5000, 3500, 4500]];
 pub const EPOCH_TIME: f32 = if cfg!(feature = "ee2-reference") { 15.0 } else { 40.0 };
 pub const MAX_EPOCH: u8 = if cfg!(feature = "ee2-reference") { 14 } else { 7 };
-pub const ORIGINAL_RESEARCH0: u8 = 64;
-pub fn original_research(item: u8) -> bool {
+pub const ORIGINAL_RESEARCH0: QueueItem = crate::ids::RESEARCH_BASE;
+pub fn original_research(item: QueueItem) -> bool {
     cfg!(feature = "ee2-reference") && (ORIGINAL_RESEARCH0..ORIGINAL_RESEARCH0 + 180).contains(&item)
 }
 
@@ -164,7 +165,7 @@ const fn bld(name: &'static str, epoch: u8, size: f32, hp: f32, cost: [u16; 3], 
 }
 
 #[allow(clippy::too_many_arguments)]
-const fn unit(name: &'static str, epoch: u8, until: u8, dom: u8, made_at: u8, cost: [u16; 3], time: f32, pop: u8, hp: f32, speed: f32, armor: u8, size: f32, flags: u16, w0: Wpn, w1: Wpn) -> Def {
+const fn unit(name: &'static str, epoch: u8, until: u8, dom: u8, made_at: DefId, cost: [u16; 3], time: f32, pop: u8, hp: f32, speed: f32, armor: u8, size: f32, flags: u16, w0: Wpn, w1: Wpn) -> Def {
     let sight = if dom == AIR { 11.0 } else { 8.0 };
     Def { name, epoch, until, dom, building: false, size, hp, speed, sight, armor, cost, time, pop, made_at, flags, w: [w0, w1] }
 }
@@ -173,8 +174,10 @@ const G: u8 = LAND | SEA; // "surface" targets
 
 #[cfg(not(feature = "ee2-reference"))]
 pub const DEFS: &[Def] = &legacy_defs();
-#[cfg(feature = "ee2-reference")]
+#[cfg(all(feature = "ee2-reference",not(feature="ee2-roster6")))]
 pub const DEFS: &[Def] = &crate::ee2_profile::apply(BASE_DEFS);
+#[cfg(feature="ee2-roster6")]
+pub const DEFS:&[Def]=&crate::roster6_defs::production(crate::ee2_profile::apply(crate::roster6_defs::initial(BASE_DEFS)));
 const fn legacy_defs()->[Def;53]{let mut d=[BASE_DEFS[0];53];let mut i=0;while i<53 {d[i]=BASE_DEFS[i];i+=1;}d}
 #[cfg(feature="ee2-reference")]
 pub(crate) const fn prototype_defs()->[Def;57]{BASE_DEFS}
@@ -278,7 +281,7 @@ pub fn class_of(d: &Def) -> usize {
 pub struct Tech {
     pub name: &'static str,
     pub desc: &'static str,
-    pub at: u8,
+    pub at: DefId,
     pub epoch: u8,
     pub cost: [u16; 3],
     pub time: f32,
@@ -289,10 +292,10 @@ pub struct Tech {
 }
 
 /// Queue ids `TECH0 + index` stand for researching `TECHS[index]`.
-pub const TECH0: u8 = 200;
+pub const TECH0: QueueItem = crate::ids::TECH_BASE;
 
 #[allow(clippy::too_many_arguments)]
-const fn tech(name: &'static str, desc: &'static str, at: u8, epoch: u8, cost: [u16; 3], time: f32, kind: u8, class: usize, amount: f32) -> Tech {
+const fn tech(name: &'static str, desc: &'static str, at: DefId, epoch: u8, cost: [u16; 3], time: f32, kind: u8, class: usize, amount: f32) -> Tech {
     Tech { name, desc, at, epoch, cost, time, kind, class, amount }
 }
 

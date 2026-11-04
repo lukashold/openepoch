@@ -11,10 +11,14 @@ export function createNativeLightingContext(data,settings={}){
  const rowKey=tod?.atmosphere?.[weather],row=source?.atmospheres?.[rowKey];
  if(!row||!['High','Low'].includes(detail))throw new RangeError('No declared native lighting selection');
  const brightness=f(data.sceneLight.selected.Dimmer),factor=data.nativeColorToFloat.floatFactor;
+ const sourceRgb=rgba=>rgba.slice(0,3).map(x=>f(x*factor));
  const rgb=rgba=>rgba.slice(0,3).map(x=>f(f(x*factor)*brightness));
  const sourceRay=unit(tod.sunDirectionSource),direction=[-sourceRay[0],-sourceRay[2],sourceRay[1]].map(f);
  return Object.freeze({native:true,profile,climate,period,weather,detail,rowKey,todKey,brightness,
   ambient:rgb(row.sourceRGBA.ambient),sun:rgb(row.sourceRGBA.diffuse),specular:rgb(row.sourceRGBA.specular),direction,
+  // 006CD700/006CD6D0 return NiLight +E8/+F4 without the +E4 dimmer.
+  // 006CD670 returns the normalized source ray, before our Y-up adapter.
+  sourceAmbient:sourceRgb(row.sourceRGBA.ambient),sourceDiffuse:sourceRgb(row.sourceRGBA.diffuse),sourceDirection:sourceRay,
   terrain:data.terrain,fog:{rgba:row.sourceRGBA.fog.map(x=>f(x*factor)),start:row.fogStart,on:row.fogOn,intensity:row.fogIntensity}});
 }
 export function nativeModelPipeline(part,lighting){

@@ -1,8 +1,12 @@
 import fs from 'node:fs/promises';
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 import {calculateHudLayout,anchorFlags,nativeHudRect,nativeMetaEpoch} from '../docs/original-hud-layout.js';
 import {loadNativeHud} from '../docs/original-hud.js';
 
+const reportName=process.argv.find(arg=>arg.startsWith('--report='))?.slice(9)||'original-hud-tests.json';
+if(!/^[a-z0-9-]+\.json$/i.test(reportName))throw Error('Invalid report filename');
+const reportURL=new URL(reportName,new URL('../../EE2-Research/analysis/',import.meta.url));
 const manifest=JSON.parse(await fs.readFile(new URL('../docs/local-original/hud-native/manifest.json',import.meta.url)));
 let checks=0;const check=(ok,text)=>{assert.ok(ok,text);checks++;};
 const eq=(a,b,text)=>{assert.deepEqual(a,b,text);checks++;};
@@ -92,5 +96,6 @@ win.innerWidth=1920;win.innerHeight=1080;listeners.get('resize')();
 eq(original.get('mini').style.width,'302px','Resize uses native truncated width');
 hud.update({epoch:14});eq(hud.status().metaEpoch,3,'Metal theme');
 const report={format:'ee2-native-hud-tests-v1',status:'passed',checks,
+ sourceHashes:Object.fromEntries(await Promise.all(['original-hud.js','original-hud-layout.js','original-seasons.js','local-original/hud-native/manifest.json'].map(async name=>[name,createHash('sha256').update(await fs.readFile(new URL('../docs/'+name,import.meta.url))).digest('hex')]))),
  scope:'Independent named-corner/integer fixtures for native geometry; exact live DOM identity, command listeners, drawer access, themes and resize. Browser raster and full native widget state are not asserted.'};
-await fs.writeFile(new URL('../../EE2-Research/analysis/native4-hud-tests.json',import.meta.url),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));
+await fs.writeFile(reportURL,JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));

@@ -1,0 +1,22 @@
+{
+  "format": "ee2-up15-regeneration-v1",
+  "byte_identical": true,
+  "verification_required": true,
+  "files": {
+    "src/ee2_up15_units.rs": "49f802ed91ca4e4bdfd28ca61e4a505273504115db785312e9b9bfc6f2be2555",
+    "src/ee2_up15_combat.rs": "99a91ffa3895d89cd94492022875dab587366aebff4119d3b91f95e563b59fe3",
+    "src/ee2_up15_research.rs": "5de764d8f3f19d08e9e0aef8b3b8efccd04f274149f0a932f90240acbe861cb0",
+    "src/ee2_up15_profile.rs": "df8cd5006fecb9525706bb42650308d1face60b6d0e92b4a4cb54b433090d16d",
+    "src/ee2_up15_economy.rs": "7e2239d5f02554d6f79ed0e3efe15643db1ac3fd81c95a25e5a6b0122322762e",
+    "src/ee2_up15_attack.rs": "a08a54b67b921c68d7bd1752bdad7bb297d14a80fcc64387ef2d5c95f4929741",
+    "src/ee2_up15_oracle_tests.rs": "393971ba32fd02726e7cf524d46a52340f856faf33b08252a083f94044301f34",
+    "tools/up15-combat-oracle.bin": "8de91b3d9a84e0a0fad73671cb88a8203b9ec2df89b788ae91acb9edaabd1ddd",
+    "docs/ee2-up15-units.json": "6a2f631b71bc4d2ee5c9aacda32f3ff0d239ea385c434fbdaa91928280d4bbf3",
+    "docs/ee2-up15-combat.json": "c7b27bcc5b2d39d78d4754246c35b560327954e3e0eda103490aaf820aa72358",
+    "docs/ee2-up15-research.json": "2c7009f0ae24252a9a3b0c21b12668207f23073495dc88b0bd34ddfa3c5ee01f",
+    "docs/ee2-up15-catalog.json": "cc62a6bbf2621e1f7c7087a3433037f3a7d7c8fa17c4b656f01418afe3cd56b6",
+    "docs/ee2-up15-unit-refs.json": "1c6e85adfdf19c9599259db1445d68e5070829dbe8f44d2ada5e044660dfbb0a",
+    "docs/native-up15-attack.json": "bdfceb965b3d1bf7cd44adc8cc5ba1b5874f20f88dab3c2aaaeb83a08d24cfd2"
+  },
+  "source_scope": "Native00541940 CSV5 literals and two active CFG5 lists only; native VFS resolution already encoded in the prepared effective manifest."
+}

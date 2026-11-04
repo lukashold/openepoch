@@ -1,37 +1,45 @@
-Originaltreue – Stand native-ui5, 04.11.2026
+Originaltreue – aktiver Arbeitsstand native-ui6, 04.11.2026
 
-Die Entwicklung läuft weiter. Ein vollständiger 1:1-Nachbau ist noch nicht erreicht.
+Die Entwicklung läuft weiter. Vollständige 1:1-Gleichheit ist nicht erreicht.
 
-Alle 57 bisherigen Rollen sind an Quellen gebunden: 279 Klassenintervalle,
-129 Visualintervalle und 313 RPS-Profile. Paladin und LightHerc besitzen ihre
-wirklichen UP-Modelle. Die beiden bisherigen WASMs und BASE-Modellmanifeste
-bleiben unverändert. Angriffsrunden, verzögerter Schaden und belegte Ziel-/
-Mindestreichweiten-/Projektilregeln sind aktiv. Alte UP-Saves migrieren; Netzwerk-
-protokoll10 trennt frühere Kampfstände. Projektile im Flug bleiben eine Save-Lücke.
+Die bisherigen 57 Rollen sind unter UP auf getrennte 16-Bit-Definitions-,
+32-Bit-Produktions- und typisierte Renderkennungen umgestellt. Ressourcen,
+Geschosse, Flaggen und zusätzliche Einheiten können nicht mehr dieselben
+Atlas-/Modellkennungen belegen. OEU5-Spielstände migrieren nach OEU6;
+Netzwerkprotokoll11 trennt ältere Simulationsstände. Eigene/Basis-WASMs bleiben
+bytegleich. Der Ausbau des tatsächlichen Originalkatalogs läuft separat weiter.
 
-Die native F4-Oberfläche verwendet 236 Widgetdefinitionen und 151 Originalcrops,
-mit Spielerfarben, Beziehungen, Ressourcen- und Gebietstausch. Deutsche
-Originalnamen, Mehrzahlformen und Beschreibungen folgen Klasse und Epoche.
-Die Quellenbeleuchtung der Modelle berücksichtigt Farbbytes, NiLight und die
-passenden statischen/IndexPal-Materialpfade. Die Anwendung wählt vorerst
-Temperate/Afternoon/Normal; die native Tageszeit-/Wettersteuerung fehlt noch.
+HUD und Diplomatie verwenden die importierten Bitmap-Schriften: 70 Varianten,
+84 Auflösungsbindungen und212 Mediendateien. Originale Cache-Glyphen bleiben
+bytegleich; zusätzliche deutsche/Latin1-Zeichen sind als aktueller Windows-GDI-
+Adapter markiert. Vollständiges natives Umbruch-/Alternativschriftverhalten,
+weitere Unicodezeichen und Gleichheit mit einem anderen Originalrechner sind
+noch offen. Keine Schriftdateien/TTFs wurden übernommen.
 
-Die Farm-/Boden-/Wasser- und HUD-Quellschichten des vorherigen Standes bleiben
-enthalten. Alle importierten Medien liegen im lokalen Spielordner. Einheiten-
-übergaben, Bitmap-Schrift, vollständige KI/Kartenerzeugung und der vollständige
-Einheiten-/Zivilisationsbestand sind noch offen. 439 UpgradeRef-Feldvorkommen
-und82 Forschungsfaktoren sind inventarisierte Lücken, keine439 Einzelmerkmale.
+Die Quellenstufen der Terrainbeleuchtung sind an den tatsächlichen Modell-
+Lichtkontext angebunden. Der128²/25-Welteinheiten-Lichtatlas wird bei veränderter
+Kartenhöhe oder Lichtrichtung neu berechnet und sonst wiederverwendet. Die
+eigene Höhenkarte, Normalen-/Strahladapter und Schattenprojektion bleiben
+ausdrücklich Adapter. Native Kartenerzeugung/DEM/Klippen und die vollständige
+Wetter-/Tageszeitsteuerung sind weitere Arbeitsschritte.
 
-Prüfstand: 90 UP-/75 Referenz-/32 eigene Rusttests;115.192 Rohquellenchecks,
-407.723 WASMchecks und5.429 Angriffs-/Save-/Malformedchecks. Acht tatsächliche
-GLES-Weltszenen bestehen432 Kontrollen, zusätzliche Reflexionskontrollen106.
-1364 Profil-/Save-/Netzwerkchecks,1618 Diplomatie-UI-/Befehlschecks und6029
-HUD-Prüfungen bestehen. Die Originaltexte wurden in13.094 unabhängigen
-Quellenprüfungen und5179 Runtime-/142 tatsächlichen HUD-Handlerchecks geprüft.
+Gemeinsame Prüfung:97 UP-Rusttests,1893 isolierte WASM-/Migrationstests,
+1367 Profil-/Save-/Netzwerkprüfungen,425 Kalender-/Netzwerkprüfungen,
+36 tatsächliche HUD-/Produktionsbefehlsprüfungen,6029 HUD- und1618 Diplomatie-
+Prüfungen. Der aktive Bitmap-Koordinator besteht1040 Kontrollen. Acht echte
+GLES-Weltszenen bestehen432 Kontrollen. Lokale HTTP- und Medienpfadprüfungen
+bestehen; physischer Mac, Browserbedienung und das Originalprogramm wurden
+nicht ausgeführt. Diese Prüfungen beweisen keine vollständige Spielgleichheit.
 
-Kein Originalspiel/Original-DLL und kein Browserfenster wurde ausgeführt. Ein
-physischer Mac-Start und eine vollständige Bild-/Spielgleichheit sind ungetestet.
+Offen sind insbesondere der vollständige Einheiten-/Zivilisationskatalog,
+Spezialfähigkeiten, originale KI/Kartenerzeugung, diplomatische Einheiten-
+übergaben und weitere UI-/Sieg-/Animationsregeln. Vorherige Quellschichten für
+Kampf, Modelle, Namen, Farm, Boden, Wasser und Diplomatie sind weiterhin aktiv.
+
+Die vollständig geprüften Mac-/Quell-ZIPs und der veröffentlichte GitHub-Stand
+sind noch native-ui5. Der neue aktive Ordner wird nach dem nächsten gemeinsamen
+Einheiten-/Medienabgleich wieder vollständig exportiert und geprüft.
 Originalmedien bleiben außerhalb des öffentlichen Quellrepositories.
 
-Aktueller Nachweis: analysis/native5-frontend-integration.json und
-analysis/original-parity-audit.json. Vorheriger Stand: Originaltreue-Stand-native-ui4.txt.
+Aktueller Nachweis: analysis/native6-frontend-integration.json und
+analysis/original-parity-audit.json. Vorheriger Stand: Originaltreue-Stand-native-ui5.txt.

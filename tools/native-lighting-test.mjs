@@ -18,6 +18,10 @@ for(const [profile,source] of Object.entries(data.profiles))for(const [climate,p
   }
   const norm=Math.hypot(...tod.sunDirectionSource),r=tod.sunDirectionSource.map(x=>Math.fround(x/norm));
   equal(l.direction,[-r[0],-r[2],r[1]].map(Math.fround));close(Math.hypot(...l.direction),1);
+  equal(l.sourceDirection,r,'Flag getter retains the native source axes');
+  for(const [runtime,key]of [['sourceAmbient','ambient'],['sourceDiffuse','diffuse']]){
+   equal(l[runtime],row.sourceRGBA[key].slice(0,3).map(x=>Math.fround(x*Math.fround(1/255))),'Flag RGB getter does not include NiLight dimmer');
+  }
   equal(nativeModelPipeline({skinned:true},l),{shader:detail==='Low'?2:1,textureScale:4});
   equal(nativeModelPipeline({textureApplyMode:4,textureUrl:'actual.png'},l),{shader:0,textureScale:4});
   equal(nativeModelPipeline({textureApplyMode:4},l),{shader:0,textureScale:1});

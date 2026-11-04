@@ -1,0 +1,162 @@
+{
+  "format": "native-cloth-kernel-tests-v1",
+  "status": "passed",
+  "checks": 362,
+  "cases": [
+    {
+      "effect": "ShipOfTheLineSail",
+      "index": 0,
+      "nx": 3,
+      "ny": 2,
+      "steps": 10,
+      "finalBitsSha256": "c1204500139065505a3c039cdef020d48232ed32833158fe24f302643e3b5b9f"
+    },
+    {
+      "effect": "ShipOfTheLineSail",
+      "index": 1,
+      "nx": 5,
+      "ny": 5,
+      "steps": 2,
+      "finalBitsSha256": "861bc4d8dd9ca3408287672807d32cf3e72f4447ba53ce8ae2234993ebd5f843"
+    },
+    {
+      "effect": "ShipOfTheLineSail",
+      "index": 2,
+      "nx": 5,
+      "ny": 5,
+      "steps": 2,
+      "finalBitsSha256": "591cae6b1653492dda9ac5d6d54abcd360bf1f32b6651e51f79bd4ba9094a45f"
+    },
+    {
+      "effect": "ShipOfTheLineSail",
+      "index": 3,
+      "nx": 5,
+      "ny": 5,
+      "steps": 2,
+      "finalBitsSha256": "e7bd7d111717a3f84e304b3c565e3d093d72ba979ab59a2b71cd379697610103"
+    },
+    {
+      "effect": "ShipOfTheLineSail",
+      "index": 4,
+      "nx": 5,
+      "ny": 5,
+      "steps": 2,
+      "finalBitsSha256": "805e2b8471228ed0633187079baab7728a4fa474123b3d3197db5abd26513c7b"
+    },
+    {
+      "effect": "ShipOfTheLineSail",
+      "index": 5,
+      "nx": 5,
+      "ny": 5,
+      "steps": 2,
+      "finalBitsSha256": "8662c8a77dce4fbb0c4b0746c4bfd592dc3d5b496e6dd761a7e7caf85beeac66"
+    },
+    {
+      "effect": "ShipOfTheLineSail",
+      "index": 6,
+      "nx": 5,
+      "ny": 5,
+      "steps": 2,
+      "finalBitsSha256": "368215a111ae35033617e778b123d26fcbf76e9bdb1ecf6484dbd3b1a2113c92"
+    },
+    {
+      "effect": "ShipOfTheLineSail",
+      "index": 7,
+      "nx": 5,
+      "ny": 5,
+      "steps": 2,
+      "finalBitsSha256": "0696156a15f3cea6028d4e37bb6f06d7e584e39db0d039095daba4cf104df8de"
+    },
+    {
+      "effect": "ShipOfTheLineSail",
+      "index": 8,
+      "nx": 5,
+      "ny": 5,
+      "steps": 2,
+      "finalBitsSha256": "eefe4d1cc8408d60faad57c2f05b575c888e5d4345860193aae4ed7bdff5aba8"
+    },
+    {
+      "effect": "ShipOfTheLineSail",
+      "index": 9,
+      "nx": 5,
+      "ny": 5,
+      "steps": 2,
+      "finalBitsSha256": "1760d677c4160db1f67c27cc977c18525d5290c27428edffa2497a83dd6ccd91"
+    },
+    {
+      "effect": "ShipOfTheLineSail",
+      "index": 10,
+      "nx": 5,
+      "ny": 5,
+      "steps": 2,
+      "finalBitsSha256": "8205a0c8a5afdb459818b87d2c7b2f0fdfd2723df81b9199ee714aa25d4055b2"
+    },
+    {
+      "effect": "ShipOfTheLineSail",
+      "index": 11,
+      "nx": 5,
+      "ny": 5,
+      "steps": 2,
+      "finalBitsSha256": "bf8fa9f43b9ab108a92528d158edb7784086bdc40bf3ae7470cb45d1e37e1245"
+    },
+    {
+      "effect": "CaravelSail",
+      "index": 0,
+      "nx": 5,
+      "ny": 5,
+      "steps": 10,
+      "finalBitsSha256": "ead5c2502be7261fe4d579dcba5fc581d8b11e2d8e5aebf356b46fa7db2eba81"
+    },
+    {
+      "effect": "CaravelSail",
+      "index": 1,
+      "nx": 5,
+      "ny": 5,
+      "steps": 2,
+      "finalBitsSha256": "4222f5a95b142273d1ecda156cd44b97f5ff7c10a0fe074103f2ba5b11e2bb25"
+    },
+    {
+      "effect": "CaravelSail",
+      "index": 2,
+      "nx": 5,
+      "ny": 5,
+      "steps": 2,
+      "finalBitsSha256": "e302a8a2612a9e860d271879650326bdc54e74cca2054ec1565dca336775b5e8"
+    },
+    {
+      "effect": "CaravelSail",
+      "index": 3,
+      "nx": 5,
+      "ny": 5,
+      "steps": 10,
+      "finalBitsSha256": "b6c253998e848e3fae288a65c8c2697bd28c0f0a7baf65f78825952dbcfc9e85"
+    },
+    {
+      "effect": "CaravelSail",
+      "index": 4,
+      "nx": 5,
+      "ny": 5,
+      "steps": 2,
+      "finalBitsSha256": "426ce86a729791fee49a0d8c4f755d13b448fdd7e2ce408726a72463e1350891"
+    },
+    {
+      "effect": "CaravelSail",
+      "index": 5,
+      "nx": 5,
+      "ny": 5,
+      "steps": 2,
+      "finalBitsSha256": "9750539a71f09bb79a8f39bb40f615b74db1276ca6ee3e589f6390f6270cdfe7"
+    }
+  ],
+  "sourceManifestSha256": "f744b0a4f25313963a3c4bbcd2d6249fc306a2eae9667d069da146114a349d2d",
+  "rationalOracleSha256": "625f7d7c693795f6c1735d2d7882cd3d6865d9aff4d0f76e61d9f85b139f16c0",
+  "kernelSha256": "2eb0d416b1f6e41b998593364cbf4a0a8010e801d58e376befda0514b4467032",
+  "arithmeticSha256": "0941661ccc487907881d897cc6149c903fe6a74ac7d047c2f817071c84fa6393",
+  "benchmark": {
+    "sails": 18,
+    "vertices": 431,
+    "outerUpdates": 60,
+    "milliseconds": 108.4762
+  },
+  "scope": "Strict bit comparison against independently implemented Fraction/integer CHOP53 reconstruction at every selected native store point. Source-algorithm verification with explicit FPU mode and controlled kernel inputs; no original routine was executed and no global original-frame FPU/timing parity is claimed."
+}

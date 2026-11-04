@@ -1,0 +1,46 @@
+{
+  "format": "native-audio6-active-tests-v1",
+  "status": "passed",
+  "checks": 7323,
+  "realWasmSnapshot": {
+    "path": "docs/openepoch-ee2-up15.wasm",
+    "sha256": "25c832f13c1c8b4d8547eb6c65d78bd74c5fa50f45d9745328f8bb18ccbb146d",
+    "ruleset": 2,
+    "schema": 7,
+    "definitions": 61,
+    "flags": [
+      {
+        "id": 57,
+        "flags": 18
+      },
+      {
+        "id": 58,
+        "flags": 18
+      },
+      {
+        "id": 59,
+        "flags": 17
+      },
+      {
+        "id": 60,
+        "flags": 17
+      }
+    ],
+    "scope": "Read-only metadata of the active61-role simulation."
+  },
+  "legacyComparison": {
+    "acknowledgmentResults": 3420,
+    "recordingAndGroupResults": 3420,
+    "legacyManifestSha256": "ff67ba2de5ca7175449793786f9f95852eb469ed0e7b1a29ce518422b0e1a6ce"
+  },
+  "familyIntervals": 16,
+  "originalRecordings": 28,
+  "sourceHashes": {
+    "docs/original-audio-bindings.js": "6271658a613c5293a52efa3f7092a53b49b7550389e08d30cf84893af95c99f1",
+    "docs/original-audio.js": "b52ea832faf0c89502988d6337f7dcdb407311d6b24f8ac7f8bbc7f41d8e6fd4",
+    "docs/audio.js": "e287c64970bc8f5f65545fff1494a6ffb2ebc5e2c7a1f19c3de982184131a987",
+    "docs/local-original/audio/native-families.json": "7aa92154cbd1e760be5b08658546da74d1d3cc304463f9d2bd07221efb4f43da",
+    "tools/extract_ee2_audio_families.py": "a9e8f9985a9ba8d036f6f62c7521349c5d34148eeeec981c71237891e53b3e25"
+  },
+  "scope": "Active typed resolver, original-audio and production audio wrapper. A frozen pre-activation57-role source module is the legacy oracle; the actual61-role WASM is used. WebAudio graph/decoder and clock are deterministic test transports, not an audio-device or browser playback test."
+}

@@ -412,6 +412,48 @@ class AssetAudit:
             if row.get('pngFile')!=sprite.get('file'):self.error('diplomacy-strip-sprite-file-mismatch',key,name)
         self.stats['diplomacyWidgets']=len(widgets);self.stats['diplomacySprites']=len(sprites);self.stats['diplomacySourceTextures']=len(textures);self.stats['diplomacyPlayerStrips']=len(strips)
 
+    def check_fonts(self):
+        base='local-original/fonts-native';name=base+'/bitmap-manifest.json';cache_name=base+'/manifest.json'
+        self.ref(name,'original-fonts.js','font-manifest');self.ref(cache_name,name,'font-cache-manifest')
+        data=self.read_json(name);cache=self.read_json(cache_name)
+        if data.get('format')!='ee2-native-bitmap-font-v1' or cache.get('format')!='ee2-original-font-cache-v1':self.error('font-manifest-format',name);return
+        if data.get('sourceCacheManifestSha256')!=self.digest(cache_name):self.error('font-cache-manifest-hash-mismatch',name)
+        def image(row,label,group):
+            target=self.ref(row.get('file'),label,group,base)
+            if not target:return
+            if self.digest(target)!=(row.get('sha256') or row.get('pngSha256')):self.error('font-png-hash-mismatch',target,label)
+            h=self.files[target].read_bytes()[:24]
+            if len(h)!=24 or h[:16]!=b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR':self.error('font-invalid-png',target,label)
+            elif [int.from_bytes(h[16:20],'big'),int.from_bytes(h[20:24],'big')]!=[row.get('width'),row.get('height')]:self.error('font-png-dimensions',target,label)
+        for key,row in cache.get('fonts',{}).items():image(row,f'{cache_name}.fonts.{key}','font-original-cache-png')
+        images=data.get('images',{});fonts=data.get('fonts',{});bindings=data.get('bindings',{})
+        for key,row in images.items():
+            if row.get('file')!=key:self.error('font-image-key-mismatch',key,name)
+            image(row,f'{name}.images.{key}','font-atlas-png')
+        glyph_count=0;original_count=0
+        for key,font in fonts.items():
+            glyphs=font.get('glyphs',{});glyph_count+=len(glyphs);source=font.get('sourceCache');original=cache.get('fonts',{}).get(source.get('key')) if isinstance(source,dict) else None
+            if source and not original:self.error('font-unknown-source-cache',key,name)
+            nominal=font.get('nominalSize');height=font.get('lineHeight');flags=font.get('flags',0)
+            if type(nominal)!=int or nominal<=0 or type(height)!=int or type(flags)!=int or height!=nominal+(2 if flags&8 else 0) or font.get('spacing')!=(-1 if flags&8 else 0):self.error('font-invalid-native-metrics',key,name)
+            if original and font.get('kerning')!={f'{a}:{b}':amount for a,b,amount in original.get('kerning',[])}:self.error('font-original-kerning-changed',key,name)
+            for pair,amount in font.get('kerning',{}).items():
+                if not re.fullmatch(r'\d+:\d+',pair) or type(amount)!=int:self.error('font-invalid-kerning',f'{key}/{pair}',name)
+            for cp,glyph in glyphs.items():
+                atlas=images.get(glyph.get('file'));rect=[glyph.get(k) for k in ('x','y','width','height')]
+                if not atlas:self.error('font-glyph-missing-atlas',f'{key}/{cp}',name);continue
+                if not cp.isdecimal() or int(cp)>0x10ffff or any(type(v)!=int for v in rect) or min(rect)<0 or rect[2]<=0 or rect[3]!=height or rect[0]+rect[2]>atlas.get('width',0) or rect[1]+rect[3]>atlas.get('height',0):self.error('font-glyph-outside-atlas',f'{key}/{cp}',name)
+                if glyph.get('origin')=='shipped-cache':
+                    original_count+=1;cell=original.get('glyphs',{}).get(cp) if original else None
+                    if not cell or [glyph['file'],*rect]!=[original['file'],cell['x'],cell['y'],cell['width'],original['headerObjectOffsets']['0x2c']]:self.error('font-shipped-glyph-changed',f'{key}/{cp}',name)
+                elif glyph.get('origin')!='current-headless-gdi':self.error('font-unknown-glyph-origin',f'{key}/{cp}',name)
+            if not all(str(ord(cp)) in glyphs for cp in 'ÄÖÜäöüß'):self.error('font-missing-german-glyph',key,name)
+        for key,tiers in bindings.items():
+            if not isinstance(tiers,list) or len(tiers)!=6 or any(tier not in fonts for tier in tiers):self.error('font-invalid-resolution-binding',key,name)
+        for key,row in data.get('fontStyles',{}).items():
+            if row.get('FONT') not in bindings:self.error('font-style-missing-font',key,name)
+        self.stats['nativeFontVariants']=len(fonts);self.stats['nativeFontSourceAtlases']=len(cache.get('fonts',{}));self.stats['nativeFontGlyphBindings']=glyph_count;self.stats['nativeFontOriginalGlyphBindings']=original_count;self.stats['nativeFontStyleBindings']=len(data.get('fontStyles',{}))
+
     def check_audio(self):
         name='local-original/audio/manifest.json';base='local-original/audio'
         self.ref(name,'original-audio.js','audio-manifest');data=self.read_json(name)
@@ -436,6 +478,83 @@ class AssetAudit:
         if ambient.get('loop'):clip(ambient['loop'],'audio.ambient.loop')
         for i,file in enumerate(ambient.get('birds',[])):clip(file,f'audio.ambient.birds[{i}]')
         self.stats['audioAssets']=len(assets)
+        family_name=base+'/native-families.json'
+        module=self.files.get('original-audio.js')
+        if family_name in self.files or (module and 'native-families.json' in module.read_text(encoding='utf8')):
+            self.check_audio_families()
+
+    def check_audio_families(self):
+        name='local-original/audio/native-families.json';base='local-original/audio'
+        self.ref(name,'original-audio.js','native-family-audio-manifest');data=self.read_json(name)
+        if data.get('format')!='ee2-native-family-audio-v1':self.error('native-family-audio-format',name);return
+        assets=data.get('assets',{});events=data.get('events',{});families=data.get('families',{})
+        if not all(isinstance(value,dict) for value in (assets,events,families)):
+            self.error('native-family-audio-tables',name);return
+        for key,record in assets.items():
+            if not isinstance(record,dict):self.error('native-family-audio-asset',key,name);continue
+            target=self.ref(record.get('file'),f'{name}.assets.{key}','native-family-audio-asset',base)
+            if record.get('file')!=key:self.error('native-family-audio-asset-key',key,name)
+            if target:
+                if not target.startswith(base+'/'):self.error('native-family-audio-base',target,name)
+                if self.files[target].stat().st_size!=record.get('bytes'):self.error('native-family-audio-size',target,name)
+                if self.digest(target)!=record.get('sha256'):self.error('native-family-audio-hash',target,name)
+        for event,record in events.items():
+            if not isinstance(record,dict):self.error('native-family-audio-event',event,name);continue
+            file=record.get('file');self.ref(file,f'{name}.events.{event}','native-family-audio-event',base)
+            if not isinstance(file,str) or file not in assets:self.error('native-family-audio-unbound-clip',event,name)
+            volume=record.get('volume')
+            if type(volume) not in (int,float) or not math.isfinite(volume) or not 0<=volume<=1:self.error('native-family-audio-volume',event,name)
+        interval_count=0
+        for family,record in families.items():
+            if not isinstance(record,dict) or record.get('role') not in ('voice','selection-effect') or not isinstance(record.get('intervals'),list):
+                self.error('native-family-audio-role',family,name);continue
+            previous=0
+            for row in record['intervals']:
+                if not isinstance(row,dict):self.error('native-family-audio-interval',family,name);continue
+                epoch,until=row.get('epoch'),row.get('until')
+                if type(epoch)!=int or type(until)!=int or not previous<=epoch<until<=15:
+                    self.error('native-family-audio-interval',family,name)
+                else:previous=until
+                channels=row.get('effectiveEvents',{})
+                for action in ('select','order','attack'):
+                    names=channels.get(action) if isinstance(channels,dict) else None
+                    if not isinstance(names,list) or len(names)>8 or any(not isinstance(event,str) or event not in events for event in names):
+                        self.error('native-family-audio-channel',family+':'+action,name)
+                interval_count+=1
+        self.stats['nativeFamilyAudioAssets']=len(assets);self.stats['nativeFamilyAudioEvents']=len(events);self.stats['nativeFamilyAudioFamilies']=len(families);self.stats['nativeFamilyAudioIntervals']=interval_count
+
+    def check_sails(self):
+        name='local-original/sails-native/manifest.json'
+        self.ref(name,'original-renderer.js','native-sail-manifest');data=self.read_json(name)
+        if data.get('format')!='ee2-native-sail-initial-composites-v1':self.error('native-sail-format',name);return
+        assets=data.get('assets',{})
+        if not isinstance(assets,dict) or not isinstance(data.get('models'),list):self.error('native-sail-tables',name);return
+        for key,row in assets.items():
+            target=self.ref(row.get('url'),name+'.assets.'+key,'native-sail-texture')
+            if row.get('url')!=key:self.error('native-sail-texture-key',key,name)
+            if target and self.digest(target)!=row.get('pngSha256'):self.error('native-sail-texture-hash',target,name)
+        parts=0
+        for row in data['models']:
+            target=self.ref(row.get('url'),name+'.models','native-sail-composite')
+            if not target:continue
+            if self.digest(target)!=row.get('sha256'):self.error('native-sail-composite-hash',target,name)
+            composite=self.read_json(target)
+            if composite.get('assetKind')!=0 or composite.get('id')!=58 or composite.get('sourceFamily')!='FightingSail':self.error('native-sail-typed-binding',target,name)
+            if composite.get('source',{}).get('sha256')!=row.get('source',{}).get('sha256'):self.error('native-sail-parent-hash',target,name)
+            if composite.get('effect')!=row.get('effect') or composite.get('epoch')!=row.get('epoch') or composite.get('until')!=row.get('until'):self.error('native-sail-model-interval',target,name)
+            planes=composite.get('parts',[])
+            if not isinstance(planes,list) or len(planes)!=row.get('sails'):self.error('native-sail-plane-count',target,name);continue
+            for part in planes:
+                positions=part.get('positions',[]);vertices=len(positions)//3
+                if len(positions)%3 or not vertices or len(part.get('normals',[]))!=3*vertices or len(part.get('uvs',[]))!=2*vertices or len(part.get('pinned',[]))!=vertices or any(type(i)!=int or i<0 or i>=vertices for i in part.get('indices',[])):
+                    self.error('native-sail-mesh-layout',target,name)
+                urls=[part.get('textureUrl'),*part.get('damageMaskUrls',[])]
+                if len(part.get('damageMaskUrls',[]))!=9:self.error('native-sail-mask-count',target,name)
+                for url in urls:
+                    self.ref(url,target,'native-sail-part-texture')
+                    if url not in assets:self.error('native-sail-unbound-texture',url,target)
+            parts+=len(planes)
+        self.stats['nativeSailComposites']=len(data['models']);self.stats['nativeSailPlanes']=parts;self.stats['nativeSailTextures']=len(assets)
 
     def check_rule_profiles(self):
         name='rules-profile.js';source=self.files[name].read_text(encoding='utf8')
@@ -445,6 +564,20 @@ class AssetAudit:
         if enabled[1]=='true':files.append('openepoch-ee2-up15.wasm')
         for file in files:self.ref(file,name,'numerical-profile-wasm')
         self.stats['numericalRuleProfileBinaries']=len(files)
+
+    def check_source_cloth(self):
+        name='source-sail-runtime.js';text=self.files[name].read_text(encoding='utf8')
+        expression=r"SOURCE_CLOTH_MODULE=Object\.freeze\(\{\s*url:new URL\('([^']+)',\s*import\.meta\.url\),bytes:(\d+),\s*sha256:'([a-f0-9]{64})'"
+        descriptor=re.search(expression,text)
+        if not descriptor:self.error('own-cloth-missing-integrity-descriptor',name);return
+        target=self.ref(descriptor[1],name,'own-source-cloth-wasm')
+        if not target:return
+        binary=self.files[target]
+        if binary.stat().st_size!=int(descriptor[2]):self.error('own-cloth-size-mismatch',target,name)
+        if self.digest(target)!=descriptor[3]:self.error('own-cloth-sha256-mismatch',target,name)
+        with binary.open('rb')as stream:
+            if stream.read(8)!=b'\0asm\x01\0\0\0':self.error('own-cloth-invalid-wasm-header',target,name)
+        self.stats['ownSourceClothWasmBytes']=binary.stat().st_size
 
     def check_static_runtime(self):
         audit=self
@@ -494,14 +627,19 @@ class AssetAudit:
         self.check_models()
         if 'local-original/models/manifest-up15.json' in self.files:
             self.check_models('local-original/models/manifest-up15.json','up15-')
+        if 'local-original/models/manifest-roster6.json' in self.files:
+            self.check_models('local-original/models/manifest-roster6.json','roster6-')
         self.check_textures_and_ground();self.check_teams();self.check_model_seasons();self.check_audio();self.check_static_runtime()
         if 'original-water.js' in self.files:self.check_water()
         if 'local-original/farm-composites.json' in self.files:self.check_farms()
         if 'original-hud.js' in self.files:self.check_hud()
         if 'original-diplomacy.js' in self.files:self.check_diplomacy()
+        if 'original-fonts.js' in self.files:self.check_fonts()
+        if 'local-original/sails-native/manifest.json' in self.files:self.check_sails()
         if 'local-original/labels-native.json' in self.files:
             self.ref('local-original/labels-native.json','original-labels.js','original-labels-manifest');self.read_json('local-original/labels-native.json')
         if 'rules-profile.js' in self.files:self.check_rule_profiles()
+        if 'source-sail-runtime.js' in self.files:self.check_source_cloth()
         # All local-original JSONs carry auxiliary provenance/preview references;
         # validate those too without interpreting source .tga/.nif/cache paths.
         for name in self.files:
@@ -535,6 +673,18 @@ class PathPolicyTests(unittest.TestCase):
         self.temp.cleanup()
     def test_exact_path_and_query(self):
         a=AssetAudit(self.root);self.assertEqual(a.ref('Icons/Tree.png?v=abc#x','test','fixture'),'Icons/Tree.png');self.assertFalse(a.errors)
+    def test_own_cloth_pin_rejects_corruption_and_missing_or_wrong_case_files(self):
+        original=b'\0asm\x01\0\0\0own-visual-fixture'
+        binary=self.root/'Cloth.wasm';binary.write_bytes(original)
+        def audit(url='Cloth.wasm?v=test',size=len(original),digest=None):
+            text="export const SOURCE_CLOTH_MODULE=Object.freeze({\n url:new URL('"+url+"',import.meta.url),bytes:"+str(size)+",\n sha256:'"+(digest or hashlib.sha256(original).hexdigest())+"',\n});"
+            (self.root/'source-sail-runtime.js').write_text(text,encoding='utf8');value=AssetAudit(self.root);value.check_source_cloth();return value
+        self.assertFalse(audit().errors)
+        binary.write_bytes(original[:-1]+b'X');self.assertIn('own-cloth-sha256-mismatch',[e['kind']for e in audit().errors])
+        binary.write_bytes(original);self.assertIn('own-cloth-size-mismatch',[e['kind']for e in audit(size=1).errors])
+        self.assertIn('case-mismatch',[e['kind']for e in audit(url='cloth.wasm').errors])
+        self.assertIn('missing-runtime-file',[e['kind']for e in audit(url='Missing.wasm').errors])
+        binary.write_bytes(b'MZ'+original[2:]);self.assertIn('own-cloth-invalid-wasm-header',[e['kind']for e in audit(digest=hashlib.sha256(binary.read_bytes()).hexdigest()).errors])
     def test_windows_cannot_hide_wrong_case(self):
         a=AssetAudit(self.root);self.assertIsNone(a.ref('icons/tree.png','test','fixture'));self.assertEqual(a.errors[0]['kind'],'case-mismatch')
     def test_reject_drive_file_external_and_backslash(self):
@@ -545,8 +695,51 @@ class PathPolicyTests(unittest.TestCase):
             a=AssetAudit(self.root);self.assertIsNone(a.ref(value,'test','fixture'));self.assertTrue(a.errors)
     def test_audio_base_and_safe_relative_module_parent(self):
         a=AssetAudit(self.root);self.assertEqual(a.ref('../Icons/Tree.png','test','fixture','module'),'Icons/Tree.png');self.assertFalse(a.errors)
+    def family_audio_fixture(self):
+        folder=self.root/'local-original/audio/family6';folder.mkdir(parents=True,exist_ok=True)
+        clip=folder/'Voice.mp3';clip.write_bytes(b'original-audio-byte-fixture')
+        file='family6/Voice.mp3'
+        return {'format':'ee2-native-family-audio-v1','assets':{file:{'file':file,'bytes':clip.stat().st_size,'sha256':sha(clip)}},
+                'events':{'voice_select':{'file':file,'volume':.5}},'families':{'Scout':{'role':'voice','intervals':[{'epoch':0,'until':15,'effectiveEvents':{'select':['voice_select'],'order':[],'attack':[]}}]}}}
+    def family_audio_audit(self,data):
+        (self.root/'local-original/audio/native-families.json').write_text(json.dumps(data),encoding='utf8')
+        audit=AssetAudit(self.root);audit.check_audio_families();return audit
+    def test_family_audio_graph_binds_exact_case_media_and_events(self):
+        audit=self.family_audio_audit(self.family_audio_fixture());self.assertFalse(audit.errors);self.assertEqual(audit.stats['nativeFamilyAudioAssets'],1)
+    def test_family_audio_graph_rejects_missing_case_hash_size_and_event_media(self):
+        for mutate,expected in [
+            (lambda d:d['assets']['family6/Voice.mp3'].update(file='family6/voice.mp3'),'case-mismatch'),
+            (lambda d:d['assets']['family6/Voice.mp3'].update(sha256='0'*64),'native-family-audio-hash'),
+            (lambda d:d['assets']['family6/Voice.mp3'].update(bytes=0),'native-family-audio-size'),
+            (lambda d:d['events']['voice_select'].update(file='family6/Missing.mp3'),'missing-runtime-file')]:
+            data=self.family_audio_fixture();mutate(data);self.assertIn(expected,[row['kind'] for row in self.family_audio_audit(data).errors])
+    def test_family_audio_graph_rejects_bad_channels_intervals_and_volume(self):
+        for mutate,expected in [
+            (lambda d:d['families']['Scout']['intervals'].append(d['families']['Scout']['intervals'][0]),'native-family-audio-interval'),
+            (lambda d:d['families']['Scout']['intervals'][0]['effectiveEvents'].update(select=['missing']),'native-family-audio-channel'),
+            (lambda d:d['events']['voice_select'].update(volume=float('nan')),'native-family-audio-volume'),
+            (lambda d:d['families']['Scout'].update(role='building'),'native-family-audio-role')]:
+            data=self.family_audio_fixture();mutate(data);self.assertIn(expected,[row['kind'] for row in self.family_audio_audit(data).errors])
     def test_missing_file_is_not_a_case_mismatch(self):
         a=AssetAudit(self.root);a.ref('Icons/Missing.png','test','fixture');self.assertEqual(a.errors[0]['kind'],'missing-runtime-file')
+    def sail_fixture(self):
+        base='local-original/sails-native';folder=self.root/base;folder.mkdir(parents=True,exist_ok=True)
+        url='Icons/Tree.png';source={'sha256':'a'*64}
+        part={'positions':[0,0,0,1,0,0,0,1,0],'normals':[0,0,1]*3,'uvs':[0,0,1,0,0,1],'indices':[0,1,2],'pinned':[1,0,1],'textureUrl':url,'damageMaskUrls':[url]*9}
+        composite={'assetKind':0,'id':58,'sourceFamily':'FightingSail','source':source,'epoch':5,'until':7,'effect':'CaravelSail','parts':[part]}
+        target=folder/'Ship.json';target.write_text(json.dumps(composite),encoding='utf8')
+        return {'format':'ee2-native-sail-initial-composites-v1','assets':{url:{'url':url,'pngSha256':sha(self.root/url)}},'models':[{'url':base+'/Ship.json','sha256':sha(target),'source':source,'epoch':5,'until':7,'effect':'CaravelSail','sails':1}]}
+    def sail_audit(self,data):
+        (self.root/'local-original/sails-native/manifest.json').write_text(json.dumps(data),encoding='utf8');audit=AssetAudit(self.root);audit.check_sails();return audit
+    def test_sail_graph_checks_composite_hash_typed_parent_and_masks(self):
+        audit=self.sail_audit(self.sail_fixture());self.assertFalse(audit.errors);self.assertEqual(audit.stats['nativeSailPlanes'],1)
+    def test_sail_graph_rejects_wrong_case_and_changed_payloads(self):
+        for mutate,expected in [(lambda d:d['models'][0].update(url='local-original/sails-native/ship.json'),'case-mismatch'),(lambda d:d['models'][0].update(sha256='0'*64),'native-sail-composite-hash'),(lambda d:d['assets']['Icons/Tree.png'].update(pngSha256='0'*64),'native-sail-texture-hash'),(lambda d:d['models'][0].update(source={'sha256':'b'*64}),'native-sail-parent-hash')]:
+            data=self.sail_fixture();mutate(data);self.assertIn(expected,[row['kind'] for row in self.sail_audit(data).errors])
+    def test_sail_graph_rejects_unbound_mask_and_malformed_mesh(self):
+        for field,value,expected in [('damageMaskUrls',[],'native-sail-mask-count'),('textureUrl','Icons/Missing.png','native-sail-unbound-texture'),('uvs',[],'native-sail-mesh-layout')]:
+            data=self.sail_fixture();target=self.root/data['models'][0]['url'];composite=json.loads(target.read_text());composite['parts'][0][field]=value;target.write_text(json.dumps(composite),encoding='utf8');data['models'][0]['sha256']=sha(target)
+            self.assertIn(expected,[row['kind'] for row in self.sail_audit(data).errors])
     def seasonal_fixture(self):
         model='local-original/models/tree.json';base='Icons/Tree.png';source={'archive':'graphics.zip','entry':'tree.nifcache','sha256':'1'*64}
         documents={'local-original/models/manifest.json':{'models':[{'url':model}]},
@@ -673,6 +866,26 @@ class PathPolicyTests(unittest.TestCase):
             (lambda d:d['fontStyles']['white'].update(FONT='missing'),'diplomacy-style-missing-font'),
             (lambda d:d['playerStripPixels']['spr_dip_pcolor_strip_glow'].update(rgba='bad!'),'diplomacy-invalid-strip-rgba')]:
             data=self.diplomacy_fixture();mutate(data);self.assertIn(expected,[e['kind'] for e in self.diplomacy_audit(data).errors])
+    def font_fixture(self):
+        hud=self.hud_fixture();folder=self.root/'local-original/fonts-native';folder.mkdir(parents=True,exist_ok=True);(folder/'Atlas.png').write_bytes((self.root/'local-original/hud-native/Panel.png').read_bytes())
+        image={'file':'Atlas.png','sha256':sha(folder/'Atlas.png'),'width':4,'height':4};cell={'x':0,'y':0,'width':4,'reserved':0}
+        cache={'format':'ee2-original-font-cache-v1','fonts':{'source':{'file':'Atlas.png','pngSha256':image['sha256'],'width':4,'height':4,'glyphs':{'65':cell},'kerning':[[65,65,-1]],'headerObjectOffsets':{'0x2c':4}}}}
+        (folder/'manifest.json').write_text(json.dumps(cache),encoding='utf8')
+        glyph={'file':'Atlas.png','x':0,'y':0,'width':4,'height':4,'origin':'current-headless-gdi'};glyphs={str(ord(cp)):dict(glyph) for cp in 'ÄÖÜäöüß'};glyphs['65']=dict(glyph,origin='shipped-cache')
+        return {'format':'ee2-native-bitmap-font-v1','sourceCacheManifestSha256':sha(folder/'manifest.json'),'images':{'Atlas.png':image},'fonts':{'font':{'nominalSize':4,'lineHeight':4,'flags':64,'spacing':0,'sourceCache':{'key':'source'},'kerning':{'65:65':-1},'glyphs':glyphs}},'bindings':{'native':['font']*6},'fontStyles':{'white':{'FONT':'native'}}}
+    def font_audit(self,data):
+        (self.root/'local-original/fonts-native/bitmap-manifest.json').write_text(json.dumps(data),encoding='utf8');audit=AssetAudit(self.root);audit.check_fonts();return audit
+    def test_font_graph_checks_source_cache_images_glyphs_and_all_tiers(self):
+        audit=self.font_audit(self.font_fixture());self.assertFalse(audit.errors);self.assertEqual(audit.stats['nativeFontOriginalGlyphBindings'],1)
+    def test_font_graph_rejects_path_hash_and_missing_atlas(self):
+        for mutate,expected in [(lambda d:d['images']['Atlas.png'].update(file='atlas.png'),'case-mismatch'),(lambda d:d['images']['Atlas.png'].update(sha256='0'*64),'font-png-hash-mismatch'),(lambda d:d['fonts']['font']['glyphs']['65'].update(file='Missing.png'),'font-glyph-missing-atlas')]:
+            data=self.font_fixture();mutate(data);self.assertIn(expected,[row['kind'] for row in self.font_audit(data).errors])
+    def test_font_graph_rejects_modified_original_kerning_and_glyph_cells(self):
+        for mutate,expected in [(lambda d:d['fonts']['font']['glyphs']['65'].update(x=1),'font-shipped-glyph-changed'),(lambda d:d['fonts']['font'].update(kerning={}), 'font-original-kerning-changed')]:
+            data=self.font_fixture();mutate(data);self.assertIn(expected,[row['kind'] for row in self.font_audit(data).errors])
+    def test_font_graph_rejects_missing_tiers_styles_german_and_invalid_metrics(self):
+        for mutate,expected in [(lambda d:d['bindings']['native'].pop(),'font-invalid-resolution-binding'),(lambda d:d['fontStyles']['white'].update(FONT='missing'),'font-style-missing-font'),(lambda d:d['fonts']['font']['glyphs'].pop(str(ord('ß'))),'font-missing-german-glyph'),(lambda d:d['fonts']['font'].update(lineHeight=5),'font-invalid-native-metrics'),(lambda d:d['fonts']['font'].update(flags='invalid'),'font-invalid-native-metrics')]:
+            data=self.font_fixture();mutate(data);self.assertIn(expected,[row['kind'] for row in self.font_audit(data).errors])
     def test_rule_profile_draft_does_not_implicitly_enable_an_absent_up_binary(self):
         for file in ('openepoch.wasm','openepoch-ee2.wasm'):(self.root/file).write_bytes(b'wasm-fixture')
         (self.root/'rules-profile.js').write_text('export const UP15_PROFILE_ENABLED=false;',encoding='utf8');audit=AssetAudit(self.root);audit.check_rule_profiles();self.assertFalse(audit.errors);self.assertEqual(audit.stats['numericalRuleProfileBinaries'],2)

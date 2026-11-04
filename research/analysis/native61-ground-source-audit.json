@@ -1,0 +1,1962 @@
+{
+  "format": "native61-ground-source-audit-v1",
+  "status": "passed",
+  "checks": 3627,
+  "conclusion": "No added floor is justified. The effective native CFG5 visual graph for AirDefense59 and CoastalDefense60 has no Under* Decal child at any of its eight source visual intervals. Keep the existing14-entry ground manifest unchanged.",
+  "sourceManifestSha256": "eabf590cacef634646eb4e8e47eb58e29a44ca8a6ac1d914a012e1b91b9f87f3",
+  "engineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+  "activeCfgs": [
+    {
+      "path": "db/dbunitfile5.cfg",
+      "origin": {
+        "virtualPath": "db/dbunitfile5.cfg",
+        "lookupKey": "db/dbunitfile5.cfg",
+        "kind": "zip-member",
+        "physical": "zips/db_155.zip",
+        "marker": "zips/db_155.zip",
+        "member": "db/dbunitfile5.cfg",
+        "bytes": 4672,
+        "sha256": "6cca2dec44dc660841403d253126d6dfbea22770dd3478d9161332191190f9d5",
+        "archivePriority": 2,
+        "hookSubstitution": false,
+        "memberTime": 1785976612,
+        "initialRecordTime": 1785976612,
+        "initialRecordSize": 4672,
+        "insertionPriority": 431,
+        "profile": {
+          "game": "ee2",
+          "up16Enabled": true,
+          "enhancedTerrainRequested": false,
+          "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+          "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+          "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+        }
+      }
+    },
+    {
+      "path": "db/techtree/dbepochupgrade5.cfg",
+      "origin": {
+        "virtualPath": "db/TechTree/dbepochupgrade5.cfg",
+        "lookupKey": "db/techtree/dbepochupgrade5.cfg",
+        "kind": "zip-member",
+        "physical": "zips/db_155.zip",
+        "marker": "zips/db_155.zip",
+        "member": "db/TechTree/dbepochupgrade5.cfg",
+        "bytes": 1013,
+        "sha256": "a448b4179f2a6e439b0c19b72d814a40a268d7c7319d7b189ce083810da94b03",
+        "archivePriority": 2,
+        "hookSubstitution": false,
+        "memberTime": 1552543932,
+        "initialRecordTime": 1552543932,
+        "initialRecordSize": 1013,
+        "insertionPriority": 438,
+        "profile": {
+          "game": "ee2",
+          "up16Enabled": true,
+          "enhancedTerrainRequested": false,
+          "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+          "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+          "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+        }
+      }
+    }
+  ],
+  "activeDdfFiles": 158,
+  "nativeUnderDeclarations": [
+    "UnderAirport",
+    "UnderAluminum",
+    "UnderAppleTree",
+    "UnderBananaTree",
+    "UnderBarracks",
+    "UnderCityCenter",
+    "UnderDateTree",
+    "UnderFarm",
+    "UnderFortress",
+    "UnderGold",
+    "UnderHouse",
+    "UnderIron",
+    "UnderMangoTree",
+    "UnderMarienburgCastle",
+    "UnderMarket",
+    "UnderMill",
+    "UnderNotreDame",
+    "UnderOakTree",
+    "UnderOrangeTree",
+    "UnderPlaza1",
+    "UnderPlaza2",
+    "UnderPlaza3",
+    "UnderPomegranateTree",
+    "UnderSaltpeter",
+    "UnderStable",
+    "UnderStone",
+    "UnderTemple",
+    "UnderTin",
+    "UnderUniversity",
+    "UnderVersailles",
+    "UnderWarehouse",
+    "UnderWhiteHouse",
+    "UnderWonderFarEast_01",
+    "UnderWonderFarEast_06",
+    "UnderWonderFarEast_11",
+    "UnderWonderMesoAmerican_01",
+    "UnderWonderMesoAmerican_06",
+    "UnderWonderMesoAmerican_11",
+    "UnderWonderMiddleEast_01",
+    "UnderWonderMiddleEast_06",
+    "UnderWonderMiddleEast_11",
+    "UnderWonderWestern_01",
+    "UnderWonderWestern_06",
+    "UnderWonderWestern_11",
+    "UndergroundAsphaltTextur",
+    "UndergroundBlueTiles",
+    "UndergroundBridge",
+    "UndergroundBridge2",
+    "UndergroundCobbleStones",
+    "UndergroundCrater01",
+    "UndergroundCrater02",
+    "UndergroundCrater03",
+    "UndergroundCrater04",
+    "UndergroundCrater05",
+    "UndergroundCrater06",
+    "UndergroundCrater07",
+    "UndergroundCrater08",
+    "UndergroundCrater09",
+    "UndergroundCrater10",
+    "UndergroundCrater11",
+    "UndergroundCrater12",
+    "UndergroundCrudeOil",
+    "UndergroundFX",
+    "UndergroundLava",
+    "UndergroundMarbleTiles01",
+    "UndergroundMarbleTiles02",
+    "UndergroundMossyStones",
+    "UndergroundNoBuildings",
+    "UndergroundNoUnits",
+    "UndergroundNoUnitsBlack",
+    "UndergroundOldRoad",
+    "UndergroundPavement",
+    "UndergroundSandCoarse",
+    "UndergroundSmoothStones",
+    "UndergroundSound",
+    "UndergroundSpacefield1",
+    "UndergroundSpacefield2",
+    "UndergroundSpacefield3",
+    "UndergroundSpacefield4",
+    "UndergroundSpacefield5",
+    "UndergroundSpacefield6",
+    "UndergroundSpacefield7",
+    "UndergroundSpacefield8",
+    "UndergroundSwampscumt",
+    "UndergroundTechPlating",
+    "UndergroundWaterriverbed",
+    "UndergroundYellowStone"
+  ],
+  "families": [
+    {
+      "id": 59,
+      "assetKind": 0,
+      "sourceFamily": "AirDefense",
+      "conclusion": "no-native-Under-decal-child",
+      "unitChain": [
+        {
+          "name": "AirDefense",
+          "source": {
+            "archive": "zips/db_155.zip",
+            "entry": "db/Units/air_defense_15.ddf",
+            "virtual_path": "db/Units/air_defense_15.ddf",
+            "line": 5,
+            "sha256": "b1fa5637d7cca8f6fb390b57f2ad71085c402b9d0fecb18cce86e326a1eebeaa",
+            "origin": {
+              "virtualPath": "db/Units/air_defense_15.ddf",
+              "lookupKey": "db/units/air_defense_15.ddf",
+              "kind": "zip-member",
+              "physical": "zips/db_155.zip",
+              "marker": "zips/db_155.zip",
+              "member": "db/Units/air_defense_15.ddf",
+              "bytes": 3682,
+              "sha256": "b1fa5637d7cca8f6fb390b57f2ad71085c402b9d0fecb18cce86e326a1eebeaa",
+              "archivePriority": 2,
+              "hookSubstitution": false,
+              "memberTime": 1729702860,
+              "initialRecordTime": 1729702860,
+              "initialRecordSize": 3682,
+              "insertionPriority": 557,
+              "profile": {
+                "game": "ee2",
+                "up16Enabled": true,
+                "enhancedTerrainRequested": false,
+                "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+              }
+            },
+            "declaration": "UnitType AirDefense"
+          },
+          "undertextureProperties": []
+        },
+        {
+          "name": "NoProduceBuilding",
+          "source": {
+            "archive": "zips/db_155.zip",
+            "entry": "db/Units/building_15.ddf",
+            "virtual_path": "db/Units/building_15.ddf",
+            "line": 20,
+            "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+            "origin": {
+              "virtualPath": "db/Units/building_15.ddf",
+              "lookupKey": "db/units/building_15.ddf",
+              "kind": "zip-member",
+              "physical": "zips/db_155.zip",
+              "marker": "zips/db_155.zip",
+              "member": "db/Units/building_15.ddf",
+              "bytes": 4647,
+              "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+              "archivePriority": 2,
+              "hookSubstitution": false,
+              "memberTime": 1701955086,
+              "initialRecordTime": 1701955086,
+              "initialRecordSize": 4647,
+              "insertionPriority": 474,
+              "profile": {
+                "game": "ee2",
+                "up16Enabled": true,
+                "enhancedTerrainRequested": false,
+                "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+              }
+            },
+            "declaration": "UnitType NoProduceBuilding"
+          },
+          "undertextureProperties": []
+        },
+        {
+          "name": "BareBoneBuilding",
+          "source": {
+            "archive": "zips/db_155.zip",
+            "entry": "db/Units/building_15.ddf",
+            "virtual_path": "db/Units/building_15.ddf",
+            "line": 5,
+            "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+            "origin": {
+              "virtualPath": "db/Units/building_15.ddf",
+              "lookupKey": "db/units/building_15.ddf",
+              "kind": "zip-member",
+              "physical": "zips/db_155.zip",
+              "marker": "zips/db_155.zip",
+              "member": "db/Units/building_15.ddf",
+              "bytes": 4647,
+              "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+              "archivePriority": 2,
+              "hookSubstitution": false,
+              "memberTime": 1701955086,
+              "initialRecordTime": 1701955086,
+              "initialRecordSize": 4647,
+              "insertionPriority": 474,
+              "profile": {
+                "game": "ee2",
+                "up16Enabled": true,
+                "enhancedTerrainRequested": false,
+                "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+              }
+            },
+            "declaration": "UnitType BareBoneBuilding"
+          },
+          "undertextureProperties": []
+        }
+      ],
+      "inheritedDimensionProperties": {
+        "sizex": {
+          "value": 1.0,
+          "source": {
+            "archive": "zips/db_155.zip",
+            "entry": "db/Units/air_defense_15.ddf",
+            "virtual_path": "db/Units/air_defense_15.ddf",
+            "line": 5,
+            "sha256": "b1fa5637d7cca8f6fb390b57f2ad71085c402b9d0fecb18cce86e326a1eebeaa",
+            "origin": {
+              "virtualPath": "db/Units/air_defense_15.ddf",
+              "lookupKey": "db/units/air_defense_15.ddf",
+              "kind": "zip-member",
+              "physical": "zips/db_155.zip",
+              "marker": "zips/db_155.zip",
+              "member": "db/Units/air_defense_15.ddf",
+              "bytes": 3682,
+              "sha256": "b1fa5637d7cca8f6fb390b57f2ad71085c402b9d0fecb18cce86e326a1eebeaa",
+              "archivePriority": 2,
+              "hookSubstitution": false,
+              "memberTime": 1729702860,
+              "initialRecordTime": 1729702860,
+              "initialRecordSize": 3682,
+              "insertionPriority": 557,
+              "profile": {
+                "game": "ee2",
+                "up16Enabled": true,
+                "enhancedTerrainRequested": false,
+                "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+              }
+            },
+            "declaration": "UnitType AirDefense"
+          }
+        },
+        "sizey": {
+          "value": 1.0,
+          "source": {
+            "archive": "zips/db_155.zip",
+            "entry": "db/Units/air_defense_15.ddf",
+            "virtual_path": "db/Units/air_defense_15.ddf",
+            "line": 5,
+            "sha256": "b1fa5637d7cca8f6fb390b57f2ad71085c402b9d0fecb18cce86e326a1eebeaa",
+            "origin": {
+              "virtualPath": "db/Units/air_defense_15.ddf",
+              "lookupKey": "db/units/air_defense_15.ddf",
+              "kind": "zip-member",
+              "physical": "zips/db_155.zip",
+              "marker": "zips/db_155.zip",
+              "member": "db/Units/air_defense_15.ddf",
+              "bytes": 3682,
+              "sha256": "b1fa5637d7cca8f6fb390b57f2ad71085c402b9d0fecb18cce86e326a1eebeaa",
+              "archivePriority": 2,
+              "hookSubstitution": false,
+              "memberTime": 1729702860,
+              "initialRecordTime": 1729702860,
+              "initialRecordSize": 3682,
+              "insertionPriority": 557,
+              "profile": {
+                "game": "ee2",
+                "up16Enabled": true,
+                "enhancedTerrainRequested": false,
+                "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+              }
+            },
+            "declaration": "UnitType AirDefense"
+          }
+        },
+        "footprintsizex": {
+          "value": 2.5,
+          "source": {
+            "archive": "zips/db_155.zip",
+            "entry": "db/Units/air_defense_15.ddf",
+            "virtual_path": "db/Units/air_defense_15.ddf",
+            "line": 5,
+            "sha256": "b1fa5637d7cca8f6fb390b57f2ad71085c402b9d0fecb18cce86e326a1eebeaa",
+            "origin": {
+              "virtualPath": "db/Units/air_defense_15.ddf",
+              "lookupKey": "db/units/air_defense_15.ddf",
+              "kind": "zip-member",
+              "physical": "zips/db_155.zip",
+              "marker": "zips/db_155.zip",
+              "member": "db/Units/air_defense_15.ddf",
+              "bytes": 3682,
+              "sha256": "b1fa5637d7cca8f6fb390b57f2ad71085c402b9d0fecb18cce86e326a1eebeaa",
+              "archivePriority": 2,
+              "hookSubstitution": false,
+              "memberTime": 1729702860,
+              "initialRecordTime": 1729702860,
+              "initialRecordSize": 3682,
+              "insertionPriority": 557,
+              "profile": {
+                "game": "ee2",
+                "up16Enabled": true,
+                "enhancedTerrainRequested": false,
+                "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+              }
+            },
+            "declaration": "UnitType AirDefense"
+          }
+        },
+        "footprintsizey": {
+          "value": 2.5,
+          "source": {
+            "archive": "zips/db_155.zip",
+            "entry": "db/Units/air_defense_15.ddf",
+            "virtual_path": "db/Units/air_defense_15.ddf",
+            "line": 5,
+            "sha256": "b1fa5637d7cca8f6fb390b57f2ad71085c402b9d0fecb18cce86e326a1eebeaa",
+            "origin": {
+              "virtualPath": "db/Units/air_defense_15.ddf",
+              "lookupKey": "db/units/air_defense_15.ddf",
+              "kind": "zip-member",
+              "physical": "zips/db_155.zip",
+              "marker": "zips/db_155.zip",
+              "member": "db/Units/air_defense_15.ddf",
+              "bytes": 3682,
+              "sha256": "b1fa5637d7cca8f6fb390b57f2ad71085c402b9d0fecb18cce86e326a1eebeaa",
+              "archivePriority": 2,
+              "hookSubstitution": false,
+              "memberTime": 1729702860,
+              "initialRecordTime": 1729702860,
+              "initialRecordSize": 3682,
+              "insertionPriority": 557,
+              "profile": {
+                "game": "ee2",
+                "up16Enabled": true,
+                "enhancedTerrainRequested": false,
+                "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+              }
+            },
+            "declaration": "UnitType AirDefense"
+          }
+        }
+      },
+      "counterfactualSizingOnly": {
+        "note": "The size fallback is computable but must not create an unbound Decal child.",
+        "raw": {
+          "size": [
+            1.0,
+            1.0
+          ],
+          "footprint": [
+            2.5,
+            2.5
+          ],
+          "underSize": [
+            0,
+            0
+          ],
+          "underOffset": [
+            0,
+            0
+          ],
+          "centerOffset": [
+            0,
+            0
+          ],
+          "footprintType": 2
+        },
+        "stored": {
+          "mode": "footprint",
+          "width": 3.535533905029297,
+          "depth": 3.535533905029297,
+          "offsetX": 1.0606601238250732,
+          "offsetY": 1.0606601238250732,
+          "bodySize": [
+            1.4142135381698608,
+            1.4142135381698608
+          ],
+          "footprintSize": [
+            3.535533905029297,
+            3.535533905029297
+          ],
+          "underSize": [
+            0.0,
+            0.0
+          ],
+          "nativeOffset": [
+            -1.0606601238250732,
+            -1.0606601238250732
+          ]
+        }
+      },
+      "intervals": [
+        {
+          "runtimeEpoch": 9,
+          "until": 12,
+          "sourceVisual": "AirDefense",
+          "modelChain": [
+            {
+              "name": "AirDefense",
+              "source": {
+                "archive": "zips/db_155.zip",
+                "entry": "db/Units/air_defense_15.ddf",
+                "virtual_path": "db/Units/air_defense_15.ddf",
+                "line": 73,
+                "sha256": "b1fa5637d7cca8f6fb390b57f2ad71085c402b9d0fecb18cce86e326a1eebeaa",
+                "origin": {
+                  "virtualPath": "db/Units/air_defense_15.ddf",
+                  "lookupKey": "db/units/air_defense_15.ddf",
+                  "kind": "zip-member",
+                  "physical": "zips/db_155.zip",
+                  "marker": "zips/db_155.zip",
+                  "member": "db/Units/air_defense_15.ddf",
+                  "bytes": 3682,
+                  "sha256": "b1fa5637d7cca8f6fb390b57f2ad71085c402b9d0fecb18cce86e326a1eebeaa",
+                  "archivePriority": 2,
+                  "hookSubstitution": false,
+                  "memberTime": 1729702860,
+                  "initialRecordTime": 1729702860,
+                  "initialRecordSize": 3682,
+                  "insertionPriority": 557,
+                  "profile": {
+                    "game": "ee2",
+                    "up16Enabled": true,
+                    "enhancedTerrainRequested": false,
+                    "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                    "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                    "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+                  }
+                },
+                "declaration": "UnitModel AirDefense"
+              },
+              "declaredChildren": [
+                "MachineGunTracer",
+                "TheMuzzleSmokeEffect",
+                "MediumGlow",
+                "ExplSelectorBuild_Tiny"
+              ]
+            },
+            {
+              "name": "BuildingWithTurrets",
+              "source": {
+                "archive": "zips/db_155.zip",
+                "entry": "db/Units/building_15.ddf",
+                "virtual_path": "db/Units/building_15.ddf",
+                "line": 137,
+                "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+                "origin": {
+                  "virtualPath": "db/Units/building_15.ddf",
+                  "lookupKey": "db/units/building_15.ddf",
+                  "kind": "zip-member",
+                  "physical": "zips/db_155.zip",
+                  "marker": "zips/db_155.zip",
+                  "member": "db/Units/building_15.ddf",
+                  "bytes": 4647,
+                  "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+                  "archivePriority": 2,
+                  "hookSubstitution": false,
+                  "memberTime": 1701955086,
+                  "initialRecordTime": 1701955086,
+                  "initialRecordSize": 4647,
+                  "insertionPriority": 474,
+                  "profile": {
+                    "game": "ee2",
+                    "up16Enabled": true,
+                    "enhancedTerrainRequested": false,
+                    "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                    "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                    "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+                  }
+                },
+                "declaration": "UnitModel BuildingWithTurrets"
+              },
+              "declaredChildren": [
+                "BuildingWithTurretsShadow",
+                "TheRallyFlag"
+              ]
+            },
+            {
+              "name": "SimpleBuilding",
+              "source": {
+                "archive": "zips/db_155.zip",
+                "entry": "db/Units/building_15.ddf",
+                "virtual_path": "db/Units/building_15.ddf",
+                "line": 106,
+                "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+                "origin": {
+                  "virtualPath": "db/Units/building_15.ddf",
+                  "lookupKey": "db/units/building_15.ddf",
+                  "kind": "zip-member",
+                  "physical": "zips/db_155.zip",
+                  "marker": "zips/db_155.zip",
+                  "member": "db/Units/building_15.ddf",
+                  "bytes": 4647,
+                  "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+                  "archivePriority": 2,
+                  "hookSubstitution": false,
+                  "memberTime": 1701955086,
+                  "initialRecordTime": 1701955086,
+                  "initialRecordSize": 4647,
+                  "insertionPriority": 474,
+                  "profile": {
+                    "game": "ee2",
+                    "up16Enabled": true,
+                    "enhancedTerrainRequested": false,
+                    "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                    "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                    "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+                  }
+                },
+                "declaration": "UnitModel SimpleBuilding"
+              },
+              "declaredChildren": [
+                "TheCollapseEffect",
+                "TheHealthBar",
+                "TheResistanceBar",
+                "SelectCircleBig",
+                "TheAmbientPlacer",
+                "SinkRubbles",
+                "TheBuildEffect",
+                "TheVisualFlag",
+                "TheBldDamageEffect"
+              ]
+            }
+          ],
+          "conservativeInheritedChildren": [
+            "BuildingWithTurretsShadow",
+            "ExplSelectorBuild_Tiny",
+            "MachineGunTracer",
+            "MediumGlow",
+            "SelectCircleBig",
+            "SinkRubbles",
+            "TheAmbientPlacer",
+            "TheBldDamageEffect",
+            "TheBuildEffect",
+            "TheCollapseEffect",
+            "TheHealthBar",
+            "TheMuzzleSmokeEffect",
+            "TheRallyFlag",
+            "TheResistanceBar",
+            "TheVisualFlag"
+          ],
+          "transitiveChildCount": 15,
+          "underChildren": []
+        },
+        {
+          "runtimeEpoch": 12,
+          "until": 14,
+          "sourceVisual": "AirDefense_13",
+          "modelChain": [
+            {
+              "name": "AirDefense_13",
+              "source": {
+                "archive": "zips/db_155.zip",
+                "entry": "db/Units/air_defense_15.ddf",
+                "virtual_path": "db/Units/air_defense_15.ddf",
+                "line": 86,
+                "sha256": "b1fa5637d7cca8f6fb390b57f2ad71085c402b9d0fecb18cce86e326a1eebeaa",
+                "origin": {
+                  "virtualPath": "db/Units/air_defense_15.ddf",
+                  "lookupKey": "db/units/air_defense_15.ddf",
+                  "kind": "zip-member",
+                  "physical": "zips/db_155.zip",
+                  "marker": "zips/db_155.zip",
+                  "member": "db/Units/air_defense_15.ddf",
+                  "bytes": 3682,
+                  "sha256": "b1fa5637d7cca8f6fb390b57f2ad71085c402b9d0fecb18cce86e326a1eebeaa",
+                  "archivePriority": 2,
+                  "hookSubstitution": false,
+                  "memberTime": 1729702860,
+                  "initialRecordTime": 1729702860,
+                  "initialRecordSize": 3682,
+                  "insertionPriority": 557,
+                  "profile": {
+                    "game": "ee2",
+                    "up16Enabled": true,
+                    "enhancedTerrainRequested": false,
+                    "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                    "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                    "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+                  }
+                },
+                "declaration": "UnitModel AirDefense_13"
+              },
+              "declaredChildren": [
+                "MediumGlow",
+                "ExplSelectorBuild_Tiny"
+              ]
+            },
+            {
+              "name": "BuildingWithTurrets",
+              "source": {
+                "archive": "zips/db_155.zip",
+                "entry": "db/Units/building_15.ddf",
+                "virtual_path": "db/Units/building_15.ddf",
+                "line": 137,
+                "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+                "origin": {
+                  "virtualPath": "db/Units/building_15.ddf",
+                  "lookupKey": "db/units/building_15.ddf",
+                  "kind": "zip-member",
+                  "physical": "zips/db_155.zip",
+                  "marker": "zips/db_155.zip",
+                  "member": "db/Units/building_15.ddf",
+                  "bytes": 4647,
+                  "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+                  "archivePriority": 2,
+                  "hookSubstitution": false,
+                  "memberTime": 1701955086,
+                  "initialRecordTime": 1701955086,
+                  "initialRecordSize": 4647,
+                  "insertionPriority": 474,
+                  "profile": {
+                    "game": "ee2",
+                    "up16Enabled": true,
+                    "enhancedTerrainRequested": false,
+                    "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                    "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                    "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+                  }
+                },
+                "declaration": "UnitModel BuildingWithTurrets"
+              },
+              "declaredChildren": [
+                "BuildingWithTurretsShadow",
+                "TheRallyFlag"
+              ]
+            },
+            {
+              "name": "SimpleBuilding",
+              "source": {
+                "archive": "zips/db_155.zip",
+                "entry": "db/Units/building_15.ddf",
+                "virtual_path": "db/Units/building_15.ddf",
+                "line": 106,
+                "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+                "origin": {
+                  "virtualPath": "db/Units/building_15.ddf",
+                  "lookupKey": "db/units/building_15.ddf",
+                  "kind": "zip-member",
+                  "physical": "zips/db_155.zip",
+                  "marker": "zips/db_155.zip",
+                  "member": "db/Units/building_15.ddf",
+                  "bytes": 4647,
+                  "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+                  "archivePriority": 2,
+                  "hookSubstitution": false,
+                  "memberTime": 1701955086,
+                  "initialRecordTime": 1701955086,
+                  "initialRecordSize": 4647,
+                  "insertionPriority": 474,
+                  "profile": {
+                    "game": "ee2",
+                    "up16Enabled": true,
+                    "enhancedTerrainRequested": false,
+                    "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                    "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                    "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+                  }
+                },
+                "declaration": "UnitModel SimpleBuilding"
+              },
+              "declaredChildren": [
+                "TheCollapseEffect",
+                "TheHealthBar",
+                "TheResistanceBar",
+                "SelectCircleBig",
+                "TheAmbientPlacer",
+                "SinkRubbles",
+                "TheBuildEffect",
+                "TheVisualFlag",
+                "TheBldDamageEffect"
+              ]
+            }
+          ],
+          "conservativeInheritedChildren": [
+            "BuildingWithTurretsShadow",
+            "ExplSelectorBuild_Tiny",
+            "MediumGlow",
+            "SelectCircleBig",
+            "SinkRubbles",
+            "TheAmbientPlacer",
+            "TheBldDamageEffect",
+            "TheBuildEffect",
+            "TheCollapseEffect",
+            "TheHealthBar",
+            "TheRallyFlag",
+            "TheResistanceBar",
+            "TheVisualFlag"
+          ],
+          "transitiveChildCount": 13,
+          "underChildren": []
+        },
+        {
+          "runtimeEpoch": 14,
+          "until": 15,
+          "sourceVisual": "AirDefense_15",
+          "modelChain": [
+            {
+              "name": "AirDefense_15",
+              "source": {
+                "archive": "zips/db_155.zip",
+                "entry": "db/Units/air_defense_15.ddf",
+                "virtual_path": "db/Units/air_defense_15.ddf",
+                "line": 99,
+                "sha256": "b1fa5637d7cca8f6fb390b57f2ad71085c402b9d0fecb18cce86e326a1eebeaa",
+                "origin": {
+                  "virtualPath": "db/Units/air_defense_15.ddf",
+                  "lookupKey": "db/units/air_defense_15.ddf",
+                  "kind": "zip-member",
+                  "physical": "zips/db_155.zip",
+                  "marker": "zips/db_155.zip",
+                  "member": "db/Units/air_defense_15.ddf",
+                  "bytes": 3682,
+                  "sha256": "b1fa5637d7cca8f6fb390b57f2ad71085c402b9d0fecb18cce86e326a1eebeaa",
+                  "archivePriority": 2,
+                  "hookSubstitution": false,
+                  "memberTime": 1729702860,
+                  "initialRecordTime": 1729702860,
+                  "initialRecordSize": 3682,
+                  "insertionPriority": 557,
+                  "profile": {
+                    "game": "ee2",
+                    "up16Enabled": true,
+                    "enhancedTerrainRequested": false,
+                    "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                    "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                    "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+                  }
+                },
+                "declaration": "UnitModel AirDefense_15"
+              },
+              "declaredChildren": [
+                "MediumGlow",
+                "ExplSelectorBuild_Tiny",
+                "Beam_Herc02"
+              ]
+            },
+            {
+              "name": "BuildingWithTurrets",
+              "source": {
+                "archive": "zips/db_155.zip",
+                "entry": "db/Units/building_15.ddf",
+                "virtual_path": "db/Units/building_15.ddf",
+                "line": 137,
+                "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+                "origin": {
+                  "virtualPath": "db/Units/building_15.ddf",
+                  "lookupKey": "db/units/building_15.ddf",
+                  "kind": "zip-member",
+                  "physical": "zips/db_155.zip",
+                  "marker": "zips/db_155.zip",
+                  "member": "db/Units/building_15.ddf",
+                  "bytes": 4647,
+                  "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+                  "archivePriority": 2,
+                  "hookSubstitution": false,
+                  "memberTime": 1701955086,
+                  "initialRecordTime": 1701955086,
+                  "initialRecordSize": 4647,
+                  "insertionPriority": 474,
+                  "profile": {
+                    "game": "ee2",
+                    "up16Enabled": true,
+                    "enhancedTerrainRequested": false,
+                    "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                    "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                    "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+                  }
+                },
+                "declaration": "UnitModel BuildingWithTurrets"
+              },
+              "declaredChildren": [
+                "BuildingWithTurretsShadow",
+                "TheRallyFlag"
+              ]
+            },
+            {
+              "name": "SimpleBuilding",
+              "source": {
+                "archive": "zips/db_155.zip",
+                "entry": "db/Units/building_15.ddf",
+                "virtual_path": "db/Units/building_15.ddf",
+                "line": 106,
+                "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+                "origin": {
+                  "virtualPath": "db/Units/building_15.ddf",
+                  "lookupKey": "db/units/building_15.ddf",
+                  "kind": "zip-member",
+                  "physical": "zips/db_155.zip",
+                  "marker": "zips/db_155.zip",
+                  "member": "db/Units/building_15.ddf",
+                  "bytes": 4647,
+                  "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+                  "archivePriority": 2,
+                  "hookSubstitution": false,
+                  "memberTime": 1701955086,
+                  "initialRecordTime": 1701955086,
+                  "initialRecordSize": 4647,
+                  "insertionPriority": 474,
+                  "profile": {
+                    "game": "ee2",
+                    "up16Enabled": true,
+                    "enhancedTerrainRequested": false,
+                    "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                    "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                    "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+                  }
+                },
+                "declaration": "UnitModel SimpleBuilding"
+              },
+              "declaredChildren": [
+                "TheCollapseEffect",
+                "TheHealthBar",
+                "TheResistanceBar",
+                "SelectCircleBig",
+                "TheAmbientPlacer",
+                "SinkRubbles",
+                "TheBuildEffect",
+                "TheVisualFlag",
+                "TheBldDamageEffect"
+              ]
+            }
+          ],
+          "conservativeInheritedChildren": [
+            "Beam_Herc02",
+            "BuildingWithTurretsShadow",
+            "ExplSelectorBuild_Tiny",
+            "MediumGlow",
+            "SelectCircleBig",
+            "SinkRubbles",
+            "TheAmbientPlacer",
+            "TheBldDamageEffect",
+            "TheBuildEffect",
+            "TheCollapseEffect",
+            "TheHealthBar",
+            "TheRallyFlag",
+            "TheResistanceBar",
+            "TheVisualFlag"
+          ],
+          "transitiveChildCount": 14,
+          "underChildren": []
+        }
+      ]
+    },
+    {
+      "id": 60,
+      "assetKind": 0,
+      "sourceFamily": "CoastalDefense",
+      "conclusion": "no-native-Under-decal-child",
+      "unitChain": [
+        {
+          "name": "CoastalDefense",
+          "source": {
+            "archive": "zips/db.zip",
+            "entry": "db/Units/coastal_defense.ddf",
+            "virtual_path": "db/Units/coastal_defense.ddf",
+            "line": 5,
+            "sha256": "ae3ee9795834a5f0cb14713482782bc1f7dd99ee9d04f26ba272f37f35051409",
+            "origin": {
+              "virtualPath": "db/Units/coastal_defense.ddf",
+              "lookupKey": "db/units/coastal_defense.ddf",
+              "kind": "zip-member",
+              "physical": "zips/db.zip",
+              "marker": "zips/db.zip",
+              "member": "db/Units/coastal_defense.ddf",
+              "bytes": 7141,
+              "sha256": "ae3ee9795834a5f0cb14713482782bc1f7dd99ee9d04f26ba272f37f35051409",
+              "archivePriority": 0,
+              "hookSubstitution": false,
+              "memberTime": 1127900910,
+              "initialRecordTime": 1127900910,
+              "initialRecordSize": 7141,
+              "insertionPriority": 274,
+              "profile": {
+                "game": "ee2",
+                "up16Enabled": true,
+                "enhancedTerrainRequested": false,
+                "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+              }
+            },
+            "declaration": "UnitType CoastalDefense"
+          },
+          "undertextureProperties": []
+        },
+        {
+          "name": "NoProduceBuilding",
+          "source": {
+            "archive": "zips/db_155.zip",
+            "entry": "db/Units/building_15.ddf",
+            "virtual_path": "db/Units/building_15.ddf",
+            "line": 20,
+            "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+            "origin": {
+              "virtualPath": "db/Units/building_15.ddf",
+              "lookupKey": "db/units/building_15.ddf",
+              "kind": "zip-member",
+              "physical": "zips/db_155.zip",
+              "marker": "zips/db_155.zip",
+              "member": "db/Units/building_15.ddf",
+              "bytes": 4647,
+              "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+              "archivePriority": 2,
+              "hookSubstitution": false,
+              "memberTime": 1701955086,
+              "initialRecordTime": 1701955086,
+              "initialRecordSize": 4647,
+              "insertionPriority": 474,
+              "profile": {
+                "game": "ee2",
+                "up16Enabled": true,
+                "enhancedTerrainRequested": false,
+                "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+              }
+            },
+            "declaration": "UnitType NoProduceBuilding"
+          },
+          "undertextureProperties": []
+        },
+        {
+          "name": "BareBoneBuilding",
+          "source": {
+            "archive": "zips/db_155.zip",
+            "entry": "db/Units/building_15.ddf",
+            "virtual_path": "db/Units/building_15.ddf",
+            "line": 5,
+            "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+            "origin": {
+              "virtualPath": "db/Units/building_15.ddf",
+              "lookupKey": "db/units/building_15.ddf",
+              "kind": "zip-member",
+              "physical": "zips/db_155.zip",
+              "marker": "zips/db_155.zip",
+              "member": "db/Units/building_15.ddf",
+              "bytes": 4647,
+              "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+              "archivePriority": 2,
+              "hookSubstitution": false,
+              "memberTime": 1701955086,
+              "initialRecordTime": 1701955086,
+              "initialRecordSize": 4647,
+              "insertionPriority": 474,
+              "profile": {
+                "game": "ee2",
+                "up16Enabled": true,
+                "enhancedTerrainRequested": false,
+                "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+              }
+            },
+            "declaration": "UnitType BareBoneBuilding"
+          },
+          "undertextureProperties": []
+        }
+      ],
+      "inheritedDimensionProperties": {
+        "sizex": {
+          "value": 1.0,
+          "source": {
+            "archive": "zips/db.zip",
+            "entry": "db/Units/coastal_defense.ddf",
+            "virtual_path": "db/Units/coastal_defense.ddf",
+            "line": 5,
+            "sha256": "ae3ee9795834a5f0cb14713482782bc1f7dd99ee9d04f26ba272f37f35051409",
+            "origin": {
+              "virtualPath": "db/Units/coastal_defense.ddf",
+              "lookupKey": "db/units/coastal_defense.ddf",
+              "kind": "zip-member",
+              "physical": "zips/db.zip",
+              "marker": "zips/db.zip",
+              "member": "db/Units/coastal_defense.ddf",
+              "bytes": 7141,
+              "sha256": "ae3ee9795834a5f0cb14713482782bc1f7dd99ee9d04f26ba272f37f35051409",
+              "archivePriority": 0,
+              "hookSubstitution": false,
+              "memberTime": 1127900910,
+              "initialRecordTime": 1127900910,
+              "initialRecordSize": 7141,
+              "insertionPriority": 274,
+              "profile": {
+                "game": "ee2",
+                "up16Enabled": true,
+                "enhancedTerrainRequested": false,
+                "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+              }
+            },
+            "declaration": "UnitType CoastalDefense"
+          }
+        },
+        "sizey": {
+          "value": 1.0,
+          "source": {
+            "archive": "zips/db.zip",
+            "entry": "db/Units/coastal_defense.ddf",
+            "virtual_path": "db/Units/coastal_defense.ddf",
+            "line": 5,
+            "sha256": "ae3ee9795834a5f0cb14713482782bc1f7dd99ee9d04f26ba272f37f35051409",
+            "origin": {
+              "virtualPath": "db/Units/coastal_defense.ddf",
+              "lookupKey": "db/units/coastal_defense.ddf",
+              "kind": "zip-member",
+              "physical": "zips/db.zip",
+              "marker": "zips/db.zip",
+              "member": "db/Units/coastal_defense.ddf",
+              "bytes": 7141,
+              "sha256": "ae3ee9795834a5f0cb14713482782bc1f7dd99ee9d04f26ba272f37f35051409",
+              "archivePriority": 0,
+              "hookSubstitution": false,
+              "memberTime": 1127900910,
+              "initialRecordTime": 1127900910,
+              "initialRecordSize": 7141,
+              "insertionPriority": 274,
+              "profile": {
+                "game": "ee2",
+                "up16Enabled": true,
+                "enhancedTerrainRequested": false,
+                "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+              }
+            },
+            "declaration": "UnitType CoastalDefense"
+          }
+        },
+        "footprintsizex": {
+          "value": 1.0,
+          "source": {
+            "archive": "zips/db.zip",
+            "entry": "db/Units/coastal_defense.ddf",
+            "virtual_path": "db/Units/coastal_defense.ddf",
+            "line": 5,
+            "sha256": "ae3ee9795834a5f0cb14713482782bc1f7dd99ee9d04f26ba272f37f35051409",
+            "origin": {
+              "virtualPath": "db/Units/coastal_defense.ddf",
+              "lookupKey": "db/units/coastal_defense.ddf",
+              "kind": "zip-member",
+              "physical": "zips/db.zip",
+              "marker": "zips/db.zip",
+              "member": "db/Units/coastal_defense.ddf",
+              "bytes": 7141,
+              "sha256": "ae3ee9795834a5f0cb14713482782bc1f7dd99ee9d04f26ba272f37f35051409",
+              "archivePriority": 0,
+              "hookSubstitution": false,
+              "memberTime": 1127900910,
+              "initialRecordTime": 1127900910,
+              "initialRecordSize": 7141,
+              "insertionPriority": 274,
+              "profile": {
+                "game": "ee2",
+                "up16Enabled": true,
+                "enhancedTerrainRequested": false,
+                "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+              }
+            },
+            "declaration": "UnitType CoastalDefense"
+          }
+        },
+        "footprintsizey": {
+          "value": 1.0,
+          "source": {
+            "archive": "zips/db.zip",
+            "entry": "db/Units/coastal_defense.ddf",
+            "virtual_path": "db/Units/coastal_defense.ddf",
+            "line": 5,
+            "sha256": "ae3ee9795834a5f0cb14713482782bc1f7dd99ee9d04f26ba272f37f35051409",
+            "origin": {
+              "virtualPath": "db/Units/coastal_defense.ddf",
+              "lookupKey": "db/units/coastal_defense.ddf",
+              "kind": "zip-member",
+              "physical": "zips/db.zip",
+              "marker": "zips/db.zip",
+              "member": "db/Units/coastal_defense.ddf",
+              "bytes": 7141,
+              "sha256": "ae3ee9795834a5f0cb14713482782bc1f7dd99ee9d04f26ba272f37f35051409",
+              "archivePriority": 0,
+              "hookSubstitution": false,
+              "memberTime": 1127900910,
+              "initialRecordTime": 1127900910,
+              "initialRecordSize": 7141,
+              "insertionPriority": 274,
+              "profile": {
+                "game": "ee2",
+                "up16Enabled": true,
+                "enhancedTerrainRequested": false,
+                "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+              }
+            },
+            "declaration": "UnitType CoastalDefense"
+          }
+        }
+      },
+      "counterfactualSizingOnly": {
+        "note": "The size fallback is computable but must not create an unbound Decal child.",
+        "raw": {
+          "size": [
+            1.0,
+            1.0
+          ],
+          "footprint": [
+            1.0,
+            1.0
+          ],
+          "underSize": [
+            0,
+            0
+          ],
+          "underOffset": [
+            0,
+            0
+          ],
+          "centerOffset": [
+            0,
+            0
+          ],
+          "footprintType": 2
+        },
+        "stored": {
+          "mode": "footprint",
+          "width": 1.4142135381698608,
+          "depth": 1.4142135381698608,
+          "offsetX": -0.0,
+          "offsetY": -0.0,
+          "bodySize": [
+            1.4142135381698608,
+            1.4142135381698608
+          ],
+          "footprintSize": [
+            1.4142135381698608,
+            1.4142135381698608
+          ],
+          "underSize": [
+            0.0,
+            0.0
+          ],
+          "nativeOffset": [
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "intervals": [
+        {
+          "runtimeEpoch": 1,
+          "until": 4,
+          "sourceVisual": "CoastalDefense",
+          "modelChain": [
+            {
+              "name": "CoastalDefense",
+              "source": {
+                "archive": "zips/db.zip",
+                "entry": "db/Units/coastal_defense.ddf",
+                "virtual_path": "db/Units/coastal_defense.ddf",
+                "line": 91,
+                "sha256": "ae3ee9795834a5f0cb14713482782bc1f7dd99ee9d04f26ba272f37f35051409",
+                "origin": {
+                  "virtualPath": "db/Units/coastal_defense.ddf",
+                  "lookupKey": "db/units/coastal_defense.ddf",
+                  "kind": "zip-member",
+                  "physical": "zips/db.zip",
+                  "marker": "zips/db.zip",
+                  "member": "db/Units/coastal_defense.ddf",
+                  "bytes": 7141,
+                  "sha256": "ae3ee9795834a5f0cb14713482782bc1f7dd99ee9d04f26ba272f37f35051409",
+                  "archivePriority": 0,
+                  "hookSubstitution": false,
+                  "memberTime": 1127900910,
+                  "initialRecordTime": 1127900910,
+                  "initialRecordSize": 7141,
+                  "insertionPriority": 274,
+                  "profile": {
+                    "game": "ee2",
+                    "up16Enabled": true,
+                    "enhancedTerrainRequested": false,
+                    "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                    "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                    "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+                  }
+                },
+                "declaration": "UnitModel CoastalDefense"
+              },
+              "declaredChildren": [
+                "BuildingWithTurretsShadow",
+                "MediumGlow",
+                "ExplSelectorBuild_Tiny"
+              ]
+            },
+            {
+              "name": "SimpleBuilding",
+              "source": {
+                "archive": "zips/db_155.zip",
+                "entry": "db/Units/building_15.ddf",
+                "virtual_path": "db/Units/building_15.ddf",
+                "line": 106,
+                "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+                "origin": {
+                  "virtualPath": "db/Units/building_15.ddf",
+                  "lookupKey": "db/units/building_15.ddf",
+                  "kind": "zip-member",
+                  "physical": "zips/db_155.zip",
+                  "marker": "zips/db_155.zip",
+                  "member": "db/Units/building_15.ddf",
+                  "bytes": 4647,
+                  "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+                  "archivePriority": 2,
+                  "hookSubstitution": false,
+                  "memberTime": 1701955086,
+                  "initialRecordTime": 1701955086,
+                  "initialRecordSize": 4647,
+                  "insertionPriority": 474,
+                  "profile": {
+                    "game": "ee2",
+                    "up16Enabled": true,
+                    "enhancedTerrainRequested": false,
+                    "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                    "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                    "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+                  }
+                },
+                "declaration": "UnitModel SimpleBuilding"
+              },
+              "declaredChildren": [
+                "TheCollapseEffect",
+                "TheHealthBar",
+                "TheResistanceBar",
+                "SelectCircleBig",
+                "TheAmbientPlacer",
+                "SinkRubbles",
+                "TheBuildEffect",
+                "TheVisualFlag",
+                "TheBldDamageEffect"
+              ]
+            }
+          ],
+          "conservativeInheritedChildren": [
+            "BuildingWithTurretsShadow",
+            "ExplSelectorBuild_Tiny",
+            "MediumGlow",
+            "SelectCircleBig",
+            "SinkRubbles",
+            "TheAmbientPlacer",
+            "TheBldDamageEffect",
+            "TheBuildEffect",
+            "TheCollapseEffect",
+            "TheHealthBar",
+            "TheResistanceBar",
+            "TheVisualFlag"
+          ],
+          "transitiveChildCount": 12,
+          "underChildren": []
+        },
+        {
+          "runtimeEpoch": 4,
+          "until": 7,
+          "sourceVisual": "CoastalDefense_5",
+          "modelChain": [
+            {
+              "name": "CoastalDefense_5",
+              "source": {
+                "archive": "zips/db.zip",
+                "entry": "db/Units/coastal_defense.ddf",
+                "virtual_path": "db/Units/coastal_defense.ddf",
+                "line": 115,
+                "sha256": "ae3ee9795834a5f0cb14713482782bc1f7dd99ee9d04f26ba272f37f35051409",
+                "origin": {
+                  "virtualPath": "db/Units/coastal_defense.ddf",
+                  "lookupKey": "db/units/coastal_defense.ddf",
+                  "kind": "zip-member",
+                  "physical": "zips/db.zip",
+                  "marker": "zips/db.zip",
+                  "member": "db/Units/coastal_defense.ddf",
+                  "bytes": 7141,
+                  "sha256": "ae3ee9795834a5f0cb14713482782bc1f7dd99ee9d04f26ba272f37f35051409",
+                  "archivePriority": 0,
+                  "hookSubstitution": false,
+                  "memberTime": 1127900910,
+                  "initialRecordTime": 1127900910,
+                  "initialRecordSize": 7141,
+                  "insertionPriority": 274,
+                  "profile": {
+                    "game": "ee2",
+                    "up16Enabled": true,
+                    "enhancedTerrainRequested": false,
+                    "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                    "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                    "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+                  }
+                },
+                "declaration": "UnitModel CoastalDefense_5"
+              },
+              "declaredChildren": [
+                "BuildingWithTurretsShadow",
+                "MediumGlow",
+                "ExplSelectorBuild_Tiny"
+              ]
+            },
+            {
+              "name": "SimpleBuilding",
+              "source": {
+                "archive": "zips/db_155.zip",
+                "entry": "db/Units/building_15.ddf",
+                "virtual_path": "db/Units/building_15.ddf",
+                "line": 106,
+                "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+                "origin": {
+                  "virtualPath": "db/Units/building_15.ddf",
+                  "lookupKey": "db/units/building_15.ddf",
+                  "kind": "zip-member",
+                  "physical": "zips/db_155.zip",
+                  "marker": "zips/db_155.zip",
+                  "member": "db/Units/building_15.ddf",
+                  "bytes": 4647,
+                  "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+                  "archivePriority": 2,
+                  "hookSubstitution": false,
+                  "memberTime": 1701955086,
+                  "initialRecordTime": 1701955086,
+                  "initialRecordSize": 4647,
+                  "insertionPriority": 474,
+                  "profile": {
+                    "game": "ee2",
+                    "up16Enabled": true,
+                    "enhancedTerrainRequested": false,
+                    "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                    "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                    "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+                  }
+                },
+                "declaration": "UnitModel SimpleBuilding"
+              },
+              "declaredChildren": [
+                "TheCollapseEffect",
+                "TheHealthBar",
+                "TheResistanceBar",
+                "SelectCircleBig",
+                "TheAmbientPlacer",
+                "SinkRubbles",
+                "TheBuildEffect",
+                "TheVisualFlag",
+                "TheBldDamageEffect"
+              ]
+            }
+          ],
+          "conservativeInheritedChildren": [
+            "BuildingWithTurretsShadow",
+            "ExplSelectorBuild_Tiny",
+            "MediumGlow",
+            "SelectCircleBig",
+            "SinkRubbles",
+            "TheAmbientPlacer",
+            "TheBldDamageEffect",
+            "TheBuildEffect",
+            "TheCollapseEffect",
+            "TheHealthBar",
+            "TheResistanceBar",
+            "TheVisualFlag"
+          ],
+          "transitiveChildCount": 12,
+          "underChildren": []
+        },
+        {
+          "runtimeEpoch": 7,
+          "until": 10,
+          "sourceVisual": "CoastalDefense_8",
+          "modelChain": [
+            {
+              "name": "CoastalDefense_8",
+              "source": {
+                "archive": "zips/db.zip",
+                "entry": "db/Units/coastal_defense.ddf",
+                "virtual_path": "db/Units/coastal_defense.ddf",
+                "line": 150,
+                "sha256": "ae3ee9795834a5f0cb14713482782bc1f7dd99ee9d04f26ba272f37f35051409",
+                "origin": {
+                  "virtualPath": "db/Units/coastal_defense.ddf",
+                  "lookupKey": "db/units/coastal_defense.ddf",
+                  "kind": "zip-member",
+                  "physical": "zips/db.zip",
+                  "marker": "zips/db.zip",
+                  "member": "db/Units/coastal_defense.ddf",
+                  "bytes": 7141,
+                  "sha256": "ae3ee9795834a5f0cb14713482782bc1f7dd99ee9d04f26ba272f37f35051409",
+                  "archivePriority": 0,
+                  "hookSubstitution": false,
+                  "memberTime": 1127900910,
+                  "initialRecordTime": 1127900910,
+                  "initialRecordSize": 7141,
+                  "insertionPriority": 274,
+                  "profile": {
+                    "game": "ee2",
+                    "up16Enabled": true,
+                    "enhancedTerrainRequested": false,
+                    "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                    "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                    "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+                  }
+                },
+                "declaration": "UnitModel CoastalDefense_8"
+              },
+              "declaredChildren": [
+                "BuildingWithTurretsShadow",
+                "MediumGlow",
+                "ExplSelectorBuild_Tiny",
+                "Muzzle_FieldGun"
+              ]
+            },
+            {
+              "name": "SimpleBuilding",
+              "source": {
+                "archive": "zips/db_155.zip",
+                "entry": "db/Units/building_15.ddf",
+                "virtual_path": "db/Units/building_15.ddf",
+                "line": 106,
+                "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+                "origin": {
+                  "virtualPath": "db/Units/building_15.ddf",
+                  "lookupKey": "db/units/building_15.ddf",
+                  "kind": "zip-member",
+                  "physical": "zips/db_155.zip",
+                  "marker": "zips/db_155.zip",
+                  "member": "db/Units/building_15.ddf",
+                  "bytes": 4647,
+                  "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+                  "archivePriority": 2,
+                  "hookSubstitution": false,
+                  "memberTime": 1701955086,
+                  "initialRecordTime": 1701955086,
+                  "initialRecordSize": 4647,
+                  "insertionPriority": 474,
+                  "profile": {
+                    "game": "ee2",
+                    "up16Enabled": true,
+                    "enhancedTerrainRequested": false,
+                    "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                    "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                    "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+                  }
+                },
+                "declaration": "UnitModel SimpleBuilding"
+              },
+              "declaredChildren": [
+                "TheCollapseEffect",
+                "TheHealthBar",
+                "TheResistanceBar",
+                "SelectCircleBig",
+                "TheAmbientPlacer",
+                "SinkRubbles",
+                "TheBuildEffect",
+                "TheVisualFlag",
+                "TheBldDamageEffect"
+              ]
+            }
+          ],
+          "conservativeInheritedChildren": [
+            "BuildingWithTurretsShadow",
+            "ExplSelectorBuild_Tiny",
+            "MediumGlow",
+            "Muzzle_FieldGun",
+            "SelectCircleBig",
+            "SinkRubbles",
+            "TheAmbientPlacer",
+            "TheBldDamageEffect",
+            "TheBuildEffect",
+            "TheCollapseEffect",
+            "TheHealthBar",
+            "TheResistanceBar",
+            "TheVisualFlag"
+          ],
+          "transitiveChildCount": 13,
+          "underChildren": []
+        },
+        {
+          "runtimeEpoch": 10,
+          "until": 13,
+          "sourceVisual": "CoastalDefense_11",
+          "modelChain": [
+            {
+              "name": "CoastalDefense_11",
+              "source": {
+                "archive": "zips/db.zip",
+                "entry": "db/Units/coastal_defense.ddf",
+                "virtual_path": "db/Units/coastal_defense.ddf",
+                "line": 177,
+                "sha256": "ae3ee9795834a5f0cb14713482782bc1f7dd99ee9d04f26ba272f37f35051409",
+                "origin": {
+                  "virtualPath": "db/Units/coastal_defense.ddf",
+                  "lookupKey": "db/units/coastal_defense.ddf",
+                  "kind": "zip-member",
+                  "physical": "zips/db.zip",
+                  "marker": "zips/db.zip",
+                  "member": "db/Units/coastal_defense.ddf",
+                  "bytes": 7141,
+                  "sha256": "ae3ee9795834a5f0cb14713482782bc1f7dd99ee9d04f26ba272f37f35051409",
+                  "archivePriority": 0,
+                  "hookSubstitution": false,
+                  "memberTime": 1127900910,
+                  "initialRecordTime": 1127900910,
+                  "initialRecordSize": 7141,
+                  "insertionPriority": 274,
+                  "profile": {
+                    "game": "ee2",
+                    "up16Enabled": true,
+                    "enhancedTerrainRequested": false,
+                    "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                    "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                    "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+                  }
+                },
+                "declaration": "UnitModel CoastalDefense_11"
+              },
+              "declaredChildren": [
+                "BuildingWithTurretsShadow",
+                "MediumGlow",
+                "ExplSelectorBuild_Tiny",
+                "Muzzle_FieldGun"
+              ]
+            },
+            {
+              "name": "SimpleBuilding",
+              "source": {
+                "archive": "zips/db_155.zip",
+                "entry": "db/Units/building_15.ddf",
+                "virtual_path": "db/Units/building_15.ddf",
+                "line": 106,
+                "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+                "origin": {
+                  "virtualPath": "db/Units/building_15.ddf",
+                  "lookupKey": "db/units/building_15.ddf",
+                  "kind": "zip-member",
+                  "physical": "zips/db_155.zip",
+                  "marker": "zips/db_155.zip",
+                  "member": "db/Units/building_15.ddf",
+                  "bytes": 4647,
+                  "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+                  "archivePriority": 2,
+                  "hookSubstitution": false,
+                  "memberTime": 1701955086,
+                  "initialRecordTime": 1701955086,
+                  "initialRecordSize": 4647,
+                  "insertionPriority": 474,
+                  "profile": {
+                    "game": "ee2",
+                    "up16Enabled": true,
+                    "enhancedTerrainRequested": false,
+                    "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                    "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                    "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+                  }
+                },
+                "declaration": "UnitModel SimpleBuilding"
+              },
+              "declaredChildren": [
+                "TheCollapseEffect",
+                "TheHealthBar",
+                "TheResistanceBar",
+                "SelectCircleBig",
+                "TheAmbientPlacer",
+                "SinkRubbles",
+                "TheBuildEffect",
+                "TheVisualFlag",
+                "TheBldDamageEffect"
+              ]
+            }
+          ],
+          "conservativeInheritedChildren": [
+            "BuildingWithTurretsShadow",
+            "ExplSelectorBuild_Tiny",
+            "MediumGlow",
+            "Muzzle_FieldGun",
+            "SelectCircleBig",
+            "SinkRubbles",
+            "TheAmbientPlacer",
+            "TheBldDamageEffect",
+            "TheBuildEffect",
+            "TheCollapseEffect",
+            "TheHealthBar",
+            "TheResistanceBar",
+            "TheVisualFlag"
+          ],
+          "transitiveChildCount": 13,
+          "underChildren": []
+        },
+        {
+          "runtimeEpoch": 13,
+          "until": 15,
+          "sourceVisual": "CoastalDefense_14",
+          "modelChain": [
+            {
+              "name": "CoastalDefense_14",
+              "source": {
+                "archive": "zips/db.zip",
+                "entry": "db/Units/coastal_defense.ddf",
+                "virtual_path": "db/Units/coastal_defense.ddf",
+                "line": 203,
+                "sha256": "ae3ee9795834a5f0cb14713482782bc1f7dd99ee9d04f26ba272f37f35051409",
+                "origin": {
+                  "virtualPath": "db/Units/coastal_defense.ddf",
+                  "lookupKey": "db/units/coastal_defense.ddf",
+                  "kind": "zip-member",
+                  "physical": "zips/db.zip",
+                  "marker": "zips/db.zip",
+                  "member": "db/Units/coastal_defense.ddf",
+                  "bytes": 7141,
+                  "sha256": "ae3ee9795834a5f0cb14713482782bc1f7dd99ee9d04f26ba272f37f35051409",
+                  "archivePriority": 0,
+                  "hookSubstitution": false,
+                  "memberTime": 1127900910,
+                  "initialRecordTime": 1127900910,
+                  "initialRecordSize": 7141,
+                  "insertionPriority": 274,
+                  "profile": {
+                    "game": "ee2",
+                    "up16Enabled": true,
+                    "enhancedTerrainRequested": false,
+                    "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                    "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                    "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+                  }
+                },
+                "declaration": "UnitModel CoastalDefense_14"
+              },
+              "declaredChildren": [
+                "BuildingWithTurretsShadow",
+                "MediumGlow",
+                "ExplSelectorBuild_Tiny",
+                "Muzzle_FieldGun"
+              ]
+            },
+            {
+              "name": "SimpleBuilding",
+              "source": {
+                "archive": "zips/db_155.zip",
+                "entry": "db/Units/building_15.ddf",
+                "virtual_path": "db/Units/building_15.ddf",
+                "line": 106,
+                "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+                "origin": {
+                  "virtualPath": "db/Units/building_15.ddf",
+                  "lookupKey": "db/units/building_15.ddf",
+                  "kind": "zip-member",
+                  "physical": "zips/db_155.zip",
+                  "marker": "zips/db_155.zip",
+                  "member": "db/Units/building_15.ddf",
+                  "bytes": 4647,
+                  "sha256": "d47b8ac087ff72563266a549c7125e64dff1df5d87ee8dd1f55bab4b0eb02f75",
+                  "archivePriority": 2,
+                  "hookSubstitution": false,
+                  "memberTime": 1701955086,
+                  "initialRecordTime": 1701955086,
+                  "initialRecordSize": 4647,
+                  "insertionPriority": 474,
+                  "profile": {
+                    "game": "ee2",
+                    "up16Enabled": true,
+                    "enhancedTerrainRequested": false,
+                    "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+                    "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+                    "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+                  }
+                },
+                "declaration": "UnitModel SimpleBuilding"
+              },
+              "declaredChildren": [
+                "TheCollapseEffect",
+                "TheHealthBar",
+                "TheResistanceBar",
+                "SelectCircleBig",
+                "TheAmbientPlacer",
+                "SinkRubbles",
+                "TheBuildEffect",
+                "TheVisualFlag",
+                "TheBldDamageEffect"
+              ]
+            }
+          ],
+          "conservativeInheritedChildren": [
+            "BuildingWithTurretsShadow",
+            "ExplSelectorBuild_Tiny",
+            "MediumGlow",
+            "Muzzle_FieldGun",
+            "SelectCircleBig",
+            "SinkRubbles",
+            "TheAmbientPlacer",
+            "TheBldDamageEffect",
+            "TheBuildEffect",
+            "TheCollapseEffect",
+            "TheHealthBar",
+            "TheResistanceBar",
+            "TheVisualFlag"
+          ],
+          "transitiveChildCount": 13,
+          "underChildren": []
+        }
+      ]
+    }
+  ],
+  "turretShadow": {
+    "kind": "ShadowData",
+    "name": "BuildingWithTurretsShadow",
+    "body": "\n\tFlags = (UseStencil | AutoGenerated | HasTurret)\n",
+    "source": {
+      "archive": "zips/db_155.zip",
+      "entry": "db/Visuals/effects_visual_15.ddf",
+      "virtual_path": "db/Visuals/effects_visual_15.ddf",
+      "line": 1588,
+      "sha256": "39454afb7b87bf421c8d0e49b6c1cd308d540bfe84d996009a70909240304e7f",
+      "origin": {
+        "virtualPath": "db/Visuals/effects_visual_15.ddf",
+        "lookupKey": "db/visuals/effects_visual_15.ddf",
+        "kind": "zip-member",
+        "physical": "zips/db_155.zip",
+        "marker": "zips/db_155.zip",
+        "member": "db/Visuals/effects_visual_15.ddf",
+        "bytes": 49707,
+        "sha256": "39454afb7b87bf421c8d0e49b6c1cd308d540bfe84d996009a70909240304e7f",
+        "archivePriority": 2,
+        "hookSubstitution": false,
+        "memberTime": 1703595042,
+        "initialRecordTime": 1703595042,
+        "initialRecordSize": 49707,
+        "insertionPriority": 555,
+        "profile": {
+          "game": "ee2",
+          "up16Enabled": true,
+          "enhancedTerrainRequested": false,
+          "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+          "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+          "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+        }
+      },
+      "declaration": "ShadowData BuildingWithTurretsShadow"
+    }
+  },
+  "climateTables": [
+    {
+      "climate": "Arid",
+      "source": {
+        "virtualPath": "db/Terrain/DbSeasonalTextureSets_Arid.csv",
+        "lookupKey": "db/terrain/dbseasonaltexturesets_arid.csv",
+        "kind": "zip-member",
+        "physical": "zips/db.zip",
+        "marker": "zips/db.zip",
+        "member": "db/Terrain/DbSeasonalTextureSets_Arid.csv",
+        "bytes": 31278,
+        "sha256": "45b6c66fba0ba8f0142e1dc74a347124762ec663885e8681d4e47448f28ff796",
+        "archivePriority": 0,
+        "hookSubstitution": false,
+        "memberTime": 1127900902,
+        "initialRecordTime": 1127900902,
+        "initialRecordSize": 31278,
+        "insertionPriority": 122,
+        "profile": {
+          "game": "ee2",
+          "up16Enabled": true,
+          "enhancedTerrainRequested": false,
+          "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+          "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+          "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+        }
+      },
+      "defenseUnderSetMatches": []
+    },
+    {
+      "climate": "Temperate",
+      "source": {
+        "virtualPath": "db/Terrain/DbSeasonalTextureSets_Temperate.csv",
+        "lookupKey": "db/terrain/dbseasonaltexturesets_temperate.csv",
+        "kind": "zip-member",
+        "physical": "zips/db.zip",
+        "marker": "zips/db.zip",
+        "member": "db/Terrain/DbSeasonalTextureSets_Temperate.csv",
+        "bytes": 132751,
+        "sha256": "8e39b763fc81877f2aea5c94248d839257648e8d67131974917e756cff4554bc",
+        "archivePriority": 0,
+        "hookSubstitution": false,
+        "memberTime": 1127900902,
+        "initialRecordTime": 1127900902,
+        "initialRecordSize": 132751,
+        "insertionPriority": 123,
+        "profile": {
+          "game": "ee2",
+          "up16Enabled": true,
+          "enhancedTerrainRequested": false,
+          "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+          "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+          "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+        }
+      },
+      "defenseUnderSetMatches": []
+    },
+    {
+      "climate": "Tropical",
+      "source": {
+        "virtualPath": "db/Terrain/DbSeasonalTextureSets_Tropical.csv",
+        "lookupKey": "db/terrain/dbseasonaltexturesets_tropical.csv",
+        "kind": "zip-member",
+        "physical": "zips/db.zip",
+        "marker": "zips/db.zip",
+        "member": "db/Terrain/DbSeasonalTextureSets_Tropical.csv",
+        "bytes": 32907,
+        "sha256": "241ceccb42c4360c63e728ee29957c4467cb6b68a5c75ae7d6e00f23158fff5e",
+        "archivePriority": 0,
+        "hookSubstitution": false,
+        "memberTime": 1127900902,
+        "initialRecordTime": 1127900902,
+        "initialRecordSize": 32907,
+        "insertionPriority": 124,
+        "profile": {
+          "game": "ee2",
+          "up16Enabled": true,
+          "enhancedTerrainRequested": false,
+          "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+          "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+          "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+        }
+      },
+      "defenseUnderSetMatches": []
+    }
+  ],
+  "overlaySpriteTable": {
+    "source": {
+      "virtualPath": "db/Terrain/dbsprite_overlay.csv",
+      "lookupKey": "db/terrain/dbsprite_overlay.csv",
+      "kind": "zip-member",
+      "physical": "zips/db.zip",
+      "marker": "zips/db.zip",
+      "member": "db/Terrain/dbsprite_overlay.csv",
+      "bytes": 33233,
+      "sha256": "98faab3571d5433f51e6fd5621f9045370fb4c4d0afbbb6abef30b7ea537f262",
+      "archivePriority": 0,
+      "hookSubstitution": false,
+      "memberTime": 1127900902,
+      "initialRecordTime": 1127900902,
+      "initialRecordSize": 33233,
+      "insertionPriority": 125,
+      "profile": {
+        "game": "ee2",
+        "up16Enabled": true,
+        "enhancedTerrainRequested": false,
+        "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+        "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+        "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+      }
+    },
+    "defenseUnderMatches": []
+  },
+  "unchangedGroundManifest": {
+    "sha256": "eb407c403f1e22b997215f85b8f02e9cc62ae44facf31b7068c4312f8c8454f4",
+    "entries": 14,
+    "entryHashes": [
+      "0a5a2a30d5d455f7a8d3623457e62d00cfb470cd2c976a5813d746d7a8fdf4a2",
+      "a909a2ce468f97e37965b4683a51e2f93ffbb1b6855377d698a0af4e8618965c",
+      "267415f85b819a46d86d90627c8f4042cadedba19fb2f58e4761efcbea26a253",
+      "a63aaf2e9cd63454c325a805b15c756093f7ba887ff867a6505275027841a599",
+      "0b74a9002e2f18b42913de4a61d1a3090dcfcdda8afb54a8924b31e195b53f65",
+      "a77a582eb75e195d39546b21b53c5c7da4217fa366fa1697a3c6b62535b37461",
+      "bc10be17533d0c250141836dc81272cc37acb939f4b9bb7b1f9b38d3650d147b",
+      "757f9b110e31096bc21021cd479d75550d759ff20ea3a8bb36312d0427a3ee42",
+      "e62998952310c6bfd0904ce155640517bc6d1d71110a86847f885c7b412e58bb",
+      "b94a2c66c6a6498a1827f72d6c77d71d8527075bec8f2202c9d2c2f8d8660d03",
+      "da949d4ea230e5876573becd8a17b1df9f21d65d0e82e9d17f7d5396927448aa",
+      "9e97863fc9d4e2f9aeb6e532dadc71751b7305f879202d96f510c427aaa8fb00",
+      "2f5d2f3b3f7f42488fefd4c0b25ecfe3c097f2e816626650250afa2817b65e1e",
+      "684509aa3460282b35821c3700c0370db1c4b40d31d67c38246e27f7ff22a7e1"
+    ]
+  },
+  "outputs": {
+    "additionalPngs": 0,
+    "additionalBindings": 0,
+    "separateManifestNeeded": false,
+    "runtimeChangeNeeded": false
+  },
+  "limits": [
+    "Absence is established for native Under* Decal child bindings in this resolved CSV5/CFG5 profile. Native mesh geometry may contain an integral visible base; this audit does not remove or reinterpret mesh parts.",
+    "No generic floor is inferred from footprint dimensions. The existing native sizing fallback only sizes a Decal that is actually present.",
+    "Stencil shadows and collapsed/damage effects are separate from static ground plates.",
+    "No original program or browser was executed; no active runtime or original files were changed."
+  ],
+  "sourceHashes": {
+    "auditScript": "4d0bc9294cc7afcfd109e7e5bfcc2259ff4b3838d09de5686640676ad692cb49",
+    "unitAudit": "c82d765528c3817f63287aa62f37cc1d3d59fb95940c409635d31205464c066c",
+    "groundSizingHelper": "1706a4657ee762a0be0fe616f7e2270d53724a41a9801d093ab87023d5e051fe"
+  }
+}

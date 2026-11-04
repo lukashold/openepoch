@@ -55,6 +55,10 @@ for(const id of ['own','base','up15']){
  context.rulesLoadFailure(Error('UP-Datei fehlt'));check(['play','mpopen','continue','previous-save'].every(key=>$(key).disabled),'Actual main failure handler disables game/MP/save launch');equal($('rules-note').textContent,'UP-Datei fehlt','Actual main shows the actionable load error');
 }
 for(const [id,p]of Object.entries(profiles)){const before=fetches.length,w=await fresh(id);equal(w.ruleset(),p.ruleset,'Requested binary has exact ruleset ID');equal(fetches.length,before+1,'One requested file fetch per successful profile load');assert.throws(()=>assertRulesProfile(w,profiles[id==='own'?'base':'own']));checks++;}
+for(const schema of [undefined,5,6,8]){
+ const old={ruleset:()=>2,...(schema===undefined?{}:{schema_revision:()=>schema})};
+ assert.throws(()=>assertRulesProfile(old,profiles.up15),/Speicher-\/Einheitenformat/);checks++;
+}
 let failures=0;
 await assert.rejects(loadRulesWasm(profiles.up15,new URL('docs/',root),{fetchFile:async()=>{failures++;return{ok:false,status:404};}}),/UP-Regeln.*HTTP 404/);checks++;equal(failures,1,'Missing UP file never falls back to BASE');
 await assert.rejects(loadRulesWasm(profiles.up15,new URL('docs/',root),{fetchFile:async()=>({ok:true,arrayBuffer:async()=>binaries.base})}),/Falsche Spieldatei/);checks++;

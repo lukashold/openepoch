@@ -1,5 +1,6 @@
+use crate::ids::DefId;
 // Generated from actual active UP Attack inheritance/UPGRADEREFS; candidate only.
-#[derive(Clone,Copy,Debug)] pub struct Attack{pub id:u8,pub epoch:u8,pub until:u8,pub present:bool,pub missile:bool,pub visual_kind:u8,pub min_mobile:f32,pub min_immobile:f32,pub angle:f32,pub apply_time:f32,pub pack_time:f32,pub unpack_time:f32,pub splash:f32,pub friendly:f32,pub latent:bool,pub auto_target:bool,pub attack_on_move:bool,pub ordnance:u16,pub air:bool,pub mobile:bool,pub projectile_speed:Option<f32>}
+#[derive(Clone,Copy,Debug)] pub struct Attack{pub id:DefId,pub epoch:u8,pub until:u8,pub present:bool,pub missile:bool,pub visual_kind:u8,pub min_mobile:f32,pub min_immobile:f32,pub angle:f32,pub apply_time:f32,pub pack_time:f32,pub unpack_time:f32,pub splash:f32,pub friendly:f32,pub latent:bool,pub auto_target:bool,pub attack_on_move:bool,pub ordnance:u16,pub air:bool,pub mobile:bool,pub projectile_speed:Option<f32>}
 pub const ROWS:&[Attack]=&[
 Attack{id:0,epoch:0,until:3,present:false,missile:false,visual_kind:0,min_mobile:0.0_f32,min_immobile:0.0_f32,angle:0.5199999809265137_f32,apply_time:0.0_f32,pack_time:1.0_f32,unpack_time:1.0_f32,splash:0.0_f32,friendly:0.0_f32,latent:false,auto_target:true,attack_on_move:false,ordnance:0,air:false,mobile:false,projectile_speed:None},
 Attack{id:0,epoch:3,until:6,present:false,missile:false,visual_kind:0,min_mobile:0.0_f32,min_immobile:0.0_f32,angle:0.5199999809265137_f32,apply_time:0.0_f32,pack_time:1.0_f32,unpack_time:1.0_f32,splash:0.0_f32,friendly:0.0_f32,latent:false,auto_target:true,attack_on_move:false,ordnance:0,air:false,mobile:false,projectile_speed:None},
@@ -281,5 +282,5 @@ Attack{id:56,epoch:9,until:11,present:true,missile:true,visual_kind:3,min_mobile
 Attack{id:56,epoch:11,until:13,present:true,missile:true,visual_kind:3,min_mobile:0.0_f32,min_immobile:0.0_f32,angle:6.2831854820251465_f32,apply_time:0.5_f32,pack_time:1.0_f32,unpack_time:1.0_f32,splash:0.0_f32,friendly:0.0_f32,latent:false,auto_target:true,attack_on_move:false,ordnance:0,air:false,mobile:false,projectile_speed:Some(20.0_f32)},
 Attack{id:56,epoch:13,until:15,present:true,missile:true,visual_kind:3,min_mobile:0.0_f32,min_immobile:0.0_f32,angle:6.2831854820251465_f32,apply_time:0.5_f32,pack_time:1.0_f32,unpack_time:1.0_f32,splash:0.0_f32,friendly:0.0_f32,latent:false,auto_target:true,attack_on_move:false,ordnance:0,air:false,mobile:false,projectile_speed:Some(20.0_f32)},
 ];
-pub fn lookup(id:u8,epoch:u8)->Option<&'static Attack>{ROWS.iter().find(|r|r.id==id&&epoch>=r.epoch&&epoch<r.until)}
+pub fn lookup(id:DefId,epoch:u8)->Option<&'static Attack>{ROWS.iter().find(|r|r.id==id&&epoch>=r.epoch&&epoch<r.until)}
 pub fn min_range(a:&Attack,target_mobile:bool)->f32{let r=if target_mobile{a.min_mobile}else{a.min_immobile};if r==0.0&&a.splash>0.0&&!a.air{a.splash}else{r}}

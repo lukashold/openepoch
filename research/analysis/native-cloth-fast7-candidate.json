@@ -1,0 +1,277 @@
+{
+  "format": "native-cloth-fast7-isolated-candidate-v1",
+  "status": "isolated-own-visual-WASM-PASS",
+  "wasm": {
+    "file": "work/native-cloth-fast7/cloth-fast7.wasm",
+    "sha256": "c8d1207fec111a5b47dbe24b75d51cf3f250f032dfdb4073e75113e65353c625",
+    "bytes": 52850
+  },
+  "factory": {
+    "file": "work/native-cloth-fast7/wasm-source-cloth-factory.js",
+    "export": "createWasmSourceClothFactory(wasmExports)",
+    "sha256": "b6d60140eec038f9f5225abbd791d6fb43a584a090d2949a2b1eec7e31a67f95",
+    "io": "none; requires a separately instantiated own visual module",
+    "contract": "create(plane,{rounding}),shade(cloth,plane,rawLighting,{rounding,mode,colors}),dispose(cloth); fresh typed getters, stable shading copies, private visual slots only"
+  },
+  "arithmetic": "Named binary53 toward zero/FSTP32 using FastTwoSum/Dekker residuals, exact binary32\u00d7binary32 products, integer-bit nextTowardZero; generic finite boundary fallback uses exactu128 significands and integer division/sqrt. DOMAIN.md states the derivation and restrictions. This is not a universal original x87 control-word/exponent/scheduler claim.",
+  "validation": {
+    "arithmetic": 21372,
+    "includingFrozenArithmetic": 2448,
+    "additionalFractionBoundaries": 18924,
+    "kernel": 362,
+    "sourceSelectedStates": 69,
+    "sourceGrids": 18,
+    "lighting": 31981,
+    "lightingQualityStates": 426,
+    "batch": 2418,
+    "factory": 681,
+    "actualMetadataController": 40,
+    "debugDomainRustTests": 2,
+    "totalChecks": 56856,
+    "zeroNumericTolerance": true,
+    "diagnosticNormalZeroSign": "Only diagnostic temporary normal signed zeros are canonicalized, as in the frozen source-lighting oracle; stored RGBA bits remain exact.",
+    "rustLogSha256": "c916ec85cb8e8d5b26ba57622e3d33236b5cf9cc41c51ed5f88c17ceeb006a2c"
+  },
+  "profile": {
+    "file": "work/native-cloth-fast7/frozen.cpuprofile",
+    "sha256": "b1cdbd06907d061b5a80cb5e5c9e2b6cb217adb098b9b8fd2e48938b87d05c62",
+    "selfSamples": [
+      {
+        "function": "substep@native-cloth.mjs",
+        "sampledMs": 1868.439,
+        "share": 0.3084333566584905
+      },
+      {
+        "function": "store32@chop53.mjs",
+        "sampledMs": 1223.46,
+        "share": 0.20196317596528265
+      },
+      {
+        "function": "mul@chop53.mjs",
+        "sampledMs": 675.687,
+        "share": 0.1115393167561293
+      },
+      {
+        "function": "nextTowardZero@chop53.mjs",
+        "sampledMs": 592.205,
+        "share": 0.09775849036545553
+      },
+      {
+        "function": "length@native-cloth.mjs",
+        "sampledMs": 503.431,
+        "share": 0.08310408484084336
+      },
+      {
+        "function": "add@chop53.mjs",
+        "sampledMs": 291.323,
+        "share": 0.04809026720263355
+      },
+      {
+        "function": "sub@chop53.mjs",
+        "sampledMs": 198.455,
+        "share": 0.0327600428998007
+      },
+      {
+        "function": "productError@chop53.mjs",
+        "sampledMs": 189.77,
+        "share": 0.03132636285855826
+      },
+      {
+        "function": "(garbage collector)@",
+        "sampledMs": 184.958,
+        "share": 0.03053201992724466
+      },
+      {
+        "function": "div@chop53.mjs",
+        "sampledMs": 139.793,
+        "share": 0.023076388486517548
+      },
+      {
+        "function": "step@native-cloth.mjs",
+        "sampledMs": 69.737,
+        "share": 0.011511864713428242
+      },
+      {
+        "function": "truncateRounded@chop53.mjs",
+        "sampledMs": 44.285,
+        "share": 0.007310365069248315
+      }
+    ],
+    "interpretation": "The measured122ms was in step(), not constructors/hashes. Math/store/bit-correction costs dominate named samples; GC is a small share. Inlined math may be attributed to substep, so self samples do not exactly partition algorithms."
+  },
+  "benchmarks": {
+    "preferredReport": "native-cloth-fast7-benchmark.json",
+    "runtime": "v22.23.4",
+    "platform": "win32",
+    "rows": [
+      {
+        "ships": 1,
+        "sails": 6,
+        "vertices": 150,
+        "samples": 3,
+        "updatesPerSample": 30,
+        "frozenMs": [
+          1.4746233333333312,
+          1.1051366666666658,
+          1.0159566666666668
+        ],
+        "wasmMs": [
+          0.256413333333334,
+          0.28138666666666645,
+          0.278133333333335
+        ],
+        "frozenMedianMs": 1.1051366666666658,
+        "wasmMedianMs": 0.278133333333335,
+        "ratio": 3.9734060402684293,
+        "finalStateSha256": "decf2eca97da436208d8b4dd42fd0cf536ee9c72326b4a3f93819a8cd459f1d0"
+      },
+      {
+        "ships": 2,
+        "sails": 18,
+        "vertices": 431,
+        "samples": 3,
+        "updatesPerSample": 30,
+        "frozenMs": [
+          2.857233333333333,
+          1.9048166666666664,
+          2.000916666666664
+        ],
+        "wasmMs": [
+          0.7353333333333353,
+          0.7683266666666668,
+          0.7495866666666681
+        ],
+        "frozenMedianMs": 2.000916666666664,
+        "wasmMedianMs": 0.7495866666666681,
+        "ratio": 2.669360002846004,
+        "finalStateSha256": "014ee19b001de585d66cde4cca0876374c12b1185401c5495e98687b80f4f4e0"
+      },
+      {
+        "ships": 5,
+        "sails": 42,
+        "vertices": 1012,
+        "samples": 3,
+        "updatesPerSample": 30,
+        "frozenMs": [
+          6.0916999999999994,
+          4.568153333333331,
+          4.772076666666665
+        ],
+        "wasmMs": [
+          1.735103333333336,
+          1.731880000000001,
+          1.662149999999997
+        ],
+        "frozenMedianMs": 4.772076666666665,
+        "wasmMedianMs": 1.731880000000001,
+        "ratio": 2.7554314771616175,
+        "finalStateSha256": "46a69a6c9428c7e82a1447fe69c6f703e0d49ced98c8abddb6bf10c2740f9bf9"
+      },
+      {
+        "ships": 10,
+        "sails": 90,
+        "vertices": 2155,
+        "samples": 3,
+        "updatesPerSample": 30,
+        "frozenMs": [
+          11.703026666666672,
+          11.326246666666671,
+          11.686776666666658
+        ],
+        "wasmMs": [
+          3.4019433333333304,
+          3.50015,
+          3.6126633333333453
+        ],
+        "frozenMedianMs": 11.686776666666658,
+        "wasmMedianMs": 3.50015,
+        "ratio": 3.3389359503640295,
+        "finalStateSha256": "7e6e60d5adc779efb5e254656c32e4541f3fbdc41c9fb55eba91a89b02f6d3ca"
+      },
+      {
+        "ships": 20,
+        "sails": 180,
+        "vertices": 4310,
+        "samples": 3,
+        "updatesPerSample": 30,
+        "frozenMs": [
+          24.52975999999999,
+          28.85694333333334,
+          28.990116666666655
+        ],
+        "wasmMs": [
+          7.147696666666676,
+          7.363983333333333,
+          7.791179999999986
+        ],
+        "frozenMedianMs": 28.85694333333334,
+        "wasmMedianMs": 7.363983333333333,
+        "ratio": 3.918659511722597,
+        "finalStateSha256": "8748959a42a28baaa9b814cf86e881699ccaf21066f1caa1a700adbe8705f65b"
+      },
+      {
+        "ships": 50,
+        "sails": 450,
+        "vertices": 10775,
+        "samples": 3,
+        "updatesPerSample": 30,
+        "frozenMs": [
+          66.90499333333331,
+          75.10247,
+          81.02001
+        ],
+        "wasmMs": [
+          18.480140000000027,
+          18.034613333333315,
+          20.576586666666664
+        ],
+        "frozenMedianMs": 75.10247,
+        "wasmMedianMs": 18.480140000000027,
+        "ratio": 4.063955684318403,
+        "finalStateSha256": "8778392d142711b2141f36659ada352ec904b796d0b2a31b528706a7cee4e1cb"
+      }
+    ],
+    "comparison": "Alternating serial backend batches,120warmup frames,3\u00d730updates, matched full per-count final state hashes. Host background load varies; setup/hash/lighting/GPU/gameplay are excluded.",
+    "conclusion": "The own WASM is substantially faster on this host, but50ships still take roughly18.5ms for physics alone in the paired run. No whole-game60FPS guarantee is made. The small JS prototype gave little improvement and is not recommended for promotion."
+  },
+  "frozenSourceHashes": {
+    "chop53.mjs": "0941661ccc487907881d897cc6149c903fe6a74ac7d047c2f817071c84fa6393",
+    "native-cloth.mjs": "2eb0d416b1f6e41b998593364cbf4a0a8010e801d58e376befda0514b4467032",
+    "native-cloth-lighting.mjs": "18b8c32c91ba3c1f196cd049b9d2b9e4640f3291d00738b6212f823f3a161da6"
+  },
+  "files": {
+    "wasm/Cargo.toml": "9750e13b0e846cfdbbd5d27e7d1a30e645e33eef6f982091a4a01bb6a2e70a8d",
+    "wasm/Cargo.lock": "8cd46c42843726a1dd945ce4d803073b3dbe3ea37a7eefdf6549787f3927ae87",
+    "wasm/src/lib.rs": "a32565b36235e56d4870009f179e099618dc476b0401b99b44a4fc576128b8c5",
+    "wasm/src/math.rs": "ca1e78369d65895c4b9ff78d94181f6aedfa3b875c4cb5cd85bc70b4a9e14daa",
+    "wasm/src/cloth.rs": "e577502d8ddc3220cfa86033e2a117c533321aab0c1d502dbf7439fee00a6d93",
+    "wasm/src/tests.rs": "7e2e0ac1cf38761be17ef180502280f731e1956f64e83cad04048230cc686ede",
+    "wasm-source-cloth-factory.js": "b6d60140eec038f9f5225abbd791d6fb43a584a090d2949a2b1eec7e31a67f95",
+    "DOMAIN.md": "f5c572aaaa1c2aacba6ce5e9f390dd40568e7d6ed966264cffe096af100ebd54",
+    "HANDOFF.md": "bb3fd8124c41ec3500022ae4a64535427270ee09410647565909ee64204f75a1",
+    "paired_benchmark.mjs": "545ca69c0ea1e6afb217458dbd4cfc232b188e843bfe1d5f82d414c0dac18809",
+    "make_boundary_oracle.py": "38f505b34745eb606539a7aa83b7f16fbe38469d883cd2757cd8e74cb678ca7f",
+    "test_math.mjs": "f8893a38eafdaafd13c4c7ac4f88a73f287d0133bcab9e066813f8443f64f654",
+    "test_batch.mjs": "92e85f08aa6623e371094145fd24aaa46f9f0aae5161a56e2e3086924ec1052a",
+    "test_factory.mjs": "a61ebbb2462914b1e23342cb58dce3d8a06ac43498e976165a2969f0ddb8be2f",
+    "test_controller.mjs": "0562591d2f9ec7b5a2a00c2170f142bc0958ef8e879a3bf47e0d5fc888f59d04"
+  },
+  "reports": {
+    "native-cloth-fast7-arithmetic-tests.json": "e329b23abfe89204e4871040195707ca3c5413aeb2296940e67d132cba1d6874",
+    "native-cloth-fast7-kernel-tests.json": "e5102c5e69fb006d0b521f389f24adfc1af894af7b8523982cf9deec4c5188cf",
+    "native-cloth-fast7-lighting-tests.json": "ca2faf151657b774a53f2dbe369c9f8a57447ec29e4b7e2153030b0aac0510d5",
+    "native-cloth-fast7-batch-tests.json": "ef79aa229a9f209fad5edcaf98b045d2ab987e0c195bf1cb9470a3c060851917",
+    "native-cloth-fast7-factory-tests.json": "5d4c12ee01e3e2633c7932823356d7eaa639523a361589b31e3eaf3fc19e449a",
+    "native-cloth-fast7-benchmark.json": "5cb56152b44e5a0188b26a4595917b7d95dfbe22c254bf2703b1859f51b4c758",
+    "native-cloth-fast7-controller-tests.json": "9b315f29eab9747465f5bed57a174800781567caf1ee41ae94cfadf3103197bb"
+  },
+  "scope": [
+    "Only independent visual state/geometry math is implemented; no Game/Ent/simulation/save/network fields were added or changed.",
+    "Own WASM slots are private backend allocation IDs, never actual game entity handles. Root controller retains the separate checked session/generational-handle identity.",
+    "No native movement/Death/weather event or frame scheduler is manufactured. Explicit source forces and visual clock remain controller inputs; repeated main/reflection/shadow draws must not step physics.",
+    "The supplied adapter is portable and I/O-free; Node-only QA adapters are not proposed browser loaders. Dynamic renderer/GPU integration is a separate isolated task.",
+    "All previous frozen modules/reports remain unchanged; JS fast-path copies are experiments, not the recommended backend."
+  ],
+  "activeRuntimeModified": false,
+  "originalCodeExecuted": false
+}

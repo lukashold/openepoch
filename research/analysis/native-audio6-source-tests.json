@@ -1,0 +1,16 @@
+{
+  "format": "native-audio6-independent-source-tests-v1",
+  "status": "passed",
+  "checks": 501,
+  "families": 4,
+  "intervals": 16,
+  "recordings": 28,
+  "byteIdenticalOriginalAudioBytes": 532764,
+  "sourceHashes": {
+    "import_audio6.py": "a9e8f9985a9ba8d036f6f62c7521349c5d34148eeeec981c71237891e53b3e25",
+    "native-audio6-upgrade.c": "08624df397c06b8586b9b2ceff6809d210d798150cc0b6d87cbad77ace9cf4bb",
+    "native-audio6-sound-setter.c": "35af49142fbf140df4005cf47417cf71c444a986f1fb45034e01b8d1c880864f",
+    "docs\\local-original\\audio\\native-families.json": "7aa92154cbd1e760be5b08658546da74d1d3cc304463f9d2bd07221efb4f43da"
+  },
+  "scope": "Independent CSV5 row/event/volume/channel oracle, directly reopened original MP3 archive members, strict unchanged legacy manifest and native setter assembly gates. Does not execute the original engine or a codec/audio device."
+}

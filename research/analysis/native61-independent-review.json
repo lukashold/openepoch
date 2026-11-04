@@ -1,0 +1,151 @@
+{
+  "format": "native61-independent-review-v1",
+  "status": "passed-with-explicit-scope",
+  "candidate": {
+    "sha256": "2f905ebd0ba69d155a7fdb2361f7a8f84642e8a3f2f908b9f133bfef7b7cefbc",
+    "bytes": 482478,
+    "definitions": 61,
+    "ruleset": 2,
+    "saveFormat": "OEU6"
+  },
+  "independentChecks": 217146,
+  "tests": {
+    "save": {
+      "path": "outputs/EE2-Research/analysis/native61-independent-save-tests.json",
+      "sha256": "ef0cda8c67e16f7eebcc934db63f096040d51cdf96235698a69f4f034fc49a0f",
+      "checks": 694
+    },
+    "damage": {
+      "path": "outputs/EE2-Research/analysis/native61-independent-damage-tests.json",
+      "sha256": "69ecb6185dc4b95a41908c760d253bc0bb9d2e22fdf2afd82152de7c8bfcbbfd",
+      "checks": 45
+    },
+    "main-width": {
+      "path": "outputs/EE2-Research/analysis/native61-independent-main-width.json",
+      "sha256": "1444974050aed5dab7892965691dfb4815a6cfcdff70888ac16bfc1fe7a6ecc1",
+      "checks": 36
+    },
+    "render-width": {
+      "path": "outputs/EE2-Research/analysis/native61-independent-render-width.json",
+      "sha256": "ed0c17ecf3977948881f2a34dcdbef3358c14307ae42da4bbece81d60d640864",
+      "checks": 216371
+    }
+  },
+  "saveReview": {
+    "finding": "The original roundtrip failure was a test-fixture initialization issue; no codec defect remains in the reviewed paths.",
+    "firstDiffs": [
+      {
+        "offset": 48,
+        "field": "Player.pop",
+        "loaded": 4,
+        "fixture": 0
+      },
+      {
+        "offset": 72,
+        "field": "Player.buildings",
+        "loaded": 3,
+        "fixture": 1
+      },
+      {
+        "offset": 264676,
+        "field": "first display-fog byte",
+        "loaded": 255,
+        "fixture": 0
+      }
+    ],
+    "fixtureCorrection": "Run build_grid() and refresh_display_fog() before the first saved comparison after manual spawns.",
+    "verified": [
+      "Six frozen OEU5/57 migrations through 720 ticks at verified runtime epochs0/7/14.",
+      "Genuine prior OEU6/57 changes only registry count and fingerprint on canonical61 save; simulation hash is unchanged.",
+      "Every widened entity field, all player fields and complete map/sidecar bytes compared; only reprC padding and transient flow-slot canonicalization excluded.",
+      "Count/fingerprint mismatch and out-of-range active definition/cargo/train reject atomically with complete save and hash unchanged.",
+      "Game::load constructs a local validated result; load_apply replaces global state only on Some(game)."
+    ]
+  },
+  "damageReview": {
+    "airDefenseEpoch15": {
+      "source": 59,
+      "diagnostic": 59,
+      "hud": 59,
+      "actualImpactTick": 18,
+      "targetHpBefore": 30,
+      "targetHpAfter": -29,
+      "targetHpBits": "c1e80000"
+    },
+    "sourceFactorMethod": "005F3320 case5 adds an int16 permanent percentage, combines permanent+temporary+100, FILDs the integer, multiplies by binary32 literal0.01 and native basis in x87 extended intermediates, then FSTP32s once.",
+    "sourceConstant": {
+      "va": "00B41748",
+      "bytesHex": "0ad7233c",
+      "binary32Value": 0.009999999776482582
+    },
+    "genuineEffects": [
+      "Research28 Military3_1 / MilitaryTechUpgrade_E3_Slot1a: NavalUnitsAttack AddPermMul10.",
+      "Research88 Military8_1 / MilitaryTechUpgrade_E8_Slot1a: NavalUnitsAttackEpoch8 AddPermMul10."
+    ],
+    "exactResults": [
+      "143+10%=157.3000030517578 /431d4ccd",
+      "150+20%=180 /43340000",
+      "170+20%=204 /434c0000"
+    ],
+    "refreshes": [
+      9,
+      9,
+      14,
+      7,
+      7,
+      9
+    ],
+    "negativeControl": "Rounding120*binary32(.01) to binary32 before multiplying170 gives203.99998474121094, intentionally rejected. No epsilon used.",
+    "sourceSetSemantics": "Case1 Set writes the new basis and clears temporary percentage while retaining permanent percentage. Epoch profile refresh and reload preserve the two real bonuses once.",
+    "limit": "These are the two real damage research effects targeting the four newly bound families. No invented Add/Set effect is presented as a native reachable fixture. General future factor arithmetic beyond the tested source operands is not certified."
+  },
+  "cameraSuiteReadOnlyReview": {
+    "actualReport": {
+      "path": "work/native-roster6/classic-candidate/actual-wasm-report.json",
+      "sha256": "7b1c2954df075b02a9f67998168a0e84450826aa2a21efacc73f52f970b0498b",
+      "checks": 1176
+    },
+    "coverage": [
+      "16 genuine OEU5 and OEU6/57 migrations at seeds7/41 and epochs0/5/10/14 for800ticks.",
+      "Controlled source-cost Scout57 and genuine ship58 production queues complete.",
+      "AirDefense59 and CoastalDefense60 cause actual tick damage to their native target domains; different render cadence does not change hash; ATK state roundtrips.",
+      "All16 source profile rows use strict Math.fround scalar comparison; source59 damage is no longer a recomposed ratio.",
+      "No findings in persisted-state projection, staged loader, or old57 cardinality rejection."
+    ],
+    "legacyReport": {
+      "path": "work/native-roster6/classic-candidate/legacy-profile-report.json",
+      "sha256": "44a7da45b5039f70bee30097d862802669d3033c7cba8045ace4a2d6bae1da9c",
+      "checks": 1074,
+      "cases": 24
+    },
+    "legacyDamageOrder": "Old definitions0..56 retain weapon_base*player_factor*modifier in scaled_weapon_damage, including its binary32 multiplication order; new57+ definitions use absolute native Damage."
+  },
+  "boundaries": [
+    "Only four new native source families are added: Scout57, FightingSail58, AirDefense59, CoastalDefense60. This is61 definitions, not all132classical/311installed families.",
+    "Migration keeps the existing omission of in-flight projectiles; tests do not claim this transient state is saved.",
+    "Terrain/collision, production-slot obsolescence and procedural sail geometry remain explicit adapters.",
+    "Main width test executes production handlers in a DOM/Canvas substitute; render width tests inspect actual WASM buffers and nonmutating fallback data. Neither is a browser or original-game visual capture.",
+    "Original Factor ASM is a read-only Ghidra export from installed engine SHA d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f; no original program was launched."
+  ],
+  "sourceHashes": {
+    "work/native-roster6/classic-candidate/OpenEpoch/src/save.rs": "f4b25b6312e787f0663be9eb95c9ff5862d9ea76a2f20d1b889e71796e308431",
+    "work/native-roster6/classic-candidate/OpenEpoch/src/save6.rs": "c6cb817bc80050cfda0359a940b327cfe7c5d168023563b5e37b9a1d8bdbfa8b",
+    "work/native-roster6/classic-candidate/OpenEpoch/src/roster6_registry.rs": "cce3a0126781d179dd95a4c14ff1e4a34c07217feadbac4f1ebb6dcb564fd8d2",
+    "work/native-roster6/classic-candidate/OpenEpoch/src/research.rs": "844bf8a3d1e7dd9d4bed1bdbe354fa867e6204bd627fe233adf2175da6b4f0d2",
+    "work/native-roster6/classic-candidate/OpenEpoch/src/game.rs": "b0eca2397b476d0f0ccc6db886088f87e48f32b084788c74d04cfabf45537f8d",
+    "work/native-roster6/classic-candidate/OpenEpoch/src/render.rs": "eb17097a07db92ecfea5907fb046610248fd368db7d58ee283685af248f47105",
+    "work/native-roster6/classic-candidate/OpenEpoch/src/lib.rs": "8fe6b3a7a7b9c124d5fee4b9ee0fd6387eb0e67f3913252422dbb74f7efffd86",
+    "work/native-roster6/classic-candidate/OpenEpoch/src/ee2_roster6_research.rs": "b4c317a8f5cbee42570ff475a7341111d996333193d6a90112adaab380caad02",
+    "work/native-roster6/classic-candidate/OpenEpoch/docs/ee2-roster6-units.json": "c82d765528c3817f63287aa62f37cc1d3d59fb95940c409635d31205464c066c",
+    "work/native-roster6/classic-candidate/OpenEpoch/tools/test_roster6_classic_wasm.mjs": "9162a31d439dc32e4a2f235d428488831a650db940f0f118073d47dfe35aa050",
+    "work/native-roster6/classic-candidate/OpenEpoch/tools/roster6-state.mjs": "3295a9f8cf529760debadbe97bbd3a305fdb977edd8b9510a82177b2575ac4ea",
+    "outputs/OpenEpoch/docs/main.js": "eebee3010370cb2d4ceb8eab0ec726a9c968ffef37dc823926ee1e7a7560c574",
+    "outputs/EE2-Research/analysis/native61-factor-setter.c": "2fd6ecded99a63aac725b531f30def669eb1ff7a60a0efa3e88664dc44e3f997",
+    "outputs/EE2-Research/analysis/native61-factor-oracle.json": "9abb9b427c6ffd83224b4bbff72c64b8b784dc13b48b09b4926ce79e5b062530",
+    "work/native61-review/save-test.mjs": "a3da3776201a4e55a896461d011153161e583553239b714926b596a408e6ece1",
+    "work/native61-review/damage-test.mjs": "d9044ea59a52eed206a2952da49000d21099da4b139f41b86c339391148d224f",
+    "work/native61-review/main-width-test.mjs": "d61530e068efc78d6376d2bdfea881c66a2760078120c90a5c1ec1e3c570eba2",
+    "work/native61-review/render-width-test.mjs": "00583828b047064249733baaa9c34e93442080a38a047848048ec83aadf7fe88"
+  },
+  "writes": "Only isolated review tests and new research reports; no Rust, Main, active runtime or original installation changes."
+}

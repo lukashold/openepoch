@@ -1,0 +1,104 @@
+{
+  "format": "openepoch-paidqueue7-portable-contract-v2",
+  "saveMagic": "0x3755454f",
+  "schemaRevision": 7,
+  "descriptorSchema": 2,
+  "entityBytes": 176,
+  "playerBytes": 96,
+  "definitionCount": 61,
+  "registrySha256": "d5790a14cedaef0d8c08c3399851eccdab34d2e302c9f68b1442a2d2284eed40",
+  "tailOrder": [
+    "CGD1",
+    "ATK1",
+    "PQP1v2",
+    "R6S1(v7,schema2)"
+  ],
+  "ledger": {
+    "header": [
+      "magic u32 0x31505150",
+      "version u32 2",
+      "recordCount u32"
+    ],
+    "recordBytes": 64,
+    "record": [
+      {
+        "offset": 0,
+        "type": "u32",
+        "field": "generationHandle"
+      },
+      {
+        "offset": 4,
+        "type": "u32",
+        "field": "queuePosition"
+      },
+      {
+        "offset": 8,
+        "type": "u32",
+        "field": "typedJob"
+      },
+      {
+        "offset": 12,
+        "type": "u32",
+        "field": "flags bit0 inferred,bit1 purchased"
+      },
+      {
+        "offset": 16,
+        "type": "f32[11]",
+        "field": "nativeResourcePrice"
+      },
+      {
+        "offset": 60,
+        "type": "f32",
+        "field": "timeToProduce -1 until start"
+      }
+    ],
+    "footer": [
+      "chunkBytes u32 (20+64*count)",
+      "endMagic u32 0x45505150"
+    ],
+    "maximumRecords": 40960,
+    "requiredCoverage": "Every used queue entry of every alive building, canonical ascending entity-slot then queue-position order, exact generation handle and job match. Pending positions require duration=-1; a positive front duration withqt=0 is rejected, while duration0 remains valid."
+  },
+  "nativeResourceOrder": [
+    "Food",
+    "Wood",
+    "Stone",
+    "Gold",
+    "Tin",
+    "Iron",
+    "Saltpeter",
+    "Oil",
+    "Uranium",
+    "TechPoints",
+    "Population"
+  ],
+  "coreResourceToNative": [
+    0,
+    1,
+    5,
+    2,
+    3,
+    4,
+    6,
+    7,
+    8
+  ],
+  "migration": {
+    "OEU5": "Known57 identity,148-byte entities translated through the existing explicit checked normalizer; historical prices and active duration inferred.",
+    "OEU6": "Known57/61 fingerprint-count pairs; prices and active duration inferred.",
+    "OEU7v1": "Unreleased intermediate only, rejected by this production candidate.",
+    "atomic": "All payment and duration validation occurs in a temporary new world before replacing the active Game."
+  },
+  "readonlyABI": {
+    "queue_price(handle,pos,nativeResource)": "f32 actual stored component; -1 invalid",
+    "queue_price_flags(handle,pos)": "u32 bits0 inferred,1 purchased; 0xffffffff invalid",
+    "queue_duration_raw(handle,pos)": "f32 latched duration; -1 unstarted, -2 invalid"
+  },
+  "durationPolicy": "Latch from current production/research duration only when work begins. New captured unit orders use source startup increment0.01; OEU5/OEU6 inferred jobs retain old first-step continuation. Later class/research reprice does not change an already latched duration. HUD and completion use the same limit.",
+  "knownAdapters": [
+    "Existing integer unit-cost calculation; no fractional native-price parity claim.",
+    "Source register/store arithmetic evaluated in declared nearest53 context; actual original temporal FPU context unresolved.",
+    "Current smaller engine offers no manual-market/crown price changes or production-cycle command, so default110/90 normal-mode branch only.",
+    "Existing population reservation,20Hz simulation and TC research-host adapters are retained; area-effect production-rate changes remain outside this slice."
+  ]
+}

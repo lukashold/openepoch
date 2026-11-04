@@ -1,0 +1,9 @@
+{
+  "format": "native-sail-frame7-tests-v1",
+  "status": "passed",
+  "checks": 20,
+  "mainSha256": "a112eeabc5b6a8aa72ac06f33870598cf6de796cef5e60e429abb217d46fff8b",
+  "wasmSha256": "f7784ee37122a8bd1e281bf09c4a898cae081e752cd5f9649a2c1d09efa50bd5",
+  "runtimeSha256": "b962e0f641b24f7dce7571bd12378a56c2fddc0ef3643dd4f448b8d260254228",
+  "scope": "Executes actual Main frame, actual ordinary ship production, sorted actor ABI and own visual WASM; substitutes geometry/GL calls. Native GPU checks remain separate."
+}

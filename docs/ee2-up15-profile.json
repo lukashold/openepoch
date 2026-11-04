@@ -1,1 +1,298 @@
-{"format":"ee2-up15-profile-audit-v2","status":"Combat5 active; parent integrated NET10, profile-specific models and original labels.","profile":{"feature":"ee2-up15","depends_on":"ee2-reference","ruleset_id":2,"save_magic_hex":"0x3555454f","save_magic_ascii":"OEU5","indexed_db_proposal":"openepoch-ee2-up15-v1","query_proposal":"rules=ee2-up15","network":"NET10 plus exact WASM fingerprint owned by frontend; older protocol9 peers are rejected.","query":"rules=ee2&profile=up15"},"sources":{"effective_manifest":"work/up-resolved-sources/effective-db-sources.json","effective_manifest_sha256":"eabf590cacef634646eb4e8e47eb58e29a44ca8a6ac1d914a012e1b91b9f87f3","native_loader":"00541940 (CSV5 literals), active db/dbunitfile5.cfg + db/techtree/dbepochupgrade5.cfg","priority_evidence":"outputs/EE2-Research/analysis/native-vfs-order-evidence.json","helper_evidence":"outputs/EE2-Research/analysis/native-uphelper-source-evidence.json","active_ddfs":158,"inactive_base_or_other_version_ddfs_added":false,"numeric_table_origins":[{"virtualPath":"DbHdrs/DbUnitDefEnums.h","lookupKey":"dbhdrs/dbunitdefenums.h","kind":"zip-member","physical":"zips/hdrs.zip","marker":"zips/hdrs.zip","member":"DbHdrs/DbUnitDefEnums.h","bytes":15951,"sha256":"c2fd2ef87d9927872b913a30eaaf267a096b7e4c5221e145020a7173afeb79e9","archivePriority":15,"hookSubstitution":false,"memberTime":1127902008,"initialRecordTime":1127902008,"initialRecordSize":15951,"insertionPriority":621,"profile":{"game":"ee2","up16Enabled":true,"enhancedTerrainRequested":false,"physicalRoot":"C:\\Program Files (x86)\\GOG.com\\Empire Earth II","auditedDefaultUserTemp":"C:\\Users\\Admin\\AppData\\Local\\Temp","scope":"Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."}},{"virtualPath":"DbHdrs/DbCombatDefs.h","lookupKey":"dbhdrs/dbcombatdefs.h","kind":"zip-member","physical":"zips/hdrs.zip","marker":"zips/hdrs.zip","member":"DbHdrs/DbCombatDefs.h","bytes":2567,"sha256":"08c479892dee1e1c9dcda642c91dd2d1e598093d78097245863fa5904b08caa8","archivePriority":15,"hookSubstitution":false,"memberTime":1127902008,"initialRecordTime":1127902008,"initialRecordSize":2567,"insertionPriority":590,"profile":{"game":"ee2","up16Enabled":true,"enhancedTerrainRequested":false,"physicalRoot":"C:\\Program Files (x86)\\GOG.com\\Empire Earth II","auditedDefaultUserTemp":"C:\\Users\\Admin\\AppData\\Local\\Temp","scope":"Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."}},{"virtualPath":"db/Simulation/dbcomba5.csv","lookupKey":"db/simulation/dbcomba5.csv","kind":"zip-member","physical":"zips/db_155.zip","marker":"zips/db_155.zip","member":"db/Simulation/dbcomba5.csv","bytes":4810,"sha256":"394fe5a0eebde3267c3074876ffbd8fab7901ddd6b17dcaee8a9e67a4eca2161","archivePriority":2,"hookSubstitution":false,"memberTime":1644018890,"initialRecordTime":1644018890,"initialRecordSize":4810,"insertionPriority":434,"profile":{"game":"ee2","up16Enabled":true,"enhancedTerrainRequested":false,"physicalRoot":"C:\\Program Files (x86)\\GOG.com\\Empire Earth II","auditedDefaultUserTemp":"C:\\Users\\Admin\\AppData\\Local\\Temp","scope":"Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."}},{"virtualPath":"db/Simulation/dbcombat_unittypeadjus5.csv","lookupKey":"db/simulation/dbcombat_unittypeadjus5.csv","kind":"zip-member","physical":"zips/db_155.zip","marker":"zips/db_155.zip","member":"db/Simulation/dbcombat_unittypeadjus5.csv","bytes":30887,"sha256":"2e7b8ce47014b3b42bf81a2fd849ff3086888e98925960783184c2f11da14b72","archivePriority":2,"hookSubstitution":false,"memberTime":1552544196,"initialRecordTime":1552544196,"initialRecordSize":30887,"insertionPriority":435,"profile":{"game":"ee2","up16Enabled":true,"enhancedTerrainRequested":false,"physicalRoot":"C:\\Program Files (x86)\\GOG.com\\Empire Earth II","auditedDefaultUserTemp":"C:\\Users\\Admin\\AppData\\Local\\Temp","scope":"Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."}},{"virtualPath":"db/TechTree/upgrade_unittype5.csv","lookupKey":"db/techtree/upgrade_unittype5.csv","kind":"zip-member","physical":"zips/db_155.zip","marker":"zips/db_155.zip","member":"db/TechTree/upgrade_unittype5.csv","bytes":145672,"sha256":"225b9e7c8e34fcf2969e166207997d349aeed642b371f5fc08911911ce575ffb","archivePriority":2,"hookSubstitution":false,"memberTime":1791150192,"initialRecordTime":1791150192,"initialRecordSize":145672,"insertionPriority":452,"profile":{"game":"ee2","up16Enabled":true,"enhancedTerrainRequested":false,"physicalRoot":"C:\\Program Files (x86)\\GOG.com\\Empire Earth II","auditedDefaultUserTemp":"C:\\Users\\Admin\\AppData\\Local\\Temp","scope":"Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."}}]},"bindings":{"definitions":57,"resolved":57,"disabled_unresolved":[],"role_adapters":14,"visual_records":129,"class_records":279,"rps_matrix_shape":[35,35],"adjustments":516,"research_nodes":180,"research_summary":{"runtime_effects":188,"unsupported_factors":82,"tooltip_only_factors":6,"deduplicated_factors":0},"rps_profiles":313},"source_influences":{"hp":"CSV5 HP or inherited CitizenM HP + active per-epoch Citizen factors -> rebuild_modifiers -> max_hp.","cost9":"CSV5 upgrade or production costs in FOOD WOOD IRON STONE GOLD TIN SALTPETER OIL URANIUM order -> unit_cost; research Cost modifier.","population":"Inherited active DDF popCount and popCapacity remain distinct; garrison-slot cost uses compiled popCount semantic binding.","production_construction":"CSV5 BUILDTIME or production TIME -> production_time and construction progress; research BuildTime factor. Existing grid/territory2x/3x multiplier remains independent engine adapter.","attack":"Actual refs before nonzero CSV replacements; native RPS eligibility, start/apply/end clock, source min ranges, named missiles/speed, quadratic splash and compiled friendly-ratio quirk. Remaining geometry/turret/packing/ordnance adapters are explicit.","movement":"Actual bound Move/VehicleMove/NavalMove/AircraftMove values; source degrees/sec use compiled radians constant. Engine distance identity and movement paths remain explicit adapters.","gather":"Active GatherFarm nine rates, farmRate, carryLimit and farmCarryLimit replace hardcoded values only in UP profile; existing resource eligibility/worker-slot/navigation adapters remain.","generation_dropoff":"University/extractor Garrison.gatherRate/gatherType and Garrison.resourceBonus replace literals only in UP profile.","garrison":"Source slots/heal/attackBonus/eligibility/popCount-cost. Existing CARGO_MAX10 caps slot storage; healing and attackBonus are integrated only for Fortress.","research":"180 nodes from active dbtechtreenod5.csv, factorse5.csv + active epoch UpgradeRefSets. Family/instance/RPS/movement selector projected onto explicit smaller source roles; unsupported selectors and native specialist factors remain in audit.","source_tokens":"Singular/plural CSV DISPLAYNAME values and production DISPLAYNAME/PRODUCE/UPGRADE retain exact origins/SHA. Existing research label reused only when token unchanged; German resolver remains separate."},"not_adopted":["Packed visual capability, actual turret bank readiness/alignment and ordnance/rearm.","Native military flags/line-of-shot collision geometry and original firing-animation event callbacks/global RNG.","Renderer weapon categories and projectile curves remain explicit presentation adapters; rockets are not torpedoes.","Latent House attack not enabled without modifier-default/activation proof.","Full native production/civilization roster; current57 roles still include14 explicit role adapters.","Existing transient projectiles are not persisted, so arbitrary in-flight save/reload is not replay-equivalent."],"save_scope":{"header":["ATK1 magic:u32","version1:u32","count:u32"],"record":["fullGenerationHandle:u32","nextAttackGameSeconds:f32","flags:u32"],"footer":["chunkBytes:u32","ATKE magic:u32"],"bytes":"20+12*count","placement":"Immediately after a complete validated CGD1 tail on the full57/ECO1/DIP1/TER1 UP save.","legacy":"Old OEU5 without ATK1 migrates already-running Ent.cd into a waiting deadline.","atomic":"Fresh local Game is committed only after every extension and foreign-profile check succeeds."},"original_install_modified":false,"original_dll_or_exe_executed":false,"original_media_extracted_or_copied":true,"github_writes":false,"binding_refs":{"class_rows":279,"records":878,"kinds":{"UpgradeSet":23,"InlineFactor":33,"UpgradeAbilities":239,"UpgradeUnitTypeUpgrade":5,"UpgradeRefSet":187,"CSVFactorSet":374,"UpgradeSize":17},"unresolved":0,"unsupported_ability_occurrences":439,"audit":"docs/ee2-up15-unit-refs.json","scope":"Actual bound CSV UPGRADEREFS (including cross-named upgrades), nested sets, inline factors and named CSV factors are traversed completely. Nonzero scalar CSV replacements override ability placeholders; zero retains source values, as DbUpgradeDefs.h documents."},"validation":{"rustTests":{"up15":90,"reference":75,"base":32},"sourceOracles":{"format":"ee2-up15-independent-source-oracles-v1","checks":115192,"source_manifest_sha256":"eabf590cacef634646eb4e8e47eb58e29a44ca8a6ac1d914a012e1b91b9f87f3","profiles":313,"compiled_matchups":97969,"compiled_unit_csv_records":271,"research_nodes":180,"originals_modified":false,"dll_or_exe_executed":false},"actualWasm":{"format":"native-combat5-actual-wasm-v1","status":"PASS","checks":5429,"wasmSha256":"c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51","wasmBytes":460364,"attackAuditSha256":"bdfceb965b3d1bf7cd44adc8cc5ba1b5874f20f88dab3c2aaaeb83a08d24cfd2","expectedFireTicks":[11,42,74,105],"actualFireTicks":[11,42,74,105],"malformedCases":46,"limits":["Packed/unpacked state, turret banks, native blocking geometry and ordnance/rearm remain explicit adapters.","As in existing saves, active projectiles are transient; this replay fixture uses direct attacks."]},"regeneration":{"format":"ee2-up15-regeneration-v1","byte_identical":true,"verification_required":true,"files":{"src/ee2_up15_units.rs":"847f22ce37265fe944e570527e8f4af718a36432fa86adc55409f01e365eb508","src/ee2_up15_combat.rs":"e79055630fcea0efe40e11246262c3e1f7f94d21d892d04653f9450680b5eea9","src/ee2_up15_research.rs":"54310b59d678eb6e42a4b01ef60057ed30b67111833d48fe91fc6002ed631a07","src/ee2_up15_profile.rs":"b7c7460f8ed50e6ff493ba6c576f1f2726eb3e692be886918f3780ff186e95cd","src/ee2_up15_economy.rs":"a68a35bd3e3b815eeb5444fa887e53d08d024a8b3c87a86a13b8d2a52eea06cb","src/ee2_up15_attack.rs":"165c8b314345ae64f34ece004b4507cae83618c0f664abc81694e708a3ebad61","src/ee2_up15_oracle_tests.rs":"f0c81affd5c3892dab54f13b7294aa5d80cd6a7a2b78b2a03c556f1d14ea7901","tools/up15-combat-oracle.bin":"8de91b3d9a84e0a0fad73671cb88a8203b9ec2df89b788ae91acb9edaabd1ddd","docs/ee2-up15-units.json":"6a2f631b71bc4d2ee5c9aacda32f3ff0d239ea385c434fbdaa91928280d4bbf3","docs/ee2-up15-combat.json":"c7b27bcc5b2d39d78d4754246c35b560327954e3e0eda103490aaf820aa72358","docs/ee2-up15-research.json":"2c7009f0ae24252a9a3b0c21b12668207f23073495dc88b0bd34ddfa3c5ee01f","docs/ee2-up15-catalog.json":"cc62a6bbf2621e1f7c7087a3433037f3a7d7c8fa17c4b656f01418afe3cd56b6","docs/ee2-up15-unit-refs.json":"1c6e85adfdf19c9599259db1445d68e5070829dbe8f44d2ada5e044660dfbb0a","docs/native-up15-attack.json":"bdfceb965b3d1bf7cd44adc8cc5ba1b5874f20f88dab3c2aaaeb83a08d24cfd2"},"source_scope":"Native00541940 CSV5 literals and two active CFG5 lists only; native VFS resolution already encoded in the prepared effective manifest."},"profileWasmReport":"outputs/EE2-Research/analysis/native-combat5-wasm-profile-tests.json"},"models_manifest_sha256":"34c9265030903859a07b51727a78b79a57e66f27123a9d15879c0e719c0eb643","media_scope":"Only source-bound local-original derivatives for the private portable game. Original-media directory remains excluded from public source.","base_models_manifest_unchanged_sha256":"f681e82a0676d78c05590f3f1d736be665d7cb533346c73cc49dbe317d083d53","repositoryCopy":{"deduplicatedProvenanceOnly":true,"allNumericalAndOracleFieldsPreserved":true,"fullLocalReportSha256":"acc12a6d88f3b7eb375f2c52ceae9ce8e84e20029ed2d6e200ac549cc8503a96","sourceOriginDefinitions":{}}}
+{
+  "format": "ee2-up15-profile-audit-v2",
+  "status": "Combat5 active; parent integrated NET10, profile-specific models and original labels.",
+  "profile": {
+    "feature": "ee2-up15",
+    "depends_on": "ee2-reference",
+    "ruleset_id": 2,
+    "save_magic_hex": "0x3555454f",
+    "save_magic_ascii": "OEU5",
+    "indexed_db_proposal": "openepoch-ee2-up15-v1",
+    "query_proposal": "rules=ee2-up15",
+    "network": "NET10 plus exact WASM fingerprint owned by frontend; older protocol9 peers are rejected.",
+    "query": "rules=ee2&profile=up15"
+  },
+  "sources": {
+    "effective_manifest": "work/up-resolved-sources/effective-db-sources.json",
+    "effective_manifest_sha256": "eabf590cacef634646eb4e8e47eb58e29a44ca8a6ac1d914a012e1b91b9f87f3",
+    "native_loader": "00541940 (CSV5 literals), active db/dbunitfile5.cfg + db/techtree/dbepochupgrade5.cfg",
+    "priority_evidence": "outputs/EE2-Research/analysis/native-vfs-order-evidence.json",
+    "helper_evidence": "outputs/EE2-Research/analysis/native-uphelper-source-evidence.json",
+    "active_ddfs": 158,
+    "inactive_base_or_other_version_ddfs_added": false,
+    "numeric_table_origins": [
+      {
+        "virtualPath": "DbHdrs/DbUnitDefEnums.h",
+        "lookupKey": "dbhdrs/dbunitdefenums.h",
+        "kind": "zip-member",
+        "physical": "zips/hdrs.zip",
+        "marker": "zips/hdrs.zip",
+        "member": "DbHdrs/DbUnitDefEnums.h",
+        "bytes": 15951,
+        "sha256": "c2fd2ef87d9927872b913a30eaaf267a096b7e4c5221e145020a7173afeb79e9",
+        "archivePriority": 15,
+        "hookSubstitution": false,
+        "memberTime": 1127902008,
+        "initialRecordTime": 1127902008,
+        "initialRecordSize": 15951,
+        "insertionPriority": 621,
+        "profile": {
+          "game": "ee2",
+          "up16Enabled": true,
+          "enhancedTerrainRequested": false,
+          "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+          "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+          "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+        }
+      },
+      {
+        "virtualPath": "DbHdrs/DbCombatDefs.h",
+        "lookupKey": "dbhdrs/dbcombatdefs.h",
+        "kind": "zip-member",
+        "physical": "zips/hdrs.zip",
+        "marker": "zips/hdrs.zip",
+        "member": "DbHdrs/DbCombatDefs.h",
+        "bytes": 2567,
+        "sha256": "08c479892dee1e1c9dcda642c91dd2d1e598093d78097245863fa5904b08caa8",
+        "archivePriority": 15,
+        "hookSubstitution": false,
+        "memberTime": 1127902008,
+        "initialRecordTime": 1127902008,
+        "initialRecordSize": 2567,
+        "insertionPriority": 590,
+        "profile": {
+          "game": "ee2",
+          "up16Enabled": true,
+          "enhancedTerrainRequested": false,
+          "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+          "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+          "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+        }
+      },
+      {
+        "virtualPath": "db/Simulation/dbcomba5.csv",
+        "lookupKey": "db/simulation/dbcomba5.csv",
+        "kind": "zip-member",
+        "physical": "zips/db_155.zip",
+        "marker": "zips/db_155.zip",
+        "member": "db/Simulation/dbcomba5.csv",
+        "bytes": 4810,
+        "sha256": "394fe5a0eebde3267c3074876ffbd8fab7901ddd6b17dcaee8a9e67a4eca2161",
+        "archivePriority": 2,
+        "hookSubstitution": false,
+        "memberTime": 1644018890,
+        "initialRecordTime": 1644018890,
+        "initialRecordSize": 4810,
+        "insertionPriority": 434,
+        "profile": {
+          "game": "ee2",
+          "up16Enabled": true,
+          "enhancedTerrainRequested": false,
+          "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+          "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+          "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+        }
+      },
+      {
+        "virtualPath": "db/Simulation/dbcombat_unittypeadjus5.csv",
+        "lookupKey": "db/simulation/dbcombat_unittypeadjus5.csv",
+        "kind": "zip-member",
+        "physical": "zips/db_155.zip",
+        "marker": "zips/db_155.zip",
+        "member": "db/Simulation/dbcombat_unittypeadjus5.csv",
+        "bytes": 30887,
+        "sha256": "2e7b8ce47014b3b42bf81a2fd849ff3086888e98925960783184c2f11da14b72",
+        "archivePriority": 2,
+        "hookSubstitution": false,
+        "memberTime": 1552544196,
+        "initialRecordTime": 1552544196,
+        "initialRecordSize": 30887,
+        "insertionPriority": 435,
+        "profile": {
+          "game": "ee2",
+          "up16Enabled": true,
+          "enhancedTerrainRequested": false,
+          "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+          "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+          "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+        }
+      },
+      {
+        "virtualPath": "db/TechTree/upgrade_unittype5.csv",
+        "lookupKey": "db/techtree/upgrade_unittype5.csv",
+        "kind": "zip-member",
+        "physical": "zips/db_155.zip",
+        "marker": "zips/db_155.zip",
+        "member": "db/TechTree/upgrade_unittype5.csv",
+        "bytes": 145672,
+        "sha256": "225b9e7c8e34fcf2969e166207997d349aeed642b371f5fc08911911ce575ffb",
+        "archivePriority": 2,
+        "hookSubstitution": false,
+        "memberTime": 1791150192,
+        "initialRecordTime": 1791150192,
+        "initialRecordSize": 145672,
+        "insertionPriority": 452,
+        "profile": {
+          "game": "ee2",
+          "up16Enabled": true,
+          "enhancedTerrainRequested": false,
+          "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+          "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+          "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+        }
+      }
+    ]
+  },
+  "bindings": {
+    "definitions": 57,
+    "resolved": 57,
+    "disabled_unresolved": [],
+    "role_adapters": 14,
+    "visual_records": 129,
+    "class_records": 279,
+    "rps_matrix_shape": [
+      35,
+      35
+    ],
+    "adjustments": 516,
+    "research_nodes": 180,
+    "research_summary": {
+      "runtime_effects": 188,
+      "unsupported_factors": 82,
+      "tooltip_only_factors": 6,
+      "deduplicated_factors": 0
+    },
+    "rps_profiles": 313
+  },
+  "source_influences": {
+    "hp": "CSV5 HP or inherited CitizenM HP + active per-epoch Citizen factors -> rebuild_modifiers -> max_hp.",
+    "cost9": "CSV5 upgrade or production costs in FOOD WOOD IRON STONE GOLD TIN SALTPETER OIL URANIUM order -> unit_cost; research Cost modifier.",
+    "population": "Inherited active DDF popCount and popCapacity remain distinct; garrison-slot cost uses compiled popCount semantic binding.",
+    "production_construction": "CSV5 BUILDTIME or production TIME -> production_time and construction progress; research BuildTime factor. Existing grid/territory2x/3x multiplier remains independent engine adapter.",
+    "attack": "Actual refs before nonzero CSV replacements; native RPS eligibility, start/apply/end clock, source min ranges, named missiles/speed, quadratic splash and compiled friendly-ratio quirk. Remaining geometry/turret/packing/ordnance adapters are explicit.",
+    "movement": "Actual bound Move/VehicleMove/NavalMove/AircraftMove values; source degrees/sec use compiled radians constant. Engine distance identity and movement paths remain explicit adapters.",
+    "gather": "Active GatherFarm nine rates, farmRate, carryLimit and farmCarryLimit replace hardcoded values only in UP profile; existing resource eligibility/worker-slot/navigation adapters remain.",
+    "generation_dropoff": "University/extractor Garrison.gatherRate/gatherType and Garrison.resourceBonus replace literals only in UP profile.",
+    "garrison": "Source slots/heal/attackBonus/eligibility/popCount-cost. Existing CARGO_MAX10 caps slot storage; healing and attackBonus are integrated only for Fortress.",
+    "research": "180 nodes from active dbtechtreenod5.csv, factorse5.csv + active epoch UpgradeRefSets. Family/instance/RPS/movement selector projected onto explicit smaller source roles; unsupported selectors and native specialist factors remain in audit.",
+    "source_tokens": "Singular/plural CSV DISPLAYNAME values and production DISPLAYNAME/PRODUCE/UPGRADE retain exact origins/SHA. Existing research label reused only when token unchanged; German resolver remains separate."
+  },
+  "not_adopted": [
+    "Packed visual capability, actual turret bank readiness/alignment and ordnance/rearm.",
+    "Native military flags/line-of-shot collision geometry and original firing-animation event callbacks/global RNG.",
+    "Renderer weapon categories and projectile curves remain explicit presentation adapters; rockets are not torpedoes.",
+    "Latent House attack not enabled without modifier-default/activation proof.",
+    "Full native production/civilization roster; current57 roles still include14 explicit role adapters.",
+    "Existing transient projectiles are not persisted, so arbitrary in-flight save/reload is not replay-equivalent."
+  ],
+  "save_scope": {
+    "header": [
+      "ATK1 magic:u32",
+      "version1:u32",
+      "count:u32"
+    ],
+    "record": [
+      "fullGenerationHandle:u32",
+      "nextAttackGameSeconds:f32",
+      "flags:u32"
+    ],
+    "footer": [
+      "chunkBytes:u32",
+      "ATKE magic:u32"
+    ],
+    "bytes": "20+12*count",
+    "placement": "Immediately after a complete validated CGD1 tail on the full57/ECO1/DIP1/TER1 UP save.",
+    "legacy": "Old OEU5 without ATK1 migrates already-running Ent.cd into a waiting deadline.",
+    "atomic": "Fresh local Game is committed only after every extension and foreign-profile check succeeds."
+  },
+  "original_install_modified": false,
+  "original_dll_or_exe_executed": false,
+  "original_media_extracted_or_copied": true,
+  "github_writes": false,
+  "binding_refs": {
+    "class_rows": 279,
+    "records": 878,
+    "kinds": {
+      "UpgradeSet": 23,
+      "InlineFactor": 33,
+      "UpgradeAbilities": 239,
+      "UpgradeUnitTypeUpgrade": 5,
+      "UpgradeRefSet": 187,
+      "CSVFactorSet": 374,
+      "UpgradeSize": 17
+    },
+    "unresolved": 0,
+    "unsupported_ability_occurrences": 439,
+    "audit": "docs/ee2-up15-unit-refs.json",
+    "scope": "Actual bound CSV UPGRADEREFS (including cross-named upgrades), nested sets, inline factors and named CSV factors are traversed completely. Nonzero scalar CSV replacements override ability placeholders; zero retains source values, as DbUpgradeDefs.h documents."
+  },
+  "validation": {
+    "rustTests": {
+      "up15": 90,
+      "reference": 75,
+      "base": 32
+    },
+    "sourceOracles": {
+      "format": "ee2-up15-independent-source-oracles-v1",
+      "checks": 115192,
+      "source_manifest_sha256": "eabf590cacef634646eb4e8e47eb58e29a44ca8a6ac1d914a012e1b91b9f87f3",
+      "profiles": 313,
+      "compiled_matchups": 97969,
+      "compiled_unit_csv_records": 271,
+      "research_nodes": 180,
+      "originals_modified": false,
+      "dll_or_exe_executed": false
+    },
+    "actualWasm": {
+      "format": "native-combat5-actual-wasm-v1",
+      "status": "PASS",
+      "checks": 5429,
+      "wasmSha256": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51",
+      "wasmBytes": 460364,
+      "attackAuditSha256": "bdfceb965b3d1bf7cd44adc8cc5ba1b5874f20f88dab3c2aaaeb83a08d24cfd2",
+      "expectedFireTicks": [
+        11,
+        42,
+        74,
+        105
+      ],
+      "actualFireTicks": [
+        11,
+        42,
+        74,
+        105
+      ],
+      "malformedCases": 46,
+      "limits": [
+        "Packed/unpacked state, turret banks, native blocking geometry and ordnance/rearm remain explicit adapters.",
+        "As in existing saves, active projectiles are transient; this replay fixture uses direct attacks."
+      ]
+    },
+    "regeneration": {
+      "format": "ee2-up15-regeneration-v1",
+      "byte_identical": true,
+      "verification_required": true,
+      "files": {
+        "src/ee2_up15_units.rs": "847f22ce37265fe944e570527e8f4af718a36432fa86adc55409f01e365eb508",
+        "src/ee2_up15_combat.rs": "e79055630fcea0efe40e11246262c3e1f7f94d21d892d04653f9450680b5eea9",
+        "src/ee2_up15_research.rs": "54310b59d678eb6e42a4b01ef60057ed30b67111833d48fe91fc6002ed631a07",
+        "src/ee2_up15_profile.rs": "b7c7460f8ed50e6ff493ba6c576f1f2726eb3e692be886918f3780ff186e95cd",
+        "src/ee2_up15_economy.rs": "a68a35bd3e3b815eeb5444fa887e53d08d024a8b3c87a86a13b8d2a52eea06cb",
+        "src/ee2_up15_attack.rs": "165c8b314345ae64f34ece004b4507cae83618c0f664abc81694e708a3ebad61",
+        "src/ee2_up15_oracle_tests.rs": "f0c81affd5c3892dab54f13b7294aa5d80cd6a7a2b78b2a03c556f1d14ea7901",
+        "tools/up15-combat-oracle.bin": "8de91b3d9a84e0a0fad73671cb88a8203b9ec2df89b788ae91acb9edaabd1ddd",
+        "docs/ee2-up15-units.json": "6a2f631b71bc4d2ee5c9aacda32f3ff0d239ea385c434fbdaa91928280d4bbf3",
+        "docs/ee2-up15-combat.json": "c7b27bcc5b2d39d78d4754246c35b560327954e3e0eda103490aaf820aa72358",
+        "docs/ee2-up15-research.json": "2c7009f0ae24252a9a3b0c21b12668207f23073495dc88b0bd34ddfa3c5ee01f",
+        "docs/ee2-up15-catalog.json": "cc62a6bbf2621e1f7c7087a3433037f3a7d7c8fa17c4b656f01418afe3cd56b6",
+        "docs/ee2-up15-unit-refs.json": "1c6e85adfdf19c9599259db1445d68e5070829dbe8f44d2ada5e044660dfbb0a",
+        "docs/native-up15-attack.json": "bdfceb965b3d1bf7cd44adc8cc5ba1b5874f20f88dab3c2aaaeb83a08d24cfd2"
+      },
+      "source_scope": "Native00541940 CSV5 literals and two active CFG5 lists only; native VFS resolution already encoded in the prepared effective manifest."
+    },
+    "profileWasmReport": "outputs/EE2-Research/analysis/native-combat5-wasm-profile-tests.json"
+  },
+  "models_manifest_sha256": "34c9265030903859a07b51727a78b79a57e66f27123a9d15879c0e719c0eb643",
+  "media_scope": "Only source-bound local-original derivatives for the private portable game. Original-media directory remains excluded from public source.",
+  "base_models_manifest_unchanged_sha256": "f681e82a0676d78c05590f3f1d736be665d7cb533346c73cc49dbe317d083d53"
+}

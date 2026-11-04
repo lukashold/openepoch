@@ -1,0 +1,16 @@
+{
+  "format": "native-sail-controller7-candidate-tests-v1",
+  "status": "passed",
+  "checks": 40,
+  "controllerSha256": "b59c8f1d69a3878c3ecd94167bf20cda5eae35f188efc7a159c19f0e3f064a27",
+  "metadataWasmSha256": "f7784ee37122a8bd1e281bf09c4a898cae081e752cd5f9649a2c1d09efa50bd5",
+  "sourceSailManifestSha256": "f744b0a4f25313963a3c4bbcd2d6249fc306a2eae9667d069da146114a349d2d",
+  "actualSourcePlanes": 6,
+  "activeRuntimeModified": false,
+  "limits": [
+    "Actual metadata identity and original local source grids are used with explicit controlled local forces; this is not a native ship-matrix, pause-scheduler or original-game trajectory claim.",
+    "Visible owners advance once; culled live owners retain state without stepping as an explicit application policy.",
+    "Native Death requires a real future lifecycle event; a controlled test invokes the explicit method, with no active gameplay death binding.",
+    "Per-owner GPU position/color upload and bounds are still separate."
+  ]
+}

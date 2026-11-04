@@ -1,0 +1,149 @@
+{
+  "status": "passed",
+  "format": "native-roster6-independent-migration-review-v1",
+  "checks": 3150,
+  "binaries": {
+    "up5": {
+      "sha256": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51",
+      "bytes": 460364
+    },
+    "up6": {
+      "sha256": "1741020cd97f45d8393181bde50165d922debf4cb19f7d706a9969d03a7e1ebe",
+      "bytes": 472115
+    },
+    "base": {
+      "sha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+      "bytes": 430146
+    },
+    "own": {
+      "sha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+      "bytes": 268821
+    }
+  },
+  "scenarios": [
+    {
+      "epoch": 0,
+      "oldSha256": "105229895f6203fe1cba07863455de102e7a3fc123266d8f09cc509b7a901fea",
+      "newSha256": "870e952deab564d7c70a75e814f169d4e18e03327ddb344e2b3d8f343f910da9",
+      "continuedTicks": 740
+    },
+    {
+      "epoch": 7,
+      "oldSha256": "fce1d8cd7b92f7afd0a0fe714d73e1878e24c19e26efe4762be397fcb680e600",
+      "newSha256": "4a458c9c92aea9b1d3b099a1266bea54a2d4808dd949ea8d1f790c1540a29373",
+      "continuedTicks": 740
+    },
+    {
+      "epoch": 14,
+      "oldSha256": "6864197d45d05c991e343b55fb7f1c6a467058762586f15caf38e2e4cfc589b9",
+      "newSha256": "5c69351e2ced4d77a0283ef77fd18b5b695035c9e2daa511c72a0515a3333450",
+      "continuedTicks": 740
+    }
+  ],
+  "malformedCases": 1000,
+  "additionalDeadRecordMalformedCases": 3,
+  "genuinePreClockLegacy": "passed",
+  "groups": {
+    "header": 10,
+    "player-bool": 40,
+    "player-float": 336,
+    "entity-bool": 20,
+    "entity-float": 380,
+    "array-count": 4,
+    "worker-resource-state": 6,
+    "cargo-definition": 2,
+    "tail-truncation-1": 2,
+    "tail-truncation-2": 2,
+    "tail-truncation-3": 2,
+    "tail-truncation-4": 2,
+    "tail-truncation-5": 2,
+    "tail-truncation-6": 2,
+    "tail-truncation-7": 2,
+    "tail-truncation-8": 2,
+    "tail-truncation-9": 2,
+    "tail-truncation-10": 2,
+    "tail-truncation-11": 2,
+    "tail-truncation-12": 2,
+    "tail-truncation-13": 2,
+    "tail-truncation-14": 2,
+    "tail-truncation-15": 2,
+    "tail-truncation-16": 2,
+    "tail-truncation-17": 2,
+    "tail-truncation-18": 2,
+    "tail-truncation-19": 2,
+    "tail-truncation-21": 2,
+    "tail-truncation-22": 2,
+    "tail-truncation-23": 2,
+    "tail-truncation-24": 2,
+    "tail-truncation-25": 2,
+    "tail-truncation-26": 2,
+    "tail-truncation-27": 2,
+    "tail-truncation-28": 2,
+    "tail-truncation-29": 2,
+    "tail-truncation-30": 2,
+    "tail-truncation-31": 2,
+    "tail-truncation-32": 2,
+    "tail-truncation-33": 2,
+    "tail-truncation-34": 2,
+    "tail-truncation-35": 2,
+    "tail-truncation-36": 2,
+    "tail-truncation-37": 2,
+    "tail-truncation-38": 2,
+    "tail-truncation-39": 2,
+    "tail-truncation-40": 2,
+    "tail-truncation-41": 2,
+    "tail-truncation-42": 2,
+    "tail-truncation-43": 2,
+    "tail-truncation-44": 2,
+    "tail-truncation-45": 2,
+    "tail-truncation-46": 2,
+    "tail-truncation-47": 2,
+    "tail-truncation-48": 2,
+    "tail-truncation-49": 2,
+    "tail-truncation-50": 2,
+    "tail-truncation-51": 2,
+    "tail-truncation-52": 2,
+    "tail-truncation-53": 2,
+    "tail-truncation-54": 2,
+    "tail-truncation-55": 2,
+    "tail-truncation-56": 2,
+    "tail-truncation-57": 2,
+    "tail-truncation-58": 2,
+    "tail-truncation-59": 2,
+    "tail-truncation-60": 2,
+    "tail-truncation-61": 2,
+    "tail-truncation-62": 2,
+    "tail-truncation-63": 2,
+    "tail-truncation-64": 2,
+    "tail-truncation-65": 2,
+    "tail-truncation-66": 2,
+    "tail-truncation-67": 2,
+    "tail-truncation-68": 2,
+    "tail-truncation-69": 2,
+    "tail-truncation-70": 2,
+    "tail-truncation-71": 2,
+    "tail-truncation-72": 2,
+    "appended-data": 2,
+    "tail-truncation-20": 1,
+    "descriptor-byte": 52,
+    "definition16": 1,
+    "job-namespace": 4
+  },
+  "reviewScriptSha256": "014db81632e7df3dfd5f388cf51089742a7ca30741c5e3a6c35e865d5cc3fe2a",
+  "sourceHashes": {
+    "save6.rs": "9fc6860ed4a34a4fde94973f6862f7990d024bee48b83de01916c9c4e83a0868",
+    "save.rs": "5e9e6629d36685e058cb3bbb451581f9e6d894fa957b1f50c496db5022a841a4",
+    "ids.rs": "a0faa35d5e339f9cda9e59ac3fbecbc220f02c957fccd838e5345768a17f511f"
+  },
+  "sourceReview": [
+    "All untrusted Ent/Player bool bytes and every explicitly encoded float are validated before raw typed filling.",
+    "Explicit fixed-width5→6 entity conversion normalizes padding and transient flow slots; player/entity layout guards and namespace descriptor fingerprint checked.",
+    "Shared load constructs a new Game and swaps the active state only on complete success.",
+    "Worker queue fields are preserved as resource-state values; only building job queues are namespace-migrated."
+  ],
+  "limits": [
+    "Exactly57 gameplay roles remain in this phase; this review does not assert a completed native roster.",
+    "Field equivalence excludes incidental flow-cache slots and reprC padding; all other persisted bits, complete map and extension tails are compared.",
+    "Queued epoch/cargo edge fixture is explicitly controlled and first validated/re-emitted by the real frozen5 WASM; no native executable or browser used."
+  ]
+}

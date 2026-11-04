@@ -1,0 +1,15 @@
+{
+  "format": "native6-bitmap-font-original-preservation-and-images-v1",
+  "passed": true,
+  "checks": 329889,
+  "originalGlyphBindingsUnchanged": 2240,
+  "currentGdiGlyphBindings": 11144,
+  "fontVariants": 70,
+  "sourceResolutionBindings": 84,
+  "productionDrawCaptures": 5,
+  "visibleGlyphPixels": 3888,
+  "preview": "bitmap-fonts-preview.png",
+  "previewSha256": "59989231d1e7428225914e60fdfb0bb74a82576df792417d1ef238b0f9b793c1",
+  "manifestSha256": "ff12ad34c6940c32f4993290a3c9f3e6f85c0bb5ee418f4b77d5cd0dce05c82c",
+  "scope": "Every original glyph binding and full cached kerning table preserved; portable image hashes/UV/packing/German coverage; actual activeJS draw placements composed with original and separately provenanced GDI glyphPNGs. Composition preview is not a browser/original executable capture."
+}

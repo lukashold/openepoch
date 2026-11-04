@@ -1,0 +1,132 @@
+{
+  "format": "native-terrain6-browser-handoff-v1",
+  "status": "passed",
+  "stage": "isolated-no-active-runtime-change",
+  "checks": 3872,
+  "browserTests": {
+    "status": "passed",
+    "format": "native-terrain6-browser-port-tests-v1",
+    "checks": 168195,
+    "profiles": [
+      {
+        "profile": "base",
+        "sha256": "f1c14bea6d0bfce4fbe1a0e1f7cd4cc944ad19eaa03b436d8ea42d08b47a008d",
+        "bytes": 1982464,
+        "milliseconds": 664.521
+      },
+      {
+        "profile": "up15",
+        "sha256": "f1c14bea6d0bfce4fbe1a0e1f7cd4cc944ad19eaa03b436d8ea42d08b47a008d",
+        "bytes": 1982464,
+        "milliseconds": 603.2035999999998
+      }
+    ],
+    "lifecycle": [
+      {
+        "elapsedMs": 2094.01,
+        "builds": 4,
+        "framesWithoutRebuild": 60,
+        "finalFallback": "invalid-context"
+      }
+    ],
+    "sourceHashes": {
+      "browser/original-terrain.js": "32bb7736a323f4069524b6fd08892dbcda15d0314a8f25f40e4fd28a5a12fb0a",
+      "browser/native-terrain-lightmap.js": "8310245a5b4d94ab36fd4d764bc26ce1d5384aa7386b90c4c3016caa46f7bc02",
+      "browser/native-terrain-lighting.js": "87b9dbddcdbb6dfd240d0f44bc105f4b8a2a7d6b0deab4ef306fe1e7d17053fd",
+      "browser-test.mjs": "7de13bb6b5edd8efa4573d5ca0376b780adab6789037b831c1b09b740283e05e"
+    },
+    "limits": [
+      "Node uses the production module through a recording GL transport; actual shader/pixel checks are a separate GLES replay.",
+      "Own heightfield/normal/ray adapters remain explicit; no native mapgen, cliffs or native projected-shadow emitter claim."
+    ]
+  },
+  "worldProfiles": [
+    {
+      "profile": "base",
+      "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+      "capture": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\world-0-town-month6-reflection-profile-base-terrain6-browser-base.json",
+      "captureSha256": "980f918fcf863eff0029d34a5253d769023b31f7c4109392e22e5f8423c7c730",
+      "gpuReportSha256": "871dbc8d875f925c6224546fdfc6c0c269637383d3dab43972c789c6fa83ce32",
+      "pngSha256": "0457445e23e54e24b57c533dbe262146ec90014ba455db9aa526f0c1a8a3d5bb",
+      "pixelsDifferentFromPythonCandidate": 0,
+      "instances": 397,
+      "draws": 38,
+      "metrics": {
+        "terrainCalls": 1,
+        "waterCalls": 0,
+        "seasonSlot": 6,
+        "seasonNext": 7,
+        "seasonBlend": 0,
+        "images": 52,
+        "classification": "simulation-terrain-ids",
+        "lightmapBuilds": 1,
+        "lightmapUploads": 1,
+        "lightmapBytes": 1982464,
+        "lightmapBuildMs": 760.3907999999999,
+        "nativeLighting": true,
+        "lightingFallback": null,
+        "lightmapLayers": 121,
+        "lightmapOccludedSamples": 0
+      }
+    },
+    {
+      "profile": "up15",
+      "wasmSha256": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51",
+      "capture": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\world-0-town-month6-reflection-profile-up15-terrain6-browser-up.json",
+      "captureSha256": "23de783a4fe06e69ff7ed02d22a6e17d8b14a56d219893f547ed17f35aa41e58",
+      "gpuReportSha256": "8efbb6094caf58de9795a547da1b06caa2bd09a8dd69424ea41df51cfb51ab60",
+      "pngSha256": "0457445e23e54e24b57c533dbe262146ec90014ba455db9aa526f0c1a8a3d5bb",
+      "pixelsDifferentFromPythonCandidate": 0,
+      "instances": 397,
+      "draws": 38,
+      "metrics": {
+        "terrainCalls": 1,
+        "waterCalls": 0,
+        "seasonSlot": 6,
+        "seasonNext": 7,
+        "seasonBlend": 0,
+        "images": 52,
+        "classification": "simulation-terrain-ids",
+        "lightmapBuilds": 1,
+        "lightmapUploads": 1,
+        "lightmapBytes": 1982464,
+        "lightmapBuildMs": 769.7499999999999,
+        "nativeLighting": true,
+        "lightingFallback": null,
+        "lightmapLayers": 121,
+        "lightmapOccludedSamples": 0
+      }
+    }
+  ],
+  "files": {
+    "browser\\native-terrain-lighting.js": "87b9dbddcdbb6dfd240d0f44bc105f4b8a2a7d6b0deab4ef306fe1e7d17053fd",
+    "browser\\native-terrain-lightmap.js": "8310245a5b4d94ab36fd4d764bc26ce1d5384aa7386b90c4c3016caa46f7bc02",
+    "browser\\original-terrain.js": "32bb7736a323f4069524b6fd08892dbcda15d0314a8f25f40e4fd28a5a12fb0a",
+    "browser\\original-terrain.patch": "2c9b3e3057ae8ef31dbfdfe127f3daa0b38dc6b11212235fc42f41ab85f38748"
+  },
+  "baselineTerrainSha256": "647091f06fcc8e0831a695927b6290e5b5c57eaffa03432787d20b4101b4a090",
+  "sourceEvidence": {
+    "path": "work/native-terrain6/candidate-report.json",
+    "sha256": "6ade4d346e30b1fb7a0566d5a91b03bf0a16746f9094ec884066af554788c99b"
+  },
+  "integration": {
+    "copyFiles": [
+      "browser/original-terrain.js -> docs/original-terrain.js",
+      "browser/native-terrain-lightmap.js -> docs/native-terrain-lightmap.js",
+      "browser/native-terrain-lighting.js -> docs/native-terrain-lighting.js"
+    ],
+    "mainCall": "nativeTerrain.setLightingContext(models.lighting); before/after updateMap both work. Main remains owned by Root.",
+    "textureUnit": 14,
+    "format": "128x128 R8, 121 layers at 25-unit spans, 1,982,464 bytes",
+    "optionalMapNormals": "updateMap({heights,types,normals}) accepts the exact interleaved terrain normal triples; omitted uses the byte-verified existing central-difference input adapter.",
+    "cache": "Only map height, supplied normals or source direction change rebuilds. Colour, class IDs, season, draw, reflection and clipping do not.",
+    "fallback": "Legacy shading with missing-context/awaiting-map/invalid-context/lightmap-build-failed diagnostic; failure details in errors."
+  },
+  "limits": [
+    "The native source lighting constants, lightmap normal interpolation, visibility filter, block dimensions/UV and colour-combine stages are source-backed.",
+    "Own generated heightfield/central-difference normals/triangle DDA remain explicit input adapters; native DEM/cliff generation and queries remain open.",
+    "Native projected-shadow/volume emitter geometry and all native atmosphere/fog pass scheduling are not activated. Existing model-shadow and water/territory/fog adapters retained.",
+    "The source colour stages are fused into the existing terrain fragment pass; this does not emulate every native render-state pass or prove whole-game visual equivalence.",
+    "Initial synchronous atlas build measured about0.5-0.7seconds on this machine. No per-frame atlas build. No original executable/browser/GUI launched."
+  ]
+}

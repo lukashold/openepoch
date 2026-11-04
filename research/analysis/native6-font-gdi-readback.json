@@ -1,0 +1,9 @@
+{
+  "format": "native6-font-gdi-bulk-vs-getpixel-v1",
+  "passed": true,
+  "checks": 160,
+  "comparedGlyphPixels": 12976,
+  "bulkSourceSha256": "2e0cc199c929fd1a521432ed7344a435d79143117a76efbf471541018ecebb3d",
+  "probeSourceSha256": "3501c6ea525215c637ccfd9d9c9b80870ccb66332edb31a106e2db56b6011f9d",
+  "scope": "Actual nativeDDB GDI pixels read independently with per-pixel GetPixel versus bulk GetDIBits; all160 candidate glyph cells are byte-identical. Historical shipped-raster differences remain separately reported."
+}
