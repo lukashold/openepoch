@@ -1,58 +1,37 @@
-Originaltreue – Stand native-ui4, 04.11.2026
+Originaltreue – Stand native-ui5, 04.11.2026
 
-Ein vollständiger1:1-Nachbau ist noch nicht erreicht. Die Entwicklung läuft weiter.
+Die Entwicklung läuft weiter. Ein vollständiger 1:1-Nachbau ist noch nicht erreicht.
 
-Aktueller spielbarer Ausbau
-Das EE2-Menü startet jetzt das getrennte numerische Profil der installierten
-UP-Version. Basisversion und unabhängige OpenEpoch-Regeln bleiben wählbar;
-Spielstände und Multiplayer-Regelprüfung sind getrennt. Die bisherigen beiden
-WASM-Dateien sind unverändert, eine dritte UP-Datei kommt hinzu.
+Alle 57 bisherigen Rollen sind an Quellen gebunden: 279 Klassenintervalle,
+129 Visualintervalle und 313 RPS-Profile. Paladin und LightHerc besitzen ihre
+wirklichen UP-Modelle. Die beiden bisherigen WASMs und BASE-Modellmanifeste
+bleiben unverändert. Angriffsrunden, verzögerter Schaden und belegte Ziel-/
+Mindestreichweiten-/Projektilregeln sind aktiv. Alte UP-Saves migrieren; Netzwerk-
+protokoll10 trennt frühere Kampfstände. Projektile im Flug bleiben eine Save-Lücke.
 
-55 der57 bisherigen Rollen verwenden aufgelöste Originalprofile.275 Klassen-/
-Epochenprofile und862 erreichbare Upgrade-Verweise sind geprüft. Die beiden
-noch unaufgelösten Rollen28/43 bleiben gesperrt. Das Angebot ist kleiner als
-im Original;14 Zuordnungen sind weiterhin ausdrücklich Rollenadapter.
+Die native F4-Oberfläche verwendet 236 Widgetdefinitionen und 151 Originalcrops,
+mit Spielerfarben, Beziehungen, Ressourcen- und Gebietstausch. Deutsche
+Originalnamen, Mehrzahlformen und Beschreibungen folgen Klasse und Epoche.
+Die Quellenbeleuchtung der Modelle berücksichtigt Farbbytes, NiLight und die
+passenden statischen/IndexPal-Materialpfade. Die Anwendung wählt vorerst
+Temperate/Afternoon/Normal; die native Tageszeit-/Wettersteuerung fehlt noch.
 
-Die Oberfläche verwendet51 originale Layoutdefinitionen und129 hochauflösende
-Originalgrafiken. Bestehende Befehle, Minikarte und Speicherfunktionen bleiben
-angeschlossen. Uhr und Monat folgen Simulation und gespeicherten Jahreszeiten.
-Die Darstellung durch Browser/CSS und Systemschriften ist keine vollständige
-Reproduktion des ursprünglichen Widget- und Schriftrenderers.
+Die Farm-/Boden-/Wasser- und HUD-Quellschichten des vorherigen Standes bleiben
+enthalten. Alle importierten Medien liegen im lokalen Spielordner. Einheiten-
+übergaben, Bitmap-Schrift, vollständige KI/Kartenerzeugung und der vollständige
+Einheiten-/Zivilisationsbestand sind noch offen. 439 UpgradeRef-Feldvorkommen
+und82 Forschungsfaktoren sind inventarisierte Lücken, keine439 Einzelmerkmale.
 
-Farmen bestehen aus vier belegten Teilfeldern mit nativer Skalierung und
-Geländeanpassung. Alle zwölf Zustände der drei Feldfamilien sind importiert;
-aktiv ist der originale Standardzustand der Weizenfarm. Arbeiterabhängige
-Erntefolgen und Seeding-Animation werden weiter rekonstruiert.
+Prüfstand: 90 UP-/75 Referenz-/32 eigene Rusttests;115.192 Rohquellenchecks,
+407.723 WASMchecks und5.429 Angriffs-/Save-/Malformedchecks. Acht tatsächliche
+GLES-Weltszenen bestehen432 Kontrollen, zusätzliche Reflexionskontrollen106.
+1364 Profil-/Save-/Netzwerkchecks,1618 Diplomatie-UI-/Befehlschecks und6029
+HUD-Prüfungen bestehen. Die Originaltexte wurden in13.094 unabhängigen
+Quellenprüfungen und5179 Runtime-/142 tatsächlichen HUD-Handlerchecks geprüft.
 
-Gebäudeböden berücksichtigen die belegte Größenumrechnung einschließlich√2,
-Achsen und Versätzen. Frühere Aussagen, rohe DDF-Größen seien schon fertige
-Weltmaße, sind überholt; die alten Prüfdokumente bleiben als Historie erhalten.
+Kein Originalspiel/Original-DLL und kein Browserfenster wurde ausgeführt. Ein
+physischer Mac-Start und eine vollständige Bild-/Spielgleichheit sind ungetestet.
+Originalmedien bleiben außerhalb des öffentlichen Quellrepositories.
 
-Wasser verwendet Original-Skins und originale Kanal-/Alphaberechnung sowie
-einen getrennten Reflexionspass. UV-Vorgaben, native Sichtauswahl und vollständige
-Beleuchtungs-, Wetter- und Schattensteuerung sind noch offen.
-
-Noch wesentliche Arbeit
-Vollständiger Einheitenbestand, Zivilisationen und Spezialfähigkeiten; originale
-KI und Kartenerzeugung;82 Forschungsfaktoren; weitere Waffen-/Ziel-/Timingregeln;
-vollständige Diplomatie-/Einheitenübergabe- und sonstige Oberflächen. Die913 im
-Audit aufgeführten Spezialfeldvorkommen sind wiederholte Datensätze und dürfen
-nicht als913 verschiedene fehlende Funktionen gelesen werden.
-
-Prüfung
-76 UP-,32 eigene und75 Basis-Rusttests,92.660 Rohdatenprüfungen und318.228 WASM-
-Prüfungen. Ein unabhängiger zweiter Quellenabgleich deckt4668 weitere Prüfungen
-und89 echte WASM-Fälle ab.1364 Profil-/Speicher-/Netzwerkprüfungen und6029 HUD-
-DOM-/Mathematikprüfungen sind bestanden. Die aktuelle Grafik wurde mit324
-Weltprüfungen und106 Reflexionskontrollen auf einem echten GLES-Framebuffer
-geprüft.20 Portabilitäts-Selbsttests und12 lokale HTTP-Fälle sind bestanden.
-
-Es wurde kein Originalspiel, Original-DLL oder Browserfenster ausgeführt.
-Ein physischer Mac-Start und vollständige Bild-/Spielgleichheit mit dem Original
-sind nicht geprüft. Originalmedien bleiben im lokalen Komplettpaket und werden
-nicht in das öffentliche Quellrepository aufgenommen.
-
-Aktuelle Einzelnachweise: analysis/original-parity-audit.json,
-analysis/native4-profile-integration.json, analysis/native4-hud-integration.json,
-analysis/native3-farm-ground-integration.json und analysis/native3-water-implementation.json.
-Historischer Vorstand: Originaltreue-Stand-visual-seasons2.txt.
+Aktueller Nachweis: analysis/native5-frontend-integration.json und
+analysis/original-parity-audit.json. Vorheriger Stand: Originaltreue-Stand-native-ui4.txt.

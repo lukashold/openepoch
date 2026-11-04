@@ -1,0 +1,158 @@
+{
+  "format": "up15-isolated-wasm-validation-v1",
+  "checks": 407723,
+  "binaries": {
+    "up15": {
+      "bytes": 460364,
+      "sha256": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51"
+    },
+    "base": {
+      "bytes": 268821,
+      "sha256": "d68c4a8e9cda3387722e8f7d1c416f9656794cfdb9654f3dec41edd770283efe"
+    },
+    "reference": {
+      "bytes": 430146,
+      "sha256": "6347228960bfeeb6da9995da513c9b58fadc5658534001c3ffccc5dd206fcaa7"
+    },
+    "beforeBase": {
+      "bytes": 268821,
+      "sha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a"
+    },
+    "beforeReference": {
+      "bytes": 430146,
+      "sha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18"
+    }
+  },
+  "equivalence": [
+    {
+      "profile": "base",
+      "seed": 7,
+      "epoch": 0,
+      "ticks": 1200,
+      "stateHash": 334032274,
+      "saveSha256": "7b1344246328e25684fdc6d45d2821c6c2b45a05b55b860ec267d3608be82046"
+    },
+    {
+      "profile": "base",
+      "seed": 7,
+      "epoch": 2,
+      "ticks": 1200,
+      "stateHash": 3816871589,
+      "saveSha256": "d073ac61947608b3035c9152ec192d5f955c4a6a5ab00947aec7c3b59466cca4"
+    },
+    {
+      "profile": "base",
+      "seed": 7,
+      "epoch": 5,
+      "ticks": 1200,
+      "stateHash": 1336266061,
+      "saveSha256": "74ec42a3eab7291f9e4b9162ed44df69c94163ca28cc09156c5ca2b602303fd9"
+    },
+    {
+      "profile": "base",
+      "seed": 7,
+      "epoch": 7,
+      "ticks": 1200,
+      "stateHash": 3885618272,
+      "saveSha256": "d2a1c35572682cf633269ef451d1a50f5da3b41edaaeb12dcd1901ef3f42a639"
+    },
+    {
+      "profile": "base",
+      "seed": 41,
+      "epoch": 0,
+      "ticks": 1200,
+      "stateHash": 1592468928,
+      "saveSha256": "a202155805d8e4e9e431528573817711235ad04ec45a1e75e5034f8e0164cd92"
+    },
+    {
+      "profile": "base",
+      "seed": 41,
+      "epoch": 2,
+      "ticks": 1200,
+      "stateHash": 2694425332,
+      "saveSha256": "d0d5834549ba6df202ab48e4e71abfaf5637b4173675d05c5ecd1ebb31c58a00"
+    },
+    {
+      "profile": "base",
+      "seed": 41,
+      "epoch": 5,
+      "ticks": 1200,
+      "stateHash": 1585551613,
+      "saveSha256": "ed25caf766078fd5857d7d34063d4eeb38986fc3dba5afc27047bd36194e0bcd"
+    },
+    {
+      "profile": "base",
+      "seed": 41,
+      "epoch": 7,
+      "ticks": 1200,
+      "stateHash": 2504500657,
+      "saveSha256": "9933614ea66ab2a884d1cb229772d921e511f62fc21304fb63f8368886fa015a"
+    },
+    {
+      "profile": "reference",
+      "seed": 7,
+      "epoch": 0,
+      "ticks": 1200,
+      "stateHash": 1238175386,
+      "saveSha256": "8c1e0cc76a7aebe4a5598f2354e90b7e6e81d737212e7cf574d692bd1e01c6e5"
+    },
+    {
+      "profile": "reference",
+      "seed": 7,
+      "epoch": 5,
+      "ticks": 1200,
+      "stateHash": 405669801,
+      "saveSha256": "5857493cdb22ec4e94e9a5e8803c5014a98093dbc4ac7adbb61e4b3e12aeb3d5"
+    },
+    {
+      "profile": "reference",
+      "seed": 7,
+      "epoch": 10,
+      "ticks": 1200,
+      "stateHash": 3758298013,
+      "saveSha256": "dcd535320fc81b79299f1e6d52237aa8d74b1913d519a3ae63738c7d9f379006"
+    },
+    {
+      "profile": "reference",
+      "seed": 7,
+      "epoch": 14,
+      "ticks": 1200,
+      "stateHash": 1846928256,
+      "saveSha256": "37114e498c37049573ab713b081e5958191633db8edfb985a45e1e3aab49acc8"
+    },
+    {
+      "profile": "reference",
+      "seed": 41,
+      "epoch": 0,
+      "ticks": 1200,
+      "stateHash": 1809240826,
+      "saveSha256": "4dcee12e75331f8a4bcca495c17a76a3012b8d719d5c6c1e34f04f4c6663afac"
+    },
+    {
+      "profile": "reference",
+      "seed": 41,
+      "epoch": 5,
+      "ticks": 1200,
+      "stateHash": 1146735430,
+      "saveSha256": "9c68ec83a9c5f2d6fee1945c088078978c0a9015c4539438d19aab542f461620"
+    },
+    {
+      "profile": "reference",
+      "seed": 41,
+      "epoch": 10,
+      "ticks": 1200,
+      "stateHash": 1783510160,
+      "saveSha256": "cbd93dab05b61409770649ca2d4ee1f5d41da5aa2f55c891cd0f585e3997b528"
+    },
+    {
+      "profile": "reference",
+      "seed": 41,
+      "epoch": 14,
+      "ticks": 1200,
+      "stateHash": 415906562,
+      "saveSha256": "e48eec3154c0284454f380833a6c2f949d7536be33e86c8083d941f71157bad3"
+    }
+  ],
+  "saveSemantics": "Current UP save preserves persisted state; load resets Ent.fslot flow-cache slots as all existing profiles do. Active projectiles remain transient and are not replay-equivalent across save/load.",
+  "status": "PASS"
+}

@@ -150,6 +150,8 @@ pub struct Proj {
     /// Source class/upgrade snapshot at launch; transient projectiles are not saved.
     #[cfg(feature="ee2-reference")]
     pub attacker_profile:u16,
+    #[cfg(feature="ee2-up15")]
+    pub friendly_ratio:f32,
     /// Distance at launch, so the renderer can draw an arc.
     pub d0: f32,
 }
@@ -209,6 +211,8 @@ pub struct Game {
     pub territory: crate::territory::TerritoryDiplomacy,
     #[cfg(feature="ee2-reference")]
     pub city_ground: Vec<crate::city_ground::CityBand>,
+    #[cfg(feature="ee2-up15")]
+    pub attack_clock:Vec<crate::native_attack_clock::Clock>,
     pub inst: Vec<f32>,
     pub mini: Vec<u8>,
     pub ui: String,
@@ -271,6 +275,8 @@ impl Game {
             territory: crate::territory::TerritoryDiplomacy::default(),
             #[cfg(feature="ee2-reference")]
             city_ground: vec![crate::city_ground::EMPTY; MAXE],
+            #[cfg(feature="ee2-up15")]
+            attack_clock:vec![crate::native_attack_clock::EMPTY;MAXE],
             inst: Vec::with_capacity(8 * 16384),
             mini: vec![0; NN * 4],
             ui: String::with_capacity(4096),
@@ -363,6 +369,8 @@ impl Game {
         self.ents[i] = Ent { alive: true, def, team, gen, x, y, px: x, py: y, ox: x, oy: y, hp: self.max_hp(team,def), rot:angle,prot:angle,..E0 };
         #[cfg(feature="ee2-reference")]
         { self.city_ground[i]=crate::city_ground::EMPTY; self.sync_city_ground_entry(i); }
+        #[cfg(feature="ee2-up15")]
+        {self.attack_clock[i]=crate::native_attack_clock::EMPTY;}
         if d.building {
             self.block(i, true);
         }
@@ -401,6 +409,8 @@ impl Game {
         s.gen = s.gen.wrapping_add(1);
         #[cfg(feature="ee2-reference")]
         { self.city_ground[i]=crate::city_ground::EMPTY; }
+        #[cfg(feature="ee2-up15")]
+        {self.attack_clock[i]=crate::native_attack_clock::EMPTY;}
         self.free.push(i as u16);
     }
 
@@ -542,6 +552,8 @@ impl Game {
             e.order = if attack { O_AMOVE } else { O_MOVE };
             e.ox = tx;
             e.oy = ty;
+            #[cfg(feature="ee2-up15")]
+            crate::native_attack_clock::stop(&mut self.attack_clock[i].flags);
             e.tgt = NONE;
             e.otgt = NONE;
             e.fkey = key;
@@ -568,6 +580,8 @@ impl Game {
             }
             let key = self.key_for(d.dom, t.x, t.y);
             let e = &mut self.ents[i];
+            #[cfg(feature="ee2-up15")]
+            crate::native_attack_clock::stop(&mut self.attack_clock[i].flags);
             e.order = O_ATTACK;
             e.otgt = h;
             e.tgt = h;
@@ -591,6 +605,8 @@ impl Game {
             if cfg!(feature="ee2-reference")&&e.carry>0.0&&e.q[0]!=kind {if e.q[2]==0{e.q[2]=e.q[0];}e.q[1]=1;}
             e.otile = tile as u32;
             e.otgt = NONE;
+            #[cfg(feature="ee2-up15")]
+            crate::native_attack_clock::stop(&mut self.attack_clock[i].flags);
             e.tgt = NONE;
             e.q[0] = kind;
             e.fkey = key;
@@ -627,6 +643,8 @@ impl Game {
             }
             e.order = O_BOARD;
             e.otgt = h;
+            #[cfg(feature="ee2-up15")]
+            crate::native_attack_clock::stop(&mut self.attack_clock[i].flags);
             e.tgt = NONE;
             e.fkey = key;
             e.stuck = 0;
@@ -654,6 +672,8 @@ impl Game {
             e.order = O_UNLOAD;
             e.ox = (t % N) as f32 + 0.5;
             e.oy = (t / N) as f32 + 0.5;
+            #[cfg(feature="ee2-up15")]
+            crate::native_attack_clock::stop(&mut self.attack_clock[i].flags);
             e.tgt = NONE;
             e.otgt = NONE;
             e.fkey = key;
@@ -760,6 +780,7 @@ impl Game {
                 if DEFS[e.def as usize].building{mix(e.rot.to_bits());}
                 mix(e.carry.to_bits());
                 mix(e.qt.to_bits());
+
                 mix(e.qn as u32);
                 if DEFS[e.def as usize].building {for q in &e.q[..e.qn as usize] {mix(*q as u32);}}
                 for k in 0..e.ncargo as usize {mix(e.cargo[k] as u32 | (e.cargo_hp[k] as u32)<<8);}
@@ -773,15 +794,20 @@ impl Game {
                 if radius>0.0 {mix(self.h(i));mix(radius.to_bits());}
             }
         }
+        #[cfg(feature="ee2-up15")]
+        {mix(crate::native_attack_clock::MAGIC);for i in 0..self.high{let c=self.attack_clock[i];if self.ents[i].alive&&c.handle==self.h(i){mix(c.handle);mix(c.next.to_bits());mix(c.flags as u32);}}}
         h
     }
 
     pub fn order_stop(&mut self, ids: &[usize]) {
         for &i in ids {
+            self.native_stop_attack(i);
             let e = &mut self.ents[i];
             e.order = O_IDLE;
             e.ox = e.x;
             e.oy = e.y;
+            #[cfg(feature="ee2-up15")]
+            crate::native_attack_clock::stop(&mut self.attack_clock[i].flags);
             e.tgt = NONE;
         }
     }
@@ -917,6 +943,18 @@ impl Game {
         {let _=(attacker,defender);true}
     }
 
+    fn native_attack_min(&self,e:&Ent,t:&Ent)->f32 {
+        #[cfg(feature="ee2-up15")] {
+            if let Some(a)=crate::ee2_up15_attack::lookup(e.def,self.players[e.team as usize].epoch){
+                let mobile=crate::ee2_up15_attack::lookup(t.def,self.players[t.team as usize].epoch).map_or(!DEFS[t.def as usize].building,|a|a.mobile);
+                return crate::ee2_up15_attack::min_range(a,mobile);
+            }
+        }
+        let _=(e,t);0.0
+    }
+    fn native_too_close(&self,e:&Ent,t:&Ent,edge_distance:f32)->bool {
+        let minimum=self.native_attack_min(e,t);minimum>0.0&&edge_distance<minimum
+    }
     /// Nearest hostile that `e` can see and shoot within `r`.
     fn acquire(&self, e: &Ent, d: &Def, r: f32) -> u32 {
         let mask = d.all_targets();
@@ -941,7 +979,7 @@ impl Game {
                     if !self.rps_allows(e,t){continue;}
                     let (dx, dy) = (t.x - e.x, t.y - e.y);
                     let dist = (dx * dx + dy * dy).sqrt() - self.entity_radius(t);
-                    if dist > r {
+                    if dist > r || self.native_too_close(e,t,dist) {
                         continue;
                     }
                     // shoot things that shoot back first
@@ -979,11 +1017,37 @@ impl Game {
         mask
     }
 
+    fn try_attack_round(&mut self,index:usize,e:&mut Ent,w:&Wpn,tj:usize){
+        #[cfg(feature="ee2-up15")]
+        if let Some(a)=crate::ee2_up15_attack::lookup(e.def,self.players[e.team as usize].epoch){
+            let now=self.tick as f32*DT;
+            let reload=crate::ee2_units::lookup_class(e.def,self.players[e.team as usize].epoch).and_then(|r|r.reload).unwrap_or(w.cd);
+            let handle=((e.gen as u32)<<16)|index as u32;let c=&mut self.attack_clock[index];
+            if c.handle!=handle{*c=crate::native_attack_clock::Clock{handle,next:0.0,flags:0};}
+            let event=crate::native_attack_clock::step(now,reload,a.apply_time,&mut c.next,&mut c.flags);
+            let remaining=(c.next-now).max(0.0);e.cd=remaining;
+            if event==crate::native_attack_clock::Event::Fire{self.fire(e,w,tj);e.cd=remaining;}
+            return;
+        }
+        let _=index;self.fire(e,w,tj);
+    }
+    fn native_stop_attack(&mut self,index:usize){
+        #[cfg(feature="ee2-up15")]crate::native_attack_clock::stop(&mut self.attack_clock[index].flags);
+        #[cfg(not(feature="ee2-up15"))]let _=index;
+    }
+    fn native_round_locked(&self,index:usize,e:&Ent)->bool{
+        #[cfg(feature="ee2-up15")]{let c=self.attack_clock[index];return c.handle==((e.gen as u32)<<16|index as u32)&&c.flags&(crate::native_attack_clock::STARTED|crate::native_attack_clock::IN_ATTACK)==(crate::native_attack_clock::STARTED|crate::native_attack_clock::IN_ATTACK);}
+        #[cfg(not(feature="ee2-up15"))]{let _=(index,e);false}
+    }
     fn fire(&mut self, e: &mut Ent, w: &Wpn, tj: usize) {
         if !self.hostile(e.team,self.ents[tj].team)||!self.can_see(e.team,tj)||!self.rps_allows(e,&self.ents[tj]){e.tgt=NONE;return;}
         #[cfg(feature="ee2-reference")]
         let attacker_profile=crate::ee2_combat::profile(e.def,self.players[e.team as usize].epoch);
         let mut w=*w;
+        #[cfg(feature="ee2-up15")]
+        let attack=crate::ee2_up15_attack::lookup(e.def,self.players[e.team as usize].epoch);
+        #[cfg(feature="ee2-up15")]
+        if let Some(a)=attack {w.kind=a.visual_kind;w.splash=a.splash;}
         // Both Cannonball and TankShell use our existing shell projectile.
         #[cfg(feature="ee2-reference")]
         if e.def==FORTRESS {
@@ -1003,8 +1067,14 @@ impl Game {
         }
         let dmg = w.dmg * self.players[e.team as usize].atk[class_of(d)] * self.modifiers[e.team as usize][e.def as usize][1] * (1.0+self.fortress_attack_bonus(e));
         self.ev(if w.kind == W_MELEE { 7.0 } else { w.kind as f32 }, e.x, e.y);
-        if w.kind == W_MELEE || self.projs.len() >= 4000 {
-            #[cfg(feature="ee2-reference")]
+        let direct={
+            #[cfg(feature="ee2-up15")] {attack.map(|a|!a.missile).unwrap_or(w.kind==W_MELEE)}
+            #[cfg(not(feature="ee2-up15"))] {w.kind==W_MELEE}
+        };
+        if direct || self.projs.len() >= 4000 {
+            #[cfg(feature="ee2-up15")]
+            self.native_attack_impact(e.team,self.h(tj),self.ents[tj].x,self.ents[tj].y,dmg,w.kind,w.targets,w.splash,attack.map_or(0.0,|a|a.friendly),attacker_profile);
+            #[cfg(all(feature="ee2-reference",not(feature="ee2-up15")))]
             self.damage_from(tj,dmg,w.kind,attacker_profile);
             #[cfg(not(feature="ee2-reference"))]
             self.damage(tj, dmg, w.kind);
@@ -1013,9 +1083,14 @@ impl Game {
         let t = &self.ents[tj];
         let d0 = ((t.x - e.x).powi(2) + (t.y - e.y).powi(2)).sqrt().max(0.1);
         const SPEED: [f32; 7] = [0.0, 14.0, 34.0, 15.0, 6.5, 13.0, 7.0];
-        self.projs.push(Proj { x: e.x, y: e.y, px: e.x, py: e.y, tx: t.x, ty: t.y, tgt: self.h(tj), speed: SPEED[w.kind as usize], dmg, kind: w.kind, team: e.team, splash: w.splash, targets: w.targets,
+        self.projs.push(Proj { x: e.x, y: e.y, px: e.x, py: e.y, tx: t.x, ty: t.y, tgt: self.h(tj), speed: {
+            #[cfg(feature="ee2-up15")] {attack.and_then(|a|a.projectile_speed).filter(|v|*v>0.0).unwrap_or(SPEED[w.kind as usize])}
+            #[cfg(not(feature="ee2-up15"))] {SPEED[w.kind as usize]}
+        }, dmg, kind: w.kind, team: e.team, splash: w.splash, targets: w.targets,
             #[cfg(feature="ee2-reference")]
             attacker_profile,
+            #[cfg(feature="ee2-up15")]
+            friendly_ratio:attack.map_or(0.0,|a|a.friendly),
             d0 });
     }
 
@@ -1043,6 +1118,16 @@ impl Game {
         if team==self.local&&m>0.0&&self.tick%8==0 {let(x,y)=(t.x,t.y);self.ev(15.0,x,y);}
     }
 
+    #[cfg(feature="ee2-up15")]
+    fn native_attack_impact(&mut self,team:u8,primary:u32,x:f32,y:f32,damage:f32,kind:u8,targets:u8,radius:f32,friendly:f32,profile:u16){
+        if radius<=0.0 {if let Some(j)=self.get(primary){if self.hostile(team,self.ents[j].team){self.damage_from(j,damage,kind,profile);}}return;}
+        for j in 0..self.high{
+            let t=self.ents[j];if !t.alive||targets&DEFS[t.def as usize].dom==0{continue;}
+            let ratio=if self.hostile(team,t.team){1.0}else if team==t.team{friendly}else{0.0};if ratio<=0.0{continue;}
+            let distance=((t.x-x).powi(2)+(t.y-y).powi(2)).sqrt();
+            if distance<=radius{let falloff=crate::ee2_combat::splash_factor(distance,radius,self.h(j)==primary);self.damage_from(j,damage*falloff*ratio,kind,profile);}
+        }
+    }
     fn update_projs(&mut self) {
         let mut k = 0;
         while k < self.projs.len() {
@@ -1066,6 +1151,9 @@ impl Game {
                 continue;
             }
             self.projs.swap_remove(k);
+            #[cfg(feature="ee2-up15")]
+            self.native_attack_impact(p.team,p.tgt,p.tx,p.ty,p.dmg,p.kind,p.targets,p.splash,p.friendly_ratio,p.attacker_profile);
+            #[cfg(not(feature="ee2-up15"))]
             if p.splash > 0.0 {
                 let m = p.splash + 5.0;
                 let (cx0, cy0) = (((p.tx - m) / CELL).max(0.0) as usize, ((p.ty - m) / CELL).max(0.0) as usize);
@@ -1296,15 +1384,15 @@ impl Game {
                 let td = &DEFS[t.def as usize];
                 let dist = ((t.x - e.x).powi(2) + (t.y - e.y).powi(2)).sqrt() - self.entity_radius(&t);
                 match d.weapon_vs(td.dom) {
-                    Some(w) if dist <= w.range+self.modifiers[e.team as usize][e.def as usize][6] => {
-                        if e.cd <= 0.0 {
+                    Some(w) if (dist <= w.range+self.modifiers[e.team as usize][e.def as usize][6] && !self.native_too_close(e,&t,dist))||self.native_round_locked(i,e) => {
+                        if cfg!(feature="ee2-up15")||e.cd <= 0.0 {
                             let w = *w;
-                            self.fire(e, &w, tj);
+                            self.try_attack_round(i,e, &w, tj);
                         }
                     }
-                    _ => e.tgt = NONE,
+                    _ => {self.native_stop_attack(i);e.tgt = NONE;},
                 }
-            }
+            }else{self.native_stop_attack(i);}
         }
     }
 
@@ -1376,7 +1464,9 @@ impl Game {
                 }
                 _ => {
                     Self::set_idle(&mut e);
-                    e.tgt = NONE;
+                    #[cfg(feature="ee2-up15")]
+            crate::native_attack_clock::stop(&mut self.attack_clock[i].flags);
+            e.tgt = NONE;
                     if plane {
                         e.ox = e.x + e.rot.cos() * 4.0;
                         e.oy = e.y + e.rot.sin() * 4.0;
@@ -1388,7 +1478,7 @@ impl Game {
         if e.tgt != NONE {
             match self.get(e.tgt) {
                 Some(j) if self.hostile(e.team,self.ents[j].team)&&self.can_see(e.team, j)&&self.rps_allows(&e,&self.ents[j]) => tj = j,
-                _ => e.tgt = NONE,
+                _ => {self.native_stop_attack(i);e.tgt = NONE;},
             }
         }
         if tj == NOIDX && stagger && d.armed() && e.order <= O_AMOVE {
@@ -1412,36 +1502,49 @@ impl Game {
                 let (dx, dy) = (t.x - e.x, t.y - e.y);
                 let dist = (dx * dx + dy * dy).sqrt();
                 let ang = dy.atan2(dx);
-                if dist - self.entity_radius(&t) <= w.range+self.modifiers[e.team as usize][e.def as usize][6] {
+                let edge_distance=dist-self.entity_radius(&t);
+                let too_close=self.native_too_close(&e,&t,edge_distance);
+                let round_locked=self.native_round_locked(i,&e);
+                if (edge_distance <= w.range+self.modifiers[e.team as usize][e.def as usize][6] && !too_close)||round_locked {
                     face = Some(ang);
                     engaged = e.order != O_MOVE;
                     goal = (t.x, t.y);
-                    let aligned = !plane || w.kind == W_BOMB || angdiff(ang, e.rot).abs() < 0.5;
-                    if e.cd <= 0.0 && aligned {
-                        self.fire(&mut e, &w, tj);
-                    }
+                    let aligned = self.native_round_locked(i,&e)||!plane || w.kind == W_BOMB || angdiff(ang, e.rot).abs() < 0.5;
+                    let allowed_on_move={
+                        #[cfg(feature="ee2-up15")] {e.order!=O_MOVE||crate::ee2_up15_attack::lookup(e.def,self.players[e.team as usize].epoch).map_or(false,|a|a.attack_on_move)}
+                        #[cfg(not(feature="ee2-up15"))] {true}
+                    };
+                    if (cfg!(feature="ee2-up15")||e.cd<=0.0)&&aligned&&allowed_on_move{
+                        self.try_attack_round(i,&mut e,&w,tj);
+                    }else if !allowed_on_move{self.native_stop_attack(i);}
                 } else if e.order == O_MOVE {
-                    e.tgt = NONE;
+                    self.native_stop_attack(i);e.tgt = NONE;
                 } else {
+                    self.native_stop_attack(i);
                     let leash = if plane { 30.0 } else { 15.0 };
                     if e.order == O_IDLE && (e.x - e.ox).powi(2) + (e.y - e.oy).powi(2) > leash * leash {
                         // chased too far from our post: walk back
-                        e.tgt = NONE;
+                        #[cfg(feature="ee2-up15")]
+            crate::native_attack_clock::stop(&mut self.attack_clock[i].flags);
+            e.tgt = NONE;
                         e.order = O_MOVE;
                         e.fkey = self.key_for(d.dom, e.ox, e.oy);
                     } else {
                         engaged = true;
                         moving = true;
                         goal = (t.x, t.y);
-                        want = if e.order == O_ATTACK { self.steer(&mut e, d, t.x, t.y) } else { (dx / dist.max(1e-4), dy / dist.max(1e-4)) };
+                        want = if too_close {(-dx/dist.max(1e-4),-dy/dist.max(1e-4))} else if e.order == O_ATTACK { self.steer(&mut e, d, t.x, t.y) } else { (dx / dist.max(1e-4), dy / dist.max(1e-4)) };
                     }
                 }
             } else {
-                e.tgt = NONE;
+                #[cfg(feature="ee2-up15")]
+            crate::native_attack_clock::stop(&mut self.attack_clock[i].flags);
+            e.tgt = NONE;
             }
         }
 
         // ---- follow orders when not fighting
+        if tj==NOIDX{self.native_stop_attack(i);}
         if !engaged {
             match e.order {
                 O_MOVE | O_AMOVE => {
@@ -1854,6 +1957,8 @@ mod diplomacy_combat_tests {
         let t=g.ents[target];Proj{x:t.x,y:t.y,px:t.x,py:t.y,tx:t.x,ty:t.y,tgt:g.h(target),speed:14.0,dmg:10.0,kind:W_ARROW,team:0,splash,targets:LAND|SEA|SUB|AIR,
             #[cfg(feature="ee2-reference")]
             attacker_profile:crate::ee2_combat::UNKNOWN_PROFILE,
+            #[cfg(feature="ee2-up15")]
+            friendly_ratio:0.0,
             d0:1.0}
     }
     #[test]
@@ -1924,3 +2029,7 @@ mod territory_resource_epoch_tests{
   assert!(g.apply_territory(0,1,0,id as u32,NONE));assert_eq!(g.ents[iron].carry,0.0);assert_eq!(g.ents[iron].q[1],0);assert_eq!(g.ents[iron].q[2],0);assert_eq!(g.resource(1,R_METAL as usize-1),bank);assert_eq!(g.ents[wood].carry,9.0);assert_eq!(g.ents[wood].q[2],R_WOOD);
  }
 }
+
+#[cfg(all(test,feature="ee2-up15"))]
+#[path="native_attack_tests.rs"]
+mod native_attack_tests;

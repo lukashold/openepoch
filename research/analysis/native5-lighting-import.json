@@ -1,0 +1,85 @@
+{
+  "status": "passed",
+  "format": "ee2-native-lighting-v1",
+  "outputSha256": "1b38767bd3ad11c2d45b816235ea009dae274c9e92df1e155599b8501f5fc872",
+  "bytes": 171699,
+  "sourceEngineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+  "atmospheresPerProfile": {
+    "base": 113,
+    "native155": 113
+  },
+  "selectedLight": {
+    "sourceNode": 3,
+    "Name": "FDirect01",
+    "Dimmer": 1.5,
+    "Translation": {
+      "x": -223.00741577148438,
+      "y": -400.0,
+      "z": 618.2948608398438
+    },
+    "Rotation": {
+      "m11": 0.44615626335144043,
+      "m21": 0.18594016134738922,
+      "m31": -0.8754261136054993,
+      "m12": 0.7285014390945435,
+      "m22": -0.6436324715614319,
+      "m32": 0.23456963896751404,
+      "m13": -0.5198367238044739,
+      "m23": -0.7424038648605347,
+      "m33": -0.4226182997226715
+    },
+    "Ambient Color": {
+      "r": 0.0,
+      "g": 0.0,
+      "b": 0.0
+    },
+    "Diffuse Color": {
+      "r": 1.0,
+      "g": 0.9725490808486938,
+      "b": 0.9294118285179138
+    },
+    "Specular Color": {
+      "r": 1.0,
+      "g": 0.9725490808486938,
+      "b": 0.9294118285179138
+    }
+  },
+  "sources": {
+    "hdrs.zip!DbHdrs/DbClimateDefs.h": {
+      "archive": "hdrs.zip",
+      "entry": "DbHdrs/DbClimateDefs.h",
+      "sha256": "69d3fc6585039ee9b1fd712966ac7b64b5dc19b6e709073ff815fc0f62ada536",
+      "bytes": 5586
+    },
+    "db.zip!db/Terrain/dbclimate.ddf": {
+      "archive": "db.zip",
+      "entry": "db/Terrain/dbclimate.ddf",
+      "sha256": "f2199462c639eda040c81ad7298c73a00b01212be97a18cb94e46a12d0bc515c",
+      "bytes": 23130
+    },
+    "db.zip!db/Terrain/dbclimate_atmosphere.csv": {
+      "archive": "db.zip",
+      "entry": "db/Terrain/dbclimate_atmosphere.csv",
+      "sha256": "3936616b14fb3dc5e1e28170851fe561cdb144089afdb3b0c78288cbdf9dc2e4",
+      "bytes": 10821
+    },
+    "db_155.zip!db/Terrain/dbclimat5.ddf": {
+      "archive": "db_155.zip",
+      "entry": "db/Terrain/dbclimat5.ddf",
+      "sha256": "c0e8db617fb1e5dead7ceff929c31c49ff8b393366ca805959c0f27fb3d37436",
+      "bytes": 26378
+    },
+    "db_155.zip!db/Terrain/dbclimate_atmospher5.csv": {
+      "archive": "db_155.zip",
+      "entry": "db/Terrain/dbclimate_atmospher5.csv",
+      "sha256": "3777a899c78590be1c4ac5c626e7d6b6e49d0879bc11edf752256e541f686aa0",
+      "bytes": 10802
+    },
+    "graphics.zip!cache/nifcache/lights.nifcache": {
+      "archive": "graphics.zip",
+      "entry": "cache/nifcache/lights.nifcache",
+      "sha256": "918a455b68e7d731679c106dcd0193caf6527b75b28c268de3d3c7534e3666ef",
+      "bytes": 724
+    }
+  }
+}

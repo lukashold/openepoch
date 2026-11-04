@@ -37,7 +37,7 @@ def run(shaders,report):
             for p,v in [(0x2801,0x2600),(0x2800,0x2600),(0x2802,0x812f),(0x2803,0x812f)]:gl.glTexParameteri(target,p,v)
         texture(0);texture(7);texture(2);texture(6);texture(5,array=True)
         for name,v in {'uDiffuse':0,'uDiffuseNext':7,'uFog':2,'uTerrain':6,'uFrames':5,'uTerrainSize':1,'uFrameCount':1,'uFrameWidth':1,'uShadow':0,'uAnimated':0,'uTerrainEnabled':0,'uSpecularEnabled':0,'uVertexMode':0,'uLightingMode':0,'uHasAlpha':0,'uAlphaFunction':4,'uClipEnabled':0}.items():scalar(name,v,True)
-        for name,v in {'uModelSeasonBlend':0,'uYOffset':0,'uCutoff':180/255,'uModelHeight':2,'uGlossiness':10}.items():scalar(name,v)
+        for name,v in {'uModelSeasonBlend':0,'uYOffset':0,'uCutoff':180/255,'uModelHeight':2,'uGlossiness':10,'uTextureScale':1}.items():scalar(name,v)
         for name,v in {'uColor':[1,1,1,1],'uOriginOffset':[0,0,0],'uEmissiveMaterial':[1,1,1],'uAmbientMaterial':[0,0,0],'uSpecularMaterial':[0,0,0],'uEye':[0,10,0],'uSunDirection':[0,1,0],'uSunColor':[0,0,0],'uAmbientLight':[0,0,0],'uClipPlane':[0,0,0,0]}.items():vector(name,v)
         identity=[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];matrix(identity)
         gl.glViewport(0,0,32,32)

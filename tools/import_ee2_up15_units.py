@@ -10,7 +10,8 @@ STAGE=ROOT.parent/'stage/OpenEpoch'
 
 def run():
     for directory in ['src','docs/local-original/models']: (STAGE/directory).mkdir(parents=True,exist_ok=True)
-    for filename in ['src/defs.rs','docs/local-original/models/manifest.json']:shutil.copyfile(ROOT/filename,STAGE/filename)
+    shutil.copyfile(ROOT/'src/defs.rs',STAGE/'src/defs.rs')
+    shutil.copyfile(ROOT/'docs/local-original/models/manifest-up15.json',STAGE/'docs/local-original/models/manifest.json')
     research=STAGE.parent/'EE2-Research/analysis';research.mkdir(parents=True,exist_ok=True)
     shutil.copyfile(ROOT.parent/'EE2-Research/analysis/fortress-population-binding.json',research/'fortress-population-binding.json')
     old_root,old_database,old_fields=units.ROOT,units.Database,units.make_fields
@@ -57,6 +58,16 @@ def run():
                 result[field]=units.field(value,[factor['source']],'Actual bound UpgradeRefs factor '+factor['method'])
                 factor['status']='retained only; original city behavior not integrated' if field in ['city_radius','city_heal_rate'] else 'applied numeric field '+field
             else:factor['status']='unsupported factor/method; no guessed effect'
+        # Native 0053C930 calls every +7c/+80 UpgradeRef through 0053CD60
+        # BEFORE its nonzero scalar replacement calls (0053CADD..0053CBC1).
+        # Reapply explicit CSV values last, including a future factor targeting
+        # the same field. Current installed inline factors have no such overlap.
+        for field,column in [('hp','HP'),('buildtime','BUILDTIME'),('sight','LOS'),
+                             ('damage','DAMAGE'),('range','RANGE'),('reload','RELOAD'),
+                             ('pop_capacity','POP CAPACITY')]:
+            if upgrade and float(upgrade.get(column,'0') or 0):
+                result[field]=units.csv_field(upgrade,column)
+                result[field]['note']='Native0053C930: nonzero CSV replacement after actual UpgradeRefs'
         result['declared_upgrade_refs']=units.field(ref_audit,[ref['source'] for ref in ref_audit if 'source' in ref],
             'Complete reachable refs for the actual bound CSV upgrade (or Citizen DDF upgrade), including implemented, no-op and unsupported leaves.')
         return result,resolved

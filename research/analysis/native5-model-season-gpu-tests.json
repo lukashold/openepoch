@@ -1,0 +1,734 @@
+{
+  "status": "passed",
+  "format": "ee2-model-season-gpu-v1",
+  "passed": 43,
+  "checks": [
+    {
+      "case": "oak source RGBA mix0",
+      "pixel": [
+        247,
+        243,
+        239,
+        255
+      ],
+      "expected": [
+        247,
+        243,
+        239,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "oak source RGBA mix0.25",
+      "pixel": [
+        185,
+        182,
+        179,
+        255
+      ],
+      "expected": [
+        185,
+        182,
+        179,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "oak source RGBA mix0.5",
+      "pixel": [
+        123,
+        121,
+        119,
+        255
+      ],
+      "expected": [
+        124,
+        122,
+        120,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "oak source RGBA mix0.75",
+      "pixel": [
+        62,
+        61,
+        60,
+        255
+      ],
+      "expected": [
+        62,
+        61,
+        60,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "oak source RGBA mix1",
+      "pixel": [
+        0,
+        0,
+        0,
+        255
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "pine source RGBA mix0",
+      "pixel": [
+        206,
+        223,
+        198,
+        255
+      ],
+      "expected": [
+        206,
+        223,
+        198,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "pine source RGBA mix0.25",
+      "pixel": [
+        163,
+        185,
+        152,
+        255
+      ],
+      "expected": [
+        163,
+        186,
+        152,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "pine source RGBA mix0.5",
+      "pixel": [
+        119,
+        148,
+        107,
+        255
+      ],
+      "expected": [
+        120,
+        148,
+        107,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "pine source RGBA mix0.75",
+      "pixel": [
+        76,
+        110,
+        61,
+        255
+      ],
+      "expected": [
+        76,
+        110,
+        62,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "pine source RGBA mix1",
+      "pixel": [
+        33,
+        73,
+        16,
+        255
+      ],
+      "expected": [
+        33,
+        73,
+        16,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "city source RGBA mix0",
+      "pixel": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "expected": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "city source RGBA mix0.25",
+      "pixel": [
+        191,
+        191,
+        191,
+        255
+      ],
+      "expected": [
+        191,
+        191,
+        191,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "city source RGBA mix0.5",
+      "pixel": [
+        128,
+        128,
+        128,
+        255
+      ],
+      "expected": [
+        128,
+        128,
+        128,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "city source RGBA mix0.75",
+      "pixel": [
+        64,
+        64,
+        64,
+        255
+      ],
+      "expected": [
+        64,
+        64,
+        64,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "city source RGBA mix1",
+      "pixel": [
+        0,
+        0,
+        0,
+        255
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "FarmWheat native seasonal skin source RGBA mix0",
+      "pixel": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "expected": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "FarmWheat native seasonal skin source RGBA mix0.25",
+      "pixel": [
+        197,
+        197,
+        191,
+        255
+      ],
+      "expected": [
+        197,
+        197,
+        191,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "FarmWheat native seasonal skin source RGBA mix0.5",
+      "pixel": [
+        139,
+        139,
+        128,
+        255
+      ],
+      "expected": [
+        140,
+        140,
+        128,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "FarmWheat native seasonal skin source RGBA mix0.75",
+      "pixel": [
+        82,
+        82,
+        64,
+        255
+      ],
+      "expected": [
+        82,
+        82,
+        64,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "FarmWheat native seasonal skin source RGBA mix1",
+      "pixel": [
+        24,
+        24,
+        0,
+        255
+      ],
+      "expected": [
+        24,
+        24,
+        0,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "FarmSugarCane native seasonal skin source RGBA mix0",
+      "pixel": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "expected": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "FarmSugarCane native seasonal skin source RGBA mix0.25",
+      "pixel": [
+        191,
+        192,
+        195,
+        255
+      ],
+      "expected": [
+        191,
+        192,
+        195,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "FarmSugarCane native seasonal skin source RGBA mix0.5",
+      "pixel": [
+        128,
+        129,
+        135,
+        255
+      ],
+      "expected": [
+        128,
+        130,
+        136,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "FarmSugarCane native seasonal skin source RGBA mix0.75",
+      "pixel": [
+        64,
+        67,
+        76,
+        255
+      ],
+      "expected": [
+        64,
+        67,
+        76,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "FarmSugarCane native seasonal skin source RGBA mix1",
+      "pixel": [
+        0,
+        4,
+        16,
+        255
+      ],
+      "expected": [
+        0,
+        4,
+        16,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "FarmYam native seasonal skin source RGBA mix0",
+      "pixel": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "expected": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "FarmYam native seasonal skin source RGBA mix0.25",
+      "pixel": [
+        191,
+        194,
+        191,
+        255
+      ],
+      "expected": [
+        191,
+        194,
+        191,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "FarmYam native seasonal skin source RGBA mix0.5",
+      "pixel": [
+        128,
+        133,
+        128,
+        255
+      ],
+      "expected": [
+        128,
+        134,
+        128,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "FarmYam native seasonal skin source RGBA mix0.75",
+      "pixel": [
+        64,
+        73,
+        64,
+        255
+      ],
+      "expected": [
+        64,
+        73,
+        64,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "FarmYam native seasonal skin source RGBA mix1",
+      "pixel": [
+        0,
+        12,
+        0,
+        255
+      ],
+      "expected": [
+        0,
+        12,
+        0,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "winter team A/B source RGBA mix0",
+      "pixel": [
+        0,
+        0,
+        189,
+        255
+      ],
+      "expected": [
+        0,
+        0,
+        189,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "winter team A/B source RGBA mix0.25",
+      "pixel": [
+        60,
+        2,
+        142,
+        255
+      ],
+      "expected": [
+        60,
+        2,
+        142,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "winter team A/B source RGBA mix0.5",
+      "pixel": [
+        119,
+        4,
+        94,
+        255
+      ],
+      "expected": [
+        120,
+        4,
+        94,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "winter team A/B source RGBA mix0.75",
+      "pixel": [
+        179,
+        6,
+        47,
+        255
+      ],
+      "expected": [
+        179,
+        6,
+        47,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "winter team A/B source RGBA mix1",
+      "pixel": [
+        239,
+        8,
+        0,
+        255
+      ],
+      "expected": [
+        239,
+        8,
+        0,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "foliage alpha cutout mix0",
+      "pixel": [
+        17,
+        31,
+        47,
+        255
+      ],
+      "expected": [
+        17,
+        31,
+        47,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "foliage alpha cutout mix0.25",
+      "pixel": [
+        17,
+        31,
+        47,
+        255
+      ],
+      "expected": [
+        17,
+        31,
+        47,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "foliage alpha cutout mix0.5",
+      "pixel": [
+        17,
+        31,
+        47,
+        255
+      ],
+      "expected": [
+        17,
+        31,
+        47,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "foliage alpha cutout mix0.75",
+      "pixel": [
+        215,
+        213,
+        146,
+        191
+      ],
+      "expected": [
+        215,
+        213,
+        146,
+        191
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "foliage alpha cutout mix1",
+      "pixel": [
+        214,
+        215,
+        123,
+        255
+      ],
+      "expected": [
+        214,
+        215,
+        123,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "world plane clips below reflection water height",
+      "pixel": [
+        17,
+        31,
+        47,
+        255
+      ],
+      "expected": [
+        17,
+        31,
+        47,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "world clip follows instance height after camera compensation",
+      "pixel": [
+        217,
+        208,
+        214,
+        255
+      ],
+      "expected": [
+        217,
+        208,
+        214,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "default draw disables stale reflection clipping",
+      "pixel": [
+        217,
+        208,
+        214,
+        255
+      ],
+      "expected": [
+        217,
+        208,
+        214,
+        255
+      ],
+      "tolerance": 2
+    }
+  ],
+  "context": {
+    "egl": [
+      1,
+      5
+    ],
+    "vendor": "Google Inc. (AMD)",
+    "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11-31.0.21924.61)",
+    "version": "OpenGL ES 3.0 (ANGLE 2.1 git hash: unknown hash)",
+    "libraryDirectory": "C:\\Program Files\\Mozilla Firefox",
+    "surface": [
+      32,
+      32
+    ],
+    "uiLaunched": false,
+    "framebuffer": "RGBA8 texture + DEPTH24_STENCIL8 renderbuffer"
+  },
+  "uiLaunched": false,
+  "productionShaders": {
+    "vertex": "7a1f879ffb93822a6095f8c86bd846a85cd60b2f7068460f877250b1e77e041c",
+    "fragment": "a5c8d0726c130e313a374f21394c040c5c222753b35d747536e06e470e23216d"
+  },
+  "sourceManifestSha256": "17e4869e547f12eed82ea79a693677f4afebcd804dd1ea9a295d8d3079531e3c",
+  "sourceImages": {
+    "local-original/season-model-textures/tre_oak_wi01.png": "6e7b444c78397227954c5d31061725b79e91a1273f77a6aae11700721d20612a",
+    "local-original/model-textures/tre_oak_summer.png": "e3b80c4c8580051b128a04b56e250e473a431022edfaa99ac6879c27d6468bb0",
+    "local-original/season-model-textures/tre_pine_wi.png": "4bced8fcfab72273ec6fbfbdbf52ced154dfafca3db0bbf2c0864001fdee1d00",
+    "local-original/model-textures/tre_pine.png": "0d2595f785b740fc501cffc4ba2f212a0b489ac3121a0af0dc6cc4fb927e034e",
+    "local-original/season-model-textures/bld_citycenter1_we_wi.png": "a3687af8dc0a51cf0cdd89059f5f5539f972ff61f7c4049b915e1d09dd654c4d",
+    "local-original/model-textures/bld_citycenter1_we.png": "797342cce2f2f27701b1b164c89a64eac6a7a81626553c4fd5ed2893f5e7360a",
+    "local-original/season-model-textures/bld_farm_wheat_wi.png": "8bacd6ce21aa6c013e364de03e43da29d3229b48a188ac4e34c871c40019ec50",
+    "local-original/farm-textures/bld_farm_wheat.png": "35ca68729ba330762ed31a5c804dd697ece0456d9f600d27cb27d37e2bc29ca6",
+    "local-original/season-model-textures/bld_farm_sugar_wi.png": "b7a2718ff5800c205f8de0786a35e1a9b0994e6dd3771d7c4240180f694b2a8c",
+    "local-original/farm-textures/bld_farm_sugar.png": "df5cd771eecf3cc4868e2ef10c6d57f5109b60926ccd9c45bc5dd34056d186af",
+    "local-original/season-model-textures/bld_farm_yam1_wi.png": "1c8829952f1a2d7d96815f39d1065a06723d8c42960acd1c227697198bca4edc",
+    "local-original/farm-textures/bld_farm_yam1.png": "c49a0481b480f1768543038179ea0a8f399fa928ed530487a50894623ee505be",
+    "local-original/season-model-textures/team/bld_citycenter1_we_wi-A.png": "d3174296dcc74999d50d5020fba2ff44b4caf4b55d64bcba6082c4721a727c68",
+    "local-original/season-model-textures/team/bld_citycenter1_we_wi-B.png": "9eae0a7c797e1ba772ff0f05d2f3a9a2236142b30f5fe286af5277506c513c16"
+  },
+  "scope": "Actual original texture pixels through production GLES shaders: seasonal RGBA interpolation, foliage alpha test and world-space clipping. No original-game screenshot or complete visual parity claim."
+}

@@ -13,10 +13,11 @@ import {createSeasonClock,normalizeSeasonSettings} from '../docs/original-season
 import {createOriginalReflection} from '../docs/original-reflection.js';
 import {createSeasonSession} from '../docs/season-session.js';
 import {resolveRulesProfile,loadRulesWasm} from '../docs/rules-profile.js';
+import {createUpProductionShowcase} from './native5-production-showcase.mjs';
 
 // Existing epoch/scene arguments remain valid. An optional month position2.5
 // starts at month2, advances actual WASM ticks, then samples its halfway phase.
-const rawArgs=process.argv.slice(2),headingOption=rawArgs.find(arg=>arg.startsWith('--heading=')),tagOption=rawArgs.find(arg=>arg.startsWith('--tag=')),profileOption=rawArgs.find(arg=>arg.startsWith('--profile=')),wantsFarm=rawArgs.includes('--farm'),args=rawArgs.filter(arg=>!arg.startsWith('--heading=')&&!arg.startsWith('--tag=')&&!arg.startsWith('--profile=')&&arg!=='--farm');
+const rawArgs=process.argv.slice(2),headingOption=rawArgs.find(arg=>arg.startsWith('--heading=')),tagOption=rawArgs.find(arg=>arg.startsWith('--tag=')),profileOption=rawArgs.find(arg=>arg.startsWith('--profile=')),wantsFarm=rawArgs.includes('--farm'),wantsShowcase=rawArgs.includes('--showcase'),args=rawArgs.filter(arg=>!arg.startsWith('--heading=')&&!arg.startsWith('--tag=')&&!arg.startsWith('--profile=')&&arg!=='--farm'&&arg!=='--showcase');
 const requestedProfile=profileOption?.split('=')[1]??'base';
 if(!['base','up15'].includes(requestedProfile))throw Error('World capture supports explicit base/up15 numerical profiles');
 const rulesProfile=resolveRulesProfile(`http://localhost/?rules=ee2&profile=${requestedProfile}`);
@@ -31,15 +32,17 @@ if(!Number.isFinite(requestedMonthPosition)||requestedMonthPosition<0||requested
 const seasonSettings=normalizeSeasonSettings({cycle:true,startMonth:Math.floor(requestedMonthPosition),minutesPerSeason:Number(args[3]??5)});
 const clock=createSeasonClock(seasonSettings),monthTicks=clock.atTick(0).ticksPerYear/12;
 const steps=Math.round((requestedMonthPosition-seasonSettings.startMonth)*monthTicks);
-const suffix=(explicitMonth?`-month${String(requestedMonthPosition).replace('.','p')}`:'')+(useReflection?'-reflection':'')+(shoreObjects?'-shore-objects':'')+(headingOption?`-heading${String(headingDegrees).replace('.','p')}`:'')+(wantsFarm?'-farm':'')+(profileOption?`-profile-${requestedProfile}`:'')+(captureTag?`-${captureTag}`:'');
+const suffix=(explicitMonth?`-month${String(requestedMonthPosition).replace('.','p')}`:'')+(useReflection?'-reflection':'')+(shoreObjects?'-shore-objects':'')+(headingOption?`-heading${String(headingDegrees).replace('.','p')}`:'')+(wantsFarm?'-farm':'')+(wantsShowcase?'-showcase':'')+(profileOption?`-profile-${requestedProfile}`:'')+(captureTag?`-${captureTag}`:'');
 const destination=new URL(`../../../work/world-${epoch}-${scene}${suffix}.json`,import.meta.url);
 const wasmPath=new URL(`../docs/${rulesProfile.wasm}`,import.meta.url),bytes=await fs.readFile(wasmPath);
 const sha=value=>createHash('sha256').update(value).digest('hex');
 const captureScriptSha256=sha(await fs.readFile(new URL(import.meta.url)));
-const sourceNames=['main.js','index.html','rules-profile.js','season-session.js','original-terrain.js','original-water.js','original-ground.js','original-ground-native.js','original-scale.js','original-renderer.js','original-model-seasons.js','original-camera.js','original-seasons.js','original-reflection.js','original-hud.js','original-hud-layout.js','local-original/terrain-native/manifest.json','local-original/water-native/manifest.json','local-original/ground-decals.json','local-original/models/manifest.json','local-original/model-seasons.json','local-original/farm-composites.json','local-original/hud-native/manifest.json','local-original/season-model-textures/team/manifest.json','local-original/team-textures/manifest.json'];
+const sourceNames=['main.js','index.html','rules-profile.js','season-session.js','original-terrain.js','original-water.js','original-ground.js','original-ground-native.js','original-scale.js','original-renderer.js','original-lighting.js','original-model-seasons.js','original-camera.js','original-seasons.js','original-reflection.js','original-hud.js','original-hud-layout.js','local-original/terrain-native/manifest.json','local-original/water-native/manifest.json','local-original/ground-decals.json','local-original/models/manifest.json','local-original/models/manifest-up15.json','local-original/model-scales.json','local-original/model-scales-up15.json','local-original/climate-lighting.json','local-original/model-seasons.json','local-original/farm-composites.json','local-original/hud-native/manifest.json','local-original/season-model-textures/team/manifest.json','local-original/team-textures/manifest.json'];
 const sourceFiles=Object.fromEntries(await Promise.all(sourceNames.map(async name=>[name,sha(await fs.readFile(new URL(`../docs/${name}`,import.meta.url)))])));
 const wasm=await loadRulesWasm(rulesProfile,new URL('../docs/',import.meta.url),{fetchFile:async()=>({ok:true,arrayBuffer:async()=>bytes})});
 wasm.init(7,1,0,1,0);wasm.skirmish_epoch(epoch);wasm.skirmish_visibility(2);
+if(wantsShowcase&&(epoch!==14||requestedProfile!=='up15'))throw Error('Production showcase requires UP epoch15');
+const productionShowcase=wantsShowcase?createUpProductionShowcase(wasm):null;
 let farmFixture=null;
 if(wantsFarm){
  wasm.cheat(0);wasm.cheat(2);wasm.cheat(3);wasm.select_idle_worker();
@@ -61,6 +64,7 @@ const heights=new Float32Array(wasm.memory.buffer,wasm.hmap_ptr(),257**2).slice(
 const types=new Uint8Array(wasm.memory.buffer,wasm.terrain_types_ptr(),256**2).slice();
 const groundAt=(x,z)=>{x=Math.max(0,Math.min(255.9999,x));z=Math.max(0,Math.min(255.9999,z));const i=Math.floor(z)*257+Math.floor(x),fx=x%1,fz=z%1;return Math.max(0,(heights[i]*(1-fx)+heights[i+1]*fx)*(1-fz)+(heights[i+257]*(1-fx)+heights[i+258]*fx)*fz);};
 const cam={x:wasm.start_x(),y:wasm.start_y(),nativeFraction:.28,heading:headingDegrees*Math.PI/180},view={vp:new Float32Array(16)};
+if(productionShowcase){cam.x=productionShowcase.built.reduce((n,b)=>n+b.center.x,0)/productionShowcase.built.length;cam.y=productionShowcase.built.reduce((n,b)=>n+b.center.z,0)/productionShowcase.built.length;cam.nativeFraction=.14;}
 if(scene==='coast'){
  let best=Infinity;
  for(let z=1;z<255;z++)for(let x=1;x<255;x++)if(types[z*256+x]===1&&[types[z*256+x+1],types[z*256+x-1],types[(z+1)*256+x],types[(z-1)*256+x]].some(t=>t>=2)){
@@ -97,7 +101,7 @@ globalThis.fetch=async url=>{
  const path=fileURLToPath(url),buffer=await fs.readFile(path);
  return {ok:true,status:200,json:async()=>{
   const value=JSON.parse(buffer);
-  if(path.replaceAll('\\','/').endsWith('/models/manifest.json')){
+  if(/\/models\/manifest(?:-up15)?\.json$/.test(path.replaceAll('\\','/'))){
    const latest=new Map();for(const row of value.models)if(used.has(row.id))for(const neededEpoch of neededEpochs.get(row.id)){
     const key=`${row.id}:${neededEpoch}`;if(row.epoch<=neededEpoch&&(!latest.has(key)||latest.get(key).epoch<row.epoch))latest.set(key,row);
    }
@@ -110,7 +114,8 @@ globalThis.fetch=async url=>{
 globalThis.createImageBitmap=async blob=>({width:blob.bytes.readUInt32BE(16),height:blob.bytes.readUInt32BE(20),url:blob.url,close(){}});
 try{
  const gl=new RecordingGL(),teams=[[.27,.59,1],[.94,.27,.24],[.31,.86,.39],[.96,.82,.27],[1,1,1],[1,1,1],[1,1,1],[.3,.75,1]];
- const terrain=await loadOriginalTerrain(gl,true,teams),models=await loadOriginalModels(gl,true,teams),ground=await loadOriginalGround(gl,true),nativeWater=await loadOriginalWater(gl,true);
+ const modelOptions={lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-up15.json',scaleManifestURL:'./local-original/model-scales-up15.json'}:{})};
+ const terrain=await loadOriginalTerrain(gl,true,teams),models=await loadOriginalModels(gl,true,teams,()=>{},modelOptions),ground=await loadOriginalGround(gl,true),nativeWater=await loadOriginalWater(gl,true);
  if(!terrain.enabled||!ground.enabled||!nativeWater.enabled||terrain.errors.length||models.errors.length||ground.errors.length||nativeWater.errors.length)throw Error(JSON.stringify({terrain:terrain.errors,models:models.errors,ground:ground.errors,water:nativeWater.errors}));
  terrain.updateMap({heights,types});nativeWater.updateMap({heights,types});models.updateTerrain(heights);ground.updateTerrain(heights);
  const seasonSession=createSeasonSession(wasm,terrain,ground,models);seasonSession.configure(seasonSettings);
@@ -156,11 +161,12 @@ try{
  const payload={format:'openepoch-production-world-capture-v1',width,height,epoch:epoch+1,scene,cam,eye:view.eye,instances:count,modelBindings:models.manifest.models.length,epochs,rulesProfile,
   season:{requestedMonthPosition,actualSimulationTick:simulationTick,tickSource:typeof wasm.game_tick==='function'?'WASM game_tick':'WASM UI snapshot',steppedTicks:steps,...seasonPhase},
   ground:{enabled:ground.enabled,policy:ground.policy,entries:ground.entries.size,metrics:{...ground.metrics},urbanSource:'WASM ground_urban_at; active source-backed Town Center city bands',urbanQueries},
-  sourceHashes:{wasmSha256:sha(bytes),captureScriptSha256,files:sourceFiles,shaders:shaderHashes},
+  sourceHashes:{wasmSha256:sha(bytes),captureScriptSha256,auxiliary:{'tools/native5-production-showcase.mjs':sha(await fs.readFile(new URL('./native5-production-showcase.mjs',import.meta.url)))},files:sourceFiles,shaders:shaderHashes},
   reflection:{enabled:useReflection,draws:reflectionDraws,width:reflection?.width,height:reflection?.height,vp:reflection?Array.from(reflection.vp):undefined,eye:reflection?.eye,clipPlane:useReflection?[0,1,0,0]:undefined,texture:reflection?.texture.id,policy:'Planar world-y0 reflection, terrain and object clip; framebuffer resolution and shader discard are WebGL adapters.'},
   modelSeason:{available:typeof models.setSeasonPhase==='function',metrics:{...models.metrics}},
+  modelOptions,lighting:models.lighting,modelScaleBindingCount:models.scaleManifest?.entries?.length??models.scaleManifest?.bindings?.length,
   nativeWater:{enabled:nativeWater.enabled,metrics:{...nativeWater.metrics},material:'Source Skin1/2/4 product/lerp vertex channels; separate reflection alpha0.32 overlay',adapters:nativeWater.manifest.adapter},
-  farmFixture,
+  farmFixture,productionShowcase,modelBindingsUsed:models.manifest.models.map(({id,epoch,url})=>({id,epoch,url})),
   scope:'WASM seed7 world, production simulation-tick calendar, camera/loaders/material, epoch/urban/seasonal building ground, terrain-conforming stencil shadows and terrain/water draw calls. World-only native GLES replay; no HUD, browser, native executable or original-game visual equality claim.',...recorded};
  await fs.writeFile(destination,JSON.stringify(payload));
  console.log(JSON.stringify({output:fileURLToPath(destination),epoch:epoch+1,scene,instances:count,modelBindings:payload.modelBindings,draws:payload.draws.length,textureCount:Object.keys(payload.textures).length,season:payload.season,ground:payload.ground.metrics,urbanQueries:urbanQueries.length,wasmSha256:payload.sourceHashes.wasmSha256}));

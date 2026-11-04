@@ -1,0 +1,58 @@
+Originaltreue – Stand native-ui4, 04.11.2026
+
+Ein vollständiger1:1-Nachbau ist noch nicht erreicht. Die Entwicklung läuft weiter.
+
+Aktueller spielbarer Ausbau
+Das EE2-Menü startet jetzt das getrennte numerische Profil der installierten
+UP-Version. Basisversion und unabhängige OpenEpoch-Regeln bleiben wählbar;
+Spielstände und Multiplayer-Regelprüfung sind getrennt. Die bisherigen beiden
+WASM-Dateien sind unverändert, eine dritte UP-Datei kommt hinzu.
+
+55 der57 bisherigen Rollen verwenden aufgelöste Originalprofile.275 Klassen-/
+Epochenprofile und862 erreichbare Upgrade-Verweise sind geprüft. Die beiden
+noch unaufgelösten Rollen28/43 bleiben gesperrt. Das Angebot ist kleiner als
+im Original;14 Zuordnungen sind weiterhin ausdrücklich Rollenadapter.
+
+Die Oberfläche verwendet51 originale Layoutdefinitionen und129 hochauflösende
+Originalgrafiken. Bestehende Befehle, Minikarte und Speicherfunktionen bleiben
+angeschlossen. Uhr und Monat folgen Simulation und gespeicherten Jahreszeiten.
+Die Darstellung durch Browser/CSS und Systemschriften ist keine vollständige
+Reproduktion des ursprünglichen Widget- und Schriftrenderers.
+
+Farmen bestehen aus vier belegten Teilfeldern mit nativer Skalierung und
+Geländeanpassung. Alle zwölf Zustände der drei Feldfamilien sind importiert;
+aktiv ist der originale Standardzustand der Weizenfarm. Arbeiterabhängige
+Erntefolgen und Seeding-Animation werden weiter rekonstruiert.
+
+Gebäudeböden berücksichtigen die belegte Größenumrechnung einschließlich√2,
+Achsen und Versätzen. Frühere Aussagen, rohe DDF-Größen seien schon fertige
+Weltmaße, sind überholt; die alten Prüfdokumente bleiben als Historie erhalten.
+
+Wasser verwendet Original-Skins und originale Kanal-/Alphaberechnung sowie
+einen getrennten Reflexionspass. UV-Vorgaben, native Sichtauswahl und vollständige
+Beleuchtungs-, Wetter- und Schattensteuerung sind noch offen.
+
+Noch wesentliche Arbeit
+Vollständiger Einheitenbestand, Zivilisationen und Spezialfähigkeiten; originale
+KI und Kartenerzeugung;82 Forschungsfaktoren; weitere Waffen-/Ziel-/Timingregeln;
+vollständige Diplomatie-/Einheitenübergabe- und sonstige Oberflächen. Die913 im
+Audit aufgeführten Spezialfeldvorkommen sind wiederholte Datensätze und dürfen
+nicht als913 verschiedene fehlende Funktionen gelesen werden.
+
+Prüfung
+76 UP-,32 eigene und75 Basis-Rusttests,92.660 Rohdatenprüfungen und318.228 WASM-
+Prüfungen. Ein unabhängiger zweiter Quellenabgleich deckt4668 weitere Prüfungen
+und89 echte WASM-Fälle ab.1364 Profil-/Speicher-/Netzwerkprüfungen und6029 HUD-
+DOM-/Mathematikprüfungen sind bestanden. Die aktuelle Grafik wurde mit324
+Weltprüfungen und106 Reflexionskontrollen auf einem echten GLES-Framebuffer
+geprüft.20 Portabilitäts-Selbsttests und12 lokale HTTP-Fälle sind bestanden.
+
+Es wurde kein Originalspiel, Original-DLL oder Browserfenster ausgeführt.
+Ein physischer Mac-Start und vollständige Bild-/Spielgleichheit mit dem Original
+sind nicht geprüft. Originalmedien bleiben im lokalen Komplettpaket und werden
+nicht in das öffentliche Quellrepository aufgenommen.
+
+Aktuelle Einzelnachweise: analysis/original-parity-audit.json,
+analysis/native4-profile-integration.json, analysis/native4-hud-integration.json,
+analysis/native3-farm-ground-integration.json und analysis/native3-water-implementation.json.
+Historischer Vorstand: Originaltreue-Stand-visual-seasons2.txt.

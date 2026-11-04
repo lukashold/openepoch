@@ -1,0 +1,12 @@
+{
+  "format": "openepoch-native5-label-runtime-tests-v1",
+  "status": "passed",
+  "checks": 5179,
+  "profiles": [
+    "base",
+    "up15"
+  ],
+  "dataSha256": "faef8a21b4a7a25463def7b5415029c821dec47dcbda0cbb68f7fb7774f2698b",
+  "runtimeSha256": "d93c26db898842afcf40a8e82a2b7f592dca9e82628bcbf354cfd95effa5e0b8",
+  "scope": "Actual source-class selection and optional-media loader; independent ruleset, malformed media, profile mismatch and HTML escaping controls."
+}

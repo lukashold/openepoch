@@ -1,0 +1,314 @@
+{
+  "status": "passed",
+  "build": "native5",
+  "format": "ee2-native-lighting-integration-v1",
+  "runtimeFiles": {
+    "original-renderer.js": {
+      "sha256": "c709512a7ec0bfc08a9b88beeea81e6e65382c34ebbd936a2db41270b7c5b899",
+      "bytes": 33535
+    },
+    "original-lighting.js": {
+      "sha256": "b352ef7390de9f86e05c6a7bc690518b449d06a2f0222041d111b8b8224dafe1",
+      "bytes": 2732
+    },
+    "original-material.js": {
+      "sha256": "2c0b2a0bb290ed78763a3330f43168a46a9c4258234fe590b3c12f794c8ee9c6",
+      "bytes": 2880
+    },
+    "local-original/climate-lighting.json": {
+      "sha256": "1b38767bd3ad11c2d45b816235ea009dae274c9e92df1e155599b8501f5fc872",
+      "bytes": 171699
+    },
+    "local-original/models/manifest.json": {
+      "sha256": "f681e82a0676d78c05590f3f1d736be665d7cb533346c73cc49dbe317d083d53",
+      "bytes": 178469
+    },
+    "local-original/model-scales.json": {
+      "sha256": "890394b80f99684b7bf571bd9426e191c9f97e8f90db891d74dd81a49d94961b",
+      "bytes": 267233
+    },
+    "local-original/models/manifest-up15.json": {
+      "sha256": "34c9265030903859a07b51727a78b79a57e66f27123a9d15879c0e719c0eb643",
+      "bytes": 183770
+    },
+    "local-original/model-scales-up15.json": {
+      "sha256": "3feb204c3270c762f87b8bc6ed355b6756176d21fe14dc25ff779bbf005a40f7",
+      "bytes": 273474
+    }
+  },
+  "wasm": {
+    "openepoch.wasm": {
+      "sha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+      "bytes": 268821
+    },
+    "openepoch-ee2.wasm": {
+      "sha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+      "bytes": 430146
+    },
+    "openepoch-ee2-up15.wasm": {
+      "sha256": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51",
+      "bytes": 460364
+    }
+  },
+  "sourceFiles": {
+    "hdrs.zip!DbHdrs/DbClimateDefs.h": {
+      "archive": "hdrs.zip",
+      "entry": "DbHdrs/DbClimateDefs.h",
+      "sha256": "69d3fc6585039ee9b1fd712966ac7b64b5dc19b6e709073ff815fc0f62ada536",
+      "bytes": 5586
+    },
+    "db.zip!db/Terrain/dbclimate.ddf": {
+      "archive": "db.zip",
+      "entry": "db/Terrain/dbclimate.ddf",
+      "sha256": "f2199462c639eda040c81ad7298c73a00b01212be97a18cb94e46a12d0bc515c",
+      "bytes": 23130
+    },
+    "db.zip!db/Terrain/dbclimate_atmosphere.csv": {
+      "archive": "db.zip",
+      "entry": "db/Terrain/dbclimate_atmosphere.csv",
+      "sha256": "3936616b14fb3dc5e1e28170851fe561cdb144089afdb3b0c78288cbdf9dc2e4",
+      "bytes": 10821
+    },
+    "db_155.zip!db/Terrain/dbclimat5.ddf": {
+      "archive": "db_155.zip",
+      "entry": "db/Terrain/dbclimat5.ddf",
+      "sha256": "c0e8db617fb1e5dead7ceff929c31c49ff8b393366ca805959c0f27fb3d37436",
+      "bytes": 26378
+    },
+    "db_155.zip!db/Terrain/dbclimate_atmospher5.csv": {
+      "archive": "db_155.zip",
+      "entry": "db/Terrain/dbclimate_atmospher5.csv",
+      "sha256": "3777a899c78590be1c4ac5c626e7d6b6e49d0879bc11edf752256e541f686aa0",
+      "bytes": 10802
+    },
+    "graphics.zip!cache/nifcache/lights.nifcache": {
+      "archive": "graphics.zip",
+      "entry": "cache/nifcache/lights.nifcache",
+      "sha256": "918a455b68e7d731679c106dcd0193caf6527b75b28c268de3d3c7534e3666ef",
+      "bytes": 724
+    }
+  },
+  "evidence": {
+    "originalEngineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+    "sourceRGB": "00A5CF80 reads3/4 RGBA unsigned bytes then swaps offsets0/2 intoBGRA (alpha defaults255 for3 components).00A30390 reads offsets2/1/0 times f32(1/255), no gamma transform.",
+    "nativeTableSelection": "00541940 explicitly names dbclimat5.ddf and dbClimate_atmospher5.csv. BASE db.zip tables remain a distinct profile;49 atmosphere rows differ.",
+    "lightSelection": "00604BA0 loads lights.nif,005F81C0 returns first NiDirectionalLight by ascending NiNode child order; sourcechildren[3,4,5] select FDirect01 withDimmer1.5.006296B0 multiplies source ambient/diffuse byDimmer.",
+    "direction": "006CCA00 normalizes DDF SunDirectionVec3f into localmatrix column0;008EF400 copies worldcolumn0 into WorldDirection+110/114/118. Y-up portable mapping preserved.",
+    "indexPal": "005F9100 assigns IndexPal20_High/Low to skinned geometry on enabled programmable path. Source HighVS signed dot(normal,-SunDir)*SunColor+SceneAmbient; Low .5*SunColor+SceneAmbient. Per-vertex clamped diffuse output, materialalpha only. NSF base4x RGB/alphaModulate. MaterialRGB/specular do not participate.",
+    "staticTextureStage": "00957B70 reads NiTexturingProperty+20 apply4 and selects D3DTOP_MODULATE4X6 through0094BFB0. Only textured parts with that explicit applymode receive4x; IndexPal ownNSF selects4x separately. No universal4x multiply on untextured/legacy/specular/shadow RGB.",
+    "terrainBoundary": "006F3520/3540/3560 prove compiled .85/.75/1 atC430C8/CC/D0; source file is Terrain/MaskRenderer/MaskRenderer.cpp.006F41D0 combines diffuse*dimmer*.85, ambient*dimmer*2*.75, byte-packs and uses mask/stencil/multiply passes. These scalars are retained as source data, not applied as an invented single terrain RGB formula.",
+    "inventory": {
+      "modelFiles": 204,
+      "sourceNifs": 138,
+      "textureProperties": 559,
+      "counts": {
+        "applyMode": {
+          "4": 559
+        },
+        "baseFilterMode": {
+          "2": 547,
+          "1": 12
+        },
+        "baseClampMode": {
+          "3": 559
+        },
+        "sourceMipmapPreference": {
+          "1": 559
+        },
+        "sourceType": {
+          "NiSourceTexture": 559
+        },
+        "secondaryTexture": {},
+        "vertexMode": {
+          "0": 251,
+          "2": 2
+        },
+        "lightingMode": {
+          "1": 253
+        }
+      }
+    }
+  },
+  "tests": {
+    "native5-lighting-source-tests.json": {
+      "sha256": "4c3584882ac497c1d7e09230caf416c49e8760914d86a0d3fc2790214e8e7b9d",
+      "checks": 14909
+    },
+    "native5-lighting-loader-tests.json": {
+      "sha256": "a972f48320239f31d69e2a1b89e74891e9d4baac62a7546ca38cdb1ddee47f9c",
+      "checks": 49
+    },
+    "native5-model-lighting-gpu-tests.json": {
+      "sha256": "11cf8a1ac05a24753c4060d955c2c010d0a4a831a7605346a8094d80b8ec089e",
+      "checks": 38
+    },
+    "native5-model-season-loader-tests.json": {
+      "sha256": "1c3ca4eba926348c295884fd11e3a69a09ed24cfc3e14e4e223f4ed129219a76",
+      "checks": 34269
+    },
+    "native5-model-season-gpu-tests.json": {
+      "sha256": "2f6faf2f975f076a1a9c534fc20b923882bd6083c855f39a5f57d811c4faf0e9",
+      "checks": 43
+    },
+    "native5-farm-gpu-tests.json": {
+      "sha256": "e9ac2a14f98f82325392f723b8095ac01ea484be705d15956c37c8819b31de1c",
+      "checks": 66
+    }
+  },
+  "pythonOriginalSourceUnitTests": 4,
+  "world": [
+    {
+      "profile": "base",
+      "capture": "work/world-0-town-month6-reflection-profile-base-native5-light-base.json",
+      "captureSha256": "4dc33d0eeec33bb69d4c5a3393187ff82ffac9e284900388f31e5ebf3bce4d4d",
+      "gpuReport": "native5-lighting-world-base.json",
+      "instances": 397,
+      "drawCalls": 38,
+      "modelDrawCalls": 33,
+      "modelOptions": {
+        "lightingSettings": {
+          "profile": "base"
+        }
+      },
+      "lighting": {
+        "native": true,
+        "profile": "base",
+        "climate": "Temperate",
+        "period": "Afternoon",
+        "weather": "Normal",
+        "detail": "High",
+        "rowKey": "Atm_Temperate_Aft_normal",
+        "todKey": "ClimateToD_Temperate_Aft",
+        "brightness": 1.5,
+        "ambient": [
+          0.20588237047195435,
+          0.17647060751914978,
+          0.229411780834198
+        ],
+        "sun": [
+          0.28823530673980713,
+          0.25882354378700256,
+          0.21764707565307617
+        ],
+        "specular": [
+          0.3235294222831726,
+          0.3235294222831726,
+          0.3235294222831726
+        ],
+        "direction": [
+          0.5996103882789612,
+          0.7695000171661377,
+          0.2198571413755417
+        ],
+        "terrain": {
+          "diffuseScale": 0.8500000238418579,
+          "ambientScale": 0.75,
+          "shadowScale": 1
+        },
+        "fog": {
+          "rgba": [
+            1,
+            1,
+            1,
+            0
+          ],
+          "start": 1,
+          "on": false,
+          "intensity": 1
+        }
+      },
+      "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+      "outputSha256": "896dafc02349ed90b9f5769d1389f6fc25fbfa3211a98d31c0a38843bbfc9ce7",
+      "changedPixelsAgainstStageControl": 260249,
+      "controlScope": "Only native IndexPal selection, native stage scales and native stage clamps disabled. Same source light context, geometry, animation, WASM snapshot, view, terrain, ground, fog, water and reflection graph."
+    },
+    {
+      "profile": "up15",
+      "capture": "work/world-0-town-month6-reflection-profile-up15-native5-light-up.json",
+      "captureSha256": "627c6c0146f0f59403a8c758b0691012a3988327943acc8615e7049bd6ecd4f9",
+      "gpuReport": "native5-lighting-world-up15.json",
+      "instances": 397,
+      "drawCalls": 38,
+      "modelDrawCalls": 33,
+      "modelOptions": {
+        "lightingSettings": {
+          "profile": "native155"
+        },
+        "manifestURL": "./local-original/models/manifest-up15.json",
+        "scaleManifestURL": "./local-original/model-scales-up15.json"
+      },
+      "lighting": {
+        "native": true,
+        "profile": "native155",
+        "climate": "Temperate",
+        "period": "Afternoon",
+        "weather": "Normal",
+        "detail": "High",
+        "rowKey": "Atm_Temperate_Aft_normal",
+        "todKey": "ClimateToD_Temperate_Aft",
+        "brightness": 1.5,
+        "ambient": [
+          0.20588237047195435,
+          0.17647060751914978,
+          0.229411780834198
+        ],
+        "sun": [
+          0.28823530673980713,
+          0.25882354378700256,
+          0.21764707565307617
+        ],
+        "specular": [
+          0.3235294222831726,
+          0.3235294222831726,
+          0.3235294222831726
+        ],
+        "direction": [
+          0.5996103882789612,
+          0.7695000171661377,
+          0.2198571413755417
+        ],
+        "terrain": {
+          "diffuseScale": 0.8500000238418579,
+          "ambientScale": 0.75,
+          "shadowScale": 1
+        },
+        "fog": {
+          "rgba": [
+            1,
+            1,
+            1,
+            0
+          ],
+          "start": 1,
+          "on": false,
+          "intensity": 1
+        }
+      },
+      "wasmSha256": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51",
+      "outputSha256": "896dafc02349ed90b9f5769d1389f6fc25fbfa3211a98d31c0a38843bbfc9ce7",
+      "changedPixelsAgainstStageControl": 260249,
+      "controlScope": "Only native IndexPal selection, native stage scales and native stage clamps disabled. Same source light context, geometry, animation, WASM snapshot, view, terrain, ground, fog, water and reflection graph."
+    }
+  ],
+  "preservedModelPayloads": 191,
+  "historicalNative3ReportsUnchanged": {
+    "native3-farm-ground-integration.json": "6368cbea53b93331e8ee07f9028f67499f43facec278bdede3ac4e271f642fb6",
+    "native3-farm-ground-evidence.json": "e59929cb80415b726c6abfa063c370670f83b7edf42526ae8281dd95f1fbb0cf",
+    "native3-ground-profile-import.json": "34baf12f3be39ee110fadc6ba92c93388977c2adb8ea200df21130f7bececec2",
+    "native3-model-season-import.json": "66789792732d022b7387187e237af445ce996120f4242b3724350e62996f1d01",
+    "native3-model-season-loader-tests.json": "0722bdb974fb4e06003f8d10605497a7b3433ec72a8f1f77fb979c617e432c41",
+    "native3-farm-gpu-tests.json": "76a79bfbe2befe2673bd1dbc2b488b5066aeb542093da5d36dc423c18aa0dd20",
+    "native3-model-material-gpu-tests.json": "d8e539538b21d4477dfb4e2c1670ead0e95ca522211e592d374fb1c56133c055",
+    "native3-model-season-gpu-tests.json": "a23343c81449f14f10df9a82293fb5a529b83044613ac5cf2254660222ea8c58",
+    "native3-farm-scene-tests.json": "4aae706ea5476bae84b23d7317b083816ed03e4337733285ba1b51c40179d4c5"
+  },
+  "uiLaunched": false,
+  "originalEngineExecuted": false,
+  "limits": [
+    "Source period/weather are explicit application settings; no native default-time, dynamic day cycle or random weather scheduler is claimed.",
+    "Static model illumination remains the existing per-fragment portable material/specular adapter. Source light channels, stage4x and separate specular colour are improvements, not full native FFP equivalence.",
+    "Existing sampled geometry/animation/normal streams remain unchanged; source IndexPal first-bone normal skinning is not newly reconstructed by this lighting-only change.",
+    "Terrain/ground illumination, projected/stencil shadow eligibility/opacity/pass order, scenario light overrides, sampler override precedence and special player-colour passes remain incomplete native paths.",
+    "Actual ANGLE/GLES pixels on Windows; no original-game screenshot comparison, physical macOS/Safari execution or1:1 equality claim."
+  ]
+}

@@ -1,0 +1,563 @@
+{
+  "format": "native-combat5-regression-tests-v1",
+  "status": "PASS",
+  "wasm": {
+    "path": "docs/openepoch-ee2-up15.wasm",
+    "sha256": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51",
+    "bytes": 460364
+  },
+  "rustTests": {
+    "up15": 90,
+    "reference": 75,
+    "base": 32
+  },
+  "sourceOracles": {
+    "format": "ee2-up15-independent-source-oracles-v1",
+    "checks": 115192,
+    "source_manifest_sha256": "eabf590cacef634646eb4e8e47eb58e29a44ca8a6ac1d914a012e1b91b9f87f3",
+    "profiles": 313,
+    "compiled_matchups": 97969,
+    "compiled_unit_csv_records": 271,
+    "research_nodes": 180,
+    "originals_modified": false,
+    "dll_or_exe_executed": false
+  },
+  "actualWasm": {
+    "format": "native-combat5-actual-wasm-v1",
+    "status": "PASS",
+    "checks": 5429,
+    "wasmSha256": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51",
+    "wasmBytes": 460364,
+    "attackAuditSha256": "bdfceb965b3d1bf7cd44adc8cc5ba1b5874f20f88dab3c2aaaeb83a08d24cfd2",
+    "expectedFireTicks": [
+      11,
+      42,
+      74,
+      105
+    ],
+    "actualFireTicks": [
+      11,
+      42,
+      74,
+      105
+    ],
+    "malformedCases": 46,
+    "limits": [
+      "Packed/unpacked state, turret banks, native blocking geometry and ordnance/rearm remain explicit adapters.",
+      "As in existing saves, active projectiles are transient; this replay fixture uses direct attacks."
+    ]
+  },
+  "profileWasm": {
+    "format": "up15-isolated-wasm-validation-v1",
+    "checks": 407723,
+    "binaries": {
+      "up15": {
+        "bytes": 460364,
+        "sha256": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51"
+      },
+      "base": {
+        "bytes": 268821,
+        "sha256": "d68c4a8e9cda3387722e8f7d1c416f9656794cfdb9654f3dec41edd770283efe"
+      },
+      "reference": {
+        "bytes": 430146,
+        "sha256": "6347228960bfeeb6da9995da513c9b58fadc5658534001c3ffccc5dd206fcaa7"
+      },
+      "beforeBase": {
+        "bytes": 268821,
+        "sha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a"
+      },
+      "beforeReference": {
+        "bytes": 430146,
+        "sha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18"
+      }
+    },
+    "equivalence": [
+      {
+        "profile": "base",
+        "seed": 7,
+        "epoch": 0,
+        "ticks": 1200,
+        "stateHash": 334032274,
+        "saveSha256": "7b1344246328e25684fdc6d45d2821c6c2b45a05b55b860ec267d3608be82046"
+      },
+      {
+        "profile": "base",
+        "seed": 7,
+        "epoch": 2,
+        "ticks": 1200,
+        "stateHash": 3816871589,
+        "saveSha256": "d073ac61947608b3035c9152ec192d5f955c4a6a5ab00947aec7c3b59466cca4"
+      },
+      {
+        "profile": "base",
+        "seed": 7,
+        "epoch": 5,
+        "ticks": 1200,
+        "stateHash": 1336266061,
+        "saveSha256": "74ec42a3eab7291f9e4b9162ed44df69c94163ca28cc09156c5ca2b602303fd9"
+      },
+      {
+        "profile": "base",
+        "seed": 7,
+        "epoch": 7,
+        "ticks": 1200,
+        "stateHash": 3885618272,
+        "saveSha256": "d2a1c35572682cf633269ef451d1a50f5da3b41edaaeb12dcd1901ef3f42a639"
+      },
+      {
+        "profile": "base",
+        "seed": 41,
+        "epoch": 0,
+        "ticks": 1200,
+        "stateHash": 1592468928,
+        "saveSha256": "a202155805d8e4e9e431528573817711235ad04ec45a1e75e5034f8e0164cd92"
+      },
+      {
+        "profile": "base",
+        "seed": 41,
+        "epoch": 2,
+        "ticks": 1200,
+        "stateHash": 2694425332,
+        "saveSha256": "d0d5834549ba6df202ab48e4e71abfaf5637b4173675d05c5ecd1ebb31c58a00"
+      },
+      {
+        "profile": "base",
+        "seed": 41,
+        "epoch": 5,
+        "ticks": 1200,
+        "stateHash": 1585551613,
+        "saveSha256": "ed25caf766078fd5857d7d34063d4eeb38986fc3dba5afc27047bd36194e0bcd"
+      },
+      {
+        "profile": "base",
+        "seed": 41,
+        "epoch": 7,
+        "ticks": 1200,
+        "stateHash": 2504500657,
+        "saveSha256": "9933614ea66ab2a884d1cb229772d921e511f62fc21304fb63f8368886fa015a"
+      },
+      {
+        "profile": "reference",
+        "seed": 7,
+        "epoch": 0,
+        "ticks": 1200,
+        "stateHash": 1238175386,
+        "saveSha256": "8c1e0cc76a7aebe4a5598f2354e90b7e6e81d737212e7cf574d692bd1e01c6e5"
+      },
+      {
+        "profile": "reference",
+        "seed": 7,
+        "epoch": 5,
+        "ticks": 1200,
+        "stateHash": 405669801,
+        "saveSha256": "5857493cdb22ec4e94e9a5e8803c5014a98093dbc4ac7adbb61e4b3e12aeb3d5"
+      },
+      {
+        "profile": "reference",
+        "seed": 7,
+        "epoch": 10,
+        "ticks": 1200,
+        "stateHash": 3758298013,
+        "saveSha256": "dcd535320fc81b79299f1e6d52237aa8d74b1913d519a3ae63738c7d9f379006"
+      },
+      {
+        "profile": "reference",
+        "seed": 7,
+        "epoch": 14,
+        "ticks": 1200,
+        "stateHash": 1846928256,
+        "saveSha256": "37114e498c37049573ab713b081e5958191633db8edfb985a45e1e3aab49acc8"
+      },
+      {
+        "profile": "reference",
+        "seed": 41,
+        "epoch": 0,
+        "ticks": 1200,
+        "stateHash": 1809240826,
+        "saveSha256": "4dcee12e75331f8a4bcca495c17a76a3012b8d719d5c6c1e34f04f4c6663afac"
+      },
+      {
+        "profile": "reference",
+        "seed": 41,
+        "epoch": 5,
+        "ticks": 1200,
+        "stateHash": 1146735430,
+        "saveSha256": "9c68ec83a9c5f2d6fee1945c088078978c0a9015c4539438d19aab542f461620"
+      },
+      {
+        "profile": "reference",
+        "seed": 41,
+        "epoch": 10,
+        "ticks": 1200,
+        "stateHash": 1783510160,
+        "saveSha256": "cbd93dab05b61409770649ca2d4ee1f5d41da5aa2f55c891cd0f585e3997b528"
+      },
+      {
+        "profile": "reference",
+        "seed": 41,
+        "epoch": 14,
+        "ticks": 1200,
+        "stateHash": 415906562,
+        "saveSha256": "e48eec3154c0284454f380833a6c2f949d7536be33e86c8083d941f71157bad3"
+      }
+    ],
+    "saveSemantics": "Current UP save preserves persisted state; load resets Ent.fslot flow-cache slots as all existing profiles do. Active projectiles remain transient and are not replay-equivalent across save/load.",
+    "status": "PASS"
+  },
+  "regeneration": {
+    "format": "ee2-up15-regeneration-v1",
+    "byte_identical": true,
+    "verification_required": true,
+    "files": {
+      "src/ee2_up15_units.rs": "847f22ce37265fe944e570527e8f4af718a36432fa86adc55409f01e365eb508",
+      "src/ee2_up15_combat.rs": "e79055630fcea0efe40e11246262c3e1f7f94d21d892d04653f9450680b5eea9",
+      "src/ee2_up15_research.rs": "54310b59d678eb6e42a4b01ef60057ed30b67111833d48fe91fc6002ed631a07",
+      "src/ee2_up15_profile.rs": "b7c7460f8ed50e6ff493ba6c576f1f2726eb3e692be886918f3780ff186e95cd",
+      "src/ee2_up15_economy.rs": "a68a35bd3e3b815eeb5444fa887e53d08d024a8b3c87a86a13b8d2a52eea06cb",
+      "src/ee2_up15_attack.rs": "165c8b314345ae64f34ece004b4507cae83618c0f664abc81694e708a3ebad61",
+      "src/ee2_up15_oracle_tests.rs": "f0c81affd5c3892dab54f13b7294aa5d80cd6a7a2b78b2a03c556f1d14ea7901",
+      "tools/up15-combat-oracle.bin": "8de91b3d9a84e0a0fad73671cb88a8203b9ec2df89b788ae91acb9edaabd1ddd",
+      "docs/ee2-up15-units.json": "6a2f631b71bc4d2ee5c9aacda32f3ff0d239ea385c434fbdaa91928280d4bbf3",
+      "docs/ee2-up15-combat.json": "c7b27bcc5b2d39d78d4754246c35b560327954e3e0eda103490aaf820aa72358",
+      "docs/ee2-up15-research.json": "2c7009f0ae24252a9a3b0c21b12668207f23073495dc88b0bd34ddfa3c5ee01f",
+      "docs/ee2-up15-catalog.json": "cc62a6bbf2621e1f7c7087a3433037f3a7d7c8fa17c4b656f01418afe3cd56b6",
+      "docs/ee2-up15-unit-refs.json": "1c6e85adfdf19c9599259db1445d68e5070829dbe8f44d2ada5e044660dfbb0a",
+      "docs/native-up15-attack.json": "bdfceb965b3d1bf7cd44adc8cc5ba1b5874f20f88dab3c2aaaeb83a08d24cfd2"
+    },
+    "source_scope": "Native00541940 CSV5 literals and two active CFG5 lists only; native VFS resolution already encoded in the prepared effective manifest."
+  },
+  "scalarOrder": {
+    "format": "native-combat5-scalar-order-review-v1",
+    "nativeFunction": "0053c930",
+    "upgradeRefsCall": "0053c9d9 calls0053cd60 before scalar replacement block0053cadd..0053cbc1",
+    "checkedCommonFieldValues": 7436,
+    "changedValues": [],
+    "conclusion": "Native order corrected for future overlaps. No current installed common-row scalar values change. Actual additional source-bound rows are separately audited."
+  },
+  "bindings": {
+    "roles": 57,
+    "sourceBound": 57,
+    "visualRows": 129,
+    "classRows": 279,
+    "rpsProfiles": 313,
+    "attackRows": 279,
+    "presentAttackRows": 220,
+    "remainingUnsupportedRefOccurrences": 439
+  },
+  "protectedUnchanged": {
+    "docs/openepoch.wasm": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+    "docs/openepoch-ee2.wasm": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+    "docs/local-original/models/manifest.json": "f681e82a0676d78c05590f3f1d736be665d7cb533346c73cc49dbe317d083d53",
+    "docs/local-original/model-scales.json": "890394b80f99684b7bf571bd9426e191c9f97e8f90db891d74dd81a49d94961b"
+  },
+  "changedFiles": [
+    {
+      "path": "src/city_ground_tests.rs",
+      "sha256": "4c8c1dd364c41b9db762a489e3d55af7210c5e1745e7b93670e12dad8e859e80",
+      "bytes": 9346,
+      "localOriginal": false
+    },
+    {
+      "path": "src/claim_tests.rs",
+      "sha256": "b6fb2c3b7cd1bc3ac152caa82c9bec9f8153e7ce7a162cc25ba8f62bda8bf060",
+      "bytes": 5380,
+      "localOriginal": false
+    },
+    {
+      "path": "src/diplomacy.rs",
+      "sha256": "9cc7dd28a865aaaca16196283a794c16cba04f15d41daea2f5077419539045f0",
+      "bytes": 36517,
+      "localOriginal": false
+    },
+    {
+      "path": "src/ee2_combat_tests.rs",
+      "sha256": "415ad2ce19f60fb68e07d4720918a58d58b80a16804c14185dfb1c8ccf93e378",
+      "bytes": 6629,
+      "localOriginal": false
+    },
+    {
+      "path": "src/ee2_up15_attack.rs",
+      "sha256": "165c8b314345ae64f34ece004b4507cae83618c0f664abc81694e708a3ebad61",
+      "bytes": 97714,
+      "localOriginal": false
+    },
+    {
+      "path": "src/ee2_up15_combat.rs",
+      "sha256": "e79055630fcea0efe40e11246262c3e1f7f94d21d892d04653f9450680b5eea9",
+      "bytes": 44572,
+      "localOriginal": false
+    },
+    {
+      "path": "src/ee2_up15_economy.rs",
+      "sha256": "a68a35bd3e3b815eeb5444fa887e53d08d024a8b3c87a86a13b8d2a52eea06cb",
+      "bytes": 22369,
+      "localOriginal": false
+    },
+    {
+      "path": "src/ee2_up15_oracle_tests.rs",
+      "sha256": "f0c81affd5c3892dab54f13b7294aa5d80cd6a7a2b78b2a03c556f1d14ea7901",
+      "bytes": 107382,
+      "localOriginal": false
+    },
+    {
+      "path": "src/ee2_up15_profile.rs",
+      "sha256": "b7c7460f8ed50e6ff493ba6c576f1f2726eb3e692be886918f3780ff186e95cd",
+      "bytes": 14883,
+      "localOriginal": false
+    },
+    {
+      "path": "src/ee2_up15_units.rs",
+      "sha256": "847f22ce37265fe944e570527e8f4af718a36432fa86adc55409f01e365eb508",
+      "bytes": 287483,
+      "localOriginal": false
+    },
+    {
+      "path": "src/fortress_tests.rs",
+      "sha256": "7dfc83412ce3987f187cad205e5f13517defe5fc03970c88d99c9ad02746e013",
+      "bytes": 4181,
+      "localOriginal": false
+    },
+    {
+      "path": "src/game.rs",
+      "sha256": "e3538d0a3ec28c0400bf893d2b36910da272998bb42e3665815416c75295e6ca",
+      "bytes": 93087,
+      "localOriginal": false
+    },
+    {
+      "path": "src/lib.rs",
+      "sha256": "834af35418c6d395f0bddf78347924eddd69f7f98414832241e752d6ebecbe4d",
+      "bytes": 32621,
+      "localOriginal": false
+    },
+    {
+      "path": "src/native_attack_clock.rs",
+      "sha256": "2b50f6d1d545164e9470f5396dbc0b55af88939806d2b1ac19dca5c0cd0e2bd6",
+      "bytes": 5588,
+      "localOriginal": false
+    },
+    {
+      "path": "src/native_attack_tests.rs",
+      "sha256": "fd85a5d40c18221b18e86e4a219b668eec0bab59f709035314a151193279cca0",
+      "bytes": 5474,
+      "localOriginal": false
+    },
+    {
+      "path": "src/save.rs",
+      "sha256": "1bb1bbe459e548f0b9285fc3fe56404a0b46ba49cc094ec023b70dee8bf702a6",
+      "bytes": 12265,
+      "localOriginal": false
+    },
+    {
+      "path": "src/territory.rs",
+      "sha256": "4ddda0f4344e8fb3b51558c11bf80bbe11a0fa4a6c1bf3f40d7f46ceaf3d1e3b",
+      "bytes": 45309,
+      "localOriginal": false
+    },
+    {
+      "path": "tools/import_ee2_up15_units.py",
+      "sha256": "eb1fadfd9542548bed074fba32d4b6a85ff9973827c502ba56d306fbb865c0fb",
+      "bytes": 8378,
+      "localOriginal": false
+    },
+    {
+      "path": "tools/import_ee2_up15_combat.py",
+      "sha256": "851e9ba7c0672a5c129ae2ca9ade6b275147323ac7477d07ec1155b502cdd419",
+      "bytes": 12947,
+      "localOriginal": false
+    },
+    {
+      "path": "tools/import_ee2_up15_profile.py",
+      "sha256": "362e4548d6232eef2999c3d094e1a775f1fc907e4834a44622c4a66ae43e29e3",
+      "bytes": 3605,
+      "localOriginal": false
+    },
+    {
+      "path": "tools/bind_candidate_visual_progression.py",
+      "sha256": "6d6d04277d27c6dcc9737cd653e8c1a025fea59ca4ee4bb341f2d8a479a1268f",
+      "bytes": 1687,
+      "localOriginal": false
+    },
+    {
+      "path": "tools/generate_native_attack.py",
+      "sha256": "6f5ba80894657568899aa98bfd31fbf42e3c7336da33eb2ffe24c02614c23558",
+      "bytes": 7595,
+      "localOriginal": false
+    },
+    {
+      "path": "tools/import_ee2_up15_models.py",
+      "sha256": "2d60576d8efb4e83be41bd13c8cb35f3ac16d853f5387649dfe466247f9867b1",
+      "bytes": 9979,
+      "localOriginal": false
+    },
+    {
+      "path": "tools/audit_ee2_up15_upgrade_refs.py",
+      "sha256": "e9117c34dd09c714adb88e3169c626c5865af051bfe9f6c7b8726adb8f45c561",
+      "bytes": 6762,
+      "localOriginal": false
+    },
+    {
+      "path": "tools/regenerate_ee2_up15.py",
+      "sha256": "97eed9b5f8b26029c5df840226083379cddb21b3b8d031d2baaa875febd8ddbd",
+      "bytes": 2005,
+      "localOriginal": false
+    },
+    {
+      "path": "tools/test_ee2_up15_sources.py",
+      "sha256": "a9edb954d431f245a7f767ed3194eacea77f71328b81ded683f37e9880470325",
+      "bytes": 12697,
+      "localOriginal": false
+    },
+    {
+      "path": "tools/test_ee2_up15_wasm.mjs",
+      "sha256": "5bf2756ac779f061b3bff339e22aa2dfd6fb1290fb2833b8749405a1530880d5",
+      "bytes": 6465,
+      "localOriginal": false
+    },
+    {
+      "path": "tools/test_native_attack_wasm.mjs",
+      "sha256": "9af4ced66bf7fc7925db5cd17ada7eaa2b23125e393dc16559b2a87726cf926c",
+      "bytes": 8390,
+      "localOriginal": false
+    },
+    {
+      "path": "tools/save-fixture.mjs",
+      "sha256": "ecacd333b97204968cc2722c62dcfbf0cb3039f2ecfb779c4e981767ce6c4134",
+      "bytes": 6737,
+      "localOriginal": false
+    },
+    {
+      "path": "tools/up15-combat-oracle.bin",
+      "sha256": "8de91b3d9a84e0a0fad73671cb88a8203b9ec2df89b788ae91acb9edaabd1ddd",
+      "bytes": 391880,
+      "localOriginal": false
+    },
+    {
+      "path": "docs/ee2-up15-units.json",
+      "sha256": "6a2f631b71bc4d2ee5c9aacda32f3ff0d239ea385c434fbdaa91928280d4bbf3",
+      "bytes": 22038296,
+      "localOriginal": false
+    },
+    {
+      "path": "docs/ee2-up15-combat.json",
+      "sha256": "c7b27bcc5b2d39d78d4754246c35b560327954e3e0eda103490aaf820aa72358",
+      "bytes": 1813313,
+      "localOriginal": false
+    },
+    {
+      "path": "docs/ee2-up15-research.json",
+      "sha256": "2c7009f0ae24252a9a3b0c21b12668207f23073495dc88b0bd34ddfa3c5ee01f",
+      "bytes": 2301444,
+      "localOriginal": false
+    },
+    {
+      "path": "docs/ee2-up15-catalog.json",
+      "sha256": "cc62a6bbf2621e1f7c7087a3433037f3a7d7c8fa17c4b656f01418afe3cd56b6",
+      "bytes": 3060941,
+      "localOriginal": false
+    },
+    {
+      "path": "docs/ee2-up15-unit-refs.json",
+      "sha256": "1c6e85adfdf19c9599259db1445d68e5070829dbe8f44d2ada5e044660dfbb0a",
+      "bytes": 2897487,
+      "localOriginal": false
+    },
+    {
+      "path": "docs/native-up15-attack.json",
+      "sha256": "bdfceb965b3d1bf7cd44adc8cc5ba1b5874f20f88dab3c2aaaeb83a08d24cfd2",
+      "bytes": 4658101,
+      "localOriginal": false
+    },
+    {
+      "path": "docs/local-original/models/lla13_humveestriker.json",
+      "sha256": "b845cbcdd87fdf208a9916875dad19b7288b5bf9bc5a6f953872f2d1b6360e01",
+      "bytes": 3394643,
+      "localOriginal": true
+    },
+    {
+      "path": "docs/local-original/models/lla15_paladin_defense_up15.json",
+      "sha256": "8a048ce669b0c9d56fc950c1ebd4dd217ff0c69e43c9b0a0b852ab1dd0640e5a",
+      "bytes": 5302752,
+      "localOriginal": true
+    },
+    {
+      "path": "docs/local-original/models/fix_llm14_mech.json",
+      "sha256": "7c86e7739e07f47145b894aab6ebcb19987ae8eec5d0f76a8473cb44274f198f",
+      "bytes": 10176737,
+      "localOriginal": true
+    },
+    {
+      "path": "docs/local-original/model-textures/lla13_humveestriker.png",
+      "sha256": "fec819006ec7f14faaf0b062d96119bf70fc98f82506b0f559cef4bf596812a0",
+      "bytes": 321903,
+      "localOriginal": true
+    },
+    {
+      "path": "docs/local-original/model-textures/lla15_paladin_fix_15.png",
+      "sha256": "2bf69f8613dbfadfbcf04de6520681bab421fdbd294abf8ae2b8cbca19f0b94b",
+      "bytes": 228705,
+      "localOriginal": true
+    },
+    {
+      "path": "docs/local-original/model-textures/lla15_paladin_defense.png",
+      "sha256": "00b98f908e9834ea4bd426ec191134ffab69752288814e14e2db8399d5bb6e9a",
+      "bytes": 183648,
+      "localOriginal": true
+    },
+    {
+      "path": "docs/local-original/model-textures/lhm15_mech_1.png",
+      "sha256": "968f2a514c98385a68e8c8e55382ad89f3c6a95821d3c5490c8ab8df0b7d762e",
+      "bytes": 314228,
+      "localOriginal": true
+    },
+    {
+      "path": "docs/local-original/model-textures/lhm15_mech_2.png",
+      "sha256": "71b6e9bb1b32ce4e9df06b49888678129342ff1b37bf653221f58bae1221f1b5",
+      "bytes": 236095,
+      "localOriginal": true
+    },
+    {
+      "path": "docs/local-original/models/manifest-up15.json",
+      "sha256": "34c9265030903859a07b51727a78b79a57e66f27123a9d15879c0e719c0eb643",
+      "bytes": 183770,
+      "localOriginal": true
+    },
+    {
+      "path": "docs/local-original/model-scales-up15.json",
+      "sha256": "3feb204c3270c762f87b8bc6ed355b6756176d21fe14dc25ff779bbf005a40f7",
+      "bytes": 273474,
+      "localOriginal": true
+    },
+    {
+      "path": "docs/openepoch-ee2-up15.wasm",
+      "sha256": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51",
+      "bytes": 460364,
+      "localOriginal": false
+    },
+    {
+      "path": "docs/ee2-up15-profile.json",
+      "sha256": "acc12a6d88f3b7eb375f2c52ceae9ce8e84e20029ed2d6e200ac549cc8503a96",
+      "bytes": 14912,
+      "localOriginal": false
+    },
+    {
+      "path": "docs/EE2-UP15-PROFIL.md",
+      "sha256": "daf125b6effec866a9b8a894332478feb905b48fded19b48de6f88dedaeb1eba",
+      "bytes": 5319,
+      "localOriginal": false
+    }
+  ],
+  "independentReview": "Terrain agent read-only review: no atomic-load, legacy, full-generation or recycling blocker; suggested duplicate/reordered record cases added and pass.",
+  "toolErrorsResolved": [
+    "Initial candidate test copy used an incorrect relative working directory; corrected without active writes.",
+    "Isolated model importer required existing nif_schema.xml; supplied the unchanged schema before successful regeneration."
+  ],
+  "nativeLimitations": [
+    "Packed visual capability, actual turret bank readiness/alignment and ordnance/rearm.",
+    "Native military flags/line-of-shot collision geometry and original firing-animation event callbacks/global RNG.",
+    "Renderer weapon categories and projectile curves remain explicit presentation adapters; rockets are not torpedoes.",
+    "Latent House attack not enabled without modifier-default/activation proof.",
+    "Full native production/civilization roster; current57 roles still include14 explicit role adapters.",
+    "Existing transient projectiles are not persisted, so arbitrary in-flight save/reload is not replay-equivalent."
+  ]
+}

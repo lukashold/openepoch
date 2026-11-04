@@ -1,15 +1,15 @@
 {
-  "format": "openepoch-mac-portable-package-v6",
+  "format": "openepoch-mac-portable-package-v7",
   "status": "passed",
-  "build": "native-ui4",
-  "createdUTC": "2026-11-04T11:24:34.736767+00:00",
+  "build": "native-ui5",
+  "createdUTC": "2026-11-04T12:59:21.785500+00:00",
   "file": "OpenEpoch-Mac-Komplett.zip",
-  "zipBytes": 1172866193,
-  "sha256": "c59458bd093ae4ab3f1bb1cfb0a091a0ea80b7244c8b1c11d6531e8574f59082",
-  "zipEntries": 4531,
-  "manifestFilesVerified": 4529,
-  "mediaFiles": 4466,
-  "mediaBytes": 1272968897,
+  "zipBytes": 1237014952,
+  "sha256": "a1d5df4966675b2a2fa70e1d4143dff1a319962101a82efac2124533a5232f91",
+  "zipEntries": 4697,
+  "manifestFilesVerified": 4695,
+  "mediaFiles": 4627,
+  "mediaBytes": 1358366922,
   "launcherMode": "0755",
   "launcherLineEndings": "LF",
   "pythonMinimum": "3.8",
@@ -24,91 +24,36 @@
     "ghidraRequiredToPlay": false,
     "rustCompilerRequiredToPlay": false
   },
-  "validationReport": "native4-release.json",
+  "validationReport": "native5-release.json",
   "browserTestThisBuild": false,
   "physicalMacTest": false,
-  "currentHttpTests": {
-    "format": "openepoch-native4-http-tests-v1",
-    "status": "passed",
-    "build": "native-ui4",
-    "createdUTC": "2026-11-04T11:19:47.727449+00:00",
-    "runs": [
-      {
-        "label": "source",
-        "passed": 12,
-        "seconds": 11.194,
-        "serverSha256": "e9a48fe72be557fe2d6d9abdda264eee656c60d2c4832dbba26fa5a470100049",
-        "testSha256": "6ed7d1007bdf2f6f4126cd910d8bc350ec2025dc039f124b17854949ea7cb28f",
-        "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
-        "wasmSha256ByFile": {
-          "openepoch.wasm": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
-          "openepoch-ee2.wasm": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
-          "openepoch-ee2-up15.wasm": "f9ce07f4aa1105fb0bb9472be6e88fc070cc06046eb8db17a01b4956920fe2c3"
-        },
-        "logSha256": "79302141a11a1a64fadf1ddbf9895e214a4c8a16a426d96fdef5d63e70de81ed"
-      },
-      {
-        "label": "extracted",
-        "passed": 12,
-        "seconds": 11.434,
-        "serverSha256": "e9a48fe72be557fe2d6d9abdda264eee656c60d2c4832dbba26fa5a470100049",
-        "testSha256": "6ed7d1007bdf2f6f4126cd910d8bc350ec2025dc039f124b17854949ea7cb28f",
-        "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
-        "wasmSha256ByFile": {
-          "openepoch.wasm": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
-          "openepoch-ee2.wasm": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
-          "openepoch-ee2-up15.wasm": "f9ce07f4aa1105fb0bb9472be6e88fc070cc06046eb8db17a01b4956920fe2c3"
-        },
-        "logSha256": "c893eeef2f700fb2a800d59d676d08df7dde2fc143ed2e896487e48f2c394000"
-      }
-    ],
-    "scope": "Actual local HTTP/process tests on Windows for current source and freshly extracted complete package. No browser, external network, original executable or physical macOS test."
-  },
-  "worldGpuReports": [
-    "native4-world-qa.json",
-    "native4-reflection-world-pixel-tests.json"
-  ],
-  "profiles": [
-    {
-      "id": "own",
-      "ruleset": 0,
-      "wasm": {
-        "file": "openepoch.wasm",
-        "bytes": 268821,
-        "sha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a"
-      },
-      "database": "openepoch-v2"
+  "profiles": {
+    "own": {
+      "file": "openepoch.wasm",
+      "bytes": 268821,
+      "sha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a"
     },
-    {
-      "id": "base",
-      "ruleset": 1,
-      "wasm": {
-        "file": "openepoch-ee2.wasm",
-        "bytes": 430146,
-        "sha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18"
-      },
-      "database": "openepoch-ee2-reference-v2"
+    "base": {
+      "file": "openepoch-ee2.wasm",
+      "bytes": 430146,
+      "sha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18"
     },
-    {
-      "id": "up15",
-      "ruleset": 2,
-      "wasm": {
-        "file": "openepoch-ee2-up15.wasm",
-        "bytes": 435415,
-        "sha256": "f9ce07f4aa1105fb0bb9472be6e88fc070cc06046eb8db17a01b4956920fe2c3"
-      },
-      "database": "openepoch-ee2-up15-v1"
+    "up15": {
+      "file": "openepoch-ee2-up15.wasm",
+      "bytes": 460364,
+      "sha256": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51"
     }
-  ],
+  },
   "limits": [
-    "Complete visual/gameplay1:1 parity is not achieved; development continues.",
-    "UP data project onto55 of57 role slots with14 explicit role adapters; two unresolved slots remain locked.",
-    "Complete roster, civilizations, skirmish AI, native terrain generation, weather, lighting and full native UI remain incomplete.",
-    "82 research factors and additional weapon/target/timing/latent/pack/turret behavior remain open.",
-    "All12 farm states are included, but worker-dependent crop/family transitions and seeding playback are not yet reproduced.",
-    "Native reflection culling, UV defaults and full native transparency/sky ordering remain incomplete.",
-    "Multiplayer currently connects two browser peers; complete original multiplayer scope and Internet/WebRTC connectivity were not validated here.",
-    "DOM/IndexedDB transport adapters and headless GLES validate the stated source slices; no original-game same-scene comparison, browser interaction or physical macOS execution is claimed.",
-    "All imported original media are in the local portable ZIP; original media stay outside GitHub source publication."
+    "Complete original roster and civilizations: current57roles bind39 sourcefamilies; the independently inventoried classic132/installed311 production classes are not all simultaneous skirmish choices.",
+    "82 research factors and439 repeated UpgradeRef-field occurrences; these counts are not distinct feature counts.",
+    "Pack/unpack capability, turret/military/ordnance/airfield reload and full native ability/animation event behavior.",
+    "Mid-flight projectiles are transient rather than replay-equal serialized state.",
+    "Native skirmish AI, map generator, weather/day scheduling and complete terrain/shadow pipeline.",
+    "Worker-dependent farm crop/family transitions and seeding playback.",
+    "Unit diplomacy gifts and complete treaty/victory/user-interface behavior.",
+    "Original bitmap font renderer; current DOM/CSS/system font rendering remains an adapter.",
+    "Separate reflected-view culling and full native water UV/transparency/sky policy.",
+    "Controlled original-game same-scene comparison and physical Mac/browser interaction were not executed."
   ]
 }

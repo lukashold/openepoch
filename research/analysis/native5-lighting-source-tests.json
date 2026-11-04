@@ -1,0 +1,8 @@
+{
+  "status": "passed",
+  "build": "native5",
+  "format": "ee2-native-lighting-source-runtime-test-v1",
+  "checks": 14909,
+  "sourceSha256": "1b38767bd3ad11c2d45b816235ea009dae274c9e92df1e155599b8501f5fc872",
+  "scope": "Every declared BASE/155 climate, static period, seven weather rows and High/Low selectors. Independent source-byte colour oracle, source1.5 Dimmer, direction axes, shader selection, source apply modes and exact alpha."
+}

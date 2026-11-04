@@ -1,0 +1,93 @@
+{
+  "format": "native5-diplomacy-integration-v1",
+  "build": "native-ui5",
+  "status": "passed",
+  "createdUTC": "2026-11-04T12:04:09.618731+00:00",
+  "mainOwnership": "Returned to root after this snapshot; later label/combat integration must rebind final runtime hashes.",
+  "scope": "Original F4 diplomacy/proposal and territory presentation; simulation unchanged. No claim of full original-game parity.",
+  "activation": {
+    "enabled": "EE2 profile with original assets enabled; missing manifest/required controller controls preserves existing UI",
+    "originalControllersUnchanged": true,
+    "mainEdit": "One import, awaited enhancement after existing panel construction, diagnostics exposed on window.openepoch. Index unchanged."
+  },
+  "nativeData": {
+    "widgets": 236,
+    "sprites": 151,
+    "sourceAtlases": 92,
+    "sourceLabels": 39,
+    "fonts": 3,
+    "fontStyles": 6,
+    "pngBytes": 60832064,
+    "independentlyComparedRgbaPixels": 61768429,
+    "rotatedSprites": 11,
+    "qualityScale": 4,
+    "unchangedSharedSpritesNativeScale": 1
+  },
+  "checks": {
+    "uiSourceAndCommands": 1618,
+    "independentOriginalImages": 1258,
+    "portableGraphSelftests": 23,
+    "ruleProfiles": 1364,
+    "seasonSession": 425,
+    "cameraControls": 73,
+    "portableFiles": 4676,
+    "portableReferences": 19810,
+    "portableTargets": 4557,
+    "portableErrors": 0
+  },
+  "sourceHashes": {
+    "docs/main.js": "917449c813554f090dc364838dd9692bdf8a4e4843a89bf575d550e608c29279",
+    "docs/index.html": "7bf27bdd149e1f62fd85e94c2a774fc37058fb8f3d63476ecc08cda954ca6cf2",
+    "docs/diplomacy.js": "d2413d1a808bfacfa667d51a075c1d02d38a5981ca7b9763b21d0196f2993838",
+    "docs/territory-panel.js": "ee04884c4381f4b7d2664868259ba49986e3e163c34a39893c4104c11816da48",
+    "docs/original-diplomacy.js": "7be5a20e894e6143f3787c43e21ba1b3e6d335a53761616b085cd060c308198e",
+    "docs/original-diplomacy-layout.js": "9e119882f4e90950aa6193f7f680b35109ab98191924fb9d136926ef46a5b80c",
+    "docs/local-original/diplomacy-native/manifest.json": "fb527824c257e1dd23caf70666507b5f6c883a81628fda3495af54dff76abd2f",
+    "docs/openepoch.wasm": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+    "docs/openepoch-ee2.wasm": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+    "docs/openepoch-ee2-up15.wasm": "f9ce07f4aa1105fb0bb9472be6e88fc070cc06046eb8db17a01b4956920fe2c3",
+    "tools/portable-assets-test.py": "38fab019f4c8a00221ccef3ebec6a19fefa001ed443d41c6ca757131ee303a50",
+    "tools/extract_ee2_diplomacy.py": "e7a93675d32e51ffb10f249ffd8c5cd15b33c282a7034415ac681a6a1a6706b3",
+    "tools/original-diplomacy-test.mjs": "aec084d94f17bdf4f424b38c498fa4473f6d0c0924ede5cd3981b5ae888ff661",
+    "tools/original-diplomacy-images-test.py": "27256ee20c4f78faa2da718a2e1b07f0dc53a4086a529738a8c68b63ca74650d",
+    "tools/diplomacy-dom-fixture.mjs": "7f57709823ab96df98620cfcad88143b8d3a5742e54520aa2b0f7f78d58195e0"
+  },
+  "reports": [
+    {
+      "path": "native5-diplomacy-ui-tests.json",
+      "sha256": "dd2f6423fcfc0959c580174466a2752c4c616336862caf2d3412bf4870817f79"
+    },
+    {
+      "path": "native5-diplomacy-images-tests.json",
+      "sha256": "e29ffe67915ffa94dfd33a794ba8853abf71399fd7d322a60b6eaf7dd16a98bc"
+    },
+    {
+      "path": "native5-portable-assets-check.json",
+      "sha256": "286c3ee46d5ab71c42e715e789cfe8fdbeb866b061c6da7c70a3bb0f5ff4468d"
+    },
+    {
+      "path": "native5-rules-profile-tests.json",
+      "sha256": "a6d6286ccacc58b0358edbb5e270da86a2145dcdfa4643cc9fc626e6519e589b"
+    },
+    {
+      "path": "native5-season-session-tests.json",
+      "sha256": "29e391a389a5a7135d103cefa29c1e5a62024ff024efa475dd57a126e1b34a1e"
+    },
+    {
+      "path": "native5-visual-controls-tests.json",
+      "sha256": "1b91eeab61f34267b49a2dde5d9c9236196576c54163ac46743a0af306230aa1"
+    }
+  ],
+  "evidence": {
+    "path": "native5-diplomacy-source-evidence.json",
+    "sha256": "3966d11b2f74033ad2f73bd7626bcd0a5dc623ea90cf20bc6a6751a3393363e8"
+  },
+  "limits": [
+    "Presentation uses original source geometry, sprite crops, color strips and font styles; native cached bitmap glyph rendering is not yet reconstructed, so browser font raster remains an adapter.",
+    "Unit tribute is disabled explicitly. Native team/civilization data are unavailable and shown as em dashes; the application has four players while native tables provide nine opponent row holders.",
+    "Own peace/alliance/vision and resource/territory commands are retained. Complete native treaty rights, tariffs, durations, unit transfer, taxes and atomic multiresource contracts remain unimplemented.",
+    "Source resource matrix stages and submits through existing validated gift controls; source territory/proposal map uses the application map and command validation.",
+    "DOM/canvas transport tests exercise production handlers and actual WASM stock changes, not browser CSS raster or Internet/WebRTC connectivity. Source crop previews are composition previews, not original executable captures.",
+    "Native hover/modal/tribute sound styles are not fully bound; existing application order sounds and pause behavior remain authoritative."
+  ]
+}

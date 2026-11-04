@@ -1,0 +1,102 @@
+{
+  "format": "openepoch-native5-release-v1",
+  "status": "passed",
+  "build": "native-ui5",
+  "createdUTC": "2026-11-04T12:59:21.785500+00:00",
+  "networkProtocol": 10,
+  "profiles": {
+    "own": {
+      "file": "openepoch.wasm",
+      "bytes": 268821,
+      "sha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a"
+    },
+    "base": {
+      "file": "openepoch-ee2.wasm",
+      "bytes": 430146,
+      "sha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18"
+    },
+    "up15": {
+      "file": "openepoch-ee2-up15.wasm",
+      "bytes": 460364,
+      "sha256": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51"
+    }
+  },
+  "package": {
+    "file": "OpenEpoch-Mac-Komplett.zip",
+    "zipBytes": 1237014952,
+    "sha256": "a1d5df4966675b2a2fa70e1d4143dff1a319962101a82efac2124533a5232f91",
+    "zipEntries": 4697,
+    "manifestFilesVerified": 4695,
+    "mediaFiles": 4627,
+    "mediaBytes": 1358366922,
+    "launcherMode": "0755",
+    "launcherLineEndings": "LF",
+    "pythonMinimum": "3.8"
+  },
+  "validation": {
+    "profileSaveNetwork": 1364,
+    "hudSourceDomMath": 6029,
+    "diplomacyDomCommands": 1618,
+    "independentDiplomacyImages": 1258,
+    "labelRawSources": 13094,
+    "labelRuntime": 5179,
+    "labelProductionHud": 142,
+    "worldGles": 432,
+    "worldScenes": 8,
+    "reflection": 106,
+    "lightingSource": 14909,
+    "lightingLoader": 49,
+    "lightingGles": 38,
+    "portableSelfTests": 23,
+    "portableReferences": 21577,
+    "exactCaseTargets": 4565,
+    "sourceHttpTests": 12,
+    "extractedHttpTests": 12,
+    "liveFilesCompared": 38
+  },
+  "evidenceReports": {
+    "native5-frontend-integration.json": "34687022c7722c6b3fde968c71604948c7109e686894616155e5a420d82fd4cd",
+    "native5-package-extraction.json": "998ad89576b7449fd059fd4e95f92f0078b645eb6c4f51a6d2d9f71d5144d7d9",
+    "native5-package-portable-assets.json": "c08506ee0ae1d695ba270c4c6803df12795e85e70e36fb2d85bfd52deedcdaf2",
+    "native5-http-tests.json": "1e40aa9c02ee3b23f6ad777adeb2804101952bc5e19589bdd03e6a17a786255e",
+    "native5-live-http.json": "88a3e4e1502a78fc3b824e44501da0f3f4fb4581834af13f40d946bf33f3f768",
+    "original-parity-audit.json": "ba78f6a26b110b332aebeeb5084a6fd8625225c96d481af7ba7a5f2760973421"
+  },
+  "currentRuntimeFiles": {
+    "main.js": "27cca83a8633cfd71d5ea3607af258f088b929239ed0bcf60d30a479c2f2924e",
+    "index.html": "270bfdd9bd2052597b34b2ff035b7998f717c73a61ca562a972ad81b800d3795",
+    "rules-profile.js": "c341869d5a1e0755d6270efaca2a8dc965abf4201ad889f7d59aa34b4f300c91",
+    "net.js": "562f6bec0fddd0d36c5dab58bb7c29a8d3c0cc7d166a7ea62d825541f4940193",
+    "original-diplomacy.js": "7be5a20e894e6143f3787c43e21ba1b3e6d335a53761616b085cd060c308198e",
+    "original-diplomacy-layout.js": "9e119882f4e90950aa6193f7f680b35109ab98191924fb9d136926ef46a5b80c",
+    "original-labels.js": "d93c26db898842afcf40a8e82a2b7f592dca9e82628bcbf354cfd95effa5e0b8",
+    "original-lighting.js": "b352ef7390de9f86e05c6a7bc690518b449d06a2f0222041d111b8b8224dafe1",
+    "original-renderer.js": "c709512a7ec0bfc08a9b88beeea81e6e65382c34ebbd936a2db41270b7c5b899",
+    "local-original/labels-native.json": "faef8a21b4a7a25463def7b5415029c821dec47dcbda0cbb68f7fb7774f2698b",
+    "local-original/climate-lighting.json": "1b38767bd3ad11c2d45b816235ea009dae274c9e92df1e155599b8501f5fc872",
+    "local-original/models/manifest.json": "f681e82a0676d78c05590f3f1d736be665d7cb533346c73cc49dbe317d083d53",
+    "local-original/models/manifest-up15.json": "34c9265030903859a07b51727a78b79a57e66f27123a9d15879c0e719c0eb643",
+    "local-original/model-scales.json": "890394b80f99684b7bf571bd9426e191c9f97e8f90db891d74dd81a49d94961b",
+    "local-original/model-scales-up15.json": "3feb204c3270c762f87b8bc6ed355b6756176d21fe14dc25ff779bbf005a40f7",
+    "local-original/diplomacy-native/manifest.json": "fb527824c257e1dd23caf70666507b5f6c883a81628fda3495af54dff76abd2f"
+  },
+  "liveUrl": "http://127.0.0.1:8125/?rules=ee2&build=native-ui5",
+  "github": {
+    "currentCheckpointPublished": false,
+    "previousCommit": "3d2c5e14d82e747a8c957043a9b39c13ac01af20",
+    "originalMediaIncluded": false
+  },
+  "fullOriginalParity": false,
+  "limits": [
+    "Complete original roster and civilizations: current57roles bind39 sourcefamilies; the independently inventoried classic132/installed311 production classes are not all simultaneous skirmish choices.",
+    "82 research factors and439 repeated UpgradeRef-field occurrences; these counts are not distinct feature counts.",
+    "Pack/unpack capability, turret/military/ordnance/airfield reload and full native ability/animation event behavior.",
+    "Mid-flight projectiles are transient rather than replay-equal serialized state.",
+    "Native skirmish AI, map generator, weather/day scheduling and complete terrain/shadow pipeline.",
+    "Worker-dependent farm crop/family transitions and seeding playback.",
+    "Unit diplomacy gifts and complete treaty/victory/user-interface behavior.",
+    "Original bitmap font renderer; current DOM/CSS/system font rendering remains an adapter.",
+    "Separate reflected-view culling and full native water UV/transparency/sky policy.",
+    "Controlled original-game same-scene comparison and physical Mac/browser interaction were not executed."
+  ]
+}

@@ -878,6 +878,8 @@ mod tests {
         assert_eq!(g.state_hash(), loaded.state_hash());
         assert_eq!(loaded.nplayers, 2);
         assert!(loaded.shares_to(0, 1));
+        #[cfg(feature="ee2-up15")]
+        let bytes=crate::native_attack_clock::split_save(&bytes).unwrap().0.to_vec();
         #[cfg(feature="ee2-reference")]
         let bytes=crate::city_ground::split_save(&bytes).unwrap().0.to_vec();
         let start = bytes.len() - DIP_BYTES - crate::territory::TERR_BYTES;

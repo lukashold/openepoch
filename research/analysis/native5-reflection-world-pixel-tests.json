@@ -1,0 +1,112 @@
+{
+  "format": "openepoch-native5-reflection-world-pixel-tests-v1",
+  "passed": true,
+  "checks": 106,
+  "wasmSha256": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51",
+  "sourceHashes": {
+    "wasmSha256": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51",
+    "captureScriptSha256": "5e6d5476cda38ae22d35af0ed96e57c715ccae975eacafc9f8fb3df050d83b11",
+    "auxiliary": {
+      "tools/native5-production-showcase.mjs": "9250075768789775ed2022152f4026d5676232ec78cb84cc4ff626daa817e6dd"
+    },
+    "files": {
+      "main.js": "27cca83a8633cfd71d5ea3607af258f088b929239ed0bcf60d30a479c2f2924e",
+      "index.html": "270bfdd9bd2052597b34b2ff035b7998f717c73a61ca562a972ad81b800d3795",
+      "rules-profile.js": "c341869d5a1e0755d6270efaca2a8dc965abf4201ad889f7d59aa34b4f300c91",
+      "season-session.js": "2ba54f8c2c55b87034abd6ae79f730d816e0a98505ce4582c3c3b1111eaf7e07",
+      "original-terrain.js": "647091f06fcc8e0831a695927b6290e5b5c57eaffa03432787d20b4101b4a090",
+      "original-water.js": "4692e5e0031d5bd31b08ba7a28c7402c7cd01fd59fe0e7120eecd849ed6bd268",
+      "original-ground.js": "9902abc52e4dec444cc72aa4dcc1a15a6099d5433cd9aff78a01542930c47ec5",
+      "original-ground-native.js": "cc92743ca43a227527e58cb75c87905457961c8eb3067cc5ec7f8bf1ae331093",
+      "original-scale.js": "4651e04fd4a0a61b8a47f2c4b8fb56df83bfd7864796011cf2648df6b992a947",
+      "original-renderer.js": "c709512a7ec0bfc08a9b88beeea81e6e65382c34ebbd936a2db41270b7c5b899",
+      "original-lighting.js": "b352ef7390de9f86e05c6a7bc690518b449d06a2f0222041d111b8b8224dafe1",
+      "original-model-seasons.js": "c8fab385c06dbe93dd7f29fa80959d48dadd031801f6b315e9d7b9a77f3863a6",
+      "original-camera.js": "ffc6ecdcebcace98b73918a15e9cc5e90af6685e724708b82c2a46247eab1954",
+      "original-seasons.js": "fb4001470974e86ed297465309933305bef3bd8c54c8c603f6e39d18b2e63492",
+      "original-reflection.js": "f3506a9b55e880b5b17b63bb329f28a80eaf2ff47cfa7b9abea4f51842b6c131",
+      "original-hud.js": "b777e9a3f56a50fc04389a010368830f75098861796704bac658748b95339f15",
+      "original-hud-layout.js": "dd7c84000e04cfa0708539b426d365872845ff26f8b2e322de4438f23ad762b5",
+      "local-original/terrain-native/manifest.json": "c7cf660ff198a5f3e7b9c0aa2391b27f38ec7afb116b9541fa09019223c0359a",
+      "local-original/water-native/manifest.json": "1739c08538f09c0279dd4ecdef44019e9b2fed4e9e0149e60a04ad4b88d50bc7",
+      "local-original/ground-decals.json": "eb407c403f1e22b997215f85b8f02e9cc62ae44facf31b7068c4312f8c8454f4",
+      "local-original/models/manifest.json": "f681e82a0676d78c05590f3f1d736be665d7cb533346c73cc49dbe317d083d53",
+      "local-original/models/manifest-up15.json": "34c9265030903859a07b51727a78b79a57e66f27123a9d15879c0e719c0eb643",
+      "local-original/model-scales.json": "890394b80f99684b7bf571bd9426e191c9f97e8f90db891d74dd81a49d94961b",
+      "local-original/model-scales-up15.json": "3feb204c3270c762f87b8bc6ed355b6756176d21fe14dc25ff779bbf005a40f7",
+      "local-original/climate-lighting.json": "1b38767bd3ad11c2d45b816235ea009dae274c9e92df1e155599b8501f5fc872",
+      "local-original/model-seasons.json": "17e4869e547f12eed82ea79a693677f4afebcd804dd1ea9a295d8d3079531e3c",
+      "local-original/farm-composites.json": "d85f3e229280734a583f6089ffe97c2df02e4104d7fae95aff60d1b9300f00bb",
+      "local-original/hud-native/manifest.json": "2b5c66a91b27cf7c3833d00db063a74c0b8e8dfedc2d0a67504d3bd6b4d6db6a",
+      "local-original/season-model-textures/team/manifest.json": "269bd404054013b2431d32ec308d0056aa43a51055a68502f4c387d942be3113",
+      "local-original/team-textures/manifest.json": "e9d618ca90a3cc583bc95d911b887a4a15f468fc398516b0b269130d6fb4a5df"
+    },
+    "shaders": {
+      "1": {
+        "vertexSha256": "9f3482f9446fde6fa07f7ed0ca4219d2e35d92cf798ac9045e65f9a056ca999d",
+        "fragmentSha256": "e65d82001e7524fb422bf002f10bdbeaa14b40f24078f8bbc89ee595094e8dda"
+      },
+      "4": {
+        "vertexSha256": "b72acea400e56c4c93b4d842cb1d7d7d440adbf2403f967553e9053df55ffd46",
+        "fragmentSha256": "7efe2d142aa91825d2be67fdb51420ef1746e44bd68a1c137bdc1b46bd70e866"
+      },
+      "22": {
+        "vertexSha256": "7a1f879ffb93822a6095f8c86bd846a85cd60b2f7068460f877250b1e77e041c",
+        "fragmentSha256": "a5c8d0726c130e313a374f21394c040c5c222753b35d747536e06e470e23216d"
+      },
+      "222": {
+        "vertexSha256": "9535f328c82af94214709f53f614a30577e270b714d52a2465e1fe37b76ca9c0",
+        "fragmentSha256": "846d396c976f2420073fb76bce272341fc4bc95664f3d52fdc135633c134ee13"
+      },
+      "236": {
+        "vertexSha256": "1d47141ee3d6b2812f526b348b455a4836e50e10ec8be438bd0b9d8a558ef85e",
+        "fragmentSha256": "ecda9fb2699e29a50b3d9234679db3d9ac2bcf60adf7817bb7dd717faabc3a5d"
+      },
+      "239": {
+        "vertexSha256": "3b1e2d3fe88867371c45fd6de96100778d40092c444d470e91838b32ba382bb1",
+        "fragmentSha256": "b10cd648b9f92848f471809c82b876fc3cacd8f66001f4ec9fca197ac07f1adb"
+      }
+    }
+  },
+  "context": {
+    "egl": [
+      1,
+      5
+    ],
+    "vendor": "Google Inc. (AMD)",
+    "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11-31.0.21924.61)",
+    "version": "OpenGL ES 3.0 (ANGLE 2.1 git hash: unknown hash)",
+    "libraryDirectory": "C:\\Program Files\\Mozilla Firefox",
+    "surface": [
+      1280,
+      1280
+    ],
+    "uiLaunched": false,
+    "framebuffer": "RGBA8 texture + DEPTH24_STENCIL8 renderbuffer"
+  },
+  "reflectionDraws": 12,
+  "mainDraws": 26,
+  "nativeObjectContribution": {
+    "pixels": 10464,
+    "maxChannel": 203,
+    "sumChannels": 2352686
+  },
+  "submergedClipContribution": {
+    "pixels": 526973,
+    "maxChannel": 206,
+    "sumChannels": 76618508
+  },
+  "waterReflectionContribution": {
+    "pixels": 516180,
+    "maxChannel": 63,
+    "sumChannels": 32220285
+  },
+  "productionWorld": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\EE2-Research\\analysis\\native5-reflection-world-coast.json",
+  "output": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\OpenEpoch\\native5-reflection-coast.png",
+  "target": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\OpenEpoch\\native5-reflection-coast-reflection-256.png",
+  "scope": "Actual WASM coast world; production helper, terrain/model/native source water shaders, native models/textures and GPU FBO. Diagnostic controls omit reflected objects, disable clipping, or omit only the source alpha0.32 reflection overlay while retaining base water, without changing source shader code.",
+  "limitations": [
+    "WebGL scene capture resolution, above-water fragment clipping and fallback sky color are explicit adapters unless separately source-proven.",
+    "No original-game same-scene visual comparison or browser/Mac execution."
+  ]
+}

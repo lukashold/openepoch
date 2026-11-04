@@ -56,7 +56,7 @@ Im Scharmützelmenü lassen sich Startmonat, Jahreszeitenwechsel und Dauer wähl
 Ohne Wechsel bleibt der gewählte Monat erhalten. Pause hält den Wechsel an.
 Spielstände behalten diese Einstellungen; alte Spielstände zeigen festen Sommer.
 Im Mehrspieler bestimmt der Gastgeber die Jahreszeiten. Beide Spieler benötigen
-denselben Regelstand mit Netzwerkprotokoll9.
+denselben Regelstand mit Netzwerkprotokoll10.
 
 Regelversion und vorhandene Spielstände
 Standard ist das rekonstruierte Profil der installierten UP-Version. Im
@@ -74,13 +74,17 @@ F4: Diplomatie. F: freie Bürger. H: Heimat. P: Pause. Cmd+S/Ctrl+S: speichern.
 Enter: Cheatdialog. icheat aktiviert Cheats; loot, sea monkeys und give tech
 sind im Einzelspieler vorhanden.
 
-Neuer Grafikausbau: native-ui4
+Neuer Grafikausbau: native-ui5
 Die Kamera verwendet nun die aus Ghidra belegte Zoom-/Winkelkurve. Originale
 Modellmaßstäbe und Ursprünge, zusätzliche Materialwerte, höhenabhängige Schatten,
 Originalgelände und Wassermaterialien sind eingebunden. Farmen bestehen aus
 vier originalen Teilfeldern; alle importierten Feldzustände liegen im Ordner.
 Alle neuen Bilder und Zuordnungen sind enthalten. Der Startmonat ist wählbar;
 die vollständige originale Wetter- und Beleuchtungssteuerung wird weiter ergänzt.
+Die Diplomatie verwendet Originalrahmen, Reiter und Spielerfarben. Die Einheiten
+zeigen ihre deutschen Originalnamen passend zur Epoche. Paladin und LightHerc
+sind mit ihren UP-Modellen enthalten. Die Quellenbeleuchtung der Modelle nutzt
+vorerst einen festen Nachmittag; die originale Tageszeitsteuerung ist noch offen.
 Die Grafik wurde ohne geöffneten Browser auf einem lokalen GLES-Framebuffer
 geprüft. Diese Prüfung ersetzt keinen tatsächlichen Mac-Start.
 

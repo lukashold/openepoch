@@ -7,7 +7,11 @@ fn city(g: &Game, team: u8) -> usize {
     g.ents[..g.high].iter().position(|e|e.alive&&e.def==TC&&e.team==team).unwrap()
 }
 fn epoch(g: &mut Game, team: u8, value: u8) {g.players[team as usize].epoch=value;g.rebuild_modifiers(team,false);}
-fn tail(b: &[u8]) -> usize { city_ground::split_save(b).unwrap().0.len() }
+fn city_prefix(b:&[u8])->&[u8]{
+ #[cfg(feature="ee2-up15")]let b=crate::native_attack_clock::split_save(b).unwrap().0;
+ b
+}
+fn tail(b: &[u8]) -> usize { city_ground::split_save(city_prefix(b)).unwrap().0.len() }
 fn put(b:&mut [u8],o:usize,v:u32) { b[o..o+4].copy_from_slice(&v.to_le_bytes()); }
 
 #[test]
@@ -98,7 +102,7 @@ fn cgd1_roundtrip_is_exact_and_legacy_synthesizes_only_present_profile() {
     let mut g=game();let c=city(&g,0);epoch(&mut g,0,14);epoch(&mut g,0,0);g.save();
     let bytes=g.savebuf.clone();let offset=tail(&bytes);
     assert_eq!(&bytes[offset..offset+4],&CITY_MAGIC.to_le_bytes());
-    assert_eq!(&bytes[bytes.len()-4..],&CITY_END.to_le_bytes());
+    assert_eq!(&city_prefix(&bytes)[city_prefix(&bytes).len()-4..],&CITY_END.to_le_bytes());
     let mut loaded=Game::load(&bytes).unwrap();assert_eq!(loaded.city_ground_radius(c),11.0);
     loaded.save();assert_eq!(loaded.savebuf,bytes);
     #[cfg(feature="ee2-up15")]
@@ -136,14 +140,14 @@ fn malformed_city_chunks_are_rejected_before_world_replacement() {
         (start+12,NONE),(start+12,g.h(1)),(start+12,g.h(0)^(1<<16)),
         (start+16,f32::NAN.to_bits()),(start+16,f32::INFINITY.to_bits()),
         (start+16,0.0_f32.to_bits()),(start+16,6.0_f32.to_bits()),
-        (start+16,12.0_f32.to_bits()),(valid.len()-8,19),(valid.len()-4,CITY_END^1)] {
+        (start+16,12.0_f32.to_bits()),(city_prefix(&valid).len()-8,19),(city_prefix(&valid).len()-4,CITY_END^1)] {
         let mut b=valid.clone();put(&mut b,at,value);cases.push(b);
     }
     let mut b=valid.clone();put(&mut b,start+20,g.h(0));cases.push(b); // duplicate
     let mut b=valid.clone();let a=b[start+12..start+20].to_vec();let z=b[start+20..start+28].to_vec();
     b[start+12..start+20].copy_from_slice(&z);b[start+20..start+28].copy_from_slice(&a);cases.push(b);
     let mut b=valid.clone();put(&mut b,start+8,1);b.drain(start+20..start+28);let len=b.len();put(&mut b,len-8,28);cases.push(b); // missing TC
-    for n in 1..=20 {cases.push(valid[..valid.len()-n].to_vec());}
+    for n in 1..=20 {let prefix=city_prefix(&valid);cases.push(prefix[..prefix.len()-n].to_vec());}
     let mut b=valid.clone();b.push(0);cases.push(b);
     let before=g.state_hash();for b in cases {assert!(Game::load(&b).is_none());assert_eq!(g.state_hash(),before);}
     g.save();assert_eq!(g.savebuf,valid);

@@ -1,0 +1,585 @@
+{
+  "format": "ee2-up15-replacement-model-candidate-v1",
+  "original_install_readonly": true,
+  "base_profile_manifests_modified": false,
+  "source_manifest_sha256": "eabf590cacef634646eb4e8e47eb58e29a44ca8a6ac1d914a012e1b91b9f87f3",
+  "models": [
+    {
+      "id": 25,
+      "epoch": 12,
+      "verified": true,
+      "yawOffset": -1.5707963267948966,
+      "url": "local-original/models/lla13_humveestriker.json",
+      "source": {
+        "archive": "graphics.zip",
+        "entry": "cache/nifcache/lla13_humveestriker.nifcache",
+        "sha256": "6015c6f73cdb0e908ed6aa1b8e93e985e0e64c35fd9b3e478b35a08a0bc58d20",
+        "origin": {
+          "path": "cache/nifcache/lla13_humveestriker.nifcache",
+          "initialTime": 1109438772,
+          "physical": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\zips\\graphics.zip",
+          "marker": "zips/graphics.zip",
+          "member": "cache/nifcache/lla13_humveestriker.nifcache",
+          "priority": 10,
+          "memberTime": 1109438772,
+          "bytes": 54533,
+          "crc32": "b108d5b7"
+        }
+      },
+      "triangles": 1357,
+      "databaseVisualBinding": {
+        "visualDefinition": "LightArtillery2_13",
+        "sourceUnit": "LightArtillery2",
+        "declaredModel": "LLA13_humveestriker.nif",
+        "source": {
+          "archive": "zips/db_155.zip",
+          "entry": "db/Units/light_artillery2_15.ddf",
+          "virtual_path": "db/Units/light_artillery2_15.ddf",
+          "line": 203,
+          "sha256": "dbc4d56df45ad1d72ade446e10d6ed17e4d8d2943b30323669eb2203ec138122",
+          "origin": {
+            "virtualPath": "db/Units/light_artillery2_15.ddf",
+            "lookupKey": "db/units/light_artillery2_15.ddf",
+            "kind": "zip-member",
+            "physical": "zips/db_155.zip",
+            "marker": "zips/db_155.zip",
+            "member": "db/Units/light_artillery2_15.ddf",
+            "bytes": 7194,
+            "sha256": "dbc4d56df45ad1d72ade446e10d6ed17e4d8d2943b30323669eb2203ec138122",
+            "archivePriority": 2,
+            "hookSubstitution": false,
+            "memberTime": 1612902118,
+            "initialRecordTime": 1612902118,
+            "initialRecordSize": 7194,
+            "insertionPriority": 493,
+            "profile": {
+              "game": "ee2",
+              "up16Enabled": true,
+              "enhancedTerrainRequested": false,
+              "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+              "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+              "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+            }
+          },
+          "declaration": "UnitModel LightArtillery2_13"
+        },
+        "scope": "Exact active UP default model and explicit KF states; no old BASE-model numeric alias."
+      }
+    },
+    {
+      "id": 28,
+      "epoch": 14,
+      "verified": true,
+      "yawOffset": -1.5707963267948966,
+      "url": "local-original/models/lla15_paladin_defense_up15.json",
+      "source": {
+        "archive": "Graphics_160.zip",
+        "entry": "cache/nifcache/lla15_paladin_defense_up15.nifcache",
+        "sha256": "91a95f24a87951f045ad6c76ca14b4fb20d29136f92fd0993675c3c79b78b8c4",
+        "origin": {
+          "path": "cache/nifcache/lla15_paladin_defense_up15.nifcache",
+          "initialTime": 1612901696,
+          "physical": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\zips\\Graphics_160.zip",
+          "marker": "zips/Graphics_160.zip",
+          "member": "cache/nifcache/lla15_paladin_defense_up15.nifcache",
+          "priority": 13,
+          "memberTime": 1612901696,
+          "bytes": 109075,
+          "crc32": "dd45184c"
+        }
+      },
+      "triangles": 1039,
+      "databaseVisualBinding": {
+        "visualDefinition": "LightArtillery2_15",
+        "sourceUnit": "LightArtillery2",
+        "declaredModel": "lla15_paladin_defense_up15.nif",
+        "source": {
+          "archive": "zips/db_155.zip",
+          "entry": "db/Units/light_artillery2_15.ddf",
+          "virtual_path": "db/Units/light_artillery2_15.ddf",
+          "line": 236,
+          "sha256": "dbc4d56df45ad1d72ade446e10d6ed17e4d8d2943b30323669eb2203ec138122",
+          "origin": {
+            "virtualPath": "db/Units/light_artillery2_15.ddf",
+            "lookupKey": "db/units/light_artillery2_15.ddf",
+            "kind": "zip-member",
+            "physical": "zips/db_155.zip",
+            "marker": "zips/db_155.zip",
+            "member": "db/Units/light_artillery2_15.ddf",
+            "bytes": 7194,
+            "sha256": "dbc4d56df45ad1d72ade446e10d6ed17e4d8d2943b30323669eb2203ec138122",
+            "archivePriority": 2,
+            "hookSubstitution": false,
+            "memberTime": 1612902118,
+            "initialRecordTime": 1612902118,
+            "initialRecordSize": 7194,
+            "insertionPriority": 493,
+            "profile": {
+              "game": "ee2",
+              "up16Enabled": true,
+              "enhancedTerrainRequested": false,
+              "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+              "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+              "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+            }
+          },
+          "declaration": "UnitModel LightArtillery2_15"
+        },
+        "scope": "Exact active UP default model and explicit KF states; no old BASE-model numeric alias."
+      }
+    },
+    {
+      "id": 43,
+      "epoch": 13,
+      "verified": true,
+      "yawOffset": -1.5707963267948966,
+      "url": "local-original/models/fix_llm14_mech.json",
+      "source": {
+        "archive": "Graphics_160.zip",
+        "entry": "cache/nifcache/fix_llm14_mech.nifcache",
+        "sha256": "08fbd6892e0686634177f3da5bedec0b7be12877d31c69c62a93a39a6a1a3e28",
+        "origin": {
+          "path": "cache/nifcache/fix_llm14_mech.nifcache",
+          "initialTime": 1112705008,
+          "physical": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\zips\\Graphics_160.zip",
+          "marker": "zips/Graphics_160.zip",
+          "member": "cache/nifcache/fix_llm14_mech.nifcache",
+          "priority": 13,
+          "memberTime": 1112705008,
+          "bytes": 202095,
+          "crc32": "8ac2f8ff"
+        }
+      },
+      "triangles": 1700,
+      "databaseVisualBinding": {
+        "visualDefinition": "LightMounted3",
+        "sourceUnit": "LightMounted3",
+        "declaredModel": "fix_LLM14_mech.nif",
+        "source": {
+          "archive": "zips/db_155.zip",
+          "entry": "db/Units/light_mounted3_15.ddf",
+          "virtual_path": "db/Units/light_mounted3_15.ddf",
+          "line": 72,
+          "sha256": "c3c5724097c4f062e785d89a181e8579334a665c3e03592dc2cd77c1a2817af0",
+          "origin": {
+            "virtualPath": "db/Units/light_mounted3_15.ddf",
+            "lookupKey": "db/units/light_mounted3_15.ddf",
+            "kind": "zip-member",
+            "physical": "zips/db_155.zip",
+            "marker": "zips/db_155.zip",
+            "member": "db/Units/light_mounted3_15.ddf",
+            "bytes": 3475,
+            "sha256": "c3c5724097c4f062e785d89a181e8579334a665c3e03592dc2cd77c1a2817af0",
+            "archivePriority": 2,
+            "hookSubstitution": false,
+            "memberTime": 1697246662,
+            "initialRecordTime": 1697246662,
+            "initialRecordSize": 3475,
+            "insertionPriority": 527,
+            "profile": {
+              "game": "ee2",
+              "up16Enabled": true,
+              "enhancedTerrainRequested": false,
+              "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+              "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+              "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+            }
+          },
+          "declaration": "UnitModel LightMounted3"
+        },
+        "scope": "Exact active UP default model and explicit KF states; no old BASE-model numeric alias."
+      }
+    }
+  ],
+  "scales": {
+    "25:12": {
+      "url": "local-original/models/lla13_humveestriker.json",
+      "sourceSha256": "6015c6f73cdb0e908ed6aa1b8e93e985e0e64c35fd9b3e478b35a08a0bc58d20",
+      "sourceEntry": "cache/nifcache/lla13_humveestriker.nifcache",
+      "verified": true,
+      "visual": "LightArtillery2_13",
+      "scaleType": "kScaleVehicle",
+      "forceScale": null,
+      "sourceScale": 0.0707106813788414,
+      "inheritance": [
+        {
+          "archive": "zips/db_155.zip",
+          "entry": "db/Units/light_artillery2_15.ddf",
+          "virtual_path": "db/Units/light_artillery2_15.ddf",
+          "line": 203,
+          "sha256": "dbc4d56df45ad1d72ade446e10d6ed17e4d8d2943b30323669eb2203ec138122",
+          "origin": {
+            "virtualPath": "db/Units/light_artillery2_15.ddf",
+            "lookupKey": "db/units/light_artillery2_15.ddf",
+            "kind": "zip-member",
+            "physical": "zips/db_155.zip",
+            "marker": "zips/db_155.zip",
+            "member": "db/Units/light_artillery2_15.ddf",
+            "bytes": 7194,
+            "sha256": "dbc4d56df45ad1d72ade446e10d6ed17e4d8d2943b30323669eb2203ec138122",
+            "archivePriority": 2,
+            "hookSubstitution": false,
+            "memberTime": 1612902118,
+            "initialRecordTime": 1612902118,
+            "initialRecordSize": 7194,
+            "insertionPriority": 493,
+            "profile": {
+              "game": "ee2",
+              "up16Enabled": true,
+              "enhancedTerrainRequested": false,
+              "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+              "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+              "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+            }
+          },
+          "declaration": "UnitModel LightArtillery2_13"
+        }
+      ],
+      "sourceBounds": {
+        "min": [
+          -5.676112,
+          -0.132458,
+          -8.771359
+        ],
+        "max": [
+          5.454264,
+          13.143563,
+          10.363453
+        ]
+      },
+      "normalization": {
+        "scale": 0.05226076963407143,
+        "offset": [
+          0.110924,
+          0.132458,
+          -0.796047
+        ],
+        "axis": "x,z,-y",
+        "kind": "vehicle"
+      },
+      "sourceOrigin": {
+        "path": "cache/nifcache/lla13_humveestriker.nifcache",
+        "initialTime": 1109438772,
+        "physical": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\zips\\graphics.zip",
+        "marker": "zips/graphics.zip",
+        "member": "cache/nifcache/lla13_humveestriker.nifcache",
+        "priority": 10,
+        "memberTime": 1109438772,
+        "bytes": 54533,
+        "crc32": "b108d5b7"
+      }
+    },
+    "28:14": {
+      "url": "local-original/models/lla15_paladin_defense_up15.json",
+      "sourceSha256": "91a95f24a87951f045ad6c76ca14b4fb20d29136f92fd0993675c3c79b78b8c4",
+      "sourceEntry": "cache/nifcache/lla15_paladin_defense_up15.nifcache",
+      "verified": true,
+      "visual": "LightArtillery2_15",
+      "scaleType": "kScaleVehicle",
+      "forceScale": null,
+      "sourceScale": 0.0707106813788414,
+      "inheritance": [
+        {
+          "archive": "zips/db_155.zip",
+          "entry": "db/Units/light_artillery2_15.ddf",
+          "virtual_path": "db/Units/light_artillery2_15.ddf",
+          "line": 236,
+          "sha256": "dbc4d56df45ad1d72ade446e10d6ed17e4d8d2943b30323669eb2203ec138122",
+          "origin": {
+            "virtualPath": "db/Units/light_artillery2_15.ddf",
+            "lookupKey": "db/units/light_artillery2_15.ddf",
+            "kind": "zip-member",
+            "physical": "zips/db_155.zip",
+            "marker": "zips/db_155.zip",
+            "member": "db/Units/light_artillery2_15.ddf",
+            "bytes": 7194,
+            "sha256": "dbc4d56df45ad1d72ade446e10d6ed17e4d8d2943b30323669eb2203ec138122",
+            "archivePriority": 2,
+            "hookSubstitution": false,
+            "memberTime": 1612902118,
+            "initialRecordTime": 1612902118,
+            "initialRecordSize": 7194,
+            "insertionPriority": 493,
+            "profile": {
+              "game": "ee2",
+              "up16Enabled": true,
+              "enhancedTerrainRequested": false,
+              "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+              "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+              "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+            }
+          },
+          "declaration": "UnitModel LightArtillery2_15"
+        }
+      ],
+      "sourceBounds": {
+        "min": [
+          -6.324543,
+          -0.007583,
+          -11.339476
+        ],
+        "max": [
+          6.440466,
+          11.333243,
+          11.440394
+        ]
+      },
+      "normalization": {
+        "scale": 0.04389840733463767,
+        "offset": [
+          -0.057962,
+          0.007583,
+          -0.050459
+        ],
+        "axis": "x,z,-y",
+        "kind": "vehicle"
+      },
+      "sourceOrigin": {
+        "path": "cache/nifcache/lla15_paladin_defense_up15.nifcache",
+        "initialTime": 1612901696,
+        "physical": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\zips\\Graphics_160.zip",
+        "marker": "zips/Graphics_160.zip",
+        "member": "cache/nifcache/lla15_paladin_defense_up15.nifcache",
+        "priority": 13,
+        "memberTime": 1612901696,
+        "bytes": 109075,
+        "crc32": "dd45184c"
+      }
+    },
+    "43:13": {
+      "url": "local-original/models/fix_llm14_mech.json",
+      "sourceSha256": "08fbd6892e0686634177f3da5bedec0b7be12877d31c69c62a93a39a6a1a3e28",
+      "sourceEntry": "cache/nifcache/fix_llm14_mech.nifcache",
+      "verified": true,
+      "visual": "LightMounted3",
+      "scaleType": "kScaleUnit",
+      "forceScale": 0.07,
+      "sourceScale": 0.04949747398495674,
+      "inheritance": [
+        {
+          "archive": "zips/db_155.zip",
+          "entry": "db/Units/light_mounted3_15.ddf",
+          "virtual_path": "db/Units/light_mounted3_15.ddf",
+          "line": 72,
+          "sha256": "c3c5724097c4f062e785d89a181e8579334a665c3e03592dc2cd77c1a2817af0",
+          "origin": {
+            "virtualPath": "db/Units/light_mounted3_15.ddf",
+            "lookupKey": "db/units/light_mounted3_15.ddf",
+            "kind": "zip-member",
+            "physical": "zips/db_155.zip",
+            "marker": "zips/db_155.zip",
+            "member": "db/Units/light_mounted3_15.ddf",
+            "bytes": 3475,
+            "sha256": "c3c5724097c4f062e785d89a181e8579334a665c3e03592dc2cd77c1a2817af0",
+            "archivePriority": 2,
+            "hookSubstitution": false,
+            "memberTime": 1697246662,
+            "initialRecordTime": 1697246662,
+            "initialRecordSize": 3475,
+            "insertionPriority": 527,
+            "profile": {
+              "game": "ee2",
+              "up16Enabled": true,
+              "enhancedTerrainRequested": false,
+              "physicalRoot": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II",
+              "auditedDefaultUserTemp": "C:\\Users\\Admin\\AppData\\Local\\Temp",
+              "scope": "Explicit static UP1.6 profile. Engine/helper are never executed. Config/license/CDKey/network data are outside extraction scope."
+            }
+          },
+          "declaration": "UnitModel LightMounted3"
+        }
+      ],
+      "sourceBounds": {
+        "min": [
+          -12.456282,
+          0.001314,
+          -12.456269
+        ],
+        "max": [
+          12.456271,
+          20.397147,
+          12.456285
+        ]
+      },
+      "normalization": {
+        "scale": 0.040140405055458094,
+        "offset": [
+          6e-06,
+          -0.001314,
+          -8e-06
+        ],
+        "axis": "x,z,-y",
+        "kind": "vehicle"
+      },
+      "sourceOrigin": {
+        "path": "cache/nifcache/fix_llm14_mech.nifcache",
+        "initialTime": 1112705008,
+        "physical": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\zips\\Graphics_160.zip",
+        "marker": "zips/Graphics_160.zip",
+        "member": "cache/nifcache/fix_llm14_mech.nifcache",
+        "priority": 13,
+        "memberTime": 1112705008,
+        "bytes": 202095,
+        "crc32": "8ac2f8ff"
+      }
+    }
+  },
+  "textures": [
+    {
+      "url": "local-original/model-textures/lla13_humveestriker.png",
+      "original_texture_path": "lla13_humveestriker.tga",
+      "archive_member": "cache/texcache/lla13_humveestriker.texcache",
+      "origin": {
+        "path": "cache/texcache/lla13_humveestriker.texcache",
+        "initialTime": 1109431338,
+        "physical": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\zips\\textures.zip",
+        "marker": "zips/textures.zip",
+        "member": "cache/texcache/lla13_humveestriker.texcache",
+        "priority": 19,
+        "memberTime": 1109431338,
+        "bytes": 349810,
+        "crc32": "4670710e"
+      },
+      "source_sha256": "d729c2a4ff466aa20c944b5e3da3a13720846ce1d359d486a905f597647430fe",
+      "png_sha256": "fec819006ec7f14faaf0b062d96119bf70fc98f82506b0f559cef4bf596812a0",
+      "format": "DXT3",
+      "width": 512,
+      "height": 512,
+      "mipmaps_in_source": 10,
+      "pixel_payload_bytes": 349552,
+      "top_mip_bytes": 262144,
+      "transformation": "Original top mip decoded to RGBA PNG; no rescaling or repainting"
+    },
+    {
+      "url": "local-original/model-textures/lla15_paladin_fix_15.png",
+      "original_texture_path": "lla15_paladin_fix_15.tga",
+      "archive_member": "cache/texcache/lla15_paladin_fix_15.texcache",
+      "origin": {
+        "path": "cache/texcache/lla15_paladin_fix_15.texcache",
+        "initialTime": 1109431304,
+        "physical": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\zips\\Textures_160.zip",
+        "marker": "zips/Textures_160.zip",
+        "member": "cache/texcache/lla15_paladin_fix_15.texcache",
+        "priority": 21,
+        "memberTime": 1109431304,
+        "bytes": 87658,
+        "crc32": "d78735f0"
+      },
+      "source_sha256": "0f6a0a77af0fbfac726d4584c05ed13dca201f325e54a84ea7787a73751276a9",
+      "png_sha256": "2bf69f8613dbfadfbcf04de6520681bab421fdbd294abf8ae2b8cbca19f0b94b",
+      "format": "DXT1",
+      "width": 512,
+      "height": 256,
+      "mipmaps_in_source": 10,
+      "pixel_payload_bytes": 87400,
+      "top_mip_bytes": 65536,
+      "transformation": "Original top mip decoded to RGBA PNG; no rescaling or repainting"
+    },
+    {
+      "url": "local-original/model-textures/lla15_paladin_defense.png",
+      "original_texture_path": "lla15_paladin_defense.tga",
+      "archive_member": "cache/texcache/lla15_paladin_defense.texcache",
+      "origin": {
+        "path": "cache/texcache/lla15_paladin_defense.texcache",
+        "initialTime": 1109431344,
+        "physical": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\zips\\textures.zip",
+        "marker": "zips/textures.zip",
+        "member": "cache/texcache/lla15_paladin_defense.texcache",
+        "priority": 19,
+        "memberTime": 1109431344,
+        "bytes": 87658,
+        "crc32": "92a50618"
+      },
+      "source_sha256": "7e7e71eeb1444eebdc81e1af9c7ef211c83ed4ec7da41c0ac79eb244134783d8",
+      "png_sha256": "00b98f908e9834ea4bd426ec191134ffab69752288814e14e2db8399d5bb6e9a",
+      "format": "DXT1",
+      "width": 512,
+      "height": 256,
+      "mipmaps_in_source": 10,
+      "pixel_payload_bytes": 87400,
+      "top_mip_bytes": 65536,
+      "transformation": "Original top mip decoded to RGBA PNG; no rescaling or repainting"
+    },
+    {
+      "url": "local-original/model-textures/lhm15_mech_1.png",
+      "original_texture_path": "lhm15_mech_1.tga",
+      "archive_member": "cache/texcache/lhm15_mech_1.texcache",
+      "origin": {
+        "path": "cache/texcache/lhm15_mech_1.texcache",
+        "initialTime": 1109431326,
+        "physical": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\zips\\textures.zip",
+        "marker": "zips/textures.zip",
+        "member": "cache/texcache/lhm15_mech_1.texcache",
+        "priority": 19,
+        "memberTime": 1109431326,
+        "bytes": 349810,
+        "crc32": "a90401fa"
+      },
+      "source_sha256": "e8238291fa7d565a2bc384a25733a50819de275a8e07c66ad691a30985d252dc",
+      "png_sha256": "968f2a514c98385a68e8c8e55382ad89f3c6a95821d3c5490c8ab8df0b7d762e",
+      "format": "DXT3",
+      "width": 512,
+      "height": 512,
+      "mipmaps_in_source": 10,
+      "pixel_payload_bytes": 349552,
+      "top_mip_bytes": 262144,
+      "transformation": "Original top mip decoded to RGBA PNG; no rescaling or repainting"
+    },
+    {
+      "url": "local-original/model-textures/lhm15_mech_2.png",
+      "original_texture_path": "lhm15_mech_2.tga",
+      "archive_member": "cache/texcache/lhm15_mech_2.texcache",
+      "origin": {
+        "path": "cache/texcache/lhm15_mech_2.texcache",
+        "initialTime": 1109431330,
+        "physical": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\zips\\textures.zip",
+        "marker": "zips/textures.zip",
+        "member": "cache/texcache/lhm15_mech_2.texcache",
+        "priority": 19,
+        "memberTime": 1109431330,
+        "bytes": 349810,
+        "crc32": "d37e5d9b"
+      },
+      "source_sha256": "f63aaa4f8b502f4973714d3cf607814fb9977a41065b66b00d1af52d121c5eeb",
+      "png_sha256": "71b6e9bb1b32ce4e9df06b49888678129342ff1b37bf653221f58bae1221f1b5",
+      "format": "DXT3",
+      "width": 512,
+      "height": 512,
+      "mipmaps_in_source": 10,
+      "pixel_payload_bytes": 349552,
+      "top_mip_bytes": 262144,
+      "transformation": "Original top mip decoded to RGBA PNG; no rescaling or repainting"
+    }
+  ],
+  "overrideEvents": [
+    {
+      "path": "cache/nifcache/llm14_mech.nifcache",
+      "previous": {
+        "path": "cache/nifcache/llm14_mech.nifcache",
+        "initialTime": 1109438776,
+        "physical": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\zips\\graphics.zip",
+        "marker": "zips/graphics.zip",
+        "member": "cache/nifcache/llm14_mech.nifcache",
+        "priority": 10,
+        "memberTime": 1109438776,
+        "bytes": 202095,
+        "crc32": "1184c2fa"
+      },
+      "selected": {
+        "path": "cache/nifcache/llm14_mech.nifcache",
+        "initialTime": 1109438776,
+        "physical": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\zips\\graphics_110.zip",
+        "marker": "zips/graphics_110.zip",
+        "member": "cache/nifcache/llm14_mech.nifcache",
+        "priority": 11,
+        "memberTime": 1112705008,
+        "bytes": 202095,
+        "crc32": "8ac2f8ff"
+      }
+    }
+  ],
+  "limitations": [
+    "Three exact active UP variants are additive local-only assets; source class bindings do not imply complete original roster.",
+    "NIF child-name attachment/effect models and native animation event callbacks remain separate renderer work."
+  ]
+}

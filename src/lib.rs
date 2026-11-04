@@ -10,6 +10,10 @@ mod defs;
 mod economy;
 #[cfg(feature="ee2-up15")]
 mod ee2_up15_economy;
+#[cfg(feature="ee2-up15")]
+mod ee2_up15_attack;
+#[cfg(feature="ee2-up15")]
+mod native_attack_clock;
 mod diplomacy;
 mod territory;
 mod placement;
@@ -829,4 +833,18 @@ pub extern "C" fn up15_stat(team:u32,id:u32,field:u32)->f32{
         14=>ee2_up15_economy::lookup(id as u8,epoch).and_then(|r|r.dropoff_bonus).unwrap_or(-1.0),
         20..=28=>row.gather.map(|v|v[(field-20)as usize]).unwrap_or(-1.0),_=>-1.0,
     }
+}
+
+/// Read-only source diagnostics; does not advance or mutate the simulation.
+#[cfg(feature="ee2-up15")]
+#[no_mangle]
+pub extern "C" fn native_attack_stat(id:u32,epoch:u32,field:u32)->f32{
+    if id>=57||epoch>=15{return -1.0;}
+    let Some(a)=ee2_up15_attack::lookup(id as u8,epoch as u8) else{return -1.0;};
+    match field{0=>a.present as u8 as f32,1=>a.min_mobile,2=>a.min_immobile,3=>a.angle,
+        4=>a.apply_time,5=>a.pack_time,6=>a.unpack_time,7=>a.splash,8=>a.friendly,
+        9=>a.missile as u8 as f32,10=>a.attack_on_move as u8 as f32,
+        11=>a.auto_target as u8 as f32,12=>a.latent as u8 as f32,13=>a.ordnance as f32,
+        14=>a.projectile_speed.unwrap_or(-1.0),15=>a.visual_kind as f32,
+        16=>a.mobile as u8 as f32,17=>a.air as u8 as f32,_=>-1.0}
 }

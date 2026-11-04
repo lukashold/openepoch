@@ -3,6 +3,7 @@
 import {DEFAULT_MODEL_LIGHTING,modelMaterial,alphaState,depthState} from './original-material.js?v=material1';
 import {nativeModelTransform} from './original-scale.js?v=native1';
 import {modelYearPhase,modelSeasonFrames,modelSeasonBinding} from './original-model-seasons.js?v=modelseason1';
+import {createNativeLightingContext,nativeModelPipeline} from './original-lighting.js?v=lighting5';
 const VS=`#version 300 es
 layout(location=0) in vec3 aPosition;layout(location=1) in vec3 aNormal;layout(location=2) in vec2 aUV;
 layout(location=3) in vec4 iA;layout(location=4) in vec4 iB;layout(location=5) in vec4 iC;
@@ -11,7 +12,8 @@ uniform mat4 uVP;uniform highp int uShadow;uniform bool uAnimated;uniform float 
 uniform highp sampler2DArray uFrames;uniform int uFrameWidth;uniform int uFrameCount;
 uniform highp sampler2D uTerrain;uniform int uTerrainSize;uniform bool uTerrainEnabled;uniform vec3 uSunDirection;
 uniform bool uFarmPlotConform;uniform vec3 uFarmPlotCenter;
-out vec3 vNormal;out vec2 vUV;out vec2 vWorld;out vec3 vPosition;out vec4 vColor;out float vY;flat out vec4 vInfo;
+uniform highp int uNativeShader;uniform vec3 uAmbientLight;uniform vec3 uSunColor;uniform vec4 uColor;
+out vec4 vNativeLighting;out vec3 vNormal;out vec2 vUV;out vec2 vWorld;out vec3 vPosition;out vec4 vColor;out float vY;flat out vec4 vInfo;
 float terrainAt(vec2 p){
  vec2 sampleAt=clamp(p,vec2(0.),vec2(float(uTerrainSize-1)));ivec2 a=ivec2(floor(sampleAt));ivec2 b=min(a+1,ivec2(uTerrainSize-1));vec2 f=fract(sampleAt);
  float lo=mix(texelFetch(uTerrain,a,0).r,texelFetch(uTerrain,ivec2(b.x,a.y),0).r,f.x);
@@ -52,6 +54,10 @@ void main(){
   }else{world.xz-=direction*max(p.y,0.);world.y=iA.z+.035;}
  }
  vNormal=vec3(normal.x*c-normal.z*s,normal.y,normal.x*s+normal.z*c);
+ // IndexPal20_High/Low.vsh: signed normal dot or constant .5, then the
+ // vertex diffuse register is clamped before raster interpolation.
+ float lightDot=uNativeShader==2?.5:dot(normalize(vNormal),normalize(uSunDirection));
+ vNativeLighting=vec4(clamp(uAmbientLight+lightDot*uSunColor,0.,1.),uColor.a);
  vUV=aUV;vWorld=world.xz;vPosition=world;vColor=aColor;vY=constructionY;vInfo=iB;
  gl_Position=uVP*vec4(world,1.);
 }`;
@@ -61,8 +67,9 @@ uniform highp int uShadow;uniform int uHasAlpha;uniform float uCutoff;uniform fl
 uniform int uAlphaFunction;uniform vec3 uAmbientMaterial;uniform vec3 uSpecularMaterial;uniform vec3 uEmissiveMaterial;
 uniform float uGlossiness;uniform bool uSpecularEnabled;uniform int uVertexMode;uniform int uLightingMode;
 uniform vec3 uAmbientLight;uniform vec3 uSunColor;uniform vec3 uSunDirection;uniform vec3 uEye;
+uniform vec3 uSpecularLight;uniform highp int uNativeShader;uniform float uTextureScale;uniform bool uNativeLighting;
 uniform bool uClipEnabled;uniform vec4 uClipPlane;
-in vec3 vNormal;in vec2 vUV;in vec2 vWorld;in vec3 vPosition;in vec4 vColor;in float vY;flat in vec4 vInfo;out vec4 outColor;
+in vec4 vNativeLighting;in vec3 vNormal;in vec2 vUV;in vec2 vWorld;in vec3 vPosition;in vec4 vColor;in float vY;flat in vec4 vInfo;out vec4 outColor;
 bool alphaPass(float alpha){
  if(uAlphaFunction==0)return true;if(uAlphaFunction==1)return alpha<uCutoff;if(uAlphaFunction==2)return alpha==uCutoff;
  if(uAlphaFunction==3)return alpha<=uCutoff;if(uAlphaFunction==4)return alpha>uCutoff;if(uAlphaFunction==5)return alpha!=uCutoff;
@@ -70,7 +77,7 @@ bool alphaPass(float alpha){
 }
 void main(){
  if(uClipEnabled && dot(vec4(vPosition,1.),uClipPlane)<0.)discard;
- vec4 texel=mix(texture(uDiffuse,vUV),texture(uDiffuseNext,vUV),uModelSeasonBlend);float coverage=texel.a*uColor.a*(uVertexMode==2?vColor.a:1.);
+ vec4 texel=mix(texture(uDiffuse,vUV),texture(uDiffuseNext,vUV),uModelSeasonBlend);float coverage=texel.a*(uNativeShader!=0?vNativeLighting.a:uColor.a*(uVertexMode==2?vColor.a:1.));
  if((uHasAlpha&1)!=0 && !alphaPass(coverage))discard;
  int flags=int(vInfo.w+.5);float fog=texture(uFog,vWorld/256.).r;
  if((flags&32)==0 && fog<.05)discard;
@@ -79,16 +86,22 @@ void main(){
  vec3 n=normalize(vNormal),sun=normalize(uSunDirection);float diffuseLight=max(dot(n,sun),0.);
  vec3 ambient=uVertexMode==2?vColor.rgb:uAmbientMaterial,diffuse=uVertexMode==2?vColor.rgb:uColor.rgb;
  vec3 emission=uVertexMode==1?vColor.rgb:uEmissiveMaterial;
- // Illumination is an explicit adapter; source material/state values are exact.
- vec3 color=texel.rgb*emission;
- if(uLightingMode!=0){
-  color+=texel.rgb*(ambient*uAmbientLight+diffuse*uSunColor*diffuseLight);
+ // The explicit native IndexPal shader ignores material RGB and specular.
+ // Static material illumination retains the portable adapter; its source
+ // texture stage and separate specular-light colour are now applied exactly.
+ vec3 primary=emission;
+ if(uLightingMode!=0)primary+=ambient*uAmbientLight+diffuse*uSunColor*diffuseLight;
+ if(uNativeLighting)primary=clamp(primary,0.,1.);
+ vec3 color=texel.rgb*(uNativeShader!=0?vNativeLighting.rgb:primary)*uTextureScale;
+ if(uNativeLighting)color=clamp(color,0.,1.);
+ if(uNativeShader==0 && uLightingMode!=0){
   if(uSpecularEnabled && diffuseLight>0.){
    vec3 halfAngle=normalize(sun+normalize(uEye-vPosition));
    float specular=uGlossiness==0.?1.:pow(max(dot(n,halfAngle),0.),uGlossiness);
-   color+=uSpecularMaterial*uSunColor*specular;
+   color+=uSpecularMaterial*uSpecularLight*specular;
   }
  }
+ if(uNativeLighting)color=clamp(color,0.,1.);
  if((flags&4)!=0)color=mix(color,vec3(1.),.5);
  float alpha=(uHasAlpha&2)!=0?coverage:1.;
  if((flags&8)!=0){color=mix(color,vec3(.3,1.,.4),.4);alpha=.6;}
@@ -126,7 +139,7 @@ function program(gl){
   gl.attachShader(p,s);gl.deleteShader(s);
  }
  gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));
- const u={};for(const name of ['uVP','uShadow','uAnimated','uYOffset','uOriginOffset','uDiffuse','uDiffuseNext','uModelSeasonBlend','uFog','uColor','uHasAlpha','uCutoff','uModelHeight','uTeam','uFrames','uFrameWidth','uFrameCount','uTerrain','uTerrainSize','uTerrainEnabled','uSunDirection','uAmbientMaterial','uSpecularMaterial','uEmissiveMaterial','uGlossiness','uSpecularEnabled','uVertexMode','uLightingMode','uAmbientLight','uSunColor','uEye','uAlphaFunction','uClipEnabled','uClipPlane','uFarmPlotConform','uFarmPlotCenter'])u[name]=gl.getUniformLocation(p,name);
+ const u={};for(const name of ['uVP','uShadow','uAnimated','uYOffset','uOriginOffset','uDiffuse','uDiffuseNext','uModelSeasonBlend','uFog','uColor','uHasAlpha','uCutoff','uModelHeight','uTeam','uFrames','uFrameWidth','uFrameCount','uTerrain','uTerrainSize','uTerrainEnabled','uSunDirection','uAmbientMaterial','uSpecularMaterial','uEmissiveMaterial','uGlossiness','uSpecularEnabled','uVertexMode','uLightingMode','uAmbientLight','uSunColor','uSpecularLight','uNativeShader','uTextureScale','uNativeLighting','uEye','uAlphaFunction','uClipEnabled','uClipPlane','uFarmPlotConform','uFarmPlotCenter'])u[name]=gl.getUniformLocation(p,name);
  return {p,u};
 }
 const absolute=url=>new URL(url,import.meta.url);
@@ -225,17 +238,24 @@ function gpuPart(gl,part,instanceBuffer,materialTexture,keepPickingGeometry=fals
  };
  // Only static resource archetypes retain CPU indices for click tests.
  const pickGeometry=keepPickingGeometry?{positions,indices:part.indices,bounds:geometryBounds(positions)}:null;
- return {vao,pose,animations:part.animations,activities:part.activities,count:part.indices.length,texture:materialTexture,material:modelMaterial(part),alpha:alphaState(part),depth:depthState(part),height:maxY,pickGeometry,farmPlotOffset:part.farmPlotOffset||null};
+ return {vao,pose,animations:part.animations,activities:part.activities,count:part.indices.length,texture:materialTexture,material:modelMaterial(part),alpha:alphaState(part),depth:depthState(part),height:maxY,pickGeometry,farmPlotOffset:part.farmPlotOffset||null,pipeline:{skinned:part.skinned,textureApplyMode:part.textureApplyMode,textureUrl:part.textureUrl,textureSource:part.textureSource,texture:part.texture}};
 }
 
-export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{}){
- const result={available:new Set(),models:new Map(),errors:[],metrics:{colorMs:0,shadowMs:0,calls:0,triangles:0,gpuMs:0},draw(){},updateTerrain(){},setSeasonPhase(){return false;},setSeasonClimate(){return false;},pickResource(){return null;}};if(!enabled)return result;
- let manifest,teamManifest={},scales={},seasonManifest={},seasonTeamManifest={},yearPhase,seasonClimate='Temperate';
- try{manifest=await json('./local-original/models/manifest.json');}catch{return result;}
+export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},options={}){
+ const result={available:new Set(),models:new Map(),errors:[],metrics:{colorMs:0,shadowMs:0,calls:0,triangles:0,gpuMs:0},draw(){},updateTerrain(){},setLightingContext(){return false;},setLightingSettings(){return false;},setSeasonPhase(){return false;},setSeasonClimate(){return false;},pickResource(){return null;}};if(!enabled)return result;
+ let manifest,teamManifest={},scales={},seasonManifest={},seasonTeamManifest={},yearPhase,seasonClimate='Temperate',lightingData,defaultLighting=DEFAULT_MODEL_LIGHTING;
+ try{manifest=await json(options.manifestURL||'./local-original/models/manifest.json');}catch{return result;}
  result.manifest=manifest;
  try{teamManifest=await json('./local-original/team-textures/manifest.json');}catch{/* The original neutral materials remain available. */}
- try{scales=await json('./local-original/model-scales.json');}catch{/* Legacy normalized exports remain playable without native scale bindings. */}
+ try{scales=await json(options.scaleManifestURL||'./local-original/model-scales.json');}catch{/* Legacy normalized exports remain playable without native scale bindings. */}
  result.scaleManifest=scales;
+ result.setLightingContext=context=>{
+  for(const key of ['ambient','sun','direction'])if(!Array.isArray(context?.[key])||context[key].length!==3||!context[key].every(Number.isFinite))throw new RangeError('Invalid original model lighting');
+  if(Math.hypot(...context.direction)<1e-12)throw new RangeError('Zero original model light direction');
+  defaultLighting=context;result.lighting=context;return true;
+ };
+ result.setLightingSettings=settings=>{if(!lightingData)return false;return result.setLightingContext(createNativeLightingContext(lightingData,settings));};
+ if(options.nativeLighting!==false){try{lightingData=await json(options.lightingURL||'./local-original/climate-lighting.json');result.setLightingSettings(options.lightingSettings);}catch{/* Older portable asset folders keep the explicit legacy adapter. */}}
  try{seasonManifest=await json('./local-original/model-seasons.json');}catch{/* Static original skins remain available in older asset folders. */}
  if(seasonManifest.teamManifest){try{seasonTeamManifest=await json(seasonManifest.teamManifest);}catch{/* Unverified or absent patch data keeps the correct neutral seasonal image. */}}
  result.seasonManifest=seasonManifest;
@@ -348,7 +368,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{}){
   }
   return hit;
  };
- result.draw=({data,ranges,vp,epochs,zoom=80,shadow=false,eye=[0,200,0],lighting=DEFAULT_MODEL_LIGHTING,clipPlane=null,capture=false})=>{
+ result.draw=({data,ranges,vp,epochs,zoom=80,shadow=false,eye=[0,200,0],lighting=defaultLighting,clipPlane=null,capture=false})=>{
   const started=performance.now();let calls=0,triangles=0,querying=false;
   const previousState=drawState(gl);
   if(!shadow&&!capture){resourceView.data=data;resourceView.ranges=ranges;resourceView.epochs=epochs;resourceView.zoom=zoom;resourceView.choices.clear();}
@@ -363,6 +383,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{}){
   gl.uniform1i(shader.u.uClipEnabled,clipPlane?1:0);gl.uniform4fv(shader.u.uClipPlane,clipPlane||[0,0,0,0]);
   gl.uniform3fv(shader.u.uEye,eye);gl.uniform3fv(shader.u.uAmbientLight,lighting.ambient||DEFAULT_MODEL_LIGHTING.ambient);
   gl.uniform3fv(shader.u.uSunColor,lighting.sun||DEFAULT_MODEL_LIGHTING.sun);gl.uniform3fv(shader.u.uSunDirection,lighting.direction||DEFAULT_MODEL_LIGHTING.direction);
+  gl.uniform3fv(shader.u.uSpecularLight,lighting.specular||lighting.sun||DEFAULT_MODEL_LIGHTING.sun);gl.uniform1i(shader.u.uNativeLighting,lighting.native?1:0);
   gl.activeTexture(gl.TEXTURE0+6);gl.bindTexture(gl.TEXTURE_2D,heightTexture);gl.uniform1i(shader.u.uTerrainSize,heightSize);gl.uniform1i(shader.u.uTerrainEnabled,heightReady?1:0);
   for(const [id,variants] of result.models){
    const count=ranges[id*2+1];if(!count)continue;
@@ -406,6 +427,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{}){
      gl.activeTexture(gl.TEXTURE0+7);gl.bindTexture(gl.TEXTURE_2D,seasonal.next);gl.uniform1f(shader.u.uModelSeasonBlend,seasonal.blend);
      gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,seasonal.first);gl.bindVertexArray(part.vao);
      const m=part.material,a=part.alpha;
+     const pipeline=nativeModelPipeline(part.pipeline,lighting);gl.uniform1i(shader.u.uNativeShader,pipeline.shader);gl.uniform1f(shader.u.uTextureScale,pipeline.textureScale);
      gl.uniform4fv(shader.u.uColor,[...m.diffuse,m.alpha]);gl.uniform1f(shader.u.uModelHeight,part.height);
      gl.uniform3fv(shader.u.uAmbientMaterial,m.ambient);gl.uniform3fv(shader.u.uSpecularMaterial,m.specular);gl.uniform3fv(shader.u.uEmissiveMaterial,m.emissive);
      gl.uniform1f(shader.u.uGlossiness,m.glossiness);gl.uniform1i(shader.u.uSpecularEnabled,m.specularEnabled?1:0);

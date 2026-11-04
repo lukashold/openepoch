@@ -1,0 +1,73 @@
+{
+  "format": "openepoch-native5-label-source-checks-v1",
+  "status": "passed",
+  "checks": 13094,
+  "dataSha256": "faef8a21b4a7a25463def7b5415029c821dec47dcbda0cbb68f7fb7774f2698b",
+  "profiles": {
+    "base": {
+      "classIntervals": 268,
+      "resolvedFields": 803,
+      "missing": [
+        {
+          "id": 55,
+          "epoch": 13,
+          "field": "displayName",
+          "token": "tx_utn_HercFacility_name"
+        },
+        {
+          "id": 55,
+          "epoch": 13,
+          "field": "displayNamePlural",
+          "token": "tx_utn_HercFacility_pname"
+        },
+        {
+          "id": 55,
+          "epoch": 13,
+          "field": "displayName",
+          "unit": "HercFacility"
+        }
+      ]
+    },
+    "up15": {
+      "classIntervals": 278,
+      "resolvedFields": 833,
+      "missing": [
+        {
+          "id": 55,
+          "epoch": 13,
+          "field": "displayName",
+          "token": "tx_utn_HercFacility_name"
+        },
+        {
+          "id": 55,
+          "epoch": 13,
+          "field": "displayNamePlural",
+          "token": "tx_utn_HercFacility_pname"
+        },
+        {
+          "id": 55,
+          "epoch": 13,
+          "field": "displayName",
+          "unit": "HercFacility"
+        }
+      ]
+    }
+  },
+  "sourceFileSha256": {
+    "base:db/TechTree/upgrade_unittypes.csv": "377cd1a4f02dde5383cbc02bdb4231446452be87b7fd217d13b501a0e302cdac",
+    "base:db/Text/dbtext_unittypenames.utf8": "85134b6179bbb35f8a39de295676fc5ec55466693a9849026912c75192050900",
+    "base:db/Text/dbtext_unittypetips.utf8": "ab095f80e520803fac6a42b703fba6e2183caa07279f906c713551d04cdf65ef",
+    "base:db/Units/farm.ddf": "629e5dec7df3dfc1e0b53861718be7b27345140c96ef6c778f85b2a689e88abc",
+    "base:db/Units/citizen.ddf": "49ad998e0cf3370902940b4224f22b707c08fc061076718c70074275f33167ea",
+    "base:db/Units/resources.ddf": "35ec70b4cf8a5c2f0471db86586cb70376e68bf103c43535811c7ac30a7e8347",
+    "up15:db/TechTree/upgrade_unittype5.csv": "225b9e7c8e34fcf2969e166207997d349aeed642b371f5fc08911911ce575ffb",
+    "up15:db/Text/dbtext_unittypenames.utf8": "85134b6179bbb35f8a39de295676fc5ec55466693a9849026912c75192050900",
+    "up15:db/Text/dbtext_unittypetips.utf8": "ab095f80e520803fac6a42b703fba6e2183caa07279f906c713551d04cdf65ef",
+    "up15:db/Units/farm_15.ddf": "965e29e08f9b1e939feb7c3ee8478c9e324a726d4d8d260040f3dc36a84b61ab",
+    "up15:db/Units/citizen_15.ddf": "383976e9e3bd0f2d8a13317eef99d081ee50aa1deefb94698ce3b44e6e3d49c9",
+    "up15:db/Units/resources.ddf": "35ec70b4cf8a5c2f0471db86586cb70376e68bf103c43535811c7ac30a7e8347"
+  },
+  "originalExeOrDllExecuted": false,
+  "originalFilesModified": false,
+  "scope": "All text values independently decoded from raw original rows; actual CSV columns or inherited DDF source chains and audited class intervals."
+}

@@ -40,7 +40,7 @@ for(let epoch=0;epoch<15;epoch++){
    if(f.gather.value)near(w.up15_stat(0,row.id,20+k),f.gather.value[k],'live nine-slot gather');
   }
  }
- for(const id of[28,43])equal(w.unit_epoch(id),255,'unresolved native role disabled');
+ equal(w.unit_epoch(28),14,'Exact UP Paladin available E15');equal(w.unit_epoch(43),13,'Exact UP LightHerc available E14');
  const p=w.research_tree(),tree=JSON.parse(new TextDecoder().decode(new Uint8Array(w.memory.buffer,p,w.ui_len())));
  equal(tree.length,180);for(let i=0;i<180;i++){equal(tree[i].id,i);equal(tree[i].cost,research.nodes[i].raw_node.TECHPTS);}
 }

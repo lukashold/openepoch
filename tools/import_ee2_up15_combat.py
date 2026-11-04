@@ -153,6 +153,21 @@ pub fn adjustment_percent(attacker_profile:u16,defender_profile:u16)->Option<u16
 
 def run(installation=INSTALL):
  data=collect(installation)
+ # A UnitType's inherited RPS exists before its production upgrade. Captured,
+ # scenario or cheat-spawned future units must not lose known class eligibility
+ # merely because their new owner's epoch precedes production availability.
+ for identifier,lookup in enumerate(data['lookup']):
+  absent=[epoch for epoch,value in enumerate(lookup) if value==UNKNOWN]
+  if not absent:continue
+  members=[p for p in data['profiles'] if p['id']==identifier]
+  assert members and len({p['rps'] for p in members})==1
+  original=members[0];index=len(data['profiles'])
+  base={**original,'index':index,'epoch':min(absent),'until':max(absent)+1,'sourceEpoch':0,
+    'upgrade':None,'upgradeIndex':UNKNOWN,'upgradeSource':None,'baseTypeBeforeProduction':True,
+    'scope':'Inherited DDF UnitType RPS only; no unverified CSV upgrade identity before availability.'}
+  data['profiles'].append(base)
+  for epoch in absent:lookup[epoch]=index
+ data['baseTypeScope']='Every bound source UnitType retains its proven inherited RPS before production availability; missing upgrade identity uses native default adjustment100.'
  targets=[(ROOT/'src/ee2_up15_combat.rs',generate(data)),(ROOT/'docs/ee2-up15-combat.json',json.dumps(data,indent=2)+'\n')]
  for path,text in targets:
   temporary=path.with_suffix(path.suffix+'.tmp');temporary.write_text(text,encoding='utf8');temporary.replace(path)

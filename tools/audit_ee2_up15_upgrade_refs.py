@@ -7,8 +7,15 @@ def run():
     ability_policy={
       'Attack':{'damage':'CSV nonzero override; zero falls back to actual ref. Live damage modifier consumes effective field.',
                 'range':'CSV nonzero override; zero falls back to actual ref. Live range modifier consumes effective field.',
-                'reloadTime':'CSV nonzero override; zero falls back to actual ref. Live fire cooldown consumes effective field.',
-                'missileName':'Retained in effective attack_missile. Only Fortress Cannonball/TankShell mapping is integrated; other projectile types remain adapters.'},
+                'reloadTime':'CSV nonzero override after refs. Native round deadline uses source reload; temporary/veteran reload multiplier remains1 until integrated.',
+                'missileName':'Actual empty name selects direct damage; named ammo uses source projectile speed when declared. Presentation/trajectory remain explicit adapters.',
+                'minRangeMobile':'Consumed by target acquisition, fire eligibility and mobile retreat; existing surface-distance geometry remains adapter.',
+                'minRangeImmobile':'Consumed with actual inherited target mobility and native splash fallback; existing distance geometry remains adapter.',
+                'applyDamageTime':'Consumed by007DB4E0 strict native round deadline comparison, persisted through ATK1.',
+                'areaDamageRadius':'Consumed by direct and projectile AoE using native quadratic center-distance falloff and primary bypass.',
+                'areaDamageFriendlyRatio':'Consumed after compiled007DA1C0 quirk: only exactly1 survives, all other values become0.',
+                'attackOnTheMove':'Consumed to gate firing during plain MOVE orders; source moving aircraft may fire.',
+                'WeaponType':'Used solely by explicit existing-renderer presentation adapter; damage uses native RPS instead of old weapon/armor multipliers.'},
       'LOS':{'range':'CSV nonzero override; zero falls back to actual ref. Live LOS modifier consumes effective field.'},
       'Garrison':{'numOfSlots':'Effective source slots consumed; existing CARGO_MAX10 capacity/role adapter remains.',
                    'healPoints':'Retained; runtime healing consumes this only for Fortress.',
@@ -43,11 +50,11 @@ def run():
                      'leaves':leaves,'ability_field_status':evaluated})
     header=ROOT.parents[1]/'up-resolved-sources/files/dbhdrs/DbUpgradeDefs.h'
     if not header.exists():header=ROOT.parents[1]/'work/up-resolved-sources/files/dbhdrs/DbUpgradeDefs.h'
-    report={'format':'ee2-up15-complete-unit-upgrade-refs-v1','scope':'All275 bound class rows; actual CSV UPGRADEREFS or Citizen DDF UpgradeRefs. Explicit no-op temporary reset when no native temp improvement layer exists. Missing, unsupported and merely retained fields are disclosed.',
+    report={'format':'ee2-up15-complete-unit-upgrade-refs-v1','scope':f'All{len(rows)} bound class rows; actual CSV UPGRADEREFS or Citizen DDF UpgradeRefs. Explicit no-op temporary reset when no native temp improvement layer exists. Missing, unsupported and merely retained fields are disclosed.',
       'header_evidence':{'path':'DbHdrs/DbUpgradeDefs.h','sha256':hashlib.sha256(header.read_bytes()).hexdigest(),'line58':'DbUpgradeUnitTypeUpgrade','line61':'m_userEpoch IGNORED','line62to66':'nonzero scalar replacements or0 placeholders'},
       'class_rows':len(rows),'counts':dict(counts),'ability_field_counts':[{'ability':a,'field':f,'occurrences':n} for (a,f),n in sorted(field_counts.items())],
       'unresolved_refs':unresolved,'unsupported_occurrences':unsupported,'rows':rows,
-      'remaining_nonref_scope':['Native target/weapon domain matrices and secondary attacks unbound beyond RPS gates.',
+      'remaining_nonref_scope':['Native military-target flags, turret banks, packing capability, blocking geometry and ordnance/rearm remain unbound; current RPS gates are complete for these source classes.',
          'Native temporary veteran/elite/area/civilization layers are absent; resetting their multiplier to zero has no current simulation effect.',
          'CityRadius/CityHealRate retained; completed-TC radius adapter happens to match7..11 source values, native CityManager/heal-area behavior remains unbound.',
          'UpgradeSize retained in raw_size; simulation footprint/pathing/world conversion unchanged.']}

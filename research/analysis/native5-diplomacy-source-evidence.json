@@ -1,0 +1,66 @@
+{
+  "format": "native5-diplomacy-source-evidence-v1",
+  "build": "native-ui5",
+  "createdUTC": "2026-11-04T12:04:09.551781+00:00",
+  "originalEngine": {
+    "path": "Unofficial Patch Files/EnabledUP15Units/EE2.exe",
+    "sha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f"
+  },
+  "method": "Installed source tables and original atlas bytes read-only; targeted Ghidra headless readOnly/noanalysis exports. No original executable or GUI launched.",
+  "exports": [
+    {
+      "path": "native5-native-diplomacy-center.c",
+      "sha256": "ef00c24aece442d957e970721ace063abd2d257c417809ce7d5dd8388fcc2f3a"
+    },
+    {
+      "path": "native5-native-diplomacy-refs.c",
+      "sha256": "6eb98c55d49a1e2085ae4909ab6f4cce99b0055bc0f250ce90f4e62364dcf52c"
+    },
+    {
+      "path": "native5-native-diplomacy-runtime.c",
+      "sha256": "f05a2b84c91f1b92134b11bdecb13aa882c51de7a5c0d835646a86fea50245a6"
+    },
+    {
+      "path": "native5-native-diplomacy-templates.c",
+      "sha256": "3365c5a59b50a2a2c5a9ffcbc546d9a5394da08ada6cc6fbe8c064f37f203f61"
+    }
+  ],
+  "findings": [
+    {
+      "address": "007B24E0",
+      "role": "F4 controller constructor",
+      "proven": "diplo_panel; source opponent row templates and minimap runtime parent diplo_tribterr_pane. Nine row holders, source player IDs1..10."
+    },
+    {
+      "address": "007B01D0",
+      "role": "Player-row widget template",
+      "proven": "diplo_pl_currstat_from through diplo_pl_civ; binds player name, team, civilization and original player-color/glow strip."
+    },
+    {
+      "address": "007B03B0",
+      "role": "Player-row selected state",
+      "proven": "Changes both player color and glow strip states."
+    },
+    {
+      "address": "007B0DC0",
+      "role": "Diplomacy commands",
+      "proven": "Relation callbacks, source proposal path and war confirmation. Existing application simulation retained rather than claiming native semantics."
+    },
+    {
+      "address": "007A91D0",
+      "role": "Proposal constructor",
+      "proven": "Separate prop_panel with source templates. No invented native tariff, rights or duration simulation."
+    },
+    {
+      "address": "00A7F930",
+      "role": "Centered panel placement",
+      "proven": "Signed integer truncation of (screen-content size)/2 on each axis."
+    },
+    {
+      "address": "00A91E40 / 00A74D10",
+      "role": "Frame and ancestor geometry",
+      "proven": "Previously secured Native4 frame inset and ancestor inner bounds; reused unchanged original-hud-layout.js."
+    }
+  ],
+  "manifestSha256": "fb527824c257e1dd23caf70666507b5f6c883a81628fda3495af54dff76abd2f"
+}

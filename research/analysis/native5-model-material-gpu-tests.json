@@ -1,0 +1,195 @@
+{
+  "format": "openepoch-original-material-gpu-test-v1",
+  "context": {
+    "egl": [
+      1,
+      5
+    ],
+    "vendor": "Google Inc. (AMD)",
+    "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11-31.0.21924.61)",
+    "version": "OpenGL ES 3.0 (ANGLE 2.1 git hash: unknown hash)",
+    "libraryDirectory": "C:\\Program Files\\Mozilla Firefox",
+    "surface": [
+      64,
+      64
+    ],
+    "uiLaunched": false,
+    "framebuffer": "RGBA8 texture + DEPTH24_STENCIL8 renderbuffer"
+  },
+  "shaderSha256": {
+    "vertex": "7a1f879ffb93822a6095f8c86bd846a85cd60b2f7068460f877250b1e77e041c",
+    "fragment": "9e305a2bbb2df61b190201e7ff206769411ba050bde91f9192fa2bbf0ef6cfb0"
+  },
+  "checks": [
+    {
+      "case": "legacy ambient plus diffuse",
+      "pixel": [
+        90,
+        173,
+        70,
+        255
+      ],
+      "expected": [
+        90,
+        173,
+        70,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "source ambient independent of diffuse",
+      "pixel": [
+        13,
+        14,
+        26,
+        255
+      ],
+      "expected": [
+        13,
+        14,
+        26,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "source emissive",
+      "pixel": [
+        32,
+        96,
+        48,
+        255
+      ],
+      "expected": [
+        32,
+        96,
+        48,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "nonblack specular disabled",
+      "pixel": [
+        0,
+        0,
+        0,
+        255
+      ],
+      "expected": [
+        0,
+        0,
+        0,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "source specular enable",
+      "pixel": [
+        64,
+        64,
+        64,
+        255
+      ],
+      "expected": [
+        64,
+        64,
+        64,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "source vertex ambient-diffuse mode",
+      "pixel": [
+        22,
+        86,
+        53,
+        255
+      ],
+      "expected": [
+        22,
+        86,
+        53,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "emissive-only lighting mode",
+      "pixel": [
+        64,
+        48,
+        64,
+        255
+      ],
+      "expected": [
+        64,
+        48,
+        64,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "GREATER rejects exact alpha threshold",
+      "pixel": [
+        32,
+        64,
+        96,
+        255
+      ],
+      "expected": [
+        32,
+        64,
+        96,
+        255
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "GREATER accepts next alpha byte",
+      "pixel": [
+        90,
+        173,
+        70,
+        128
+      ],
+      "expected": [
+        90,
+        173,
+        70,
+        128
+      ],
+      "tolerance": 2
+    },
+    {
+      "case": "source origin changes actual GPU geometry",
+      "centroidBefore": [
+        31.5,
+        21.82758620689655
+      ],
+      "centroidAfter": [
+        45.22736285525446,
+        23.019828155981493
+      ]
+    },
+    {
+      "case": "shadow follows sampled sloping terrain",
+      "centroidFlat": [
+        31.5,
+        27.15625
+      ],
+      "centroidSlope": [
+        31.5,
+        30.65625
+      ],
+      "algorithm": "own terrain-conforming projector, not native algorithm"
+    }
+  ],
+  "passed": 11,
+  "uiLaunched": false,
+  "scope": "Production shader pixels on native headless ANGLE. No original-game visual parity or physical macOS execution claim."
+}

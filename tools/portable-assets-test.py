@@ -7,6 +7,7 @@ as a runtime path. After unpacking, run with --docs <unpacked docs directory>
 """
 from __future__ import annotations
 import argparse
+import base64
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 import hashlib
@@ -133,12 +134,11 @@ class AssetAudit:
         elif isinstance(value,str) and value.startswith('local-original/'):
             self.ref(value,source,group)
 
-    def check_models(self):
-        manifest_name='local-original/models/manifest.json'
+    def check_models(self,manifest_name='local-original/models/manifest.json',stat_prefix=''):
         self.ref(manifest_name,'original-renderer.js','model-manifest')
         manifest=self.read_json(manifest_name)
         models=manifest.get('models',[])
-        self.stats['modelBindings']=len(models)
+        self.stats[stat_prefix+'modelBindings']=len(models)
         loaded=set()
         for i,row in enumerate(models):
             if row.get('verified') is False:continue
@@ -161,10 +161,10 @@ class AssetAudit:
                                        'sourceTextures':model.get('sourceTextures',[]),
                                        'nativeFarmComposite':model.get('nativeFarmComposite'),
                                        'parts':[{key:part.get(key) for key in ('sourceNode','name','textureSource','textureUrl','farmPlot','farmPlotOffset')} for part in model.get('parts',[])]}
-        self.stats['uniqueBoundModelJSON']=len(loaded)
+        self.stats[stat_prefix+'uniqueBoundModelJSON']=len(loaded)
         for i,row in enumerate(manifest.get('epochIconBindings',[])):
             self.hash_ref(row,f'{manifest_name}.epochIconBindings[{i}]','epoch-icon')
-        self.stats['epochIconBindings']=len(manifest.get('epochIconBindings',[]))
+        self.stats[stat_prefix+'epochIconBindings']=len(manifest.get('epochIconBindings',[]))
         self.local_urls(manifest.get('textures',{}),manifest_name+'.textures','model-material-map')
 
     def check_textures_and_ground(self):
@@ -354,6 +354,64 @@ class AssetAudit:
                 if chosen not in sprites:self.error('hud-art-missing-meta-sprite',f'{widget}/e{meta}',name)
         self.stats['hudWidgets']=len(widgets);self.stats['hudSprites']=len(sprites);self.stats['hudSourceTextures']=len(textures);self.stats['hudArtBindings']=len(data.get('art',{}))
 
+    def check_diplomacy(self):
+        name='local-original/diplomacy-native/manifest.json';base='local-original/diplomacy-native'
+        self.ref(name,'original-diplomacy.js','diplomacy-manifest');data=self.read_json(name)
+        if data.get('format')!='ee2-native-diplomacy-v1':self.error('diplomacy-manifest-format',name);return
+        if data.get('sourceResolutionScale')!=4:self.error('diplomacy-source-resolution-scale',data.get('sourceResolutionScale'),name)
+        if data.get('coordinateReference')!=[1600,1200]:self.error('diplomacy-coordinate-reference',data.get('coordinateReference'),name)
+        sprites=data.get('sprites',{});textures=data.get('textures',{});widgets=data.get('widgets',{})
+        frames=data.get('frameStyles',{});styles=data.get('fontStyles',{});fonts=data.get('fonts',{})
+        for key,row in sprites.items():
+            target=self.ref(row.get('file'),f'{name}.sprites.{key}.file','diplomacy-sprite-png',base)
+            if target:
+                if self.digest(target)!=row.get('sha256'):self.error('diplomacy-png-hash-mismatch',target,name)
+                header=self.files[target].read_bytes()[:24]
+                if len(header)!=24 or header[:16]!=b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR':self.error('diplomacy-invalid-png-header',target,name)
+                elif [int.from_bytes(header[16:20],'big'),int.from_bytes(header[20:24],'big')]!=[row.get('width'),row.get('height')]:self.error('diplomacy-png-dimension-mismatch',target,name)
+            # Enhanced UI7 atlases are 4x; unchanged shared sprites are native 1x.
+            scale=row.get('sourceResolutionScale');scales=scale if isinstance(scale,list) else [scale,scale]
+            for axis,(physical,logical) in enumerate([('width','logicalWidth'),('height','logicalHeight')]):
+                value=row.get(logical);dimension=row.get(physical);factor=scales[axis] if len(scales)==2 else None
+                if type(factor) not in (int,float) or not math.isfinite(factor) or factor<=0 or type(value) not in (int,float) or not math.isfinite(value) or value<=0 or type(dimension)!=int or dimension<=0 or value*factor!=dimension:self.error('diplomacy-logical-scale-mismatch',f'{key}/{logical}',name)
+            texture=textures.get(row.get('sourceTexture'));rect=row.get('sourceSprite',{}).get('rect',[])
+            if not texture:self.error('diplomacy-missing-source-texture',row.get('sourceTexture'),name)
+            elif not isinstance(rect,list) or len(rect)!=4 or any(type(v)!=int or v<0 for v in rect) or rect[2]<=0 or rect[3]<=0 or rect[0]+rect[2]>texture.get('width',0) or rect[1]+rect[3]>texture.get('height',0):self.error('diplomacy-source-crop-outside-texture',key,name)
+            elif ([rect[3],rect[2]] if row.get('restoredPackedRotation') else rect[2:4])!=[row.get('width'),row.get('height')]:self.error('diplomacy-restored-crop-dimension-mismatch',key,name)
+        for key,row in widgets.items():
+            if row.get('NAME')!=key:self.error('diplomacy-widget-name-mismatch',key,name)
+            for field in ('PARENT','ANCHORNAME1','ANCHORNAME2'):
+                if row.get(field) and row[field] not in widgets:self.error('diplomacy-missing-widget-anchor',f'{key}/{field}/{row[field]}',name)
+            for field in ('ANCHORTYPE1','ANCHORTYPE2'):
+                value=row.get(field,'')
+                if value not in ('','NoAnchor') and not re.fullmatch(r'Source(?:UL|LL|UR|LR)Target(?:UL|LL|UR|LR)',value):self.error('diplomacy-invalid-anchor-type',f'{key}/{field}/{value}',name)
+            for field,table in [('SPRITE',sprites),('FRAMESTYLE',frames),('FONTSTYLE',styles)]:
+                if row.get(field) and row[field] not in table:self.error('diplomacy-missing-widget-binding',f'{key}/{field}/{row[field]}',name)
+        done=set();visiting=set()
+        def visit(key):
+            if key in visiting:self.error('diplomacy-widget-anchor-cycle',key,name);return
+            if key in done:return
+            visiting.add(key)
+            for field in ('PARENT','ANCHORNAME1','ANCHORNAME2'):
+                parent=widgets[key].get(field)
+                if parent in widgets:visit(parent)
+            visiting.remove(key);done.add(key)
+        for key in widgets:visit(key)
+        for key,row in frames.items():
+            # Native glass/inset frames are color-only and declare no sprite.
+            if row.get('SPRITE') and row['SPRITE'] not in sprites:self.error('diplomacy-frame-missing-sprite',key,name)
+        for key,row in styles.items():
+            if row.get('FONT') not in fonts:self.error('diplomacy-style-missing-font',key,name)
+        strips=data.get('playerStripPixels',{})
+        for key in ('spr_dip_pcolor_strip_glow','spr_dip_pcolor_strip_glow_on','spr_dip_pcolor_strip_2state','spr_dip_pcolor_strip_2state_on'):
+            row=strips.get(key,{})
+            try:rgba=base64.b64decode(row.get('rgba',''),validate=True)
+            except (ValueError,TypeError):rgba=b''
+            sprite=sprites.get(key,{})
+            if not rgba or [row.get('width'),row.get('height')]!=[sprite.get('width'),sprite.get('height')] or len(rgba)!=row.get('width',0)*row.get('height',0)*4 or hashlib.sha256(rgba).hexdigest()!=row.get('rgbaSha256'):self.error('diplomacy-invalid-strip-rgba',key,name)
+            if row.get('pngFile')!=sprite.get('file'):self.error('diplomacy-strip-sprite-file-mismatch',key,name)
+        self.stats['diplomacyWidgets']=len(widgets);self.stats['diplomacySprites']=len(sprites);self.stats['diplomacySourceTextures']=len(textures);self.stats['diplomacyPlayerStrips']=len(strips)
+
     def check_audio(self):
         name='local-original/audio/manifest.json';base='local-original/audio'
         self.ref(name,'original-audio.js','audio-manifest');data=self.read_json(name)
@@ -433,10 +491,16 @@ class AssetAudit:
         return comparison
 
     def run(self,compare=None):
-        self.check_models();self.check_textures_and_ground();self.check_teams();self.check_model_seasons();self.check_audio();self.check_static_runtime()
+        self.check_models()
+        if 'local-original/models/manifest-up15.json' in self.files:
+            self.check_models('local-original/models/manifest-up15.json','up15-')
+        self.check_textures_and_ground();self.check_teams();self.check_model_seasons();self.check_audio();self.check_static_runtime()
         if 'original-water.js' in self.files:self.check_water()
         if 'local-original/farm-composites.json' in self.files:self.check_farms()
         if 'original-hud.js' in self.files:self.check_hud()
+        if 'original-diplomacy.js' in self.files:self.check_diplomacy()
+        if 'local-original/labels-native.json' in self.files:
+            self.ref('local-original/labels-native.json','original-labels.js','original-labels-manifest');self.read_json('local-original/labels-native.json')
         if 'rules-profile.js' in self.files:self.check_rule_profiles()
         # All local-original JSONs carry auxiliary provenance/preview references;
         # validate those too without interpreting source .tga/.nif/cache paths.
@@ -580,6 +644,35 @@ class PathPolicyTests(unittest.TestCase):
         (self.root/'rules-profile.js').write_text('export const UP15_PROFILE_ENABLED=true;',encoding='utf8')
         audit=AssetAudit(self.root);audit.check_rule_profiles();self.assertEqual(audit.stats['numericalRuleProfileBinaries'],3);self.assertIn('missing-runtime-file',[e['kind'] for e in audit.errors])
         (self.root/'openepoch-ee2-up15.wasm').write_bytes(b'up-wasm-fixture');audit=AssetAudit(self.root);audit.check_rule_profiles();self.assertFalse(audit.errors)
+    def diplomacy_fixture(self):
+        data=self.hud_fixture();folder=self.root/'local-original/diplomacy-native';folder.mkdir(parents=True,exist_ok=True)
+        (folder/'Panel.png').write_bytes((self.root/'local-original/hud-native/Panel.png').read_bytes())
+        data.update(format='ee2-native-diplomacy-v1',fonts={'native':{'NAME':'native'}},fontStyles={'white':{'FONT':'native'}},frameStyles={'frame':{'SPRITE':'panel'}},playerStripPixels={})
+        data['sprites']['panel']['sourceResolutionScale']=4
+        data['widgets']['panel'].update(FRAMESTYLE='frame',FONTSTYLE='white')
+        raw=b'\xff'*64
+        for key in ('spr_dip_pcolor_strip_glow','spr_dip_pcolor_strip_glow_on','spr_dip_pcolor_strip_2state','spr_dip_pcolor_strip_2state_on'):
+            data['sprites'][key]=dict(data['sprites']['panel'],sourceResolutionScale=1,logicalWidth=4,logicalHeight=4)
+            data['playerStripPixels'][key]={'width':4,'height':4,'pngFile':'Panel.png','rgba':base64.b64encode(raw).decode(),'rgbaSha256':hashlib.sha256(raw).hexdigest()}
+        return data
+    def diplomacy_audit(self,data):
+        (self.root/'local-original/diplomacy-native/manifest.json').write_text(json.dumps(data),encoding='utf8');audit=AssetAudit(self.root);audit.check_diplomacy();return audit
+    def test_diplomacy_graph_checks_mixed_native_scales_and_embedded_strips(self):
+        audit=self.diplomacy_audit(self.diplomacy_fixture());self.assertFalse(audit.errors);self.assertEqual(audit.stats['diplomacyPlayerStrips'],4)
+    def test_diplomacy_graph_rejects_image_path_hash_dimensions_and_scale(self):
+        for mutate,expected in [(lambda d:d['sprites']['panel'].update(file='panel.png'),'case-mismatch'),
+            (lambda d:d['sprites']['panel'].update(sha256='0'*64),'diplomacy-png-hash-mismatch'),
+            (lambda d:d['sprites']['panel'].update(width=8),'diplomacy-png-dimension-mismatch'),
+            (lambda d:d['sprites']['panel'].update(sourceResolutionScale=1),'diplomacy-logical-scale-mismatch'),
+            (lambda d:d['sprites']['panel']['sourceSprite'].update(rect=[1,0,4,4]),'diplomacy-source-crop-outside-texture')]:
+            data=self.diplomacy_fixture();mutate(data);self.assertIn(expected,[e['kind'] for e in self.diplomacy_audit(data).errors])
+    def test_diplomacy_graph_rejects_anchor_binding_font_and_embedded_rgba_errors(self):
+        for mutate,expected in [(lambda d:d['widgets']['panel'].update(ANCHORNAME1='missing'),'diplomacy-missing-widget-anchor'),
+            (lambda d:d['widgets']['root'].update(PARENT='panel'),'diplomacy-widget-anchor-cycle'),
+            (lambda d:d['widgets']['panel'].update(SPRITE='wrong'),'diplomacy-missing-widget-binding'),
+            (lambda d:d['fontStyles']['white'].update(FONT='missing'),'diplomacy-style-missing-font'),
+            (lambda d:d['playerStripPixels']['spr_dip_pcolor_strip_glow'].update(rgba='bad!'),'diplomacy-invalid-strip-rgba')]:
+            data=self.diplomacy_fixture();mutate(data);self.assertIn(expected,[e['kind'] for e in self.diplomacy_audit(data).errors])
     def test_rule_profile_draft_does_not_implicitly_enable_an_absent_up_binary(self):
         for file in ('openepoch.wasm','openepoch-ee2.wasm'):(self.root/file).write_bytes(b'wasm-fixture')
         (self.root/'rules-profile.js').write_text('export const UP15_PROFILE_ENABLED=false;',encoding='utf8');audit=AssetAudit(self.root);audit.check_rule_profiles();self.assertFalse(audit.errors);self.assertEqual(audit.stats['numericalRuleProfileBinaries'],2)

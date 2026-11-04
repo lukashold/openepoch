@@ -4,7 +4,7 @@ export const UP15_PROFILE_ENABLED=true;
 const PROFILES=Object.freeze({
  own:Object.freeze({id:'own',ruleset:0,label:'OpenEpoch-Regeln',wasm:'openepoch.wasm?v=combat-season1',database:'openepoch-v2'}),
  base:Object.freeze({id:'base',ruleset:1,label:'EE2 · Basisdaten',wasm:'openepoch-ee2.wasm?v=combat-season1',database:'openepoch-ee2-reference-v2'}),
- up15:Object.freeze({id:'up15',ruleset:2,label:'EE2 · installierte UP-Regeln',wasm:'openepoch-ee2-up15.wasm?v=up15-profile5',database:'openepoch-ee2-up15-v1'}),
+ up15:Object.freeze({id:'up15',ruleset:2,label:'EE2 · installierte UP-Regeln',wasm:'openepoch-ee2-up15.wasm?v=native-combat5',database:'openepoch-ee2-up15-v1'}),
 });
 
 export function resolveRulesProfile(input,{up15Enabled=UP15_PROFILE_ENABLED}={}){

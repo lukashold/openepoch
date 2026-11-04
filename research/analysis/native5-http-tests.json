@@ -1,0 +1,37 @@
+{
+  "format": "openepoch-native5-http-tests-v1",
+  "status": "passed",
+  "build": "native-ui5",
+  "createdUTC": "2026-11-04T12:51:57.862580+00:00",
+  "runs": [
+    {
+      "label": "source",
+      "passed": 12,
+      "seconds": 8.714,
+      "serverSha256": "4a0e144db778027b236b2217454d38983d3b8a6cc1a0723d87fb5c4662a23e19",
+      "testSha256": "ed0a9c2dd2fc40ef296e3bd9d328c69332d5b6e146b1ba653f45915166d6fcdb",
+      "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+      "wasmSha256ByFile": {
+        "openepoch.wasm": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+        "openepoch-ee2.wasm": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+        "openepoch-ee2-up15.wasm": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51"
+      },
+      "logSha256": "ef832f493d7b755009b9011271346abdb95753910f750ff74a2ae2275d096497"
+    },
+    {
+      "label": "extracted",
+      "passed": 12,
+      "seconds": 8.585,
+      "serverSha256": "4a0e144db778027b236b2217454d38983d3b8a6cc1a0723d87fb5c4662a23e19",
+      "testSha256": "ed0a9c2dd2fc40ef296e3bd9d328c69332d5b6e146b1ba653f45915166d6fcdb",
+      "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+      "wasmSha256ByFile": {
+        "openepoch.wasm": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+        "openepoch-ee2.wasm": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+        "openepoch-ee2-up15.wasm": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51"
+      },
+      "logSha256": "b7fcf6bbaa6b14049bd76f3eb7bf3fd1cc2131a03845281b6c14fc28a8f6a947"
+    }
+  ],
+  "scope": "Actual local HTTP/process tests on Windows for current source and freshly extracted complete package. No browser, external network, original executable or physical macOS test."
+}

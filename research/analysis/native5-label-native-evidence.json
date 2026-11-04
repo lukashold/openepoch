@@ -1,0 +1,59 @@
+{
+  "format": "openepoch-native5-label-native-evidence-v1",
+  "status": "passed",
+  "engineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+  "propertyTable": [
+    {
+      "table": "00c148b8",
+      "field": "displayName",
+      "offsetVariable": "00c148bc",
+      "nameAddress": "00c14b18"
+    },
+    {
+      "table": "00c148c0",
+      "field": "displayNamePlural",
+      "offsetVariable": "00c148c4",
+      "nameAddress": "00c14b04"
+    },
+    {
+      "table": "00c148c8",
+      "field": "displayNameTTTooltip",
+      "offsetVariable": "00c148cc",
+      "nameAddress": "00c14aec"
+    },
+    {
+      "table": "00c148d0",
+      "field": "displayNameScenEdit",
+      "offsetVariable": "00c148d4",
+      "nameAddress": "00c14ad8"
+    },
+    {
+      "table": "00c148d8",
+      "field": "verboseTooltip",
+      "offsetVariable": "00c148dc",
+      "nameAddress": "00c14ac8"
+    }
+  ],
+  "functions": {
+    "0053A0F0": "Resolves named UnitType property metadata fields.",
+    "0053A8D0": "First nonzero property in child-to-parent chain; positive indices set name+0x10, plural+0x14 and tooltip+0x24. Negative fields stop lookup without assignment.",
+    "0053C930": "Applies referenced upgrades before CSV overrides. Positive m_name(+0x38) replaces singular; positive m_namePlural(+0x3c) replaces plural; a new singular with absent plural clears the old plural. Positive m_ttIndex(+0x58) replaces tooltip.",
+    "00868A80": "UnitType constructor, not an upgrade application; excluded from override inference."
+  },
+  "evidenceSha256": {
+    "native5-label-field-refs.c": "ba2344c9ea772228aae8f53a1255cf0b1adc05acc9e084ec65dc4636374aed9c",
+    "native5-label-field-loader.c": "2a9e6072ec20c65572d6073f00482e3a9127a038f3e9bfc339d36e393518876d",
+    "native5-label-field-users.c": "32effad2c1f186e3719079dbb6960eefe3c5f46f0b1b878070b81558e25069f6",
+    "native5-label-constructor.c": "a7b10b98f2af30f3ed84afdf9d867bf44b5ef3e859829e10fb8f06bdf0a9f601",
+    "native5-label-upgrade-apply.c": "554bb3dabf7525ade1d08874843a3f93687f585f4f26b514187f48221ea1d415"
+  },
+  "headerSha256": {
+    "DbUnitDefs.h": "afde5529ed266cc3995dfa3c48eecc3fd17f2eac7db65c880d077ac277cd26c3",
+    "DbUpgradeDefs.h": "8af8ee8a7c93b16fccb93afa8b441b435cb7bd0aa5dde5f78f617773b2227791"
+  },
+  "limits": [
+    "Native formatted Veteran/Elite names and original renderer/font rasterization are not implemented by the label adapter.",
+    "HercFacility name/plural tokens are absent from the resolved localization files; existing local fallback remains explicit.",
+    "No original executable or DLL was run; Ghidra passes were read-only/noanalysis."
+  ]
+}

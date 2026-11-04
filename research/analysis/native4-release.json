@@ -109,9 +109,12 @@
   },
   "liveUrl": "http://127.0.0.1:8125/?rules=ee2&build=native-ui4",
   "github": {
-    "currentCheckpointPublished": false,
+    "currentCheckpointPublished": true,
     "previousCommit": "f545f2faa336426d70055f56ededb599f4064520",
-    "originalMediaIncluded": false
+    "originalMediaIncluded": false,
+    "commit": "3d2c5e14d82e747a8c957043a9b39c13ac01af20",
+    "tree": "4657c5f8bd6cc8bc16225db661a69db5c45d1994",
+    "publicationReport": "github-native4-publication.json"
   },
   "fullOriginalParity": false,
   "limits": [

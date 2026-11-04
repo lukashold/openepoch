@@ -67,7 +67,7 @@ try{
  flush();
  for(const peer of peers){check(peer.api.getNet()?.ls instanceof Lockstep,'Actual main channel creates the production Lockstep');check(peer.begins.length===1,'One match starts');equal(peer.session.settings,hostSettings,'Guest adopts all host calendar fields');equal(plain(peer.api.menuSeasonSettings()),hostSettings,'Production controls reflect host settings');equal(peer.wasm.game_tick(),0,'Handshake does not advance simulation');}
  equal(peers[0].wasm.state_hash(),peers[1].wasm.state_hash(),'Host seed/AI/visibility override different guest menu values');
- check(PROTOCOL_VERSION===9,'Current shared season protocol is9');
+ check(PROTOCOL_VERSION===10,'Current native UP combat/season protocol is10');
  // Issue genuine commands through both WASM outboxes, not artificial packets.
  for(const peer of peers){
   const w=peer.wasm,id=w.select_idle_worker();check(id!==0xffffffff,'Real worker available');
@@ -99,7 +99,7 @@ try{
  flush();equal(leader.wasm.state_hash(),follower.wasm.state_hash(),'Peers recover without losing deterministic state');
  equal(leader.session.update(),follower.session.update(),'Calendar agrees after network recovery');
  // Repeated starts cannot reinitialize a running peer.
- const liveTick=follower.wasm.game_tick();handlers[1].message(JSON.stringify({t:'start',protocol:9,rules:follower.wasm.ruleset(),seed:123,ai:0,visibility:2,seasons:guestSettings}));
+ const liveTick=follower.wasm.game_tick();handlers[1].message(JSON.stringify({t:'start',protocol:PROTOCOL_VERSION,rules:follower.wasm.ruleset(),seed:123,ai:0,visibility:2,seasons:guestSettings}));
  equal(follower.wasm.game_tick(),liveTick,'Duplicate start does not reset a match');equal(follower.session.settings,hostSettings,'Duplicate start cannot replace the host calendar');
  // Exercise the actual single-player pause branch and actual WASM serialization.
  leader.api.detach();leader.wasm.events_clear();leader.api.togglePause();check(leader.api.getPaused(),'Production pause toggles in a detached single-player stepping fixture');

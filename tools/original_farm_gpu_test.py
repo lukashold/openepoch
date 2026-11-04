@@ -60,7 +60,7 @@ def run(payload,report_path):
         uniform('uFarmPlotConform',0);attribute(0,.25,.1,-.25,1);attribute(3,2,2,3.25,0)
         result=read();assert max(abs(a-b)for a,b in zip(result,[2.5,3.45,1.5,0,1,0]))<1e-6;checks.append({'case':'non-Farm path preserves original instance height','gpu':result})
         uniform('uFarmPlotConform',1);uniform('uTerrainEnabled',0);result=read();assert abs(result[1]-3.45)<1e-6;checks.append({'case':'missing terrain keeps compatible model path','gpu':result})
-        report={'status':'passed','build':'water-farm3','format':'ee2-native-farm-gpu-v1','checks':len(checks),'cases':checks,'context':ctx.info,'vertexSha256':hashlib.sha256(shader['vertex'].encode()).hexdigest(),'fragmentSha256':hashlib.sha256(shader['fragment'].encode()).hexdigest(),'uiLaunched':False,'limits':'Production vertex shader on native GLES; actual Farm source-mesh/material scene replay is a separate test. Terrain interpolation adapts the native center-height query to the current terrain triangles.'}
+        report={'status':'passed','build':payload.get('build','water-farm3'),'format':'ee2-native-farm-gpu-v1','checks':len(checks),'cases':checks,'context':ctx.info,'vertexSha256':hashlib.sha256(shader['vertex'].encode()).hexdigest(),'fragmentSha256':hashlib.sha256(shader['fragment'].encode()).hexdigest(),'uiLaunched':False,'limits':'Production vertex shader on native GLES; actual Farm source-mesh/material scene replay is a separate test. Terrain interpolation adapts the native center-height query to the current terrain triangles.'}
     pathlib.Path(report_path).write_text(json.dumps(report,indent=2)+'\n');return report
 
 if __name__=='__main__':

@@ -69,9 +69,9 @@ def run(payload, report):
         def defaults():
             matrix([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);vertices()
             for name,value in {'uShadow':0,'uAnimated':0,'uTerrainEnabled':0,'uSpecularEnabled':0,'uVertexMode':0,'uLightingMode':1,'uHasAlpha':0,'uAlphaFunction':4}.items():scalar(name,value,True)
-            for name,value in {'uYOffset':0.,'uCutoff':.5,'uModelHeight':2.,'uGlossiness':16.}.items():scalar(name,value)
+            for name,value in {'uYOffset':0.,'uCutoff':.5,'uModelHeight':2.,'uGlossiness':16.,'uTextureScale':1.}.items():scalar(name,value)
             for name,value in {'uOriginOffset':[0,0,0],'uEye':[0,1000,0],'uSunDirection':[0,1,0],
-                               'uAmbientLight':[.2,.3,.4],'uSunColor':[.5,.6,.7],'uAmbientMaterial':[1,1,1],
+                               'uAmbientLight':[.2,.3,.4],'uSunColor':[.5,.6,.7],'uSpecularLight':[.5,.6,.7],'uAmbientMaterial':[1,1,1],
                                'uSpecularMaterial':[0,0,0],'uEmissiveMaterial':[0,0,0],'uColor':[1,1,1,1]}.items():vector(name,value)
             gl.glActiveTexture(0x84c0);gl.glBindTexture(0x0de1,diffuse)
             pixels=(C.c_ubyte*4)(128,192,64,255);gl.glTexImage2D(0x0de1,0,0x8058,1,1,0,0x1908,0x1401,pixels)
@@ -87,7 +87,7 @@ def run(payload, report):
         defaults();pixel,_=render();expect('legacy ambient plus diffuse',pixel,(90,173,70,255))
         defaults();vertices(normal=(0,-1,0));vector('uAmbientMaterial',[.5,.25,1]);pixel,_=render();expect('source ambient independent of diffuse',pixel,(13,14,26,255))
         defaults();vector('uAmbientLight',[0,0,0]);vector('uSunColor',[0,0,0]);vector('uEmissiveMaterial',[.25,.5,.75]);pixel,_=render();expect('source emissive',pixel,(32,96,48,255))
-        defaults();vector('uAmbientLight',[0,0,0]);vector('uColor',[0,0,0,1]);vector('uSunColor',[.25,.25,.25]);vector('uSpecularMaterial',[1,1,1]);pixel,_=render();expect('nonblack specular disabled',pixel,(0,0,0,255))
+        defaults();vector('uAmbientLight',[0,0,0]);vector('uColor',[0,0,0,1]);vector('uSunColor',[.25,.25,.25]);vector('uSpecularLight',[.25,.25,.25]);vector('uSpecularMaterial',[1,1,1]);pixel,_=render();expect('nonblack specular disabled',pixel,(0,0,0,255))
         scalar('uSpecularEnabled',1,True);pixel,_=render();expect('source specular enable',pixel,(64,64,64,255))
         defaults();scalar('uVertexMode',2,True);vertices(color=(.25,.5,.75,1));pixel,_=render();expect('source vertex ambient-diffuse mode',pixel,(22,86,53,255))
         defaults();scalar('uLightingMode',0,True);vector('uEmissiveMaterial',[.5,.25,1]);pixel,_=render();expect('emissive-only lighting mode',pixel,(64,48,64,255))
@@ -113,6 +113,34 @@ def run(payload, report):
         _,slope=render((1,1,1,1));flat_center=centroid(flat,lambda p:p[0]<240);slope_center=centroid(slope,lambda p:p[0]<240)
         if not 3<slope_center[1]-flat_center[1]<5:raise AssertionError(f'shadow slope projection {flat_center}->{slope_center}')
         checks.append({'case':'shadow follows sampled sloping terrain','centroidFlat':flat_center,'centroidSlope':slope_center,'algorithm':'own terrain-conforming projector, not native algorithm'})
+        # Production IndexPal branch against independent source table arithmetic.
+        if payload.get('lighting'):
+            source=payload['lighting'];factor=source['nativeColorToFloat']['floatFactor'];brightness=source['sceneLight']['selected']['Dimmer']
+            for profile in ('base','native155'):
+                for period in ('Afternoon','Night'):
+                    table=source['profiles'][profile];tod=table['timeOfDay'][table['climates']['Temperate'][period]]
+                    row=table['atmospheres'][tod['atmosphere']['Normal']];source_direction=tod['sunDirectionSource'];length=math.sqrt(sum(x*x for x in source_direction))
+                    direction=[-source_direction[0]/length,-source_direction[2]/length,source_direction[1]/length]
+                    ambient=[x*factor*brightness for x in row['sourceRGBA']['ambient'][:3]];sun=[x*factor*brightness for x in row['sourceRGBA']['diffuse'][:3]]
+                    for low in (False,True):
+                        for coefficient in (-1,0,1):
+                            defaults();scalar('uNativeLighting',1,True);scalar('uNativeShader',2 if low else 1,True);scalar('uTextureScale',4.)
+                            scalar('uVertexMode',2,True);scalar('uSpecularEnabled',1,True);scalar('uHasAlpha',2,True)
+                            # Neither RGB material channels, specular nor vertex alpha
+                            # participates in the explicit IndexPal source program.
+                            vector('uColor',[0,0,0,.25]);vector('uEmissiveMaterial',[1,1,1]);vector('uSpecularMaterial',[1,1,1]);vector('uSpecularLight',[1,1,1]);vector('uAmbientLight',ambient);vector('uSunColor',sun);vector('uSunDirection',direction)
+                            normal=direction if coefficient==1 else[-x for x in direction]if coefficient==-1 else[direction[2],0,-direction[0]]
+                            vertices(normal=normal,color=(0,0,0,0));pixel,_=render()
+                            weight=.5 if low else coefficient
+                            wanted=tuple(round(4*texel*min(1,max(0,ambient[i]+weight*sun[i])))for i,texel in enumerate((128,192,64)))+(64,)
+                            wanted=tuple(min(255,x)for x in wanted)
+                            expect(f'IndexPal {profile}/{period}/{"Low"if low else"High"} dot{coefficient}',pixel,wanted)
+            # Static source stage magnifies the texture contribution, preserving
+            # a separate enabled specular term with its own source light colour.
+            defaults();scalar('uNativeLighting',1,True);scalar('uNativeShader',0,True);scalar('uTextureScale',4.)
+            vector('uAmbientLight',[.1,.1,.1]);vector('uSunColor',[0,0,0]);vector('uSpecularLight',[0,0,0]);pixel,_=render();expect('static APPLY_MODULATE4X RGB',pixel,(51,77,26,255))
+            scalar('uTextureScale',1.);pixel,_=render();expect('other apply modes keep own scale',pixel,(13,19,6,255))
+            scalar('uTextureScale',4.);scalar('uSpecularEnabled',1,True);vector('uSpecularMaterial',[1,1,1]);vector('uSpecularLight',[.1,.2,.3]);pixel,_=render();expect('specular source colour remains outside4x',pixel,(77,128,102,255))
         result={'format':'openepoch-original-material-gpu-test-v1','context':ctx.info,'shaderSha256':{key:hashlib.sha256(shader[key].encode()).hexdigest() for key in ('vertex','fragment')},
                 'checks':checks,'passed':len(checks),'uiLaunched':False,'scope':'Production shader pixels on native headless ANGLE. No original-game visual parity or physical macOS execution claim.'}
     report.parent.mkdir(parents=True,exist_ok=True);report.write_text(json.dumps(result,indent=2)+'\n',encoding='utf8')

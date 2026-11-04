@@ -1,0 +1,12 @@
+{
+  "format": "native5-diplomacy-independent-images-v1",
+  "passed": true,
+  "checks": 1258,
+  "sprites": 151,
+  "atlases": 92,
+  "comparedRgbaPixels": 61768429,
+  "rotatedPackedSprites": 11,
+  "manifestSha256": "fb527824c257e1dd23caf70666507b5f6c883a81628fda3495af54dff76abd2f",
+  "pngBytes": 60832064,
+  "scope": "Direct installed atlas bytes and an independent full-pixel crop/rotation coordinate oracle; all151 original PNGs, exact case/relative paths and declared logical extents. No repaint, rescale, browser or original executable."
+}

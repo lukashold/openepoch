@@ -45,6 +45,11 @@ def main():
                 "docs/local-original/model-seasons.json", "docs/local-original/model-scales.json",
                 "docs/local-original/farm-composites.json", "docs/local-original/hud-native/manifest.json",
                 "docs/local-original/water-native/manifest.json",
+                "docs/original-diplomacy.js", "docs/original-diplomacy-layout.js",
+                "docs/original-labels.js", "docs/original-lighting.js",
+                "docs/local-original/diplomacy-native/manifest.json",
+                "docs/local-original/labels-native.json", "docs/local-original/climate-lighting.json",
+                "docs/local-original/models/manifest-up15.json", "docs/local-original/model-scales-up15.json",
                 "docs/local-original/season-model-textures/team/manifest.json"}
     names = [name for _, name in files]
     if len(names) != len(set(names)) or not required.issubset(names):

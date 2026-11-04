@@ -69,6 +69,7 @@ fn splash_resolves_each_defenders_class_separately(){
  let mut g=game(10,10);let attacker=g.spawn(26,0,106.5,110.5);let infantry=g.spawn(10,1,110.5,110.5);let building=g.spawn(HOUSE,1,110.5,110.5);
  g.ents[infantry].hp=1000.0;g.ents[building].hp=1000.0;g.build_grid();let mut e=g.ents[attacker];
  let mut shell=DEFS[26].w[0];shell.splash=2.0;g.fire(&mut e,&shell,infantry);
+ #[cfg(feature="ee2-up15")] {g.projs.last_mut().unwrap().splash=2.0;}
  let shot=*g.projs.last().expect("Splash projectile");
  for _ in 0..100{g.update_projs();if g.projs.is_empty(){break;}}
  close(g.ents[infantry].hp,1000.0-shot.dmg*native::multiplier_from_profile(shot.attacker_profile,10,10).unwrap());
@@ -80,6 +81,7 @@ fn secondary_splash_half_radius_takes_quarter_damage(){
  let mut g=game(10,10);let attacker=g.spawn(26,0,106.5,110.5);let primary=g.spawn(10,1,110.5,110.5);let secondary=g.spawn(10,1,112.5,110.5);
  g.ents[primary].hp=1000.0;g.ents[secondary].hp=1000.0;g.build_grid();let mut e=g.ents[attacker];
  let mut shell=DEFS[26].w[0];shell.splash=4.0;g.fire(&mut e,&shell,primary);
+ #[cfg(feature="ee2-up15")] {g.projs.last_mut().unwrap().splash=4.0;}
  let shot=*g.projs.last().expect("Splash projectile");
  for _ in 0..100{g.update_projs();if g.projs.is_empty(){break;}}
  let damage=shot.dmg*native::multiplier_from_profile(shot.attacker_profile,10,10).unwrap();

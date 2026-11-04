@@ -74,7 +74,7 @@ try{
 }finally{globalThis.fetch=previousFetch;globalThis.createImageBitmap=previousBitmap;}
 const baseline=JSON.parse(await fs.readFile(new URL('../../../work/season-model-baseline/model-hashes.json',import.meta.url)));
 for(const [url,digest]of Object.entries(baseline)){check(sha(await fs.readFile(path.join(docs,url)))===digest,`Byte-identical geometry/animation ${url}`);}
-const report={status:'passed',build:'water-farm3',format:'ee2-model-season-loader-tests-v1',checks,uiLaunched:false,sourceManifestSha256:sha(await fs.readFile(path.join(docs,'local-original/model-seasons.json'))),rendererSha256:sha(await fs.readFile(path.join(docs,'original-renderer.js'))),unchangedModelFiles:Object.keys(baseline).length,requestedLocalAssets:requests.size,
+const report={status:'passed',build:process.argv[3]||'water-farm3',format:'ee2-model-season-loader-tests-v1',checks,uiLaunched:false,sourceManifestSha256:sha(await fs.readFile(path.join(docs,'local-original/model-seasons.json'))),rendererSha256:sha(await fs.readFile(path.join(docs,'original-renderer.js'))),unchangedModelFiles:Object.keys(baseline).length,requestedLocalAssets:requests.size,
  scope:'Real asset production loader/near/far/team/phase/capture tests using a WebGL call recorder; numerical annual sampling for every imported climate/set. Actual GLES pixels are tested separately.'};
-await fs.writeFile(new URL('../../EE2-Research/analysis/native3-model-season-loader-tests.json',import.meta.url),JSON.stringify(report,null,2)+'\n');
+await fs.writeFile(process.argv[2]||new URL('../../EE2-Research/analysis/native3-model-season-loader-tests.json',import.meta.url),JSON.stringify(report,null,2)+'\n');
 console.log(JSON.stringify(report));

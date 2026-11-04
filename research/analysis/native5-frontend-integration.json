@@ -1,0 +1,81 @@
+{
+  "format": "openepoch-native5-frontend-integration-v1",
+  "status": "passed",
+  "build": "native-ui5",
+  "createdUTC": "2026-11-04T12:47:48.264116+00:00",
+  "networkProtocol": 10,
+  "profiles": {
+    "own": {
+      "file": "openepoch.wasm",
+      "bytes": 268821,
+      "sha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a"
+    },
+    "base": {
+      "file": "openepoch-ee2.wasm",
+      "bytes": 430146,
+      "sha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18"
+    },
+    "up15": {
+      "file": "openepoch-ee2-up15.wasm",
+      "bytes": 460364,
+      "sha256": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51"
+    }
+  },
+  "sourceFiles": {
+    "main.js": "27cca83a8633cfd71d5ea3607af258f088b929239ed0bcf60d30a479c2f2924e",
+    "index.html": "270bfdd9bd2052597b34b2ff035b7998f717c73a61ca562a972ad81b800d3795",
+    "rules-profile.js": "c341869d5a1e0755d6270efaca2a8dc965abf4201ad889f7d59aa34b4f300c91",
+    "net.js": "562f6bec0fddd0d36c5dab58bb7c29a8d3c0cc7d166a7ea62d825541f4940193",
+    "original-diplomacy.js": "7be5a20e894e6143f3787c43e21ba1b3e6d335a53761616b085cd060c308198e",
+    "original-diplomacy-layout.js": "9e119882f4e90950aa6193f7f680b35109ab98191924fb9d136926ef46a5b80c",
+    "original-labels.js": "d93c26db898842afcf40a8e82a2b7f592dca9e82628bcbf354cfd95effa5e0b8",
+    "original-lighting.js": "b352ef7390de9f86e05c6a7bc690518b449d06a2f0222041d111b8b8224dafe1",
+    "original-renderer.js": "c709512a7ec0bfc08a9b88beeea81e6e65382c34ebbd936a2db41270b7c5b899",
+    "local-original/labels-native.json": "faef8a21b4a7a25463def7b5415029c821dec47dcbda0cbb68f7fb7774f2698b",
+    "local-original/climate-lighting.json": "1b38767bd3ad11c2d45b816235ea009dae274c9e92df1e155599b8501f5fc872",
+    "local-original/models/manifest.json": "f681e82a0676d78c05590f3f1d736be665d7cb533346c73cc49dbe317d083d53",
+    "local-original/models/manifest-up15.json": "34c9265030903859a07b51727a78b79a57e66f27123a9d15879c0e719c0eb643",
+    "local-original/model-scales.json": "890394b80f99684b7bf571bd9426e191c9f97e8f90db891d74dd81a49d94961b",
+    "local-original/model-scales-up15.json": "3feb204c3270c762f87b8bc6ed355b6756176d21fe14dc25ff779bbf005a40f7",
+    "local-original/diplomacy-native/manifest.json": "fb527824c257e1dd23caf70666507b5f6c883a81628fda3495af54dff76abd2f"
+  },
+  "validation": {
+    "profileSaveNetwork": 1364,
+    "hudSourceDomMath": 6029,
+    "diplomacyDomCommands": 1618,
+    "independentDiplomacyImages": 1258,
+    "labelRawSources": 13094,
+    "labelRuntime": 5179,
+    "labelProductionHud": 142,
+    "worldGles": 432,
+    "worldScenes": 8,
+    "reflection": 106,
+    "lightingSource": 14909,
+    "lightingLoader": 49,
+    "lightingGles": 38
+  },
+  "reports": {
+    "native5-rules-profile-tests.json": "7b426a93d672acfd8de0f448c290f512a233b3c5a9fa190385a165307db85881",
+    "native5-season-session-tests.json": "3b5b2312134b6c492ff1e87460150b350e47185b1a509f3e55871f289559c8ff",
+    "native5-visual-controls-tests.json": "07e20bc35b5ece22ccd1ec5a626701e05a74578a0fcb29e4c095339906b0962e",
+    "native5-label-source-tests.json": "2b745b84d4e5e18337e9d1d4b67f93ec93f10df2d6322168e3e28a18b71f3a12",
+    "native5-label-runtime-tests.json": "d2926c82980d46b685a5213281a2a076269199d0d8cc20b3d4c9b3e6ed271c2c",
+    "native5-label-main-tests.json": "aca022c45ee44b5a17232774261098c97f8748a21578b356a5e1d5d51616ae6c",
+    "native5-label-native-evidence.json": "fb55543857f5750ba4be3b1e0a88050878d4b3edd8e87fc9ead620f5ccbd4f63",
+    "native5-diplomacy-ui-tests.json": "ffd835e587b06d3b38f2cd9b3f9850008c33e47d334f5e779886433dfe4f59fa",
+    "native5-diplomacy-integration.json": "e49af5cb0a6f21e363614139586454f2e81b7a4948024d6e40855102d47cbedc",
+    "native5-diplomacy-source-evidence.json": "3966d11b2f74033ad2f73bd7626bcd0a5dc623ea90cf20bc6a6751a3393363e8",
+    "native5-lighting-integration.json": "ecf04a4bf94bbd11b798609ce8e12b0389b60ed20546eac50aa911cbade1b2ad",
+    "native-combat5-regression-tests.json": "3cb8acded3eb2e6ab03c3b5a117f0009e2dea62d4c1b8dd30ba5f3e7b9023328",
+    "native5-world-qa.json": "5245729219fdbc13d64a55e4b000e745069ddba435b3d92ba102b5579f0bae1c",
+    "native5-reflection-world-pixel-tests.json": "0922095dbfc9eeb5f5ec7edf17956aadd5c5d9a922648ce88f849a275631ba98",
+    "native5-portable-assets-check.json": "733edd1074d07fab3b59b90e098d9492b755902b9a1d39e3182860b63363ce72",
+    "native5-portable-server-tests.json": "fd91567dba2b5475c273083fde4cf7c60fa888d1c0826c9c4c322da6ddc1622f"
+  },
+  "scope": "Joint active native F4, original class/epoch text, exact UP model/scale selection and native model lighting with protocol10 and verified attack clocks. Complete game parity is not asserted.",
+  "fullOriginalParity": false,
+  "originalExeOrDllExecuted": false,
+  "browserLaunched": false,
+  "physicalMacTest": false,
+  "updatedUTC": "2026-11-04T12:59:21.785500+00:00"
+}

@@ -1,0 +1,8 @@
+{
+  "format": "native-combat5-scalar-order-review-v1",
+  "nativeFunction": "0053c930",
+  "upgradeRefsCall": "0053c9d9 calls0053cd60 before scalar replacement block0053cadd..0053cbc1",
+  "checkedCommonFieldValues": 7436,
+  "changedValues": [],
+  "conclusion": "Native order corrected for future overlaps. No current installed common-row scalar values change. Actual additional source-bound rows are separately audited."
+}

@@ -2,7 +2,8 @@
 //!
 //! The map is regenerated from its seed, then everything that can change is
 //! written on top: players, entities, harvested tiles and explored fog.
-//! Projectiles and explosions in flight are dropped, which nobody will miss.
+//! Projectiles and explosions in flight remain transient. Persisted attack-round
+//! windup/cooldown state is stored separately for the UP profile.
 
 use crate::defs::*;
 use crate::game::*;
@@ -53,10 +54,14 @@ impl Game {
         self.write_diplomacy(&mut b);self.write_territory(&mut b);
         #[cfg(feature="ee2-reference")]
         self.write_city_ground(&mut b);
+        #[cfg(feature="ee2-up15")]
+        self.write_attack_clock(&mut b);
         self.savebuf = b;
     }
 
     pub fn load(buf: &[u8]) -> Option<Game> {
+        #[cfg(feature="ee2-up15")]
+        let(buf,attack_chunk)=crate::native_attack_clock::split_save(buf)?;
         #[cfg(feature="ee2-reference")]
         let (buf,city_chunk)=crate::city_ground::split_save(buf)?;
         const H: usize = 9 * 4;
@@ -186,6 +191,8 @@ impl Game {
         g.high = high;
         #[cfg(feature="ee2-reference")]
         g.read_city_ground(city_chunk)?;
+        #[cfg(feature="ee2-up15")]
+        g.read_attack_clock(attack_chunk)?;
         g.free = (0..MAXE).rev().filter(|&i| !g.ents[i].alive).map(|i| i as u16).collect();
         for i in 0..high {
             g.ents[i].fslot = u16::MAX; // flow-field cache starts empty

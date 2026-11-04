@@ -4,7 +4,7 @@ GitHub enthält Quellcode, fertige WASM-Builds, Tests und Importwerkzeuge.
 Originalmedien im ignorierten Ordner `docs/local-original/` werden lokal importiert
 oder aus dem separaten vollständigen Spielpaket übernommen.
 
-Arbeitsstand 04.11.2026 · native-ui4. Das lokale EE2-Profil verbindet die eigene Rust-/WASM-Simulation
+Arbeitsstand 04.11.2026 · native-ui5. Das lokale EE2-Profil verbindet die eigene Rust-/WASM-Simulation
 mit Originalgrafiken, Originalton und quellbelegten Wirtschafts- und Einheitenwerten.
 Der aktuelle Ausbau ist weiterhin kein vollständiges, regelgleiches Empire Earth II.
 
@@ -26,7 +26,7 @@ Eine tatsächliche macOS-Ausführung wurde hier nicht getestet.
 `OpenEpoch-Scharmuetzel.zip` ist das separate Quellpaket
 ohne Originalmedien. Für den Mac-Transfer das neue **Komplettpaket** verwenden.
 
-## Originales Bedienfeld, Farmen, Wasser und UP-Regeln · native-ui4
+## Originales Bedienfeld, Diplomatie, Kampf und Beleuchtung · native-ui5
 
 Das Bedienfeld verwendet51 originale Widgetdefinitionen und129 hochauflösende
 Originalgrafiken. Minikarte, Befehlsraster, Einheiteninfo, Rohstoffe und Epochenleiste
@@ -35,6 +35,12 @@ originalen Epochenbereichen1–5,6–10 und11–15. Die Schaltflächen für Fors
 Diplomatie stehen links unten; das Menüsymbol rechts neben der Epochenleiste
 öffnet Speichern, Ton, Vollbild und Hauptmenü. Die Browserdarstellung der Schrift,
 das Befehlsangebot und Teile des Menüverhaltens bleiben angepasste Oberflächen.
+
+Die Diplomatie verwendet jetzt die originalen Reiter, Rahmen, Spielerstreifen
+und Vorschlagsfenster. Beziehungen, Ressourcen und Gebietsgeschenke/-verträge
+sind an die vorhandenen Spielbefehle angeschlossen; Einheitenübergaben sind
+weiter offen. Deutsche Originalnamen, Mehrzahlformen und Beschreibungen folgen
+der tatsächlichen Quellenklasse und Epoche. Systemschriften bleiben ein Adapter.
 
 Farmen verwenden vier originale Teilfelder. Alle zwölf Zustände der drei
 originalen Feldfamilien sind importiert; aktiv ist der belegte Standardzustand
@@ -49,8 +55,9 @@ quellbelegten Anteil überlagert. UV-Maßstäbe, Zuordnung der eigenen Kartenkla
 und die separate native Sichtauswahl werden weiter rekonstruiert.
 
 `?rules=ee2` startet jetzt die rekonstruierten numerischen Regeln der installierten
-UP-Version.55 von57 bisherigen Rollen sind gebunden; zwei unaufgelöste Rollen
-werden gesperrt. Echte Upgrade-Verweise bestimmen Werte und Epochenfortschritte.
+UP-Version. Alle57 bisherigen Rollen sind jetzt an Quellen gebunden; Paladin
+und LightHerc verwenden ihre tatsächlichen UP-Modelle.279 Klassenintervalle
+und313 RPS-Profile bilden Werte und Epochenfortschritte ab.
 Das ist weiterhin ein kleineres Einheitenangebot mit offenen Fähigkeiten und
 Forschungsfaktoren. Im Menü **Regelversion** bleibt **EE2 · Basisdaten** verfügbar;
 die vorhandenen Spielstände dieses Profils bleiben dort erhalten. Die unabhängigen
@@ -58,15 +65,26 @@ OpenEpoch-Regeln und ihre Spielstände bleiben ebenfalls getrennt.
 
 Die drei Profile haben eigene WASM-Dateien und Speicherbereiche. Multiplayer
 weist verschiedene Regelversionen vor Spielbeginn ab. Die beiden bisherigen
-WASM-Dateien sind unverändert; die UP-Datei ist zusätzlich enthalten. Alle neuen
+WASM-Dateien sind unverändert; die UP-Datei verwendet jetzt gespeicherte native
+Angriffsrunden und verzögerte Schadensereignisse. Netzwerkprotokoll10 verhindert
+eine Mischung mit dem früheren Kampfstand. Alte UP-Spielstände werden beim Laden
+migriert. Projektile im Flug sind weiterhin flüchtig und damit eine offene
+Spielstandlücke. Alle neuen
 Bilder, Farmzustände und Wassermedien liegen im Komplettpaket. Die Quellen und
 Prüfungen sind unter [UP-Profil](docs/EE2-UP15-PROFIL.md),
-[Profil-/Spielstandprüfung](research/analysis/native4-profile-integration.json),
+[Profil-/Spielstandprüfung](research/analysis/native5-rules-profile-tests.json),
+[Diplomatie](research/analysis/native5-diplomacy-integration.json),
+[Modellbeleuchtung](research/analysis/native5-lighting-integration.json),
 [Farm und Gebäudeböden](research/analysis/native3-farm-ground-integration.json)
 und [Wasser](research/analysis/native3-water-implementation.json) dokumentiert.
 
+Modelle nutzen die belegte Farb-/Lichtkette und die passenden statischen bzw.
+skinned Materialpfade. Als Anwendungseinstellung ist gemäßigtes Klima am
+Nachmittag bei normalem Wetter gewählt. Die vollständige native Tageszeit-,
+Wetter- und Terrain-Lichtsteuerung ist noch offen.
+
 Die folgenden Abschnitte dokumentieren frühere Ausbaustände; maßgeblich ist
-der oben beschriebene Stand native-ui4.
+der oben beschriebene Stand native-ui5.
 
 ## Saisonale Modelle, Wasserreflexionen und Kameradrehung · visual-seasons2
 

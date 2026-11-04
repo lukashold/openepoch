@@ -1,0 +1,25 @@
+{
+  "format": "native-combat5-actual-wasm-v1",
+  "status": "PASS",
+  "checks": 5429,
+  "wasmSha256": "c80906c19c7a329c868f5596e77b202d95262af87b48997bfeedc77636e05e51",
+  "wasmBytes": 460364,
+  "attackAuditSha256": "bdfceb965b3d1bf7cd44adc8cc5ba1b5874f20f88dab3c2aaaeb83a08d24cfd2",
+  "expectedFireTicks": [
+    11,
+    42,
+    74,
+    105
+  ],
+  "actualFireTicks": [
+    11,
+    42,
+    74,
+    105
+  ],
+  "malformedCases": 46,
+  "limits": [
+    "Packed/unpacked state, turret banks, native blocking geometry and ordnance/rearm remain explicit adapters.",
+    "As in existing saves, active projectiles are transient; this replay fixture uses direct attacks."
+  ]
+}

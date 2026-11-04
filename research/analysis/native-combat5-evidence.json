@@ -1,0 +1,53 @@
+{
+  "format": "native-combat5-evidence-v1",
+  "engineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+  "originalReadOnly": true,
+  "originalExeOrDllExecuted": false,
+  "functions": {
+    "007da1c0": "Copies18DWORD Attack fields; radians/default angle, pack/unpack zero->1, friendly ratio only exactly1 retained.",
+    "007da320": "Mobile/immobile min range; zero+positive splash for nonair returns splash plus literal0.",
+    "007db4e0": "Round tick: start deadline, strict apply-time comparison, single damage event, end on next deadline; no geometry retest once started.",
+    "007dbae0/00840220": "Native unpack depends on separate visual capability; not applied universally.",
+    "007dbb20": "Stop clears round flags but preserves next deadline.",
+    "007dbb30/007dc510": "Direct/missile rounds are distinct; named ammo binds source projectile movement speed.",
+    "007da960/007dad70": "RPS/target/diplomacy predicates; latent requires an active factor binding. No invented house activation.",
+    "0086c770": "Line-of-shot flags, not LAND/SEA/AIR domain bitmask.",
+    "0053c930": "Actual refs0053cd60 execute before nonzero CSV replacements.",
+    "00803920": "Reload modifier defaults1; native temporary/veteran modifier layer remains absent."
+  },
+  "implemented": [
+    "Native RPS gates for AA/naval attacks and known base RPS even before production epoch.",
+    "Strict start/apply/end round clock and cancellation with persisted full-generation state.",
+    "Actual source min ranges, direct vs named missile, projectile speed, splash and compiled friendly-ratio quirk.",
+    "Plain MOVE firing requires actual attackOnTheMove.",
+    "Actual UP Paladin/LightHerc replacements and HumveeStriker AA progression in independent manifests."
+  ],
+  "remaining": [
+    "Packed visual capability, actual turret bank readiness/alignment and ordnance/rearm.",
+    "Native military flags/line-of-shot collision geometry and original firing-animation event callbacks/global RNG.",
+    "Renderer weapon categories and projectile curves remain explicit presentation adapters; rockets are not torpedoes.",
+    "Latent House attack not enabled without modifier-default/activation proof.",
+    "Full native production/civilization roster; current57 roles still include14 explicit role adapters.",
+    "Existing transient projectiles are not persisted, so arbitrary in-flight save/reload is not replay-equivalent."
+  ],
+  "attackTail": {
+    "header": [
+      "ATK1 magic:u32",
+      "version1:u32",
+      "count:u32"
+    ],
+    "record": [
+      "fullGenerationHandle:u32",
+      "nextAttackGameSeconds:f32",
+      "flags:u32"
+    ],
+    "footer": [
+      "chunkBytes:u32",
+      "ATKE magic:u32"
+    ],
+    "bytes": "20+12*count",
+    "placement": "Immediately after a complete validated CGD1 tail on the full57/ECO1/DIP1/TER1 UP save.",
+    "legacy": "Old OEU5 without ATK1 migrates already-running Ent.cd into a waiting deadline.",
+    "atomic": "Fresh local Game is committed only after every extension and foreign-profile check succeeds."
+  }
+}

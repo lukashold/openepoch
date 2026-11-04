@@ -172,7 +172,7 @@ class PortableServerTest(unittest.TestCase):
         self.assertEqual(status['wasmSha256'], hashlib.sha256((self.root/'openepoch-ee2.wasm').read_bytes()).hexdigest())
         for name,digest in status['wasmSha256ByFile'].items():
             self.assertEqual(digest, hashlib.sha256((self.root/name).read_bytes()).hexdigest())
-        self.assertEqual(urllib.parse.parse_qs(urllib.parse.urlsplit(server.ready['url']).query), {'rules':['ee2'],'build':['native-ui4']})
+        self.assertEqual(urllib.parse.parse_qs(urllib.parse.urlsplit(server.ready['url']).query), {'rules':['ee2'],'build':['native-ui5']})
         # This is another local loopback address, never an external connection.
         # A wildcard 0.0.0.0 listener would prevent the exclusive second bind.
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as check:
@@ -373,7 +373,7 @@ if __name__ == '__main__':
     result=program.result
     if args.report:
         digest=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
-        report={'format':'native4-portable-server-tests-v2','passed':result.wasSuccessful(),
+        report={'format':'openepoch-portable-server-tests-v3','passed':result.wasSuccessful(),
             'platform':sys.platform,'pythonVersion':sys.version.split()[0],'serverVersion':2,
             'testsRun':result.testsRun,'failures':len(result.failures),'errors':len(result.errors),'skipped':len(result.skipped),
             'sourceHashes':{'tools/serve_game.py':digest(SERVER),'tools/portable-server-test.py':digest(Path(__file__).resolve())},

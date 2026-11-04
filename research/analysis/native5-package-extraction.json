@@ -1,0 +1,19 @@
+{
+  "format": "openepoch-native5-package-extraction-v1",
+  "status": "passed",
+  "build": "native-ui5",
+  "createdUTC": "2026-11-04T12:50:45.740372+00:00",
+  "file": "OpenEpoch-Mac-Komplett.zip",
+  "zipBytes": 1237014952,
+  "sha256": "a1d5df4966675b2a2fa70e1d4143dff1a319962101a82efac2124533a5232f91",
+  "zipEntries": 4697,
+  "manifestFilesVerified": 4695,
+  "allCopiedFilesMatchCurrentSource": true,
+  "mediaFiles": 4627,
+  "mediaBytes": 1358366922,
+  "root": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\Mac Paket Native5 Test\\OpenEpoch",
+  "launcherMode": "0755",
+  "launcherLineEndings": "LF",
+  "pythonMinimum": "3.8",
+  "noMacExecutionClaim": true
+}

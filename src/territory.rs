@@ -965,6 +965,8 @@ mod tests {
         let loaded = Game::load(&bytes).unwrap();
         assert_eq!(loaded.state_hash(), g.state_hash());
         assert!(loaded.territory.offers[1].active);
+        #[cfg(feature="ee2-up15")]
+        let bytes=crate::native_attack_clock::split_save(&bytes).unwrap().0.to_vec();
         #[cfg(feature="ee2-reference")]
         let bytes=crate::city_ground::split_save(&bytes).unwrap().0.to_vec();
         let ter = bytes.len() - TERR_BYTES;

@@ -5,11 +5,13 @@ import { buildModels } from './models.js?v=fortress1';
 import { parseCheat } from './cheats.js';
 import { researchPanel } from './research.js?v=research3';
 import { diplomacyPanel } from './diplomacy.js?v=fortress1';
+import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=diplomacy5';
 import {territoryClaimMessage} from './territory-help.js?v=fortress1';
 import * as sfx from './audio.js?v=graphics2';
 import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=fortress1';
+import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native-text5';
 import {loadNativeHud} from './original-hud.js?v=native-ui4';
-import {loadOriginalModels} from './original-renderer.js?v=native-ui4';
+import {loadOriginalModels} from './original-renderer.js?v=native-light5';
 import {loadOriginalGround} from './original-ground.js?v=native-ui4';
 import {loadOriginalTerrain} from './original-terrain.js?v=visual-seasons2';
 import {loadOriginalWater} from './original-water.js?v=water-farm3';
@@ -18,7 +20,7 @@ import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js';
 import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=profile1';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
-import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=combat-season1';
+import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native-combat5';
 import {createFullscreenController} from './fullscreen.js?v=building2';
 import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=fortress1';
 import {updateOriginalCamera,originalCameraRay,originalFractionForZoom,normalizeOriginalHeading,rotateOriginalCameraHeading} from './original-camera.js?v=heading2';
@@ -427,9 +429,10 @@ for (const pr of [terrain, water, models, quads]) {
 }
 const originalEnabled=referenceMode&&new URLSearchParams(location.search).get('assets')!=='procedural';
 const originalAssets=await loadOriginalAssets(gl,originalEnabled);
+const originalLabels=await loadOriginalLabels(rulesProfile);
 const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,total)=>{
   $('play').textContent=`Originalgrafiken laden · ${Math.round(loaded/total*100)} %`;
-});
+},{lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-up15.json',scaleManifestURL:'./local-original/model-scales-up15.json'}:{})});
 const originalGround=await loadOriginalGround(gl,originalEnabled);
 const originalTerrain=await loadOriginalTerrain(gl,originalEnabled,TEAM);
 const originalWater=await loadOriginalWater(gl,originalEnabled);
@@ -589,6 +592,8 @@ const diplomacy=diplomacyPanel({wasm,referenceMode,
  resume(){if(paused&&!net)togglePause();},
  onTerritoryFocus(territory){cam.x=territory.x;cam.y=territory.y;updateCamera();toast(territory.name);}
 });
+const nativeDiplomacy=await enhanceOriginalDiplomacy(diplomacy,{wasm,enabled:referenceMode&&originalAssets.enabled});
+document.body.dataset.originalDiplomacy=String(nativeDiplomacy.enabled);
 $('diplomacy-button').onclick=()=>{if(running&&!bench)diplomacy.open();};
 
 // ---------------------------------------------------------------- starting, saving, loading
@@ -866,7 +871,8 @@ function icon(id, px) {
 const glyph = (ch, px) => { const d = document.createElement('div'); d.style.cssText = `font-size:${px * 0.66}px;height:${px}px;line-height:${px}px`; d.textContent = ch; return d; };
 const GLYPH = { e: '⬆', r: '⚗', u: '⚓' };
 const LABELS = {'Worker':'Bürger','Town Center':'Stadtzentrum','House':'Haus','Farm':'Bauernhof','Barracks':'Kaserne','Workshop':'Werkstatt','Dock':'Hafen','Airfield':'Flugplatz','Watchtower':'Wachturm','Next Epoch':'Nächste Epoche','University':'Universität','Mill':'Mühle','Stable':'Stall','Market':'Markt','Temple':'Tempel','Warehouse':'Lagerhaus','Oil Rig':'Bohrturm','Uranium Mine':'Uranmine','HercFacility':'HERC-Fabrik','Fortress':'Festung'};
-const label = name => LABELS[name] || name;
+const label = (name,id,count=1) => originalLabels.name(id,ui?.epoch??0,LABELS[name]||name,count);
+const actionUnitId = a => a&&(a.k==='b'||a.k==='t')?a.id:undefined;
 const ACTIVITIES = ['Bereit','Unterwegs','Holz fällen','Erz abbauen','Nahrung sammeln','Bauen','Im Kampf'];
 function costText(c) {return c.flatMap((value,slot)=>value?[`${value} ${!referenceMode&&slot===2?'Metall':RESOURCE_NAMES[slot]}`]:[]).join(' · ')||'Kostenlos';}
 
@@ -895,7 +901,7 @@ function updateUi(drawn, now) {
   if (!s.n) info.innerHTML = bench ? '<h3>Stress test</h3><span class="dim">Two armies are kept at full strength and thrown at each other. Zoom and pan freely; you can still select and command the blue side.</span>'
     : `<span class="dim">Keine Einheit ausgewählt</span>${ui.techs.length ? '<div class="types">' + ui.techs.map(t => `<span>${t}</span>`).join('') + '</div>' : ''}`;
   else {
-    let h = `<h3>${s.n > 1 && s.types.length > 1 ? s.n + ' Einheiten' : label(s.name) + (s.n > 1 ? ' ×' + s.n : '')}</h3>`;
+    let h = `<h3>${s.n > 1 && s.types.length > 1 ? s.n + ' Einheiten' : escapeLabelHtml(label(s.name,s.def,s.n)) + (s.n > 1 ? ' ×' + s.n : '')}</h3>`;
     if (s.n === 1) {
       h += `<div class="hp"><i style="width:${100 * s.hp / s.max}%"></i></div>${s.hp} / ${s.max} HP`;
       if (s.def >= 8 && s.def <= 46) h += `<div class="activity">${ACTIVITIES[s.activity] || 'Bereit'}</div>`;
@@ -905,7 +911,7 @@ function updateUi(drawn, now) {
     if(referenceMode&&s.def===56&&s.cargomax)h+=`<br>Garnison: ${s.cargoUnits??s.cargo} ${(s.cargoUnits??s.cargo)===1?'Einheit':'Einheiten'} · ${s.cargo} / ${s.cargomax} Plätze<br>Angriffsbonus: +${s.garrisonAttackBonus??s.cargo*3} %${s.garrisonHealRate?` · Heilung ${s.garrisonHealRate} HP/s`:""}`;
     else if (s.cargomax) h += s.def===47 ? `<br>Forscher: ${s.cargo} / ${s.cargomax}<br>Forschung insgesamt: +${(ui.research.rate*60).toFixed(1)} TP / Minute` : s.def===53||s.def===54 ? `<br>Förderarbeiter: ${s.cargo} / ${s.cargomax}<br>+${(s.cargo*.75).toFixed(2)} ${s.def===53?'Öl':'Uran'} / Sekunde` : referenceMode&&(s.def===0||s.def===52) ? `<br>Einquartiert: ${s.cargo} / ${s.cargomax}<br>Abgabebonus: +${s.cargo*2} %` : `<br>Passagiere: ${s.cargo} / ${s.cargomax}`;
     if(s.carrying>0)h+=`<br>${s.returning?'Bringt zurück':'Trägt'}: ${s.carrying.toFixed(1)} ${RESOURCE_NAMES[s.carriedResource-1]}`;
-    if (s.types.length > 1) h += '<div class="types">' + s.types.map(t => `<span>${label(t[2])} ×${t[1]}</span>`).join('') + '</div>';
+    if (s.types.length > 1) h += '<div class="types">' + s.types.map(t => `<span>${escapeLabelHtml(label(t[2],t[0],t[1]))} ×${t[1]}</span>`).join('') + '</div>';
     if (s.q.length) h += `<div class="q" id="queue"></div><div class="hp"><i style="width:${s.qp * 100}%;background:#4aa3ff"></i></div>`;
     info.innerHTML = h;
     const q = $('queue');
@@ -919,11 +925,11 @@ function updateUi(drawn, now) {
     ui.act.forEach((a, i) => {
       const b = document.createElement('button'); b.className = 'act'; b.dataset.i = i;
       b.append(GLYPH[a.k] ? glyph(GLYPH[a.k], 44) : icon(a.id, 44));
-      const sm = document.createElement('small'); sm.textContent = label(a.name); b.append(sm);
+      const sm = document.createElement('small'); sm.textContent = label(a.name,actionUnitId(a)); b.append(sm);
       if (HOT[i]) { const k = document.createElement('kbd'); k.textContent = HOT[i]; b.append(k); }
       b.onclick = () => doAct(i);
       b.oncontextmenu = e => { e.preventDefault(); wasm.cmd_cancel(); };
-      b.onmouseenter = () => { const a = ui.act[i]; if (!a) return; const t = $('tip'); t.innerHTML = `<b>${label(a.name)}</b> <span class="c">${a.tp ? a.tp+' Technologiepunkte' : a.k === 'u' ? '' : costText(a.cost)}</span><br>${a.tip}`; t.style.display = 'block'; };
+      b.onmouseenter = () => { const a = ui.act[i]; if (!a) return; const t = $('tip'); t.innerHTML = `<b>${escapeLabelHtml(label(a.name,actionUnitId(a)))}</b> <span class="c">${a.tp ? a.tp+' Technologiepunkte' : a.k === 'u' ? '' : costText(a.cost)}</span><br>${originalLabels.description(actionUnitId(a),ui.epoch)?escapeLabelHtml(originalLabels.description(actionUnitId(a),ui.epoch))+'<br>':''}${escapeLabelHtml(a.tip)}`; t.style.display = 'block'; };
       b.onmouseleave = () => $('tip').style.display = 'none';
       acts.append(b);
     });
@@ -945,7 +951,7 @@ function updateUi(drawn, now) {
 function doAct(i) {
   const a = ui && ui.act[i];
   if (!a) return;
-  if (a.k === 'b') { ghost = { id: a.id, size: a.size,name:label(a.name),turn:0,manual:false }; placementKey='';attackMode = false; sfx.play(20);updatePlacement();return; }
+  if (a.k === 'b') { ghost = { id: a.id, size: a.size,name:label(a.name,a.id),turn:0,manual:false }; placementKey='';attackMode = false; sfx.play(20);updatePlacement();return; }
   if (a.k === 'u') { wasm.cmd_unload(); sfx.play(22); return; }
   if (wasm.cmd_train(a.id)) sfx.play(20);
   else { sfx.play(21); toast(a.ok ? 'Warteschlange voll' : a.k==='e' && referenceMode && ui.research.count<6 ? 'Zuerst sechs Technologien dieser Epoche erforschen' : a.tp && ui.research.points<a.tp ? 'Technologiepunkte fehlen – Bürger in Universitäten schicken' : a.k === 't' && ui.pop >= ui.cap ? 'Mehr Häuser bauen' : 'Rohstoffe fehlen'); }
@@ -1230,6 +1236,6 @@ else if (qs.has('seed')) start(+qs.get('ai') || 1, +qs.get('seed') || 1, 0);
 // ?warm=600 fast-forwards that many ticks; ?zoom= ?x= ?y= place the camera
 for (let i = +qs.get('warm') || 0; i > 0 && running; i--) wasm.tick();
 for (const k of ['zoom', 'x', 'y']) if (qs.has(k)) cam[k] = +qs.get(k);
-window.openepoch = { wasm, rulesProfile, cam, gl, frame, start, saveGame, loadGame, toWorld, channel, seasonSession, get net() { return net; } };
+window.openepoch = { wasm, rulesProfile, cam, gl, frame, start, saveGame, loadGame, toWorld, channel, seasonSession, nativeDiplomacy, get net() { return net; } };
 const loop = now => { requestAnimationFrame(loop); frame(now); };
 requestAnimationFrame(loop);
