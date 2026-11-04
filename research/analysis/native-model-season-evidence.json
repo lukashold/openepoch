@@ -1,0 +1,119 @@
+{
+  "status": "passed",
+  "build": "visual-seasons2",
+  "rendererRevision": "modelseason1",
+  "date": "2026-11-04",
+  "wasm": {
+    "ee2": {
+      "sha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+      "bytes": 430146
+    },
+    "base": {
+      "sha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+      "bytes": 268821
+    }
+  },
+  "format": "ee2-native-model-season-evidence-v1",
+  "engineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+  "method": "Bounded serial Ghidra readOnly/noanalysis passes; installed archives read only. No original executable, browser or GUI launched.",
+  "proved": [
+    {
+      "function": "005F8450",
+      "meaning": "Finds NiStringExtraData named UserPropBuffer, searches AnimatedTextureSetName, copies the exact nontrivial text between angle brackets. No inferred association by a summer/winter filename."
+    },
+    {
+      "function": "005F8260",
+      "meaning": "Recurses through unannotated scene nodes. On an explicit set, resolves it via00684490 and attaches the corresponding controller to that subtree."
+    },
+    {
+      "function": "005F8560",
+      "meaning": "Recursively attaches the inherited outer set to children without re-searching inner UserPropBuffer values. Source paths and original binding-node indices are retained in the importer."
+    },
+    {
+      "function": "00684490",
+      "meaning": "Resolves the declared set through active database0052F330, loads every source-order texture, and appends it with00684B50."
+    },
+    {
+      "function": "0052F330",
+      "meaning": "Returns current database+0x70, the active seasonal texture set table."
+    },
+    {
+      "function": "00684D90",
+      "meaning": "Feeds00684DC0 the current CalendarTimer/YearSeconds ratio when the calendar exists, otherwise the object-stored phase."
+    },
+    {
+      "source": "DbHdrs/DbTerrainDefs.h DbTextureSetinfo",
+      "meaning": "Explicitly documents order-dependent lists interpolated uniformly over the year, with actual list length defining intervals. Source arrays here contain1,8,11,12 and13 entries; duplicates are preserved."
+    }
+  ],
+  "exports": {
+    "native-model-season-binding.c": "b66026ebccc61d3dbf5ff91e3f61f44a14484335aec20dab5091d8db4a302ef3",
+    "native-model-season-runtime.c": "bf70dd29e1f5a2aa85286615187cd11766cf24fda931f9c04659cd3a8ab31663",
+    "native-model-season-controller.c": "f8ce3d5da98c5320338fc0d090b8c1cc6501621d86da1675f22411f271aac259",
+    "native-model-season-sampling.c": "b2f6aa89b8ab7a417236163450b0b98d40e16a89a1fdd29ff9b181883c09f8e2",
+    "native-reflection-runtime.c": "8e7ff8460d4cca8694fe2d822eb90a23dd76f69b600c7d362977b1f6e82eba75",
+    "native-vfs-enumeration.c": "3908c49161710b30653783d10fa63401d184d246c9ac69e953b2b379caf0b2a1"
+  },
+  "source": {
+    "modelManifestSha256": "ee42afb0d5ad06a65d295c548601d67b48c3c1b7a579174c224c75b3076850c1",
+    "climates": {
+      "Temperate": {
+        "archive": "db.zip",
+        "entry": "db/Terrain/DbSeasonalTextureSets_Temperate.csv",
+        "sha256": "8e39b763fc81877f2aea5c94248d839257648e8d67131974917e756cff4554bc"
+      },
+      "Arid": {
+        "archive": "db.zip",
+        "entry": "db/Terrain/DbSeasonalTextureSets_Arid.csv",
+        "sha256": "45b6c66fba0ba8f0142e1dc74a347124762ec663885e8681d4e47448f28ff796"
+      },
+      "Tropical": {
+        "archive": "db.zip",
+        "entry": "db/Terrain/DbSeasonalTextureSets_Tropical.csv",
+        "sha256": "241ceccb42c4360c63e728ee29957c4467cb6b68a5c75ae7d6e00f23158fff5e"
+      }
+    },
+    "header": {
+      "archive": "hdrs.zip",
+      "entry": "DbHdrs/DbTerrainDefs.h",
+      "sha256": "19fc7b1e07b6aca24cfe5e3605b600d976f1a1b3a95eac0a6a4de9a1b626c2b2"
+    }
+  },
+  "independentTests": {
+    "command": "python tools/test_ee2_model_seasons.py -v",
+    "passed": 9
+  },
+  "coverage": {
+    "seasonalModels": 106,
+    "seasonalParts": 248,
+    "inheritedParts": 83,
+    "setsPerClimate": 115,
+    "climates": [
+      "Temperate",
+      "Arid",
+      "Tropical"
+    ],
+    "listLengths": [
+      1,
+      8,
+      11,
+      12,
+      13
+    ],
+    "physicalTextureCount": 232,
+    "newNeutralTextures": 117,
+    "newTeamTextureSets": 100
+  },
+  "sourceDefect": {
+    "key": "bld_stable11_01",
+    "models": [
+      "local-original/models/bld_stable11.json",
+      "local-original/models/bld_stable11_lodfar.json"
+    ],
+    "meaning": "One source door annotation is absent from all three installed seasonal databases. Its two near/far parts retain the original base material; no guessed bld_stable11_1 alias is introduced."
+  },
+  "limits": [
+    "The WebGL interpolation shader follows the source list/calendar contract; complete native driver/controller scheduling and filtering are separate from exact asset binding.",
+    "Native missing-set fallback can derive a terrain texture; the single defective door binding keeps its original base material in this renderer."
+  ]
+}

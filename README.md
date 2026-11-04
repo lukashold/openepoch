@@ -4,7 +4,7 @@ GitHub enthält Quellcode, fertige WASM-Builds, Tests und Importwerkzeuge.
 Originalmedien im ignorierten Ordner `docs/local-original/` werden lokal importiert
 oder aus dem separaten vollständigen Spielpaket übernommen.
 
-Übergabestand 03.11.2026 · combat-season1. Das lokale EE2-Profil verbindet die eigene Rust-/WASM-Simulation
+Arbeitsstand 04.11.2026 · visual-seasons2. Das lokale EE2-Profil verbindet die eigene Rust-/WASM-Simulation
 mit Originalgrafiken, Originalton und quellbelegten Wirtschafts- und Einheitenwerten.
 Der aktuelle Ausbau ist weiterhin kein vollständiges, regelgleiches Empire Earth II.
 
@@ -25,6 +25,36 @@ Eine tatsächliche macOS-Ausführung wurde hier nicht getestet.
 
 Das bisherige `OpenEpoch-Scharmuetzel.zip` ist weiterhin ein kleines Quellpaket
 ohne Originalmedien. Für den Mac-Transfer das neue **Komplettpaket** verwenden.
+
+## Saisonale Modelle, Wasserreflexionen und Kameradrehung · visual-seasons2
+
+Gebäude und Vegetation verwenden jetzt die originalen saisonalen Texturlisten.
+106 Nah-/Fernmodelle mit248 Meshbindungen wechseln mit demselben Kalender wie
+Gelände und Gebäudeböden. Die Zuordnung kommt aus den NIF-Mesh- und Elterndaten;
+191 bestehende Geometrie-/Animationsdateien bleiben unverändert. Ein fehlender
+Originalschlüssel einer Stalltür behält ausdrücklich das bisherige Basismaterial.
+
+Die Wasserfläche erhält jetzt ein echtes Szenenbild aus einer gespiegelten
+Kamera. Terrain und Modelle werden an der Wasserfläche abgeschnitten, anschließend
+wird das Bild in der Wasseroberfläche abgetastet. Native Ziel-/Clip-/Kamerapfade
+sind belegt. Wasserfarbe, Materialdetails und die separate native Sichtauswahl
+werden weiter rekonstruiert; dieser Stand verwendet noch den gemeinsamen Instanzsatz.
+
+Strg+Pfeil links/rechts dreht die Kamera; Umschalt beschleunigt die Eingabe.
+Die drei Kameraknöpfe drehen um45° oder richten nach Norden aus. Auswahlstrahlen,
+Schieben und Anzeigen folgen der gedrehten Ansicht. Spielstände erhalten die
+Ausrichtung; ältere Spielstände und neue Partien beginnen nach Norden.
+
+Die Simulation und beide WASM-Dateien sind gegenüber combat-season1 unverändert.
+Die neuen Prüfungen umfassen echte Produktionsfunktionen für Eingaben und
+Speicherstände sowie Szenen mit Sommer, Winter, Monatsübergang, Zukunft und90°-
+Ansicht auf einem echten GLES-Framebuffer. Ein Start auf physischem macOS und
+vollständige Bildgleichheit mit dem Original sind weiterhin nicht geprüft.
+
+[Saisonale Modelle](research/analysis/native-model-season-integration.json),
+[Reflexionspipeline](research/analysis/native-reflection-implementation.json),
+[Kameradrehung](research/analysis/native-camera-heading-evidence.json),
+[Eingaben und Spielstände](research/analysis/visual-controls-tests.json).
 
 ## Kampfregeln und Jahreszeiten · combat-season1
 
@@ -229,7 +259,7 @@ powershell -ExecutionPolicy Bypass -File .\Import-EE2-Assets.ps1
 ```
 
 Danach `Start-OpenEpoch.cmd` starten:
-<http://127.0.0.1:8125/?rules=ee2&build=combat-season1>.
+<http://127.0.0.1:8125/?rules=ee2&build=visual-seasons2>.
 Im Menü sind alle 15 Startepochen auswählbar; Standard bleibt die Steinzeit.
 Eine Endepoche ist noch nicht konfigurierbar. Die Startepochen-API erlaubt
 Änderungen nur vor dem ersten Tick im Einzelspieler.

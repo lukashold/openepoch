@@ -1,0 +1,24 @@
+{
+  "status": "passed",
+  "format": "ee2-model-season-loader-tests-v1",
+  "checks": 33687,
+  "uiLaunched": false,
+  "sourceManifestSha256": "c22faa625d3e68b2a4918499f08a82352b8da3af6df72449402f1296b51064e0",
+  "rendererSha256": "32a2be1ee141c2d8749b321ed0217cf79c98416c38a3959d4a55b2cb50a0758c",
+  "unchangedModelFiles": 191,
+  "requestedLocalAssets": 19,
+  "scope": "Real asset production loader/near/far/team/phase/capture tests using a WebGL call recorder; numerical annual sampling for every imported climate/set. Actual GLES pixels are tested separately.",
+  "build": "visual-seasons2",
+  "rendererRevision": "modelseason1",
+  "date": "2026-11-04",
+  "wasm": {
+    "ee2": {
+      "sha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+      "bytes": 430146
+    },
+    "base": {
+      "sha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+      "bytes": 268821
+    }
+  }
+}

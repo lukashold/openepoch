@@ -43,11 +43,16 @@ getrennten lokalen Speicher. Eine bereits laufende Instanz desselben Ordners
 wird wiederverwendet.
 
 Bedienung
+Strg+Pfeil links/rechts: Kamera drehen, mit Umschalt schneller. Die drei
+Kameraknöpfe rechts oben drehen45° oder richten die Ansicht nach Norden aus.
+Schieben, Auswahl und Spielstände berücksichtigen die Ausrichtung.
+Wasserreflexionen sowie saisonale Gebäude- und Baumtexturen sind enthalten.
+
 Im Scharmützelmenü lassen sich Startmonat, Jahreszeitenwechsel und Dauer wählen.
 Ohne Wechsel bleibt der gewählte Monat erhalten. Pause hält den Wechsel an.
 Spielstände behalten diese Einstellungen; alte Spielstände zeigen festen Sommer.
 Im Mehrspieler bestimmt der Gastgeber die Jahreszeiten. Beide Spieler benötigen
-denselben combat-season1-Stand mit Netzwerkprotokoll9.
+denselben Regelstand mit Netzwerkprotokoll9.
 
 Linksklick/Ziehen: auswählen. Rechtsklick/Zweifingerklick: Auftrag.
 Mausrad: Zoom. Pfeiltasten/Screenrand: Kamera. Mittlere Maustaste: schieben.

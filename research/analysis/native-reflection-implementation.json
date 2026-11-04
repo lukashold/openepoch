@@ -1,0 +1,129 @@
+{
+  "format": "openepoch-native-reflection-implementation-v1",
+  "date": "2026-11-04",
+  "componentBuild": "native-reflection1",
+  "status": "passed",
+  "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+  "problem": "Production water previously used an approximate sky color because no rendered scene texture was supplied. Reflected terrain/objects were missing.",
+  "result": "Production planar RGBA8/depth-stencil scene target now supplies terrain and native objects to the existing source-derived two-normal water distortion path. Above-water terrain/model clipping prevents submerged geometry from contaminating the target. Main and reflected seasonal skins use the same actual saved simulation tick.",
+  "api": {
+    "module": "docs/original-reflection.js",
+    "factory": "createOriginalReflection(gl,{resolutionScale:1,maxSize:2048})",
+    "capture": "render({vp,eye,width,height,waterHeight:0,drawScene}) -> {texture,vp,eye,width,height,waterHeight}",
+    "callback": "drawScene({vp,eye,clipPlane:[0,1,0,-waterHeight],capture:true,width,height}); synchronous terrain/model-only callback, no water recursion or sampling this target.",
+    "consumer": "terrain.drawWater({...,reflectionTexture:capture.texture,reflectionVP:capture.vp})",
+    "terrainHook": "drawTerrain({...,clipPlane:null,capture:false}); main default resets the clip uniform. capture:true preserves main terrain counters.",
+    "modelHook": "draw({...,clipPlane:null,capture:false}); Materials renderer owns this hook and preserves picking/timer/main metrics during capture.",
+    "lifecycle": "Reuses same-size attachments, proportionally resizes within limits, retires still-bound previous targets, disposes resources, rejects recursive/async draws. Exceptions and incomplete allocation restore caller state."
+  },
+  "stateRestoration": [
+    "separate draw/read framebuffer bindings",
+    "renderbuffer",
+    "viewport and scissor",
+    "color/depth/stencil clear values",
+    "color/depth write masks and separate front/back stencil masks",
+    "depth test/function, blend factors/equations and enabled flags",
+    "cull/front-face modes",
+    "program, VAO and array buffer",
+    "all fragment texture slots both2D and2D-array plus active texture"
+  ],
+  "sourceBacked": [
+    "Native0088A8F0/0088E210 capture-target and hardware clip-plane bracketing.",
+    "Native0088DE20 cloned camera height sign inversion;0088AB30 separate reflected view.",
+    "Native horizontal clip plane Z-up(0,0,1,0), mapped to application Y-up(0,1,0,0).",
+    "Original Waterbump pixels and NSF flow(.01125,.02),(-.01125,.01), averaged signed-normal offset scale0.1."
+  ],
+  "explicitAdapters": [
+    "WebGL RGBA8+DEPTH24_STENCIL8 framebuffer, proportional resolution/quality/cap policy and lifecycle.",
+    "VP*mirrorY geometrical transform; fragment-discard clipping rather than native fixed-function hardware clipping.",
+    "Culling disabled inside reflected pass to accommodate handedness; complete native render-state and transparent ordering are not reconstructed.",
+    "Water fallback clear/sky color, base color/layer mixture, Fresnel/specular/opacity and wall-clock animation phase remain adapter behavior."
+  ],
+  "validation": {
+    "sourceChecks": 12,
+    "stateAndMatrixChecks": 423,
+    "combinedWorldChecks": 169,
+    "combinedWorlds": 5,
+    "combinedCases": [
+      "summer",
+      "winter",
+      "halfblend",
+      "future",
+      "heading90"
+    ],
+    "reflectionPixelChecks": 105,
+    "nativeObjectReflectionPixels": {
+      "pixels": 29430,
+      "maxChannel": 209,
+      "sumChannels": 8677394
+    },
+    "submergedGeometryClipPixels": {
+      "pixels": 542000,
+      "maxChannel": 207,
+      "sumChannels": 83621281
+    },
+    "visibleWaterReflectionPixels": {
+      "pixels": 14987,
+      "maxChannel": 14,
+      "sumChannels": 219192
+    },
+    "method": "Actual production JS helper/loaders/draw inputs with real WASM worlds and createSeasonSession; real ANGLE EGL/GLES FBO capture and pixel-control replays. Source/profile/shader/manifest hashes are included in reports.",
+    "noGuiOrOriginalExecutable": true
+  },
+  "remainingLimits": [
+    "Native auxiliary plane0.02 projection/grid/UV construction and reflected-camera near-clamp globals remain incomplete.",
+    "Exact native target format/dimensions/refresh and complete quality mapping are unproven.",
+    "Current production reflection reuses main visible instances. Native inserts a separate view; very tall objects outside the main instance AABB may therefore be absent from our reflection.",
+    "No full native sky/shadow/transparency/cull/caustic/palette/overlay ordering or identical source time phase.",
+    "No controlled same-scene original visual comparison, browser interaction or physical macOS execution in this headless proof."
+  ],
+  "sourceFiles": {
+    "main.js": "6b9afbc3f253b4d169fc12e9f9f630cfb71d7db74483402d07860dfca46f8128",
+    "index.html": "eb2b47b5b6384e3e9f150b7db8e4dfcdef3c15c192436c624f226140a6513868",
+    "season-session.js": "2ba54f8c2c55b87034abd6ae79f730d816e0a98505ce4582c3c3b1111eaf7e07",
+    "original-terrain.js": "647091f06fcc8e0831a695927b6290e5b5c57eaffa03432787d20b4101b4a090",
+    "original-ground.js": "bf0b44726870aacf5e57d72969d60a9468db823de21576fd7ea5b3f5962d1724",
+    "original-renderer.js": "32a2be1ee141c2d8749b321ed0217cf79c98416c38a3959d4a55b2cb50a0758c",
+    "original-model-seasons.js": "c8fab385c06dbe93dd7f29fa80959d48dadd031801f6b315e9d7b9a77f3863a6",
+    "original-camera.js": "ffc6ecdcebcace98b73918a15e9cc5e90af6685e724708b82c2a46247eab1954",
+    "original-seasons.js": "fb4001470974e86ed297465309933305bef3bd8c54c8c603f6e39d18b2e63492",
+    "original-reflection.js": "f3506a9b55e880b5b17b63bb329f28a80eaf2ff47cfa7b9abea4f51842b6c131",
+    "local-original/terrain-native/manifest.json": "c7cf660ff198a5f3e7b9c0aa2391b27f38ec7afb116b9541fa09019223c0359a",
+    "local-original/ground-decals.json": "394dc17695378752eab77d37defde85e6ff225b33d12a65a162893c05ef49a5d",
+    "local-original/models/manifest.json": "ee42afb0d5ad06a65d295c548601d67b48c3c1b7a579174c224c75b3076850c1",
+    "local-original/model-seasons.json": "c22faa625d3e68b2a4918499f08a82352b8da3af6df72449402f1296b51064e0",
+    "local-original/season-model-textures/team/manifest.json": "40f3768a9a878bf6fea8e8abbbcf05fa73c917209e86b373f7bb71968dd4d22f",
+    "local-original/team-textures/manifest.json": "e9d618ca90a3cc583bc95d911b887a4a15f468fc398516b0b269130d6fb4a5df"
+  },
+  "reports": [
+    {
+      "file": "native-reflection-evidence.json",
+      "sha256": "a72b53483f503aa76ea43b032bbfd81cae1a7e5a072f7aae892b387606ba0d98"
+    },
+    {
+      "file": "native-reflection-contract-tests.json",
+      "sha256": "f47bd1f5d7a182bf426cad8a1c1e29052df39fc7b23172542fc78aea6cc565c2"
+    },
+    {
+      "file": "native-reflection-world-pixel-tests.json",
+      "sha256": "fbd2770e985490324fe295ad76439763c3d426934725b6d48cff5564554784f2"
+    },
+    {
+      "file": "native-reflection-world-coast.json",
+      "sha256": "da1c6b3101647eea75726b8f39443710fd5faf7b844e45d47e268bb9dbe64dfb"
+    },
+    {
+      "file": "native-season-world-qa.json",
+      "sha256": "e6dc232f980d0d4e65f8079285891dafb6ef329a8dffce95b53215a5a80dbf8d"
+    },
+    {
+      "file": "native-terrain-contract-tests.json",
+      "sha256": "95da864edf8e6b5edafa4078c0d93626a3297238111c83457fa8cc86bc3872a4"
+    },
+    {
+      "file": "native-terrain-gpu-pixels.json",
+      "sha256": "cc096040132751fd851968f680f21695f28d86fed14f25b1bbe723df23d57553"
+    }
+  ],
+  "baseline": "work/reflection-baseline retains pre-change terrain/capture/recorder/replayer files; original installation unchanged."
+}

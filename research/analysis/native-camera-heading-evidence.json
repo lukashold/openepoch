@@ -1,0 +1,141 @@
+{
+  "format": "ee2-native-camera-heading-evidence-v1",
+  "status": "passed",
+  "createdUtc": "2026-11-04T08:20:24.002600+00:00",
+  "engineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+  "config": {
+    "file": "C:\\Program Files (x86)\\GOG.com\\Empire Earth II\\myconfig.cfg",
+    "sha256": "5724b92160ec3b4505fbbb646cc71fd3b124e97ea6256e8f1cb26327950668b8",
+    "headingDegrees": 90
+  },
+  "sourceConstants": {
+    "00b41414": {
+      "bytes": "db0fc940",
+      "f32": 6.2831854820251465
+    },
+    "00b42604": {
+      "bytes": "db0fc93f",
+      "f32": 1.5707963705062866
+    },
+    "00b42f0c": {
+      "bytes": "35fa8e3c",
+      "f32": 0.01745329238474369
+    },
+    "00b4038c": {
+      "bytes": "00000000",
+      "f32": 0.0
+    }
+  },
+  "bindings": [
+    {
+      "function": "0051d090",
+      "fact": "HEADING config degrees multiplied by float00b42f0c, stored at config+0x20."
+    },
+    {
+      "function": "005207f0",
+      "fact": "Orbit uses heading at camera+0x20: source eyeXY=focusXY-horizontal*[cos(H),sin(H)]. Existing pitch/distance/terrain/fov branches retained."
+    },
+    {
+      "function": "005204b0",
+      "fact": "Increment yaw negates its input in orbit mode1, then wraps into[0,float2PI)."
+    },
+    {
+      "function": "00520530",
+      "fact": "Absolute yaw setter wraps into[0,float2PI) without negation."
+    },
+    {
+      "function": "00520600",
+      "fact": "Builds 3x3 source rotation from pitch and(H-PI/2). Columns are native forward/up/right."
+    },
+    {
+      "function": "00520dd0",
+      "fact": "World-to-camera subtracts cached eye, applies inverse of the native3x3, then reorders localD/U/R intoR/U/D."
+    },
+    {
+      "function": "0051f9f0",
+      "fact": "Camera basis is copied to NiCamera rotation+0x38; unchanged horizontal frustum is +/-tan(FOV/2),vertical divided by aspect."
+    }
+  ],
+  "adapter": {
+    "heading": "cam.heading is radians relative to native configured90 degrees, normalized[-PI,PI); missing/nonfinite0.",
+    "positive": "Camera orbit moves from south toward east; +PI/2 puts eye east of focus and looks west.",
+    "coordinateMapping": "SourceXYZ -> browserX/Z/-Y. The previous north-up orientation is calibrated to exactly0 to preserve its numeric output.",
+    "eyeHorizontal": "[focusX + horizontal*sin(heading), focusZ + horizontal*cos(heading)]",
+    "right": "[cos(heading),0,-sin(heading)]",
+    "forward": "[-cos(pitch)*sin(heading),-sin(pitch),-cos(pitch)*cos(heading)]",
+    "up": "[-sin(pitch)*sin(heading),cos(pitch),-sin(pitch)*cos(heading)]",
+    "groundRight": "[cos(heading),-sin(heading)] in simulationX/Y",
+    "groundForward": "[-sin(heading),-cos(heading)] in simulationX/Y; screen-down is its negative.",
+    "ray": "direction=forward+right*ndcX*tanX+up*ndcY*tanY. Not normalized: its parameter is forward camera depth, exactly the near/far clip convention.",
+    "terrain": "Height sampling uses rotated eyeXY; native minimum clearance/pitch correction preserved.",
+    "profileUnchanged": [
+      "zoom fraction",
+      "distance/pitch knee quirk",
+      "horizontal FOV",
+      "near1/far300",
+      "terrain focus-height blend"
+    ]
+  },
+  "api": {
+    "sampleOriginalCamera": "(fraction,{width,height,heading=0,profile}) includesheading/nativeHeading/right/groundRight/groundForward",
+    "updateOriginalCamera": "(cam,view,width,height,heightAt,profile) reads/normalizescam.heading and fills the existing view contract plus rotated basis.",
+    "originalCameraRay": "(view,px,py,width,height) returns the unnormalized rotated world direction.",
+    "originalCameraRaySegment": "same args; {origin,direction,near,far,nearPoint,farPoint}",
+    "normalizeOriginalHeading": "(offsetRadians)->[-PI,PI)",
+    "rotateOriginalCameraHeading": "(cam,deltaRadians)->heading; positive increases offset.",
+    "applyOriginalCameraNativeTurn": "(cam,nativeDeltaRadians)->heading; orbit005204b0 input sign is negated.",
+    "originalCameraHeadingAxes": "(heading=0)->{heading,sin,cos,right,groundRight,groundForward}"
+  },
+  "tests": {
+    "mathAndBaseline": {
+      "format": "native-camera-heading-tests-v1",
+      "passed": true,
+      "checks": 26562,
+      "northCases": 288,
+      "rotationCases": 105,
+      "baselineSha256": "56fdd51c6ec1ac099482cb14b101995c18c9d1ed0b3ce12ba4355d9544511575",
+      "cameraSha256": "ffc6ecdcebcace98b73918a15e9cc5e90af6685e724708b82c2a46247eab1954",
+      "scope": "North baseline bit equality, independent native00520600 basis, heading orbit/pan, rotated terrain clearance, camera-depth ray endpoints and projection. UI input rate remains an adapter.",
+      "gpuCases": 16
+    },
+    "nativeGles": {
+      "format": "native-camera-heading-gles-tests-v1",
+      "passed": true,
+      "checks": 288,
+      "cases": 16,
+      "probes": 128,
+      "cameraSha256": "ffc6ecdcebcace98b73918a15e9cc5e90af6685e724708b82c2a46247eab1954",
+      "fixtureSha256": "074426340248e245e074823ff835abd0bb5288fbb8ee41d52c164dd8e4f46277",
+      "context": {
+        "egl": [
+          1,
+          5
+        ],
+        "vendor": "Google Inc. (AMD)",
+        "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11-31.0.21924.61)",
+        "version": "OpenGL ES 3.0 (ANGLE 2.1 git hash: unknown hash)",
+        "libraryDirectory": "C:\\Program Files\\Mozilla Firefox",
+        "surface": [
+          256,
+          256
+        ],
+        "uiLaunched": false,
+        "framebuffer": "RGBA8 texture + DEPTH24_STENCIL8 renderbuffer"
+      },
+      "scope": "Native GLES point draw/readback consumes production camera matrices and points from public picking rays. Tests 0/45/90/180 degrees, four zooms, expected screen pixels, and near/far/behind-eye clipping. No original runtime or UI launched."
+    }
+  },
+  "sourceFiles": {
+    "native-camera-heading.c": "82f309d3bd12bea1877722083312eb607db486eb309d8a9e7f35c7cdb3f0b566",
+    "native-camera-heading-bindings.c": "d3f195f36253336fa43913d3e0845704ba6a515ac86019a130a69e11a415ff7c",
+    "native-camera-curve.c": "336a527372f142331c275fc711125f6d5e1fc562c4bce99639668cd1ed3b9271",
+    "visual-native-camera-runtime.c": "3999234af0ff3d95c01dfebaab97ae934bce02a465207181dadb1b7bd8e1fb21",
+    "native-camera-frustum-final.c": "2fc085d2ba204e18d0685bdb34d712db59d0f624a0c62aee185e16dd25af4c78"
+  },
+  "cameraSha256": "ffc6ecdcebcace98b73918a15e9cc5e90af6685e724708b82c2a46247eab1954",
+  "limits": [
+    "Native CamCtrl token-to-delta, repeat timing and Shift speed multiplier have not been proved; input rate remains a frontend adapter.",
+    "The relative-radian API uses JavaScript trigonometry and a calibrated north basis; full x87 instruction-level equality for arbitrary rotations is not claimed.",
+    "No original game/app/UI was launched. Evidence is installed config, raw PE constants, bounded read-only/noanalysis Ghidra exports and independent math/GLES checks."
+  ]
+}

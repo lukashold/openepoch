@@ -1,0 +1,19 @@
+{
+  "format": "openepoch-visual-seasons-package-extraction-v1",
+  "status": "passed",
+  "build": "visual-seasons2",
+  "createdUTC": "2026-11-04T09:15:57.287203+00:00",
+  "file": "OpenEpoch-Mac-Komplett.zip",
+  "zipBytes": 1133680896,
+  "sha256": "507a58fb0dfe9d8bd8053709594b1f18920bbb00d40e1dd9da01cf2565f12f13",
+  "zipEntries": 4357,
+  "manifestFilesVerified": 4355,
+  "allCopiedFilesMatchCurrentSource": true,
+  "mediaFiles": 4305,
+  "mediaBytes": 1232318090,
+  "root": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\Mac Paket Visual Season Test\\OpenEpoch",
+  "launcherMode": "0755",
+  "launcherLineEndings": "LF",
+  "pythonMinimum": "3.8",
+  "noMacExecutionClaim": true
+}

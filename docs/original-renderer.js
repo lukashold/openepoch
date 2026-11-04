@@ -2,6 +2,7 @@
 // This renderer does not inspect original files or alter the deterministic simulation.
 import {DEFAULT_MODEL_LIGHTING,modelMaterial,alphaState,depthState} from './original-material.js?v=material1';
 import {nativeModelTransform} from './original-scale.js?v=native1';
+import {modelYearPhase,modelSeasonFrames,modelSeasonBinding} from './original-model-seasons.js?v=modelseason1';
 const VS=`#version 300 es
 layout(location=0) in vec3 aPosition;layout(location=1) in vec3 aNormal;layout(location=2) in vec2 aUV;
 layout(location=3) in vec4 iA;layout(location=4) in vec4 iB;layout(location=5) in vec4 iC;
@@ -41,11 +42,12 @@ void main(){
  gl_Position=uVP*vec4(world,1.);
 }`;
 const FS=`#version 300 es
-precision highp float;uniform sampler2D uDiffuse;uniform sampler2D uFog;uniform vec4 uColor;
+precision highp float;uniform sampler2D uDiffuse;uniform sampler2D uDiffuseNext;uniform float uModelSeasonBlend;uniform sampler2D uFog;uniform vec4 uColor;
 uniform highp int uShadow;uniform int uHasAlpha;uniform float uCutoff;uniform float uModelHeight;uniform vec3 uTeam[8];
 uniform int uAlphaFunction;uniform vec3 uAmbientMaterial;uniform vec3 uSpecularMaterial;uniform vec3 uEmissiveMaterial;
 uniform float uGlossiness;uniform bool uSpecularEnabled;uniform int uVertexMode;uniform int uLightingMode;
 uniform vec3 uAmbientLight;uniform vec3 uSunColor;uniform vec3 uSunDirection;uniform vec3 uEye;
+uniform bool uClipEnabled;uniform vec4 uClipPlane;
 in vec3 vNormal;in vec2 vUV;in vec2 vWorld;in vec3 vPosition;in vec4 vColor;in float vY;flat in vec4 vInfo;out vec4 outColor;
 bool alphaPass(float alpha){
  if(uAlphaFunction==0)return true;if(uAlphaFunction==1)return alpha<uCutoff;if(uAlphaFunction==2)return alpha==uCutoff;
@@ -53,7 +55,8 @@ bool alphaPass(float alpha){
  if(uAlphaFunction==6)return alpha>=uCutoff;return false;
 }
 void main(){
- vec4 texel=texture(uDiffuse,vUV);float coverage=texel.a*uColor.a*(uVertexMode==2?vColor.a:1.);
+ if(uClipEnabled && dot(vec4(vPosition,1.),uClipPlane)<0.)discard;
+ vec4 texel=mix(texture(uDiffuse,vUV),texture(uDiffuseNext,vUV),uModelSeasonBlend);float coverage=texel.a*uColor.a*(uVertexMode==2?vColor.a:1.);
  if((uHasAlpha&1)!=0 && !alphaPass(coverage))discard;
  int flags=int(vInfo.w+.5);float fog=texture(uFog,vWorld/256.).r;
  if((flags&32)==0 && fog<.05)discard;
@@ -109,7 +112,7 @@ function program(gl){
   gl.attachShader(p,s);gl.deleteShader(s);
  }
  gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));
- const u={};for(const name of ['uVP','uShadow','uAnimated','uYOffset','uOriginOffset','uDiffuse','uFog','uColor','uHasAlpha','uCutoff','uModelHeight','uTeam','uFrames','uFrameWidth','uFrameCount','uTerrain','uTerrainSize','uTerrainEnabled','uSunDirection','uAmbientMaterial','uSpecularMaterial','uEmissiveMaterial','uGlossiness','uSpecularEnabled','uVertexMode','uLightingMode','uAmbientLight','uSunColor','uEye','uAlphaFunction'])u[name]=gl.getUniformLocation(p,name);
+ const u={};for(const name of ['uVP','uShadow','uAnimated','uYOffset','uOriginOffset','uDiffuse','uDiffuseNext','uModelSeasonBlend','uFog','uColor','uHasAlpha','uCutoff','uModelHeight','uTeam','uFrames','uFrameWidth','uFrameCount','uTerrain','uTerrainSize','uTerrainEnabled','uSunDirection','uAmbientMaterial','uSpecularMaterial','uEmissiveMaterial','uGlossiness','uSpecularEnabled','uVertexMode','uLightingMode','uAmbientLight','uSunColor','uEye','uAlphaFunction','uClipEnabled','uClipPlane'])u[name]=gl.getUniformLocation(p,name);
  return {p,u};
 }
 const absolute=url=>new URL(url,import.meta.url);
@@ -212,34 +215,54 @@ function gpuPart(gl,part,instanceBuffer,materialTexture,keepPickingGeometry=fals
 }
 
 export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{}){
- const result={available:new Set(),models:new Map(),errors:[],metrics:{colorMs:0,shadowMs:0,calls:0,triangles:0,gpuMs:0},draw(){},updateTerrain(){},pickResource(){return null;}};if(!enabled)return result;
- let manifest,teamManifest={},scales={};
+ const result={available:new Set(),models:new Map(),errors:[],metrics:{colorMs:0,shadowMs:0,calls:0,triangles:0,gpuMs:0},draw(){},updateTerrain(){},setSeasonPhase(){return false;},setSeasonClimate(){return false;},pickResource(){return null;}};if(!enabled)return result;
+ let manifest,teamManifest={},scales={},seasonManifest={},seasonTeamManifest={},yearPhase,seasonClimate='Temperate';
  try{manifest=await json('./local-original/models/manifest.json');}catch{return result;}
  result.manifest=manifest;
  try{teamManifest=await json('./local-original/team-textures/manifest.json');}catch{/* The original neutral materials remain available. */}
  try{scales=await json('./local-original/model-scales.json');}catch{/* Legacy normalized exports remain playable without native scale bindings. */}
  result.scaleManifest=scales;
+ try{seasonManifest=await json('./local-original/model-seasons.json');}catch{/* Static original skins remain available in older asset folders. */}
+ if(seasonManifest.teamManifest){try{seasonTeamManifest=await json(seasonManifest.teamManifest);}catch{/* Unverified or absent patch data keeps the correct neutral seasonal image. */}}
+ result.seasonManifest=seasonManifest;
+ result.setSeasonPhase=phase=>{yearPhase=modelYearPhase(phase);return !!seasonManifest.models;};
+ result.setSeasonClimate=climate=>{
+  if(!Object.hasOwn(seasonManifest.sets||{},climate))throw new RangeError('Unknown model season climate');
+  seasonClimate=climate;return true;
+ };
  let shader;
  try{shader=program(gl);}catch(e){result.errors.push(e.message);console.warn('Originalmodell-Renderer:',e);return result;}
  const instances=gl.createBuffer(),textures=new Map();
  const entries=Array.isArray(manifest.models)?manifest.models:Object.entries(manifest.models||manifest.mapping||{}).map(([id,value])=>typeof value==='string'?{id:+id,url:value}:{id:+id,...value});
- const loadParts=async (model,keepPickingGeometry=false)=>{
+ const loadParts=async (model,keepPickingGeometry=false,modelUrl=null)=>{
    const parts=[];
    for(const part of model.parts){
     const url=part.textureUrl||part.texture||manifest.textures?.[part.textureSource?.toLowerCase()]||null;
     const gpu=gpuPart(gl,part,instances,await texture(gl,url,textures),keepPickingGeometry);
-    const key=teamManifest.texture_bindings?.[url]||url?.split('/').pop().replace(/\.png$/i,'').toLowerCase();
-    const teamSource=teamManifest.textures?.[key],teamGPU=new Map(),requested=new Set();
-    gpu.forTeam=team=>{
-      const suffix=['A','B','C','G'][team],variant=teamSource?.variants?.[suffix];
-      if(variant?.verified&&teamManifest.colour_mapping_verified){
-        if(!requested.has(suffix)){
-          requested.add(suffix);
-          texture(gl,variant.url,textures).then(t=>teamGPU.set(suffix,t)).catch(e=>{result.errors.push(e.message);console.warn('Original-Spielerfarbe:',e);});
+    const seasonalKey=modelSeasonBinding(seasonManifest,modelUrl,model,part),neutralGPU=new Map([[url,gpu.texture]]),teamGPU=new Map(),requested=new Set();
+    // Preload every declared climate image before exposing the model. A seasonal
+    // switch never displays an unrelated summer image while its pixels load.
+    if(seasonalKey){
+     const urls=new Set(Object.values(seasonManifest.sets||{}).flatMap(climate=>climate[seasonalKey]?.urls||[]));
+     for(const source of urls)neutralGPU.set(source,await texture(gl,source,textures));
+    }
+    const forSourceTeam=(source,team)=>{
+      const suffix=['A','B','C','G'][team],key=source?.split('/').pop().replace(/\.png$/i,'').toLowerCase();
+      const patchManifest=seasonTeamManifest.texture_bindings?.[source]?seasonTeamManifest:teamManifest;
+      const teamKey=patchManifest.texture_bindings?.[source]||key,variant=patchManifest.textures?.[teamKey]?.variants?.[suffix],cacheKey=source+':'+suffix;
+      if(variant?.verified&&patchManifest.colour_mapping_verified){
+        if(!requested.has(cacheKey)){
+          requested.add(cacheKey);
+          texture(gl,variant.url,textures).then(t=>teamGPU.set(cacheKey,t)).catch(e=>{result.errors.push(e.message);console.warn('Original-Spielerfarbe:',e);});
         }
-        return teamGPU.get(suffix)||gpu.texture;
+        return teamGPU.get(cacheKey)||neutralGPU.get(source)||gpu.texture;
       }
-      return gpu.texture;
+      return neutralGPU.get(source)||gpu.texture;
+    };
+    gpu.forTeam=team=>forSourceTeam(url,team);
+    gpu.forSeason=team=>{
+      const sequence=seasonManifest.sets?.[seasonClimate]?.[seasonalKey]?.urls,pair=modelSeasonFrames(sequence,yearPhase,url);
+      return {first:forSourceTeam(pair.first,team),next:forSourceTeam(pair.next,team),blend:pair.blend};
     };
     parts.push(gpu);
    }
@@ -251,7 +274,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{}){
   if(entry.verified===false)continue;
   try{
    const id=+(entry.id??entry.def);if(!Number.isFinite(id))continue;
-   const model=await json(entry.url||entry.file),parts=await loadParts(model,resourceId(id));
+   const modelUrl=entry.url||entry.file,model=await json(modelUrl),parts=await loadParts(model,resourceId(id),modelUrl);
    if(!parts.length)continue;
    const sea=(id>=29&&id<=36)||id===42||id===45,transform=nativeModelTransform(model,scales.variants?.[id+':'+(entry.epoch??0)]);
    const yOffset=!transform.native&&sea?-(model.normalization?.offset?.[1]||0)*(model.normalization?.scale||1):0;
@@ -259,7 +282,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{}){
   }catch(e){result.errors.push(e.message);console.warn('Originalmodell:',entry,e);}
  }
  for(const list of result.models.values())list.sort((a,b)=>a.epoch-b.epoch);
- gl.useProgram(shader.p);gl.uniform1i(shader.u.uDiffuse,0);gl.uniform1i(shader.u.uFog,2);gl.uniform1i(shader.u.uFrames,5);gl.uniform1i(shader.u.uTerrain,6);gl.uniform3fv(shader.u.uTeam,new Float32Array(teams.flat()));
+ gl.useProgram(shader.p);gl.uniform1i(shader.u.uDiffuse,0);gl.uniform1i(shader.u.uDiffuseNext,7);gl.uniform1i(shader.u.uFog,2);gl.uniform1i(shader.u.uFrames,5);gl.uniform1i(shader.u.uTerrain,6);gl.uniform3fv(shader.u.uTeam,new Float32Array(teams.flat()));
  const heightTexture=gl.createTexture();let heightSize=1,heightReady=false;
  const uploadHeights=(values,size)=>{
   gl.activeTexture(gl.TEXTURE0+6);gl.bindTexture(gl.TEXTURE_2D,heightTexture);
@@ -311,11 +334,11 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{}){
   }
   return hit;
  };
- result.draw=({data,ranges,vp,epochs,zoom=80,shadow=false,eye=[0,200,0],lighting=DEFAULT_MODEL_LIGHTING})=>{
+ result.draw=({data,ranges,vp,epochs,zoom=80,shadow=false,eye=[0,200,0],lighting=DEFAULT_MODEL_LIGHTING,clipPlane=null,capture=false})=>{
   const started=performance.now();let calls=0,triangles=0,querying=false;
   const previousState=drawState(gl);
-  if(!shadow){resourceView.data=data;resourceView.ranges=ranges;resourceView.epochs=epochs;resourceView.zoom=zoom;resourceView.choices.clear();}
-  if(!shadow&&timer){
+  if(!shadow&&!capture){resourceView.data=data;resourceView.ranges=ranges;resourceView.epochs=epochs;resourceView.zoom=zoom;resourceView.choices.clear();}
+  if(!shadow&&!capture&&timer){
    if(gpuQuery&&gl.getQueryParameter(gpuQuery,gl.QUERY_RESULT_AVAILABLE)){
     if(!gl.getParameter(timer.GPU_DISJOINT_EXT))result.metrics.gpuMs=gl.getQueryParameter(gpuQuery,gl.QUERY_RESULT)/1e6;
     gl.deleteQuery(gpuQuery);gpuQuery=null;
@@ -323,6 +346,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{}){
    if(!gpuQuery&&started>=nextQuery){nextQuery=started+1000;gpuQuery=gl.createQuery();gl.beginQuery(timer.TIME_ELAPSED_EXT,gpuQuery);querying=true;}
   }
   gl.useProgram(shader.p);gl.uniformMatrix4fv(shader.u.uVP,false,vp);gl.uniform1i(shader.u.uShadow,shadow?1:0);
+  gl.uniform1i(shader.u.uClipEnabled,clipPlane?1:0);gl.uniform4fv(shader.u.uClipPlane,clipPlane||[0,0,0,0]);
   gl.uniform3fv(shader.u.uEye,eye);gl.uniform3fv(shader.u.uAmbientLight,lighting.ambient||DEFAULT_MODEL_LIGHTING.ambient);
   gl.uniform3fv(shader.u.uSunColor,lighting.sun||DEFAULT_MODEL_LIGHTING.sun);gl.uniform3fv(shader.u.uSunDirection,lighting.direction||DEFAULT_MODEL_LIGHTING.direction);
   gl.activeTexture(gl.TEXTURE0+6);gl.bindTexture(gl.TEXTURE_2D,heightTexture);gl.uniform1i(shader.u.uTerrainSize,heightSize);gl.uniform1i(shader.u.uTerrainEnabled,heightReady?1:0);
@@ -336,7 +360,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{}){
     if(far&&variant.farUrl){
      if(!variant.farRequested){
       variant.farRequested=true;const near=variant;
-      json(near.farUrl).then(model=>loadParts(model,resourceId(id))).then(parts=>{near.far={...near,parts,pickBounds:resourceBounds(parts)};}).catch(e=>{result.errors.push(e.message);console.warn('Original-Fernmodell:',e);});
+      json(near.farUrl).then(model=>loadParts(model,resourceId(id),near.farUrl)).then(parts=>{near.far={...near,parts,pickBounds:resourceBounds(parts)};}).catch(e=>{result.errors.push(e.message);console.warn('Original-Fernmodell:',e);});
      }
      if(variant.far)variant=variant.far;
     }
@@ -354,7 +378,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{}){
     groups.set(key,group);
    }
    for(const [groupKey,{variant,team,list,activity,clip,preview}] of groups){
-    if(!shadow&&resourceId(id))resourceView.choices.set(id+':'+groupKey,variant);
+    if(!shadow&&!capture&&resourceId(id))resourceView.choices.set(id+':'+groupKey,variant);
     gl.uniform1f(shader.u.uYOffset,variant.yOffset);
     gl.uniform3fv(shader.u.uOriginOffset,variant.originOffset);
     gl.bindBuffer(gl.ARRAY_BUFFER,instances);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(list),gl.STREAM_DRAW);
@@ -363,8 +387,9 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{}){
      const pose=part.pose(clip);gl.uniform1i(shader.u.uAnimated,pose?1:0);
      gl.activeTexture(gl.TEXTURE5);gl.bindTexture(gl.TEXTURE_2D_ARRAY,pose?.texture||emptyFrames);
      gl.uniform1i(shader.u.uFrameWidth,pose?.width||1);gl.uniform1i(shader.u.uFrameCount,pose?.count||1);
-     const diffuse=part.forTeam(team);
-     gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,diffuse);gl.bindVertexArray(part.vao);
+     const seasonal=part.forSeason(team);
+     gl.activeTexture(gl.TEXTURE0+7);gl.bindTexture(gl.TEXTURE_2D,seasonal.next);gl.uniform1f(shader.u.uModelSeasonBlend,seasonal.blend);
+     gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,seasonal.first);gl.bindVertexArray(part.vao);
      const m=part.material,a=part.alpha;
      gl.uniform4fv(shader.u.uColor,[...m.diffuse,m.alpha]);gl.uniform1f(shader.u.uModelHeight,part.height);
      gl.uniform3fv(shader.u.uAmbientMaterial,m.ambient);gl.uniform3fv(shader.u.uSpecularMaterial,m.specular);gl.uniform3fv(shader.u.uEmissiveMaterial,m.emissive);
@@ -379,6 +404,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{}){
   }
   restoreDrawState(gl,previousState);
   if(querying)gl.endQuery(timer.TIME_ELAPSED_EXT);
+  if(capture)return;
   if(shadow)result.metrics.shadowMs=performance.now()-started;
   else{result.metrics.colorMs=performance.now()-started;result.metrics.calls=calls;result.metrics.triangles=triangles;}
  };

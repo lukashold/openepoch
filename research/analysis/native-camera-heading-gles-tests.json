@@ -1,0 +1,1644 @@
+{
+  "format": "native-camera-heading-gles-tests-v1",
+  "passed": true,
+  "checks": 288,
+  "cases": 16,
+  "probes": 128,
+  "cameraSha256": "ffc6ecdcebcace98b73918a15e9cc5e90af6685e724708b82c2a46247eab1954",
+  "fixtureSha256": "074426340248e245e074823ff835abd0bb5288fbb8ee41d52c164dd8e4f46277",
+  "context": {
+    "egl": [
+      1,
+      5
+    ],
+    "vendor": "Google Inc. (AMD)",
+    "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11-31.0.21924.61)",
+    "version": "OpenGL ES 3.0 (ANGLE 2.1 git hash: unknown hash)",
+    "libraryDirectory": "C:\\Program Files\\Mozilla Firefox",
+    "surface": [
+      256,
+      256
+    ],
+    "uiLaunched": false,
+    "framebuffer": "RGBA8 texture + DEPTH24_STENCIL8 renderbuffer"
+  },
+  "scope": "Native GLES point draw/readback consumes production camera matrices and points from public picking rays. Tests 0/45/90/180 degrees, four zooms, expected screen pixels, and near/far/behind-eye clipping. No original runtime or UI launched.",
+  "results": [
+    {
+      "headingRadians": 0,
+      "fraction": 0,
+      "probes": [
+        {
+          "pixel": [
+            32,
+            64
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            128,
+            128
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            127.0,
+            128.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            196
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            64
+          ],
+          "forwardDepth": 1.01,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            32,
+            196
+          ],
+          "forwardDepth": 299,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            64,
+            128
+          ],
+          "forwardDepth": 0.99,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            192,
+            128
+          ],
+          "forwardDepth": 301,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            128,
+            32
+          ],
+          "forwardDepth": -15,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        }
+      ]
+    },
+    {
+      "headingRadians": 0,
+      "fraction": 0.2,
+      "probes": [
+        {
+          "pixel": [
+            32,
+            64
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            128,
+            128
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            127.0,
+            128.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            196
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            64
+          ],
+          "forwardDepth": 1.01,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            32,
+            196
+          ],
+          "forwardDepth": 299,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            64,
+            128
+          ],
+          "forwardDepth": 0.99,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            192,
+            128
+          ],
+          "forwardDepth": 301,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            128,
+            32
+          ],
+          "forwardDepth": -15,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        }
+      ]
+    },
+    {
+      "headingRadians": 0,
+      "fraction": 0.7,
+      "probes": [
+        {
+          "pixel": [
+            32,
+            64
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            128,
+            128
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            127.0,
+            128.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            196
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            64
+          ],
+          "forwardDepth": 1.01,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            32,
+            196
+          ],
+          "forwardDepth": 299,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            64,
+            128
+          ],
+          "forwardDepth": 0.99,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            192,
+            128
+          ],
+          "forwardDepth": 301,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            128,
+            32
+          ],
+          "forwardDepth": -15,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        }
+      ]
+    },
+    {
+      "headingRadians": 0,
+      "fraction": 1,
+      "probes": [
+        {
+          "pixel": [
+            32,
+            64
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            128,
+            128
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            127.0,
+            128.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            196
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            64
+          ],
+          "forwardDepth": 1.01,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            32,
+            196
+          ],
+          "forwardDepth": 299,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            64,
+            128
+          ],
+          "forwardDepth": 0.99,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            192,
+            128
+          ],
+          "forwardDepth": 301,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            128,
+            32
+          ],
+          "forwardDepth": -15,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        }
+      ]
+    },
+    {
+      "headingRadians": 0.7853981633974483,
+      "fraction": 0,
+      "probes": [
+        {
+          "pixel": [
+            32,
+            64
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            128,
+            128
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            127.0,
+            128.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            196
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            64
+          ],
+          "forwardDepth": 1.01,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            32,
+            196
+          ],
+          "forwardDepth": 299,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            64,
+            128
+          ],
+          "forwardDepth": 0.99,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            192,
+            128
+          ],
+          "forwardDepth": 301,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            128,
+            32
+          ],
+          "forwardDepth": -15,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        }
+      ]
+    },
+    {
+      "headingRadians": 0.7853981633974483,
+      "fraction": 0.2,
+      "probes": [
+        {
+          "pixel": [
+            32,
+            64
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            128,
+            128
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            127.0,
+            128.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            196
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            64
+          ],
+          "forwardDepth": 1.01,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            32,
+            196
+          ],
+          "forwardDepth": 299,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            64,
+            128
+          ],
+          "forwardDepth": 0.99,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            192,
+            128
+          ],
+          "forwardDepth": 301,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            128,
+            32
+          ],
+          "forwardDepth": -15,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        }
+      ]
+    },
+    {
+      "headingRadians": 0.7853981633974483,
+      "fraction": 0.7,
+      "probes": [
+        {
+          "pixel": [
+            32,
+            64
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            128,
+            128
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            127.0,
+            128.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            196
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            64
+          ],
+          "forwardDepth": 1.01,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            32,
+            196
+          ],
+          "forwardDepth": 299,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            64,
+            128
+          ],
+          "forwardDepth": 0.99,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            192,
+            128
+          ],
+          "forwardDepth": 301,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            128,
+            32
+          ],
+          "forwardDepth": -15,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        }
+      ]
+    },
+    {
+      "headingRadians": 0.7853981633974483,
+      "fraction": 1,
+      "probes": [
+        {
+          "pixel": [
+            32,
+            64
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            128,
+            128
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            127.0,
+            128.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            196
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            64
+          ],
+          "forwardDepth": 1.01,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            32,
+            196
+          ],
+          "forwardDepth": 299,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            64,
+            128
+          ],
+          "forwardDepth": 0.99,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            192,
+            128
+          ],
+          "forwardDepth": 301,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            128,
+            32
+          ],
+          "forwardDepth": -15,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        }
+      ]
+    },
+    {
+      "headingRadians": 1.5707963267948966,
+      "fraction": 0,
+      "probes": [
+        {
+          "pixel": [
+            32,
+            64
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            128,
+            128
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            127.0,
+            128.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            196
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            64
+          ],
+          "forwardDepth": 1.01,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            32,
+            196
+          ],
+          "forwardDepth": 299,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            64,
+            128
+          ],
+          "forwardDepth": 0.99,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            192,
+            128
+          ],
+          "forwardDepth": 301,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            128,
+            32
+          ],
+          "forwardDepth": -15,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        }
+      ]
+    },
+    {
+      "headingRadians": 1.5707963267948966,
+      "fraction": 0.2,
+      "probes": [
+        {
+          "pixel": [
+            32,
+            64
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            128,
+            128
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            127.0,
+            128.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            196
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            64
+          ],
+          "forwardDepth": 1.01,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            32,
+            196
+          ],
+          "forwardDepth": 299,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            64,
+            128
+          ],
+          "forwardDepth": 0.99,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            192,
+            128
+          ],
+          "forwardDepth": 301,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            128,
+            32
+          ],
+          "forwardDepth": -15,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        }
+      ]
+    },
+    {
+      "headingRadians": 1.5707963267948966,
+      "fraction": 0.7,
+      "probes": [
+        {
+          "pixel": [
+            32,
+            64
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            128,
+            128
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            127.0,
+            128.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            196
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            64
+          ],
+          "forwardDepth": 1.01,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            32,
+            196
+          ],
+          "forwardDepth": 299,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            64,
+            128
+          ],
+          "forwardDepth": 0.99,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            192,
+            128
+          ],
+          "forwardDepth": 301,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            128,
+            32
+          ],
+          "forwardDepth": -15,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        }
+      ]
+    },
+    {
+      "headingRadians": 1.5707963267948966,
+      "fraction": 1,
+      "probes": [
+        {
+          "pixel": [
+            32,
+            64
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            128,
+            128
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            127.0,
+            128.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            196
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            64
+          ],
+          "forwardDepth": 1.01,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            32,
+            196
+          ],
+          "forwardDepth": 299,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            64,
+            128
+          ],
+          "forwardDepth": 0.99,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            192,
+            128
+          ],
+          "forwardDepth": 301,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            128,
+            32
+          ],
+          "forwardDepth": -15,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        }
+      ]
+    },
+    {
+      "headingRadians": 3.141592653589793,
+      "fraction": 0,
+      "probes": [
+        {
+          "pixel": [
+            32,
+            64
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            128,
+            128
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            127.0,
+            128.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            196
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            64
+          ],
+          "forwardDepth": 1.01,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            32,
+            196
+          ],
+          "forwardDepth": 299,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            64,
+            128
+          ],
+          "forwardDepth": 0.99,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            192,
+            128
+          ],
+          "forwardDepth": 301,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            128,
+            32
+          ],
+          "forwardDepth": -15,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        }
+      ]
+    },
+    {
+      "headingRadians": 3.141592653589793,
+      "fraction": 0.2,
+      "probes": [
+        {
+          "pixel": [
+            32,
+            64
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            128,
+            128
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            127.0,
+            128.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            196
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            64
+          ],
+          "forwardDepth": 1.01,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            32,
+            196
+          ],
+          "forwardDepth": 299,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            64,
+            128
+          ],
+          "forwardDepth": 0.99,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            192,
+            128
+          ],
+          "forwardDepth": 301,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            128,
+            32
+          ],
+          "forwardDepth": -15,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        }
+      ]
+    },
+    {
+      "headingRadians": 3.141592653589793,
+      "fraction": 0.7,
+      "probes": [
+        {
+          "pixel": [
+            32,
+            64
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            128,
+            128
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            127.0,
+            128.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            196
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            64
+          ],
+          "forwardDepth": 1.01,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            32,
+            196
+          ],
+          "forwardDepth": 299,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            64,
+            128
+          ],
+          "forwardDepth": 0.99,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            192,
+            128
+          ],
+          "forwardDepth": 301,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            128,
+            32
+          ],
+          "forwardDepth": -15,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        }
+      ]
+    },
+    {
+      "headingRadians": 3.141592653589793,
+      "fraction": 1,
+      "probes": [
+        {
+          "pixel": [
+            32,
+            64
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            128,
+            128
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            127.0,
+            128.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            196
+          ],
+          "forwardDepth": 15,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            220,
+            64
+          ],
+          "forwardDepth": 1.01,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            219.0,
+            64.0
+          ]
+        },
+        {
+          "pixel": [
+            32,
+            196
+          ],
+          "forwardDepth": 299,
+          "expectedVisible": true,
+          "paintedPixels": 25,
+          "measuredTopLeftPixel": [
+            31.0,
+            196.0
+          ]
+        },
+        {
+          "pixel": [
+            64,
+            128
+          ],
+          "forwardDepth": 0.99,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            192,
+            128
+          ],
+          "forwardDepth": 301,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        },
+        {
+          "pixel": [
+            128,
+            32
+          ],
+          "forwardDepth": -15,
+          "expectedVisible": false,
+          "paintedPixels": 0,
+          "measuredTopLeftPixel": null
+        }
+      ]
+    }
+  ]
+}

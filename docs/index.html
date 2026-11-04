@@ -64,6 +64,9 @@
   #mp textarea { width:100%; background:#0b0f13; color:var(--text); border:1px solid var(--line); border-radius:6px; padding:6px; font:11px ui-monospace, monospace; resize:vertical; word-break:break-all; }
   #mpstatus { color:var(--dim); font-size:13px; margin:6px 0; }
   #menu button.alt { padding:8px 14px; font-size:14px; }
+  #camera-tools {position:fixed;top:45px;right:12px;display:flex;gap:3px;z-index:3;}
+  #camera-tools[hidden]{display:none;}
+  #camera-tools button{background:#182329e8;color:#e9e7cb;border:1px solid #88917b;border-radius:3px;font:600 18px system-ui;padding:4px 11px;cursor:pointer;}
   .dim { color:var(--dim); }
   #menu table { border-collapse:collapse; font-size:13px; color:var(--dim); margin-top:10px; }
   #menu td { padding:2px 14px 2px 0; vertical-align:top; }
@@ -151,6 +154,11 @@
 <div id="tip"></div>
 <div id="box"></div>
 <div id="toast"></div>
+<div id="camera-tools" role="group" aria-label="Kamera ausrichten" hidden>
+  <button id="camera-left" title="Kamera 45° nach links · Strg+Pfeil links" aria-label="Kamera nach links drehen">↶</button>
+  <button id="camera-north" title="Kamera nach Norden ausrichten" aria-label="Kamera nach Norden ausrichten">N</button>
+  <button id="camera-right" title="Kamera 45° nach rechts · Strg+Pfeil rechts" aria-label="Kamera nach rechts drehen">↷</button>
+</div>
 <dialog id="research-dialog">
  <header><h2>Forschung</h2><button id="research-close">Schließen · Esc</button></header>
  <p id="research-status"></p><div id="research-epochs"></div><div id="research-nodes"></div>
@@ -231,6 +239,6 @@
   <p id="building-status" role="status" aria-live="polite"></p>
   <small>Strg / R / Komma / Punkt: 90° · mit Umschalt: 45° · Umschalt+Mausrad: 45° · Esc: abbrechen</small>
 </aside>
-<script type="module" src="main.js?v=combat-season1"></script>
+<script type="module" src="main.js?v=visual-seasons2"></script>
 </body>
 </html>

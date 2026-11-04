@@ -157,7 +157,8 @@ class AssetAudit:
                 # hundreds of MB. Retain only the metadata needed by the later
                 # auxiliary scan, so this audit also fits smaller Mac machines.
                 self.json_cache[name]={'format':model.get('format'),'source':model.get('source'),
-                                       'sourceTextures':model.get('sourceTextures',[])}
+                                       'sourceTextures':model.get('sourceTextures',[]),
+                                       'parts':[{key:part.get(key) for key in ('sourceNode','name','textureSource','textureUrl')} for part in model.get('parts',[])]}
         self.stats['uniqueBoundModelJSON']=len(loaded)
         for i,row in enumerate(manifest.get('epochIconBindings',[])):
             self.hash_ref(row,f'{manifest_name}.epochIconBindings[{i}]','epoch-icon')
@@ -181,8 +182,8 @@ class AssetAudit:
                         for j,sprite in enumerate(states.get(group,[])):
                             self.ref(sprite.get('url'),f'ground.{section}[{i}].{state}.{group}[{j}]','ground-'+state)
 
-    def check_teams(self):
-        name='local-original/team-textures/manifest.json';self.ref(name,'original-renderer.js','team-manifest');data=self.read_json(name)
+    def check_teams(self,name='local-original/team-textures/manifest.json',stat_prefix=''):
+        self.ref(name,'original-renderer.js',stat_prefix+'team-manifest');data=self.read_json(name)
         bindings=data.get('texture_bindings',{})
         for url,key in bindings.items():
             self.ref(url,name+'.texture_bindings.<key>','team-base-binding')
@@ -191,8 +192,58 @@ class AssetAudit:
             for url in record.get('base_texture_urls',[]):self.ref(url,f'{name}.textures.{family}.base_texture_urls','team-base')
             for letter,variant in record.get('variants',{}).items():
                 self.hash_ref(variant,f'{name}.textures.{family}.variants.{letter}','team-variant')
-        self.stats['teamFamilies']=len(data.get('textures',{}))
-        self.stats['teamVariants']=sum(len(t.get('variants',{})) for t in data.get('textures',{}).values())
+        self.stats[stat_prefix+'teamFamilies']=len(data.get('textures',{}))
+        self.stats[stat_prefix+'teamVariants']=sum(len(t.get('variants',{})) for t in data.get('textures',{}).values())
+
+    def check_model_seasons(self):
+        name='local-original/model-seasons.json'
+        self.ref(name,'original-renderer.js','model-season-manifest');data=self.read_json(name)
+        if data.get('format')!='ee2-original-model-seasonal-v1':self.error('unknown-model-season-schema',data.get('format'),name)
+        source_manifest='local-original/models/manifest.json'
+        if source_manifest in self.files and data.get('source',{}).get('modelManifestSha256')!=self.digest(source_manifest):
+            self.error('season-model-manifest-hash-mismatch',source_manifest,name)
+        climates=data.get('sets',{});needed=set();texture_urls=set()
+        if data.get('defaultClimate') not in climates:self.error('missing-default-model-season-climate',data.get('defaultClimate'),name)
+        for key,record in data.get('textures',{}).items():
+            self.hash_ref(record,f'{name}.textures.{key}','model-season-neutral-texture')
+            texture_urls.add(record.get('url'))
+        for climate,sets in climates.items():
+            for key,record in sets.items():
+                urls=record.get('urls',[]);paths=record.get('paths',[])
+                if not urls or len(urls)!=len(paths):self.error('season-source-list-length-mismatch',f'{climate}/{key}',name)
+                for i,url in enumerate(urls):
+                    self.ref(url,f'{name}.sets.{climate}.{key}.urls[{i}]','model-season-ordered-image')
+                    if url not in texture_urls:self.error('season-image-without-decoded-source-record',url,name)
+        for url,record in data.get('models',{}).items():
+            target=self.ref(url,f'{name}.models.<key>','model-season-model-binding')
+            if not target:continue
+            model=self.read_json(target)
+            if record.get('source')!=model.get('source'):self.error('season-nif-source-mismatch',url,name)
+            parts={str(p.get('sourceNode')):p for p in model.get('parts',[])}
+            for node,binding in record.get('parts',{}).items():
+                source=parts.get(node)
+                if not source:self.error('season-node-not-in-model',{'model':url,'node':node},name);continue
+                if any(binding.get(a)!=source.get(b) for a,b in [('name','name'),('baseTextureSource','textureSource'),('baseTextureUrl','textureUrl')]):
+                    self.error('season-mesh-source-mismatch',{'model':url,'node':node},name)
+                if binding.get('baseTextureUrl'):self.ref(binding['baseTextureUrl'],f'{name}.models.{url}.parts.{node}.baseTextureUrl','model-season-base-image')
+                key=str(binding.get('key','')).casefold();needed.add(key)
+                for climate,sets in climates.items():
+                    if key not in sets:self.error('missing-explicit-model-season-set',{'model':url,'node':node,'climate':climate,'key':key},name)
+                self.stats['modelSeasonMeshBindings']+=1
+        team_name=self.ref(data.get('teamManifest'),name+'.teamManifest','model-season-team-manifest')
+        if team_name:self.check_teams(team_name,'modelSeason-')
+        for i,binding in enumerate(data.get('unresolvedBindings',[])):
+            target=self.ref(binding.get('modelUrl'),f'{name}.unresolvedBindings[{i}].modelUrl','model-season-unresolved-model')
+            if binding.get('baseTextureUrl'):self.ref(binding['baseTextureUrl'],f'{name}.unresolvedBindings[{i}].baseTextureUrl','model-season-unresolved-base-image')
+            if target:
+                model=self.read_json(target);parts={p.get('sourceNode'):p for p in model.get('parts',[])}
+                if binding.get('sourceNode') not in parts:self.error('unresolved-season-node-not-in-model',binding.get('sourceNode'),target)
+                if binding.get('source')!=model.get('source'):self.error('unresolved-season-source-mismatch',target,name)
+        self.stats['modelSeasonModelBindings']=len(data.get('models',{}))
+        self.stats['modelSeasonSetsPerClimate']=len(needed)
+        self.stats['modelSeasonClimates']=len(climates)
+        self.stats['modelSeasonPhysicalTextures']=len(texture_urls)
+        self.stats['modelSeasonUnresolvedBindings']=len(data.get('unresolvedBindings',[]))
 
     def check_audio(self):
         name='local-original/audio/manifest.json';base='local-original/audio'
@@ -264,7 +315,7 @@ class AssetAudit:
         return comparison
 
     def run(self,compare=None):
-        self.check_models();self.check_textures_and_ground();self.check_teams();self.check_audio();self.check_static_runtime()
+        self.check_models();self.check_textures_and_ground();self.check_teams();self.check_model_seasons();self.check_audio();self.check_static_runtime()
         # All local-original JSONs carry auxiliary provenance/preview references;
         # validate those too without interpreting source .tga/.nif/cache paths.
         for name in self.files:
@@ -310,6 +361,34 @@ class PathPolicyTests(unittest.TestCase):
         a=AssetAudit(self.root);self.assertEqual(a.ref('../Icons/Tree.png','test','fixture','module'),'Icons/Tree.png');self.assertFalse(a.errors)
     def test_missing_file_is_not_a_case_mismatch(self):
         a=AssetAudit(self.root);a.ref('Icons/Missing.png','test','fixture');self.assertEqual(a.errors[0]['kind'],'missing-runtime-file')
+    def seasonal_fixture(self):
+        model='local-original/models/tree.json';base='Icons/Tree.png';source={'archive':'graphics.zip','entry':'tree.nifcache','sha256':'1'*64}
+        documents={'local-original/models/manifest.json':{'models':[{'url':model}]},
+            model:{'format':'ee2-original-mesh-v1','source':source,'parts':[{'sourceNode':3,'name':'canopy','textureSource':'tree.tga','textureUrl':base}]},
+            'local-original/season-model-textures/team/manifest.json':{'textures':{},'texture_bindings':{}},
+            'local-original/model-seasons.json':{'format':'ee2-original-model-seasonal-v1','defaultClimate':'Temperate',
+                'source':{},'teamManifest':'local-original/season-model-textures/team/manifest.json',
+                'models':{model:{'source':source,'parts':{'3':{'key':'oak','name':'canopy','baseTextureSource':'tree.tga','baseTextureUrl':base}}}},
+                'sets':{'Temperate':{'oak':{'paths':['tree.tga','tree.tga'],'urls':[base,base]}}},
+                'textures':{'tree':{'url':base,'png_sha256':sha(self.root/base)}}}}
+        for name,value in documents.items():
+            p=self.root/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(value),encoding='utf8')
+        data=documents['local-original/model-seasons.json'];data['source']['modelManifestSha256']=sha(self.root/'local-original/models/manifest.json')
+        return data
+    def seasonal_audit(self,data):
+        (self.root/'local-original/model-seasons.json').write_text(json.dumps(data),encoding='utf8')
+        a=AssetAudit(self.root);a.check_model_seasons();return a
+    def test_model_season_graph_checks_source_nodes_and_all_ordered_images(self):
+        a=self.seasonal_audit(self.seasonal_fixture());self.assertFalse(a.errors);self.assertEqual(a.stats['modelSeasonMeshBindings'],1)
+    def test_model_season_graph_rejects_wrong_case_hidden_inside_array(self):
+        data=self.seasonal_fixture();data['sets']['Temperate']['oak']['urls'][1]='icons/tree.png'
+        self.assertIn('case-mismatch',[e['kind'] for e in self.seasonal_audit(data).errors])
+    def test_model_season_graph_rejects_stale_model_nodes(self):
+        data=self.seasonal_fixture();parts=data['models']['local-original/models/tree.json']['parts'];parts['99']=parts.pop('3')
+        self.assertIn('season-node-not-in-model',[e['kind'] for e in self.seasonal_audit(data).errors])
+    def test_model_season_graph_rejects_missing_declared_array_member(self):
+        data=self.seasonal_fixture();data['sets']['Temperate']['oak']['urls'].pop()
+        self.assertIn('season-source-list-length-mismatch',[e['kind'] for e in self.seasonal_audit(data).errors])
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)

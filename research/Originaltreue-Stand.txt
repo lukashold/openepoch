@@ -1,3 +1,59 @@
+Aktueller Originaltreue-Abgleich — 04.11.2026 — visual-seasons2
+
+Das vollständige, identische EE2 ist weiterhin nicht erreicht. Die aktuelle
+quellbelegte Umsetzung und ihre Grenzen stehen in analysis/original-parity-audit.json.
+Die Übergabe combat-season1 vom03.11 bleibt darunter vollständig historisch erhalten.
+
+NEU: Das Wasser spiegelt jetzt tatsächlich Terrain und native Modelle aus einem
+separaten Szenenbild. Die belegte horizontale Clipplane verhindert Unterwasser-
+geometrie im Bild; Kamera und Zielbindungen werden für den Hauptpass zurückgesetzt.
+Original-Waterbump und die belegte Zwei-Normalen-Verzerrung lesen dieses Bild.
+Die native separate View-Cullingpolitik ist noch offen: aktuell teilen Reflexion
+und Hauptpass denselben sichtbaren Instanzsatz. Hohe Objekte außerhalb dieses
+Ausschnitts können fehlen. Native Zusatzprojektion/Near-Clamp und vollständige
+RTT-Qualitäts-/Zeit-/Wasser-Materialpolitik bleiben teilweise Adapter.
+
+NEU: Explizite AnimatedTextureSetName-Einträge in nativen Modellen und ihren Eltern
+steuern jetzt106 Modelle mit248 Meshbindungen, davon83 geerbte Bindungen.115 Sets
+je Klima in drei Klimata behalten ihre originalen Listen, Wiederholungen und
+Längen1/8/11/12/13.232 Originaltexturen und geprüfte Spielerfarben liegen lokal.
+Terrain, Gebäudeböden und deklarierte Modellskins lesen gemeinsam denselben
+gespeicherten Simulationstick. Zwei Stalltür-Near/Far-Bindungen mit fehlendem
+Original-CSV-Key behalten das Original-Basismaterial. Wind/Wetter-RNG, Regen/Schnee-
+Ereignisse, Wetter-Spielregeln und komplette Atmosphäre sind weiterhin offen.
+
+NEU: Die belegte Kamerarichtung dreht jetzt Auge, Basis, Picking und Geländehöhen-
+korrektur gemeinsam. Nordausgabe bleibt in288 Fällen bitgleich; mathematische und
+reale GLES-Proben decken weitere Richtungen ab. Eingaberate/-schritt, vollständiges
+Picture-in-Picture und Live-Launcher-Hooks sind dadurch nicht originalgleich belegt.
+
+Aktuelle Prüfungen: fünf kombinierte echte GLES-Welten mit169 Checks für Sommer,
+Winter, Halbblend bei echtem Tick1000, Zukunft und90° Kameradrehung;105 Reflexions-
+Pixelchecks und423 Matrix-/Zustandschecks. Die Kontrollen weisen29430 echte native
+Objektpixel im Ziel,542000 vom Clip betroffene Pixel und14987 sichtbar veränderte
+Wasserpixel nach.33687 Modell-Saison-Laderchecks bestehen. Der Frontend-Protokoll9-
+Test mit zwei echten WASMs/Locksteps wurde auf aktueller main.js mit425 Checks
+erneuert. Diese Kopfzeile ersetzt keine separate GUI-/Mac-/Internet-Abnahme.
+Der unabhängige Produktions-VM-Test prüft Start, Kameraeingaben und Speichern/Laden
+zusätzlich mit73 Checks; sourcegebundener Bericht: analysis/visual-controls-tests.json.
+
+Die Engine bleibt unverändert zum finalen combat-season1-Kern:
+EE2 SHA256 d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18
+BASE SHA256230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a
+75 EE2-/32 BASE-Rusttests und21692 Kalenderchecks gehören zu diesem unveränderten
+Kern. Aktuelle Runtime-/Shader-/Assethashes stehen in den Berichten, nicht in alten
+Freigabezahlen. Neue Belege: Wasserreflexion.txt und analysis/native-reflection-*.json,
+native-model-season-*.json, native-camera-heading-*.json, native-season-world-qa.json.
+
+Weiter offen bleiben insbesondere konfigurierte UP5-/VFS-Profildaten gegenüber
+unseren expliziten BASE-Regeln, vollständiger Inhalt/Kampfsonderregeln/KI, genaue
+native Terrain-/Beleuchtungs-/Schattenpipeline und die zuvor belegten Teilgrenzen.
+Die neue Grafik beweist keine1:1-Bildgleichheit: kein aktueller kontrollierter
+Originalvergleich, kein physischer MacBook- und kein Browser-/Internettest in dieser
+Headless-QA. Weitere Rekonstruktion bleibt erforderlich.
+
+=========== HISTORISCHE ÜBERGABE combat-season1, 03.11.2026 ===========
+
 Aktueller Originaltreue-Abgleich — 03.11.2026 — combat-season1
 
 Das vollständige, identische EE2 ist weiterhin nicht erreicht. Dieser Stand trennt

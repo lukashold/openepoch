@@ -1,0 +1,9 @@
+{
+  "format": "openepoch-visual-controls-tests-v1",
+  "passed": true,
+  "checks": 73,
+  "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+  "mainSha256": "6b9afbc3f253b4d169fc12e9f9f630cfb71d7db74483402d07860dfca46f8128",
+  "cameraSha256": "ffc6ecdcebcace98b73918a15e9cc5e90af6685e724708b82c2a46247eab1954",
+  "scope": "Exact production main camera, keyboard, mouse, start, save and load functions in vm; real WASM and serializer. DOM, IndexedDB transaction transport and begin UI hook are substituted. No browser/native app launched."
+}

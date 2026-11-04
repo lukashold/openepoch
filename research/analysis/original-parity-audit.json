@@ -1,9 +1,9 @@
 {
   "format": "openepoch-original-parity-audit-v1",
-  "date": "2026-11-03",
-  "currentBuild": "combat-season1",
+  "date": "2026-11-04",
+  "currentBuild": "visual-seasons2",
   "conclusion": "Substantial source-backed slices are implemented and tested. Complete visual, rules, content and behavioral 1:1 equivalence is not established and is not claimed.",
-  "method": "Independent file/source/report review plus freshly rerun production-channel, real-WASM clock and real-GLES production-world QA. No GUI, original executable, browser process or network service launched for this audit.",
+  "method": "Independent file/source/report review plus current production-channel, real-WASM and real-GLES QA. New five-world proof uses createSeasonSession for terrain, ground and model skins, reflected scene capture and camera heading. No GUI, original executable or browser process launched.",
   "currentWasm": {
     "ee2": {
       "sha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
@@ -25,9 +25,12 @@
   "completedSourceBackedSlices": [
     {
       "area": "Camera and bound model scale",
-      "done": "Source orbit, horizontal-FOV axis, near/far and terrain collision equations are reproduced. Installed defaults give distance24, pitch about41.793 degrees and HFOV57 degrees.154 of156 model-scale bindings are verified, including native category defaults, source origins and inheritance.",
+      "done": "Source orbit, horizontal-FOV axis, near/far and terrain collision equations are reproduced. Installed defaults give distance24, pitch about41.793 degrees and HFOV57 degrees.154 of156 model-scale bindings are verified, including native category defaults, source origins and inheritance. Native heading/yaw, complete rotated basis, picking rays and terrain clearance are now implemented; north-up output remains bit-identical for288 tested cases. Native turn sign/wrap are source-verified. Browser input step/rate remains an adapter.",
       "evidence": [
-        "native-render-evidence.json"
+        "native-render-evidence.json",
+        "native-camera-heading-evidence.json",
+        "native-camera-heading-tests.json",
+        "native-camera-heading-gles-tests.json"
       ]
     },
     {
@@ -48,13 +51,17 @@
       ]
     },
     {
-      "area": "Calendar, terrain season and building-ground season",
-      "done": "Native1200-second year constructor and1/5/10/20/30 minute-per-season menu values are source-verified. Native uniform annual list interpolation drives monthly terrain arrays and independent1/4/5/12-image building-ground lists. Production host settings, protocol9 validation, actual saved tick phase, pause and peer waiting are tested end to end.",
+      "area": "Shared calendar, terrain, building ground and declared model skins",
+      "done": "Native1200-second year constructor and1/5/10/20/30 minute-per-season menu values are source-verified. Native uniform annual list interpolation drives monthly terrain arrays and independent1/4/5/12-image building-ground lists. Production host settings, protocol9 validation, actual saved tick phase, pause and peer waiting are tested end to end. Native explicit AnimatedTextureSetName direct/inherited NIF bindings now drive106 models/248 mesh bindings, including83 inherited bindings, using115 sets per climate across three climates. Lists retain original order/duplicates/lengths1,8,11,12,13;232 physical textures and verified team variants are local. Current production session updates terrain, ground and models from the same saved tick.",
       "evidence": [
         "native-calendar-evidence.json",
         "season-session-tests.json",
         "native-season-clock-tests.json",
-        "native-season-world-qa.json"
+        "native-season-world-qa.json",
+        "native-model-season-evidence.json",
+        "native-model-season-import.json",
+        "native-model-season-loader-tests.json",
+        "native-model-season-gpu-tests.json"
       ]
     },
     {
@@ -74,6 +81,16 @@
         "native-combat-integration.json"
       ],
       "executionCaveat": "The dedicated exhaustive combat report is an earlier-engine snapshot. Current75/32 Rust suites and current real-WASM integration exercise the rebuilt engine; no claim that every earlier exhaustive pair was rerun here."
+    },
+    {
+      "area": "Scene water reflection",
+      "done": "A real mirrored terrain/object framebuffer now feeds the production water shader. Source horizontal clip plane and camera height inversion, target bracketing and native normal distortion inputs are evidenced. Above-water clipping, framebuffer/viewport/state restoration and pixel contributions are tested. Complete original RTT/projection/culling policy remains partial.",
+      "evidence": [
+        "native-reflection-evidence.json",
+        "native-reflection-contract-tests.json",
+        "native-reflection-world-pixel-tests.json",
+        "native-reflection-implementation.json"
+      ]
     }
   ],
   "openSourceBackedParityGaps": [
@@ -89,10 +106,12 @@
     {
       "id": "weather-and-season-appearance",
       "area": "Weather and season appearance",
-      "gap": "Calendar phase and terrain/building-ground texture interpolation are complete slices. Native weather event queue, probabilities, RNG, durations, precipitation/wind and gameplay effects are not reconstructed. Seasonal vegetation/building skins, atmospheric tint and lighting are not switched by the current season integration.",
+      "gap": "Native declared/inherited model skin lists now switch and blend alongside terrain/building ground. Native weather event queue, probabilities, RNG, durations, precipitation/wind, gameplay effects and atmospheric lighting/tint remain incomplete. Two near/far stall-door bindings refer to a missing native CSV key and retain original base material; native terrain-derived fallback is not emulated.",
       "evidence": [
         "native-calendar-evidence.json",
-        "native-season-world-qa.json"
+        "native-season-world-qa.json",
+        "native-model-season-import.json",
+        "native-model-season-evidence.json"
       ]
     },
     {
@@ -125,10 +144,12 @@
     {
       "id": "water-pipeline",
       "area": "Water",
-      "gap": "Verified source flow constants and normal-offset formula are used, but native four-texture material/time-phase binding, low/medium/palette paths and caustic timing are incomplete. Production main currently supplies no reflection render target, so the shader uses a sky-color approximation.",
+      "gap": "Production scene reflection is now wired and pixel-tested. Remaining native gaps are separate reflected-view object culling, auxiliary plane0.02 projection/grid/UV construction, reflected near-clamp globals, exact RTT allocation/quality/refresh, complete native overlay/vertex-alpha/color/time, low/medium/palette paths and caustic linkage. Current reflection reuses main visible instances, so tall off-main-frustum objects can be absent.",
       "evidence": [
         "native-render-evidence.json",
-        "native-terrain-gpu-pixels.json"
+        "native-terrain-gpu-pixels.json",
+        "native-reflection-evidence.json",
+        "native-reflection-implementation.json"
       ]
     },
     {
@@ -152,9 +173,10 @@
     {
       "id": "camera-controls",
       "area": "Camera controls and additional views",
-      "gap": "Core orbit/projection math is implemented. Current north-up mapping, wheel anchoring and control conversion are adapters; full heading controls, picture-in-picture and later launcher camera hooks are not established.",
+      "gap": "Native heading, basis, turn sign/wrap, picking rays and terrain clearance are implemented and GPU-tested. UI step/rate and pointer conversion remain adapters; full native picture-in-picture, remaining original controls and live launcher memory hooks are not established. Main keyboard/pan/save integration has its own independent root-owned QA.",
       "evidence": [
-        "native-render-evidence.json"
+        "native-render-evidence.json",
+        "native-camera-heading-evidence.json"
       ]
     }
   ],
@@ -165,7 +187,7 @@
     },
     {
       "area": "Lighting, shadow and water appearance",
-      "adapter": "Own Blinn-Phong lighting/default sun, three-step terrain-conforming projected shadow with epsilon, water repeat/opacity/Fresnel/specular/color mixing and wall-clock phase. Native source rates alone do not prove identical native time/material behavior."
+      "adapter": "Own Blinn-Phong lighting/default sun, three-step terrain-conforming projected shadow with epsilon, water repeat/opacity/Fresnel/specular/color mixing and wall-clock phase. Native source rates alone do not prove identical native time/material behavior. The approximate sky-only production reflection has been replaced by real scene capture. Its WebGL target resolution policy, geometric mirrored VP, fragment clipping and shared main/reflected instance list remain explicit adapters."
     },
     {
       "area": "Determinism, saves and multiplayer",
@@ -191,24 +213,45 @@
       "source": "season-session-tests.json",
       "rejectedCases": 27,
       "realWasmPeers": 2,
-      "realLocksteps": 2
+      "realLocksteps": 2,
+      "currentMainSha256": "6b9afbc3f253b4d169fc12e9f9f630cfb71d7db74483402d07860dfca46f8128"
     },
     "seasonClock": {
       "checks": 21692,
       "source": "native-season-clock-tests.json"
     },
     "gpuWorld": {
-      "checks": 71,
+      "checks": 169,
       "source": "native-season-world-qa.json",
       "cases": [
         "summer",
         "winter",
-        "halfblend-at-real-tick1000",
-        "future-epoch15"
+        "halfblend",
+        "future",
+        "heading90"
       ],
-      "method": "Real ANGLE/EGL GLES3 FBO replay of captured production loaders, shaders, draw inputs and actual WASM city/tick queries."
+      "method": "Five real GLES scenes from actual WASM and production createSeasonSession; terrain/ground/model skin source pairs are independently checked, including reflected/main passes and90-degree heading."
     },
-    "baseEquivalence": "Current BASE executable sections and non-location simulation data match the prior BASE binary; only panic source-location metadata differs, per native-city-ground-base-equivalence.json."
+    "baseEquivalence": "Current BASE executable sections and non-location simulation data match the prior BASE binary; only panic source-location metadata differs, per native-city-ground-base-equivalence.json.",
+    "reflection": {
+      "sourceChecks": 12,
+      "matrixAndStateChecks": 423,
+      "worldPixelChecks": 105,
+      "source": "native-reflection-implementation.json"
+    },
+    "modelSkinLoader": {
+      "checks": 33687,
+      "source": "native-model-season-loader-tests.json"
+    },
+    "cameraHeading": {
+      "mathChecks": 26562,
+      "glesChecks": 288,
+      "source": "native-camera-heading-evidence.json"
+    },
+    "mainVisualControls": {
+      "source": "visual-controls-tests.json",
+      "coverage": "Production VM input/start/save/load integration; root-owned73 checks."
+    }
   },
   "validationNotPerformed": [
     "No controlled same-scene comparison against the running original at matching camera, epoch, map, lighting and resolution; current images prove this renderer's output, not image equality to EE2.",
@@ -217,11 +260,11 @@
     "No physical MacBook/macOS GPU, audio or browser execution test; portable asset packaging is a separate verification.",
     "No complete match-long original rules/AI/roster equivalence audit."
   ],
-  "historicalReportPolicy": "Preserve previous reports as dated execution snapshots. native-render-evidence describes native-render1; native-combat-integration and its exhaustive WASM report precede the city-radius/parser rebuild. Their source evidence is retained, while current WASM status is bound by the reports listed as current-build-execution.",
+  "historicalReportPolicy": "Preserve previous reports as dated execution snapshots. native-render-evidence describes native-render1; native-combat-integration and its exhaustive WASM report precede the city-radius/parser rebuild. Their source evidence is retained, while current WASM status is bound by the reports listed as current-build-execution. The combat-season1 parity audit is archived separately. Missing production reflections, fixed-north camera and entirely static model skins are superseded findings; native weather and the explicitly retained gaps remain open.",
   "reviewedReports": [
     {
       "file": "season-session-tests.json",
-      "sha256": "fe637bccb3ca11195abc31e96506674d2b3b41af256019468afe57a5de51ed38",
+      "sha256": "53ce9268162d86046721290b6b1f34c6a0378b611a39d61cd581cf16639abb68",
       "scope": "current-build-execution"
     },
     {
@@ -231,27 +274,27 @@
     },
     {
       "file": "native-season-world-qa.json",
-      "sha256": "faddecbc210de4297174458d07465feb2872bcbab667844c9a3fe46f7655845d",
+      "sha256": "e6dc232f980d0d4e65f8079285891dafb6ef329a8dffce95b53215a5a80dbf8d",
       "scope": "current-build-execution"
     },
     {
       "file": "native-season-world-summer.json",
-      "sha256": "fc9978dbcfb4e74d4117a1dca580ef140430e90ae39718b8ce00984447be58d1",
+      "sha256": "45a012b59be6d5c103d0d105546a7fdc1058f588bc443089fed2c1ade0b58424",
       "scope": "current-build-execution"
     },
     {
       "file": "native-season-world-winter.json",
-      "sha256": "703af612a5b5cfc21532de5316e5ab92d95c83e86afd99c049d4d152227c8ea7",
+      "sha256": "34ecf00146bdb70f6d94f798ce9c258aaf8506717f0c695af928c9cdf554aeb3",
       "scope": "current-build-execution"
     },
     {
       "file": "native-season-world-halfblend.json",
-      "sha256": "e3be14e5adf42f4caeed0be94dbdf8a372c8e39a03af5c3267ae08796b6ea53f",
+      "sha256": "07e3c013399d8728b63ab1758edc023ffd0a47ca924c2a87c3c9fd21c0469aab",
       "scope": "current-build-execution"
     },
     {
       "file": "native-season-world-future.json",
-      "sha256": "3e09cfe907d2d236db2e5836f6d7333ff8e17cd5dd56e64463d39f154cc7c398",
+      "sha256": "9fe458ec726ab81408daef65f5de612750118809fd8b2a0c6152ccd8ad5943ad",
       "scope": "current-build-execution"
     },
     {
@@ -301,7 +344,7 @@
     },
     {
       "file": "native-terrain-contract-tests.json",
-      "sha256": "b89fc2fad44828f7e60084a37c0609fda53cf0ef7c3b9736aeb6229f63dae5fb",
+      "sha256": "95da864edf8e6b5edafa4078c0d93626a3297238111c83457fa8cc86bc3872a4",
       "scope": "source-evidence-or-bounded-implementation-fixture"
     },
     {
@@ -311,7 +354,7 @@
     },
     {
       "file": "native-terrain-gpu-pixels.json",
-      "sha256": "8671ad7e7fb2704b827ddd84c7da00ec7f66825e5335498c20e6e1964799aba8",
+      "sha256": "cc096040132751fd851968f680f21695f28d86fed14f25b1bbe723df23d57553",
       "scope": "source-evidence-or-bounded-implementation-fixture"
     },
     {
@@ -338,15 +381,115 @@
       "file": "native-combat-lockstep.json",
       "sha256": "06e704851e98d66b21532dfc4acd7cfacab206ddf52275c7af80cbf93aa8fca9",
       "scope": "historical-build-execution-source-proof-still-useful"
+    },
+    {
+      "file": "native-season-world-heading90.json",
+      "sha256": "05c0404701fbc081edc4ace6d47c3cdccd18c9ab136cf16052fbf64ca655f75e",
+      "scope": "visual-seasons2-source-or-current-component-execution"
+    },
+    {
+      "file": "native-reflection-evidence.json",
+      "sha256": "a72b53483f503aa76ea43b032bbfd81cae1a7e5a072f7aae892b387606ba0d98",
+      "scope": "visual-seasons2-source-or-current-component-execution"
+    },
+    {
+      "file": "native-reflection-contract-tests.json",
+      "sha256": "f47bd1f5d7a182bf426cad8a1c1e29052df39fc7b23172542fc78aea6cc565c2",
+      "scope": "visual-seasons2-source-or-current-component-execution"
+    },
+    {
+      "file": "native-reflection-world-pixel-tests.json",
+      "sha256": "fbd2770e985490324fe295ad76439763c3d426934725b6d48cff5564554784f2",
+      "scope": "visual-seasons2-source-or-current-component-execution"
+    },
+    {
+      "file": "native-reflection-world-coast.json",
+      "sha256": "da1c6b3101647eea75726b8f39443710fd5faf7b844e45d47e268bb9dbe64dfb",
+      "scope": "visual-seasons2-source-or-current-component-execution"
+    },
+    {
+      "file": "native-reflection-implementation.json",
+      "sha256": "58630168c9eda45e9128fdf03f48dfae469aeaf5ec03d155d64436ec1bbcbc91",
+      "scope": "visual-seasons2-source-or-current-component-execution"
+    },
+    {
+      "file": "native-model-season-evidence.json",
+      "sha256": "f3b205b8163223f9bdbeb72e9d5869dd90ac00e60126f0b4f9527f797107c301",
+      "scope": "visual-seasons2-source-or-current-component-execution"
+    },
+    {
+      "file": "native-model-season-integration.json",
+      "sha256": "730ca908a6cdc48618abf5599b5da7b2dd8be37a21412a870d8c3f0f5d54f7d5",
+      "scope": "visual-seasons2-source-or-current-component-execution"
+    },
+    {
+      "file": "native-model-season-import.json",
+      "sha256": "a81f8bc83be97f3ad76a4060582b51df441ee460091042cbc994570acf186c8b",
+      "scope": "visual-seasons2-source-or-current-component-execution"
+    },
+    {
+      "file": "native-model-season-loader-tests.json",
+      "sha256": "579a297d8c97e5408a4b89acdaae30a160f8536d3ffb6583fdc9a61c996ee791",
+      "scope": "visual-seasons2-source-or-current-component-execution"
+    },
+    {
+      "file": "native-model-season-gpu-tests.json",
+      "sha256": "29dac4215b37486ba506a0f4ce675d3c92f6fd281f2802ebfbd3f87352361933",
+      "scope": "visual-seasons2-source-or-current-component-execution"
+    },
+    {
+      "file": "native-model-season-material-gpu-tests.json",
+      "sha256": "553ac2d8ab7ccdc76f3eea6d17ff9349ae81f8941974b3fd280a4171ed5d0742",
+      "scope": "visual-seasons2-source-or-current-component-execution"
+    },
+    {
+      "file": "native-model-season-portable-assets.json",
+      "sha256": "d5609d66480129d37860ee6fa8598479088c58c9d0e168426be0f7c8b1465e0f",
+      "scope": "visual-seasons2-source-or-current-component-execution"
+    },
+    {
+      "file": "native-camera-heading-evidence.json",
+      "sha256": "53e0687224a9f8b2d3aff2c002ad9df48bec61e7caf38511946a2e34ce6c5528",
+      "scope": "visual-seasons2-source-or-current-component-execution"
+    },
+    {
+      "file": "native-camera-heading-tests.json",
+      "sha256": "15be1a6e30dc13436c9ac0b7a8fb0f6816a0c3c2409f626d456f351e09c11f28",
+      "scope": "visual-seasons2-source-or-current-component-execution"
+    },
+    {
+      "file": "native-camera-heading-gles-tests.json",
+      "sha256": "9391c614890fb97f73c5b2790bc189f202402305150fc1ddee6d29893efc926c",
+      "scope": "visual-seasons2-source-or-current-component-execution"
+    },
+    {
+      "file": "visual-controls-tests.json",
+      "sha256": "2c6fabad7cadca93a468635f25b09b0b89b852374ec9a1a0cb8d2461cee78c14",
+      "scope": "visual-seasons2-source-or-current-component-execution"
     }
   ],
   "runtimeSourceHashes": {
-    "docs/main.js": "9f8d7ce30e74480933cfa8328eaf47893fa9704f3f6fe2dbf6ca6d76bb7c4995",
-    "docs/season-session.js": "bcf6048713e00485eb9a639a2d5d779dc57e5da05abb4a740d093a8891307c2e",
-    "docs/net.js": "4c0c1ae51b386a80e0785fef32c212799ca99ae0c2e7af9c44d65de81f3a992f",
-    "docs/index.html": "fbd3c36353b755e50c094ad8e792beb3a3a51f3dbabd36e3f02ce7f6c8c84bf3",
+    "docs/main.js": "6b9afbc3f253b4d169fc12e9f9f630cfb71d7db74483402d07860dfca46f8128",
+    "docs/index.html": "eb2b47b5b6384e3e9f150b7db8e4dfcdef3c15c192436c624f226140a6513868",
+    "docs/season-session.js": "2ba54f8c2c55b87034abd6ae79f730d816e0a98505ce4582c3c3b1111eaf7e07",
+    "docs/original-terrain.js": "647091f06fcc8e0831a695927b6290e5b5c57eaffa03432787d20b4101b4a090",
+    "docs/original-ground.js": "bf0b44726870aacf5e57d72969d60a9468db823de21576fd7ea5b3f5962d1724",
+    "docs/original-renderer.js": "32a2be1ee141c2d8749b321ed0217cf79c98416c38a3959d4a55b2cb50a0758c",
+    "docs/original-model-seasons.js": "c8fab385c06dbe93dd7f29fa80959d48dadd031801f6b315e9d7b9a77f3863a6",
+    "docs/original-camera.js": "ffc6ecdcebcace98b73918a15e9cc5e90af6685e724708b82c2a46247eab1954",
     "docs/original-seasons.js": "fb4001470974e86ed297465309933305bef3bd8c54c8c603f6e39d18b2e63492",
-    "docs/original-terrain.js": "923805d2f4a2c9474a07895e597a9e0b05f90e9b3034e19005c43894c52e748b",
-    "docs/original-ground.js": "bf0b44726870aacf5e57d72969d60a9468db823de21576fd7ea5b3f5962d1724"
+    "docs/original-reflection.js": "f3506a9b55e880b5b17b63bb329f28a80eaf2ff47cfa7b9abea4f51842b6c131",
+    "docs/local-original/terrain-native/manifest.json": "c7cf660ff198a5f3e7b9c0aa2391b27f38ec7afb116b9541fa09019223c0359a",
+    "docs/local-original/ground-decals.json": "394dc17695378752eab77d37defde85e6ff225b33d12a65a162893c05ef49a5d",
+    "docs/local-original/models/manifest.json": "ee42afb0d5ad06a65d295c548601d67b48c3c1b7a579174c224c75b3076850c1",
+    "docs/local-original/model-seasons.json": "c22faa625d3e68b2a4918499f08a82352b8da3af6df72449402f1296b51064e0",
+    "docs/local-original/season-model-textures/team/manifest.json": "40f3768a9a878bf6fea8e8abbbcf05fa73c917209e86b373f7bb71968dd4d22f",
+    "docs/local-original/team-textures/manifest.json": "e9d618ca90a3cc583bc95d911b887a4a15f468fc398516b0b269130d6fb4a5df",
+    "docs/net.js": "4c0c1ae51b386a80e0785fef32c212799ca99ae0c2e7af9c44d65de81f3a992f"
+  },
+  "supersedes": {
+    "file": "original-parity-audit-combat-season1.json",
+    "sha256": "0b7933fb42761ec6c76ec494e5a5ff8ce516a93112ec3682aee7358f8b85e487",
+    "note": "Preserved historical03.11 combat-season1 snapshot. Its dated report hashes do not describe files subsequently refreshed for visual-seasons2."
   }
 }

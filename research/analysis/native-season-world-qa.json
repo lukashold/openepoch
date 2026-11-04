@@ -1,17 +1,25 @@
 {
   "format": "openepoch-native-season-world-qa-v1",
   "passed": true,
-  "checks": 71,
+  "checks": 169,
   "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
   "sourceFiles": {
-    "original-terrain.js": "923805d2f4a2c9474a07895e597a9e0b05f90e9b3034e19005c43894c52e748b",
+    "main.js": "6b9afbc3f253b4d169fc12e9f9f630cfb71d7db74483402d07860dfca46f8128",
+    "index.html": "eb2b47b5b6384e3e9f150b7db8e4dfcdef3c15c192436c624f226140a6513868",
+    "season-session.js": "2ba54f8c2c55b87034abd6ae79f730d816e0a98505ce4582c3c3b1111eaf7e07",
+    "original-terrain.js": "647091f06fcc8e0831a695927b6290e5b5c57eaffa03432787d20b4101b4a090",
     "original-ground.js": "bf0b44726870aacf5e57d72969d60a9468db823de21576fd7ea5b3f5962d1724",
-    "original-renderer.js": "176896aaa07ebce8c76745337869b1715db7b7e7ff6269fea62b6d45771b0192",
-    "original-camera.js": "56fdd51c6ec1ac099482cb14b101995c18c9d1ed0b3ce12ba4355d9544511575",
+    "original-renderer.js": "32a2be1ee141c2d8749b321ed0217cf79c98416c38a3959d4a55b2cb50a0758c",
+    "original-model-seasons.js": "c8fab385c06dbe93dd7f29fa80959d48dadd031801f6b315e9d7b9a77f3863a6",
+    "original-camera.js": "ffc6ecdcebcace98b73918a15e9cc5e90af6685e724708b82c2a46247eab1954",
     "original-seasons.js": "fb4001470974e86ed297465309933305bef3bd8c54c8c603f6e39d18b2e63492",
+    "original-reflection.js": "f3506a9b55e880b5b17b63bb329f28a80eaf2ff47cfa7b9abea4f51842b6c131",
     "local-original/terrain-native/manifest.json": "c7cf660ff198a5f3e7b9c0aa2391b27f38ec7afb116b9541fa09019223c0359a",
     "local-original/ground-decals.json": "394dc17695378752eab77d37defde85e6ff225b33d12a65a162893c05ef49a5d",
-    "local-original/models/manifest.json": "ee42afb0d5ad06a65d295c548601d67b48c3c1b7a579174c224c75b3076850c1"
+    "local-original/models/manifest.json": "ee42afb0d5ad06a65d295c548601d67b48c3c1b7a579174c224c75b3076850c1",
+    "local-original/model-seasons.json": "c22faa625d3e68b2a4918499f08a82352b8da3af6df72449402f1296b51064e0",
+    "local-original/season-model-textures/team/manifest.json": "40f3768a9a878bf6fea8e8abbbcf05fa73c917209e86b373f7bb71968dd4d22f",
+    "local-original/team-textures/manifest.json": "e9d618ca90a3cc583bc95d911b887a4a15f468fc398516b0b269130d6fb4a5df"
   },
   "scenes": [
     {
@@ -52,31 +60,134 @@
           0
         ]
       },
-      "capture": "work\\world-0-town-month6.json",
-      "captureSha256": "e9cbefb5a59b6341aa7891f20e15293063d0e65976e4e0252af946c8dcb9371f",
+      "capture": "work\\world-0-town-month6-reflection.json",
+      "captureSha256": "117cc80f78a5bdea8859de20f5249ddffa7d8e524f3ed78926dfdc2568191f23",
       "png": "native-season-summer.png",
-      "pngSha256": "023819957d3dff3df1480916e21e24e1b66780ad74f4c86e617d08598790b6ea",
+      "pngSha256": "375504523c3f3d6b85fd84d3a785c655bac37d059004cae0a38661c5c90d6331",
       "replayReport": "native-season-world-summer.json",
-      "drawCalls": 25,
-      "triangles": 306694,
+      "drawCalls": 37,
+      "triangles": 524552,
       "shaderHashes": {
         "1": {
           "vertexSha256": "9f3482f9446fde6fa07f7ed0ca4219d2e35d92cf798ac9045e65f9a056ca999d",
-          "fragmentSha256": "82312ae9dd2708b8b7a854f87f612a434743768bb59fb8666cd8c377dccd4fc4"
+          "fragmentSha256": "e65d82001e7524fb422bf002f10bdbeaa14b40f24078f8bbc89ee595094e8dda"
         },
         "4": {
           "vertexSha256": "b72acea400e56c4c93b4d842cb1d7d7d440adbf2403f967553e9053df55ffd46",
-          "fragmentSha256": "58f6c4401123699a829e791985536515046b27ec6960d615fdceb6e1ebc0cc49"
+          "fragmentSha256": "7efe2d142aa91825d2be67fdb51420ef1746e44bd68a1c137bdc1b46bd70e866"
         },
         "22": {
           "vertexSha256": "67c10b2db0ad79b591accf1eb2a314d6606795540416d1c85376614e875180c9",
-          "fragmentSha256": "8a5ccc8c6531ed60a08bb6d4b7699269ddae4cc7b9a9789de7c56ae4539ac418"
+          "fragmentSha256": "4f6305cab3f4805a53e9a2b8d9b19aa177a03fd9cf89f378df42bcb928e10a30"
         },
-        "215": {
+        "220": {
           "vertexSha256": "9535f328c82af94214709f53f614a30577e270b714d52a2465e1fe37b76ca9c0",
           "fragmentSha256": "846d396c976f2420073fb76bce272341fc4bc95664f3d52fdc135633c134ee13"
         }
-      }
+      },
+      "models": {
+        "declaredSeasonDraws": 10,
+        "pairs": [
+          {
+            "first": "local-original/model-textures/bld_citycenter1_we.png",
+            "next": "local-original/model-textures/bld_citycenter1_we.png",
+            "blend": 0,
+            "reflection": true
+          },
+          {
+            "first": "local-original/model-textures/bld_citycenter1_we.png",
+            "next": "local-original/model-textures/bld_citycenter1_we.png",
+            "blend": 0,
+            "reflection": true
+          },
+          {
+            "first": "local-original/model-textures/bld_citycenter1_we.png",
+            "next": "local-original/model-textures/bld_citycenter1_we.png",
+            "blend": 0,
+            "reflection": true
+          },
+          {
+            "first": "local-original/model-textures/tre_oak_summer.png",
+            "next": "local-original/model-textures/tre_oak_summer.png",
+            "blend": 0,
+            "reflection": true
+          },
+          {
+            "first": "local-original/model-textures/tre_pine.png",
+            "next": "local-original/model-textures/tre_pine.png",
+            "blend": 0,
+            "reflection": true
+          },
+          {
+            "first": "local-original/model-textures/bld_citycenter1_we.png",
+            "next": "local-original/model-textures/bld_citycenter1_we.png",
+            "blend": 0,
+            "reflection": false
+          },
+          {
+            "first": "local-original/model-textures/bld_citycenter1_we.png",
+            "next": "local-original/model-textures/bld_citycenter1_we.png",
+            "blend": 0,
+            "reflection": false
+          },
+          {
+            "first": "local-original/model-textures/bld_citycenter1_we.png",
+            "next": "local-original/model-textures/bld_citycenter1_we.png",
+            "blend": 0,
+            "reflection": false
+          },
+          {
+            "first": "local-original/model-textures/tre_oak_summer.png",
+            "next": "local-original/model-textures/tre_oak_summer.png",
+            "blend": 0,
+            "reflection": false
+          },
+          {
+            "first": "local-original/model-textures/tre_pine.png",
+            "next": "local-original/model-textures/tre_pine.png",
+            "blend": 0,
+            "reflection": false
+          }
+        ]
+      },
+      "reflection": {
+        "enabled": true,
+        "draws": 12,
+        "width": 1280,
+        "height": 720,
+        "vp": [
+          1.8114968538284302,
+          0,
+          0,
+          0,
+          0,
+          -2.0825045108795166,
+          0.7678871154785156,
+          0.7627848386764526,
+          0,
+          -2.4565019607543945,
+          -0.6509777903556824,
+          -0.646652340888977,
+          -92.38634490966797,
+          124.76239776611328,
+          63.19599914550781,
+          64.76944732666016
+        ],
+        "eye": [
+          51,
+          -24.35331956087863,
+          71.43421427293266
+        ],
+        "clipPlane": [
+          0,
+          1,
+          0,
+          0
+        ],
+        "texture": 238,
+        "policy": "Planar world-y0 reflection, terrain and object clip; framebuffer resolution and shader discard are WebGL adapters."
+      },
+      "heading": 0
     },
     {
       "name": "winter",
@@ -116,31 +227,134 @@
           0
         ]
       },
-      "capture": "work\\world-0-town-month0.json",
-      "captureSha256": "c0bd6c3c04217fbbe7cd38fa8a5cf2da015220cb030acaa121a68db58bd6f819",
+      "capture": "work\\world-0-town-month0-reflection.json",
+      "captureSha256": "0cdb42045ba20d737819fa166db489111da689cebb5563e4cf6236909509b40a",
       "png": "native-season-winter.png",
-      "pngSha256": "6c5221b5720272893d2844bbb8dbaf1783222ba8314143996a21abd4a98239c0",
+      "pngSha256": "a99e0acdcab60f4fed46c913aa37fb21ad934d78af87a82455800fd2e111b0ee",
       "replayReport": "native-season-world-winter.json",
-      "drawCalls": 25,
-      "triangles": 306694,
+      "drawCalls": 37,
+      "triangles": 524552,
       "shaderHashes": {
         "1": {
           "vertexSha256": "9f3482f9446fde6fa07f7ed0ca4219d2e35d92cf798ac9045e65f9a056ca999d",
-          "fragmentSha256": "82312ae9dd2708b8b7a854f87f612a434743768bb59fb8666cd8c377dccd4fc4"
+          "fragmentSha256": "e65d82001e7524fb422bf002f10bdbeaa14b40f24078f8bbc89ee595094e8dda"
         },
         "4": {
           "vertexSha256": "b72acea400e56c4c93b4d842cb1d7d7d440adbf2403f967553e9053df55ffd46",
-          "fragmentSha256": "58f6c4401123699a829e791985536515046b27ec6960d615fdceb6e1ebc0cc49"
+          "fragmentSha256": "7efe2d142aa91825d2be67fdb51420ef1746e44bd68a1c137bdc1b46bd70e866"
         },
         "22": {
           "vertexSha256": "67c10b2db0ad79b591accf1eb2a314d6606795540416d1c85376614e875180c9",
-          "fragmentSha256": "8a5ccc8c6531ed60a08bb6d4b7699269ddae4cc7b9a9789de7c56ae4539ac418"
+          "fragmentSha256": "4f6305cab3f4805a53e9a2b8d9b19aa177a03fd9cf89f378df42bcb928e10a30"
         },
-        "215": {
+        "220": {
           "vertexSha256": "9535f328c82af94214709f53f614a30577e270b714d52a2465e1fe37b76ca9c0",
           "fragmentSha256": "846d396c976f2420073fb76bce272341fc4bc95664f3d52fdc135633c134ee13"
         }
-      }
+      },
+      "models": {
+        "declaredSeasonDraws": 10,
+        "pairs": [
+          {
+            "first": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "next": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "blend": 0,
+            "reflection": true
+          },
+          {
+            "first": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "next": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "blend": 0,
+            "reflection": true
+          },
+          {
+            "first": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "next": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "blend": 0,
+            "reflection": true
+          },
+          {
+            "first": "local-original/season-model-textures/tre_oak_wi01.png",
+            "next": "local-original/season-model-textures/tre_oak_wi01.png",
+            "blend": 0,
+            "reflection": true
+          },
+          {
+            "first": "local-original/season-model-textures/tre_pine_wi.png",
+            "next": "local-original/season-model-textures/tre_pine_wi.png",
+            "blend": 0,
+            "reflection": true
+          },
+          {
+            "first": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "next": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "blend": 0,
+            "reflection": false
+          },
+          {
+            "first": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "next": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "blend": 0,
+            "reflection": false
+          },
+          {
+            "first": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "next": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "blend": 0,
+            "reflection": false
+          },
+          {
+            "first": "local-original/season-model-textures/tre_oak_wi01.png",
+            "next": "local-original/season-model-textures/tre_oak_wi01.png",
+            "blend": 0,
+            "reflection": false
+          },
+          {
+            "first": "local-original/season-model-textures/tre_pine_wi.png",
+            "next": "local-original/season-model-textures/tre_pine_wi.png",
+            "blend": 0,
+            "reflection": false
+          }
+        ]
+      },
+      "reflection": {
+        "enabled": true,
+        "draws": 12,
+        "width": 1280,
+        "height": 720,
+        "vp": [
+          1.8114968538284302,
+          0,
+          0,
+          0,
+          0,
+          -2.0825045108795166,
+          0.7678871154785156,
+          0.7627848386764526,
+          0,
+          -2.4565019607543945,
+          -0.6509777903556824,
+          -0.646652340888977,
+          -92.38634490966797,
+          124.76239776611328,
+          63.19599914550781,
+          64.76944732666016
+        ],
+        "eye": [
+          51,
+          -24.35331956087863,
+          71.43421427293266
+        ],
+        "clipPlane": [
+          0,
+          1,
+          0,
+          0
+        ],
+        "texture": 238,
+        "policy": "Planar world-y0 reflection, terrain and object clip; framebuffer resolution and shader discard are WebGL adapters."
+      },
+      "heading": 0
     },
     {
       "name": "halfblend",
@@ -180,31 +394,134 @@
           0
         ]
       },
-      "capture": "work\\world-0-town-month2p5.json",
-      "captureSha256": "10abe04b7e38608b45efddfce37deab8a6fe704f4856bcb11d412697c299b1eb",
+      "capture": "work\\world-0-town-month2p5-reflection.json",
+      "captureSha256": "bb615c8b9e47e7c3a778e346ae20676612c1c2f414308566b86349ad9b53b978",
       "png": "native-season-halfblend.png",
-      "pngSha256": "be6d444679e10e0c70db29b35e0403d52e2ec9bee8057366e81bced06273a566",
+      "pngSha256": "e51305c3ae2a4f86481d2bb824d97fc666d970a548d8541f9b3b38436c24d952",
       "replayReport": "native-season-world-halfblend.json",
-      "drawCalls": 25,
-      "triangles": 306694,
+      "drawCalls": 37,
+      "triangles": 524552,
       "shaderHashes": {
         "1": {
           "vertexSha256": "9f3482f9446fde6fa07f7ed0ca4219d2e35d92cf798ac9045e65f9a056ca999d",
-          "fragmentSha256": "82312ae9dd2708b8b7a854f87f612a434743768bb59fb8666cd8c377dccd4fc4"
+          "fragmentSha256": "e65d82001e7524fb422bf002f10bdbeaa14b40f24078f8bbc89ee595094e8dda"
         },
         "4": {
           "vertexSha256": "b72acea400e56c4c93b4d842cb1d7d7d440adbf2403f967553e9053df55ffd46",
-          "fragmentSha256": "58f6c4401123699a829e791985536515046b27ec6960d615fdceb6e1ebc0cc49"
+          "fragmentSha256": "7efe2d142aa91825d2be67fdb51420ef1746e44bd68a1c137bdc1b46bd70e866"
         },
         "22": {
           "vertexSha256": "67c10b2db0ad79b591accf1eb2a314d6606795540416d1c85376614e875180c9",
-          "fragmentSha256": "8a5ccc8c6531ed60a08bb6d4b7699269ddae4cc7b9a9789de7c56ae4539ac418"
+          "fragmentSha256": "4f6305cab3f4805a53e9a2b8d9b19aa177a03fd9cf89f378df42bcb928e10a30"
         },
-        "215": {
+        "220": {
           "vertexSha256": "9535f328c82af94214709f53f614a30577e270b714d52a2465e1fe37b76ca9c0",
           "fragmentSha256": "846d396c976f2420073fb76bce272341fc4bc95664f3d52fdc135633c134ee13"
         }
-      }
+      },
+      "models": {
+        "declaredSeasonDraws": 10,
+        "pairs": [
+          {
+            "first": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "next": "local-original/model-textures/bld_citycenter1_we.png",
+            "blend": 0.5,
+            "reflection": true
+          },
+          {
+            "first": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "next": "local-original/model-textures/bld_citycenter1_we.png",
+            "blend": 0.5,
+            "reflection": true
+          },
+          {
+            "first": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "next": "local-original/model-textures/bld_citycenter1_we.png",
+            "blend": 0.5,
+            "reflection": true
+          },
+          {
+            "first": "local-original/season-model-textures/tre_oak_wi01.png",
+            "next": "local-original/model-textures/tre_oak_summer.png",
+            "blend": 0.5,
+            "reflection": true
+          },
+          {
+            "first": "local-original/season-model-textures/tre_pine_wi.png",
+            "next": "local-original/model-textures/tre_pine.png",
+            "blend": 0.5,
+            "reflection": true
+          },
+          {
+            "first": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "next": "local-original/model-textures/bld_citycenter1_we.png",
+            "blend": 0.5,
+            "reflection": false
+          },
+          {
+            "first": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "next": "local-original/model-textures/bld_citycenter1_we.png",
+            "blend": 0.5,
+            "reflection": false
+          },
+          {
+            "first": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "next": "local-original/model-textures/bld_citycenter1_we.png",
+            "blend": 0.5,
+            "reflection": false
+          },
+          {
+            "first": "local-original/season-model-textures/tre_oak_wi01.png",
+            "next": "local-original/model-textures/tre_oak_summer.png",
+            "blend": 0.5,
+            "reflection": false
+          },
+          {
+            "first": "local-original/season-model-textures/tre_pine_wi.png",
+            "next": "local-original/model-textures/tre_pine.png",
+            "blend": 0.5,
+            "reflection": false
+          }
+        ]
+      },
+      "reflection": {
+        "enabled": true,
+        "draws": 12,
+        "width": 1280,
+        "height": 720,
+        "vp": [
+          1.8114968538284302,
+          0,
+          0,
+          0,
+          0,
+          -2.0825045108795166,
+          0.7678871154785156,
+          0.7627848386764526,
+          0,
+          -2.4565019607543945,
+          -0.6509777903556824,
+          -0.646652340888977,
+          -92.38634490966797,
+          124.76239776611328,
+          63.19599914550781,
+          64.76944732666016
+        ],
+        "eye": [
+          51,
+          -24.35331956087863,
+          71.43421427293266
+        ],
+        "clipPlane": [
+          0,
+          1,
+          0,
+          0
+        ],
+        "texture": 239,
+        "policy": "Planar world-y0 reflection, terrain and object clip; framebuffer resolution and shader discard are WebGL adapters."
+      },
+      "heading": 0
     },
     {
       "name": "future",
@@ -244,37 +561,308 @@
           2
         ]
       },
-      "capture": "work\\world-14-town-month6.json",
-      "captureSha256": "a74f348d50685f4f75071f004bf6f40a9ebd6c25002e878a623b308c18ed5804",
+      "capture": "work\\world-14-town-month6-reflection.json",
+      "captureSha256": "ce68d8689254bf86e78f4d6169604fdd6abd15bcdd199be76b8a91d7a32d3c60",
       "png": "native-season-future.png",
-      "pngSha256": "13a4e498d44ec893d1a1ba1993f684cb2e58ed620f8987af52aad37b54d6fada",
+      "pngSha256": "d1cf95f4b987aa5cf9a2b65668277d48575230feb0e22e40ca80f27b2380b981",
       "replayReport": "native-season-world-future.json",
-      "drawCalls": 35,
-      "triangles": 309406,
+      "drawCalls": 52,
+      "triangles": 528620,
       "shaderHashes": {
         "1": {
           "vertexSha256": "9f3482f9446fde6fa07f7ed0ca4219d2e35d92cf798ac9045e65f9a056ca999d",
-          "fragmentSha256": "82312ae9dd2708b8b7a854f87f612a434743768bb59fb8666cd8c377dccd4fc4"
+          "fragmentSha256": "e65d82001e7524fb422bf002f10bdbeaa14b40f24078f8bbc89ee595094e8dda"
         },
         "4": {
           "vertexSha256": "b72acea400e56c4c93b4d842cb1d7d7d440adbf2403f967553e9053df55ffd46",
-          "fragmentSha256": "58f6c4401123699a829e791985536515046b27ec6960d615fdceb6e1ebc0cc49"
+          "fragmentSha256": "7efe2d142aa91825d2be67fdb51420ef1746e44bd68a1c137bdc1b46bd70e866"
         },
         "22": {
           "vertexSha256": "67c10b2db0ad79b591accf1eb2a314d6606795540416d1c85376614e875180c9",
-          "fragmentSha256": "8a5ccc8c6531ed60a08bb6d4b7699269ddae4cc7b9a9789de7c56ae4539ac418"
+          "fragmentSha256": "4f6305cab3f4805a53e9a2b8d9b19aa177a03fd9cf89f378df42bcb928e10a30"
         },
-        "234": {
+        "240": {
           "vertexSha256": "9535f328c82af94214709f53f614a30577e270b714d52a2465e1fe37b76ca9c0",
           "fragmentSha256": "846d396c976f2420073fb76bce272341fc4bc95664f3d52fdc135633c134ee13"
         }
-      }
+      },
+      "models": {
+        "declaredSeasonDraws": 10,
+        "pairs": [
+          {
+            "first": "local-original/model-textures/bld_citycenter13_fe_we1.png",
+            "next": "local-original/model-textures/bld_citycenter13_fe_we1.png",
+            "blend": 0,
+            "reflection": true
+          },
+          {
+            "first": "local-original/model-textures/bld_citycenter13_fe_we2.png",
+            "next": "local-original/model-textures/bld_citycenter13_fe_we2.png",
+            "blend": 0,
+            "reflection": true
+          },
+          {
+            "first": "local-original/model-textures/bld_citycenter13_fe_we2.png",
+            "next": "local-original/model-textures/bld_citycenter13_fe_we2.png",
+            "blend": 0,
+            "reflection": true
+          },
+          {
+            "first": "local-original/model-textures/tre_oak_summer.png",
+            "next": "local-original/model-textures/tre_oak_summer.png",
+            "blend": 0,
+            "reflection": true
+          },
+          {
+            "first": "local-original/model-textures/tre_pine.png",
+            "next": "local-original/model-textures/tre_pine.png",
+            "blend": 0,
+            "reflection": true
+          },
+          {
+            "first": "local-original/model-textures/bld_citycenter13_fe_we1.png",
+            "next": "local-original/model-textures/bld_citycenter13_fe_we1.png",
+            "blend": 0,
+            "reflection": false
+          },
+          {
+            "first": "local-original/model-textures/bld_citycenter13_fe_we2.png",
+            "next": "local-original/model-textures/bld_citycenter13_fe_we2.png",
+            "blend": 0,
+            "reflection": false
+          },
+          {
+            "first": "local-original/model-textures/bld_citycenter13_fe_we2.png",
+            "next": "local-original/model-textures/bld_citycenter13_fe_we2.png",
+            "blend": 0,
+            "reflection": false
+          },
+          {
+            "first": "local-original/model-textures/tre_oak_summer.png",
+            "next": "local-original/model-textures/tre_oak_summer.png",
+            "blend": 0,
+            "reflection": false
+          },
+          {
+            "first": "local-original/model-textures/tre_pine.png",
+            "next": "local-original/model-textures/tre_pine.png",
+            "blend": 0,
+            "reflection": false
+          }
+        ]
+      },
+      "reflection": {
+        "enabled": true,
+        "draws": 17,
+        "width": 1280,
+        "height": 720,
+        "vp": [
+          1.8114968538284302,
+          0,
+          0,
+          0,
+          0,
+          -2.0825045108795166,
+          0.7678871154785156,
+          0.7627848386764526,
+          0,
+          -2.4565019607543945,
+          -0.6509777903556824,
+          -0.646652340888977,
+          -92.38634490966797,
+          124.76239776611328,
+          63.19599914550781,
+          64.76944732666016
+        ],
+        "eye": [
+          51,
+          -24.35331956087863,
+          71.43421427293266
+        ],
+        "clipPlane": [
+          0,
+          1,
+          0,
+          0
+        ],
+        "texture": 259,
+        "policy": "Planar world-y0 reflection, terrain and object clip; framebuffer resolution and shader discard are WebGL adapters."
+      },
+      "heading": 0
+    },
+    {
+      "name": "heading90",
+      "epoch": 1,
+      "season": {
+        "requestedMonthPosition": 0,
+        "actualSimulationTick": 0,
+        "tickSource": "WASM game_tick",
+        "steppedTicks": 0,
+        "month0": 0,
+        "month1": 1,
+        "blend": 0,
+        "monthPosition": 0,
+        "monthName": "Januar",
+        "secondsPerYear": 1200,
+        "ticksPerYear": 24000,
+        "settings": {
+          "cycle": true,
+          "startMonth": 0,
+          "minutesPerSeason": 5
+        }
+      },
+      "ground": {
+        "calls": 1,
+        "instances": 1,
+        "urbanQueries": [
+          {
+            "x": 51,
+            "z": 51,
+            "team": 0,
+            "id": 0,
+            "index": 0,
+            "urban": true
+          }
+        ],
+        "epochSlots": [
+          0
+        ]
+      },
+      "capture": "work\\world-0-coast-month0-reflection-shore-objects-heading90.json",
+      "captureSha256": "09cede553df6fb3b204c493e630aad76ded5c7452ab3dda25d7666fd753e0dd6",
+      "png": "native-season-heading90.png",
+      "pngSha256": "573316d4dea627aa73eb757d76ae2edc29f5838686ee9df3e2dc49a1dd443353",
+      "replayReport": "native-season-world-heading90.json",
+      "drawCalls": 37,
+      "triangles": 582887,
+      "shaderHashes": {
+        "1": {
+          "vertexSha256": "9f3482f9446fde6fa07f7ed0ca4219d2e35d92cf798ac9045e65f9a056ca999d",
+          "fragmentSha256": "e65d82001e7524fb422bf002f10bdbeaa14b40f24078f8bbc89ee595094e8dda"
+        },
+        "4": {
+          "vertexSha256": "b72acea400e56c4c93b4d842cb1d7d7d440adbf2403f967553e9053df55ffd46",
+          "fragmentSha256": "7efe2d142aa91825d2be67fdb51420ef1746e44bd68a1c137bdc1b46bd70e866"
+        },
+        "22": {
+          "vertexSha256": "67c10b2db0ad79b591accf1eb2a314d6606795540416d1c85376614e875180c9",
+          "fragmentSha256": "4f6305cab3f4805a53e9a2b8d9b19aa177a03fd9cf89f378df42bcb928e10a30"
+        },
+        "220": {
+          "vertexSha256": "9535f328c82af94214709f53f614a30577e270b714d52a2465e1fe37b76ca9c0",
+          "fragmentSha256": "846d396c976f2420073fb76bce272341fc4bc95664f3d52fdc135633c134ee13"
+        }
+      },
+      "models": {
+        "declaredSeasonDraws": 10,
+        "pairs": [
+          {
+            "first": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "next": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "blend": 0,
+            "reflection": true
+          },
+          {
+            "first": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "next": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "blend": 0,
+            "reflection": true
+          },
+          {
+            "first": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "next": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "blend": 0,
+            "reflection": true
+          },
+          {
+            "first": "local-original/season-model-textures/tre_oak_wi01.png",
+            "next": "local-original/season-model-textures/tre_oak_wi01.png",
+            "blend": 0,
+            "reflection": true
+          },
+          {
+            "first": "local-original/season-model-textures/tre_pine_wi.png",
+            "next": "local-original/season-model-textures/tre_pine_wi.png",
+            "blend": 0,
+            "reflection": true
+          },
+          {
+            "first": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "next": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "blend": 0,
+            "reflection": false
+          },
+          {
+            "first": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "next": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "blend": 0,
+            "reflection": false
+          },
+          {
+            "first": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "next": "local-original/season-model-textures/bld_citycenter1_we_wi.png",
+            "blend": 0,
+            "reflection": false
+          },
+          {
+            "first": "local-original/season-model-textures/tre_oak_wi01.png",
+            "next": "local-original/season-model-textures/tre_oak_wi01.png",
+            "blend": 0,
+            "reflection": false
+          },
+          {
+            "first": "local-original/season-model-textures/tre_pine_wi.png",
+            "next": "local-original/season-model-textures/tre_pine_wi.png",
+            "blend": 0,
+            "reflection": false
+          }
+        ]
+      },
+      "reflection": {
+        "enabled": true,
+        "draws": 12,
+        "width": 1280,
+        "height": 720,
+        "vp": [
+          1.1564776409901418e-16,
+          -1.6746169328689575,
+          -0.8725444078445435,
+          -0.8667467832565308,
+          0,
+          -2.910221815109253,
+          0.5020846128463745,
+          0.4987484812736511,
+          -1.8886713981628418,
+          -1.0254071009875213e-16,
+          -5.342793656321243e-17,
+          -5.307293049663937e-17,
+          118.04196166992188,
+          86.24276733398438,
+          55.61362838745117,
+          57.237457275390625
+        ],
+        "eye": [
+          62.42100914814384,
+          -6.284230994016583,
+          62.5
+        ],
+        "clipPlane": [
+          0,
+          1,
+          0,
+          0
+        ],
+        "texture": 238,
+        "policy": "Planar world-y0 reflection, terrain and object clip; framebuffer resolution and shader discard are WebGL adapters."
+      },
+      "heading": 1.5707963267948966
     }
   ],
-  "scope": "Actual WASM worlds, simulation-tick calendar, terrain/ground monthly interpolation and epoch/urban source bindings through production JS loaders and ANGLE GLES draw replay. No GUI, browser or original executable launched.",
+  "scope": "Actual WASM worlds and production createSeasonSession; shared simulation-tick phase drives native terrain, epoch/urban ground and explicitly bound native model skin lists. Real planar reflection/main passes, ninety-degree camera and ANGLE GLES FBO draw replay. No GUI, browser or original executable launched.",
   "limitations": [
     "World-only rendering proof; HUD and browser interaction are outside this check.",
     "Ground city membership follows the source-backed completed Town Center query; complete native CityManager registration/priority behavior remains separate.",
-    "Vegetation, building skins and weather events are not automatically made seasonal by terrain/ground interpolation."
+    "Only declared AnimatedTextureSetName model parts use source skin lists. Weather RNG/events and atmosphere remain separate.",
+    "Reflection currently reuses the visible main instance set; native separate reflected-view culling and complete RTT/projection policy are not established."
   ]
 }

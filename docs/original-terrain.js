@@ -15,12 +15,14 @@ void main(){vP=aP;vN=aN;gl_Position=uVP*vec4(aP,1.);}
 precision highp float;
 uniform highp sampler2DArray uGrass,uPatch,uForest,uRock,uBeach,uCoral,uRocky,uRoots;
 uniform sampler2D uMask,uWeights,uFog,uTerr;
-uniform vec3 uTeam[8];uniform float uPx,uSeasonBlend;uniform vec2 uSeasonMonths;in vec3 vP;in vec3 vN;out vec4 outColor;
+uniform vec3 uTeam[8];uniform float uPx,uSeasonBlend;uniform vec2 uSeasonMonths;
+uniform bool uClipEnabled;uniform vec4 uClipPlane;in vec3 vP;in vec3 vN;out vec4 outColor;
 ${COMMON}
 vec3 seasonSample(highp sampler2DArray source,vec2 uv){
  return mix(texture(source,vec3(uv,uSeasonMonths.x)).rgb,texture(source,vec3(uv,uSeasonMonths.y)).rgb,uSeasonBlend);
 }
 void main(){
+ if(uClipEnabled&&dot(vec4(vP,1.),uClipPlane)<0.)discard;
  vec2 w=vP.xz,uv=w/256.;float visibility=fogAt(w);
  if(visibility<.015){outColor=vec4(0.,0.,0.,1.);return;}
  vec4 weights=texture(uWeights,uv);
@@ -90,9 +92,9 @@ void main(){
  vec3 reflectionColor=vec3(.52,.69,.82);
  if(uHasReflection){
   vec4 projected=uReflectionVP*vec4(vW.x,0.,vW.y,1.);
-  vec2 reflectionUV=projected.xy/max(abs(projected.w),.0001)*.5+.5;
+  vec2 reflectionUV=projected.xy/max(projected.w,.0001)*.5+.5;
   // Native PS averages the two samples, maps to [-1,1], then offsets by0.1.
-  reflectionColor=texture(uReflection,clamp(reflectionUV+bump.xy*.1,vec2(.001),vec2(.999))).rgb;
+  if(projected.w>0.)reflectionColor=texture(uReflection,clamp(reflectionUV+bump.xy*.1,vec2(.001),vec2(.999))).rgb;
  }
  base=mix(base,reflectionColor,fresnel);
  vec3 halfVector=normalize(normalize(vec3(.42,.82,.39))+eye);
@@ -208,14 +210,16 @@ export async function loadOriginalTerrain(gl,enabled,teams){
    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
    lastFields=fields;result.metrics.classification=fields.classification;gl.activeTexture(gl.TEXTURE0);return true;
   };
-  result.drawTerrain=({vao,indexCount=MAP*MAP*6,vp,px=1/28,fogTexture,territoryTexture})=>{
+  result.drawTerrain=({vao,indexCount=MAP*MAP*6,vp,px=1/28,fogTexture,territoryTexture,clipPlane=null,capture=false})=>{
    if(!lastFields)return;
+   if(clipPlane&&(!Array.isArray(clipPlane)&&!ArrayBuffer.isView(clipPlane)||clipPlane.length!==4||!Array.from(clipPlane).every(Number.isFinite)))throw new RangeError('Invalid terrain clip plane');
    gl.useProgram(terrain.program);gl.bindVertexArray(vao);gl.uniformMatrix4fv(terrain.uniform('uVP'),false,vp);gl.uniform1f(terrain.uniform('uPx'),px);gl.uniform3fv(terrain.uniform('uTeam'),new Float32Array(teams.flat()));
+   gl.uniform1i(terrain.uniform('uClipEnabled'),clipPlane?1:0);gl.uniform4fv(terrain.uniform('uClipPlane'),clipPlane||[0,0,0,0]);
    for(const role of ROLES){bind(UNITS[role],roles[role],gl.TEXTURE_2D_ARRAY);gl.uniform1i(terrain.uniform('u'+role[0].toUpperCase()+role.slice(1)),UNITS[role]);}
    gl.uniform2fv(terrain.uniform('uSeasonMonths'),[season.month0,season.month1]);gl.uniform1f(terrain.uniform('uSeasonBlend'),season.blend);
    bind(UNITS.mask,mask);bind(UNITS.weights,weightsTexture);gl.uniform1i(terrain.uniform('uMask'),UNITS.mask);gl.uniform1i(terrain.uniform('uWeights'),UNITS.weights);
    if(fogTexture)bind(2,fogTexture);if(territoryTexture)bind(3,territoryTexture);gl.uniform1i(terrain.uniform('uFog'),2);gl.uniform1i(terrain.uniform('uTerr'),3);
-   gl.drawElements(gl.TRIANGLES,indexCount,gl.UNSIGNED_INT,0);result.metrics.terrainCalls++;gl.activeTexture(gl.TEXTURE0);
+   gl.drawElements(gl.TRIANGLES,indexCount,gl.UNSIGNED_INT,0);if(!capture)result.metrics.terrainCalls++;gl.activeTexture(gl.TEXTURE0);
   };
   result.drawWater=({vao,vp,time=0,eye=[128,30,160],fogTexture,reflectionTexture,reflectionVP=vp})=>{
    if(!lastFields)return;

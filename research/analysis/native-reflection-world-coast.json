@@ -1,0 +1,216 @@
+{
+  "format": "openepoch-production-world-gles-replay-v1",
+  "passed": true,
+  "context": {
+    "egl": [
+      1,
+      5
+    ],
+    "vendor": "Google Inc. (AMD)",
+    "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11-31.0.21924.61)",
+    "version": "OpenGL ES 3.0 (ANGLE 2.1 git hash: unknown hash)",
+    "libraryDirectory": "C:\\Program Files\\Mozilla Firefox",
+    "surface": [
+      1280,
+      1280
+    ],
+    "uiLaunched": false,
+    "framebuffer": "RGBA8 texture + DEPTH24_STENCIL8 renderbuffer"
+  },
+  "capture": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\world-0-coast-month6-reflection-shore-objects.json",
+  "captureSha256": "b956012918dc14811101b739bec4359efa10570ed58e89a9a57bafaeef637100",
+  "sourceEpoch": 1,
+  "scene": "coast",
+  "wasmInstances": 503,
+  "size": [
+    1280,
+    720
+  ],
+  "stats": {
+    "drawCalls": 37,
+    "instancedCalls": 24,
+    "drawnInstances": 1504,
+    "triangles": 582887,
+    "bufferBytes": 3717568,
+    "textureBytes": 34379804
+  },
+  "compiledPrograms": [
+    {
+      "id": "1",
+      "compiled": true,
+      "linked": true,
+      "vertexSha256": "9f3482f9446fde6fa07f7ed0ca4219d2e35d92cf798ac9045e65f9a056ca999d",
+      "fragmentSha256": "e65d82001e7524fb422bf002f10bdbeaa14b40f24078f8bbc89ee595094e8dda"
+    },
+    {
+      "id": "4",
+      "compiled": true,
+      "linked": true,
+      "vertexSha256": "b72acea400e56c4c93b4d842cb1d7d7d440adbf2403f967553e9053df55ffd46",
+      "fragmentSha256": "7efe2d142aa91825d2be67fdb51420ef1746e44bd68a1c137bdc1b46bd70e866"
+    },
+    {
+      "id": "22",
+      "compiled": true,
+      "linked": true,
+      "vertexSha256": "67c10b2db0ad79b591accf1eb2a314d6606795540416d1c85376614e875180c9",
+      "fragmentSha256": "4f6305cab3f4805a53e9a2b8d9b19aa177a03fd9cf89f378df42bcb928e10a30"
+    },
+    {
+      "id": "220",
+      "compiled": true,
+      "linked": true,
+      "vertexSha256": "9535f328c82af94214709f53f614a30577e270b714d52a2465e1fe37b76ca9c0",
+      "fragmentSha256": "846d396c976f2420073fb76bce272341fc4bc95664f3d52fdc135633c134ee13"
+    }
+  ],
+  "output": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\OpenEpoch\\native-reflection-coast.png",
+  "pngSha256": "a7cc1ea4ad003081cb22baa454827ff7e12a79347c50ff2ff66405cdaa86a642",
+  "colorHistogramBins": 632,
+  "scope": "WASM seed7 world, production simulation-tick calendar, camera/loaders/material, epoch/urban/seasonal building ground, terrain-conforming stencil shadows and terrain/water draw calls. World-only native GLES replay; no HUD, browser, native executable or original-game visual equality claim.",
+  "uiLaunched": false,
+  "reflectionTargets": [
+    {
+      "framebuffer": "239",
+      "texture": 238,
+      "size": [
+        1280,
+        720
+      ],
+      "output": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\OpenEpoch\\native-reflection-coast-reflection-239.png",
+      "pngSha256": "62fc9909fcd9d79e8f72a22888d97050ff3a2d7ee5354ec2f023f4bff61bb767"
+    }
+  ],
+  "limitation": "GPU replay of captured production world passes; not a browser/full HUD interaction test or a claim of original-game visual equality.",
+  "sourceHashes": {
+    "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+    "captureScriptSha256": "11473320cc186c48bb68a8a0ba142fad489d8ffeb6f750660bf4e98fc5c5e2a2",
+    "files": {
+      "main.js": "6b9afbc3f253b4d169fc12e9f9f630cfb71d7db74483402d07860dfca46f8128",
+      "index.html": "eb2b47b5b6384e3e9f150b7db8e4dfcdef3c15c192436c624f226140a6513868",
+      "season-session.js": "2ba54f8c2c55b87034abd6ae79f730d816e0a98505ce4582c3c3b1111eaf7e07",
+      "original-terrain.js": "647091f06fcc8e0831a695927b6290e5b5c57eaffa03432787d20b4101b4a090",
+      "original-ground.js": "bf0b44726870aacf5e57d72969d60a9468db823de21576fd7ea5b3f5962d1724",
+      "original-renderer.js": "32a2be1ee141c2d8749b321ed0217cf79c98416c38a3959d4a55b2cb50a0758c",
+      "original-model-seasons.js": "c8fab385c06dbe93dd7f29fa80959d48dadd031801f6b315e9d7b9a77f3863a6",
+      "original-camera.js": "ffc6ecdcebcace98b73918a15e9cc5e90af6685e724708b82c2a46247eab1954",
+      "original-seasons.js": "fb4001470974e86ed297465309933305bef3bd8c54c8c603f6e39d18b2e63492",
+      "original-reflection.js": "f3506a9b55e880b5b17b63bb329f28a80eaf2ff47cfa7b9abea4f51842b6c131",
+      "local-original/terrain-native/manifest.json": "c7cf660ff198a5f3e7b9c0aa2391b27f38ec7afb116b9541fa09019223c0359a",
+      "local-original/ground-decals.json": "394dc17695378752eab77d37defde85e6ff225b33d12a65a162893c05ef49a5d",
+      "local-original/models/manifest.json": "ee42afb0d5ad06a65d295c548601d67b48c3c1b7a579174c224c75b3076850c1",
+      "local-original/model-seasons.json": "c22faa625d3e68b2a4918499f08a82352b8da3af6df72449402f1296b51064e0",
+      "local-original/season-model-textures/team/manifest.json": "40f3768a9a878bf6fea8e8abbbcf05fa73c917209e86b373f7bb71968dd4d22f",
+      "local-original/team-textures/manifest.json": "e9d618ca90a3cc583bc95d911b887a4a15f468fc398516b0b269130d6fb4a5df"
+    },
+    "shaders": {
+      "1": {
+        "vertexSha256": "9f3482f9446fde6fa07f7ed0ca4219d2e35d92cf798ac9045e65f9a056ca999d",
+        "fragmentSha256": "e65d82001e7524fb422bf002f10bdbeaa14b40f24078f8bbc89ee595094e8dda"
+      },
+      "4": {
+        "vertexSha256": "b72acea400e56c4c93b4d842cb1d7d7d440adbf2403f967553e9053df55ffd46",
+        "fragmentSha256": "7efe2d142aa91825d2be67fdb51420ef1746e44bd68a1c137bdc1b46bd70e866"
+      },
+      "22": {
+        "vertexSha256": "67c10b2db0ad79b591accf1eb2a314d6606795540416d1c85376614e875180c9",
+        "fragmentSha256": "4f6305cab3f4805a53e9a2b8d9b19aa177a03fd9cf89f378df42bcb928e10a30"
+      },
+      "220": {
+        "vertexSha256": "9535f328c82af94214709f53f614a30577e270b714d52a2465e1fe37b76ca9c0",
+        "fragmentSha256": "846d396c976f2420073fb76bce272341fc4bc95664f3d52fdc135633c134ee13"
+      }
+    }
+  },
+  "season": {
+    "requestedMonthPosition": 6,
+    "actualSimulationTick": 0,
+    "tickSource": "WASM game_tick",
+    "steppedTicks": 0,
+    "month0": 6,
+    "month1": 7,
+    "blend": 0,
+    "monthPosition": 6,
+    "monthName": "Juli",
+    "secondsPerYear": 1200,
+    "ticksPerYear": 24000,
+    "settings": {
+      "cycle": true,
+      "startMonth": 6,
+      "minutesPerSeason": 5
+    }
+  },
+  "ground": {
+    "enabled": true,
+    "policy": "native-epoch-slots; CityManager callback, explicit rural fallback when absent",
+    "entries": 13,
+    "metrics": {
+      "calls": 1,
+      "instances": 1
+    },
+    "urbanSource": "WASM ground_urban_at; active source-backed Town Center city bands",
+    "urbanQueries": [
+      {
+        "x": 51,
+        "z": 51,
+        "team": 0,
+        "id": 0,
+        "index": 0,
+        "urban": true
+      }
+    ]
+  },
+  "epochs": [
+    0,
+    0,
+    0,
+    0
+  ],
+  "reflection": {
+    "enabled": true,
+    "draws": 12,
+    "width": 1280,
+    "height": 720,
+    "vp": [
+      1.8886713981628418,
+      0,
+      0,
+      0,
+      0,
+      -2.910221815109253,
+      0.5020846128463745,
+      0.4987484812736511,
+      0,
+      -1.6746169328689575,
+      -0.8725444078445435,
+      -0.8667467832565308,
+      -97.2665786743164,
+      104.6635513305664,
+      65.21161651611328,
+      66.77167510986328
+    ],
+    "eye": [
+      51.5,
+      -6.284230994016583,
+      73.42100914814384
+    ],
+    "clipPlane": [
+      0,
+      1,
+      0,
+      0
+    ],
+    "texture": 238,
+    "policy": "Planar world-y0 reflection, terrain and object clip; framebuffer resolution and shader discard are WebGL adapters."
+  },
+  "modelSeason": {
+    "available": true,
+    "metrics": {
+      "colorMs": 1.8017999999999574,
+      "shadowMs": 1.9370999999999867,
+      "calls": 11,
+      "triangles": 106231,
+      "gpuMs": 0
+    }
+  }
+}

@@ -1,0 +1,48 @@
+Wasserreflexion — Quellen und Produktionspfad, 04.11.2026
+
+Das Wasser erhält jetzt eine tatsächlich gerenderte Szene statt ausschließlich der
+bisherigen Himmelsfarbe. Terrain und native Modelle werden mit gespiegelter Kamera
+in ein separates Farbbild mit Tiefen-/Stencilpuffer gezeichnet. Der Hauptwasserpass
+liest dieses Bild über die belegten Waterbump-Normalen und UV-Verzerrungen.
+
+0088A8F0 aktiviert vor dem Szenenpass das Ziel, setzt die D3D-Clipplane und nimmt
+beides danach zurück. Die verwendeten drei Punkte bilden die native Z-up-Ebene
+(0,0,1,0); unsere Y-up-Koordinaten verwenden entsprechend(0,1,0,0). 0088DE20 kopiert
+Kamera-/Projektionsdaten und negiert die Kamerahöhe. 0088AB30 fügt die Reflexions-
+kamera als eigene View hinzu. Beim zugehörigen Szenenrendern überspringt Flag2 den
+Kalender-/Umweltupdatezweig: eine Reflexion ist kein zweiter Simulationstick.
+
+WaterReflection_LOD_HIGH.NSF und die zugehörigen VSH/PSH-Dateien belegen die beiden
+Normal-UV-Geschwindigkeiten(.01125,.02),(-.01125,.01), den Mittelwert beider Samples,
+die Abbildung auf einen vorzeichenbehafteten Versatz und den UV-Faktor0.1. Die
+Originalbilder bleiben unverändert. Die native Reflexionstextur wird mit der
+Vertexfarbe multipliziert und ohne Tiefenschreiben per Alpha darübergelegt.
+
+Die WebGL-Umsetzung verwendet original-reflection.js. render({vp,eye,width,height,
+drawScene}) liefert {texture,vp,eye,...}; der synchrone Callback erhält gespiegelte
+VP/Auge, Welt-Clipplane und capture:true. Terrain und Modelle unterstützen diesen
+Clip. drawWater erhält reflectionTexture und reflectionVP. Der Helfer erhält
+Framebuffer, Viewport, Texturbindungen und die verwendeten Renderzustände, auch bei
+einem Fehler. Größenänderungen werden proportional begrenzt; vorherige Zielbilder
+werden vor dem Zeichnen aus Samplerbindungen entfernt, um Feedback zu vermeiden.
+
+Belegte Teilumsetzung und Adapter sind getrennt: RGBA8/DEPTH24_STENCIL8, Auflösungs-
+politik, VP-Matrixspiegelung und Fragment-Clipping sind unsere WebGL-Abbildung.
+Das Original enthält außerdem eine Hilfsebene0.02, eine gesonderte Near-Clamp-
+Berechnung und eigene Reflexionsviews. Diese gesamte Projektions-/UV-/Zielpolitik
+ist noch nicht rekonstruiert. Aktuell teilen Haupt- und Reflexionspass denselben
+sichtbaren Instanzsatz; hohe Objekte außerhalb dieses Ausschnitts können fehlen.
+Wasserfarbe, Fresnel/Glanz/Deckkraft und Zeitphase bleiben teilweise Adapter.
+
+Die Prüfungen führen keine GUI, keinen Browser und keine Original-EXE aus. Sie
+verwenden echte WASM-Welten, die Produktionslader/-Shader und direkte EGL/GLES-
+Framebuffer-Ausgabe. Kontrollbilder entfernen nur die reflektierten Modelle,
+deaktivieren das Clipping oder schalten die Reflexion im Wasser aus. So werden
+Objektbeitrag, Unterwasser-Clipping und sichtbare Reflexion getrennt nachgewiesen.
+Zusätzlich prüfen fünf kombinierte Welten Sommer/Winter/Halbblend/Zukunft und90°
+Kameradrehung mit gemeinsamer Produktions-Saisonsitzung für Terrain, Böden und
+explizit deklarierte Modellskins. Aktuelle Zahlen und sämtliche Dateihashes:
+analysis/native-reflection-implementation.json; native-reflection-evidence.json;
+native-reflection-contract-tests.json; native-reflection-world-pixel-tests.json;
+native-season-world-qa.json. Ein identischer Bildaufbau mit laufendem Original oder
+eine vollständige1:1-Grafikgleichheit wird dadurch nicht belegt.

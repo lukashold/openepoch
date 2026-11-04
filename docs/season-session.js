@@ -17,7 +17,7 @@ export function savedSeasonSettings(record){
 
 // Both renderers read the same integer simulation tick. Pausing, network waits,
 // save/load and different display refresh rates therefore keep their phase.
-export function createSeasonSession(wasm,terrain,ground){
+export function createSeasonSession(wasm,terrain,ground,models=null){
   let clock=createSeasonClock();
   return Object.freeze({
     configure(settings){clock=createSeasonClock(settings);},
@@ -26,6 +26,7 @@ export function createSeasonSession(wasm,terrain,ground){
       const phase=clock.atTick(wasm.game_tick()>>>0);
       terrain.setSeasonPhase(phase);
       ground.setSeasonPhase(phase);
+      models?.setSeasonPhase?.(phase);
       return phase;
     },
   });

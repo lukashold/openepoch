@@ -1,0 +1,36 @@
+{
+  "format": "portable-assets-check-v1",
+  "status": "passed",
+  "scope": "Portable original media/runtime URL audit only; no original archives/EXE or original installation needed. Does not claim a physical Mac/Safari or GPU execution test.",
+  "latestLabel": "visual-seasons2-extracted",
+  "summaryOnly": true,
+  "fullLocalReportSha256": "348f3585baf8727f8c8a468feb51009d0838075d278d7d815fff9d0d5c667f1d",
+  "note": "Compact repository copy. The complete per-reference inventory remains in the local research report and source archive.",
+  "runs": [
+    {
+      "label": "visual-seasons2-source",
+      "status": "passed",
+      "fileCount": 4348,
+      "runtimeReferenceCount": 19308,
+      "uniqueRuntimeTargets": 4242,
+      "comparison": null,
+      "checkerSha256": "37dcd1b93f3091f11a56ff427d093352297f91e153145cce338a7bca98156eaf"
+    },
+    {
+      "label": "visual-seasons2-extracted",
+      "status": "passed",
+      "fileCount": 4348,
+      "runtimeReferenceCount": 19308,
+      "uniqueRuntimeTargets": 4242,
+      "comparison": {
+        "referenceDocs": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\outputs\\OpenEpoch\\docs",
+        "referenceFileCount": 4305,
+        "packageFileCount": 4305,
+        "missing": [],
+        "extra": [],
+        "changed": []
+      },
+      "checkerSha256": "37dcd1b93f3091f11a56ff427d093352297f91e153145cce338a7bca98156eaf"
+    }
+  ]
+}

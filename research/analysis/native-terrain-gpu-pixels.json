@@ -40,12 +40,12 @@
     {
       "name": "native-terrain",
       "vertexSha256": "9f3482f9446fde6fa07f7ed0ca4219d2e35d92cf798ac9045e65f9a056ca999d",
-      "fragmentSha256": "82312ae9dd2708b8b7a854f87f612a434743768bb59fb8666cd8c377dccd4fc4"
+      "fragmentSha256": "e65d82001e7524fb422bf002f10bdbeaa14b40f24078f8bbc89ee595094e8dda"
     },
     {
       "name": "native-water",
       "vertexSha256": "b72acea400e56c4c93b4d842cb1d7d7d440adbf2403f967553e9053df55ffd46",
-      "fragmentSha256": "58f6c4401123699a829e791985536515046b27ec6960d615fdceb6e1ebc0cc49"
+      "fragmentSha256": "7efe2d142aa91825d2be67fdb51420ef1746e44bd68a1c137bdc1b46bd70e866"
     }
   ],
   "preview": "native-terrain-gpu-preview.png",

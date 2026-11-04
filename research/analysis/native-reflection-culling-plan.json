@@ -1,0 +1,74 @@
+{
+  "format": "openepoch-reflection-culling-research-plan-v1",
+  "date": "2026-11-04",
+  "status": "planned-not-implemented",
+  "scope": "Read-only next-step plan. No runtime, WASM, simulation, model, shader or GitHub edits are part of this document.",
+  "problem": "The new reflected framebuffer receives the main view's visible instance snapshot. An above-water object outside the main two-dimensional origin bounds can project into reflected water and be omitted.",
+  "alreadySourceBacked": [
+    {
+      "function": "0088AB30",
+      "export": "native-reflection-target.c",
+      "fact": "Creates/reuses the reflected camera through0088DE20 and inserts its own view into the view list. This is positive evidence for a distinct reflected view; it does not establish the current adapter's shared-instance policy."
+    },
+    {
+      "function": "008969C0",
+      "export": "native-reflection-target.c",
+      "fact": "Applies the supplied camera/basis, passes the view into scene setup/render dispatches, then restores the primary camera. Flag2 suppresses the Calendar/environment update branch."
+    },
+    {
+      "function": "0088DE20",
+      "export": "native-reflection-camera.c",
+      "fact": "Mirrors native camera height and carries source projection/basis fields; auxiliary plane0.02 and near-clamp logic require further separation from ordinary geometric mirroring."
+    }
+  ],
+  "currentOwnPresentationFindings": [
+    {
+      "file": "src/render.rs:116",
+      "fact": "render_with_rotation takes a two-dimensional rectangle, writes temporary/instance/range presentation buffers and derives a far flag from rectangle width>130. Resource tile loops and entity/projectile origins have different fixed padding. Expanding the main rectangle can therefore change main presentation behavior."
+    },
+    {
+      "file": "docs/main.js:viewRect",
+      "fact": "Main view bounds derive from ground-plane corner intersections with fixed padding. Their ground footprint alone does not conservatively bound reflected elevated geometry."
+    },
+    {
+      "file": "docs/original-renderer.js",
+      "fact": "draw(capture:true) preserves primary picking state and metrics. A distinct reflected instance snapshot can use this existing contract without replacing main picking data."
+    }
+  ],
+  "boundedNativeResearchSlices": [
+    {
+      "order": 1,
+      "targets": ["006045A0", "00605EC0", "00605F30"],
+      "entryEvidence": "Direct calls inside008969C0 with the supplied native view/camera.",
+      "question": "Which setup/dispatch stage computes visibility, and is a fresh reflected-camera frustum used before the scene object lists? Export only these entries and immediate verified callees; no broad reanalysis."
+    },
+    {
+      "order": 2,
+      "targets": ["00612E50", "008E4B00", "008E4270"],
+      "entryEvidence": "00612E50 supplies the +34/+38 camera push/pop hooks in008969C0; the two008E methods are direct reflected-camera update/orientation calls in0088DE20.",
+      "question": "Resolve the precise camera-stack/frustum update semantics and typed bound tests before claiming original reflected culling. Read verified vtable entries only if required."
+    },
+    {
+      "order": 3,
+      "targets": ["006DC4F0"],
+      "entryEvidence": "Final supplied-camera scene call in008969C0.",
+      "question": "Determine whether this stage filters water/transparent/special content for reflected views. Defer if the function is broad; retain explicit scope limits rather than inferring policy."
+    }
+  ],
+  "candidateImplementationAfterEvidenceAndRootOwnershipHandoff": [
+    "Keep the primary visible instance list and picking data intact. Build a separate bounded reflection snapshot with no ghost/selection overlays; preserve existing fog/resource discovery and ownership checks.",
+    "Derive a conservative two-dimensional broadphase from the reflected frustum intersected with the above-water vertical slab occupied by measured terrain, animated model bounds and airborne presentation. Use source geometry/scale bounds, not an arbitrary fixed map-wide rectangle or guessed height constant.",
+    "Account for complete animated-pose bounds and native class/model transforms. Static mesh bounds alone may miss animation excursions; record any unresolved roles explicitly.",
+    "Either render the bounded reflection snapshot first and copy its presentation arrays before producing the main snapshot, or add dedicated reflection presentation buffers under Root ownership. Avoid a union rectangle that silently changes the existing width>130 main far/LOD behavior.",
+    "Use existing capture:true model draw semantics. Add per-object conservative frustum/bound rejection only after source/bound verification; keep fragment water clipping as the final half-space boundary."
+  ],
+  "requiredRegressionProof": [
+    "A measured native tall object whose origin lies outside the main bounds but whose reflection is on-screen must appear in the reflected target while remaining absent from the main instance set.",
+    "Equivalent0/45/90/180-degree camera cases, map edges, close/far zoom, terrain elevation, air/sea models, animated extrema and partially submerged objects.",
+    "Unexplored/hidden enemy or locked resource content must not become visible through reflections.",
+    "Main picking, selection, model/ground metrics, viewport/framebuffers and main image remain unchanged when only reflected visibility expands.",
+    "Simulation tick/hash/save bytes remain invariant under different reflection render/query cadence; two actual WASM peers agree. Any dedicated buffers remain presentation-only.",
+    "Bounded instance/tile counts and timings are reported; no unconditional full-map per-frame enumeration is accepted as the production solution."
+  ],
+  "coordination": "Ghidra remains sequential through Root/Camera/Materials ownership. This plan requests no project opening and changes no frozen visual-seasons2 runtime. Root owns main.js and WASM presentation integration."
+}

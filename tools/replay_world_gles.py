@@ -19,7 +19,7 @@ def replay(source, destination, report_path=None):
     if payload.get('format')!='openepoch-production-world-capture-v1':
         raise ValueError('Unsupported world capture format')
     width,height=payload['width'],payload['height']
-    programs,buffers,textures={},{},{}
+    programs,buffers,textures,framebuffers,renderbuffers={},{},{},{},{}
     programs_report=[]
     stats={'drawCalls':0,'instancedCalls':0,'drawnInstances':0,'triangles':0,'bufferBytes':0,'textureBytes':0}
     with HeadlessGLES(size=max(width,height)) as ctx:
@@ -57,6 +57,18 @@ def replay(source, destination, report_path=None):
         stencil_op=ctx.bind('glStencilOp',None,U,U,U)
         draw_elements=ctx.bind('glDrawElementsInstanced',None,U,I,U,P,I)
         draw_arrays=ctx.bind('glDrawArraysInstanced',None,U,I,I,I)
+        gen_framebuffers=ctx.bind('glGenFramebuffers',None,I,C.POINTER(U))
+        bind_framebuffer=ctx.bind('glBindFramebuffer',None,U,U)
+        attach_texture=ctx.bind('glFramebufferTexture2D',None,U,U,U,U,I)
+        gen_renderbuffers=ctx.bind('glGenRenderbuffers',None,I,C.POINTER(U))
+        bind_renderbuffer=ctx.bind('glBindRenderbuffer',None,U,U)
+        renderbuffer_storage=ctx.bind('glRenderbufferStorage',None,U,U,I,I)
+        attach_renderbuffer=ctx.bind('glFramebufferRenderbuffer',None,U,U,U,U)
+        framebuffer_status=ctx.bind('glCheckFramebufferStatus',U,U)
+        viewport=ctx.bind('glViewport',None,I,I,I,I)
+        color_mask=ctx.bind('glColorMask',None,C.c_ubyte,C.c_ubyte,C.c_ubyte,C.c_ubyte)
+        front_face=ctx.bind('glFrontFace',None,U)
+        cull_face=ctx.bind('glCullFace',None,U)
         ctx.bind('glViewport',None,I,I,I,I)(0,0,width,height)
         ctx.bind('glClearColor',None,F,F,F,F)(.012,.03,.05,1)
         ctx.bind('glClearDepthf',None,F)(1)
@@ -127,7 +139,38 @@ def replay(source, destination, report_path=None):
             ctx.check('Captured texture upload')
             return handle.value
 
-        for number,call in enumerate(payload['draws']):
+        def get_framebuffer(key):
+            if key is None:
+                return ctx.framebuffer.value
+            key=str(key)
+            if key not in framebuffers:
+                row=payload['framebuffers'][key]
+                handle=U();gen_framebuffers(1,C.byref(handle));bind_framebuffer(0x8d40,handle)
+                for attachment,binding in row['attachments'].items():
+                    if 'texture' in binding:
+                        texture=get_texture(binding['texture'])
+                        attach_texture(0x8d40,int(attachment),binding['target'],texture,binding['level'])
+                    else:
+                        identifier=str(binding['renderbuffer'])
+                        if identifier not in renderbuffers:
+                            data=payload['renderbuffers'][identifier]
+                            depth=U();gen_renderbuffers(1,C.byref(depth));bind_renderbuffer(0x8d41,depth)
+                            renderbuffer_storage(0x8d41,data['internal'],data['width'],data['height']);renderbuffers[identifier]=depth.value
+                        attach_renderbuffer(0x8d40,int(attachment),0x8d41,renderbuffers[identifier])
+                if framebuffer_status(0x8d40)!=0x8cd5:
+                    raise AssertionError('Captured production framebuffer is incomplete')
+                framebuffers[key]=handle.value
+            return framebuffers[key]
+
+        commands=payload.get('commands') or [{'draw':number} for number in range(len(payload['draws']))]
+        for command in commands:
+            if 'clear' in command:
+                bind_framebuffer(0x8d40,get_framebuffer(command.get('framebuffer')))
+                disable(0x0c11);viewport(*command['viewport']);color_mask(*command['colorMask']);depth_mask(command['depthMask']);stencil_mask(command['stencilMask'])
+                ctx.bind('glClearColor',None,F,F,F,F)(*command['color']);ctx.bind('glClearDepthf',None,F)(command['depth']);ctx.bind('glClearStencil',None,I)(command['stencil'])
+                ctx.bind('glClear',None,U)(command['clear']);ctx.check('Captured production framebuffer clear');continue
+            number=command['draw'];call=payload['draws'][number]
+            bind_framebuffer(0x8d40,get_framebuffer(call.get('framebuffer')))
             program=programs[str(call['program'])];use(program)
             vao=U();gen_vao(1,C.byref(vao));bind_vao(vao)
             for loc,attribute in call['attributes'].items():
@@ -153,6 +196,8 @@ def replay(source, destination, report_path=None):
                     n=int(kind[0]);uniform_vectors[n](loc,len(value)//n,(F*len(value))(*value))
                 else:raise ValueError(f'Unsupported captured uniform kind {kind}')
             state=call['state']
+            viewport(*state.get('viewport',[0,0,width,height]));color_mask(*state.get('colorMask',[True]*4))
+            front_face(state.get('frontFace',0x901));cull_face(state.get('cullFace',0x405))
             for cap in (0x0be2,0x0b71,0x0b90,0x0b44):
                 (enable if cap in state['enabled'] else disable)(cap)
             depth_mask(bool(state['depthWrite']));depth_func(state['depthFunc'])
@@ -171,6 +216,20 @@ def replay(source, destination, report_path=None):
             stats['drawCalls']+=1;stats['instancedCalls']+=int(call['instances']>1);stats['drawnInstances']+=call['instances']
             stats['triangles']+=(call['count']//3 if call['mode']==4 else max(0,call['count']-2))*call['instances']
         ctx.bind('glFinish',None)()
+        reflection_outputs=[]
+        for key,handle in framebuffers.items():
+            attachments=payload['framebuffers'][key]['attachments']
+            color=attachments.get(str(0x8ce0))
+            if not color or 'texture' not in color:
+                continue
+            texture_row=payload['textures'][str(color['texture'])];fw,fh=texture_row['width'],texture_row['height']
+            bind_framebuffer(0x8d40,handle);pixels=(C.c_ubyte*(fw*fh*4))()
+            ctx.bind('glReadPixels',None,I,I,I,I,U,U,P)(0,0,fw,fh,0x1908,0x1401,pixels);ctx.check('Production reflection framebuffer readback')
+            output=Path(destination).with_name(Path(destination).stem+f'-reflection-{key}.png')
+            output.parent.mkdir(parents=True,exist_ok=True)
+            Image.frombytes('RGBA',(fw,fh),bytes(pixels)).transpose(Image.Transpose.FLIP_TOP_BOTTOM).convert('RGB').save(output)
+            reflection_outputs.append({'framebuffer':key,'texture':color['texture'],'size':[fw,fh],'output':str(output.resolve()),'pngSha256':hashlib.sha256(output.read_bytes()).hexdigest()})
+        bind_framebuffer(0x8d40,ctx.framebuffer.value)
         pixels=(C.c_ubyte*(width*height*4))()
         ctx.bind('glReadPixels',None,I,I,I,I,U,U,P)(0,0,width,height,0x1908,0x1401,pixels)
         ctx.check('World RGBA readback')
@@ -187,8 +246,9 @@ def replay(source, destination, report_path=None):
             'size':[width,height],'stats':stats,'compiledPrograms':programs_report,
             'output':str(destination.resolve()),'pngSha256':hashlib.sha256(destination.read_bytes()).hexdigest(),
             'colorHistogramBins':variations,'scope':payload['scope'],'uiLaunched':False,
+            'reflectionTargets':reflection_outputs,
             'limitation':'GPU replay of captured production world passes; not a browser/full HUD interaction test or a claim of original-game visual equality.'}
-        for name in ('sourceHashes','season','ground','epochs'):
+        for name in ('sourceHashes','season','ground','epochs','reflection','modelSeason'):
             if name in payload:
                 report[name]=payload[name]
     if report_path:

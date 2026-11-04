@@ -37,7 +37,7 @@ class GL {
  }
  createProgram(){return {shaders:[]};}createShader(type){return {type};}shaderSource(s,source){s.source=source;}compileShader(){}getShaderParameter(){return true;}getShaderInfoLog(){return '';}
  attachShader(p,s){p.shaders.push(s);}deleteShader(){}linkProgram(){}getProgramParameter(){return true;}getProgramInfoLog(){return '';}
- getUniformLocation(p,name){return name;}useProgram(p){this.program=p;}uniform1i(l,v){this.uniforms.set(l,v);}uniform1f(l,v){this.uniforms.set(l,v);}uniform2fv(l,v){this.uniforms.set(l,Array.from(v));}uniform3fv(l,v){this.uniforms.set(l,Array.from(v));}uniformMatrix4fv(l,t,v){this.uniforms.set(l,Array.from(v));}
+ getUniformLocation(p,name){return name;}useProgram(p){this.program=p;}uniform1i(l,v){this.uniforms.set(l,v);}uniform1f(l,v){this.uniforms.set(l,v);}uniform2fv(l,v){this.uniforms.set(l,Array.from(v));}uniform3fv(l,v){this.uniforms.set(l,Array.from(v));}uniform4fv(l,v){this.uniforms.set(l,Array.from(v));}uniformMatrix4fv(l,t,v){this.uniforms.set(l,Array.from(v));}
  createTexture(){const t={};this.textures.push(t);return t;}activeTexture(unit){this.unit=unit-this.TEXTURE0;}bindTexture(target,t){check([this.TEXTURE_2D,this.TEXTURE_2D_ARRAY].includes(target),'Texture target valid');this.bindings.set(this.unit,t);}
  texImage2D(...args){const t=this.bindings.get(this.unit);if(args.length===6){t.width=args[5].width;t.height=args[5].height;t.image=args[5].url;}else{t.width=args[3];t.height=args[4];t.data=new args[8].constructor(args[8]);t.internal=args[2];}}
  texStorage3D(target,levels,internal,width,height,depth){Object.assign(this.bindings.get(this.unit),{target,levels,internal,width,height,depth,images:[]});}
@@ -75,6 +75,11 @@ try{
  check(gl.draws.at(-1).uniforms.get('uSeasonMonths').join(',')==='1,2','Adjacent native monthly layers reach the draw');
  for(const phase of [{month0:-1},{month0:12},{month0:0,month1:5},{month0:0,blend:NaN},{month0:0,blend:1.01}]){assert.throws(()=>module.setSeasonPhase(phase),RangeError);checks++;}
  for(const bad of [-1,12,.5,NaN]){await assert.rejects(module.setSeason(bad),RangeError);checks++;}
+ const terrainCalls=module.metrics.terrainCalls;
+ module.drawTerrain({vao:{},vp,clipPlane:[0,1,0,0],capture:true});check(gl.draws.at(-1).uniforms.get('uClipEnabled')===1,'Reflection terrain enables world clipping');
+ check(gl.draws.at(-1).uniforms.get('uClipPlane').join(',')==='0,1,0,0','Reflection clipping uses original world y plane');check(module.metrics.terrainCalls===terrainCalls,'Reflection capture preserves main-pass counters');
+ module.drawTerrain({vao:{},vp});check(gl.draws.at(-1).uniforms.get('uClipEnabled')===0,'Main pass resets reflection clipping');
+ for(const clipPlane of [[0,1,0], [0,1,0,NaN], 'abcd']){assert.throws(()=>module.drawTerrain({vao:{},vp,clipPlane}),RangeError);checks++;}
  const report={format:'openepoch-native-terrain-contract-tests-v1',checks,passed:true,
   imageCount:module.metrics.images,initialSeasonSlot:6,explicitWinterSlotTested:true,
   noBrowserOrUI:true,scope:'Real source manifest/images through loader with stateful GL contract fake; separate ANGLE GPU report covers actual shaders/pixels.'};

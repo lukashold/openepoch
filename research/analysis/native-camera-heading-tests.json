@@ -1,0 +1,11 @@
+{
+  "format": "native-camera-heading-tests-v1",
+  "passed": true,
+  "checks": 26562,
+  "northCases": 288,
+  "rotationCases": 105,
+  "baselineSha256": "56fdd51c6ec1ac099482cb14b101995c18c9d1ed0b3ce12ba4355d9544511575",
+  "cameraSha256": "ffc6ecdcebcace98b73918a15e9cc5e90af6685e724708b82c2a46247eab1954",
+  "scope": "North baseline bit equality, independent native00520600 basis, heading orbit/pan, rotated terrain clearance, camera-depth ray endpoints and projection. UI input rate remains an adapter.",
+  "gpuCases": 16
+}

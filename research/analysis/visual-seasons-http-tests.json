@@ -1,0 +1,27 @@
+{
+  "format": "openepoch-visual-seasons-http-tests-v1",
+  "status": "passed",
+  "build": "visual-seasons2",
+  "createdUTC": "2026-11-04T09:18:10.752618+00:00",
+  "runs": [
+    {
+      "label": "source",
+      "passed": 9,
+      "seconds": 8.408,
+      "serverSha256": "0cc2e3ef8a1f7eb6cb2692f353c25f556054bfa8c85e5b9f7b93c4fb3bc45c83",
+      "testSha256": "10d0ac8ad65561c69c74a132892e5b8ddd43c8580c5ca69fe71fa751f51a3c2d",
+      "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+      "logSha256": "d66bfa8817c600768f5e054c1ac7451af789c7999060ac37076ac86184634649"
+    },
+    {
+      "label": "extracted",
+      "passed": 9,
+      "seconds": 8.6,
+      "serverSha256": "0cc2e3ef8a1f7eb6cb2692f353c25f556054bfa8c85e5b9f7b93c4fb3bc45c83",
+      "testSha256": "10d0ac8ad65561c69c74a132892e5b8ddd43c8580c5ca69fe71fa751f51a3c2d",
+      "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+      "logSha256": "3f10f243e1f29de10af871c5636393b7631e3a965d22ab44bda3d5923e5ab797"
+    }
+  ],
+  "scope": "Actual local HTTP/process tests on Windows for current source and freshly extracted complete package. No browser, external network, original executable or physical macOS test."
+}

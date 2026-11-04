@@ -1,0 +1,20 @@
+{
+  "format": "openepoch-original-reflection-contract-tests-v1",
+  "passed": true,
+  "checks": 423,
+  "sourceHashes": {
+    "original-reflection.js": "f3506a9b55e880b5b17b63bb329f28a80eaf2ff47cfa7b9abea4f51842b6c131",
+    "original-terrain.js": "647091f06fcc8e0831a695927b6290e5b5c57eaffa03432787d20b4101b4a090",
+    "original-camera.js": "ffc6ecdcebcace98b73918a15e9cc5e90af6685e724708b82c2a46247eab1954"
+  },
+  "coverage": [
+    "mirrored VP geometry and involution",
+    "actual native-camera matrices",
+    "proportional resize/attachment reuse",
+    "distinct caller draw/read framebuffer restoration",
+    "viewport/scissor/color/depth/stencil/cull/blend/program/VAO/buffer/16 texture slots restoration",
+    "previous-frame reflection feedback prevention",
+    "recursive/async/exception/incomplete-FBO validation"
+  ],
+  "scope": "Actual production helper with recording WebGL. Separate real-GLES fixture/world replay validates shader pixels and framebuffer attachments; no browser or native executable."
+}

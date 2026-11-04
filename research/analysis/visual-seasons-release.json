@@ -1,0 +1,229 @@
+{
+  "format": "openepoch-visual-seasons-release-v1",
+  "status": "passed",
+  "build": "visual-seasons2",
+  "createdUTC": "2026-11-04T09:31:42.565153+00:00",
+  "networkProtocol": 9,
+  "scope": "Seasonal source model skins, heading camera controls and clipped planar scene reflections.",
+  "wasm": {
+    "ee2": {
+      "sha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+      "bytes": 430146
+    },
+    "base": {
+      "sha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+      "bytes": 268821
+    }
+  },
+  "validation": {
+    "cameraMathChecks": 26562,
+    "mainControlsChecks": 73,
+    "seasonSessionChecks": 425,
+    "combinedWorldGpuChecks": 169,
+    "reflection": {
+      "sourceChecks": 12,
+      "stateAndMatrixChecks": 423,
+      "combinedWorldChecks": 169,
+      "combinedWorlds": 5,
+      "combinedCases": [
+        "summer",
+        "winter",
+        "halfblend",
+        "future",
+        "heading90"
+      ],
+      "reflectionPixelChecks": 105,
+      "nativeObjectReflectionPixels": {
+        "pixels": 29430,
+        "maxChannel": 209,
+        "sumChannels": 8677394
+      },
+      "submergedGeometryClipPixels": {
+        "pixels": 542000,
+        "maxChannel": 207,
+        "sumChannels": 83621281
+      },
+      "visibleWaterReflectionPixels": {
+        "pixels": 14987,
+        "maxChannel": 14,
+        "sumChannels": 219192
+      },
+      "method": "Actual production JS helper/loaders/draw inputs with real WASM worlds and createSeasonSession; real ANGLE EGL/GLES FBO capture and pixel-control replays. Source/profile/shader/manifest hashes are included in reports.",
+      "noGuiOrOriginalExecutable": true
+    },
+    "seasonalModels": {
+      "modelsUnchanged": 191,
+      "seasonalModels": 106,
+      "seasonalParts": 248,
+      "inheritedParts": 83,
+      "setsPerClimate": 115,
+      "climates": [
+        "Temperate",
+        "Arid",
+        "Tropical"
+      ],
+      "listLengths": [
+        1,
+        8,
+        11,
+        12,
+        13
+      ],
+      "physicalTextureCount": 232,
+      "newNeutralTextures": 117,
+      "newTeamTextureSets": 100
+    },
+    "modelChecks": [
+      {
+        "name": "Original NIF/CSV/cache/patched-RGBA/geometry proof",
+        "passed": 9,
+        "file": "tools/test_ee2_model_seasons.py"
+      },
+      {
+        "name": "Production loader and annual source-list sampling",
+        "passed": 33687,
+        "report": "native-model-season-loader-tests.json"
+      },
+      {
+        "name": "Actual source image/alpha/world-clip GPU pixels",
+        "passed": 28,
+        "report": "native-model-season-gpu-tests.json",
+        "renderer": "ANGLE (AMD, AMD Radeon(TM) Graphics (0x00001638) Direct3D11 vs_5_0 ps_5_0, D3D11-31.0.21924.61)"
+      },
+      {
+        "name": "Existing material/scale/shadow shader GPU regression",
+        "passed": 11,
+        "report": "native-model-season-material-gpu-tests.json"
+      },
+      {
+        "name": "Existing renderer state/LOD/animation/picking regression",
+        "status": "passed",
+        "command": "node tools/original-renderer-test.mjs"
+      },
+      {
+        "name": "Native material helper contract",
+        "status": "passed",
+        "command": "node tools/original-material-test.mjs"
+      },
+      {
+        "name": "Complete exact-case portable runtime graph",
+        "status": "passed",
+        "selfTests": 10,
+        "report": "native-model-season-portable-assets.json",
+        "files": 4348,
+        "references": 19308,
+        "targets": 4242,
+        "errors": 0
+      }
+    ],
+    "http": {
+      "format": "openepoch-visual-seasons-http-tests-v1",
+      "status": "passed",
+      "build": "visual-seasons2",
+      "createdUTC": "2026-11-04T09:18:10.752618+00:00",
+      "runs": [
+        {
+          "label": "source",
+          "passed": 9,
+          "seconds": 8.408,
+          "serverSha256": "0cc2e3ef8a1f7eb6cb2692f353c25f556054bfa8c85e5b9f7b93c4fb3bc45c83",
+          "testSha256": "10d0ac8ad65561c69c74a132892e5b8ddd43c8580c5ca69fe71fa751f51a3c2d",
+          "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+          "logSha256": "d66bfa8817c600768f5e054c1ac7451af789c7999060ac37076ac86184634649"
+        },
+        {
+          "label": "extracted",
+          "passed": 9,
+          "seconds": 8.6,
+          "serverSha256": "0cc2e3ef8a1f7eb6cb2692f353c25f556054bfa8c85e5b9f7b93c4fb3bc45c83",
+          "testSha256": "10d0ac8ad65561c69c74a132892e5b8ddd43c8580c5ca69fe71fa751f51a3c2d",
+          "wasmSha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+          "logSha256": "3f10f243e1f29de10af871c5636393b7631e3a965d22ab44bda3d5923e5ab797"
+        }
+      ],
+      "scope": "Actual local HTTP/process tests on Windows for current source and freshly extracted complete package. No browser, external network, original executable or physical macOS test."
+    },
+    "runtimeReferences": 19308,
+    "exactCaseTargets": 4242
+  },
+  "package": {
+    "file": "OpenEpoch-Mac-Komplett.zip",
+    "zipBytes": 1133680896,
+    "sha256": "507a58fb0dfe9d8bd8053709594b1f18920bbb00d40e1dd9da01cf2565f12f13",
+    "zipEntries": 4357,
+    "manifestFilesVerified": 4355,
+    "mediaFiles": 4305,
+    "mediaBytes": 1232318090,
+    "launcherMode": "0755",
+    "launcherLineEndings": "LF",
+    "pythonMinimum": "3.8"
+  },
+  "currentFiles": {
+    "docs/index.html": {
+      "sha256": "eb2b47b5b6384e3e9f150b7db8e4dfcdef3c15c192436c624f226140a6513868",
+      "bytes": 22395
+    },
+    "docs/main.js": {
+      "sha256": "6b9afbc3f253b4d169fc12e9f9f630cfb71d7db74483402d07860dfca46f8128",
+      "bytes": 72745
+    },
+    "docs/season-session.js": {
+      "sha256": "2ba54f8c2c55b87034abd6ae79f730d816e0a98505ce4582c3c3b1111eaf7e07",
+      "bytes": 1346
+    },
+    "docs/original-camera.js": {
+      "sha256": "ffc6ecdcebcace98b73918a15e9cc5e90af6685e724708b82c2a46247eab1954",
+      "bytes": 6781
+    },
+    "docs/original-renderer.js": {
+      "sha256": "32a2be1ee141c2d8749b321ed0217cf79c98416c38a3959d4a55b2cb50a0758c",
+      "bytes": 29394
+    },
+    "docs/original-model-seasons.js": {
+      "sha256": "c8fab385c06dbe93dd7f29fa80959d48dadd031801f6b315e9d7b9a77f3863a6",
+      "bytes": 1254
+    },
+    "docs/original-reflection.js": {
+      "sha256": "f3506a9b55e880b5b17b63bb329f28a80eaf2ff47cfa7b9abea4f51842b6c131",
+      "bytes": 8441
+    },
+    "docs/original-terrain.js": {
+      "sha256": "647091f06fcc8e0831a695927b6290e5b5c57eaffa03432787d20b4101b4a090",
+      "bytes": 16769
+    },
+    "docs/original-ground.js": {
+      "sha256": "bf0b44726870aacf5e57d72969d60a9468db823de21576fd7ea5b3f5962d1724",
+      "bytes": 14653
+    },
+    "tools/serve_game.py": {
+      "sha256": "0cc2e3ef8a1f7eb6cb2692f353c25f556054bfa8c85e5b9f7b93c4fb3bc45c83",
+      "bytes": 7788
+    }
+  },
+  "evidenceReports": {
+    "native-camera-heading-tests.json": "15be1a6e30dc13436c9ac0b7a8fb0f6816a0c3c2409f626d456f351e09c11f28",
+    "visual-controls-tests.json": "2c6fabad7cadca93a468635f25b09b0b89b852374ec9a1a0cb8d2461cee78c14",
+    "native-reflection-implementation.json": "58630168c9eda45e9128fdf03f48dfae469aeaf5ec03d155d64436ec1bbcbc91",
+    "native-model-season-integration.json": "730ca908a6cdc48618abf5599b5da7b2dd8be37a21412a870d8c3f0f5d54f7d5",
+    "native-season-world-qa.json": "e6dc232f980d0d4e65f8079285891dafb6ef329a8dffce95b53215a5a80dbf8d",
+    "visual-seasons-package-extraction.json": "508a808f665bc713cf93c1d065e785c31e7c7f3a9a0c2ea3df3f2b69517aa3de",
+    "visual-seasons-portable-assets.json": "348f3585baf8727f8c8a468feb51009d0838075d278d7d815fff9d0d5c667f1d",
+    "visual-seasons-http-tests.json": "5af52d4f5e95fdaa20b4815a3a6f82f1d8d0205f58cecacb8d62bcc96a41649f",
+    "visual-seasons-live-http.json": "90521fc89c2f3a694bacf00ba07723e068d0ae13bac8a52501819856b66f71c2"
+  },
+  "liveUrl": "http://127.0.0.1:8125/?rules=ee2&build=visual-seasons2",
+  "github": {
+    "checkpointPublished": false,
+    "previousCommit": "7346720e5cab2c809c529a8091e6836cf60236f9",
+    "originalMediaIncluded": false
+  },
+  "limits": [
+    "A complete gameplay or visual 1:1 recreation is not achieved; this is an intermediate checkpoint.",
+    "Current simulation still uses consistent BASE data. A separate installed-UP15 profile is being reconstructed outside this checkpoint.",
+    "Complete native roster, AI, civilizations, weather, lighting, terrain generation and special abilities remain incomplete.",
+    "Native water base material, separate reflection visibility and full transparent/shadow ordering remain incomplete.",
+    "Newer Ghidra evidence proves native Undertexture sizes multiply DDF sizes by sqrt(2). The raw-size ground adapter in this checkpoint is superseded evidence, pending the next correction.",
+    "No browser interaction, Internet multiplayer or physical macOS execution was tested for this checkpoint.",
+    "Imported media are local-only in the portable package and excluded from the GitHub source payload."
+  ]
+}

@@ -1,0 +1,104 @@
+{
+  "format": "ee2-native-reflection-evidence-v1",
+  "date": "2026-11-04",
+  "passed": true,
+  "checks": [
+    "Exact analyzed installed engine",
+    "Original PE FCHS instruction at0088E1A8 negates camera height",
+    "Camera clone retains source XY and negates native Z",
+    "Native reflection pass explicitly binds then restores target",
+    "Native D3DRS_CLIPPLANEENABLE state152 toggles at pass boundary",
+    "Plane constructor uses normalized cross product and signed offset",
+    "Reflected camera is inserted into native view list",
+    "Exact two normal-UV flow vectors from native material constants",
+    "Reflection UV offset scale0.1",
+    "Original pixel shader averages normals, expands to signed offset, samples RTT",
+    "Original vertex shader preserves reflection UV and wraps source motion phase",
+    "Native reflection overlay blends alpha without depth writes"
+  ],
+  "scope": "Targeted read-only/noanalysis Ghidra exports, native PE bytes and installed plain shader files. No GUI, original executable, browser or installation writes.",
+  "engineSha256": "d41a9e15ce0638c7dc700dcc529c41c7e345bde460ca184858f966db60e6455f",
+  "exports": [
+    {
+      "file": "native-reflection-refs.c",
+      "sha256": "5b08c3eebd83eece6eb4b8f70c93bb38a0c4f0cbc0fb2b47b6e29b13b4075176"
+    },
+    {
+      "file": "native-reflection-runtime.c",
+      "sha256": "8e7ff8460d4cca8694fe2d822eb90a23dd76f69b600c7d362977b1f6e82eba75"
+    },
+    {
+      "file": "native-reflection-camera.c",
+      "sha256": "87ab6088a14ce6653a0f88581664e69f9b133cd83cee6621f041133e72e191c5"
+    },
+    {
+      "file": "native-reflection-pass.c",
+      "sha256": "38497d5d71a31a057200efa90e5dc2424a6296b320167944ca6f08f5af7523cf"
+    },
+    {
+      "file": "native-reflection-target.c",
+      "sha256": "d7452aeaa6d6fb6d6ee9593ab8828479f61e4b7c1c0c035fee6ebe6a6fddfada"
+    }
+  ],
+  "shaderFiles": [
+    {
+      "file": "shaders/WaterReflection_LOD_HIGH.NSF",
+      "sha256": "59411ce30c9d2881e0a0503f274255706f83d7508567dd624e38eee714e5c77e"
+    },
+    {
+      "file": "shaders/vsh_psh/WaterReflection_LOD_HIGH.vsh",
+      "sha256": "42941e94d750d6bc930f908599aa82388e71f14998fee2dc34926b52c428a718"
+    },
+    {
+      "file": "shaders/vsh_psh/WaterReflection_LOD_HIGH.psh",
+      "sha256": "65fc08cd17a71ad2000b0e2007c681bd8040ffe3fa6eb932d221ec9e8d9dfc82"
+    }
+  ],
+  "findings": [
+    {
+      "id": "capture-target-and-clip",
+      "functions": [
+        "00889F70",
+        "0088A8F0",
+        "0088E210",
+        "00A4D370"
+      ],
+      "verified": "WaterManager probes hardware clip-plane support, activates a reflection target before a scene pass, enables D3D state152 bit0 and disables/restores it afterward. Plane input points(0,0,0),(1,0,0),(1,1,0) produce native Z-up plane(0,0,1,0).",
+      "application": "Y-up adapter plane(0,1,0,0). WebGL2 terrain/model fragment discards retain the above-water half-space; native hardware clip scheduling is not copied."
+    },
+    {
+      "id": "reflection-camera",
+      "functions": [
+        "0088DE20",
+        "0088AB30"
+      ],
+      "verified": "Clone retains source basis/projection fields, copies XY position and negates native Z height; auxiliary plane construction includes literal0.02. Near plane also uses native minimum and far/ratio clamp. The reflected camera is inserted into the native view list.",
+      "application": "Current geometric VP*mirrorY(0) and mirrored eye are explicit WebGL equivalents of the horizontal reflection. Native auxiliary projection/grid/UV construction and near-clamp globals are not fully reconstructed."
+    },
+    {
+      "id": "scene-pass",
+      "functions": [
+        "0088AE10",
+        "008969C0",
+        "00896940"
+      ],
+      "verified": "Reflections are gated by capability/settings, enter the reflected target/camera, render a scene and exit. Camera flag2 suppresses the Calendar/environment update branch inside008969C0.",
+      "application": "Render callback draws current terrain and native objects without simulation/calendar ticks or water recursion."
+    },
+    {
+      "id": "reflection-material",
+      "functions": [
+        "0088DBE0",
+        "00628FE0"
+      ],
+      "verified": "Waterbump.tga and WaterReflection_LOD_HIGH are explicitly bound. NSF uses two wrapped normal UVs(.01125,.02),(-.01125,.01); pixel shader averages, expands to signed normal offset and offsets reflection UV by0.1 before sampling and multiplying vertex color. Alpha blend uses SrcAlpha/InvSrcAlpha with depth writes off.",
+      "application": "Native texture pixels and distortion vectors/formula are retained. Current water color, Fresnel/opacity, base-layer combination and seconds time source are still adapters."
+    }
+  ],
+  "unresolvedNativeDetails": [
+    "Exact render-target allocation dimensions/format/refresh policy and full quality-setting mapping.",
+    "Full auxiliary plane0.02 ray/grid UV constructor, reflected projection near-clamp policy and runtime camera hooks.",
+    "Complete scene selection, transparent/cull/shadow/sky priorities and off-main-frustum native object visibility.",
+    "Native vertex reflection color/alpha, complete overlay ordering and base water/caustic/palette/time linkage."
+  ]
+}

@@ -8,16 +8,17 @@ import { diplomacyPanel } from './diplomacy.js?v=fortress1';
 import {territoryClaimMessage} from './territory-help.js?v=fortress1';
 import * as sfx from './audio.js?v=graphics2';
 import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=fortress1';
-import {loadOriginalModels} from './original-renderer.js?v=combat-season1';
+import {loadOriginalModels} from './original-renderer.js?v=visual-seasons2';
 import {loadOriginalGround} from './original-ground.js?v=combat-season1';
-import {loadOriginalTerrain} from './original-terrain.js?v=combat-season1';
+import {loadOriginalTerrain} from './original-terrain.js?v=visual-seasons2';
+import {createOriginalReflection} from './original-reflection.js?v=visual-seasons2';
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=combat-season1';
 import {createFullscreenController} from './fullscreen.js?v=building2';
 import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=fortress1';
-import {updateOriginalCamera,originalCameraRay,originalFractionForZoom} from './original-camera.js?v=native-render1';
+import {updateOriginalCamera,originalCameraRay,originalFractionForZoom,normalizeOriginalHeading,rotateOriginalCameraHeading} from './original-camera.js?v=heading2';
 
 const $ = id => document.getElementById(id);
 const canvas = $('gl');
@@ -422,7 +423,9 @@ const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,to
 });
 const originalGround=await loadOriginalGround(gl,originalEnabled);
 const originalTerrain=await loadOriginalTerrain(gl,originalEnabled,TEAM);
-const seasonSession=createSeasonSession(wasm,originalTerrain,originalGround);
+const seasonSession=createSeasonSession(wasm,originalTerrain,originalGround,originalModels);
+const originalReflection=createOriginalReflection(gl);
+let reflectionError=null;
 await loadOriginalEpochIcons(originalAssets,originalModels.manifest);
 if(qaMode){
   canvas.dataset.originalGroundBindings=String(originalGround.entries.size);
@@ -447,7 +450,7 @@ if(originalEnabled&&(!originalAssets.enabled||originalModels.available.size<67))
 $('play').disabled=false;$('play').textContent='Scharmützel starten';
 
 // ---------------------------------------------------------------- state
-const cam = { x: 128, y: 128, zoom: 28 };
+const cam = { x: 128, y: 128, zoom: 28, heading:0 };
 const mouse = { x: 0, y: 0, down: false, sx: 0, sy: 0, drag: false, pan: false, inside: false };
 const keys = new Set();
 let running = false, paused = false, speed = 1, acc = 0, last = 0, bench = 0;
@@ -461,7 +464,7 @@ let simMs = 0, frameMs = 16.7, worstMs = 0, fogTick = -1, lastUi = 0, lastMini =
 const SPEEDS = [0.5, 1, 2, 4];
 
 // ---------------------------------------------------------------- camera
-// The eye sits south of and above the look-at point, so screen-up is map-north.
+// At heading0 the eye sits south of and above the look-at point.
 const view = { eye: [0, 0, 0], f: [0, -Math.sin(PITCH), -Math.cos(PITCH)], u: [0, Math.cos(PITCH), -Math.sin(PITCH)], vp: new Float32Array(16) };
 function updateCamera() {
   cam.x = Math.min(MAP, Math.max(0, cam.x)); cam.y = Math.min(MAP, Math.max(0, cam.y));
@@ -482,6 +485,14 @@ function updateCamera() {
   m[8] = 0; m[9] = t * u[2]; m[10] = -A * f[2]; m[11] = f[2];
   m[12] = t / aspect * tx; m[13] = t * ty; m[14] = A * tz + B; m[15] = -tz;
   if (running) wasm.set_eye(e[0], e[1], e[2]);   // so clicks land on what is drawn, even on aircraft
+}
+function panCameraScreen(right,down){
+  const r=referenceMode?(view.groundRight||[1,0]):[1,0],f=referenceMode?(view.groundForward||[0,-1]):[0,-1];
+  cam.x+=r[0]*right-f[0]*down;cam.y+=r[1]*right-f[1]*down;
+}
+function rotateView(delta){
+  if(!referenceMode||!running)return;
+  rotateOriginalCameraHeading(cam,delta);updateCamera();mouse.inside=false;
 }
 function ray(px, py) {
   if(referenceMode)return originalCameraRay(view,px,py,innerWidth,innerHeight);
@@ -575,6 +586,7 @@ function begin() {
   $('speed').textContent = '1×'; $('pause').textContent = 'Pause';
   for (const id of ['speed', 'pause', 'save']) $(id).style.display = net ? 'none' : '';
   $('menu').style.display = 'none'; $('end').style.display = 'none';
+  $('camera-tools').hidden=!referenceMode;
   uploadTerrain();
   wasm.events_clear();
   running = true; last = performance.now(); lastAuto = last;
@@ -587,6 +599,7 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
   if(referenceMode&&!benchUnits&&humans===1)wasm.skirmish_epoch(+$('start-epoch').value);
   if(!benchUnits)wasm.skirmish_visibility(+$('map-visibility').value);
   cam.x = benchUnits ? MAP / 2 : wasm.start_x(); cam.y = benchUnits ? MAP / 2 : wasm.start_y(); cam.zoom = benchUnits ? 11 : 28;
+  cam.heading=0;
   if(referenceMode)cam.nativeFraction=benchUnits?originalFractionForZoom(11,innerWidth,innerHeight):.2;
   begin();
 }
@@ -621,6 +634,7 @@ async function loadGame(slot='slot1') {
   u8(ptr, s.bytes.length).set(s.bytes);
   if (!wasm.load_apply()) return toast('That save is from an older version and cannot be loaded');
   net = null; bench = 0; Object.assign(cam, s.cam);
+  cam.heading=normalizeOriginalHeading(s.cam?.heading??0);
   seasonSession.configure(seasons);setSeasonControls(seasons);
   if(referenceMode)cam.nativeFraction=Number.isFinite(s.cam?.nativeFraction)?s.cam.nativeFraction:originalFractionForZoom(s.cam?.zoom??28,innerWidth,innerHeight);
   begin(); toast('Spielstand geladen');
@@ -678,10 +692,19 @@ function frame(now) {
   worstMs = Math.max(worstMs * 0.995, dt * 1000);
 
   const pan = 22 / cam.zoom * 60 * dt * (keys.has('Shift') ? 2 : 1);
-  if (keys.has('ArrowLeft') || (mouse.inside && mouse.x < 4)) cam.x -= pan;
-  if (keys.has('ArrowRight') || (mouse.inside && mouse.x > innerWidth - 5)) cam.x += pan;
-  if (keys.has('ArrowUp') || (mouse.inside && mouse.y < 4)) cam.y -= pan;
-  if (keys.has('ArrowDown') || (mouse.inside && mouse.y > innerHeight - 5)) cam.y += pan;
+  const rotating=referenceMode&&!ghost&&keys.has('Control');
+  if(rotating){
+    // Installed hotkeys bind Ctrl+arrows; angular speed is an input adapter.
+    const turn=(keys.has('ArrowLeft')?1:0)-(keys.has('ArrowRight')?1:0);
+    if(turn)rotateOriginalCameraHeading(cam,turn*dt*Math.PI/2*(keys.has('Shift')?3:1));
+    updateCamera();
+  }
+  let moveRight=0,moveDown=0;
+  if ((!rotating&&keys.has('ArrowLeft')) || (mouse.inside && mouse.x < 4)) moveRight-=pan;
+  if ((!rotating&&keys.has('ArrowRight')) || (mouse.inside && mouse.x > innerWidth - 5)) moveRight+=pan;
+  if ((!rotating&&keys.has('ArrowUp')) || (mouse.inside && mouse.y < 4)) moveDown-=pan;
+  if ((!rotating&&keys.has('ArrowDown')) || (mouse.inside && mouse.y > innerHeight - 5)) moveDown+=pan;
+  panCameraScreen(moveRight,moveDown);
   updateCamera();
 
   advance(dt, now);
@@ -708,6 +731,26 @@ function frame(now) {
   gl.enable(gl.DEPTH_TEST); gl.depthMask(true); gl.disable(gl.BLEND);
   const px = 1 / cam.zoom;
 
+  const [x0, y0, x1, y1] = viewRect();
+  let gid = -1, gx = 0, gy = 0;
+  if (ghost) { gid = ghost.id; [gx, gy] = ghostTile(); }
+  updatePlacement(now);
+  const n = (wasm.render_rotated||wasm.render)(alpha, x0, y0, x1, y1, gid, gx, gy,ghost?.turn||0);
+  const ranges = n ? new Uint32Array(wasm.memory.buffer, wasm.ranges_ptr(), 512) : null;
+  const renderEpochs=[0,1,2,3].map(t=>wasm.stat(t,0));
+  let reflection=null;
+  if(originalTerrain.enabled&&!reflectionError){
+    const scale=+$('quality').value>1?1:.5;
+    try{
+      reflection=originalReflection.render({vp:view.vp,eye:view.eye,width:Math.max(1,Math.round(w*scale)),height:Math.max(1,Math.round(h*scale)),
+        drawScene:pass=>{
+          originalTerrain.drawTerrain({vao:vaoT,px,fogTexture,territoryTexture,...pass});
+          if(n)originalModels.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,epochs:renderEpochs,zoom:cam.zoom,...pass});
+        }});
+    }catch(error){reflectionError=String(error);console.warn('Water reflection:',error);}
+    if(qaMode){canvas.dataset.reflection=JSON.stringify(originalReflection.metrics);canvas.dataset.reflectionError=reflectionError||'';}
+  }
+
   bindTexture(2,fogTexture);
   if(originalTerrain.enabled){
     originalTerrain.drawTerrain({vao:vaoT,vp:view.vp,px,fogTexture,territoryTexture});
@@ -718,17 +761,11 @@ function frame(now) {
     gl.drawElements(gl.TRIANGLES, MAP * MAP * 6, gl.UNSIGNED_INT, 0);
   }
 
-  const [x0, y0, x1, y1] = viewRect();
-  let gid = -1, gx = 0, gy = 0;
-  if (ghost) { gid = ghost.id; [gx, gy] = ghostTile(); }
-  updatePlacement(now);
-  const n = (wasm.render_rotated||wasm.render)(alpha, x0, y0, x1, y1, gid, gx, gy,ghost?.turn||0);
-  const ranges = n ? new Uint32Array(wasm.memory.buffer, wasm.ranges_ptr(), 512) : null;
   if (n) {
     gl.bindBuffer(gl.ARRAY_BUFFER, instBuf);
     gl.bufferData(gl.ARRAY_BUFFER, f32(wasm.inst_ptr(), n * STRIDE), gl.STREAM_DRAW);
     originalGround.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,vp:view.vp,
-      epochs:[0,1,2,3].map(t=>wasm.stat(t,0)),isUrbanAt:(x,z)=>!!wasm.ground_urban_at(x,z)});
+      epochs:renderEpochs,isUrbanAt:(x,z)=>!!wasm.ground_urban_at(x,z)});
     if(qaMode)canvas.dataset.originalGroundDrawn=String(originalGround.metrics.instances);
     if(!paused && now-lastWorkSound>500){
       lastWorkSound=now;
@@ -753,7 +790,7 @@ function frame(now) {
         const cnt=ranges[id*2+1]; if(!cnt||!mesh.count[id])continue;
         instOffset(ranges[id*2]); gl.drawArraysInstanced(gl.TRIANGLES,mesh.first[id],mesh.count[id],cnt);
       }
-      originalModels.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,vp:view.vp,epochs:[0,1,2,3].map(t=>wasm.stat(t,0)),zoom:cam.zoom,eye:view.eye,shadow:true});
+      originalModels.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,vp:view.vp,epochs:renderEpochs,zoom:cam.zoom,eye:view.eye,shadow:true});
       gl.disable(gl.STENCIL_TEST); gl.depthMask(true);
     }
     // one instanced draw per model type
@@ -767,13 +804,13 @@ function frame(now) {
       instOffset(ranges[id * 2]);
       gl.drawArraysInstanced(gl.TRIANGLES, mesh.first[id], mesh.count[id], cnt);
     }
-    originalModels.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,vp:view.vp,epochs:[0,1,2,3].map(t=>wasm.stat(t,0)),zoom:cam.zoom,eye:view.eye});
+    originalModels.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,vp:view.vp,epochs:renderEpochs,zoom:cam.zoom,eye:view.eye});
   }
 
   // translucent water over the sea bed and anything submerged
   gl.enable(gl.BLEND); gl.depthMask(false);
   if(originalTerrain.enabled){
-    originalTerrain.drawWater({vao:vaoW,vp:view.vp,time:now/1000,eye:view.eye,fogTexture});
+    originalTerrain.drawWater({vao:vaoW,vp:view.vp,time:now/1000,eye:view.eye,fogTexture,reflectionTexture:reflection?.texture,reflectionVP:reflection?.vp});
   }else{
     bindTexture(1,mapTexture);bindTexture(4,originalAssets.terrainTexture,gl.TEXTURE_2D_ARRAY);
     gl.useProgram(water.p); gl.bindVertexArray(vaoW);
@@ -784,7 +821,7 @@ function frame(now) {
   if (n) {
     gl.useProgram(quads.p); gl.bindVertexArray(vaoQ); gl.bindBuffer(gl.ARRAY_BUFFER, instBuf);
     gl.uniformMatrix4fv(quads.u.uVP, false, view.vp); gl.uniform1f(quads.u.uPx, px);
-    gl.uniform3f(quads.u.uRight, 1, 0, 0); gl.uniform3fv(quads.u.uUp, view.u);
+    gl.uniform3fv(quads.u.uRight,view.right||[1,0,0]); gl.uniform3fv(quads.u.uUp, view.u);
     for (const id of [243, 240, 242, 241]) {            // shadows, rings, explosions, then bars on top of everything
       const cnt = ranges[id * 2 + 1];
       if (!cnt) continue;
@@ -958,7 +995,7 @@ canvas.addEventListener('mousedown', e => {
 addEventListener('mousemove', e => {
   if(modalOpen()){mouse.inside=false;return;}
   if(ghost&&e.target!==canvas&&!mouse.pan){mouse.inside=false;return;}
-  if (mouse.pan) { cam.x -= e.movementX / cam.zoom; cam.y -= e.movementY / (cam.zoom * Math.sin(view.pitch??PITCH)); }
+  if (mouse.pan) panCameraScreen(-e.movementX/cam.zoom,-e.movementY/(cam.zoom*Math.sin(view.pitch??PITCH)));
   mouse.x = e.clientX; mouse.y = e.clientY; mouse.inside = true;
   if (mouse.down) {
     if (Math.abs(mouse.x - mouse.sx) + Math.abs(mouse.y - mouse.sy) > 6) mouse.drag = true;
@@ -1041,7 +1078,7 @@ $('cheat-form').addEventListener('submit', e => {
 addEventListener('keydown', e => {
   if(e.key==='F11'){e.preventDefault();if(!e.repeat)fullscreen.toggle();return;}
   if ($('cheat-dialog').open || $('research-dialog').open || diplomacy.isOpen()) return;
-  if(e.target.closest?.('#building-controls')&&['Enter',' '].includes(e.key))return;
+  if(e.target.closest?.('#building-controls,#camera-tools')&&['Enter',' '].includes(e.key))return;
   if (e.key === 'Enter' && !['INPUT','SELECT','TEXTAREA','BUTTON'].includes(e.target.tagName)) { e.preventDefault(); openCheats(); return; }
   if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;
   keys.add(e.key);
@@ -1057,6 +1094,7 @@ addEventListener('keydown', e => {
     e.preventDefault(); return;
   }
   if ((e.ctrlKey || e.metaKey) && k === 'S') { e.preventDefault(); saveGame(); return; }
+  if(referenceMode&&!ghost&&e.ctrlKey&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();keys.add('Control');return;}
   if (e.ctrlKey || e.metaKey) return;
   const hi = HOT.indexOf(k);
   if (hi >= 0 && ui && ui.act[hi]) { doAct(hi); return; }
@@ -1082,6 +1120,9 @@ addEventListener('keyup', e => keys.delete(e.key));
 addEventListener('blur', () => { keys.clear(); cancelMapGesture(); });
 
 $('idle').onclick = idleWorker;
+$('camera-left').onclick=()=>rotateView(Math.PI/4);
+$('camera-right').onclick=()=>rotateView(-Math.PI/4);
+$('camera-north').onclick=()=>{if(referenceMode&&running){cam.heading=0;updateCamera();mouse.inside=false;}};
 $('pause').onclick = togglePause;
 $('mute').onclick = toggleMute;
 $('music').onclick = () => { sfx.setMusicEnabled(!sfx.isMusicEnabled()); $('music').textContent = sfx.isMusicEnabled() ? 'Musik an' : 'Musik aus'; };
@@ -1089,6 +1130,7 @@ $('voices').onclick = () => { sfx.setSpeechEnabled(!sfx.isSpeechEnabled()); $('v
 $('save').onclick = () => saveGame();
 $('speed').onclick = () => setSpeed((SPEEDS.indexOf(speed) + 1) % SPEEDS.length);
 function toMenu() {
+  $('camera-tools').hidden=true;
   cancelBuilding();
   diplomacy.close();
   if (running && !net && !bench) saveGame(true);
@@ -1137,6 +1179,7 @@ function channel(local) {
     wasm.skirmish_visibility(cfg.visibility);
     net.ls = new Lockstep(wasm, local, buf => { if (ch.readyState === 'open') ch.send(buf); });
     bench = 0; cam.x = wasm.start_x(); cam.y = wasm.start_y(); cam.zoom = 28;
+    cam.heading=0;
     if(referenceMode)cam.nativeFraction=.2;
     begin(); toast(local === 0 ? 'You are blue. Good luck!' : 'You are red. Good luck!');
   }
