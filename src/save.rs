@@ -2,8 +2,9 @@
 //!
 //! The map is regenerated from its seed, then everything that can change is
 //! written on top: players, entities, harvested tiles and explored fog.
-//! Projectiles and explosions in flight remain transient. Persisted attack-round
-//! windup/cooldown state is stored separately for the UP profile.
+//! Modern joint8 retains in-flight projectiles in its separate PRJ1 outer
+//! sidecar. Older profiles omit them; presentation-only explosions are transient.
+//! Persisted attack-round windup/cooldown state is separate for the UP profile.
 
 use crate::defs::*;
 use crate::game::*;
@@ -62,10 +63,17 @@ impl Game {
         crate::save6::append_descriptor(&mut b);
         #[cfg(feature="ee2-paidqueue7")]
         {self.write_paid_queue(&mut b);crate::paid_queue7::append_descriptor(&mut b);}
+        #[cfg(feature="ee2-civ8")]
+        crate::civ8_save::write(self,&mut b);
+        #[cfg(feature="ee2-pack8")] {b=self.wrap_pack_save(&b);}
         self.savebuf = b;
     }
 
     pub fn load(buf: &[u8]) -> Option<Game> {
+        #[cfg(feature="ee2-pack8")] let (pack_core,pack_records)=crate::pack8_save::split(buf)?;
+        #[cfg(feature="ee2-pack8")] let buf=pack_core;
+        #[cfg(feature="ee2-civ8")] let(civ_normalized,civilizations)=crate::civ8_save::normalize(buf)?;
+        #[cfg(feature="ee2-civ8")] let buf=civ_normalized.as_slice();
         #[cfg(feature="ee2-paidqueue7")] let (paid_normalized,paid_chunk)=crate::paid_queue7::split_input(buf)?;
         #[cfg(feature="ee2-paidqueue7")] let buf=paid_normalized.as_slice();
         #[cfg(feature="ee2-roster6")]
@@ -187,6 +195,11 @@ impl Game {
             if e.cargo[..e.ncargo as usize].iter().any(|&c| c as usize>=DEFS.len()) {return None;}
             if DEFS[e.def as usize].building && e.q[..e.qn as usize].iter().any(|&q| q!=RESEARCH && !original_research(q) && q as usize>=DEFS.len() && (q<TECH0 || (q-TECH0) as usize>=TECHS.len())) {return None;}
         }
+        #[cfg(feature="ee2-civ8")]
+        {
+            if civilizations[g.nplayers..].iter().any(|&c|c!=crate::civ8_runtime::LEGACY_NEUTRAL){return None;}
+            g.civilizations=civilizations;
+        }
         for t in 0..g.nplayers {g.rebuild_modifiers(t as u8,false);}
         #[cfg(all(feature="ee2-reference",not(feature="ee2-up15")))]
         if trailer<236&&(u(3)==47||u(3)==53){
@@ -206,6 +219,18 @@ impl Game {
         #[cfg(feature="ee2-up15")]
         g.read_attack_clock(attack_chunk)?;
         #[cfg(feature="ee2-paidqueue7")] g.read_paid_queue(paid_chunk.as_deref())?;
+        #[cfg(feature="ee2-civ8")]
+        {
+            for e in &g.ents[..high]{
+                if e.alive&&DEFS[e.def as usize].building{
+                    for &job in &e.q[..e.qn as usize]{
+                        if (job as usize)<DEFS.len()&&!g.definition_civ_available(e.team,job as DefId){return None;}
+                    }
+                }
+            }
+            if g.queue_prices.iter().any(|p|(61..DEFS.len()as u32).contains(&p.job)&&p.inferred){return None;}
+            g.civ_setup_open=false;
+        }
         g.free = (0..MAXE).rev().filter(|&i| !g.ents[i].alive).map(|i| i as u16).collect();
         for i in 0..high {
             g.ents[i].fslot = u16::MAX; // flow-field cache starts empty
@@ -234,6 +259,7 @@ impl Game {
             g.update_fog();
         }else{g.refresh_display_fog();}
         g.terr_dirty = true;
+        #[cfg(feature="ee2-pack8")] g.read_pack_save(pack_records)?;
         Some(g)
     }
 }

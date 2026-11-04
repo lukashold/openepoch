@@ -9,10 +9,11 @@ import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from '../doc
 import {normalizeSeasonSettings} from '../docs/original-seasons.js';
 import {normalizeOriginalHeading,originalFractionForZoom} from '../docs/original-camera.js';
 import {Lockstep,PROTOCOL_VERSION} from '../docs/net.js';
+import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings} from '../docs/civilization-setup.js';
 
 const root=new URL('../',import.meta.url),analysis=new URL('../../EE2-Research/analysis/',import.meta.url);
 const sha=b=>createHash('sha256').update(b).digest('hex');
-const sourceNames=['main.js','index.html','rules-profile.js','net.js','season-session.js'];
+const sourceNames=['main.js','index.html','rules-profile.js','net.js','season-session.js','civilization-setup.js'];
 const sourceBytes=Object.fromEntries(await Promise.all(sourceNames.map(async name=>[name,await fs.readFile(new URL('docs/'+name,root))])));
 const sourceHashes=Object.fromEntries(Object.entries(sourceBytes).map(([name,bytes])=>[name,sha(bytes)]));
 const main=sourceBytes['main.js'].toString(),html=sourceBytes['index.html'].toString();
@@ -55,7 +56,7 @@ for(const id of ['own','base','up15']){
  context.rulesLoadFailure(Error('UP-Datei fehlt'));check(['play','mpopen','continue','previous-save'].every(key=>$(key).disabled),'Actual main failure handler disables game/MP/save launch');equal($('rules-note').textContent,'UP-Datei fehlt','Actual main shows the actionable load error');
 }
 for(const [id,p]of Object.entries(profiles)){const before=fetches.length,w=await fresh(id);equal(w.ruleset(),p.ruleset,'Requested binary has exact ruleset ID');equal(fetches.length,before+1,'One requested file fetch per successful profile load');assert.throws(()=>assertRulesProfile(w,profiles[id==='own'?'base':'own']));checks++;}
-for(const schema of [undefined,5,6,8]){
+for(const schema of [undefined,5,6,7]){
  const old={ruleset:()=>2,...(schema===undefined?{}:{schema_revision:()=>schema})};
  assert.throws(()=>assertRulesProfile(old,profiles.up15),/Speicher-\/Einheitenformat/);checks++;
 }
@@ -78,13 +79,17 @@ const indexedDB={open(name,version){
   }};if(upgrade)request.onupgradeneeded?.();request.onsuccess?.();
  });return request;
 }};
-async function environment(id,seat=0,qa=false){
+async function environment(id,seat=0,qa=false,menu={}){
  const p=qa?resolveRulesProfile(`http://localhost/?${id==='own'?'':'rules=ee2&profile='+id+'&'}qa`,{up15Enabled:true}):profiles[id],w=await fresh(id),elements=new Map(),messages=[],begins=[];
  const $=id=>{if(!elements.has(id))elements.set(id,{value:'',checked:false,disabled:false,style:{},textContent:''});return elements.get(id);};
- for(const [key,value] of Object.entries({'pop-limit':'500',supplies:'1','start-epoch':'0','map-visibility':'2','season-start':seat?'10':'2','season-length':seat?'30':'5',seed:seat?'99':'7',mpai:seat?'2':'0'}))$(key).value=value;
+ for(const [key,value] of Object.entries({...{'pop-limit':'500',supplies:'1','start-epoch':'0','map-visibility':'2','season-start':seat?'10':'2','season-length':seat?'30':'5',seed:seat?'99':'7',mpai:seat?'2':'0'},...menu.values}))$(key).value=value;
  $('season-cycle').checked=!seat;
  const render={setSeasonPhase(){}},session=createSeasonSession(w,render,render),cam={x:0,y:0,zoom:28,heading:0};
+ class Element{constructor(){this.children=[];this.style={};this.value='';}append(...nodes){this.children.push(...nodes);}before(node){this.previous=node;}}
+ const anchor=new Element(),civilizationSetup=createCivilizationSetup({wasm:w,document:{createElement:()=>new Element()},anchor});
+ if(civilizationSetup.enabled&&menu.choices)anchor.previous.children.slice(1).forEach((row,i)=>row.children[1].value=String(menu.choices[i]));
  const context=vm.createContext({wasm:w,rulesProfile:p,savedRulesProfileMatches,indexedDB,$,seasonSession:session,savedSeasonSettings,normalizeSeasonSettings,peerSeasonSettings,
+  civilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,
   referenceMode:p.reference,qaMode:false,normalizeOriginalHeading,originalFractionForZoom,innerWidth:1280,innerHeight:720,MAP:256,performance,queueMicrotask,
   Lockstep,PROTOCOL_VERSION,mpStatus:t=>messages.push(t),toast:t=>messages.push(t),begin:()=>begins.push(w.game_tick()),
  });
@@ -124,6 +129,40 @@ for(const id of ['own','base','up15']){
 for(const id of ['own','base','up15'])for(const other of ['own','base','up15'])if(id!==other){const e=await environment(id),h=e.api.channel(1),ch={readyState:'open',send(){},close(){this.readyState='closed';h.close();}};h.open(ch);h.message(JSON.stringify({t:'hello',protocol:PROTOCOL_VERSION,rules:profiles[other].ruleset}));equal(ch.readyState,'closed','Different numerical profiles reject in real channel');check(!e.api.getNet(),'Cross-profile hello cannot initialize multiplayer');}
 for(const id of ['own','base','up15']){const e=await environment(id),h=e.api.channel(1),ch={readyState:'open',send(){},close(){this.readyState='closed';h.close();}};h.open(ch);h.message(JSON.stringify({t:'hello',protocol:PROTOCOL_VERSION-1,rules:e.p.ruleset}));equal(ch.readyState,'closed','All profiles reject an older network protocol');check(!e.api.getNet(),'Old protocol cannot initialize multiplayer');}
 check(html.includes('for="rules-profile">Regelversion'),'Rule selector has a visible accessible label');equal((html.match(/id="rules-profile"/g)||[]).length,1,'Rule selector ID is unique');check(main.includes('await loadNativeHud(originalAssets,referenceMode)'),'Native HUD loading remains in both EE2 profiles');
+// New choices flow through the actual Main start/channel functions and real Core.
+{
+ const solo=await environment('up15',0,false,{values:{'start-epoch':'5','pop-limit':'1000',supplies:'2'},choices:[0,6,5,2]});
+ solo.api.start(3,713,0);equal(Array.from({length:4},(_,i)=>solo.w.player_civilization(i)),[0,6,5,2],'Singleplayer uses all four visible civilizations');
+ equal(solo.w.stat(0,0),5,'Singleplayer retains the selected epoch after applying civilization traits');
+ await solo.api.saveGame(true);const hash=solo.w.state_hash();for(let i=0;i<7;i++)solo.w.tick();await solo.api.loadGame();
+ equal(solo.w.state_hash(),hash,'Civilization-bearing save restores without applying menu traits a second time');
+ equal(Array.from({length:4},(_,i)=>solo.w.player_civilization(i)),[0,6,5,2]);
+ const peers=await Promise.all([
+  environment('up15',0,false,{values:{mpai:'2','start-epoch':'5','pop-limit':'1000',supplies:'2','map-visibility':'0'},choices:[0,1,5,2]}),
+  environment('up15',1,false,{values:{mpai:'0','start-epoch':'0','pop-limit':'250',supplies:'0','map-visibility':'2'},choices:[6,3,4,7]}),
+ ]),pending=[[],[]],handlers=peers.map((p,i)=>p.api.channel(i));let startMessage;
+ const transport=peers.map((p,i)=>({readyState:'open',send(value){if(typeof value==='string'&&JSON.parse(value).t==='start')startMessage=JSON.parse(value);pending[1-i].push(typeof value==='string'?value:value.slice(0));},close(){this.readyState='closed';handlers[i].close();}}));
+ const flush=()=>{for(let guard=0;guard<100;guard++){let work=false;for(let i=0;i<2;i++)for(const value of pending[i].splice(0)){handlers[i].message(value);work=true;}if(!work)return;}throw Error('New settings handshake did not drain');};
+ handlers.forEach((h,i)=>h.open(transport[i]));flush();
+ equal(startMessage.civilizations,[0,6,5,2],'Host honors guest own choice and resolves the exact playing-seat civilization array');
+ equal([startMessage.ai,startMessage.epoch,startMessage.popLimit,startMessage.supplies,startMessage.visibility],[2,5,1000,2,0],'Host transfers actual complete skirmish choices');
+ for(const p of peers){check(p.api.getNet()?.ls instanceof Lockstep);equal(Array.from({length:4},(_,i)=>p.w.player_civilization(i)),[0,6,5,2]);equal(p.w.stat(0,0),5);}
+ for(let tick=0;tick<100;tick++){flush();for(const p of peers)check(p.api.getNet().ls.step());flush();}
+ equal(peers[0].w.state_hash(),peers[1].w.state_hash(),'Four-civilization actual worlds retain a common peer hash');
+}
+const validCfg={t:'start',protocol:PROTOCOL_VERSION,rules:2,seed:713,ai:0,epoch:0,popLimit:500,supplies:1,visibility:2,civilizations:[0,1,14,14],seasons:normalizeSeasonSettings({cycle:true,startMonth:6,minutesPerSeason:5})};
+const bytesOf=w=>{const p=w.save();return new Uint8Array(w.memory.buffer,p,w.save_len()).slice();};
+for(const change of [c=>delete c.civilizations,c=>c.civilizations=[0,1,0,14],c=>c.civilizations=[0,15,14,14],c=>c.civilizations=[14,1,14,14],c=>c.civilizations=[0,1,14],c=>c.civilizations='0,1,14,14',c=>c.civilizations=[0,'1',14,14],c=>c.civilizations=[0,1,-1,14],c=>c.epoch=15,c=>c.epoch=-1,c=>c.epoch='0',c=>c.popLimit=999,c=>c.popLimit='500',c=>c.supplies=3,c=>c.visibility=3,c=>c.ai=3,c=>c.seed=0,c=>c.seasons=null]){
+ const e=await environment('up15',1),handler=e.api.channel(1),ch={readyState:'open',send(){},close(){this.readyState='closed';handler.close();}};
+ e.api.start(1,917,0);e.w.tick();handler.open(ch);const before=bytesOf(e.w),hash=e.w.state_hash();const cfg=structuredClone(validCfg);change(cfg);handler.message(JSON.stringify(cfg));
+ equal(ch.readyState,'closed','Invalid new-match choice closes transport before starting');check(!e.api.getNet());equal(e.w.state_hash(),hash);equal(bytesOf(e.w),before,'Malformed match settings preserve complete world bytes');
+}
+for(const badChoice of [undefined,null,14,16,-1,.5,'1']){
+ const e=await environment('up15',0),handler=e.api.channel(0),ch={readyState:'open',send(){},close(){this.readyState='closed';handler.close();}};handler.open(ch);
+ e.api.start(1,917,0);e.w.tick();const before=bytesOf(e.w);handler.message(JSON.stringify({t:'hello',protocol:PROTOCOL_VERSION,rules:2,civilizationChoice:badChoice}));
+ equal(ch.readyState,'closed');check(!e.api.getNet());equal(bytesOf(e.w),before,'Invalid guest civilization does not initialize a host game');
+}
+assert.throws(()=>assertRulesProfile({ruleset:()=>2,schema_revision:()=>8,definition_count:()=>61},profiles.up15),/Speicher-\/Einheitenformat/);checks++;
 for(const [name,digest]of Object.entries(sourceHashes))equal(sha(await fs.readFile(new URL('docs/'+name,root))),digest,'Source remains frozen through profile QA');
 const report={format:'openepoch-rules-profile-integration-tests-v2',passed:true,checks,productionUp15Enabled:UP15_PROFILE_ENABLED,sourceHashes,binaries:Object.fromEntries(Object.entries(binaries).map(([id,b])=>[id,{file:binaryFiles[id],bytes:b.length,sha256:sha(b)}])),network,openedDatabases:[...new Set(opened)],protocol:PROTOCOL_VERSION,
  scope:'Actual profile resolver/one-file WASM loader and actual main start/db/dbDo/save/load/Continue/channel functions evaluated in vm. Three real WASM rulesets and six same-profile Lockstep peers; DOM, IndexedDB storage-event transport and queued channel transport substituted. No browser/WebRTC socket/original EXE launched.',

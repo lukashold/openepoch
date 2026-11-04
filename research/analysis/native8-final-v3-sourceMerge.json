@@ -1,0 +1,82 @@
+{
+  "format": "native8-final-v3-root-rebind-v1",
+  "passed": true,
+  "manifestSha256": "2a7534a2c13d1a68a610469a9a67a548ce961006eecdaf8db0abebaeb262701e",
+  "verifiedFiles": 533,
+  "copied": [
+    {
+      "path": "docs/openepoch-joint8-pack.wasm",
+      "before": null,
+      "sha256": "63470e86d6a50bd168fa5d7364d0789d59d342be3aad762526aa150e3e7b8a4f"
+    },
+    {
+      "path": "src/ai.rs",
+      "before": "b8b78f8bfa8d5a2dcf0bec1c8b8af11202b54ce8dbb221c19f1dad1690a7d66c",
+      "sha256": "810750e38962722b8a80e390bb554a3ab3218265eed57019245e26da253e8a4c"
+    },
+    {
+      "path": "src/cmd.rs",
+      "before": "4c71658a15f14dc829bdb01df7cd5b89c1162703459b63acaeae3f3d85c23d8e",
+      "sha256": "977397f4e7a3e450f4ba269f0712ccd83b91ebdbaaafca1544e148a1837f6b60"
+    },
+    {
+      "path": "src/decision_hash8.rs",
+      "before": null,
+      "sha256": "6ffa9dfd32029eeda0c24621b6245fd6ea9923ef086acdaa197a90076194ee4f"
+    },
+    {
+      "path": "src/game.rs",
+      "before": "a66f6b34333d918a3dfcc411305ec565033f3b0db9680e3827296bfc1a27d26f",
+      "sha256": "ae3d641dd0bf9ac978b91b9427600a76361b90a95969ffb75189c5615eb1e569"
+    },
+    {
+      "path": "src/lib.rs",
+      "before": "8aefbc49d5763f26fea7749bc3da5195bf2ffc0f7116a018ce85874eeb9d08b0",
+      "sha256": "738aa0331b5946f16196d9b8a82c5794b41091c8942b15a5d0f21241ae2b6cb3"
+    },
+    {
+      "path": "src/navigation8.rs",
+      "before": null,
+      "sha256": "64fa72dd0b973079339dd90c82e2a6924e48f1af9f79542222479a536abdb7ec"
+    },
+    {
+      "path": "src/pack8_save.rs",
+      "before": "15a93999f309b592e9c3147775e2d4416bd6031fd78b98f8474af099541f2df7",
+      "sha256": "59ded342aa12482fb814382728dfcd088071198b66e270fa4936dec353eecd38"
+    },
+    {
+      "path": "src/pack8_tests.rs",
+      "before": "75f3ee59bf112ad2400b38a39782369015f0dfe65359ca3b4c20f99a7978c601",
+      "sha256": "240680376a3536fa0866de1de8d0a091a958a737afdad53c3b03801a586ff0cd"
+    },
+    {
+      "path": "src/placement.rs",
+      "before": "65afaff5af06c8cf0cbc938da5da060c7773f6593e99fd2544e05779c335ec3a",
+      "sha256": "55177c45a9c30feb186f5fe3210533524ccc530f608e76f83ac2312fb7f740af"
+    },
+    {
+      "path": "src/projectiles8.rs",
+      "before": null,
+      "sha256": "e3aa3d941e6ff42ecb388f2f378907074612ad347f2992d67a744ff60a3d2ab2"
+    },
+    {
+      "path": "src/projectiles8_tests.rs",
+      "before": null,
+      "sha256": "01a9d6f88bc89f8044fcd3a2ff9a34b79099220dfe448ea939fd8f0862d9c245"
+    },
+    {
+      "path": "src/save.rs",
+      "before": "97c74526f7932069b297001743463009094446043310a72bfe8bb98e4f1b536b",
+      "sha256": "59ed5c610dfeb5a842096cb1b034df5fe03c60787fdb3995c9b67c0839a581f3"
+    },
+    {
+      "path": "tools/pack8-save-envelope.mjs",
+      "before": "68ed2346ae26b08556b7c374aa0069d5fb5eee7c1527d4cf75a86e83c34a4921",
+      "sha256": "cfa4ad79cff1a81d471686aad2b90844729ecd3c0d72352de6ebb759d1ba459a"
+    }
+  ],
+  "wasmSha256": "63470e86d6a50bd168fa5d7364d0789d59d342be3aad762526aa150e3e7b8a4f",
+  "wasmBytes": 581599,
+  "profileSha256": "28ff508c7912dcbb82749dfebc3629a44bef89902c64044a44daab6e9dbfdf3e",
+  "active7Unchanged": true
+}

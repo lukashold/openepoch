@@ -76,7 +76,7 @@ def run(extra_bindings=(), prefix="ee2-up15", model_manifest="manifest-up15.json
         return result,resolved
     try:
         units.ROOT=STAGE;units.Database=lambda _:ActiveDatabase(MANIFEST);units.make_fields=fields
-        data=units.run(extra_bindings=extra_bindings)
+        data=units.run(extra_bindings=extra_bindings,unit_civs={b['source_unit']:b['source_civ']for b in extra_bindings if b.get('source_civ')})
     finally:units.ROOT,units.Database,units.make_fields=old_root,old_database,old_fields
     db=ActiveDatabase(MANIFEST)
     try:

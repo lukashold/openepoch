@@ -1,0 +1,19 @@
+{
+  "format": "openepoch-native8-package-extraction-v1",
+  "status": "passed",
+  "build": "native8",
+  "createdUTC": "2026-11-04T22:42:04.082746+00:00",
+  "file": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\native-media8\\OpenEpoch-Mac-Komplett.zip",
+  "zipBytes": 1342814366,
+  "sha256": "55273a0a8e2d6e251545838d8bb56c44a97bc06932224da47fb311f191b88f89",
+  "zipEntries": 5503,
+  "manifestFilesVerified": 5501,
+  "allCopiedFilesMatchFrozenCandidate": true,
+  "mediaFiles": 5380,
+  "mediaBytes": 1676912962,
+  "root": "C:\\Users\\Admin\\Documents\\Codex\\2026-10-30\\es-x20\\work\\Mac Paket Native8 Test\\OpenEpoch",
+  "launcherMode": "0755",
+  "launcherLineEndings": "LF",
+  "pythonMinimum": "3.8",
+  "noMacExecutionClaim": true
+}

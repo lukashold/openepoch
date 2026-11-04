@@ -1,14 +1,14 @@
 // Capture fixture built exclusively through public game commands. Save bytes
 // are inspected for positions/progress; no memory/state fields are written.
-import{save}from'./roster6-state.mjs';
-export function ordinaryEntities(w){const b=save(w),d=new DataView(b.buffer),stride=d.getUint32(4,true),start=36+4*d.getUint32(8,true),out=[];for(let i=0;i<d.getUint32(32,true);i++){const at=start+i*stride;if(!b[at])continue;out.push({slot:i,def:d.getUint16(at+2,true),team:b[at+4],x:d.getFloat32(at+8,true),y:d.getFloat32(at+12,true),built:d.getFloat32(at+80,true),selected:!!b[at+78]});}return out;}
+import{save,saveCore}from'./roster6-state.mjs';
+export function ordinaryEntities(w){const b=saveCore(w),d=new DataView(b.buffer,b.byteOffset,b.byteLength),stride=d.getUint32(4,true),start=36+4*d.getUint32(8,true),out=[];for(let i=0;i<d.getUint32(32,true);i++){const at=start+i*stride;if(!b[at])continue;out.push({slot:i,def:d.getUint16(at+2,true),team:b[at+4],x:d.getFloat32(at+8,true),y:d.getFloat32(at+12,true),built:d.getFloat32(at+80,true),selected:!!b[at+78]});}return out;}
 export function ordinaryUI(w){const p=w.ui();return JSON.parse(new TextDecoder().decode(new Uint8Array(w.memory.buffer,p,w.ui_len())));}
-function terrain(w){const b=save(w),d=new DataView(b.buffer),at=36+4*d.getUint32(8,true)+d.getUint32(4,true)*d.getUint32(32,true);return{ter:b.subarray(at,at+65536),res:b.subarray(at+65536,at+2*65536)};}
+function terrain(w){const b=saveCore(w),d=new DataView(b.buffer,b.byteOffset,b.byteLength),at=36+4*d.getUint32(8,true)+d.getUint32(4,true)*d.getUint32(32,true);return{ter:b.subarray(at,at+65536),res:b.subarray(at+65536,at+2*65536)};}
 function candidates(w,def,x0,y0){const{ter,res}=terrain(w),side=def===60?1:3,out=[];for(let y=3;y<253-side;y++)for(let x=3;x<253-side;x++){let land=0,water=0,blocked=false;for(let yy=y;yy<y+side;yy++)for(let xx=x;xx<x+side;xx++){const t=yy*256+xx;if(res[t]||ter[t]===5){blocked=true;break;}if(ter[t]<=1)water++;else land++;}if(blocked)continue;if(def===5){if(land*10<side*side||water*4<side*side||water<3)continue;}else if(water)continue;if(def===60){let near=false;for(let yy=y-4;yy<=y+4;yy++)for(let xx=x-4;xx<=x+4;xx++){if(xx>=0&&yy>=0&&xx<256&&yy<256&&ter[yy*256+xx]===0)near=true;}if(!near)continue;}out.push({x,y,side,dist:(x+side/2-x0)**2+(y+side/2-y0)**2});}return out.sort((a,b)=>a.dist-b.dist||a.y-b.y||a.x-b.x);}
 export function buildOrdinaryClassicFixture(w,{seed=7,epoch=9,instantBuild=true,maxTicksPerStep=12000}={}){
  if(epoch<9||epoch>=10)throw new Error('ordinary fixture requires common native production epoch10/runtime9');
  const trace=[],require=(value,what)=>{if(!value)throw new Error('ordinary fixture: '+what);};
- w.init(seed,0,0,1,0);require(w.definition_count()===61,'61 definitions');require(w.skirmish_epoch(epoch)===1,'epoch setting');require(w.skirmish_setup(500,2)===1,'abundant resources');require(w.skirmish_visibility(2)===1,'revealed map');
+ w.init(seed,0,0,1,0);require([61,80].includes(w.definition_count()),'explicit61/80 definition namespace');require(w.skirmish_epoch(epoch)===1,'epoch setting');require(w.skirmish_setup(500,2)===1,'abundant resources');require(w.skirmish_visibility(2)===1,'revealed map');
  if(instantBuild){require(w.cheat(0)===1,'enable authorized game cheat');require(w.cheat(3)===1,'instant build option');}
  const until=(predicate,label)=>{for(let t=0;t<=maxTicksPerStep;t++){if(predicate())return t;w.tick();}throw new Error('ordinary fixture timeout: '+label);};
  w.select_point(w.start_x(),w.start_y(),0,0,0,0,256,256);require(w.cmd_queue_job(57)===1,'Scout queue');const scoutTicks=until(()=>ordinaryEntities(w).some(e=>e.team===0&&e.def===57),'Scout production');trace.push({action:'train',def:57,ticks:scoutTicks});

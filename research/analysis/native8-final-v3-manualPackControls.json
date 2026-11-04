@@ -1,0 +1,100 @@
+{
+  "format": "native-joint8-real-main-manual-pack-controls-v1",
+  "passed": true,
+  "checks": 472,
+  "wasmSha256": "63470e86d6a50bd168fa5d7364d0789d59d342be3aad762526aa150e3e7b8a4f",
+  "mainSha256": "f3653fe46162284c824193c4b53e1560f723f121a644de6575e47862dbf1505a",
+  "cases": [
+    {
+      "id": 65,
+      "handle": 18,
+      "unpack": {
+        "handle": 18,
+        "flags": 10,
+        "phase": 2,
+        "visual": 2,
+        "duration": 1,
+        "capable": 1
+      },
+      "pack": {
+        "handle": 18,
+        "flags": 0,
+        "phase": 1,
+        "visual": 1,
+        "duration": 1,
+        "capable": 1
+      },
+      "sourceSaveSha256": "778d9ba41b01d01756140f8ec1d896819cc6c4241f8e8531566feb8197c62ffe",
+      "normalProductionTicks": 1161
+    },
+    {
+      "id": 68,
+      "handle": 17,
+      "unpack": {
+        "handle": 17,
+        "flags": 10,
+        "phase": 2,
+        "visual": 2,
+        "duration": 1,
+        "capable": 1
+      },
+      "pack": {
+        "handle": 17,
+        "flags": 0,
+        "phase": 1,
+        "visual": 1,
+        "duration": 1,
+        "capable": 1
+      },
+      "sourceSaveSha256": "c9843536c423eda9d2e10a213ad106d5e59866c881e452f5604242342c7c21d4",
+      "normalProductionTicks": 1001
+    },
+    {
+      "id": 76,
+      "handle": 18,
+      "unpack": {
+        "handle": 18,
+        "flags": 10,
+        "phase": 2,
+        "visual": 2,
+        "duration": 1,
+        "capable": 1
+      },
+      "pack": {
+        "handle": 18,
+        "flags": 0,
+        "phase": 1,
+        "visual": 1,
+        "duration": 1,
+        "capable": 1
+      },
+      "sourceSaveSha256": "d56c5443f9a241fc03bc200aafe3d27e3ac0eda567b165cd5dbf99a85a4fb130",
+      "normalProductionTicks": 1041
+    },
+    {
+      "id": 78,
+      "handle": 18,
+      "unpack": {
+        "handle": 18,
+        "flags": 10,
+        "phase": 2,
+        "visual": 2,
+        "duration": 1,
+        "capable": 1
+      },
+      "pack": {
+        "handle": 18,
+        "flags": 0,
+        "phase": 1,
+        "visual": 1,
+        "duration": 1,
+        "capable": 1
+      },
+      "sourceSaveSha256": "83afef542090501276cbdcc73f3b3dfb767db9a783f1d50c87fc7bf57cda0e60",
+      "normalProductionTicks": 1101
+    }
+  ],
+  "limits": [
+    "Actual Main UI action prefix/handler evaluated with a substituted DOM/audio feedback transport. Public normally-produced source snapshots, actual Core command transitions and opaque-handle render metadata; GPU phase and full native AI parity are separate."
+  ]
+}

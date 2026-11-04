@@ -60,6 +60,9 @@ impl Game {
             return;
         }
         // ---- census
+        #[cfg(feature="ee2-civ8")]
+        let mut count = [0u32; DEFS.len()];
+        #[cfg(not(feature="ee2-civ8"))]
         let mut count = [0u32; 64];
         let mut tc = NOIDX;
         let mut any_b = NOIDX;
@@ -288,6 +291,11 @@ impl Game {
                 let mut seen = 0;
                 for (k, d) in DEFS.iter().enumerate() {
                     if d.made_at == bdef && d.epoch <= ep && d.until > ep && d.armed() {
+                        // Own scripted AI: sample only jobs that this producer
+                        // can legally buy. Rejected civilization/price/population
+                        // choices must not consume its reservoir RNG draw.
+                        #[cfg(feature="ee2-civ8")]
+                        if !self.can_train(b,k as QueueItem) {continue;}
                         seen += 1;
                         if self.rng.range(seen) == 0 {
                             pick = k as DefId;
@@ -351,5 +359,91 @@ impl Game {
                 self.players[ti].ai_next_attack=self.tick+400;
             }
         }
+    }
+}
+
+#[cfg(all(test,feature="ee2-civ8"))]
+mod civ8_ai_tests {
+    use super::*;
+
+    // A controlled own-AI fixture: unfinished construction suppresses the
+    // unrelated building-site RNG; workers have active construction orders.
+    fn fixture(civ:u8,epoch:u8,host:DefId)->(Game,usize) {
+        let mut g=Game::new(7,1,0,1,0);
+        assert!(g.configure_civilizations([14,civ,14,14]));
+        for i in 0..g.high {if g.ents[i].team==1 {g.ents[i].alive=false;}}
+        g.players[1].epoch=epoch;g.rebuild_modifiers(1,false);
+        g.players[1].buildings=2;g.players[1].population_limit=1000;
+        g.players[1].pop=14;g.players[1].cap=1000;g.players[1].researching=true;
+        for slot in 0..9 {let old=g.resource(1,slot);g.add_resource(1,slot,60000.0-old);}
+        let b=g.spawn(host,1,80.5,80.5);g.ents[b].built=1.0;
+        let site=g.spawn(HOUSE,1,90.5,90.5);g.ents[site].built=0.5;
+        for i in 0..14 {let w=g.spawn(WORKER,1,84.0+i as f32*0.1,84.0);g.ents[w].order=O_BUILD;}
+        (g,b)
+    }
+
+    #[test]
+    fn census_accepts_every_actual_eighty_definition() {
+        let (mut g,_)=fixture(9,14,STABLE);
+        for def in 0..DEFS.len() {let i=g.spawn(def as DefId,1,120.5+(def%8)as f32*4.0,120.5+(def/8)as f32*4.0);g.ents[i].built=1.0;}
+        // Includes legal upper-census IDs64..79, surviving obsolete units and
+        // buildings. Previously the first such actor indexed beyond count64.
+        g.ai_step(1);
+        assert_eq!(DEFS.len(),80);
+        for def in 64..80 {assert!(g.ents[..g.high].iter().any(|e|e.alive&&e.team==1&&e.def as usize==def));}
+    }
+
+    #[test]
+    fn fourteen_civilizations_sample_only_legal_jobs_before_rng() {
+        for civ in 0..14 {for epoch in [0,5,10,14] {for host in [BARRACKS,STABLE,MILL] {
+            let (mut g,b)=fixture(civ,epoch,host);
+            let mut expected_rng=Rng(g.rng.0);let mut pick=0 as DefId;let mut seen=0;
+            for (k,d) in DEFS.iter().enumerate() {
+                if d.made_at==host&&d.epoch<=epoch&&d.until>epoch&&d.armed()&&g.can_train(b,k as QueueItem) {
+                    seen+=1;if expected_rng.range(seen)==0 {pick=k as DefId;}
+                }
+            }
+            g.ai_step(1);
+            assert_eq!(g.rng.0,expected_rng.0,"civ{civ} epoch{epoch} host{host}");
+            if pick==0 {assert_eq!(g.ents[b].qn,0);} else {
+                assert_eq!(g.ents[b].qn,1);assert_eq!(g.ents[b].q[0],pick as QueueItem);
+                assert!(g.definition_civ_available(1,pick));
+            }
+        }}}
+    }
+
+    #[test]
+    fn unaffordable_candidates_do_not_consume_rng() {
+        let (mut g,b)=fixture(5,5,MILL);
+        for slot in 0..9 {let old=g.resource(1,slot);g.add_resource(1,slot,-old);}
+        let before=g.rng.0;g.ai_step(1);
+        assert_eq!(g.ents[b].qn,0);assert_eq!(g.rng.0,before);
+    }
+
+    #[test]
+    #[cfg(feature="ee2-pack8")]
+    fn sourceproof_live_load_gap_is_exactly_unsaved_navigation_fields() {
+        let mut g=Game::new(7,0,0,1,0);
+        let tc=g.ents[..g.high].iter().position(|e|e.alive&&e.team==0&&e.def==TC).unwrap();
+        let (x,y)=(g.ents[tc].x,g.ents[tc].y);
+        let goals:Vec<_>=(0..crate::map::NN).filter(|&t|g.map.pass[0][t]&&((t%N)as f32-x).abs()<30.0&&((t/N)as f32-y).abs()<30.0&&((t%N)as f32-x).abs()>15.0).step_by(71).take(8).collect();
+        assert_eq!(goals.len(),8);
+        for (k,t) in goals.into_iter().enumerate(){let w=g.spawn(WORKER,0,x+5.0+k as f32*0.2,y+5.0);g.order_move(&[w],(t%N)as f32+0.5,(t/N)as f32+0.5,false);}
+        for _ in 0..40{g.tick();}
+        g.save();let mut repaired=Game::load(&g.savebuf).unwrap();
+        let raw=&g.savebuf;let u=|p|u32::from_le_bytes(raw[p..p+4].try_into().unwrap())as usize;
+        let nav=64+u(8)+u(12)*48+(MAXE-u(12))*4;
+        let mut old=raw[..nav].to_vec();old[4..8].copy_from_slice(&1u32.to_le_bytes());
+        let sum=old.iter().fold(2166136261u32,|a,&v|(a^v as u32).wrapping_mul(16777619));let length=(old.len()+12)as u32;
+        for word in[length,sum,crate::pack8_save::END]{old.extend_from_slice(&word.to_le_bytes());}
+        let mut loaded=Game::load(&old).unwrap();
+        assert!(g.map.fields.iter().filter(|f|!f.dir.is_empty()).count()>4);
+        assert!(loaded.map.fields.iter().all(|f|f.dir.is_empty()));
+        assert!(loaded.navigation_history_unknown);assert!(!repaired.navigation_history_unknown);
+        assert_eq!(g.state_hash(),repaired.state_hash());
+        g.tick();loaded.tick();repaired.tick();
+        assert_ne!(g.state_hash(),loaded.state_hash(),"empty cache changes real next-tick movement");
+        assert!(g.ents.iter().zip(&loaded.ents).any(|(a,b)|a.alive&&(a.x.to_bits()!=b.x.to_bits()||a.y.to_bits()!=b.y.to_bits())),"actual positions differ, independently of the history marker");
+        assert_eq!(g.state_hash(),repaired.state_hash(),"modern envelope restores exactly the navigation decision state");
     }
 }

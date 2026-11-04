@@ -11,7 +11,11 @@ fn city_prefix(b:&[u8])->&[u8]{
  #[cfg(feature="ee2-up15")]let b=crate::native_attack_clock::split_save(b).unwrap().0;
  b
 }
-fn tail(b: &[u8]) -> usize { city_ground::split_save(city_prefix(b)).unwrap().0.len() }
+fn tail(b: &[u8]) -> usize {
+ let offset=city_ground::split_save(city_prefix(b)).unwrap().0.len();
+ #[cfg(feature="ee2-pack8")]let offset=offset+crate::pack8_save::HEADER;
+ offset
+}
 fn put(b:&mut [u8],o:usize,v:u32) { b[o..o+4].copy_from_slice(&v.to_le_bytes()); }
 
 #[test]
@@ -121,6 +125,7 @@ fn cgd1_roundtrip_is_exact_and_legacy_synthesizes_only_present_profile() {
 #[test]
 fn legacy_final_stock_research_and_tech_bits_may_coincidentally_equal_city_footer() {
     let mut g=game();g.save();let bytes=g.savebuf.clone();
+    #[cfg(feature="ee2-pack8")]let bytes=crate::pack8_save::split(&bytes).unwrap().0.to_vec();
     let core=36+core::mem::size_of::<[Player;4]>()+core::mem::size_of::<Ent>()*g.high+NN*5;
     for defs in [56u32,57] {for prefix in [12,132,236] {
         let mut old=bytes[..core+prefix].to_vec();put(&mut old,12,defs);

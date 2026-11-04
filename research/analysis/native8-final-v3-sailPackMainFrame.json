@@ -1,0 +1,39 @@
+{
+  "format": "native-joint8-sail-pack-main-frame-tests-v1",
+  "status": "passed",
+  "checks": 61,
+  "packFrames": [
+    {
+      "id": 65,
+      "handle": 18,
+      "phase": 2,
+      "frame": 1,
+      "session": 2
+    },
+    {
+      "id": 68,
+      "handle": 17,
+      "phase": 2,
+      "frame": 1,
+      "session": 3
+    },
+    {
+      "id": 76,
+      "handle": 18,
+      "phase": 2,
+      "frame": 1,
+      "session": 4
+    },
+    {
+      "id": 78,
+      "handle": 18,
+      "phase": 2,
+      "frame": 1,
+      "session": 5
+    }
+  ],
+  "mainSha256": "f3653fe46162284c824193c4b53e1560f723f121a644de6575e47862dbf1505a",
+  "wasmSha256": "63470e86d6a50bd168fa5d7364d0789d59d342be3aad762526aa150e3e7b8a4f",
+  "runtimeSha256": "7626604bc7af9923cb0e6d5885db4e927db9b4bddb97bccf03648104a118bdfe",
+  "scope": "Executes actual Main frame, actual ordinary ship production, sorted actor ABI and own visual WASM; substitutes geometry/GL calls. Native GPU checks remain separate."
+}

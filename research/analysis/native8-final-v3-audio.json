@@ -1,0 +1,16 @@
+{
+  "format": "native-civ8-independent-live-parent-audio-bindings-v1",
+  "passed": true,
+  "checks": 4064,
+  "sourceOracleRows": 1140,
+  "sourceHashes": {
+    "models": "dc79d224a70b24c932923565c4c6e5bc4f2e2706839c49bbe5ead9798058f685",
+    "audio": "7b79426275c4943b17d830a48d38b47f1e5efe58c8e13b3319512ee9246d773f",
+    "wasm": "63470e86d6a50bd168fa5d7364d0789d59d342be3aad762526aa150e3e7b8a4f",
+    "independentSourceOracle": "3c60a7275cd196e8a99e158de382b517b000c0be591dee5aa4a2ec555b02715a",
+    "resolver": "73804c968fc6b1428ea03d35503f839532c43bb528a1458b4fef77b30d7a4ceb"
+  },
+  "limits": [
+    "Actual80-definition WASM roles and independent active-source CSV/parent oracle; playback transport/device and native RNG/scheduling remain separate."
+  ]
+}

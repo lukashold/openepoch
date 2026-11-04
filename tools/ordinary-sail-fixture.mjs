@@ -1,7 +1,7 @@
 // A medieval ship is produced through the same selected-citizen/Dock queue API
 // used by Main. Serialized state is read only to inspect terrain and completion.
 import {ordinaryEntities,ordinaryUI} from './ordinary-classic-fixture.mjs';
-import {save} from './roster6-state.mjs';
+import {saveCore} from './roster6-state.mjs';
 
 export function buildOrdinarySailFixture(w,{seed=7,epoch=5,instantBuild=true,maxTicksPerStep=12000}={}){
  const require=(value,label)=>{if(!value)throw Error('Ordinary sail fixture: '+label);},trace=[];
@@ -12,7 +12,7 @@ export function buildOrdinarySailFixture(w,{seed=7,epoch=5,instantBuild=true,max
  const until=(predicate,label)=>{for(let t=0;t<=maxTicksPerStep;t++){if(predicate())return t;w.tick();}throw Error('Ordinary sail fixture timed out: '+label);};
  w.select_none();require((w.select_idle_worker()>>>0)!==0xffffffff,'selected citizen');
  const worker=ordinaryEntities(w).find(e=>e.selected&&e.team===0&&e.def===8);require(worker,'citizen position');
- const bytes=save(w),d=new DataView(bytes.buffer),at=36+4*d.getUint32(8,true)+d.getUint32(4,true)*d.getUint32(32,true),ter=bytes.subarray(at,at+65536),res=bytes.subarray(at+65536,at+131072),sites=[];
+ const bytes=saveCore(w),d=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength),at=36+4*d.getUint32(8,true)+d.getUint32(4,true)*d.getUint32(32,true),ter=bytes.subarray(at,at+65536),res=bytes.subarray(at+65536,at+131072),sites=[];
  for(let y=3;y<250;y++)for(let x=3;x<250;x++){
   let water=0,land=0,blocked=false;
   for(let yy=y;yy<y+3;yy++)for(let xx=x;xx<x+3;xx++){const tile=yy*256+xx;if(res[tile]||ter[tile]===5)blocked=true;if(ter[tile]<=1)water++;else land++;}

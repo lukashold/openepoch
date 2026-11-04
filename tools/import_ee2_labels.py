@@ -43,9 +43,10 @@ def inherited_tokens(db,name):
                                     'source':db.block_ref(block,match.start())}
     visit(name);return result
 
-def profile(project,profile_id,db):
+def profile(project,profile_id,db,audit_override=None):
     roster_audit=project/'docs/ee2-roster6-units.json'
     audit_path=roster_audit if profile_id=='up15' and roster_audit.is_file() else project/'docs'/('ee2-up15-units.json' if profile_id=='up15' else 'ee2-units.json')
+    if audit_override is not None:audit_path=Path(audit_override).resolve()
     audit=json.loads(audit_path.read_text(encoding='utf8'))
     # A role/class audit from another installation must not silently supply
     # declaration tokens for the current source database.
@@ -95,12 +96,13 @@ def main():
     parser.add_argument('--project',type=Path,default=PROJECT)
     parser.add_argument('--install',type=Path,default=Path(r'C:\Program Files (x86)\GOG.com\Empire Earth II'))
     parser.add_argument('--up-manifest',type=Path)
+    parser.add_argument('--up-audit',type=Path,help='Explicit audited UP unit registry; source hashes must match')
     parser.add_argument('--out',type=Path)
     args=parser.parse_args();project=args.project.resolve();install=args.install.resolve()
     out=(args.out or project/'docs/local-original/labels-native.json').resolve()
     if out.is_relative_to(install):raise ValueError('Output must stay outside the original installation')
     base=Database(install/'zips/db.zip');up=ActiveDatabase(args.up_manifest or default_manifest(project))
-    try:profiles={name:profile(project,name,db)for name,db in [('base',base),('up15',up)]}
+    try:profiles={name:profile(project,name,db,args.up_audit if name=='up15' else None)for name,db in [('base',base),('up15',up)]}
     finally:base.close();up.close()
     result={'format':'ee2-native-labels-v1','language':'de','profiles':profiles,
             'scope':'Locally imported original names/descriptions; never required by the independent ruleset0.'}

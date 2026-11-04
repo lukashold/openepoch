@@ -1,0 +1,320 @@
+{
+  "format": "native-civ8-isolated-selection-v1",
+  "bindings": [
+    {
+      "id": 57,
+      "definition_name": "Scout",
+      "source_unit": "Scout",
+      "domain": "LAND",
+      "host": "CityCenter",
+      "building": false,
+      "modelKind": "human",
+      "limits": [
+        "Existing grid movement/collision and generic command adapter; no native formation or conversion mechanic."
+      ]
+    },
+    {
+      "id": 58,
+      "definition_name": "FightingSail",
+      "source_unit": "FightingSail",
+      "domain": "SEA",
+      "host": "Dock",
+      "building": false,
+      "modelKind": "ship",
+      "limits": [
+        "Existing naval pathing/collision adapter; native ship turning and unit veterancy remain separate."
+      ]
+    },
+    {
+      "id": 59,
+      "definition_name": "AirDefense",
+      "source_unit": "AirDefense",
+      "domain": "LAND",
+      "host": "Citizen",
+      "building": true,
+      "modelKind": "building",
+      "limits": [
+        "Native conversion and per-family improvement jobs remain unsupported, as in the existing roster."
+      ]
+    },
+    {
+      "id": 60,
+      "definition_name": "CoastalDefense",
+      "source_unit": "CoastalDefense",
+      "domain": "LAND",
+      "host": "Citizen",
+      "building": true,
+      "modelKind": "building",
+      "limits": [
+        "Native conversion and per-family improvement jobs remain unsupported, as in the existing roster."
+      ]
+    },
+    {
+      "id": 61,
+      "definition_name": "UniqueUnitAmerican1",
+      "source_unit": "UniqueUnitAmerican1",
+      "source_civ": "American",
+      "domain": "LAND",
+      "host": "Barracks",
+      "building": false,
+      "modelKind": "human",
+      "limits": [
+        "Isolated source-bound candidate; complete packed-state and turret/child-effects runtime are separate before activation.",
+        "Exact CIV-specific upgrade row; no All-row numerical fallback."
+      ]
+    },
+    {
+      "id": 62,
+      "definition_name": "UniqueUnitAmerican3",
+      "source_unit": "UniqueUnitAmerican3",
+      "source_civ": "American",
+      "domain": "LAND",
+      "host": "Stable",
+      "building": false,
+      "modelKind": "vehicle",
+      "limits": [
+        "Isolated source-bound candidate; complete packed-state and turret/child-effects runtime are separate before activation.",
+        "Exact CIV-specific upgrade row; no All-row numerical fallback."
+      ]
+    },
+    {
+      "id": 63,
+      "definition_name": "UniqueUnitAztec2",
+      "source_unit": "UniqueUnitAztec2",
+      "source_civ": "Aztec",
+      "domain": "LAND",
+      "host": "Stable",
+      "building": false,
+      "modelKind": "human",
+      "limits": [
+        "Isolated source-bound candidate; complete packed-state and turret/child-effects runtime are separate before activation.",
+        "Exact CIV-specific upgrade row; no All-row numerical fallback."
+      ]
+    },
+    {
+      "id": 64,
+      "definition_name": "UniqueUnitBabylonian2",
+      "source_unit": "UniqueUnitBabylonian2",
+      "source_civ": "Babylonian",
+      "domain": "LAND",
+      "host": "Stable",
+      "building": false,
+      "modelKind": "human",
+      "limits": [
+        "Isolated source-bound candidate; complete packed-state and turret/child-effects runtime are separate before activation.",
+        "Exact CIV-specific upgrade row; no All-row numerical fallback."
+      ]
+    },
+    {
+      "id": 65,
+      "definition_name": "UniqueUnitChinese2",
+      "source_unit": "UniqueUnitChinese2",
+      "source_civ": "Chinese",
+      "domain": "LAND",
+      "host": "Mill",
+      "building": false,
+      "modelKind": "human",
+      "limits": [
+        "Isolated source-bound candidate; complete packed-state and turret/child-effects runtime are separate before activation.",
+        "Exact CIV-specific upgrade row; no All-row numerical fallback."
+      ]
+    },
+    {
+      "id": 66,
+      "definition_name": "UniqueUnitChinese3",
+      "source_unit": "UniqueUnitChinese3",
+      "source_civ": "Chinese",
+      "domain": "LAND",
+      "host": "Stable",
+      "building": false,
+      "modelKind": "vehicle",
+      "limits": [
+        "Isolated source-bound candidate; complete packed-state and turret/child-effects runtime are separate before activation.",
+        "Exact CIV-specific upgrade row; no All-row numerical fallback."
+      ]
+    },
+    {
+      "id": 67,
+      "definition_name": "UniqueUnitEgyptian1",
+      "source_unit": "UniqueUnitEgyptian1",
+      "source_civ": "Egyptian",
+      "domain": "LAND",
+      "host": "Barracks",
+      "building": false,
+      "modelKind": "human",
+      "limits": [
+        "Isolated source-bound candidate; complete packed-state and turret/child-effects runtime are separate before activation.",
+        "Exact CIV-specific upgrade row; no All-row numerical fallback."
+      ]
+    },
+    {
+      "id": 68,
+      "definition_name": "UniqueUnitEgyptian2",
+      "source_unit": "UniqueUnitEgyptian2",
+      "source_civ": "Egyptian",
+      "domain": "LAND",
+      "host": "Stable",
+      "building": false,
+      "modelKind": "human",
+      "limits": [
+        "Isolated source-bound candidate; complete packed-state and turret/child-effects runtime are separate before activation.",
+        "Exact CIV-specific upgrade row; no All-row numerical fallback."
+      ]
+    },
+    {
+      "id": 69,
+      "definition_name": "UniqueUnitEgyptian3",
+      "source_unit": "UniqueUnitEgyptian3",
+      "source_civ": "Egyptian",
+      "domain": "LAND",
+      "host": "Stable",
+      "building": false,
+      "modelKind": "vehicle",
+      "limits": [
+        "Isolated source-bound candidate; complete packed-state and turret/child-effects runtime are separate before activation.",
+        "Exact CIV-specific upgrade row; no All-row numerical fallback."
+      ]
+    },
+    {
+      "id": 70,
+      "definition_name": "UniqueUnitEnglish2",
+      "source_unit": "UniqueUnitEnglish2",
+      "source_civ": "English",
+      "domain": "LAND",
+      "host": "Stable",
+      "building": false,
+      "modelKind": "human",
+      "limits": [
+        "Isolated source-bound candidate; complete packed-state and turret/child-effects runtime are separate before activation.",
+        "Exact CIV-specific upgrade row; no All-row numerical fallback."
+      ]
+    },
+    {
+      "id": 71,
+      "definition_name": "UniqueUnitGerman2",
+      "source_unit": "UniqueUnitGerman2",
+      "source_civ": "German",
+      "domain": "LAND",
+      "host": "Stable",
+      "building": false,
+      "modelKind": "human",
+      "limits": [
+        "Isolated source-bound candidate; complete packed-state and turret/child-effects runtime are separate before activation.",
+        "Exact CIV-specific upgrade row; no All-row numerical fallback."
+      ]
+    },
+    {
+      "id": 72,
+      "definition_name": "UniqueUnitGerman3",
+      "source_unit": "UniqueUnitGerman3",
+      "source_civ": "German",
+      "domain": "LAND",
+      "host": "Stable",
+      "building": false,
+      "modelKind": "vehicle",
+      "limits": [
+        "Isolated source-bound candidate; complete packed-state and turret/child-effects runtime are separate before activation.",
+        "Exact CIV-specific upgrade row; no All-row numerical fallback."
+      ]
+    },
+    {
+      "id": 73,
+      "definition_name": "UniqueUnitGreek2",
+      "source_unit": "UniqueUnitGreek2",
+      "source_civ": "Greek",
+      "domain": "LAND",
+      "host": "Stable",
+      "building": false,
+      "modelKind": "human",
+      "limits": [
+        "Isolated source-bound candidate; complete packed-state and turret/child-effects runtime are separate before activation.",
+        "Exact CIV-specific upgrade row; no All-row numerical fallback."
+      ]
+    },
+    {
+      "id": 74,
+      "definition_name": "UniqueUnitInca3",
+      "source_unit": "UniqueUnitInca3",
+      "source_civ": "Inca",
+      "domain": "LAND",
+      "host": "Mill",
+      "building": false,
+      "modelKind": "vehicle",
+      "limits": [
+        "Isolated source-bound candidate; complete packed-state and turret/child-effects runtime are separate before activation.",
+        "Exact CIV-specific upgrade row; no All-row numerical fallback."
+      ]
+    },
+    {
+      "id": 75,
+      "definition_name": "UniqueUnitKorean1",
+      "source_unit": "UniqueUnitKorean1",
+      "source_civ": "Korean",
+      "domain": "LAND",
+      "host": "Barracks",
+      "building": false,
+      "modelKind": "human",
+      "limits": [
+        "Isolated source-bound candidate; complete packed-state and turret/child-effects runtime are separate before activation.",
+        "Exact CIV-specific upgrade row; no All-row numerical fallback."
+      ]
+    },
+    {
+      "id": 76,
+      "definition_name": "UniqueUnitKorean2",
+      "source_unit": "UniqueUnitKorean2",
+      "source_civ": "Korean",
+      "domain": "LAND",
+      "host": "Mill",
+      "building": false,
+      "modelKind": "human",
+      "limits": [
+        "Isolated source-bound candidate; complete packed-state and turret/child-effects runtime are separate before activation.",
+        "Exact CIV-specific upgrade row; no All-row numerical fallback."
+      ]
+    },
+    {
+      "id": 77,
+      "definition_name": "UniqueUnitMayan2",
+      "source_unit": "UniqueUnitMayan2",
+      "source_civ": "Mayan",
+      "domain": "LAND",
+      "host": "Mill",
+      "building": false,
+      "modelKind": "human",
+      "limits": [
+        "Isolated source-bound candidate; complete packed-state and turret/child-effects runtime are separate before activation.",
+        "Exact CIV-specific upgrade row; no All-row numerical fallback."
+      ]
+    },
+    {
+      "id": 78,
+      "definition_name": "UniqueUnitMayan3",
+      "source_unit": "UniqueUnitMayan3",
+      "source_civ": "Mayan",
+      "domain": "LAND",
+      "host": "Mill",
+      "building": false,
+      "modelKind": "vehicle",
+      "limits": [
+        "Isolated source-bound candidate; complete packed-state and turret/child-effects runtime are separate before activation.",
+        "Exact CIV-specific upgrade row; no All-row numerical fallback."
+      ]
+    },
+    {
+      "id": 79,
+      "definition_name": "UniqueUnitTurkish1",
+      "source_unit": "UniqueUnitTurkish1",
+      "source_civ": "Turkish",
+      "domain": "LAND",
+      "host": "Barracks",
+      "building": false,
+      "modelKind": "human",
+      "limits": [
+        "Isolated source-bound candidate; complete packed-state and turret/child-effects runtime are separate before activation.",
+        "Exact CIV-specific upgrade row; no All-row numerical fallback."
+      ]
+    }
+  ],
+  "activeRuntimeModified": false
+}

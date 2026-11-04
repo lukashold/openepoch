@@ -11,12 +11,12 @@ mod defs;
 mod economy;
 #[cfg(all(feature="ee2-up15",not(feature="ee2-roster6")))]
 mod ee2_up15_economy;
-#[cfg(feature="ee2-roster6")]
+#[cfg(all(feature="ee2-roster6",not(feature="ee2-civ8")))]
 #[path="ee2_roster6_economy.rs"]
 mod ee2_up15_economy;
 #[cfg(all(feature="ee2-up15",not(feature="ee2-roster6")))]
 mod ee2_up15_attack;
-#[cfg(feature="ee2-roster6")]
+#[cfg(all(feature="ee2-roster6",not(feature="ee2-civ8")))]
 #[path="ee2_roster6_attack.rs"]
 mod ee2_up15_attack;
 #[cfg(feature="ee2-up15")]
@@ -29,7 +29,7 @@ mod ee2_profile;
 #[cfg(all(feature="ee2-up15",not(feature="ee2-roster6")))]
 #[path="ee2_up15_profile.rs"]
 mod ee2_profile;
-#[cfg(feature="ee2-roster6")]
+#[cfg(all(feature="ee2-roster6",not(feature="ee2-civ8")))]
 #[path="ee2_roster6_profile.rs"]
 mod ee2_profile;
 #[cfg(all(feature = "ee2-reference",not(feature="ee2-up15")))]
@@ -37,7 +37,7 @@ mod ee2_research;
 #[cfg(all(feature="ee2-up15",not(feature="ee2-roster6")))]
 #[path="ee2_up15_research.rs"]
 mod ee2_research;
-#[cfg(feature="ee2-roster6")]
+#[cfg(all(feature="ee2-roster6",not(feature="ee2-civ8")))]
 #[path="ee2_roster6_research.rs"]
 mod ee2_research;
 #[cfg(all(feature = "ee2-reference",not(feature="ee2-up15")))]
@@ -45,7 +45,7 @@ mod ee2_units;
 #[cfg(all(feature="ee2-up15",not(feature="ee2-roster6")))]
 #[path="ee2_up15_units.rs"]
 mod ee2_units;
-#[cfg(feature="ee2-roster6")]
+#[cfg(all(feature="ee2-roster6",not(feature="ee2-civ8")))]
 #[path="ee2_roster6_units.rs"]
 mod ee2_units;
 #[cfg(all(feature = "ee2-reference",not(feature="ee2-up15")))]
@@ -53,7 +53,7 @@ mod ee2_combat;
 #[cfg(all(feature="ee2-up15",not(feature="ee2-roster6")))]
 #[path="ee2_up15_combat.rs"]
 mod ee2_combat;
-#[cfg(feature="ee2-roster6")]
+#[cfg(all(feature="ee2-roster6",not(feature="ee2-civ8")))]
 #[path="ee2_roster6_combat.rs"]
 mod ee2_combat;
 mod research;
@@ -67,8 +67,27 @@ mod save;
 mod save6;
 #[cfg(feature="ee2-paidqueue7")]
 mod paid_queue7;
-#[cfg(feature="ee2-paidqueue7")]
+#[cfg(all(feature="ee2-paidqueue7",not(feature="ee2-civ8")))]
 mod paid_queue7_main;
+#[cfg(feature="ee2-civ8")]
+#[path="civ8_main.rs"]
+mod paid_queue7_main;
+#[cfg(feature="ee2-pack8")]
+mod pack8;
+#[cfg(feature="ee2-pack8")]
+mod pack8_defs;
+#[cfg(feature="ee2-pack8")]
+mod pack8_save;
+#[cfg(feature="ee2-pack8")]
+mod pack8_render;
+#[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
+mod navigation8;
+#[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
+mod projectiles8;
+#[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
+mod decision_hash8;
+#[cfg(feature="ee2-civ8")]
+mod match_settings8;
 #[cfg(feature="ee2-roster6")]
 mod roster6_registry;
 #[cfg(feature="ee2-roster6")]
@@ -151,7 +170,8 @@ pub extern "C" fn ground_urban_at(x:f32,y:f32)->u32 {
 pub extern "C" fn combat_stat(attacker:u32,attacker_epoch:u32,defender:u32,defender_epoch:u32,field:u32)->f32 {
     #[cfg(feature="ee2-reference")]
     {
-        if attacker>=57||defender>=57||attacker_epoch>=15||defender_epoch>=15{return -1.0;}
+        let limit=if cfg!(feature="ee2-civ8"){DEFS.len()as u32}else{57};
+        if attacker>=limit||defender>=limit||attacker_epoch>=15||defender_epoch>=15{return -1.0;}
         let a=ee2_combat::profile(attacker as DefId,attacker_epoch as u8);
         let d=ee2_combat::profile(defender as DefId,defender_epoch as u8);
         return match field {
@@ -681,6 +701,31 @@ pub extern "C" fn cmd_stop() {
     g.submit(C_STOP, 0.0, 0.0, 0, &hs);
 }
 
+/// Explicit manual Pack/Unpack order; the usual lockstep command path owns it.
+#[cfg(feature="ee2-pack8")]
+#[no_mangle]
+pub extern "C" fn cmd_pack(unpacked:u32)->u32{
+ if unpacked>1{return 0;}let g=g();let ids:Vec<usize>=selected(g).into_iter().filter(|&i|g.pack_spec(&g.ents[i]).is_some_and(|s|s.capable)).collect();
+ let hs=handles(g,&ids);if hs.is_empty(){return 0;}g.submit(C_PACK,0.0,0.0,unpacked as i32,&hs);hs.len()as u32
+}
+#[cfg(feature="ee2-pack8")]
+#[no_mangle]pub extern "C" fn pack_selected_count()->u32{
+ unsafe{(&*addr_of_mut!(GAME)).as_ref().map_or(0,|game|selected(game).into_iter().filter(|&i|game.pack_spec(&game.ents[i]).is_some_and(|s|s.capable)).count()as u32)}
+}
+
+#[cfg(feature="ee2-pack8")]
+#[no_mangle]pub extern "C" fn pack_schema_revision()->u32{if cfg!(feature="ee2-civ8"){3}else{1}}
+#[cfg(feature="ee2-pack8")]
+#[no_mangle]pub extern "C" fn render_pack_version()->u32{1}
+#[cfg(feature="ee2-pack8")]
+#[no_mangle]pub extern "C" fn render_pack_stride()->u32{pack8_render::STRIDE}
+#[cfg(feature="ee2-pack8")]
+#[no_mangle]pub extern "C" fn render_pack_ptr()->*const pack8_render::Record{pack8_render::ptr()}
+#[cfg(feature="ee2-pack8")]
+#[no_mangle]pub extern "C" fn render_pack_count()->u32{pack8_render::count()}
+#[cfg(feature="ee2-pack8")]
+#[no_mangle]pub extern "C" fn render_pack_len()->u32{pack8_render::count()*pack8_render::STRIDE}
+
 /// Unload selected transports where they are.
 #[no_mangle]
 pub extern "C" fn cmd_unload() {
@@ -887,8 +932,10 @@ pub extern "C" fn territory_offer_stat(from:u32,to:u32,field:u32)->u32{let game=
 
 #[cfg(all(test,feature="ee2-up15",not(feature="ee2-roster6")))]
 mod ee2_up15_oracle_tests;
-#[cfg(all(test,feature="ee2-roster6"))]
+#[cfg(all(test,feature="ee2-roster6",not(feature="ee2-civ8")))]
 mod ee2_roster6_oracle_tests;
+#[cfg(all(test,feature="ee2-civ8"))]
+mod ee2_civ8_oracle_tests;
 
 /// Candidate-only read-only diagnostics for source-oracle verification.
 #[cfg(feature="ee2-up15")]
@@ -925,7 +972,7 @@ pub extern "C" fn native_attack_stat(id:u32,epoch:u32,field:u32)->f32{
 }
 
 #[cfg(feature="ee2-roster6")]
-#[no_mangle] pub extern "C" fn schema_revision()->u32{if cfg!(feature="ee2-paidqueue7"){7}else{6}}
+#[no_mangle] pub extern "C" fn schema_revision()->u32{if cfg!(feature="ee2-civ8"){8}else if cfg!(feature="ee2-paidqueue7"){7}else{6}}
 #[cfg(feature="ee2-paidqueue7")]
 #[no_mangle] pub extern "C" fn queue_price(handle:u32,position:u32,native_resource:u32)->f32{
     let game=g();let Some(b)=game.get(handle)else{return -1.0;};
@@ -978,3 +1025,79 @@ fn submit_selected_queue_job(game:&mut Game,item:QueueItem)->u32{
 #[no_mangle] pub extern "C" fn definition_count()->u32{DEFS.len()as u32}
 #[cfg(feature="ee2-roster6")]
 #[no_mangle] pub extern "C" fn definition_flags(id:u32)->u32{let Some(d)=DEFS.get(id as usize)else{return u32::MAX;};d.building as u32|((!d.building&&d.speed>0.0)as u32)<<1|(d.has(F_WORKER)as u32)<<2|(d.has(F_TRANSPORT)as u32)<<3|(d.armed()as u32)<<4}
+
+#[cfg(feature="ee2-civ8")]
+#[path="ee2_civ8_economy.rs"]
+mod ee2_up15_economy;
+
+#[cfg(feature="ee2-civ8")]
+#[path="ee2_civ8_attack.rs"]
+mod ee2_up15_attack;
+
+#[cfg(feature="ee2-civ8")]
+#[path="ee2_civ8_profile.rs"]
+mod ee2_profile;
+
+#[cfg(feature="ee2-civ8")]
+#[path="ee2_civ8_research.rs"]
+mod ee2_research;
+
+#[cfg(feature="ee2-civ8")]
+#[path="ee2_civ8_units.rs"]
+mod ee2_units;
+
+#[cfg(feature="ee2-civ8")]
+#[path="ee2_civ8_combat.rs"]
+mod ee2_combat;
+
+#[cfg(feature="ee2-civ8")]
+mod civ8_defs;
+#[cfg(feature="ee2-civ8")]
+mod civ8_registry;
+#[cfg(feature="ee2-civ8")]
+mod civ8_gates;
+#[cfg(feature="ee2-civ8")]
+mod civ8_traits;
+#[cfg(feature="ee2-civ8")]
+mod civ8_bonus;
+
+#[cfg(feature="ee2-civ8")] mod civ8_runtime;
+#[cfg(feature="ee2-civ8")] mod civ8_save;
+
+#[cfg(feature="ee2-civ8")]
+#[no_mangle] pub extern "C" fn configure_civilizations(packed:u32)->u32{ if packed&0xffff0000!=0{return 0;}g().configure_civilizations(core::array::from_fn(|i|((packed>>(4*i))&15)as u8))as u32 }
+/// Atomic fresh-match SP/MP transaction; rejects without changing any field.
+#[cfg(feature="ee2-civ8")]
+#[no_mangle]pub extern "C" fn configure_match_settings(packed_civs:u32,pop_limit:u32,supplies:u32,epoch:u32)->u32{
+ unsafe{(&mut*addr_of_mut!(GAME)).as_mut().map_or(0,|game|game.configure_match_settings(packed_civs,pop_limit,supplies,epoch)as u32)}
+}
+
+#[cfg(feature="ee2-civ8")]
+#[no_mangle] pub extern "C" fn civilization_count()->u32{crate::civ8_runtime::COUNT}
+
+#[cfg(feature="ee2-civ8")]
+#[no_mangle] pub extern "C" fn civilization_region(civ:u32)->u32{crate::civ8_gates::REGION_BY_CIV.get(civ as usize).map(|&r|r as u32).unwrap_or(u32::MAX)}
+
+#[cfg(feature="ee2-civ8")]
+#[no_mangle] pub extern "C" fn player_civilization(team:u32)->u32{g().civilizations.get(team as usize).map(|&c|c as u32).unwrap_or(u32::MAX)}
+
+/// 1 means an imported historical save did not store its pathfinder fields.
+#[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
+#[no_mangle]pub extern "C" fn navigation_history_unknown()->u32{unsafe{(&*addr_of_mut!(GAME)).as_ref().map_or(1,|g|g.navigation_history_unknown as u32)}}
+#[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
+#[no_mangle]pub extern "C" fn projectile_history_unknown()->u32{unsafe{(&*addr_of_mut!(GAME)).as_ref().map_or(1,|g|g.projectile_history_unknown as u32)}}
+
+#[cfg(feature="ee2-civ8")]
+#[no_mangle] pub extern "C" fn definition_ttciv(def:u32)->u32{if def as usize>=DEFS.len(){return u32::MAX;}crate::civ8_runtime::source_ttciv(def as DefId)as u32}
+
+#[cfg(all(test,feature="ee2-civ8"))] mod civ8_tests;
+
+#[cfg(all(test,feature="ee2-civ8"))]
+#[test]fn combat_diagnostics_cover_eighty_source_ids_without_mutating_the_match(){
+ init(7,1,0,1,0);let before=state_hash();let game=g();game.save();let bytes=game.savebuf.clone();
+ assert!(combat_stat(79,0,8,0,0)>0.0);assert!(combat_stat(65,5,0,5,0)>0.0);
+ assert!(combat_stat(12,5,79,0,3)>=0.0);
+ for id in 0..80{for field in 0..4{assert!(combat_stat(id,5,79,5,field).is_finite());}}
+ assert_eq!(combat_stat(80,0,0,0,0),-1.0);assert_eq!(combat_stat(0,0,80,0,0),-1.0);
+ assert_eq!(state_hash(),before);let game=g();game.save();assert!(game.savebuf==bytes);
+}

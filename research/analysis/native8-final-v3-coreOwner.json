@@ -1,0 +1,526 @@
+{
+  "format": "native-joint8-continuation-integration-v2",
+  "status": "passed",
+  "build": "native8-joint-continuation-v2",
+  "activeRuntimeModified": false,
+  "originalExecuted": false,
+  "baselineManifest": {
+    "path": "work\\native-joint8-pack\\final-core\\manifest.json",
+    "sha256": "243fe90102968ae0add2e72d2803dbee3370f0148a4206e69cd6cd1a7a88462b",
+    "bytes": 102491
+  },
+  "wasm": {
+    "ee2": {
+      "path": "work\\native-joint8-pack-v2\\builds\\openepoch-joint8.wasm",
+      "sha256": "63470e86d6a50bd168fa5d7364d0789d59d342be3aad762526aa150e3e7b8a4f",
+      "bytes": 581599
+    },
+    "base": {
+      "sha256": "d69f6d38f61b74ffcd23673870933e9feed37dbd05fac6b8541896dc3b12ff18",
+      "bytes": 430146
+    },
+    "own": {
+      "sha256": "230cc5a3c708aca73d2afd72683d3750563da89da39def5605ec89f4843d0a7a",
+      "bytes": 268821
+    }
+  },
+  "abi": {
+    "schema_revision": 8,
+    "pack_schema_revision": 3,
+    "actorVersion": 1,
+    "actorStride": 64,
+    "packRenderVersion": 1,
+    "packRenderStride": 32,
+    "newReadonlyExports": [
+      "navigation_history_unknown",
+      "projectile_history_unknown"
+    ],
+    "innerEntBytes": 176,
+    "innerPlayerBytes": 96
+  },
+  "rustTests": {
+    "joint8": 179,
+    "own0": 32,
+    "base1": 75,
+    "up7": 131
+  },
+  "tests": {
+    "navigation-envelope-tests": {
+      "path": "work\\native-joint8-pack-v2\\qa\\navigation-envelope-tests.json",
+      "sha256": "b46deb6bac8fc5d64c04b69cec1666d16867d3eebe6b1cea900770cd293e8cb9",
+      "bytes": 2527,
+      "checks": 630,
+      "scope": "joint8-navigation-envelope-wasm-tests-v1"
+    },
+    "projectile-codec-tests": {
+      "path": "work\\native-joint8-pack-v2\\qa\\projectile-codec-tests.json",
+      "sha256": "96b54af040726d6e5e528f68a48b9de5c5bcd84bf2cf7be44845db0281822832",
+      "bytes": 2025,
+      "checks": 200,
+      "scope": "Typed PRJ1 fields, finite/bounded positions and enum/profile/target safety, stale full handles accepted, full outer framing/atomic rejection, NAV-only2 explicitly missing projectile history, nonzero byte offsets. Vector order and all16 words are independently checked in Rust."
+    },
+    "projectile-public-combat": {
+      "path": "work\\native-joint8-pack-v2\\qa\\projectile-public-combat.json",
+      "sha256": "a73a99f47177b59071348d0770566e708636a0063200372cb10b7d1b406de6eb",
+      "bytes": 3567,
+      "checks": 402,
+      "scope": "Genuine source-family snapshots created through public place/train, then current-Core public selection/attack-move and ordinary ticks. In-flight save and exact live/load continuation, damage/deaths, nine banks, RNG via full inner bytes, different render cadences. No saved-entity/memory mutation or original program execution."
+    },
+    "navigation-death-spawn": {
+      "path": "work\\native-joint8-pack-v2\\qa\\navigation-death-spawn.json",
+      "sha256": "774c585ccdbb560d06c6fca841a1c0d5a86c8f61e4487f561ca0178df3037a1c",
+      "bytes": 1191,
+      "checks": 4521,
+      "scope": "Actual selection/cmd_delete/tick/save/load/cmd_queue_job(8), with/without a genuine normal-produced65 active unpack task. No entity or saved-state mutation."
+    },
+    "migration-report": {
+      "path": "work\\native-joint8-pack-v2\\qa\\migration-report.json",
+      "sha256": "1aaa6b00fc480540f6c8cca5e14f402e8f2509e70aee10e39ad52c73d52423e0",
+      "bytes": 4483,
+      "checks": 1206,
+      "scope": null
+    },
+    "ai-peer-regression": {
+      "path": "work\\native-joint8-pack-v2\\qa\\ai-peer-regression.json",
+      "sha256": "6e6ad1cb50b38144e8c204e22a9b02fb257ab3137cb173ff5be1644be44eddf3",
+      "bytes": 3122,
+      "checks": 619,
+      "scope": "joint8-v2-ordinary-ai-peer-regression-v1"
+    },
+    "ai-fourteen-civs": {
+      "path": "work\\native-joint8-pack-v2\\qa\\ai-fourteen-civs.json",
+      "sha256": "1aefbb002ec5e8f3a76ab833f3c7cb989e354072b0d3a5a53be733449a2c7113",
+      "bytes": 7151,
+      "checks": 2001,
+      "scope": "joint8-v2-fourteen-civilizations-own-ai-v1"
+    },
+    "ordinary-ai-repro": {
+      "path": "work\\native-joint8-pack-v2\\qa\\ordinary-ai-repro.json",
+      "sha256": "ae713a9a75c823644d7b00310c3db820e32f51b6dc8ee8042794c1887bb3d593",
+      "bytes": 15401,
+      "checks": null,
+      "scope": "Own AI adapter correctness; not an original native AI policy claim."
+    },
+    "offprofile-runtime": {
+      "path": "work\\native-joint8-pack-v2\\qa\\offprofile-runtime.json",
+      "sha256": "09db9e0da7f21f5a09eba37524bf535ed4c58a4528a243e1ccc3c1bd59a5d75f",
+      "bytes": 1433,
+      "checks": 10926,
+      "scope": "Feature-disabled Core against genuine own/Base/joint7 baseline WASMs. Exact hashes and serialized bytes, real movement/stop, different rendering cadence, save/load continuation. Binary file identity is not required for compiler symbol metadata."
+    }
+  },
+  "independentReview": {
+    "path": "work\\native-navigation8-review\\independent-final-review.json",
+    "sha256": "ca9b5c9c377215bbc675b33e985ac8bfd2a3bc07061e8d445d8fa8ff93cd962a",
+    "bytes": 4464
+  },
+  "delta": [
+    {
+      "path": "OpenEpoch/docs/openepoch-joint8-pack.wasm",
+      "previousSha256": "73787641bbc757720d66c924ff83b7fa57f5dbdd220deba9b1711e565db580b9",
+      "sha256": "63470e86d6a50bd168fa5d7364d0789d59d342be3aad762526aa150e3e7b8a4f",
+      "bytes": 581599
+    },
+    {
+      "path": "OpenEpoch/src/ai.rs",
+      "previousSha256": "b8b78f8bfa8d5a2dcf0bec1c8b8af11202b54ce8dbb221c19f1dad1690a7d66c",
+      "sha256": "810750e38962722b8a80e390bb554a3ab3218265eed57019245e26da253e8a4c",
+      "bytes": 22823
+    },
+    {
+      "path": "OpenEpoch/src/cmd.rs",
+      "previousSha256": "4c71658a15f14dc829bdb01df7cd5b89c1162703459b63acaeae3f3d85c23d8e",
+      "sha256": "977397f4e7a3e450f4ba269f0712ccd83b91ebdbaaafca1544e148a1837f6b60",
+      "bytes": 7498
+    },
+    {
+      "path": "OpenEpoch/src/decision_hash8.rs",
+      "previousSha256": null,
+      "sha256": "6ffa9dfd32029eeda0c24621b6245fd6ea9923ef086acdaa197a90076194ee4f",
+      "bytes": 1812
+    },
+    {
+      "path": "OpenEpoch/src/game.rs",
+      "previousSha256": "a66f6b34333d918a3dfcc411305ec565033f3b0db9680e3827296bfc1a27d26f",
+      "sha256": "ae3d641dd0bf9ac978b91b9427600a76361b90a95969ffb75189c5615eb1e569",
+      "bytes": 97694
+    },
+    {
+      "path": "OpenEpoch/src/lib.rs",
+      "previousSha256": "8aefbc49d5763f26fea7749bc3da5195bf2ffc0f7116a018ce85874eeb9d08b0",
+      "sha256": "738aa0331b5946f16196d9b8a82c5794b41091c8942b15a5d0f21241ae2b6cb3",
+      "bytes": 43890
+    },
+    {
+      "path": "OpenEpoch/src/navigation8.rs",
+      "previousSha256": null,
+      "sha256": "64fa72dd0b973079339dd90c82e2a6924e48f1af9f79542222479a536abdb7ec",
+      "bytes": 6936
+    },
+    {
+      "path": "OpenEpoch/src/pack8_save.rs",
+      "previousSha256": "15a93999f309b592e9c3147775e2d4416bd6031fd78b98f8474af099541f2df7",
+      "sha256": "59ded342aa12482fb814382728dfcd088071198b66e270fa4936dec353eecd38",
+      "bytes": 7783
+    },
+    {
+      "path": "OpenEpoch/src/pack8_tests.rs",
+      "previousSha256": "75f3ee59bf112ad2400b38a39782369015f0dfe65359ca3b4c20f99a7978c601",
+      "sha256": "240680376a3536fa0866de1de8d0a091a958a737afdad53c3b03801a586ff0cd",
+      "bytes": 12514
+    },
+    {
+      "path": "OpenEpoch/src/placement.rs",
+      "previousSha256": "65afaff5af06c8cf0cbc938da5da060c7773f6593e99fd2544e05779c335ec3a",
+      "sha256": "55177c45a9c30feb186f5fe3210533524ccc530f608e76f83ac2312fb7f740af",
+      "bytes": 24650
+    },
+    {
+      "path": "OpenEpoch/src/projectiles8.rs",
+      "previousSha256": null,
+      "sha256": "e3aa3d941e6ff42ecb388f2f378907074612ad347f2992d67a744ff60a3d2ab2",
+      "bytes": 2919
+    },
+    {
+      "path": "OpenEpoch/src/projectiles8_tests.rs",
+      "previousSha256": null,
+      "sha256": "01a9d6f88bc89f8044fcd3a2ff9a34b79099220dfe448ea939fd8f0862d9c245",
+      "bytes": 4019
+    },
+    {
+      "path": "OpenEpoch/src/save.rs",
+      "previousSha256": "97c74526f7932069b297001743463009094446043310a72bfe8bb98e4f1b536b",
+      "sha256": "59ed5c610dfeb5a842096cb1b034df5fe03c60787fdb3995c9b67c0839a581f3",
+      "bytes": 14470
+    },
+    {
+      "path": "OpenEpoch/tools/pack8-save-envelope.mjs",
+      "previousSha256": "ca65ebccaa826e7ffb8e09cadcde59a2af76f9b2c2f16d1883b348e463a9842e",
+      "sha256": "cfa4ad79cff1a81d471686aad2b90844729ecd3c0d72352de6ebb759d1ba459a",
+      "bytes": 4844
+    }
+  ],
+  "sourceHashes": {
+    "src/ai.rs": {
+      "sha256": "810750e38962722b8a80e390bb554a3ab3218265eed57019245e26da253e8a4c",
+      "bytes": 22823
+    },
+    "src/city_ground.rs": {
+      "sha256": "8f5cd7affd5e5cd6fe62b75f692030dc54787671a5f123861705784857c92c44",
+      "bytes": 6170
+    },
+    "src/city_ground_tests.rs": {
+      "sha256": "80b4effed12da09e35f8185f8b42c196caf06f0f21a3fae320b296d737cc95d3",
+      "bytes": 9540
+    },
+    "src/civ8_bonus.rs": {
+      "sha256": "c18a643bf03a1d277109aec34ca0970d6e4e02aa046f2b0aef3d09f3395ed469",
+      "bytes": 7351
+    },
+    "src/civ8_defs.rs": {
+      "sha256": "29e831e7f3fc0ef5a0cb49c89f835bf0e7d581d639bf92aede5f5c18966ef408",
+      "bytes": 6821
+    },
+    "src/civ8_gates.rs": {
+      "sha256": "205e3cf89eeb13afbf1d5ac2213538de712daa120b95a0d3ca2b4b72958023ff",
+      "bytes": 2484
+    },
+    "src/civ8_main.rs": {
+      "sha256": "a6da2fad7e5a4ce36758ef0af0167a63a0820103e07ce73a27386631fda49b97",
+      "bytes": 13018
+    },
+    "src/civ8_registry.rs": {
+      "sha256": "d9485351e741340b283039c30404d625609f79f46b31212ada221874b2f44b5e",
+      "bytes": 338
+    },
+    "src/civ8_runtime.rs": {
+      "sha256": "994f573b2b007e4011f2375ed5c7b9e44043f09a04ff9e96a37a60f50fd15a5d",
+      "bytes": 2609
+    },
+    "src/civ8_save.rs": {
+      "sha256": "38462eb8e52496962047d62cc96defded897e64aeeb74c925ede77b63a08c255",
+      "bytes": 3007
+    },
+    "src/civ8_tests.rs": {
+      "sha256": "cd448aa5a0c0c1405e9f2ddfdcedcba7c7ea07a9157a1c2ec337ff88d2bcc3e1",
+      "bytes": 5628
+    },
+    "src/civ8_traits.rs": {
+      "sha256": "b78ef5c8cf4b445ccb4237e09bd987668de4244c13e49a9e20774bb276c9c124",
+      "bytes": 4935
+    },
+    "src/claim_tests.rs": {
+      "sha256": "b6fb2c3b7cd1bc3ac152caa82c9bec9f8153e7ce7a162cc25ba8f62bda8bf060",
+      "bytes": 5380
+    },
+    "src/cmd.rs": {
+      "sha256": "977397f4e7a3e450f4ba269f0712ccd83b91ebdbaaafca1544e148a1837f6b60",
+      "bytes": 7498
+    },
+    "src/decision_hash8.rs": {
+      "sha256": "6ffa9dfd32029eeda0c24621b6245fd6ea9923ef086acdaa197a90076194ee4f",
+      "bytes": 1812
+    },
+    "src/defs.rs": {
+      "sha256": "7d4163f809e15ec8712b880c397f462b390d5741086772c5bb549ad59a6d7abc",
+      "bytes": 17906
+    },
+    "src/diplomacy.rs": {
+      "sha256": "759eecdb24ade2c66f6ae14873286caf0e4a6b59157f7c6baf933ab752be97b0",
+      "bytes": 36519
+    },
+    "src/economy.rs": {
+      "sha256": "174425e8c1ac4c9ab94e9a1a00ca4621495154a223be8918038f819e10f952de",
+      "bytes": 5321
+    },
+    "src/ee2_civ8_attack.rs": {
+      "sha256": "151dc3cd6270e28d9f0777787d3b395fd4cc2b610e68e725f3694d4b985260af",
+      "bytes": 109911
+    },
+    "src/ee2_civ8_combat.rs": {
+      "sha256": "e7db43471642b2ac58f43abb4cb26a31d498c632df995eda82062b7d3fa907e0",
+      "bytes": 50196
+    },
+    "src/ee2_civ8_economy.rs": {
+      "sha256": "7fff62951ea426ca7a03d8da6c626367e4421ce331ba94f0b4c5b0cfe48ae92e",
+      "bytes": 25130
+    },
+    "src/ee2_civ8_oracle_tests.rs": {
+      "sha256": "b54708d32bc0731ba5bbf2d004c9d6c9ae47f44b9d4de3aebe5d00e1577d891c",
+      "bytes": 118327
+    },
+    "src/ee2_civ8_profile.rs": {
+      "sha256": "a900058f743bf97b68c7497179b353017c2a1f3a707057c03b6e55b88a59464f",
+      "bytes": 21206
+    },
+    "src/ee2_civ8_research.rs": {
+      "sha256": "9310b7f35a46b66ed2c80d7482455509ac75bd005191cf3dc24221aae32632fe",
+      "bytes": 45005
+    },
+    "src/ee2_civ8_units.rs": {
+      "sha256": "344316491dd458798bc78dd1cf5c8f7c1aa05397fb376a37114cd8be21b317e8",
+      "bytes": 336189
+    },
+    "src/ee2_combat.rs": {
+      "sha256": "b58fddf7b8c83cd85134b83da42d4e6e48fa5eb0d7f59b7c6d3c4388af8b2ac0",
+      "bytes": 40744
+    },
+    "src/ee2_combat_tests.rs": {
+      "sha256": "415ad2ce19f60fb68e07d4720918a58d58b80a16804c14185dfb1c8ccf93e378",
+      "bytes": 6629
+    },
+    "src/ee2_profile.rs": {
+      "sha256": "829840326657d93e6469259914bb16835780d725257c2b936ca5367bbefc2e7c",
+      "bytes": 3281
+    },
+    "src/ee2_research.rs": {
+      "sha256": "e44ae07102e78bfaafbb1d9e1e988345d7ac306c7087b85953077ac8869a6b5d",
+      "bytes": 40373
+    },
+    "src/ee2_roster6_attack.rs": {
+      "sha256": "3eb0b85b1d5c125d403b6bd5ab16e42f2aa613f85a3d77b5e79a5f95a4cb3511",
+      "bytes": 103273
+    },
+    "src/ee2_roster6_combat.rs": {
+      "sha256": "b1dac864d4b55106c129e2b33bb89b0dcabd60706db4965d9bfc41ed9c632784",
+      "bytes": 46428
+    },
+    "src/ee2_roster6_economy.rs": {
+      "sha256": "eefd978fb1f08c35f22e3904cee2b908ac05e3afaacaac0dd3fb70fdb07f2b69",
+      "bytes": 23621
+    },
+    "src/ee2_roster6_oracle_tests.rs": {
+      "sha256": "1b4ab90fd3b43ee5937988eb76711d51d0faf7af7d1de95f78a34ecdb12e4c1f",
+      "bytes": 112448
+    },
+    "src/ee2_roster6_profile.rs": {
+      "sha256": "de3d6fadfd0998e0ea758bb919bb9b9e6176eee6614d9a3b89e6ef89ac926e24",
+      "bytes": 15951
+    },
+    "src/ee2_roster6_research.rs": {
+      "sha256": "b4c317a8f5cbee42570ff475a7341111d996333193d6a90112adaab380caad02",
+      "bytes": 44559
+    },
+    "src/ee2_roster6_units.rs": {
+      "sha256": "aeaa5ecca2dc77c0411fa23c7f880f83935cb90db7615d8df16717b5d9f64758",
+      "bytes": 309861
+    },
+    "src/ee2_units.rs": {
+      "sha256": "897726b80a02102da3835356e3253048f4baf9301dc71f5fdfc0cb26e173201c",
+      "bytes": 272770
+    },
+    "src/ee2_up15_attack.rs": {
+      "sha256": "a08a54b67b921c68d7bd1752bdad7bb297d14a80fcc64387ef2d5c95f4929741",
+      "bytes": 97744
+    },
+    "src/ee2_up15_combat.rs": {
+      "sha256": "99a91ffa3895d89cd94492022875dab587366aebff4119d3b91f95e563b59fe3",
+      "bytes": 44608
+    },
+    "src/ee2_up15_economy.rs": {
+      "sha256": "7e2239d5f02554d6f79ed0e3efe15643db1ac3fd81c95a25e5a6b0122322762e",
+      "bytes": 22402
+    },
+    "src/ee2_up15_oracle_tests.rs": {
+      "sha256": "393971ba32fd02726e7cf524d46a52340f856faf33b08252a083f94044301f34",
+      "bytes": 107457
+    },
+    "src/ee2_up15_profile.rs": {
+      "sha256": "df8cd5006fecb9525706bb42650308d1face60b6d0e92b4a4cb54b433090d16d",
+      "bytes": 14889
+    },
+    "src/ee2_up15_research.rs": {
+      "sha256": "5de764d8f3f19d08e9e0aef8b3b8efccd04f274149f0a932f90240acbe861cb0",
+      "bytes": 44410
+    },
+    "src/ee2_up15_units.rs": {
+      "sha256": "49f802ed91ca4e4bdfd28ca61e4a505273504115db785312e9b9bfc6f2be2555",
+      "bytes": 287525
+    },
+    "src/fortress_tests.rs": {
+      "sha256": "ca50e78d11ecebfacdcb8e6581b2bac407db8168f57cc2d64a1b76641498315a",
+      "bytes": 4547
+    },
+    "src/game.rs": {
+      "sha256": "ae3d641dd0bf9ac978b91b9427600a76361b90a95969ffb75189c5615eb1e569",
+      "bytes": 97694
+    },
+    "src/ids.rs": {
+      "sha256": "b14e40e244bef14c8d82d4ebed0dbbf56031284fe825788cc06d25d5162d5793",
+      "bytes": 6788
+    },
+    "src/lib.rs": {
+      "sha256": "738aa0331b5946f16196d9b8a82c5794b41091c8942b15a5d0f21241ae2b6cb3",
+      "bytes": 43890
+    },
+    "src/map.rs": {
+      "sha256": "55a31ded8f7da29f0d9413f698b347d71e50125ba0d09d84cf30dba282f06e45",
+      "bytes": 22796
+    },
+    "src/match_settings8.rs": {
+      "sha256": "4614faa485a4809174e813836dc5ad888cc14246d92908a37e27bf6dbd439f0b",
+      "bytes": 4105
+    },
+    "src/native_attack_clock.rs": {
+      "sha256": "bc4303ab8d72397d37eb55555e12e7e8e1f40b1b584d2a2454d136bcc37997af",
+      "bytes": 5860
+    },
+    "src/native_attack_tests.rs": {
+      "sha256": "4718463e473d4f41afe6159755d410106321e5f38f21afc4f0830f3c2f327428",
+      "bytes": 5789
+    },
+    "src/navigation8.rs": {
+      "sha256": "64fa72dd0b973079339dd90c82e2a6924e48f1af9f79542222479a536abdb7ec",
+      "bytes": 6936
+    },
+    "src/pack8.rs": {
+      "sha256": "e484cbdeecc7bb4668987f0f67893505495584265d5846fcf951168c3a0c0d73",
+      "bytes": 6422
+    },
+    "src/pack8_defs.rs": {
+      "sha256": "39917fd49a73397a7f7b08088b5f7c6a7658b2485aec0ff8045f5c09a84bf382",
+      "bytes": 36331
+    },
+    "src/pack8_render.rs": {
+      "sha256": "1949d24cac433ea8fae2763699dc1f80aee87903bcfb6a9d2e598da00fdc9776",
+      "bytes": 1637
+    },
+    "src/pack8_save.rs": {
+      "sha256": "59ded342aa12482fb814382728dfcd088071198b66e270fa4936dec353eecd38",
+      "bytes": 7783
+    },
+    "src/pack8_tests.rs": {
+      "sha256": "240680376a3536fa0866de1de8d0a091a958a737afdad53c3b03801a586ff0cd",
+      "bytes": 12514
+    },
+    "src/paid_queue7.rs": {
+      "sha256": "0b90f26abf1a77eb66c6632d46f77505e7d65739b5156aab434b8b7e836150a9",
+      "bytes": 18891
+    },
+    "src/paid_queue7_main.rs": {
+      "sha256": "93ae7cd76fb11de0eed8949bb1f5e5e207070c4972f69ab458ca23d1b1c4708a",
+      "bytes": 10490
+    },
+    "src/paid_queue7_tests.rs": {
+      "sha256": "01dd7743f698aa1aec7658e771f5d3d1557aa11a90b62f84ed1e83851cfb93c3",
+      "bytes": 8431
+    },
+    "src/placement.rs": {
+      "sha256": "55177c45a9c30feb186f5fe3210533524ccc530f608e76f83ac2312fb7f740af",
+      "bytes": 24650
+    },
+    "src/projectiles8.rs": {
+      "sha256": "e3aa3d941e6ff42ecb388f2f378907074612ad347f2992d67a744ff60a3d2ab2",
+      "bytes": 2919
+    },
+    "src/projectiles8_tests.rs": {
+      "sha256": "01a9d6f88bc89f8044fcd3a2ff9a34b79099220dfe448ea939fd8f0862d9c245",
+      "bytes": 4019
+    },
+    "src/render.rs": {
+      "sha256": "cbbb7ac3005d86ffd8a4a31f414cba2c3bd25119e1dea7b9f221987d2dc44d19",
+      "bytes": 29038
+    },
+    "src/render_meta7.rs": {
+      "sha256": "3fadca1a1fa4a8f934b3d427bd962bb144cf1cb0425b77d0294c42d0b2557d24",
+      "bytes": 3995
+    },
+    "src/render_meta7_tests.rs": {
+      "sha256": "efd9429a84e12a7bce7997bd5376080f07336e091bf2c98208dc9411091bb228",
+      "bytes": 7241
+    },
+    "src/research.rs": {
+      "sha256": "43d0a074d4f8554a072316b9545aad5bed18da6303127a6b3c2d1a5fe88a6cf1",
+      "bytes": 8734
+    },
+    "src/roster6_classic_tests.rs": {
+      "sha256": "c2e7bd9cd743a81f22d223a4ec9cf7b464d763599e6f0964b99a44f2671af7d2",
+      "bytes": 7772
+    },
+    "src/roster6_defs.rs": {
+      "sha256": "8bb2c6654c82dc0edf6b1541235293ef9e07cea834bc7ab60bcacac5af15168c",
+      "bytes": 1632
+    },
+    "src/roster6_placement.rs": {
+      "sha256": "168d29b4b9b389f983986a3da089ece9f8b4bffa97574156379bb816d5f8921a",
+      "bytes": 2200
+    },
+    "src/roster6_queue_tests.rs": {
+      "sha256": "72b2a07fd6353e0cb6854f4f4414437df92b7d9abb27dfa524951665bda9b52b",
+      "bytes": 2723
+    },
+    "src/roster6_registry.rs": {
+      "sha256": "cce3a0126781d179dd95a4c14ff1e4a34c07217feadbac4f1ebb6dcb564fd8d2",
+      "bytes": 348
+    },
+    "src/save.rs": {
+      "sha256": "59ed5c610dfeb5a842096cb1b034df5fe03c60787fdb3995c9b67c0839a581f3",
+      "bytes": 14470
+    },
+    "src/save6.rs": {
+      "sha256": "579cfd7b1ce412bb43880185c3943ba0e3e46cd00ea03871e2e3b4c68a60dd9d",
+      "bytes": 9986
+    },
+    "src/territory.rs": {
+      "sha256": "ae727f270e928888a2de856f4299a00bb6090b97d442334b96814175ad7dad23",
+      "bytes": 45347
+    }
+  },
+  "fixes": [
+    "Civ8 AI census covers DEFS.len; can_train filters before reservoir RNG.",
+    "PKW version3 retains96 ordered own navigation fields, budget/version/LRU and all actual actor flow slots in NVC1.",
+    "Separate PRJ1 retains ordered complete in-flight projectile launch snapshots and damage/targets; stale target generations remain valid.",
+    "Authoritative population/capacity/building counts update at mutation/tick boundaries, never in ui/save/hash. Unfinished buildings give no cap.",
+    "Global alive refresh is independent of local winner latch.",
+    "HSH3 covers future-read semantic actor/player/map state while excluding selection, interpolation, local outcome and transport.",
+    "combat_stat accepts all80 source definitions for Civ8 only; query remains readonly."
+  ],
+  "limits": [
+    "Own map/pathfinder, AI policy, movement, clock and projectile simulation remain named adapters; no native EE2 AI/save/physics parity claim.",
+    "Known historical flat5/6/7/8 and PKWv1/v2 never stored some route/projectile/allocator history. Missing history is explicit; lost historical flight damage or route state is not invented.",
+    "Local outcome latch, benchmark mode, presentation-only FX/sounds and local selection are outside gameplay save/hash contracts.",
+    "Regional/gender graphics, complete native world/map integration and remaining ability/event/visual gaps are separate work; this is not complete original1:1 reconstruction.",
+    "Feature-disabled binaries may differ in compiler/panic metadata; actual unchangedOwn0/Base1/Joint7 behavior and serialized bytes were compared over10926 checks."
+  ],
+  "handoff": "Copy only the declared delta source files, the read-only save-envelope helper and finalWASM into the separately owned Root8 frontend/media overlay. Do not overwrite Root Main/renderer/runtime glue from this core-baseline docs tree."
+}

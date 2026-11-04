@@ -1,0 +1,492 @@
+{
+  "format": "native8-final-v3-pack-gpu-rebind-v1",
+  "status": "passed",
+  "activeOrRootFilesModified": false,
+  "wasm": {
+    "sha256": "63470e86d6a50bd168fa5d7364d0789d59d342be3aad762526aa150e3e7b8a4f",
+    "bytes": 581599
+  },
+  "currentRoot": "work\\native-media8\\OpenEpoch",
+  "currentProductionHashes": {
+    "rendererSha256": "254c9df7c3a3282e2690d2fad0d22565da9245c4a8eecbe8df4ebe5b67801e5d",
+    "packHelperSha256": "a38bdb4ed1e95c86932ecb907408987f5af81e0ac961ed8161e5a2ca661d2c7b",
+    "actorHelperSha256": "8cb10d47f6a305d7177e1e701f2736b051c654700eb8460084983d63d3827fcc",
+    "modelManifestSha256": "dc79d224a70b24c932923565c4c6e5bc4f2e2706839c49bbe5ead9798058f685",
+    "scaleManifestSha256": "4924a598b38d1206d58c6b4cfa67bdd61b4a016ec364e7556a8e97275aac8dbd",
+    "teamManifestSha256": "85526db0d9fb5589f39c750d8f9019769c59f5a1fb80e1ba3abc17f217fdb84a"
+  },
+  "scenes": 24,
+  "checks": 112,
+  "families": [
+    65,
+    68,
+    76,
+    78
+  ],
+  "directions": [
+    "Unpack",
+    "Pack"
+  ],
+  "steps": [
+    0,
+    10,
+    20
+  ],
+  "sourceStates": "Explicit nativeStateClips, genuine public-produced e417 fixtures loaded into final63470 core, actual select/cmd_pack, aligned opaque actor metadata.",
+  "passes": [
+    "reflection",
+    "shadow",
+    "main"
+  ],
+  "readOnlyAllPasses": true,
+  "allForegroundBoundsInside": true,
+  "motionObservedAllEightSequences": true,
+  "contactImage": "qa/final-v3-civ-pack-contact.png",
+  "files": {
+    "capture-final-pack.mjs": {
+      "sha256": "7e772d46b4cb7eb44e9c6c49011ab2aca005e5e9c65c7281bd4b34ef742a73dd",
+      "bytes": 8650
+    },
+    "contact-final-pack.py": {
+      "sha256": "d06ba0bb9323e549173fcaa1fdb84b3efecb88cfee4ebc8301db52e7dce97711",
+      "bytes": 834
+    },
+    "replay-final-pack.py": {
+      "sha256": "0ac4239bf40e61584d87dbaec92362328af93c9299607c2f1467c48eabee5603",
+      "bytes": 2831
+    },
+    "qa/civ65-pack-render-captures.json": {
+      "sha256": "e4977c186d758f91fa232139af29766da430141acd12afd0a19e34a217cb43a2",
+      "bytes": 2872
+    },
+    "qa/civ65-pack-step0-gpu.json": {
+      "sha256": "a3a4932be570e69c75586b64aa4e2529c13c4306d99142623408f6dd7d96ee95",
+      "bytes": 3135
+    },
+    "qa/civ65-pack-step0-reflection-52.png": {
+      "sha256": "ab8acfe7a46ed2569e6ece9cf2ab013932794bb04fe3d0dc7d3b6efb50899c56",
+      "bytes": 21076
+    },
+    "qa/civ65-pack-step0.json": {
+      "sha256": "7b6b1c9e878d0225a285b45d59ef80f4ee561bb73f29f3e038ce9a0a156c2849",
+      "bytes": 4114155
+    },
+    "qa/civ65-pack-step0.png": {
+      "sha256": "ccb16b1ab1853c0656f7940fc8236437f279143e62aaba1d1bd354a756ea3cfc",
+      "bytes": 24477
+    },
+    "qa/civ65-pack-step10-gpu.json": {
+      "sha256": "31cabe425b6f88198653e2adb953d1a7867acba9539caeccd5fed94b410b29ad",
+      "bytes": 3138
+    },
+    "qa/civ65-pack-step10-reflection-52.png": {
+      "sha256": "6af21dd058c75dc599350ca5dc64c05c9360ab9171c59a6bec912ba7555c3760",
+      "bytes": 22164
+    },
+    "qa/civ65-pack-step10.json": {
+      "sha256": "43ead8d25da90e2c6fbc4770beb67bdaf6828a924bbdabc4c02f770cd7b7aac9",
+      "bytes": 4114155
+    },
+    "qa/civ65-pack-step10.png": {
+      "sha256": "aff29f1ce00849d32d5b578fbc6637826f1f7cb0990a008e84de8ae5a2b2c376",
+      "bytes": 23330
+    },
+    "qa/civ65-pack-step20-gpu.json": {
+      "sha256": "16ab415315c32dab74e306994c38668716da7798b92955f47f7055431ec68fbf",
+      "bytes": 3138
+    },
+    "qa/civ65-pack-step20-reflection-52.png": {
+      "sha256": "e4e1409f40c1acd65953f017631a2cb2d44b5c01e1377184c787a67ead641ad9",
+      "bytes": 19682
+    },
+    "qa/civ65-pack-step20.json": {
+      "sha256": "3065693940c0ef002cd9887c4b0d1d79b60bb18426d0c19063fc53b6654cd309",
+      "bytes": 4114239
+    },
+    "qa/civ65-pack-step20.png": {
+      "sha256": "288f75ece7452c776894833b1fa3a4e39ddaaca58f8e8afd248b9409141ebbe0",
+      "bytes": 21514
+    },
+    "qa/civ65-render-captures.json": {
+      "sha256": "55a98badf2b77793146b549810f5db7fa729cdd4395cb2dc5ef4516bc56e4e28",
+      "bytes": 2860
+    },
+    "qa/civ65-step0-gpu.json": {
+      "sha256": "98e15c9b54f8543909152ead6a8caab38a4ccb529281f013af954fd0fdec1265",
+      "bytes": 3120
+    },
+    "qa/civ65-step0-reflection-52.png": {
+      "sha256": "653c5971c03f10fdddd6887e4ca5aaad70f6255a4a982091b9092b9fbe2262c4",
+      "bytes": 19821
+    },
+    "qa/civ65-step0.json": {
+      "sha256": "bff656ded189a953ddb6bd98af4aac67b384c9eeb18664210827942d4170cd2b",
+      "bytes": 4114169
+    },
+    "qa/civ65-step0.png": {
+      "sha256": "445155bbfa6746172a09ff5694ebc2b779e555015ae719f85ffa59ed4e75ccee",
+      "bytes": 21949
+    },
+    "qa/civ65-step10-gpu.json": {
+      "sha256": "6ee59db04c7bde212b793a8ca484453f4704a6de5bbc068f78aab7188846fe2a",
+      "bytes": 3123
+    },
+    "qa/civ65-step10-reflection-52.png": {
+      "sha256": "ddf06c6ca796248b6d1fdb94468a589a840272188d80fc68a8b268f4a378f209",
+      "bytes": 21474
+    },
+    "qa/civ65-step10.json": {
+      "sha256": "1485056737cc05adb65f4cb0608990f734c419b910326762d67a49557298e3ef",
+      "bytes": 4114168
+    },
+    "qa/civ65-step10.png": {
+      "sha256": "4274dd1252d590620d33cccfc52f907baca1333a480fe5a35be66743f43104c4",
+      "bytes": 23251
+    },
+    "qa/civ65-step20-gpu.json": {
+      "sha256": "2a9c9f493bb7bb2599cf5db84c67c225bd43821b4763ab33f2a85d02605bc700",
+      "bytes": 3123
+    },
+    "qa/civ65-step20-reflection-52.png": {
+      "sha256": "2a12232b429dfaea3d92d566292b319059c160b650955bb1cba492672b701f17",
+      "bytes": 20971
+    },
+    "qa/civ65-step20.json": {
+      "sha256": "14993ff99c9c91460ac39e8fd2188c8e0c28d1f0e81a9af9066c5ed2cdb0de3a",
+      "bytes": 4114253
+    },
+    "qa/civ65-step20.png": {
+      "sha256": "3702924d973f49109dd0cbf5480030ed7e68d3b5328546cf5aedb05fa6633494",
+      "bytes": 24239
+    },
+    "qa/civ68-pack-render-captures.json": {
+      "sha256": "56db11936f15ec3dc69d2649545f5c1a3632da02a638f7acf6b850dd3495e99d",
+      "bytes": 2041
+    },
+    "qa/civ68-pack-step0-gpu.json": {
+      "sha256": "d106f57f28cb29eb84224c975dd791eddf6c8f0b5765345210fe8044f37763ce",
+      "bytes": 3132
+    },
+    "qa/civ68-pack-step0-reflection-24.png": {
+      "sha256": "e2437a42dd4210de59ebee3f4d76cabceed6a8c979c06124d51ea76a6c2e7c21",
+      "bytes": 9739
+    },
+    "qa/civ68-pack-step0.json": {
+      "sha256": "6d0f3d2e7967a72c4a7aae8a3fabadf4f7241382e150379862275518fb1b2fc8",
+      "bytes": 1415848
+    },
+    "qa/civ68-pack-step0.png": {
+      "sha256": "daa41a463d1e68368c463dac8da0d34cb3eb894e443588de88a22df352861726",
+      "bytes": 11239
+    },
+    "qa/civ68-pack-step10-gpu.json": {
+      "sha256": "010c4e7d8f5b2636040b41bb9916d11a8c1861a0efbef9219eed1770657ae970",
+      "bytes": 3135
+    },
+    "qa/civ68-pack-step10-reflection-24.png": {
+      "sha256": "4300345ccdb456b4e349beb0178250fcb94834bf977b604e58aa58a9213846cc",
+      "bytes": 9734
+    },
+    "qa/civ68-pack-step10.json": {
+      "sha256": "04fa838283b4301d4909496581e572df03a0ad7e33bd8851a4bc570fd3b80fce",
+      "bytes": 1415851
+    },
+    "qa/civ68-pack-step10.png": {
+      "sha256": "63ba98f0021f75f7d30eee29e89b99dd549b6e28a59ad8ddbf6e0f9e1d8235ae",
+      "bytes": 11139
+    },
+    "qa/civ68-pack-step20-gpu.json": {
+      "sha256": "35c54c5262072c8e7585bd9706acc07da75fff02e9f6b0b72a1d8abec8cacdda",
+      "bytes": 3135
+    },
+    "qa/civ68-pack-step20-reflection-24.png": {
+      "sha256": "17e4fa1342a0aa5909bf56debbf73c1cfad87e8d02961f15ccedd9f80e65e220",
+      "bytes": 9810
+    },
+    "qa/civ68-pack-step20.json": {
+      "sha256": "951c3fbae1c23f497c650d521eb9d377e3138ff0e244689d7b97cdda682d2881",
+      "bytes": 1415880
+    },
+    "qa/civ68-pack-step20.png": {
+      "sha256": "5841a5bab2f2f48450f060b1856cea9d49765c4bb0a19cb49dbf505b5bf91616",
+      "bytes": 11245
+    },
+    "qa/civ68-render-captures.json": {
+      "sha256": "e5504452a4f9eaf0714d494340b8c30d51920368825be52a064a856545ff9e1b",
+      "bytes": 2029
+    },
+    "qa/civ68-step0-gpu.json": {
+      "sha256": "5095182bc37ad349ccb80a9a45e365c0087afe543b9ccbb9e0a445ef09b62441",
+      "bytes": 3117
+    },
+    "qa/civ68-step0-reflection-24.png": {
+      "sha256": "da6ec36f0f94c4bfbf2a753d84110505dd5c321b574d8a53f0330d6c1d7acebb",
+      "bytes": 9779
+    },
+    "qa/civ68-step0.json": {
+      "sha256": "c6a5cf42357f9592e40369b5d43c477af9c665ef9dfcee628e5047ddfbf0ebb7",
+      "bytes": 1415864
+    },
+    "qa/civ68-step0.png": {
+      "sha256": "8442afa89044d1371666a35e589aa0849fa960fafbcf98121af71cd25381f2a6",
+      "bytes": 11299
+    },
+    "qa/civ68-step10-gpu.json": {
+      "sha256": "e6642ea621eab127f201c673121aa7f32cee5e9b428594dfa2977ae6c42b270f",
+      "bytes": 3120
+    },
+    "qa/civ68-step10-reflection-24.png": {
+      "sha256": "3b7f57d416949de648d62c6bd598fcdfea9d1f22ec897a1714ccc5c1e7b6c699",
+      "bytes": 9822
+    },
+    "qa/civ68-step10.json": {
+      "sha256": "49ce697e54b19d52e028473a0d0e75c03b3656b112b97034da55bc6c9149d7c1",
+      "bytes": 1415865
+    },
+    "qa/civ68-step10.png": {
+      "sha256": "4e2eab195052d05a13e9c2fc3280416f5eb211b2f70b1fb6063a1f4d75ff8bca",
+      "bytes": 11257
+    },
+    "qa/civ68-step20-gpu.json": {
+      "sha256": "047439e434b603a87f986a815cf0dab775a944d66742b9eb3fd3a9d04164d669",
+      "bytes": 3120
+    },
+    "qa/civ68-step20-reflection-24.png": {
+      "sha256": "6206f709ec20207995563fe7c07d077570263dbc8e44590b7b5eb269db93d297",
+      "bytes": 9757
+    },
+    "qa/civ68-step20.json": {
+      "sha256": "5956b0aa3f1fd31f76e284eb2b14e8bb388255f652b5379aa16e7a87dc60d89d",
+      "bytes": 1415893
+    },
+    "qa/civ68-step20.png": {
+      "sha256": "c0a1e19b8ece1488f8e05706805435ab5381823d7df87d4fc2e11f020f48923e",
+      "bytes": 11244
+    },
+    "qa/civ76-pack-render-captures.json": {
+      "sha256": "7b23e9281ee277eda4b3db3ff005644d2c6b68202f80caa2d05ce73e839c467d",
+      "bytes": 2458
+    },
+    "qa/civ76-pack-step0-gpu.json": {
+      "sha256": "d1ea2ebcf8ec9c107d78dc387e5f672a4404a99edd7457ddd72413f46965e3dc",
+      "bytes": 3134
+    },
+    "qa/civ76-pack-step0-reflection-37.png": {
+      "sha256": "02bfc9915cb2681dfed1d4627a36cc64e607715b77698aae1d5543ae50cdcd95",
+      "bytes": 11727
+    },
+    "qa/civ76-pack-step0.json": {
+      "sha256": "b5a5092314150334a14681726a1cf5b3d8eb7ce58353d3ec4f4e8d79fdc25ff3",
+      "bytes": 2314846
+    },
+    "qa/civ76-pack-step0.png": {
+      "sha256": "460732bdebf8eab09be7325848fa1f59ac3d1f9ffed5fba3599aa2588c3adc8c",
+      "bytes": 13008
+    },
+    "qa/civ76-pack-step10-gpu.json": {
+      "sha256": "2eac7cbec5fc23ee278a8e9a1948ae2c041889c34bb30c166fd7cc7c7f2fa23b",
+      "bytes": 3137
+    },
+    "qa/civ76-pack-step10-reflection-37.png": {
+      "sha256": "0d6cd0cffa3202af97c741742c9a5a378a9eb817088afadecaf3722048c5cb5c",
+      "bytes": 11779
+    },
+    "qa/civ76-pack-step10.json": {
+      "sha256": "ff735ff4f42e0a2cd4418f0d4cab94c81fd95048d713cb5703485aa3e6003cd3",
+      "bytes": 2314848
+    },
+    "qa/civ76-pack-step10.png": {
+      "sha256": "9b5fb1c841d20b2641f04ad0767eb593a5e0e3022c29a0d0ca11ad5f6fc2f5a0",
+      "bytes": 13187
+    },
+    "qa/civ76-pack-step20-gpu.json": {
+      "sha256": "80c07e7ffab022994b6e1cb44b18469667611e6740711181dc72963f3026e3e3",
+      "bytes": 3137
+    },
+    "qa/civ76-pack-step20-reflection-37.png": {
+      "sha256": "2d1b9019a4a037503321ca97984df609977e6a9efbb4947196625fcf6263d1e3",
+      "bytes": 11843
+    },
+    "qa/civ76-pack-step20.json": {
+      "sha256": "777913674c84b9a640838a9728738f378c8f8336f69bd1ad0ec2cd725e874e71",
+      "bytes": 2314905
+    },
+    "qa/civ76-pack-step20.png": {
+      "sha256": "db8e193cc98254722d82ad5c9b09c9b9cc695ceef4c2f3164dde85332e1f5d5b",
+      "bytes": 13204
+    },
+    "qa/civ76-render-captures.json": {
+      "sha256": "fa5dc39c7fc9ef81fc25cec8697ab4ac92979dfce99e4e7bb0e18b9bc418cbd4",
+      "bytes": 2446
+    },
+    "qa/civ76-step0-gpu.json": {
+      "sha256": "794ddbe96b4f0df8ef8588d9bfeb94f5d2b3fdf17a5d18d0cf36d4e926e0367f",
+      "bytes": 3119
+    },
+    "qa/civ76-step0-reflection-37.png": {
+      "sha256": "3b30a3361f5006102df682be1c2dbf87bf4d100798f3747e0f50216200c5b150",
+      "bytes": 11854
+    },
+    "qa/civ76-step0.json": {
+      "sha256": "0e54ce5dd8796d99fefa9660a916858fbc4920b8692d9d6326607f25c0579a01",
+      "bytes": 2314861
+    },
+    "qa/civ76-step0.png": {
+      "sha256": "d407efb1d0ea7d06324d56650396fbf2bb03201e109e197c2d29a3e9c05329db",
+      "bytes": 13248
+    },
+    "qa/civ76-step10-gpu.json": {
+      "sha256": "0e1eb23b4113691cfc8b3ed33ebf2a28dba075c3e031e54f3fc42762255eeba6",
+      "bytes": 3122
+    },
+    "qa/civ76-step10-reflection-37.png": {
+      "sha256": "715d5448aa93d401dc6400189e4e47a4ec063688623a507b4eccab2efa1ffa4e",
+      "bytes": 11770
+    },
+    "qa/civ76-step10.json": {
+      "sha256": "b82735e3eb4459e2b97b60d59f1a8b2d8f57141ea31ee35688c052d606c344be",
+      "bytes": 2314860
+    },
+    "qa/civ76-step10.png": {
+      "sha256": "824dbbcc0a53ec6190505693920487a7c853f603026039fa998f758baa5c4d84",
+      "bytes": 13157
+    },
+    "qa/civ76-step20-gpu.json": {
+      "sha256": "961d21354328a8762d381f4cdabfcdb0368ca8705ed31eecc56b40e7cf80644f",
+      "bytes": 3122
+    },
+    "qa/civ76-step20-reflection-37.png": {
+      "sha256": "a1349a7682189f9ce9ff35f71da1bf66d416a2c8c2198140c33ee62fa7b9239e",
+      "bytes": 11718
+    },
+    "qa/civ76-step20.json": {
+      "sha256": "c3109a660b33a3eb4d7efa5c78e3f6b0240de402d0cebf548beb71f4ccf8bb7b",
+      "bytes": 2314919
+    },
+    "qa/civ76-step20.png": {
+      "sha256": "7bdf9b420fc3434c0b9d7e53c11557e53c8b65f1c6a2f7fd67e4b22dd481da87",
+      "bytes": 12992
+    },
+    "qa/civ78-pack-render-captures.json": {
+      "sha256": "1f8d8baf3646edddcc3cdc45d3705b0342af895ecbdc8c82a8d175a9e624928a",
+      "bytes": 3286
+    },
+    "qa/civ78-pack-step0-gpu.json": {
+      "sha256": "a40adc5223ac7e35b001cc3df5b855027525e0a14f2fdfc4cb90bbc1cba20360",
+      "bytes": 3135
+    },
+    "qa/civ78-pack-step0-reflection-59.png": {
+      "sha256": "5c17de4cfe8f419c14c35dedcb7d899c33e2ae228888cc649ed3d4ecd3fb1eb3",
+      "bytes": 17940
+    },
+    "qa/civ78-pack-step0.json": {
+      "sha256": "dc2aba6a18b0ba24a36c1a5d2ba454f33e83a3038cd1f237ad0b6368394282d8",
+      "bytes": 2930284
+    },
+    "qa/civ78-pack-step0.png": {
+      "sha256": "dd37f2db75dc202c894fdf8ece2e3db60fe9cec7b38b1139ba3865b8283054ba",
+      "bytes": 21298
+    },
+    "qa/civ78-pack-step10-gpu.json": {
+      "sha256": "94144e8dec692f81e11c7621d1fc2a4d85a426e823df79d5496a688920c5b319",
+      "bytes": 3138
+    },
+    "qa/civ78-pack-step10-reflection-59.png": {
+      "sha256": "cbfea5a31f54eb1ae645d96b06dfa64c04422363be1a1f87e5bd36b28b1b59cd",
+      "bytes": 17228
+    },
+    "qa/civ78-pack-step10.json": {
+      "sha256": "cfcb8024b79e610848b687c01f5d70f0f697e7a89b04eee0413468004944f63d",
+      "bytes": 2930285
+    },
+    "qa/civ78-pack-step10.png": {
+      "sha256": "1badb00a287c16a1b26daa8cf4f0a745432770a157de7e54e1594a663e5b37a2",
+      "bytes": 20783
+    },
+    "qa/civ78-pack-step20-gpu.json": {
+      "sha256": "3d13e1dd9e18e0cd555b60ca5cd10585296399c05bf484a471551cf9f13a2435",
+      "bytes": 3138
+    },
+    "qa/civ78-pack-step20-reflection-59.png": {
+      "sha256": "ce9b10fd888ec19457ae216a9184f14fa7c3da66777023cf4908adac04933d1d",
+      "bytes": 16499
+    },
+    "qa/civ78-pack-step20.json": {
+      "sha256": "66c9df36df904a2d9a445207053129153477a9e56062f22f299988a62f2219f0",
+      "bytes": 2930397
+    },
+    "qa/civ78-pack-step20.png": {
+      "sha256": "b41744918c32fa62e388f14f4b65c643350680b624f0ea87a58dcb476ff8c187",
+      "bytes": 19764
+    },
+    "qa/civ78-render-captures.json": {
+      "sha256": "1d870baf4b0b52f8b2be9c67a312799c84ca3eeaf381108a031b9ed7b19d73f1",
+      "bytes": 3274
+    },
+    "qa/civ78-step0-gpu.json": {
+      "sha256": "a813e0b7702109864a33648fc1c3e75213ca7662301254131c0fef6beb85b5a7",
+      "bytes": 3120
+    },
+    "qa/civ78-step0-reflection-59.png": {
+      "sha256": "aa91d85250d16c6667efa4fcc9c6ab6fe5829988bfb9a0ab0cbc5a55a086f4f2",
+      "bytes": 16597
+    },
+    "qa/civ78-step0.json": {
+      "sha256": "f0c6949292d8d8aa6f9ec8dfba1a1b4d5879442c7baf3607dc7958cf4a79107d",
+      "bytes": 2930298
+    },
+    "qa/civ78-step0.png": {
+      "sha256": "9dcef89d47b75f5630da1fd236a781f871f9ddc6745b2fa1e3271b4d8667533b",
+      "bytes": 19886
+    },
+    "qa/civ78-step10-gpu.json": {
+      "sha256": "fdf4bc69385f3d128fcbcf2b5d4f1e95b2d079fc92067b6560204a46708322fc",
+      "bytes": 3123
+    },
+    "qa/civ78-step10-reflection-59.png": {
+      "sha256": "407f157199951c90d8d37943c1e034acaf5bc9f6d50c2e9e70c876e4409ea2d2",
+      "bytes": 17361
+    },
+    "qa/civ78-step10.json": {
+      "sha256": "6903506ad9489883a5960e27a5b368539e677d78a97f64c118f43c2413a8c1bf",
+      "bytes": 2930299
+    },
+    "qa/civ78-step10.png": {
+      "sha256": "f7c43a6eb74fb341c7138b8694771b3acbb10803e34f0e4820ac4a446d57ed8e",
+      "bytes": 20741
+    },
+    "qa/civ78-step20-gpu.json": {
+      "sha256": "1fcdd6e61bc581521ecd55f02853162cdc08cf5c0dd71c2d64c560cc1848e442",
+      "bytes": 3123
+    },
+    "qa/civ78-step20-reflection-59.png": {
+      "sha256": "52914893885a9f85b6d554658df782c03eafba033635518d8f0cf4f953a355f8",
+      "bytes": 17982
+    },
+    "qa/civ78-step20.json": {
+      "sha256": "e0008544fa286f42aa1a0662690c41bd1088c3895daf883d220b7641c8413cb7",
+      "bytes": 2930411
+    },
+    "qa/civ78-step20.png": {
+      "sha256": "e08162f48758c335701acd3d95c63b58a50f321138ac3a0c97c897a9e1219835",
+      "bytes": 21590
+    },
+    "qa/final-v3-civ-pack-backward-gpu-report.json": {
+      "sha256": "501846404167c5479f5b008f47c64f4cda00ca45ca470c6b3e0e3e8dacf03056",
+      "bytes": 26380
+    },
+    "qa/final-v3-civ-pack-contact.png": {
+      "sha256": "e4a0f71f07f18cf51a6bf6281d71ea1d3baf5db86c4aac3a8c7838ad2b051bc3",
+      "bytes": 237074
+    },
+    "qa/final-v3-civ-pack-gpu-report.json": {
+      "sha256": "0c9e739aa811ddca8063d75c5a826b60b3639613ac341fe2af88dfca3728224a",
+      "bytes": 26334
+    }
+  },
+  "limits": [
+    "Twelve actual ANGLE captures use genuine normally-produced source80 actors, public cmd_pack, actual opaque-handle metadata, source NIF/KF/skin/textures and reflection/shadow/clipping passes.",
+    "Own object framing/background is a component proof, not a whole original-world image or a native-engine pixel-equality claim.",
+    "Clamped morph sampling does not reproduce TextKeys/native visibility/UV controllers or universal temporal x87/render-clock behavior."
+  ]
+}

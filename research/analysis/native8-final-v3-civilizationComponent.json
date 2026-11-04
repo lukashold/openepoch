@@ -1,0 +1,11 @@
+{
+  "format": "native-civ8-civilization-menu-component-v1",
+  "passed": true,
+  "checks": 249,
+  "wasmSha256": "63470e86d6a50bd168fa5d7364d0789d59d342be3aad762526aa150e3e7b8a4f",
+  "sourceSha256": "86396708095f064c03c6252a462a079e1246b95671fe45366baf2e6d2eec4bd4",
+  "limits": [
+    "Actual14-civilization Core configuration and source enum; DOM transport is substituted. Main start/save/network wiring is still a separate integration step.",
+    "Lobby random choices use the host presentation RNG once and are sent explicitly; no original native lobby RNG or source initialization parity is claimed."
+  ]
+}

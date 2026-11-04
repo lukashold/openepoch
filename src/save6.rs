@@ -52,7 +52,7 @@ fn strip_descriptor(b: &[u8]) -> Option<&[u8]> {
     if u32v(c, 0)? != META
         || u32v(c, 4)? != 6
         || u32v(c, 8)? != 1
-        || !((c.get(12..44)?==REGISTRY && u32v(b,12)? as usize==DEFS.len()) || (u32v(b,12)?==57 && c.get(12..44)?==crate::roster6_registry::PREVIOUS_57))
+        || !((c.get(12..44)?==REGISTRY && u32v(b,12)? as usize==DEFS.len()) || (u32v(b,12)?==57 && c.get(12..44)?==crate::roster6_registry::PREVIOUS_57) || (cfg!(feature="ee2-civ8")&&u32v(b,12)?==61&&c.get(12..44)?==crate::roster6_registry::FINGERPRINT))
         || u32v(c, 44)? != META_BYTES as u32
         || u32v(c, 48)? != END
     {
@@ -233,7 +233,7 @@ pub fn normalize_input(input: &[u8]) -> Option<Vec<u8>> {
         return None;
     }
     let stride = if legacy { ENT5 } else { ENT6 };
-    if u32v(b, 4)? as usize != stride || u32v(b, 8)? as usize != PLAYER || (if legacy {u32v(b,12)?!=57}else{u32v(b,12)? as usize!=DEFS.len()&&u32v(b,12)?!=57}) {
+    if u32v(b, 4)? as usize != stride || u32v(b, 8)? as usize != PLAYER || (if legacy {u32v(b,12)?!=57}else{u32v(b,12)? as usize!=DEFS.len()&&u32v(b,12)?!=57&&!(cfg!(feature="ee2-civ8")&&u32v(b,12)?==61)}) {
         return None;
     }
     let input_defs=u32v(b,12)? as usize;

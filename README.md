@@ -4,24 +4,41 @@ GitHub enthält Quellcode, fertige WASM-Builds, Tests und Importwerkzeuge.
 Originalmedien im ignorierten Ordner `docs/local-original/` werden lokal importiert
 oder aus dem separaten vollständigen Spielpaket übernommen.
 
-Arbeitsstand 04.11.2026 · native7. Das lokale EE2-Profil verbindet die eigene Rust-/WASM-Simulation
-mit Originalgrafiken, Originalton und quellbelegten Wirtschafts- und Einheitenwerten.
-Der aktuelle Ausbau ist weiterhin kein vollständiges, regelgleiches Empire Earth II.
+Arbeitsstand 04.11.2026 · native8. Das EE2-Profil verbindet die eigene Rust-/WASM-Simulation
+mit importierten Originalmodellen, Animationen, Stimmen, Musik und belegten Spielwerten.
+Die vollständige Übereinstimmung mit Empire Earth II wird weiter erarbeitet.
 
-Im aktiven Arbeitsordner sind Bitmap-Schrift für HUD und Diplomatie sowie die
-quellbelegten Terrain-Lichtstufen hinzugekommen. Unter UP sind jetzt61 Rollen
-mit getrennten16-Bit-Einheiten-, Produktions- und Renderkennungen aktiv.
-Späher, Segelkriegsschiff, Luftabwehr und Küstenverteidigung verwenden ihre
-Originalwerte, Modellwechsel, deutschen Texte und belegten Originalsounds.
-Das Produktionssystem speichert jetzt den bezahlten Preis und die beim Arbeitsbeginn
-festgelegte Dauer. Abbruch erstattet den gespeicherten Preis. Bei Klassenwechseln
-werden wartende Aufträge neu berechnet; der laufende Auftrag behält seinen Preis
-und seine Dauer. Nicht mehr verfügbare Aufträge werden entsprechend entfernt.
-Die vorhandenen eigenen/Basis-WASMs bleiben erhalten. Alte UP-Spielstände werden
-in OEU7 eingelesen; ihre nicht gespeicherte Preis-/Zeitgeschichte bleibt ausdrücklich
-rekonstruiert. Netzwerkprotokoll14 trennt ältere Simulationsstände.
-Von132 klassischen Quellenfamilien sind43 angebunden; die übrigen89 sowie
-weitere Fähigkeiten und Zivilisationsregeln werden weiterhin rekonstruiert.
+Für neue Scharmützel stehen die14 ursprünglichen Völker zur Wahl. Das UP-Profil
+enthält80 Einheitendefinitionen und19 zusätzliche Spezialeinheiten mit ihren echten
+Modellen, ihren Originalanimationen, Originalsymbolen und deutschen Namen.
+Die Völkerwahl begrenzt die Produktion passend zur Epoche. Bereits ausgebildete
+Einheiten bleiben nach dem Ende ihres Produktionszeitraums erhalten. Beim Anklicken
+und Befehlen folgen ihre Stimmen auch den im Original belegten Elternklassen.
+
+Geschütze und weitere geeignete Einheiten packen beim Bewegen ein und vor dem
+Angriff aus. Die Auswahl bietet außerdem die manuellen Befehle Einpacken und
+Auspacken. Die originalen Packanimationen verwenden ihre tatsächlichen Anfangs-
+und Endposen. Spielerfarben entstehen aus den originalen Textur-Patches; alle
+elf Farbzuordnungen sind durch die native Farbtabelle und Namensbildung belegt.
+
+Der Gastgeber überträgt Völker, Startepoche, Bevölkerungslimit, Startvorräte,
+Kartenaufdeckung und Jahreszeiten für neue UP-Mehrspielergefechte. Zufällige Völker
+werden vor dem Start aufgelöst und als konkrete Auswahl übertragen. Die älteren
+Regelprofile behalten ihre bisherigen Mehrspieler-Starteinstellungen.
+
+Produktion speichert den tatsächlich bezahlten Preis und die beim Arbeitsbeginn
+festgelegte Dauer. Abbruch erstattet den gespeicherten Preis; Klassenwechsel
+berechnen wartende Aufträge neu. Aktuelle Spielstände sichern außerdem laufende
+Packaufgaben, die für die Fortsetzung notwendige Wegfindung und fliegende
+Geschosse in ihrer tatsächlichen Reihenfolge. Das aktuelle eigene Speicherformat
+verwendet die äußere Version3. Fehlende Historie
+älterer Spielstände wird ausdrücklich als rekonstruiert gekennzeichnet. Die
+bestehenden eigenen/Basis-WASM-Dateien und die bisherigen Speicherorte bleiben
+bestehen. Netzwerkprotokoll15 trennt ältere Simulationsstände.
+
+Von132 klassischen Quellenfamilien sind62 angebunden;70 sowie weitere Fähigkeiten,
+regionale Gebäude-/Bürgerdarstellungen, Karteninitialisierung und native KI-Abläufe
+sind weitere konkrete Arbeitsbereiche. Die aktuelle KI bleibt ein eigener Adapter.
 
 Karavellen und Linienschiffe verwenden die originalen sechs beziehungsweise zwölf
 Segelflächen mit getrennten Bewegungszuständen pro Schiff, lokalen Lichtfarben
@@ -31,13 +48,13 @@ an. Originale lokale Raster und Rechenfolgen sind belegt; Zeittakt, Sichtauswahl
 und die Zuordnung zur eigenen Welt bleiben ausdrücklich Adapter.
 
 Die gemeinsamen Prüfungen und der genaue Restumfang werden unter
-`research/analysis/native7-*.json` dokumentiert. Die Dateien `native6-*.json`
+`research/analysis/native8-*.json` dokumentiert. Die Dateien `native6-*.json`
 und `native61-*.json` enthalten die davor geprüften Ausbaustufen.
 Browserbedienung und ein physischer Mac wurden dabei nicht ausgeführt.
 
 ## Komplettpaket für den Mac
 
-Das native7-Komplettpaket enthält den gemeinsam geprüften Laufzeitstand mit
+Das native8-Komplettpaket enthält den gemeinsam geprüften Laufzeitstand mit
 Originalmedien. Das zugehörige Quellpaket enthält eigenen Code, WASM-Builds und
 Prüfungen. Die vollständige Originalübereinstimmung wird weiter erarbeitet.
 
@@ -115,7 +132,7 @@ Nachmittag bei normalem Wetter gewählt. Die vollständige native Tageszeit-,
 Wetter- und Terrain-Lichtsteuerung ist noch offen.
 
 Die folgenden Abschnitte dokumentieren frühere Ausbaustände; maßgeblich ist
-der oben beschriebene Stand native7.
+der oben beschriebene Stand native8.
 
 ## Saisonale Modelle, Wasserreflexionen und Kameradrehung · visual-seasons2
 

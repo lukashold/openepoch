@@ -198,6 +198,8 @@ impl Game {
                 if o.len()>before {o[before+10]=(self.tick as f32+alpha)*DT;o[before+11]=if d.has(F_EXTRACT)&&e.ncargo>0&&self.resource_unlocked(e.team,Self::extractor_kind(e.def)) {ACT_MINE as f32}else{ACT_IDLE as f32};}
                 #[cfg(feature="ee2-render-meta7")]
                 if o.len()>before {crate::render_meta7::actor(before/STRIDE,self.h(i),e,self.max_hp(e.team,e.def));}
+                #[cfg(feature="ee2-pack8")]
+                if o.len()>before {crate::pack8_render::actor(before/STRIDE,self.canonical_pack(i),self.pack_spec(e).is_some_and(|s|s.capable));}
                 if e.built < 1.0 && !far {
                     put(&mut o, x, y, a, rot, S_SCAFFOLD, team, e.built, fl, d.size);
                 }
@@ -234,6 +236,8 @@ impl Game {
                     o[before + 11] = activity;
                     #[cfg(feature="ee2-render-meta7")]
                     crate::render_meta7::actor(before/STRIDE,self.h(i),e,self.max_hp(e.team,e.def));
+                    #[cfg(feature="ee2-pack8")]
+                    crate::pack8_render::actor(before/STRIDE,self.canonical_pack(i),self.pack_spec(e).is_some_and(|s|s.capable));
                 }
                 (a.max(0.0), d.size * 0.5 + 0.6)
             };
@@ -463,7 +467,10 @@ impl Game {
         } else if first != NOIDX && DEFS[self.ents[first].def as usize].building && self.ents[first].built >= 1.0 {
             let bdef = self.ents[first].def;
             for (id, d) in DEFS.iter().enumerate() {
-                if d.made_at == bdef && d.epoch <= ep && d.until > ep {
+                if d.made_at == bdef && d.epoch <= ep && d.until > ep && {
+                    #[cfg(feature="ee2-civ8")]{self.definition_civ_available(self.local,id as DefId)}
+                    #[cfg(not(feature="ee2-civ8"))]{true}
+                } {
                     tip.clear();
                     let _ = write!(tip, "{} HP", d.hp as i32);
                     for w in &d.w {

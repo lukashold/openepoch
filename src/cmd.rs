@@ -26,12 +26,15 @@ pub const C_DELETE: u8 = 13;
 pub const C_DIPLOMACY:u8=14;
 pub const C_TERRITORY:u8=15;
 pub const C_PLACE_ROTATED:u8=16;
+#[cfg(feature="ee2-pack8")]pub const C_PACK:u8=17;
 
 const HEAD: usize = 14; // kind, count, a, b, c
 
 impl Game {
     /// Issue a command as the local player. `hs` are entity handles.
     pub fn submit(&mut self, kind: u8, a: f32, b: f32, c: i32, hs: &[u32]) {
+        #[cfg(feature="ee2-civ8")]
+        if a.is_finite()&&b.is_finite()&&(1..=if cfg!(feature="ee2-pack8"){17}else{16}).contains(&kind){self.civ_setup_open=false;}
         if !self.net {
             let team = self.local;
             self.apply(team, kind, a, b, c, hs);
@@ -85,6 +88,8 @@ impl Game {
         if !a.is_finite() || !b.is_finite() || team as usize >= self.nplayers {
             return;
         }
+        #[cfg(feature="ee2-civ8")]
+        if (1..=if cfg!(feature="ee2-pack8"){17}else{16}).contains(&kind){self.civ_setup_open=false;}
         if kind==C_TERRITORY{
             if !hs.is_empty()||c<0||(c as u32)&0xffff_0000!=0{return;}
             let dec=|v:f32|if v==-1.0{Some(u32::MAX)}else if v>=0.0&&v<32.0&&v.fract()==0.0{Some(v as u32)}else{None};
@@ -98,8 +103,10 @@ impl Game {
         let ids: Vec<usize> = hs.iter().filter_map(|&h| self.get(h)).filter(|&i| self.ents[i].team == team).collect();
         let target = self.get(c as u32);
         match kind {
-            C_MOVE => self.order_move(&ids, a, b, false),
-            C_AMOVE => self.order_move(&ids, a, b, true),
+            #[cfg(feature="ee2-pack8")]
+            C_PACK=>{if a==0.0&&b==0.0&&(c==0||c==1){self.order_pack(&ids,c==1);}},
+            C_MOVE => {self.order_move(&ids,a,b,false);#[cfg(feature="ee2-pack8")]self.pack_direct_move(&ids);},
+            C_AMOVE => {self.order_move(&ids,a,b,true);#[cfg(feature="ee2-pack8")]self.pack_direct_move(&ids);},
             C_ATTACK => {
                 if let Some(j) = target.filter(|&j| self.hostile(team,self.ents[j].team)&&self.can_see(team,j)) {
                     self.order_attack(&ids, j);
@@ -155,5 +162,7 @@ impl Game {
             }
             _ => {}
         }
+        #[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
+        self.recount_paid_players();
     }
 }

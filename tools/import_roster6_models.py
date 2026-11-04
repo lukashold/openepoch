@@ -18,9 +18,9 @@ def member_time(d):
     if m>4 or(m==4 and day>=5):h-=1
     return int(time.mktime((y,m,day,h,minute,sec,0,0,0)))&0xffffffff
 class MediaSources:
-    def __init__(self):
+    def __init__(self,extensions=None):
         m=json.loads(MANIFEST.read_text());inventory=json.loads(INVENTORY.read_text());self.install=Path(m['profile']['physicalRoot']);self.records={};self.basenames={};self.opened={};self.events=[]
-        wanted={'.nifcache','.texcache','.kf'}
+        wanted={'.nifcache','.texcache','.kf'} if extensions is None else set(extensions)
         loose=sorted((p for p in self.install.rglob('*') if p.is_file() and p.suffix.lower() in wanted),key=lambda p:str(p).casefold())
         for p in loose:
             name=p.relative_to(self.install).as_posix();record={'path':name,'physical':str(p),'member':None,'initialTime':int(p.stat().st_mtime)&0xffffffff,'priority':-1}

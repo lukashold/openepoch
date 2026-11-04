@@ -26,7 +26,14 @@ impl Game {
         let mut cost=[0u16;9];cost[..3].copy_from_slice(&d.cost);
         #[cfg(feature="ee2-reference")]
         if let Some(row)=crate::ee2_units::lookup_class(def,self.players[team as usize].epoch){if let Some(value)=row.cost9{cost=value;}}
-        cost.map(|v|(v as f32*m).round().clamp(0.0,65535.0) as u16)
+        #[cfg(feature="ee2-civ8")]
+        {core::array::from_fn(|slot|{
+            let civ=self.civilizations[team as usize];
+            let german=if civ==0{Some(crate::civ8_runtime::resource_cost_multiplier(civ,slot))}else{None};
+            crate::civ8_bonus::natural_price53(cost[slot],m,german)
+        })}
+        #[cfg(not(feature="ee2-civ8"))]
+        {cost.map(|v|(v as f32*m).round().clamp(0.0,65535.0) as u16)}
     }
     pub fn cargo_capacity(&self, team: u8, def:DefId) -> usize {
         if DEFS[def as usize].has(F_RESEARCH|F_EXTRACT|F_DROPOFF|F_GARRISON) {
@@ -129,6 +136,8 @@ impl Game {
                 }
             }
         }
+        #[cfg(feature="ee2-civ8")]
+        crate::civ8_runtime::apply_modifiers(self.civilizations[team as usize],&baseline,&mut m);
         for row in &mut m {
             for f in [0,1,2,3,4,5,7,8,9,10,12,13,14,15,16,17] { row[f]=row[f].max(if f==2||f==1||(cfg!(feature="ee2-up15")&&f==5) {0.0} else {0.05}); }
         }

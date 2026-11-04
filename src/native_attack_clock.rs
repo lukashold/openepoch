@@ -25,7 +25,9 @@ pub fn stop(flags:&mut u8){if *flags&INIT!=0{*flags=(*flags&!(STARTED|IN_ATTACK)
 }
 
 pub fn split_save(buf:&[u8])->Option<(&[u8],Option<&[u8]>)>{
- #[cfg(feature="ee2-paidqueue7")]let buf=crate::paid_queue7::strip_wrapper(buf)?.0;
+ #[cfg(feature="ee2-pack8")]let buf=crate::pack8_save::split(buf)?.0;
+ #[cfg(feature="ee2-civ8")]let buf=crate::civ8_save::paid_prefix_view(buf)?;
+ #[cfg(all(feature="ee2-paidqueue7",not(feature="ee2-civ8")))]let buf=crate::paid_queue7::strip_wrapper(buf)?.0;
  #[cfg(feature="ee2-roster6")]let buf=crate::save6::strip_if_present(buf)?;
  // Pre-extension saves can end in any resource/research float bit pattern.
  // ATKE is meaningful only beyond the complete current prefix plus a CGD tail.

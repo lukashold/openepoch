@@ -1,6 +1,6 @@
 // The EE2 profile uses locally extracted original recordings when available.
 // Procedural sounds and local speech remain the fallback for the standalone game.
-import { createOriginalAudio } from './original-audio.js?v=native61';
+import { createOriginalAudio } from './original-audio.js?v=native8';
 const originals=createOriginalAudio();
 
 let ctx = null, master = null, noise = null;

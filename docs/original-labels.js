@@ -23,7 +23,7 @@ export function originalLabelCatalog(data,profile,{definitionCount=57}={}){
  const lookup=(id,epoch)=>Number.isInteger(id)&&Number.isInteger(epoch)&&epoch>=0&&epoch<15?
   rows.get(id)?.find(row=>epoch>=row.epoch&&epoch<row.until):undefined;
  return Object.freeze({enabled:rows.size>0,profile:profile.id,
-  name(id,epoch,fallback,count=1){const row=lookup(id,epoch);return row?(count>1&&row.plural?row.plural:row.name):fallback;},
+  name(id,epoch,fallback,count=1){const row=lookup(id,epoch);return row?(count>1&&row.plural?row.plural:row.name).replace(/\\n/g,'\n'):fallback;},
   description(id,epoch){const value=lookup(id,epoch)?.description||'';
    // Native variable/format tokens need the original formatter. Keep the current
    // runtime-stat tooltip when that formatter has not been reconstructed.
@@ -32,10 +32,10 @@ export function originalLabelCatalog(data,profile,{definitionCount=57}={}){
  });
 }
 
-export async function loadOriginalLabels(profile,{fetchImpl=globalThis.fetch,base=import.meta.url,definitionCount=57}={}){
+export async function loadOriginalLabels(profile,{fetchImpl=globalThis.fetch,base=import.meta.url,definitionCount=57,manifestURL='./local-original/labels-native.json'}={}){
  if(!profile?.reference)return originalLabelCatalog(null,profile,{definitionCount});
  try{
-  const response=await fetchImpl(new URL('./local-original/labels-native.json',base),{cache:'no-store'});
+  const response=await fetchImpl(new URL(manifestURL,base),{cache:'no-store'});
   if(!response.ok)throw new Error('Original labels: HTTP '+response.status);
   return originalLabelCatalog(await response.json(),profile,{definitionCount});
  }catch(error){

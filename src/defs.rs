@@ -176,8 +176,10 @@ const G: u8 = LAND | SEA; // "surface" targets
 pub const DEFS: &[Def] = &legacy_defs();
 #[cfg(all(feature = "ee2-reference",not(feature="ee2-roster6")))]
 pub const DEFS: &[Def] = &crate::ee2_profile::apply(BASE_DEFS);
-#[cfg(feature="ee2-roster6")]
+#[cfg(all(feature="ee2-roster6",not(feature="ee2-civ8")))]
 pub const DEFS:&[Def]=&crate::roster6_defs::production(crate::ee2_profile::apply(crate::roster6_defs::initial(BASE_DEFS)));
+#[cfg(feature="ee2-civ8")]
+pub const DEFS:&[Def]=&crate::civ8_defs::production(crate::ee2_profile::apply(crate::civ8_defs::initial(BASE_DEFS)));
 const fn legacy_defs()->[Def;53]{let mut d=[BASE_DEFS[0];53];let mut i=0;while i<53 {d[i]=BASE_DEFS[i];i+=1;}d}
 #[cfg(feature="ee2-reference")]
 pub(crate) const fn prototype_defs()->[Def;57]{BASE_DEFS}

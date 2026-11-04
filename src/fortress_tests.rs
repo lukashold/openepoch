@@ -31,7 +31,13 @@ fn board(g:&mut Game,f:usize,def:DefId)->Ent {
     let b=g.ents[f];let u=g.spawn(def,0,b.x+3.0,b.y);let mut e=g.ents[u];
     e.hp*=0.5;e.order=O_BOARD;e.otgt=g.h(f);
     g.do_board(u,&mut e,&DEFS[def as usize],&mut(0.0,0.0),&mut false);
-    g.ents[u]=e;if e.stuck==BOARDED {g.ents[u].alive=false;}
+    g.ents[u]=e;if e.stuck==BOARDED {
+        // Complete the same lifecycle the ordinary tick performs. Pack8's
+        // complete allocator validation deliberately rejects a fixture that
+        // flips alive without returning the slot to its real free list.
+        #[cfg(feature="ee2-pack8")]g.kill(u);
+        #[cfg(not(feature="ee2-pack8"))]{g.ents[u].alive=false;}
+    }
     e
 }
 

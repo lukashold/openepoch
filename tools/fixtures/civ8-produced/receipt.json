@@ -1,0 +1,729 @@
+{
+  "format": "native-civ8-ordinary-produced-snapshots-v1",
+  "wasmSha256": "e41726ecfa9525ec038b8e21eccc29adaf13ca20d40a1f3da8ac026e52285773",
+  "fixtures": [
+    {
+      "name": "civ8-produced-61.oes",
+      "bytes": 594888,
+      "sha256": "e43f8f590eec529f1d4e5f67d987eb287846110472ef303d07591da4be65e8da",
+      "sourceFamily": "UniqueUnitAmerican1",
+      "def": 61,
+      "civ": 3,
+      "epoch": 0,
+      "host": 3,
+      "buildTicks": 1,
+      "trainTicks": 801,
+      "duration": 40,
+      "cost": [
+        45,
+        0,
+        0,
+        0,
+        0,
+        45,
+        0,
+        0,
+        0
+      ],
+      "producer": {
+        "x": 54.5,
+        "y": 50.5
+      },
+      "unit": {
+        "slot": 16,
+        "def": 61,
+        "team": 0,
+        "x": 54.5,
+        "y": 52.5,
+        "built": 1,
+        "selected": false
+      },
+      "scope": "PublicAPI production/cost/selection and captured normal duration; complete pack/turret/conversion abilities are not claimed."
+    },
+    {
+      "name": "civ8-produced-62.oes",
+      "bytes": 595240,
+      "sha256": "2ad1c361d02226a5837b36b7b5fd0802c265a9002030d335ef9c02522f39aa8f",
+      "sourceFamily": "UniqueUnitAmerican3",
+      "def": 62,
+      "civ": 3,
+      "epoch": 10,
+      "host": 49,
+      "buildTicks": 1,
+      "trainTicks": 1101,
+      "duration": 55,
+      "cost": [
+        0,
+        48,
+        0,
+        0,
+        68,
+        0,
+        0,
+        70,
+        0
+      ],
+      "producer": {
+        "x": 54.5,
+        "y": 50.5
+      },
+      "unit": {
+        "slot": 18,
+        "def": 62,
+        "team": 0,
+        "x": 54.5,
+        "y": 52.5,
+        "built": 1,
+        "selected": false
+      },
+      "scope": "PublicAPI production/cost/selection and captured normal duration; complete pack/turret/conversion abilities are not claimed."
+    },
+    {
+      "name": "civ8-produced-63.oes",
+      "bytes": 595240,
+      "sha256": "7886225c5deabb880c448a30620dd874658eebde4c4783ef2c3924734de9f89d",
+      "sourceFamily": "UniqueUnitAztec2",
+      "def": 63,
+      "civ": 12,
+      "epoch": 5,
+      "host": 49,
+      "buildTicks": 1,
+      "trainTicks": 1101,
+      "duration": 55,
+      "cost": [
+        90,
+        0,
+        0,
+        0,
+        80,
+        0,
+        0,
+        0,
+        0
+      ],
+      "producer": {
+        "x": 54.5,
+        "y": 50.5
+      },
+      "unit": {
+        "slot": 18,
+        "def": 63,
+        "team": 0,
+        "x": 54.5,
+        "y": 52.5,
+        "built": 1,
+        "selected": false
+      },
+      "scope": "PublicAPI production/cost/selection and captured normal duration; complete pack/turret/conversion abilities are not claimed."
+    },
+    {
+      "name": "civ8-produced-64.oes",
+      "bytes": 595064,
+      "sha256": "2297263f8afb7888b5bd831012afd0eade955f436856038789eae5034155f297",
+      "sourceFamily": "UniqueUnitBabylonian2",
+      "def": 64,
+      "civ": 10,
+      "epoch": 5,
+      "host": 49,
+      "buildTicks": 1,
+      "trainTicks": 981,
+      "duration": 49,
+      "cost": [
+        0,
+        81,
+        0,
+        0,
+        65,
+        0,
+        0,
+        0,
+        0
+      ],
+      "producer": {
+        "x": 54.5,
+        "y": 50.5
+      },
+      "unit": {
+        "slot": 17,
+        "def": 64,
+        "team": 0,
+        "x": 54.5,
+        "y": 52.5,
+        "built": 1,
+        "selected": false
+      },
+      "scope": "PublicAPI production/cost/selection and captured normal duration; complete pack/turret/conversion abilities are not claimed."
+    },
+    {
+      "name": "civ8-produced-65.oes",
+      "bytes": 595240,
+      "sha256": "778d9ba41b01d01756140f8ec1d896819cc6c4241f8e8531566feb8197c62ffe",
+      "sourceFamily": "UniqueUnitChinese2",
+      "def": 65,
+      "civ": 5,
+      "epoch": 5,
+      "host": 48,
+      "buildTicks": 1,
+      "trainTicks": 1161,
+      "duration": 58,
+      "cost": [
+        159,
+        0,
+        0,
+        0,
+        159,
+        0,
+        0,
+        0,
+        0
+      ],
+      "producer": {
+        "x": 54.5,
+        "y": 50.5
+      },
+      "unit": {
+        "slot": 18,
+        "def": 65,
+        "team": 0,
+        "x": 54.5,
+        "y": 52.5,
+        "built": 1,
+        "selected": false
+      },
+      "scope": "PublicAPI production/cost/selection and captured normal duration; complete pack/turret/conversion abilities are not claimed."
+    },
+    {
+      "name": "civ8-produced-66.oes",
+      "bytes": 595240,
+      "sha256": "4fff8f900ed957e70ef2dc3c1b9e7d5a45cdd3c21b42159b4ce2ee2ade900811",
+      "sourceFamily": "UniqueUnitChinese3",
+      "def": 66,
+      "civ": 5,
+      "epoch": 10,
+      "host": 49,
+      "buildTicks": 1,
+      "trainTicks": 1101,
+      "duration": 55,
+      "cost": [
+        99,
+        0,
+        0,
+        0,
+        48,
+        0,
+        0,
+        22,
+        0
+      ],
+      "producer": {
+        "x": 54.5,
+        "y": 50.5
+      },
+      "unit": {
+        "slot": 18,
+        "def": 66,
+        "team": 0,
+        "x": 54.5,
+        "y": 52.5,
+        "built": 1,
+        "selected": false
+      },
+      "scope": "PublicAPI production/cost/selection and captured normal duration; complete pack/turret/conversion abilities are not claimed."
+    },
+    {
+      "name": "civ8-produced-67.oes",
+      "bytes": 595240,
+      "sha256": "a186704d1f350e488c02290f2f92f49c8018966389a7eab0b4b8d47e01cdec4c",
+      "sourceFamily": "UniqueUnitEgyptian1",
+      "def": 67,
+      "civ": 8,
+      "epoch": 0,
+      "host": 3,
+      "buildTicks": 1,
+      "trainTicks": 1101,
+      "duration": 55,
+      "cost": [
+        48,
+        0,
+        0,
+        0,
+        54,
+        29,
+        0,
+        0,
+        0
+      ],
+      "producer": {
+        "x": 54.5,
+        "y": 50.5
+      },
+      "unit": {
+        "slot": 18,
+        "def": 67,
+        "team": 0,
+        "x": 54.5,
+        "y": 52.5,
+        "built": 1,
+        "selected": false
+      },
+      "scope": "PublicAPI production/cost/selection and captured normal duration; complete pack/turret/conversion abilities are not claimed."
+    },
+    {
+      "name": "civ8-produced-68.oes",
+      "bytes": 595064,
+      "sha256": "c9843536c423eda9d2e10a213ad106d5e59866c881e452f5604242342c7c21d4",
+      "sourceFamily": "UniqueUnitEgyptian2",
+      "def": 68,
+      "civ": 8,
+      "epoch": 5,
+      "host": 49,
+      "buildTicks": 1,
+      "trainTicks": 1001,
+      "duration": 50,
+      "cost": [
+        85,
+        0,
+        0,
+        0,
+        75,
+        0,
+        0,
+        0,
+        0
+      ],
+      "producer": {
+        "x": 54.5,
+        "y": 50.5
+      },
+      "unit": {
+        "slot": 17,
+        "def": 68,
+        "team": 0,
+        "x": 54.5,
+        "y": 52.5,
+        "built": 1,
+        "selected": false
+      },
+      "scope": "PublicAPI production/cost/selection and captured normal duration; complete pack/turret/conversion abilities are not claimed."
+    },
+    {
+      "name": "civ8-produced-69.oes",
+      "bytes": 595240,
+      "sha256": "30bee1513b0d18bd27cd481b3099c5851402eb6aa2584ef8904c8ce4a5592727",
+      "sourceFamily": "UniqueUnitEgyptian3",
+      "def": 69,
+      "civ": 8,
+      "epoch": 10,
+      "host": 49,
+      "buildTicks": 1,
+      "trainTicks": 1041,
+      "duration": 52,
+      "cost": [
+        0,
+        49,
+        0,
+        0,
+        78,
+        0,
+        0,
+        84,
+        0
+      ],
+      "producer": {
+        "x": 54.5,
+        "y": 50.5
+      },
+      "unit": {
+        "slot": 18,
+        "def": 69,
+        "team": 0,
+        "x": 54.5,
+        "y": 52.5,
+        "built": 1,
+        "selected": false
+      },
+      "scope": "PublicAPI production/cost/selection and captured normal duration; complete pack/turret/conversion abilities are not claimed."
+    },
+    {
+      "name": "civ8-produced-70.oes",
+      "bytes": 595064,
+      "sha256": "566fa0b7e3be0f6ddb4bf1d28e8e75567f6bb40d3df73f16d2e732e10a19a01f",
+      "sourceFamily": "UniqueUnitEnglish2",
+      "def": 70,
+      "civ": 1,
+      "epoch": 5,
+      "host": 49,
+      "buildTicks": 1,
+      "trainTicks": 807,
+      "duration": 40.29999923706055,
+      "cost": [
+        90,
+        0,
+        0,
+        0,
+        80,
+        0,
+        0,
+        0,
+        0
+      ],
+      "producer": {
+        "x": 54.5,
+        "y": 50.5
+      },
+      "unit": {
+        "slot": 17,
+        "def": 70,
+        "team": 0,
+        "x": 54.5,
+        "y": 52.5,
+        "built": 1,
+        "selected": false
+      },
+      "scope": "PublicAPI production/cost/selection and captured normal duration; complete pack/turret/conversion abilities are not claimed."
+    },
+    {
+      "name": "civ8-produced-71.oes",
+      "bytes": 595240,
+      "sha256": "2aa0c5605bb8d53cb931d72d0a9fed400f407e61c676c8119f155072852b0440",
+      "sourceFamily": "UniqueUnitGerman2",
+      "def": 71,
+      "civ": 0,
+      "epoch": 5,
+      "host": 49,
+      "buildTicks": 1,
+      "trainTicks": 1141,
+      "duration": 57,
+      "cost": [
+        77,
+        0,
+        0,
+        0,
+        77,
+        0,
+        0,
+        0,
+        0
+      ],
+      "producer": {
+        "x": 54.5,
+        "y": 50.5
+      },
+      "unit": {
+        "slot": 18,
+        "def": 71,
+        "team": 0,
+        "x": 54.5,
+        "y": 52.5,
+        "built": 1,
+        "selected": false
+      },
+      "scope": "PublicAPI production/cost/selection and captured normal duration; complete pack/turret/conversion abilities are not claimed."
+    },
+    {
+      "name": "civ8-produced-72.oes",
+      "bytes": 595416,
+      "sha256": "77c887546bd06e81f4a09145ea3dd228ab13e014b43c316204ca0fd63f639bb1",
+      "sourceFamily": "UniqueUnitGerman3",
+      "def": 72,
+      "civ": 0,
+      "epoch": 10,
+      "host": 49,
+      "buildTicks": 1,
+      "trainTicks": 1201,
+      "duration": 60,
+      "cost": [
+        142,
+        0,
+        0,
+        0,
+        134,
+        0,
+        0,
+        53,
+        0
+      ],
+      "producer": {
+        "x": 54.5,
+        "y": 50.5
+      },
+      "unit": {
+        "slot": 19,
+        "def": 72,
+        "team": 0,
+        "x": 54.5,
+        "y": 52.5,
+        "built": 1,
+        "selected": false
+      },
+      "scope": "PublicAPI production/cost/selection and captured normal duration; complete pack/turret/conversion abilities are not claimed."
+    },
+    {
+      "name": "civ8-produced-73.oes",
+      "bytes": 595064,
+      "sha256": "aa7707860a50c1b119189b04f10d0f792674ddcb634dee9f313702b8ab3b66b2",
+      "sourceFamily": "UniqueUnitGreek2",
+      "def": 73,
+      "civ": 4,
+      "epoch": 5,
+      "host": 49,
+      "buildTicks": 1,
+      "trainTicks": 911,
+      "duration": 45.5,
+      "cost": [
+        50,
+        0,
+        0,
+        0,
+        58,
+        0,
+        0,
+        0,
+        0
+      ],
+      "producer": {
+        "x": 54.5,
+        "y": 50.5
+      },
+      "unit": {
+        "slot": 17,
+        "def": 73,
+        "team": 0,
+        "x": 54.5,
+        "y": 52.5,
+        "built": 1,
+        "selected": false
+      },
+      "scope": "PublicAPI production/cost/selection and captured normal duration; complete pack/turret/conversion abilities are not claimed."
+    },
+    {
+      "name": "civ8-produced-74.oes",
+      "bytes": 595416,
+      "sha256": "d9f8b2d2f7ede2b6d0bc8ef783862e66960cc1432bcb2090d634988dc859a245",
+      "sourceFamily": "UniqueUnitInca3",
+      "def": 74,
+      "civ": 11,
+      "epoch": 10,
+      "host": 48,
+      "buildTicks": 1,
+      "trainTicks": 1431,
+      "duration": 71.5,
+      "cost": [
+        0,
+        107,
+        0,
+        0,
+        207,
+        0,
+        0,
+        176,
+        0
+      ],
+      "producer": {
+        "x": 54.5,
+        "y": 50.5
+      },
+      "unit": {
+        "slot": 19,
+        "def": 74,
+        "team": 0,
+        "x": 54.5,
+        "y": 52.5,
+        "built": 1,
+        "selected": false
+      },
+      "scope": "PublicAPI production/cost/selection and captured normal duration; complete pack/turret/conversion abilities are not claimed."
+    },
+    {
+      "name": "civ8-produced-75.oes",
+      "bytes": 595240,
+      "sha256": "e9cbe2c05a57d2ef3caed0e1285679b9e5c62b0d4ebf6ada3edf07d4732314c6",
+      "sourceFamily": "UniqueUnitKorean1",
+      "def": 75,
+      "civ": 6,
+      "epoch": 0,
+      "host": 3,
+      "buildTicks": 1,
+      "trainTicks": 1161,
+      "duration": 58,
+      "cost": [
+        50,
+        0,
+        0,
+        0,
+        45,
+        20,
+        0,
+        0,
+        0
+      ],
+      "producer": {
+        "x": 54.5,
+        "y": 50.5
+      },
+      "unit": {
+        "slot": 18,
+        "def": 75,
+        "team": 0,
+        "x": 54.5,
+        "y": 52.5,
+        "built": 1,
+        "selected": false
+      },
+      "scope": "PublicAPI production/cost/selection and captured normal duration; complete pack/turret/conversion abilities are not claimed."
+    },
+    {
+      "name": "civ8-produced-76.oes",
+      "bytes": 595240,
+      "sha256": "d56c5443f9a241fc03bc200aafe3d27e3ac0eda567b165cd5dbf99a85a4fb130",
+      "sourceFamily": "UniqueUnitKorean2",
+      "def": 76,
+      "civ": 6,
+      "epoch": 5,
+      "host": 48,
+      "buildTicks": 1,
+      "trainTicks": 1041,
+      "duration": 52,
+      "cost": [
+        103,
+        0,
+        0,
+        0,
+        103,
+        0,
+        0,
+        0,
+        0
+      ],
+      "producer": {
+        "x": 54.5,
+        "y": 50.5
+      },
+      "unit": {
+        "slot": 18,
+        "def": 76,
+        "team": 0,
+        "x": 54.5,
+        "y": 52.5,
+        "built": 1,
+        "selected": false
+      },
+      "scope": "PublicAPI production/cost/selection and captured normal duration; complete pack/turret/conversion abilities are not claimed."
+    },
+    {
+      "name": "civ8-produced-77.oes",
+      "bytes": 595240,
+      "sha256": "5d958193d45db3f2d78ebfbcf3625305937617fbda6296eb391933a651636f55",
+      "sourceFamily": "UniqueUnitMayan2",
+      "def": 77,
+      "civ": 13,
+      "epoch": 5,
+      "host": 48,
+      "buildTicks": 1,
+      "trainTicks": 1041,
+      "duration": 52,
+      "cost": [
+        113,
+        0,
+        0,
+        0,
+        102,
+        0,
+        0,
+        0,
+        0
+      ],
+      "producer": {
+        "x": 54.5,
+        "y": 50.5
+      },
+      "unit": {
+        "slot": 18,
+        "def": 77,
+        "team": 0,
+        "x": 54.5,
+        "y": 52.5,
+        "built": 1,
+        "selected": false
+      },
+      "scope": "PublicAPI production/cost/selection and captured normal duration; complete pack/turret/conversion abilities are not claimed."
+    },
+    {
+      "name": "civ8-produced-78.oes",
+      "bytes": 595240,
+      "sha256": "83afef542090501276cbdcc73f3b3dfb767db9a783f1d50c87fc7bf57cda0e60",
+      "sourceFamily": "UniqueUnitMayan3",
+      "def": 78,
+      "civ": 13,
+      "epoch": 10,
+      "host": 48,
+      "buildTicks": 1,
+      "trainTicks": 1101,
+      "duration": 55,
+      "cost": [
+        78,
+        0,
+        0,
+        0,
+        68,
+        0,
+        0,
+        58,
+        0
+      ],
+      "producer": {
+        "x": 54.5,
+        "y": 50.5
+      },
+      "unit": {
+        "slot": 18,
+        "def": 78,
+        "team": 0,
+        "x": 54.5,
+        "y": 52.5,
+        "built": 1,
+        "selected": false
+      },
+      "scope": "PublicAPI production/cost/selection and captured normal duration; complete pack/turret/conversion abilities are not claimed."
+    },
+    {
+      "name": "civ8-produced-79.oes",
+      "bytes": 594888,
+      "sha256": "0427b1f859aabbe6f7c0a6e247bbf6dc9f7eb4a72147346d08f084a85401a367",
+      "sourceFamily": "UniqueUnitTurkish1",
+      "def": 79,
+      "civ": 9,
+      "epoch": 0,
+      "host": 3,
+      "buildTicks": 1,
+      "trainTicks": 1001,
+      "duration": 50,
+      "cost": [
+        60,
+        0,
+        0,
+        0,
+        50,
+        40,
+        0,
+        0,
+        0
+      ],
+      "producer": {
+        "x": 54.5,
+        "y": 50.5
+      },
+      "unit": {
+        "slot": 16,
+        "def": 79,
+        "team": 0,
+        "x": 54.5,
+        "y": 52.5,
+        "built": 1,
+        "selected": false
+      },
+      "scope": "PublicAPI production/cost/selection and captured normal duration; complete pack/turret/conversion abilities are not claimed."
+    }
+  ],
+  "scope": "Nineteen source families, normal paid train durations after instant producer construction is switched off. Public Core commands only; save bytes are read and retained without entity edits."
+}

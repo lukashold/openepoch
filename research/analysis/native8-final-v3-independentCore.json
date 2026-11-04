@@ -1,0 +1,78 @@
+{
+  "format": "independent-joint8-final-continuation-review-v1",
+  "status": "PASS",
+  "wasm": {
+    "path": "work\\native-joint8-pack-v2\\builds\\openepoch-joint8.wasm",
+    "sha256": "63470e86d6a50bd168fa5d7364d0789d59d342be3aad762526aa150e3e7b8a4f",
+    "bytes": 581599
+  },
+  "summaryAssertions": 34,
+  "componentCheckTotal": 7785,
+  "reports": {
+    "final-review-report.json": {
+      "sha256": "5d39f7b9636da4fcd158ba0865cf1dd4ebc328427f152804eb8f73de75bbc0d8",
+      "checks": 268,
+      "malformed": 36
+    },
+    "projectile-final-report.json": {
+      "sha256": "0387edfb609cad8e2d866da9394ef9470aac855ec204fe753cc40c2c8bbebe48",
+      "checks": 789,
+      "malformed": 65
+    },
+    "legacy-final-report.json": {
+      "sha256": "bbf3e98a98950afc1d910b9a338a218f34c66c687f1eff31f73e2efa51fc064a",
+      "checks": 1575,
+      "malformed": 0
+    },
+    "late-era-final-review-report.json": {
+      "path": "work\\native-ai9\\late-era-final-review-report.json",
+      "sha256": "9d3dbbb4dffc58c8b11360439e6430cd1ef9d0bcfc547c2f4a17c03c8513ff5c",
+      "checks": 5153,
+      "cases": 28,
+      "liveTicks": 504000,
+      "peerTicks": 1008000
+    }
+  },
+  "fieldMatrix": {
+    "path": "work/native-navigation8-review/game-state-field-audit.json",
+    "sha256": "b896e2b83f48abe8c9aee8496e34ac7dea84e900d5885767bbe0394f31ad877e",
+    "fieldCount": 148,
+    "basis": "Earlier ca4 source snapshot, all findings subsequently fixed and rebound against this final source/runtime."
+  },
+  "finalCriticalSourceHashes": {
+    "game.rs": "ae3d641dd0bf9ac978b91b9427600a76361b90a95969ffb75189c5615eb1e569",
+    "map.rs": "55a31ded8f7da29f0d9413f698b347d71e50125ba0d09d84cf30dba282f06e45",
+    "lib.rs": "738aa0331b5946f16196d9b8a82c5794b41091c8942b15a5d0f21241ae2b6cb3",
+    "save.rs": "59ed5c610dfeb5a842096cb1b034df5fe03c60787fdb3995c9b67c0839a581f3",
+    "save6.rs": "579cfd7b1ce412bb43880185c3943ba0e3e46cd00ea03871e2e3b4c68a60dd9d",
+    "navigation8.rs": "64fa72dd0b973079339dd90c82e2a6924e48f1af9f79542222479a536abdb7ec",
+    "projectiles8.rs": "e3aa3d941e6ff42ecb388f2f378907074612ad347f2992d67a744ff60a3d2ab2",
+    "decision_hash8.rs": "6ffa9dfd32029eeda0c24621b6245fd6ea9923ef086acdaa197a90076194ee4f",
+    "pack8_save.rs": "59ded342aa12482fb814382728dfcd088071198b66e270fa4936dec353eecd38",
+    "paid_queue7.rs": "0b90f26abf1a77eb66c6632d46f77505e7d65739b5156aab434b8b7e836150a9",
+    "placement.rs": "55177c45a9c30feb186f5fe3210533524ccc530f608e76f83ac2312fb7f740af",
+    "cmd.rs": "977397f4e7a3e450f4ba269f0712ccd83b91ebdbaaafca1544e148a1837f6b60",
+    "ai.rs": "810750e38962722b8a80e390bb554a3ab3218265eed57019245e26da253e8a4c"
+  },
+  "resolvedFindings": [
+    "Ordered gameplay projectiles preserved/hashed in PRJ1; native stale target generation remains valid.",
+    "148-field contract applied through additive HSH3: goals/momentum/stealth/timers/worker cargo/rally/AI and banks/tiles now fingerprinted; pure presentation/local/transport scratch excluded.",
+    "Ordinary spawn/place/completion/death counters canonical before modern saves and eligibility decisions.",
+    "Global Player.alive refresh independent of client-local winner latch.",
+    "Read-only combat_stat registry bound now covers80."
+  ],
+  "sourceReview": [
+    "PRJ32-byte framing plus64B records, NVC96 fields and actor slots, complete inner/outer checksum/length validated before committing Game.",
+    "Modern load preserves exact allocator generations/order and cache/projectile state.",
+    "Legacy unknown-history flags explicit; no claim to recover missing historical shots/cache or native EE2 save layout.",
+    "Grid/BFS scratch, presentation events, selection, interpolation and local transport excluded deliberately.",
+    "No additional gameplay57/61/64-bound defect found after the census fix; all static scan findings classified."
+  ],
+  "limits": [
+    "Own engine deterministic continuation and source-backed class bindings; this does not establish complete1:1 original gameplay, native AI personality policy, map generation, physics or all civilization event abilities.",
+    "Benchmark saves remain unsupported in official UI; external MP command transport/save support is separate from Game tick state.",
+    "Earlier reports remain immutable historical components; only reports explicitly63470 here are final rebind evidence."
+  ],
+  "sourceWrites": false,
+  "githubWrites": false
+}

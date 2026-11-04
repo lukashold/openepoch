@@ -1,4 +1,4 @@
-import {createTypedAudioBindings} from './original-audio-bindings.js?v=native61';
+import {createTypedAudioBindings} from './original-audio-bindings.js?v=native8';
 // Playback of original assets extracted from the user's local EE2 installation.
 // Metadata and byte-for-byte source hashes live beside those assets. This module
 // contains no recordings and remains usable when local-original is absent.
@@ -12,8 +12,8 @@ export function createOriginalAudio(options={}) {
   const buffers=new Map(),pending=new Map(),failed=new Set(),live=new Set(),counters=new Map();
   let musicSource=null,musicBuffer=null,musicFile=null,musicOffset=0,musicStarted=0,musicIndex=0,musicGeneration=0,musicPendingFile=null;
   let ambientSource=null,nextBird=0,currentEpoch=0,previousPeriod=-1;
-  let familyManifest=options.familyManifest||null,definitionSettings={wasm:null,bindings:[]},typed=createTypedAudioBindings({familyManifest});
-  function setDefinitionBindings({wasm=null,bindings=[]}={}){definitionSettings={wasm,bindings};typed=createTypedAudioBindings({...definitionSettings,familyManifest});if(manifest)for(const file of typed.usedFiles())load(file);}
+  let familyManifest=options.familyManifest||null,familyManifestURL=options.familyManifestURL||'native-families.json',definitionSettings={wasm:null,bindings:[]},typed=createTypedAudioBindings({familyManifest});
+  function setDefinitionBindings({wasm=null,bindings=[],familyManifestURL:url=familyManifestURL}={}){if(url!==familyManifestURL){familyManifest=null;familyManifestURL=url;}definitionSettings={wasm,bindings};typed=createTypedAudioBindings({...definitionSettings,familyManifest});if(manifest)prepareFamilyBindings();}
   const stats={voicePlays:0,effectPlays:0,musicStarts:0,ambientStarts:0};
 
   function load(file) {
@@ -99,7 +99,7 @@ export function createOriginalAudio(options={}) {
     }
   }
   async function prepareFamilyBindings(){
-    if(!familyManifest){try{const response=await fetchFile(new URL('native-families.json',base),{cache:'no-cache'});if(response.ok)familyManifest=await response.json();}catch{}}
+    if(!familyManifest){try{const response=await fetchFile(new URL(familyManifestURL,base),{cache:'no-cache'});if(response.ok)familyManifest=await response.json();}catch{}}
     try{typed=createTypedAudioBindings({...definitionSettings,familyManifest});}catch{familyManifest=null;typed=createTypedAudioBindings(definitionSettings);}
     for(const file of typed.usedFiles())load(file);
   }

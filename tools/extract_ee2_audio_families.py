@@ -4,15 +4,15 @@ import argparse,csv,hashlib,json,re,sys,time,zipfile
 HERE=Path(__file__).resolve().parent
 PROJECT=HERE.parent if (HERE.parent/'docs').is_dir() else HERE.parents[1]/'outputs/OpenEpoch'
 ROOT=PROJECT.parents[1]
-parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--resolved',type=Path,default=ROOT/'work/up-resolved-sources/effective-db-sources.json');parser.add_argument('--install',type=Path,default=Path(r'C:\Program Files (x86)\GOG.com\Empire Earth II'));parser.add_argument('--family',action='append',help='Repeat ID:SourceFamily to export another explicit typed unit catalog instead of the four defaults');parser.add_argument('--out',type=Path,default=(PROJECT/'docs/local-original/audio' if HERE==PROJECT/'tools' else HERE/'docs/local-original/audio'));args=parser.parse_args()
+parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--resolved',type=Path,default=ROOT/'work/up-resolved-sources/effective-db-sources.json');parser.add_argument('--install',type=Path,default=Path(r'C:\Program Files (x86)\GOG.com\Empire Earth II'));parser.add_argument('--family',action='append',help='Repeat ID:SourceFamily to export another explicit typed unit catalog instead of the four defaults');parser.add_argument('--out',type=Path,default=(PROJECT/'docs/local-original/audio' if HERE==PROJECT/'tools' else HERE/'docs/local-original/audio'));parser.add_argument('--cache-family',action='append',default=[],help='Additional exact source sound-cache family without a runtime definition ID');parser.add_argument('--media-subdir',default='family6');parser.add_argument('--manifest-name',default='native-families.json');args=parser.parse_args()
 sys.path.insert(0,str(PROJECT/'tools'))
 from resolved_archive_reader import ResolvedArchiveReader
 from import_ee2 import without_comments,block
 RESOLVED=args.resolved;INSTALL=args.install;OUT=args.out;OUT.mkdir(parents=True,exist_ok=True)
 FAMILIES={57:'Scout',58:'FightingSail',59:'AirDefense',60:'CoastalDefense'}
-if args.family:
+if args.family or args.cache_family:
  FAMILIES={}
- for text in args.family:
+ for text in args.family or []:
   index,family=text.split(':',1);index=int(index)
   if not 57<=index<=65535 or index in FAMILIES or not re.fullmatch(r'\w+',family):raise ValueError('Invalid explicit unit ID:family binding')
   FAMILIES[index]=family
@@ -82,7 +82,8 @@ def building_family(family,seen=None):
  body=decls.get(family,{}).get('body','');parent=re.search(r'\bparent\s*=\s*(\w+)',body)
  return bool(parent and building_family(parent[1],seen))
 selected={};states={}
-for family in FAMILIES.values():
+for family in dict.fromkeys([*FAMILIES.values(),*args.cache_family]):
+ if not re.fullmatch(r'\w+',family):raise ValueError('Invalid cache family')
  rows=[(line,row) for line,row in upgrades if row['UNIT']==family];rows.sort(key=lambda x:int(x[1]['EPOCH']));prior={};intervals=[]
  for index,(line,row) in enumerate(rows):
   epoch=int(row['EPOCH'])-1;until=int(rows[index+1][1]['EPOCH'])-1 if index+1<len(rows) else 15;native={};effective={};event_source={}
@@ -98,9 +99,9 @@ for family in FAMILIES.values():
  states[family]={'definitionIds':[key for key,value in FAMILIES.items() if value==family],'role':'selection-effect' if building_family(family) else 'voice','declarationSource':decls[family]['source'],'intervals':intervals,'buildResponse':'No native build command channel in DbUnitTypeSounds; no build recording invented.'}
 media={name:(raw,source) for name,raw,source in resolve_media([x['file'] for x in selected.values()],profile)};assets={}
 for event,record in selected.items():
- raw,source=media[record['file'].casefold()];nativeName=PurePosixPath(source.get('member',source['physical'])).name;file='family6/'+nativeName;target=OUT/file;target.parent.mkdir(exist_ok=True)
+ raw,source=media[record['file'].casefold()];nativeName=PurePosixPath(source.get('member',source['physical'])).name;file=args.media_subdir+'/'+nativeName;target=OUT/file;target.parent.mkdir(exist_ok=True)
  if target.exists():assert sha(target.read_bytes())==sha(raw)
  else:target.write_bytes(raw)
  record['file']=file;record['sha256']=sha(raw);record['source']={**source,'eventTable':sound_name,'eventTableSha256':sha(soundraw)};assets[file]={'file':file,'sha256':sha(raw),'bytes':len(raw),'source':source,'transform':'byte-for-byte original recording copy'}
-manifest={'format':'ee2-native-family-audio-v1','profile':'up15-csv5','sourceManifestSha256':sha(RESOLVED.read_bytes()),'sourceTables':{'upgrade':r.origin(upgrade_name),'sound':r.origin(sound_name),'cfg':r.origin(cfg)},'setterEvidence':{'function':'007C7FD0','caller':'0053C930','emptyArrays':'Preserve prior set: count<=0 performs no write.','maxEvents':8,'nativeChannels':['selection','move','attack','death']},'families':states,'events':selected,'assets':assets,'limits':['Existing57-role audio manifest is not changed.','This profile explicitly selects CSV5; no CSV6 or BASE event table is merged.','Native event arrays/carry-forward and recording bytes are source-backed. Playback scheduling/round-robin response selection remain application adapters.','All four current families have no native build-response channel; own fallback speech is kept separate.']}
-(OUT/'native-families.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n',encoding='utf8');print(json.dumps({'families':len(states),'intervals':sum(len(v['intervals']) for v in states.values()),'events':len(selected),'files':len(assets),'bytes':sum(x['bytes'] for x in assets.values()),'manifestSha256':sha((OUT/'native-families.json').read_bytes())},indent=2))
+manifest={'format':'ee2-native-family-audio-v1','profile':'up15-csv5','sourceManifestSha256':sha(RESOLVED.read_bytes()),'sourceTables':{'upgrade':r.origin(upgrade_name),'sound':r.origin(sound_name),'cfg':r.origin(cfg)},'setterEvidence':{'function':'007C7FD0','caller':'0053C930','emptyArrays':'Preserve prior set: count<=0 performs no write.','maxEvents':8,'nativeChannels':['selection','move','attack','death']},'families':states,'events':selected,'assets':assets,'limits':['Existing57-role audio manifest is not changed.','This profile explicitly selects CSV5; no CSV6 or BASE event table is merged.','Native event arrays/carry-forward and recording bytes are source-backed. Playback scheduling/round-robin response selection remain application adapters.','These families have no native build-response channel; own fallback speech is kept separate.']}
+(OUT/args.manifest_name).write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n',encoding='utf8');print(json.dumps({'families':len(states),'intervals':sum(len(v['intervals']) for v in states.values()),'events':len(selected),'files':len(assets),'bytes':sum(x['bytes'] for x in assets.values()),'manifestSha256':sha((OUT/args.manifest_name).read_bytes())},indent=2))

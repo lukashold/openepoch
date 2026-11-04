@@ -50,6 +50,7 @@ fn state() -> &'static mut State { unsafe { &mut *addr_of_mut!(STATE) } }
 /// Only public init and a successful transactional public load call this hook.
 /// Failed loads and visual-only frames must never change the session token.
 pub fn reset_session() {
+    #[cfg(feature="ee2-pack8")]crate::pack8_render::clear();
     let s = state();
     s.session = s.session.wrapping_add(1);
     if s.session == 0 { s.session = 1; }
@@ -59,6 +60,7 @@ pub fn reset_session() {
 }
 
 pub fn begin_frame() {
+    #[cfg(feature="ee2-pack8")]crate::pack8_render::clear();
     let s = state();
     s.unsorted.clear();
     s.sorted.clear();
@@ -77,6 +79,7 @@ pub fn actor(index: usize, handle: u32, e: &Ent, max_hp: f32) {
 }
 
 pub fn prepare_sort(count: usize) {
+    #[cfg(feature="ee2-pack8")]crate::pack8_render::prepare(count);
     let s = state();
     s.unsorted.resize(count, EMPTY);
     s.sorted.resize(count, EMPTY);
@@ -85,6 +88,7 @@ pub fn prepare_sort(count: usize) {
 /// Uses exactly the same source and destination indices as the existing stable
 /// counting sort. All nonactor rows retain NO_ACTOR and sentinel actor fields.
 pub fn sorted_row(source: usize, destination: usize, instance: &[f32]) {
+    #[cfg(feature="ee2-pack8")]crate::pack8_render::sorted_row(source,destination);
     let s = state();
     let mut record = s.unsorted[source];
     record.render_x = instance[0];

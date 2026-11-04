@@ -361,6 +361,8 @@ impl Game {
             if def == TC {
                 self.rebuild_territories();
             }
+            #[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
+            self.recount_paid_players();
         }
         i
     }

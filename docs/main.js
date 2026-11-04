@@ -8,24 +8,27 @@ import { diplomacyPanel } from './diplomacy.js?v=fortress1';
 import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native6';
 import {loadNativeFontUI} from './original-font-ui.js?v=native6';
 import {territoryClaimMessage} from './territory-help.js?v=fortress1';
-import * as sfx from './audio.js?v=native61';
+import * as sfx from './audio.js?v=native8';
 import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=native6';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native6';
-import {loadOriginalModels} from './original-renderer.js?v=dynamic-sails7';
+import {loadOriginalModels} from './original-renderer.js?v=pack-sails8';
 import {loadSourceSailRuntime} from './source-sail-runtime.js?v=sails7';
 import {createRenderAssetMapping} from './original-render-namespace.js?v=native6';
-import {createFrontendNamespace} from './render-namespace.js?v=native7';
+import {createFrontendNamespace} from './render-namespace.js?v=native8';
+import {createRenderActorMetadata} from './render-actor-metadata.js?v=pack8';
+import {createPackRenderMetadata} from './original-pack-states.js?v=pack8';
 import {loadOriginalGround} from './original-ground.js?v=native6';
 import {loadOriginalTerrain} from './original-terrain.js?v=native6';
 import {loadOriginalWater} from './original-water.js?v=water-farm3';
 import {createOriginalReflection} from './original-reflection.js?v=visual-seasons2';
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native7';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native8';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
-import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native7';
+import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native8';
 import {createFullscreenController} from './fullscreen.js?v=building2';
+import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings} from './civilization-setup.js?v=native8';
 import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=fortress1';
 import {updateOriginalCamera,originalCameraRay,originalFractionForZoom,normalizeOriginalHeading,rotateOriginalCameraHeading} from './original-camera.js?v=heading2';
 
@@ -85,6 +88,8 @@ const f32 = (ptr, len) => new Float32Array(wasm.memory.buffer, ptr, len);
 const dec = new TextDecoder();
 const assetMapping=createRenderAssetMapping(wasm);
 const renderNamespace=createFrontendNamespace(wasm,{referenceMode,assetMapping});
+const packMetadata=createPackRenderMetadata(wasm),packActorReader=packMetadata?createRenderActorMetadata(wasm):null;
+const civilizationSetup=createCivilizationSetup({wasm,document,anchor:$('pop-limit').closest('.row')});
 if(referenceMode){
   const row=document.createElement('div');row.className='row';
   const label=document.createElement('label');label.htmlFor='start-epoch';label.textContent='Startepoche';
@@ -435,13 +440,13 @@ for (const pr of [terrain, water, models, quads]) {
 }
 const originalEnabled=referenceMode&&new URLSearchParams(location.search).get('assets')!=='procedural';
 const originalAssets=await loadOriginalAssets(gl,originalEnabled);
-const originalLabels=await loadOriginalLabels(rulesProfile,{definitionCount:renderNamespace.definitionCount});
+const originalLabels=await loadOriginalLabels(rulesProfile,{definitionCount:renderNamespace.definitionCount,...(rulesProfile.ruleset===2?{manifestURL:'./local-original/labels-native-civ8.json'}:{})});
 const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,total)=>{
   $('play').textContent=`Originalgrafiken laden · ${Math.round(loaded/total*100)} %`;
-},{assetMapping,dynamicSails:rulesProfile.ruleset===2&&typeof wasm.render_meta_version==='function',lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-roster6.json',scaleManifestURL:'./local-original/model-scales-roster6.json'}:{})});
-const sourceSails=await loadSourceSailRuntime({wasm,namespace:renderNamespace,models:originalModels,enabled:originalEnabled&&rulesProfile.ruleset===2});
+},{assetMapping,packAnimations:rulesProfile.ruleset===2,dynamicSails:rulesProfile.ruleset===2&&typeof wasm.render_meta_version==='function',lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-civ8.json',scaleManifestURL:'./local-original/model-scales-civ8.json',teamManifestURL:'./local-original/team-textures/manifest-civ8.json'}:{})});
+const sourceSails=await loadSourceSailRuntime({wasm,namespace:renderNamespace,models:originalModels,enabled:originalEnabled&&rulesProfile.ruleset===2,decorateMetadata:metadata=>packMetadata?packMetadata.snapshot(metadata):metadata});
 if(sourceSails?.metrics.error)console.warn('Source sails:',sourceSails.metrics.error);
-sfx.configureOriginalDefinitions({wasm,bindings:originalModels.manifest?.models||[]});
+sfx.configureOriginalDefinitions({wasm,bindings:originalModels.manifest?.models||[],...(rulesProfile.ruleset===2?{familyManifestURL:'native-families-civ8.json'}:{})});
 const originalGround=await loadOriginalGround(gl,originalEnabled,{assetMapping});
 const originalTerrain=await loadOriginalTerrain(gl,originalEnabled,TEAM);
 originalTerrain.setLightingContext?.(originalModels.lighting);
@@ -624,8 +629,13 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
   bench = benchUnits;
   seasonSession.configure(menuSeasonSettings());
   wasm.init(seed >>> 0, nAi, benchUnits, humans, local);
-  if (!benchUnits && humans === 1) wasm.skirmish_setup(+($('pop-limit').value), +($('supplies').value));
-  if(referenceMode&&!benchUnits&&humans===1)wasm.skirmish_epoch(+$('start-epoch').value);
+  if(!benchUnits&&civilizationSetup.enabled){
+    const players=Math.max(2,Math.min(4,nAi+humans));
+    applyMatchSettings(wasm,{civilizations:civilizationSetup.resolve(players),popLimit:+$('pop-limit').value,supplies:+$('supplies').value,epoch:+$('start-epoch').value},players);
+  }else if(!benchUnits&&humans===1){
+    wasm.skirmish_setup(+$('pop-limit').value, +$('supplies').value);
+    if(referenceMode)wasm.skirmish_epoch(+$('start-epoch').value);
+  }
   if(!benchUnits)wasm.skirmish_visibility(+$('map-visibility').value);
   cam.x = benchUnits ? MAP / 2 : wasm.start_x(); cam.y = benchUnits ? MAP / 2 : wasm.start_y(); cam.zoom = benchUnits ? 11 : 28;
   cam.heading=0;
@@ -770,8 +780,9 @@ function frame(now) {
   const renderEpochs=[0,1,2,3].map(t=>wasm.stat(t,0));
   // Own visual clock: once before every scene pass. Pause/wait freezes cloth;
   // solo speed scales the explicit delta. Native helpers apply their own cap.
-  const actorMetadata=sourceSails?.advance({count:n,instances:f32(wasm.inst_ptr(),n*STRIDE),epochs:renderEpochs,
+  let actorMetadata=sourceSails?.advance({count:n,instances:f32(wasm.inst_ptr(),n*STRIDE),epochs:renderEpochs,
     deltaSeconds:dt*(net?1:speed),runPhysics:!paused&&!(net&&net.ls.waiting)})??null;
+  if(!actorMetadata&&packMetadata)actorMetadata=packMetadata.snapshot(packActorReader.snapshot({count:n,instances:f32(wasm.inst_ptr(),n*STRIDE),namespace:renderNamespace}));
   if(qaMode&&sourceSails)canvas.dataset.sourceSails=JSON.stringify(sourceSails.metrics);
   let reflection=null;
   if(originalTerrain.enabled&&!reflectionError){
@@ -891,7 +902,7 @@ function icon(id, px) {
   return c;
 }
 const glyph = (ch, px) => { const d = document.createElement('div'); d.style.cssText = `font-size:${px * 0.66}px;height:${px}px;line-height:${px}px`; d.textContent = ch; return d; };
-const GLYPH = { e: '⬆', r: '⚗', u: '⚓' };
+const GLYPH = { e: '⬆', r: '⚗', u: '⚓', p:'⇄' };
 const LABELS = {'Worker':'Bürger','Town Center':'Stadtzentrum','House':'Haus','Farm':'Bauernhof','Barracks':'Kaserne','Workshop':'Werkstatt','Dock':'Hafen','Airfield':'Flugplatz','Watchtower':'Wachturm','Next Epoch':'Nächste Epoche','University':'Universität','Mill':'Mühle','Stable':'Stall','Market':'Markt','Temple':'Tempel','Warehouse':'Lagerhaus','Oil Rig':'Bohrturm','Uranium Mine':'Uranmine','HercFacility':'HERC-Fabrik','Fortress':'Festung'};
 const label = (name,id,count=1) => originalLabels.name(id,ui?.epoch??0,LABELS[name]||name,count);
 const actionUnitId = a => a&&(a.k==='b'||a.k==='t')?a.id:undefined;
@@ -901,6 +912,10 @@ function costText(c) {return c.flatMap((value,slot)=>value?[`${value} ${!referen
 function updateUi(drawn, now) {
   const p = wasm.ui();
   ui = JSON.parse(dec.decode(u8(p, wasm.ui_len())));
+  if(typeof wasm.pack_selected_count==='function'&&wasm.pack_selected_count()>0){
+    ui.act.push({k:'p',id:0,name:'Einpacken',ok:true,tip:'Die ausgewählten Einheiten für den Marsch einpacken.'},
+      {k:'p',id:1,name:'Auspacken',ok:true,tip:'Die ausgewählten Einheiten in Stellung bringen.'});
+  }
   for (let i = 0; i < 3; i++) $('r' + i).textContent = ui.res[i];
   economyBar.update(ui);
   $('pop').textContent = `${ui.pop}/${ui.cap}`;
@@ -951,7 +966,7 @@ function updateUi(drawn, now) {
       if (HOT[i]) { const k = document.createElement('kbd'); k.textContent = HOT[i]; b.append(k); }
       b.onclick = () => doAct(i);
       b.oncontextmenu = e => { e.preventDefault(); wasm.cmd_cancel(); };
-      b.onmouseenter = () => { const a = ui.act[i]; if (!a) return; const t = $('tip'); t.innerHTML = `<b>${escapeLabelHtml(label(a.name,actionUnitId(a)))}</b> <span class="c">${a.tp ? a.tp+' Technologiepunkte' : a.k === 'u' ? '' : costText(a.cost)}</span><br>${originalLabels.description(actionUnitId(a),ui.epoch)?escapeLabelHtml(originalLabels.description(actionUnitId(a),ui.epoch))+'<br>':''}${escapeLabelHtml(a.tip)}`; t.style.display = 'block'; };
+      b.onmouseenter = () => { const a = ui.act[i]; if (!a) return; const t = $('tip'); t.innerHTML = `<b>${escapeLabelHtml(label(a.name,actionUnitId(a)))}</b> <span class="c">${a.tp ? a.tp+' Technologiepunkte' : a.k === 'u'||a.k==='p' ? '' : costText(a.cost)}</span><br>${originalLabels.description(actionUnitId(a),ui.epoch)?escapeLabelHtml(originalLabels.description(actionUnitId(a),ui.epoch))+'<br>':''}${escapeLabelHtml(a.tip)}`; t.style.display = 'block'; };
       b.onmouseleave = () => $('tip').style.display = 'none';
       acts.append(b);
     });
@@ -976,6 +991,7 @@ function doAct(i) {
   if (!a) return;
   if (a.k === 'b') { ghost = { id: a.id, size: a.size,name:label(a.name,a.id),turn:0,manual:false }; placementKey='';attackMode = false; sfx.play(20);updatePlacement();return; }
   if (a.k === 'u') { wasm.cmd_unload(); sfx.play(22); return; }
+  if(a.k==='p'){if(typeof wasm.cmd_pack==='function'&&wasm.cmd_pack(a.id)){if(!selectedUnitVoice('order'))sfx.play(20);}else sfx.play(21);lastUi=0;return;}
   if (renderNamespace.wide?wasm.cmd_queue_job(a.id):wasm.cmd_train(a.id)) sfx.play(20);
   else { sfx.play(21); toast(a.ok ? 'Warteschlange voll' : a.k==='e' && referenceMode && ui.research.count<6 ? 'Zuerst sechs Technologien dieser Epoche erforschen' : a.tp && ui.research.points<a.tp ? 'Technologiepunkte fehlen – Bürger in Universitäten schicken' : a.k === 't' && ui.pop >= ui.cap ? 'Mehr Häuser bauen' : 'Rohstoffe fehlen'); }
 }
@@ -1197,7 +1213,7 @@ function channel(local) {
   return {
     open(c) {
       ch = c;
-      ch.send(JSON.stringify({t:'hello', protocol:PROTOCOL_VERSION, rules:wasm.ruleset()}));
+      ch.send(JSON.stringify({t:'hello', protocol:PROTOCOL_VERSION, rules:wasm.ruleset(),civilizationChoice:civilizationSetup.choice(0)}));
       mpStatus('Verbunden – Spielversion wird geprüft …');
     },
     message(d) {
@@ -1206,11 +1222,19 @@ function channel(local) {
         if(rejected)return;
         if (m.t === 'hello') {
           if (m.protocol !== PROTOCOL_VERSION || m.rules !== wasm.ruleset()) { rejected = true; mpStatus('Unterschiedliche Spielversion oder Regelprofile. Beide müssen denselben Stand öffnen.'); ch.close(); return; }
-          if (local === 0 && !net) { const cfg = {t:'start', protocol:PROTOCOL_VERSION, rules:wasm.ruleset(), seed:(seedOf()>>>0)||1, ai:+$('mpai').value,visibility:+$('map-visibility').value,seasons:menuSeasonSettings()}; ch.send(JSON.stringify(cfg)); launch(cfg); }
+          if(civilizationSetup.enabled){try{civilizationChoice(m.civilizationChoice);}catch{return reject('Ungültige Völkerwahl des Mitspielers.');}}
+          else if(m.civilizationChoice!=null)return reject('Die Völkerwahl passt nicht zur Regelversion.');
+          if (local === 0 && !net) {
+            try{
+              const ai=+$('mpai').value,players=2+ai,choices=civilizationSetup.choices();
+              if(choices)choices[1]=m.civilizationChoice;
+              const cfg = {t:'start',protocol:PROTOCOL_VERSION,rules:wasm.ruleset(),seed:(seedOf()>>>0)||1,ai,visibility:+$('map-visibility').value,seasons:menuSeasonSettings(),
+                civilizations:choices?resolveCivilizations(choices,players):null,popLimit:choices?+$('pop-limit').value:null,supplies:choices?+$('supplies').value:null,epoch:choices?+$('start-epoch').value:0};
+              checkStart(cfg);ch.send(JSON.stringify(cfg));launch(cfg);
+            }catch{return reject('Die Scharmützeleinstellungen konnten nicht übernommen werden.');}
+          }
         } else if (m.t === 'start' && local === 1 && !net) {
-          if (m.protocol !== PROTOCOL_VERSION || m.rules !== wasm.ruleset() || ![0,1,2].includes(m.visibility) || !Number.isInteger(m.seed) || m.seed<1 || m.seed>0xffffffff || ![0,1,2].includes(m.ai)) { rejected = true; mpStatus('Unterschiedliche Spielversion, Regelprofile oder ungültige Karteneinstellung.'); ch.close(); return; }
-          try{peerSeasonSettings(m.seasons);}catch{rejected=true;mpStatus('Ungültige Jahreszeiteneinstellungen. Beide müssen denselben Spielstand öffnen.');ch.close();return;}
-          launch(m);
+          try{checkStart(m);launch(m);}catch{return reject('Ungültige Spielversion, Völker- oder Scharmützeleinstellungen.');}
         }
       }
       else if (net) net.ls.receive(d);
@@ -1218,11 +1242,22 @@ function channel(local) {
     close() { if (net && !net.ls.alone) { net.ls.dropPeer(); toast('The other player disconnected'); } else if (!net && !rejected) mpStatus('Connection closed.'); },
     setPc(p) { pc = p; },
   };
+  function reject(message){rejected=true;mpStatus(message);ch.close();}
+  function checkStart(cfg){
+    if(cfg.protocol!==PROTOCOL_VERSION||cfg.rules!==wasm.ruleset()||![0,1,2].includes(cfg.visibility)||!Number.isInteger(cfg.seed)||cfg.seed<1||cfg.seed>0xffffffff||![0,1,2].includes(cfg.ai))throw Error('Invalid new match settings');
+    peerSeasonSettings(cfg.seasons);
+    if(civilizationSetup.enabled){
+      checkedCivilizations(cfg.civilizations,2+cfg.ai);
+      if(![250,500,1000].includes(cfg.popLimit)||![0,1,2].includes(cfg.supplies)||!Number.isInteger(cfg.epoch)||cfg.epoch<0||cfg.epoch>=wasm.epoch_count())throw Error('Invalid skirmish setup');
+    }else if(cfg.civilizations!==null||cfg.popLimit!==null||cfg.supplies!==null||cfg.epoch!==0)throw Error('Unsupported civilization setup');
+  }
   function launch(cfg) {
+    checkStart(cfg);
+    wasm.init(cfg.seed >>> 0, cfg.ai, 0, 2, local);
+    if(civilizationSetup.enabled)applyMatchSettings(wasm,cfg,2+cfg.ai);
+    wasm.skirmish_visibility(cfg.visibility);
     seasonSession.configure(peerSeasonSettings(cfg.seasons));setSeasonControls(seasonSession.settings);
     net = { ch, pc, ls: null };
-    wasm.init(cfg.seed >>> 0, cfg.ai, 0, 2, local);
-    wasm.skirmish_visibility(cfg.visibility);
     net.ls = new Lockstep(wasm, local, buf => { if (ch.readyState === 'open') ch.send(buf); });
     bench = 0; cam.x = wasm.start_x(); cam.y = wasm.start_y(); cam.zoom = 28;
     cam.heading=0;

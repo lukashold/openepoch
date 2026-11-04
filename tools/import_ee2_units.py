@@ -454,14 +454,16 @@ def write_rust(rows, class_rows, production_from, path):
     temporary.replace(path)
 
 
-def run(installation=DEFAULT_INSTALL, extra_bindings=()):
+def run(installation=DEFAULT_INSTALL, extra_bindings=(), unit_civs=None):
     db = Database(pathlib.Path(installation) / 'zips/db.zip')
     try:
         upgrades = db.table('db/TechTree/upgrade_unittypes.csv')
         production = db.table('db/TechTree/dbtechtreenode.csv')
         by_unit = {}
         for row in upgrades:
-            if row.get('CIV', 'All') == 'All':
+            # CIV-specific source families are opt-in per exact binding. The
+            # original general-class/legacy visual alias path remains All-only.
+            if row.get('CIV', 'All') == 'All' or (unit_civs or {}).get(row['UNIT']) == row.get('CIV'):
                 by_unit.setdefault(row['UNIT'], []).append(row)
         manifest_path = ROOT/'docs/local-original/models/manifest.json'
         if not manifest_path.exists():

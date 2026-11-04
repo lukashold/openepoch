@@ -147,7 +147,7 @@ pub struct Proj {
     pub team: u8,
     pub splash: f32,
     pub targets: u8,
-    /// Source class/upgrade snapshot at launch; transient projectiles are not saved.
+    /// Source class/upgrade snapshot at launch; modern joint8 retains it in PRJ1.
     #[cfg(feature="ee2-reference")]
     pub attacker_profile:u16,
     #[cfg(feature="ee2-up15")]
@@ -215,6 +215,12 @@ pub struct Game {
     pub attack_clock:Vec<crate::native_attack_clock::Clock>,
     #[cfg(feature="ee2-paidqueue7")]
     pub queue_prices:Vec<crate::paid_queue7::Payment>,
+    #[cfg(feature="ee2-pack8")]
+    pub pack_states:Vec<crate::pack8::State>,
+    #[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
+    pub navigation_history_unknown:bool,
+    #[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
+    pub projectile_history_unknown:bool,
     pub inst: Vec<f32>,
     pub mini: Vec<u8>,
     pub ui: String,
@@ -226,6 +232,10 @@ pub struct Game {
     pub research_points: [f32; 4],
     pub researched: [[u32; 6]; 4],
     pub modifiers: [crate::research::Modifiers; 4],
+    #[cfg(feature="ee2-civ8")]
+    pub civilizations:[u8;4],
+    #[cfg(feature="ee2-civ8")]
+    pub civ_setup_open:bool,
     pub groups: Vec<Vec<u32>>,
     pub push: Vec<(f32, f32)>,
     pub scratch: Vec<usize>,
@@ -281,6 +291,12 @@ impl Game {
             attack_clock:vec![crate::native_attack_clock::EMPTY;MAXE],
             #[cfg(feature="ee2-paidqueue7")]
             queue_prices:Vec::new(),
+            #[cfg(feature="ee2-pack8")]
+            pack_states:vec![crate::pack8::EMPTY;MAXE],
+            #[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
+            navigation_history_unknown:false,
+            #[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
+            projectile_history_unknown:false,
             inst: Vec::with_capacity(8 * 16384),
             mini: vec![0; NN * 4],
             ui: String::with_capacity(4096),
@@ -288,6 +304,10 @@ impl Game {
             bench,
             cheats_enabled: false, instant_build: false, tech_points: 0,
             research_points: [0.0;4], researched: [[0;6];4], modifiers: [[[0.0;19];crate::research::DEF_COUNT];4],
+            #[cfg(feature="ee2-civ8")]
+            civilizations:[crate::civ8_runtime::LEGACY_NEUTRAL;4],
+            #[cfg(feature="ee2-civ8")]
+            civ_setup_open:true,
             groups: vec![Vec::new(); 10],
             push: vec![(0.0, 0.0); MAXE],
             scratch: Vec::with_capacity(256),
@@ -372,6 +392,7 @@ impl Game {
         let d = &DEFS[def as usize];
         let gen = self.ents[i].gen;
         self.ents[i] = Ent { alive: true, def, team, gen, x, y, px: x, py: y, ox: x, oy: y, hp: self.max_hp(team,def), rot:angle,prot:angle,..E0 };
+        #[cfg(feature="ee2-pack8")] self.pack_reset(i);
         #[cfg(feature="ee2-reference")]
         { self.city_ground[i]=crate::city_ground::EMPTY; self.sync_city_ground_entry(i); }
         #[cfg(feature="ee2-up15")]
@@ -379,6 +400,8 @@ impl Game {
         if d.building {
             self.block(i, true);
         }
+        #[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
+        self.recount_paid_players();
         i
     }
 
@@ -390,6 +413,7 @@ impl Game {
     }
 
     fn kill(&mut self, i: usize) {
+        #[cfg(feature="ee2-pack8")] {self.pack_states[i]=crate::pack8::EMPTY;}
         #[cfg(feature="ee2-paidqueue7")] self.clear_queue_payments(i);
         let e = self.ents[i];
         let d = &DEFS[e.def as usize];
@@ -418,6 +442,8 @@ impl Game {
         #[cfg(feature="ee2-up15")]
         {self.attack_clock[i]=crate::native_attack_clock::EMPTY;}
         self.free.push(i as u16);
+        #[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
+        self.recount_paid_players();
     }
 
     /// Detection is separate from terrain sight: even a revealed-map start
@@ -452,6 +478,8 @@ impl Game {
 
     /// Would `train(b, def)` succeed right now?
     pub fn can_train(&self, b: usize, def:QueueItem) -> bool {
+        #[cfg(feature="ee2-civ8")]
+        if (def as usize)<DEFS.len()&&!self.definition_civ_available(self.ents[b].team,def as DefId){return false;}
         // The installed UP profile exposes native research, never the separate
         // independent game's technologies. Their wide wire namespace is kept
         // distinct but must not become newly accessible through a crafted job.
@@ -558,6 +586,7 @@ impl Game {
             if d.building || !e.alive {
                 continue;
             }
+            #[cfg(feature="ee2-pack8")] crate::pack8::interrupt(&mut self.pack_states[i]);
             // sunflower-spiral formation slots around the goal
             let r = 0.85 * k.sqrt() * d.size.max(1.0);
             let a = k * 2.399_96;
@@ -601,6 +630,7 @@ impl Game {
                 continue;
             }
             let key = self.key_for(d.dom, t.x, t.y);
+            #[cfg(feature="ee2-pack8")] self.pack_interrupt(i);
             let e = &mut self.ents[i];
             #[cfg(feature="ee2-up15")]
             crate::native_attack_clock::stop(&mut self.attack_clock[i].flags);
@@ -768,6 +798,10 @@ impl Game {
         let mut mix = |v: u32| h = (h ^ v).wrapping_mul(16_777_619);
         mix(self.tick);
         mix(self.rng.0);
+        #[cfg(feature="ee2-civ8")]
+        if self.civilizations.iter().any(|&c|c!=crate::civ8_runtime::LEGACY_NEUTRAL){
+            mix(0x38564943);for c in self.civilizations{mix(c as u32);}
+        }
         mix(self.cheats_enabled as u32);
         mix(self.instant_build as u32);
         mix(self.tech_points);
@@ -820,11 +854,20 @@ impl Game {
         {mix(crate::native_attack_clock::MAGIC);for i in 0..self.high{let c=self.attack_clock[i];if self.ents[i].alive&&c.handle==self.h(i){mix(c.handle);mix(c.next.to_bits());mix(c.flags as u32);}}}
         #[cfg(feature="ee2-paidqueue7")]
         {mix(crate::paid_queue7::MAGIC);for p in self.canonical_queue_payments(){mix(p.handle);mix(p.position);mix(p.job);mix(p.inferred as u32|((p.purchased as u32)<<1));for v in p.price{mix(v.to_bits());}mix(p.duration.to_bits());}}
+        #[cfg(feature="ee2-pack8")]
+        {for word in self.pack_hash_words(){mix(word);}}
+        #[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
+        self.hash_navigation(&mut mix);
+        #[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
+        self.hash_projectiles(&mut mix);
+        #[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
+        self.hash_decisions8(&mut mix);
         h
     }
 
     pub fn order_stop(&mut self, ids: &[usize]) {
         for &i in ids {
+            #[cfg(feature="ee2-pack8")] self.pack_interrupt(i);
             self.native_stop_attack(i);
             let e = &mut self.ents[i];
             e.order = O_IDLE;
@@ -870,6 +913,8 @@ impl Game {
             }
         }
         if city_death{self.rebuild_territories();self.void_landless_alliances();}
+        #[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
+        self.recount_paid_players();
         if deaths&&self.bench==0{self.prune_territory_offers();}
         while self.high > 0 && !self.ents[self.high - 1].alive {
             self.high -= 1;
@@ -887,15 +932,17 @@ impl Game {
                     self.ai_step(t as u8);
                 }
             }
-            if self.tick % 20 == 0 && self.winner == 0 {
+            if self.tick % 20 == 0 && (self.winner == 0 || cfg!(all(feature="ee2-pack8",feature="ee2-civ8"))) {
                 for p in 0..self.nplayers {
                     self.players[p].alive = self.players[p].buildings > 0;
                 }
-                let me = self.local as usize;
-                if !self.players[me].alive {
-                    self.winner = 2;
-                } else if (0..self.nplayers).all(|p| p == me || !self.players[p].alive) {
-                    self.winner = 1;
+                if self.winner == 0 {
+                    let me = self.local as usize;
+                    if !self.players[me].alive {
+                        self.winner = 2;
+                    } else if (0..self.nplayers).all(|p| p == me || !self.players[p].alive) {
+                        self.winner = 1;
+                    }
                 }
             }
         }
@@ -1042,6 +1089,7 @@ impl Game {
     }
 
     fn try_attack_round(&mut self,index:usize,e:&mut Ent,w:&Wpn,tj:usize){
+        #[cfg(feature="ee2-pack8")] if self.pack_wait_for_attack(index,e){return;}
         #[cfg(feature="ee2-up15")]
         if let Some(a)=crate::ee2_up15_attack::lookup(e.def,self.players[e.team as usize].epoch){
             let now=self.tick as f32*DT;
@@ -1055,7 +1103,7 @@ impl Game {
         }
         let _=index;self.fire(e,w,tj);
     }
-    fn native_stop_attack(&mut self,index:usize){
+    pub(crate) fn native_stop_attack(&mut self,index:usize){
         #[cfg(feature="ee2-up15")]crate::native_attack_clock::stop(&mut self.attack_clock[index].flags);
         #[cfg(not(feature="ee2-up15"))]let _=index;
     }
@@ -1280,7 +1328,7 @@ impl Game {
         }
     }
 
-    fn set_idle(e: &mut Ent) {
+    pub(crate) fn set_idle(e: &mut Ent) {
         e.order = O_IDLE;
         e.ox = e.x;
         e.oy = e.y;
@@ -1471,6 +1519,7 @@ impl Game {
 
     fn update_ent(&mut self, i: usize) {
         let mut e = self.ents[i];
+        #[cfg(feature="ee2-pack8")] self.pack_tick_actor(i,&e);
         let d = &DEFS[e.def as usize];
         e.px = e.x;
         e.py = e.y;
@@ -1622,6 +1671,8 @@ impl Game {
             }
         }
 
+        #[cfg(feature="ee2-pack8")]
+        if moving&&self.pack_wait_for_move(i,&e,want.0,want.1){moving=false;want=(0.0,0.0);}
         let speed=self.modifiers[e.team as usize][e.def as usize][2];
         // ---- integrate
         if plane {
@@ -1685,6 +1736,7 @@ impl Game {
                 }
             }
         }
+        #[cfg(feature="ee2-pack8")] self.pack_finish_actor(i,&e,engaged||e.order!=O_IDLE,moving);
         self.ents[i] = e;
     }
 
@@ -2081,3 +2133,9 @@ mod roster6_classic_tests;
 #[cfg(all(test,feature="ee2-paidqueue7"))]
 #[path="paid_queue7_tests.rs"]
 mod paid_queue7_tests;
+#[cfg(all(test,feature="ee2-pack8"))]
+#[path="pack8_tests.rs"]
+mod pack8_tests;
+#[cfg(all(test,feature="ee2-pack8",feature="ee2-civ8"))]
+#[path="projectiles8_tests.rs"]
+mod projectiles8_tests;

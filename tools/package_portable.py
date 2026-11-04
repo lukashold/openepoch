@@ -59,6 +59,11 @@ def main():
     main_source=(project / 'docs/main.js').read_text(encoding='utf8')
     if 'manifest-roster6.json' in main_source:
         required.update({'docs/local-original/models/manifest-roster6.json','docs/local-original/model-scales-roster6.json'})
+    if 'manifest-civ8.json' in main_source:
+        required.update({'docs/civilization-setup.js','docs/original-pack-states.js',
+                         'docs/local-original/models/manifest-civ8.json','docs/local-original/model-scales-civ8.json',
+                         'docs/local-original/team-textures/manifest-civ8.json','docs/local-original/labels-native-civ8.json',
+                         'docs/local-original/audio/native-families-civ8.json','docs/local-original/pack-animations/manifest.json'})
     if 'configureOriginalDefinitions' in main_source:
         required.update({'docs/original-audio-bindings.js','docs/local-original/audio/native-families.json'})
     if (project/'docs/original-sail-composite.js').is_file():

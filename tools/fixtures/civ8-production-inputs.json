@@ -1,0 +1,135 @@
+[
+  {
+    "sourceFamily": "UniqueUnitAmerican1",
+    "TTCiv": 4,
+    "startRuntimeEpoch": 0,
+    "host": "Barracks",
+    "proposedDefId": 61
+  },
+  {
+    "sourceFamily": "UniqueUnitAmerican3",
+    "TTCiv": 4,
+    "startRuntimeEpoch": 10,
+    "host": "Stable",
+    "proposedDefId": 62
+  },
+  {
+    "sourceFamily": "UniqueUnitAztec2",
+    "TTCiv": 13,
+    "startRuntimeEpoch": 5,
+    "host": "Stable",
+    "proposedDefId": 63
+  },
+  {
+    "sourceFamily": "UniqueUnitBabylonian2",
+    "TTCiv": 11,
+    "startRuntimeEpoch": 5,
+    "host": "Stable",
+    "proposedDefId": 64
+  },
+  {
+    "sourceFamily": "UniqueUnitChinese2",
+    "TTCiv": 6,
+    "startRuntimeEpoch": 5,
+    "host": "Mill",
+    "proposedDefId": 65
+  },
+  {
+    "sourceFamily": "UniqueUnitChinese3",
+    "TTCiv": 6,
+    "startRuntimeEpoch": 10,
+    "host": "Stable",
+    "proposedDefId": 66
+  },
+  {
+    "sourceFamily": "UniqueUnitEgyptian1",
+    "TTCiv": 9,
+    "startRuntimeEpoch": 0,
+    "host": "Barracks",
+    "proposedDefId": 67
+  },
+  {
+    "sourceFamily": "UniqueUnitEgyptian2",
+    "TTCiv": 9,
+    "startRuntimeEpoch": 5,
+    "host": "Stable",
+    "proposedDefId": 68
+  },
+  {
+    "sourceFamily": "UniqueUnitEgyptian3",
+    "TTCiv": 9,
+    "startRuntimeEpoch": 10,
+    "host": "Stable",
+    "proposedDefId": 69
+  },
+  {
+    "sourceFamily": "UniqueUnitEnglish2",
+    "TTCiv": 2,
+    "startRuntimeEpoch": 5,
+    "host": "Stable",
+    "proposedDefId": 70
+  },
+  {
+    "sourceFamily": "UniqueUnitGerman2",
+    "TTCiv": 1,
+    "startRuntimeEpoch": 5,
+    "host": "Stable",
+    "proposedDefId": 71
+  },
+  {
+    "sourceFamily": "UniqueUnitGerman3",
+    "TTCiv": 1,
+    "startRuntimeEpoch": 10,
+    "host": "Stable",
+    "proposedDefId": 72
+  },
+  {
+    "sourceFamily": "UniqueUnitGreek2",
+    "TTCiv": 5,
+    "startRuntimeEpoch": 5,
+    "host": "Stable",
+    "proposedDefId": 73
+  },
+  {
+    "sourceFamily": "UniqueUnitInca3",
+    "TTCiv": 12,
+    "startRuntimeEpoch": 10,
+    "host": "Mill",
+    "proposedDefId": 74
+  },
+  {
+    "sourceFamily": "UniqueUnitKorean1",
+    "TTCiv": 7,
+    "startRuntimeEpoch": 0,
+    "host": "Barracks",
+    "proposedDefId": 75
+  },
+  {
+    "sourceFamily": "UniqueUnitKorean2",
+    "TTCiv": 7,
+    "startRuntimeEpoch": 5,
+    "host": "Mill",
+    "proposedDefId": 76
+  },
+  {
+    "sourceFamily": "UniqueUnitMayan2",
+    "TTCiv": 14,
+    "startRuntimeEpoch": 5,
+    "host": "Mill",
+    "proposedDefId": 77
+  },
+  {
+    "sourceFamily": "UniqueUnitMayan3",
+    "TTCiv": 14,
+    "startRuntimeEpoch": 10,
+    "host": "Mill",
+    "proposedDefId": 78
+  },
+  {
+    "sourceFamily": "UniqueUnitTurkish1",
+    "TTCiv": 10,
+    "startRuntimeEpoch": 0,
+    "host": "Barracks",
+    "proposedDefId": 79
+  }
+]

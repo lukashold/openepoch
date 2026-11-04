@@ -24,6 +24,21 @@ export function createTypedAudioBindings({wasm=null,bindings=[],familyManifest=n
     for(const action of ['select','order','attack']){const events=row.effectiveEvents[action];if(!Array.isArray(events)||events.length>8||events.some(name=>!familyManifest.events[name]))throw Error('Unbound native audio event array');}
    }
   }
+  for(const [name,family] of Object.entries(familyManifest.families)){
+   const seen=new Set([name]);let current=family;
+   while(current.parentSoundFamily!==undefined){
+    const parent=current.parentSoundFamily;
+    if(typeof parent!=='string'||!parent||!familyManifest.families[parent]||seen.has(parent))throw Error('Invalid native parent sound-cache chain');
+    seen.add(parent);current=familyManifest.families[parent];
+   }
+  }
+ }
+ function soundChannel(name,action,epoch,chain=[]){
+  const family=familyManifest?.families?.[name],interval=family?.intervals?.find(row=>row.epoch<=epoch&&epoch<row.until);
+  if(!family||chain.includes(name))return null;
+  const path=[...chain,name],names=interval?.effectiveEvents?.[action]||[];
+  if(names.length)return {family:name,interval,names,path};
+  return family.parentSoundFamily?soundChannel(family.parentSoundFamily,action,epoch,path):null;
  }
  function role(id){
   if(!Number.isInteger(id)||id<0||id>65535)return null;
@@ -44,13 +59,18 @@ export function createTypedAudioBindings({wasm=null,bindings=[],familyManifest=n
   // DbUnitTypeSounds has selection/move/attack/death, no build channel. The
   // existing Citizen build-to-order adapter remains solely in legacy audio.
   if(!['select','order','attack'].includes(action)||family.role==='selection-effect'&&action!=='select')return null;
-  const names=interval.effectiveEvents[action]||[],records=names.map(name=>familyManifest.events[name]);
+  const sound=soundChannel(definition.sourceFamily,action,epoch);
+  if(!sound)return null;
+  const names=sound.names,records=names.map(name=>familyManifest.events[name]);
   if(!records.length||records.some(row=>!row?.file))return null;
   return {namespace:'native-family',sourceFamily:definition.sourceFamily,sourceVisual:interval.sourceVisual,sourceEpoch:interval.sourceEpoch,
    action,records,group:family.role==='selection-effect'?'effect':'voice',gain:family.role==='selection-effect'?1:.75,
-   key:id+':'+interval.epoch+':'+action,sourceEventBinding:interval.effectiveEventSources[action]};
+   key:id+':'+interval.epoch+':'+action+(sound.path.length>1?':inherited:'+sound.family+':'+sound.interval.epoch:''),sourceEventBinding:sound.interval.effectiveEventSources[action],
+   ...(sound.path.length>1?{resolvedSoundFamily:sound.family,soundParentChain:sound.path,resolvedSoundEpoch:sound.interval.epoch}:{})};
  }
  return {role,resolve,errors,isLegacy:id=>Object.hasOwn(LEGACY_FLAGS,id),usedFiles(){
-  const files=new Set();for(const [id,list]of definitions){if(Object.hasOwn(LEGACY_FLAGS,id))continue;for(const definition of list){const family=familyManifest?.families?.[definition.sourceFamily];for(const interval of family?.intervals||[])for(const names of Object.values(interval.effectiveEvents))for(const event of names){const file=familyManifest.events[event]?.file;if(file)files.add(file);}}}return [...files];
+  const files=new Set(),visited=new Set();
+  function include(name){if(visited.has(name))return;visited.add(name);const family=familyManifest?.families?.[name];for(const interval of family?.intervals||[])for(const names of Object.values(interval.effectiveEvents))for(const event of names){const file=familyManifest.events[event]?.file;if(file)files.add(file);}if(family?.parentSoundFamily)include(family.parentSoundFamily);}
+  for(const [id,list]of definitions){if(Object.hasOwn(LEGACY_FLAGS,id))continue;for(const definition of list)include(definition.sourceFamily);}return [...files];
  },status(){return {definitions:definitions.size,families:familyManifest?Object.keys(familyManifest.families).length:0,errors:[...errors]};}};
 }

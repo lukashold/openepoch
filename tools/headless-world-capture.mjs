@@ -20,6 +20,8 @@ import {buildOrdinaryClassicFixture} from './ordinary-classic-fixture.mjs';
 import {buildOrdinarySailFixture} from './ordinary-sail-fixture.mjs';
 import {loadSourceSailRuntime} from '../docs/source-sail-runtime.js';
 import {sailVoyage} from './ordinary-sail-voyage.mjs';
+import {createPackRenderMetadata} from '../docs/original-pack-states.js';
+import {createRenderActorMetadata} from '../docs/render-actor-metadata.js';
 
 // Existing epoch/scene arguments remain valid. An optional month position2.5
 // starts at month2, advances actual WASM ticks, then samples its halfway phase.
@@ -52,11 +54,13 @@ const wasmPath=new URL(`../docs/${rulesProfile.wasm}`,import.meta.url),bytes=awa
 const sha=value=>createHash('sha256').update(value).digest('hex');
 const captureScriptSha256=sha(await fs.readFile(new URL(import.meta.url)));
 const sourceNames=['main.js','index.html','rules-profile.js','season-session.js','original-terrain.js','native-terrain-lightmap.js','native-terrain-lighting.js','original-render-namespace.js','render-namespace.js','original-water.js','original-ground.js','original-ground-native.js','original-scale.js','original-renderer.js','original-lighting.js','original-model-seasons.js','original-camera.js','original-seasons.js','original-reflection.js','original-hud.js','original-hud-layout.js','local-original/terrain-native/manifest.json','local-original/water-native/manifest.json','local-original/ground-decals.json','local-original/models/manifest.json','local-original/models/manifest-up15.json','local-original/models/manifest-roster6.json','local-original/model-scales.json','local-original/model-scales-up15.json','local-original/model-scales-roster6.json','local-original/climate-lighting.json','local-original/model-seasons.json','local-original/farm-composites.json','local-original/hud-native/manifest.json','local-original/season-model-textures/team/manifest.json','local-original/team-textures/manifest.json'];
+sourceNames.push('original-pack-states.js','civilization-setup.js','local-original/models/manifest-civ8.json','local-original/model-scales-civ8.json','local-original/team-textures/manifest-civ8.json','local-original/pack-animations/manifest.json');
 sourceNames.push('original-sail-composite.js','local-original/sails-native/manifest.json');
 sourceNames.push('render-actor-metadata.js','original-dynamic-sails.js','source-sail-runtime.js','source-sail-controller.js','source-cloth-wasm.js','source-cloth-kernel.js','source-cloth-lighting.js','source-cloth-arithmetic.js','openepoch-cloth7.wasm');
 const sourceFiles=Object.fromEntries(await Promise.all(sourceNames.map(async name=>[name,sha(await fs.readFile(new URL(`../docs/${name}`,import.meta.url)))])));
 const wasm=await loadRulesWasm(rulesProfile,new URL('../docs/',import.meta.url),{fetchFile:async()=>({ok:true,arrayBuffer:async()=>bytes})});
 const assetMapping=createRenderAssetMapping(wasm),renderNamespace=createFrontendNamespace(wasm,{referenceMode:true,assetMapping});
+const packMetadata=createPackRenderMetadata(wasm),packActorReader=packMetadata?createRenderActorMetadata(wasm):null;
 const sourceKey=raw=>{const row=renderNamespace.asset(raw);return renderNamespace.wide?row&&row.kind<=1?`${row.kind}:${row.sourceId}`:null:String(raw);};
 const manifestKey=row=>assetMapping?`${manifestAssetKind(row)}:${row.id}`:String(row.id);
 wasm.init(7,1,0,1,0);wasm.skirmish_epoch(epoch);wasm.skirmish_visibility(2);
@@ -129,7 +133,7 @@ globalThis.fetch=async url=>{
  const path=fileURLToPath(url),buffer=await fs.readFile(path);
  return {ok:true,status:200,json:async()=>{
   const value=JSON.parse(buffer);
-  if(/\/models\/manifest(?:-up15|-roster6)?\.json$/.test(path.replaceAll('\\','/'))){
+  if(/\/models\/manifest(?:-up15|-roster6|-civ8)?\.json$/.test(path.replaceAll('\\','/'))){
    const latest=new Map();for(const row of value.models)if(used.has(manifestKey(row)))for(const neededEpoch of neededEpochs.get(manifestKey(row))){
     const key=`${manifestKey(row)}:${neededEpoch}`;if(row.epoch<=neededEpoch&&(!latest.has(key)||latest.get(key).epoch<row.epoch))latest.set(key,row);
    }
@@ -142,7 +146,7 @@ globalThis.fetch=async url=>{
 globalThis.createImageBitmap=async blob=>({width:blob.bytes.readUInt32BE(16),height:blob.bytes.readUInt32BE(20),url:blob.url,close(){}});
 try{
  const gl=new RecordingGL(),teams=[[.27,.59,1],[.94,.27,.24],[.31,.86,.39],[.96,.82,.27],[1,1,1],[1,1,1],[1,1,1],[.3,.75,1]];
- const modelOptions={assetMapping,dynamicSails:wantsDynamicSails,lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-roster6.json',scaleManifestURL:'./local-original/model-scales-roster6.json'}:{})};
+ const modelOptions={assetMapping,packAnimations:rulesProfile.ruleset===2,dynamicSails:wantsDynamicSails,lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-civ8.json',scaleManifestURL:'./local-original/model-scales-civ8.json',teamManifestURL:'./local-original/team-textures/manifest-civ8.json'}:{})};
  const terrain=await loadOriginalTerrain(gl,true,teams),models=await loadOriginalModels(gl,true,teams,()=>{},modelOptions),ground=await loadOriginalGround(gl,true,{assetMapping}),nativeWater=await loadOriginalWater(gl,true);
  terrain.setLightingContext?.(models.lighting);
  if(!terrain.enabled||!ground.enabled||!nativeWater.enabled||terrain.errors.length||models.errors.length||ground.errors.length||nativeWater.errors.length)throw Error(JSON.stringify({terrain:terrain.errors,models:models.errors,ground:ground.errors,water:nativeWater.errors}));
@@ -174,7 +178,7 @@ try{
    const forces=models.resolveSailForces(actor,source,index,life),previous=life.isNewOwner?null:life.previousActor;
    forceTrace.push({tick:wasm.game_tick(),handle:actor.handle,sourceKey:source.key,plane:index,session:life.session,isNewOwner:life.isNewOwner,dead:life.dead,renderPosition:[actor.renderX,actor.renderY],previousPosition:previous?[previous.renderX,previous.renderY]:null,deltaSourceXY:previous?[actor.renderX-previous.renderX,-(actor.renderY-previous.renderY)]:[0,0],velocity:[actor.velocityX,actor.velocityY],forces});return forces;
   };
-  const runtime=await loadSourceSailRuntime({wasm,namespace:renderNamespace,models:runtimeModels,enabled:true});
+  const runtime=await loadSourceSailRuntime({wasm,namespace:renderNamespace,models:runtimeModels,enabled:true,decorateMetadata:metadata=>packMetadata?packMetadata.snapshot(metadata):metadata});
   if(!runtime?.metrics.enabled)throw Error('Dynamic sail runtime failed: '+runtime?.metrics.error);
   const beforeHash=wasm.state_hash(),beforePtr=wasm.save(),beforeSave=new Uint8Array(wasm.memory.buffer,beforePtr,wasm.save_len()).slice(),visualGuards=[],motionFrames=[];
   for(let i=0;i<=clothSteps;i++){
@@ -205,6 +209,7 @@ try{
    actors:actorMetadata.actors.filter(a=>a.def===58).map(a=>({handle:a.handle,team:a.team,def:a.def,hpRatio:a.hpRatio,bounds:models.dynamicSailBounds(a.handle)})),
    saveUnchanged:true,visualGuards,motionFrames,forceTrace,simulationTicksDuringVisualFrames,simulationHash:wasm.state_hash()>>>0,clockPolicy:simulationTicksDuringVisualFrames?'Explicit ordinary voyage ticks between controlled visual frames; every visual update independently preserves save/hash. Own scheduler, not native temporal parity.':'Explicit controlled render frames, no simulation ticks or native scheduler claim.'};
  }
+ if(!actorMetadata&&packMetadata)actorMetadata=packMetadata.snapshot(packActorReader.snapshot({count,instances:data,namespace:renderNamespace}));
  gl.viewport(0,0,width,height);
  let reflection=null;const reflectionStart=gl.draws.length;
  if(useReflection){

@@ -195,12 +195,30 @@ impl Game {
         if epoch<=previous_epoch{return;}
         for a in crate::paid_queue7_main::ACTIONS{
             if a.epoch<=previous_epoch||a.epoch>epoch{continue;}
+            #[cfg(feature="ee2-civ8")]
+            if a.ttciv!=0&&!crate::civ8_gates::matches_ttciv(a.ttciv,self.civilizations[team as usize]as i8){continue;}
             match a.kind{
                 crate::paid_queue7_main::Kind::Reprice=>self.reprice_paid_pending(team,a.def),
-                crate::paid_queue7_main::Kind::Obsolete=>self.retire_paid_production(team,previous_epoch),
+                crate::paid_queue7_main::Kind::Obsolete=>{
+                    #[cfg(feature="ee2-civ8")]
+                    self.retire_paid_definition(team,a.def);
+                    #[cfg(not(feature="ee2-civ8"))]
+                    self.retire_paid_production(team,previous_epoch);
+                },
             }
         }
         self.recount_paid_players();
+    }
+    #[cfg(feature="ee2-civ8")]
+    fn retire_paid_definition(&mut self,team:u8,def:DefId){
+        for b in 0..self.high{
+            if !self.ents[b].alive||self.ents[b].team!=team||!DEFS[self.ents[b].def as usize].building{continue;}
+            let mut position=0;
+            while position<self.ents[b].qn as usize{
+                if self.ents[b].q[position]==def as QueueItem{self.cancel_paid_job(b,position);}
+                else{position+=1;}
+            }
+        }
     }
     pub(crate) fn canonical_queue_payments(&self)->Vec<Payment>{
         let mut out=Vec::new();
@@ -301,7 +319,7 @@ pub fn strip_wrapper(input:&[u8])->Option<(&[u8],Option<&[u8]>)>{
     if u32v(input,0)?!=SAVE_MAGIC{return Some((input,None));}
     let descriptor=input.len().checked_sub(52)?;let d=input.get(descriptor..)?;
     if u32v(d,0)?!=META||u32v(d,4)?!=7||u32v(d,8)?!=2||d.get(12..44)?!=crate::roster6_registry::FINGERPRINT||u32v(d,44)?!=52||u32v(d,48)?!=META_END{return None;}
-    if u32v(input,12)? as usize!=DEFS.len(){return None;}
+    if u32v(input,12)? as usize!=DEFS.len()&&!(cfg!(feature="ee2-civ8")&&u32v(input,12)?==61){return None;}
     let payload=input.get(..descriptor)?;
     if u32v(payload,payload.len().checked_sub(4)?)?!=END{return None;}
     let length=u32v(payload,payload.len().checked_sub(8)?)? as usize;

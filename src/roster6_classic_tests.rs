@@ -81,7 +81,7 @@ fn all_new_definitions_roundtrip_and_render_in_distinct_namespace() {
     let mut loaded=Game::load(&saved).unwrap();
     assert_eq!(loaded.state_hash(),g.state_hash());loaded.save();assert!(loaded.savebuf==saved,"first save diff {:?}",loaded.savebuf.iter().zip(&saved).enumerate().filter(|(_, (a,b))|a!=b).map(|(i,(a,b))|(i,*a,*b)).take(8).collect::<Vec<_>>());
     for id in 57..61 {let raw=crate::ids::unit_render(id)as u32;assert_eq!(crate::ids::render_kind(raw),0);assert_eq!(crate::ids::render_source(raw),id as u32);}
-    assert_eq!(crate::ids::render_capacity(),317);
+    assert_eq!(crate::ids::render_capacity(),256+DEFS.len());
 }
 
 #[test]

@@ -64,11 +64,15 @@ fn paid_queue_roundtrip_preserves_price_flags_and_rejects_forged_bindings(){
     let(mut g,tc,dock)=game(7);assert!(g.train(tc,57));assert!(g.train(dock,58));g.build_grid();g.refresh_display_fog();
     g.save();let good=g.savebuf.clone();let mut loaded=Game::load(&good).unwrap();
     assert_eq!(loaded.queue_prices,g.canonical_queue_payments());assert_eq!(loaded.state_hash(),g.state_hash());loaded.save();assert!(loaded.savebuf==good);
-    let end=good.len()-52;let size=u32::from_le_bytes(good[end-8..end-4].try_into().unwrap())as usize;let start=end-size;
+    #[cfg(feature="ee2-pack8")]let inner=crate::pack8_save::split(&good).unwrap().0;
+    #[cfg(not(feature="ee2-pack8"))]let inner=&good[..];
+    #[cfg(feature="ee2-pack8")]let base=crate::pack8_save::HEADER;
+    #[cfg(not(feature="ee2-pack8"))]let base=0;
+    let end=inner.len()-52-if cfg!(feature="ee2-civ8"){36}else{0};let size=u32::from_le_bytes(inner[end-8..end-4].try_into().unwrap())as usize;let start=base+end-size;
     for(offset,value)in[(0,0),(4,3),(8,3),(12,u32::MAX),(16,9),(20,u32::MAX),(24,4),(28,f32::NAN.to_bits()),(28,(-1.0_f32).to_bits()),(72,f32::NAN.to_bits()),(72,(-2.0_f32).to_bits())]{
         let mut bad=good.clone();bad[start+offset..start+offset+4].copy_from_slice(&value.to_le_bytes());assert!(Game::load(&bad).is_none(),"forged offset{offset}");
     }
-    assert_eq!(u32::from_le_bytes(good[..4].try_into().unwrap()),paid_queue7::SAVE_MAGIC);
+    assert_eq!(u32::from_le_bytes(inner[..4].try_into().unwrap()),if cfg!(feature="ee2-civ8"){0x3855454f}else{paid_queue7::SAVE_MAGIC});
 }
 
 #[test]

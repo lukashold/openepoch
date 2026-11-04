@@ -10,7 +10,7 @@ export const SOURCE_CLOTH_MODULE=Object.freeze({
 // Own presentation scheduler. The caller supplies the rendered-world delta and
 // explicit pause/wait policy once, before reflection, shadow and main draws.
 // All game saves, simulation hashes and network commands remain untouched.
-export async function loadSourceSailRuntime({wasm,namespace,models,enabled=false,fetcher=globalThis.fetch}={}){
+export async function loadSourceSailRuntime({wasm,namespace,models,enabled=false,fetcher=globalThis.fetch,decorateMetadata=null}={}){
  if(!enabled)return null;
  const metrics={enabled:false,error:null,backend:null,world:null,frame:null,owners:0,steps:0,
   clock:'explicit-render-delta',visibility:'retain-without-step-while-culled',arithmetic:'conditional-chop53'};
@@ -38,7 +38,9 @@ export async function loadSourceSailRuntime({wasm,namespace,models,enabled=false
  function advance({count,instances,epochs,deltaSeconds,runPhysics}={}){
   if(failed)return null;
   try{
-   const metadata=reader.snapshot({count,instances,namespace});
+   const raw=reader.snapshot({count,instances,namespace});
+   const metadata=decorateMetadata?decorateMetadata(raw):raw;
+   if(!metadata||metadata.version!==raw.version||metadata.count!==raw.count||metadata.session!==raw.session||metadata.frame!==raw.frame||typeof metadata.forHandle!=='function'||typeof metadata.forInstance!=='function')throw Error('Decorated visual metadata does not belong to this render frame');
    const context=models.lighting;
    const updated=controller.advance({metadata,deltaSeconds,runPhysics,
     resolveSource:actor=>models.resolveSailSource(actor,epochs),

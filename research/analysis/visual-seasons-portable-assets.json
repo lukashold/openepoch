@@ -4,7 +4,7 @@
   "scope": "Portable original media/runtime URL audit only; no original archives/EXE or original installation needed. Does not claim a physical Mac/Safari or GPU execution test.",
   "latestLabel": "visual-seasons2-extracted",
   "summaryOnly": true,
-  "fullLocalReportSha256": "348f3585baf8727f8c8a468feb51009d0838075d278d7d815fff9d0d5c667f1d",
+  "fullLocalReportSha256": "faaedd173ae39df06ae9b0b7fb937db0fd43115c099ef44f6997f7ad257d7247",
   "note": "Compact repository copy. The complete per-reference inventory remains in the local research report and source archive.",
   "runs": [
     {

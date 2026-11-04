@@ -74,7 +74,7 @@ F4: Diplomatie. F: freie Bürger. H: Heimat. P: Pause. Cmd+S/Ctrl+S: speichern.
 Enter: Cheatdialog. icheat aktiviert Cheats; loot, sea monkeys und give tech
 sind im Einzelspieler vorhanden.
 
-Neuer Ausbau: native7
+Neuer Ausbau: native8
 Die Kamera verwendet nun die aus Ghidra belegte Zoom-/Winkelkurve. Originale
 Modellmaßstäbe und Ursprünge, zusätzliche Materialwerte, höhenabhängige Schatten,
 Originalgelände und Wassermaterialien sind eingebunden. Farmen bestehen aus
@@ -87,6 +87,11 @@ sind mit ihren UP-Modellen enthalten. Die Quellenbeleuchtung der Modelle nutzt
 vorerst einen festen Nachmittag; die originale Tageszeitsteuerung ist noch offen.
 Späher, Segelkriegsschiffe, Luftabwehr und Küstenverteidigung ergänzen den Kader.
 Karavellen und Linienschiffe haben bewegte Originalsegelflächen und Schadensmasken.
+14 Völker sind für neue UP-Spiele wählbar.19 zusätzliche Spezialeinheiten haben
+Originalmodelle, Animationen, Namen und Stimmen. Geeignete Einheiten zeigen die
+Befehle Einpacken und Auspacken; vor Angriffen und Bewegungen erfolgt dies auch
+automatisch. Der Gastgeber übernimmt die gewählten Völker und Starteinstellungen
+für beide Rechner. Aktuelle Spielstände sichern auch die Wegfindungszustände.
 Bitmap-Schrift für HUD und Diplomatie ist enthalten. Die Produktion speichert
 bezahlte Kosten und laufende Bauzeiten; Abbruch und Klassenwechsel berücksichtigen
 diese Werte. Alte UP-Spielstände werden beim Laden in das aktuelle Format übernommen.
@@ -112,3 +117,8 @@ https://docs.python.org/3/using/mac.html
 https://www.chromium.org/audio-video/
 https://support.mozilla.org/en-US/kb/html5-audio-and-video-firefox
 https://webkit.org/blog/16574/webkit-features-in-safari-18-4/
+
+Speichern im native8-Stand
+Aktuelle Spielstände sichern auch laufende Packaufgaben, Wegfindungszustand
+und fliegende Geschosse. Ältere Stände werden geladen; nicht gespeicherte
+Wegfindungs- und Geschosshistorie lässt sich daraus nicht wiederherstellen.

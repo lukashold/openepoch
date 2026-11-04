@@ -184,9 +184,13 @@ def convert(raw,entry,archive,texture_archive,kind='building',pose=None,animatio
         poses,duration=sample_pose(animation['reader'],reader.objects,0);frames=1 if duration<=1e-8 else int(animation.get('samples',8))
         if not 1<=frames<=64:raise ValueError('Animation sample count must fit the bounded morph exporter')
         animation_sources.append({'name':name,'entry':animation['entry'],'sha256':animation['sha256'],'duration':duration,'static':duration<=1e-8,'frames':frames})
-        for p in parts:p['animations'][name]={'duration':duration,'static':duration<=1e-8,'frames':[]}
+        if animation.get('includeEndpoint'):animation_sources[-1].update(endpointIncluded=True,sampleIntervals=max(0,frames-1))
+        for p in parts:
+            p['animations'][name]={'duration':duration,'static':duration<=1e-8,'frames':[]}
+            if animation.get('includeEndpoint'):p['animations'][name].update(endpointIncluded=True,sampleIntervals=max(0,frames-1))
         for frame in range(frames):
-            poses,_=sample_pose(animation['reader'],reader.objects,duration*frame/frames);w,*_=scene(reader,poses,lod)
+            sample_time=duration*frame/(frames-1) if animation.get('includeEndpoint') and frames>1 else duration*frame/frames
+            poses,_=sample_pose(animation['reader'],reader.objects,sample_time);w,*_=scene(reader,poses,lod)
             for p in parts:
                 positions,normals=mesh_pose(reader,p['sourceNode'],w)
                 p['animations'][name]['frames'].append({'positions':flat((positions+offset)*scale),'normals':flat(normals)})
