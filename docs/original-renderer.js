@@ -465,7 +465,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    if(!parts.length)continue;
    const scaleKey=(entry.assetKind===undefined?'':assetKind+':')+id+':'+(entry.epoch??0),sea=assetKind===0&&((id>=29&&id<=36)||id===42||id===45),transform=nativeModelTransform(model,entry.regionalCivilizations?entry.nativeScaleBinding:scales.variants?.[scaleKey]);
    const yOffset=!transform.native&&sea?-(model.normalization?.offset?.[1]||0)*(model.normalization?.scale||1):0;
-   const variant={sourceId:id,assetKind,scaleKey,epoch:entry.epoch??0,until:entry.until,regionalCivilizations:entry.regionalCivilizations,sourceIdentity:entry.sourceIdentity,region:entry.region,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),yOffset,originOffset:transform.originOffset,nativeScale:transform.native?transform.scale:null,yawOffset:entry.yawOffset??model.yawOffset??0,farUrl:entry.lodFarUrl,far:null,farRequested:false,pickBounds:resourceBounds(parts)};
+   const variant={sourceId:id,assetKind,scaleKey,epoch:entry.epoch??0,until:entry.until,regionalCivilizations:entry.regionalCivilizations,sourceIdentity:entry.sourceIdentity,region:entry.region,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),nativeAttackClock:entry.nativeAttackClock===true,yOffset,originOffset:transform.originOffset,nativeScale:transform.native?transform.scale:null,yawOffset:entry.yawOffset??model.yawOffset??0,farUrl:entry.lodFarUrl,far:null,farRequested:false,pickBounds:resourceBounds(parts)};
    if(houseBinding){try{
     const levelParts=[parts];
     for(const level of houseBinding.levels.slice(1)){
@@ -581,12 +581,18 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
      if(variant.far)variant=variant.far;
     }
     const activity=Math.round(data[i*12+11]),requestedClip=['idle','walk','wood','mine','food','build','combat'][activity]||'idle';
-    const packPose=nativePackPose(actorMetadata?.forInstance?.(i),{sourceId:variant.sourceId,team,data,index:i,parts:variant.parts});
-    const clip=packPose?.clip||(variant.parts.some(p=>p.animations?.[requestedClip])?requestedClip:'idle'),once=packPose?.once??false;
+    const packPose=nativePackPose(actor,{sourceId:variant.sourceId,team,data,index:i,parts:variant.parts});
+    const time=data[i*12+10],seed=data[i*12+6];
+    const attackElapsed=variant.nativeAttackClock&&requestedClip==='combat'&&actor?.def===variant.sourceId&&actor.team===team
+     &&actor.index===i&&actor.renderTime===time&&actor.renderX===data[i*12]&&actor.renderY===data[i*12+1]
+     ? options.stoneAttackElapsedForActor?.(actor) : undefined;
+    const timedAttack=Number.isFinite(attackElapsed);
+    const defaultClip=variant.parts.some(p=>p.animations?.[requestedClip])?requestedClip:'idle';
+    const clip=packPose?.clip||(timedAttack?(attackElapsed>=0?'combat':'idle'):defaultClip);
+    const once=packPose?.once??(timedAttack&&attackElapsed>=0);
     const animation=variant.parts.find(p=>p.animations?.[clip])?.animations?.[clip];
     const duration=animation?.duration||1;
-    const time=data[i*12+10],seed=data[i*12+6];
-    const phase=packPose?.phase??((time/duration+seed)%1+1)%1;
+    const phase=packPose?.phase??(timedAttack&&attackElapsed>=0?Math.min(1,attackElapsed/duration):((time/duration+seed)%1+1)%1);
     // Parts with authored visibility events batch only with actors in the same visible state.
     const hiddenParts=variant.hasClipVisibility?variant.parts.filter(part=>{
      if(!part.clipVisibility)return false;

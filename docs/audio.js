@@ -1,6 +1,6 @@
 // The EE2 profile uses locally extracted original recordings when available.
 // Procedural sounds and local speech remain the fallback for the standalone game.
-import { createOriginalAudio } from './original-audio.js?v=epoch13';
+import { createOriginalAudio } from './original-audio.js?v=stone-launch';
 import {createPresentationRandom} from './source-music-controller.js?v=regional11';
 const presentationRandom = createPresentationRandom(1);
 const originals=createOriginalAudio({presentationRandom});
@@ -144,13 +144,16 @@ const SOUNDS = {
 };
 
 /** Play sound `kind` at volume 0..1 and stereo position -1..1. */
+export const STONE_THROWER_LAUNCH_CUE = 26;
 export function play(kind, vol = 1, pan = 0) {
-  const s = SOUNDS[kind];
+  const fallbackKind = kind === STONE_THROWER_LAUNCH_CUE ? 3 : kind;
+  const s = SOUNDS[fallbackKind];
   if (muted || !s || vol < 0.02 || !ensure() || ctx.state !== 'running') return;
   const now = ctx.currentTime;
   if (now - (lastPlayed.get(kind) ?? -99) < s[0]) return;   // rate limit per kind
-  if (voices > 28 && kind < 12) return;                     // polyphony cap for battle noise
+  if (voices > 28 && fallbackKind < 12) return;             // polyphony cap for battle noise
   lastPlayed.set(kind, now);
   if(originals.effect(kind,Math.min(1,vol),Math.max(-1,Math.min(1,pan))))return;
+  if(fallbackKind!==kind&&originals.effect(fallbackKind,Math.min(1,vol),Math.max(-1,Math.min(1,pan))))return;
   s[1](now, Math.min(1, vol), Math.max(-1, Math.min(1, pan)));
 }

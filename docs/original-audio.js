@@ -15,12 +15,15 @@ export function createOriginalAudio(options={}) {
   let ambientSource=null,nextBird=0,currentEpoch=0,previousPeriod=-1;
   let citizenPresentation=options.citizenPresentation||null;
   let regionalMusicEnabled=!!options.regionalMusic, regionalMusic=null;
+  let playbackManifestURL='manifest.json';
   let familyManifest=options.familyManifest||null,familyManifestURL=options.familyManifestURL||'native-families.json',definitionSettings={wasm:null,bindings:[]},typed=createTypedAudioBindings({familyManifest});
   function setDefinitionBindings({wasm=null,bindings=[],familyManifestURL:url=familyManifestURL,
-    citizenPresentation:citizens=citizenPresentation,regionalMusic:useRegionalMusic=regionalMusicEnabled}={}) {
+    citizenPresentation:citizens=citizenPresentation,regionalMusic:useRegionalMusic=regionalMusicEnabled,
+    playbackManifestURL:playbackURL=playbackManifestURL}={}) {
     if(url!==familyManifestURL){familyManifest=null;familyManifestURL=url;}
     citizenPresentation=citizens;
     regionalMusicEnabled=useRegionalMusic;
+    playbackManifestURL=playbackURL;
     if (!regionalMusicEnabled) regionalMusic?.reset();
     definitionSettings={wasm,bindings};
     typed=createTypedAudioBindings({...definitionSettings,familyManifest});
@@ -119,10 +122,16 @@ export function createOriginalAudio(options={}) {
     if(!enabled||typeof context?.decodeAudioData!=='function')return false;
     ctx=context;master=destination;
     if(loading)return loading;
-    loading=fetchFile(new URL('manifest.json',base),{cache:'no-cache'})
-      .then(r=>{if(!r.ok)throw Error('No local originals');return r.json();})
+    const readManifest=async file=>{
+      const response=await fetchFile(new URL(file,base),{cache:'no-cache'});
+      if(!response.ok)throw Error('No local originals');
+      const data=await response.json();
+      if(data.version!==1||!data.effects||!data.voices)throw Error('Unsupported local audio manifest');
+      return data;
+    };
+    const file=playbackManifestURL;
+    loading=readManifest(file).catch(error=>{if(file==='manifest.json')throw error;return readManifest('manifest.json');})
       .then(async data=>{
-        if(data.version!==1||!data.effects||!data.voices)throw Error('Unsupported local audio manifest');
         manifest=data;
         const warm=[...[...Object.values(data.voices),...(data.voiceVariants||[])].flatMap(voice=>[...(voice.select||[]),...(voice.order||[]),...(voice.attack||[])]),...Object.values(data.effects).map(x=>x.file),...Object.values(data.buildingSelections||{}).map(x=>typeof x==='string'?x:x.file),data.ambient?.loop,...(data.ambient?.birds||[])];
         for(const file of new Set(warm))load(file);

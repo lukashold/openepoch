@@ -9,7 +9,7 @@ import { diplomacyPanel } from './diplomacy.js?v=fortress1';
 import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native6';
 import {loadNativeFontUI} from './original-font-ui.js?v=native6';
 import {territoryClaimMessage} from './territory-help.js?v=fortress1';
-import * as sfx from './audio.js?v=epoch13';
+import * as sfx from './audio.js?v=stone-launch';
 import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=citizen9';
 import {mountOriginalShellVideo} from './original-shell-video.js?v=native12';
 import {mountSkirmishMenu} from './skirmish-menu.js?v=native13';
@@ -17,7 +17,7 @@ import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regi
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native6';
-import {loadOriginalModels} from './original-renderer.js?v=native14';
+import {loadOriginalModels} from './original-renderer.js?v=native15';
 import {ownMapTerrainOrigin} from './original-citycenter-terrain.js?v=regional10';
 import {loadCityCenterIcons,loadHouseIcons,loadDockIcons,loadBarracksIcons,loadMillIcons,loadTempleIcons} from './original-citycenter-icons.js?v=regional14';
 import {loadSourceSailRuntime} from './source-sail-runtime.js?v=sails7';
@@ -31,11 +31,11 @@ import {loadOriginalWater} from './original-water.js?v=water-farm3';
 import {createOriginalReflection} from './original-reflection.js?v=visual-seasons2';
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native14';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native15';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=epoch13';
 import {createFullscreenController} from './fullscreen.js?v=building2';
-import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=epoch13';
+import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native15';
 import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=fortress1';
 import {updateOriginalCamera,originalCameraRay,originalFractionForZoom,normalizeOriginalHeading,rotateOriginalCameraHeading} from './original-camera.js?v=heading2';
 
@@ -469,6 +469,14 @@ for (const pr of [terrain, water, models, quads]) {
 const originalEnabled=referenceMode&&new URLSearchParams(location.search).get('assets')!=='procedural';
 const shellMovie=mountOriginalShellVideo($('shell-movie'),originalEnabled?rulesProfile.id:null);
 mountSkirmishMenu($('menu'), {enabled:rulesProfile.ruleset===2, originalArt:originalEnabled});
+const victoryOptions=$('sk-victory-options');
+victoryOptions.hidden=rulesProfile.id!=='up15';
+const victoryCondition=$('sk-victory-condition');
+function updateVictoryOptions(){
+  $('sk-territory-victory').hidden=victoryOptions.hidden||victoryCondition.value!=='territory';
+}
+victoryCondition.addEventListener('change',updateVictoryOptions);
+updateVictoryOptions();
 const originalAssets=await loadOriginalAssets(gl,originalEnabled);
 const citizenPresentation=await loadCitizenPresentation({enabled:originalEnabled&&rulesProfile.sourceIdentityVersion===1});
 const buildingIconOptions={enabled:originalEnabled&&rulesProfile.ruleset===2,profile:'packed7',neutralFallback:'west'};
@@ -483,10 +491,10 @@ originalAssets.citizenPresentation=citizenPresentation;
 const originalLabels=await loadOriginalLabels(rulesProfile,{definitionCount:renderNamespace.definitionCount,...(rulesProfile.ruleset===2?{manifestURL:'./local-original/labels-native-civ8.json'}:{})});
 const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,total)=>{
   $('play').textContent=`Originalgrafiken laden · ${Math.round(loaded/total*100)} %`;
-},{assetMapping,packAnimations:rulesProfile.ruleset===2,dynamicSails:rulesProfile.ruleset===2&&typeof wasm.render_meta_version==='function',lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-civ8.json',scaleManifestURL:'./local-original/model-scales-civ8.json',teamManifestURL:'./local-original/team-textures/manifest-civ8.json',regionalManifestURL:'./local-original/stone-thrower/regional-models.json',terrainFallbackManifestURL:'./local-original/regional-e15-seasons/terrain-fallback.json',houseLodManifestURL:'./local-original/regional-house-lod/manifest.json',houseLodProfile:{mode:'resource',modelDetail:2,rendererCap0x200:false},citizenManifestURL:'./local-original/citizens9/manifest.json',citizenNeutralFallback:'west',sourceIdentityForActor:actor=>wasm.actor_source_identity(actor.handle)>>>0}:{})});
+},{assetMapping,packAnimations:rulesProfile.ruleset===2,dynamicSails:rulesProfile.ruleset===2&&typeof wasm.render_meta_version==='function',lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-civ8.json',scaleManifestURL:'./local-original/model-scales-civ8.json',teamManifestURL:'./local-original/team-textures/manifest-civ8.json',regionalManifestURL:'./local-original/stone-thrower/regional-models-native15.json',stoneAttackElapsedForActor:actor=>wasm.render_stone_thrower_attack_elapsed(actor.handle,actor.renderTime),terrainFallbackManifestURL:'./local-original/regional-e15-seasons/terrain-fallback.json',houseLodManifestURL:'./local-original/regional-house-lod/manifest.json',houseLodProfile:{mode:'resource',modelDetail:2,rendererCap0x200:false},citizenManifestURL:'./local-original/citizens9/manifest.json',citizenNeutralFallback:'west',sourceIdentityForActor:actor=>wasm.actor_source_identity(actor.handle)>>>0}:{})});
 const sourceSails=await loadSourceSailRuntime({wasm,namespace:renderNamespace,models:originalModels,enabled:originalEnabled&&rulesProfile.ruleset===2,decorateMetadata:metadata=>packMetadata?packMetadata.snapshot(metadata):metadata});
 if(sourceSails?.metrics.error)console.warn('Source sails:',sourceSails.metrics.error);
-sfx.configureOriginalDefinitions({wasm,bindings:originalModels.manifest?.models||[],citizenPresentation,regionalMusic:rulesProfile.ruleset===2,...(rulesProfile.ruleset===2?{familyManifestURL:'native-families-civ8.json'}:{})});
+sfx.configureOriginalDefinitions({wasm,bindings:originalModels.manifest?.models||[],citizenPresentation,regionalMusic:rulesProfile.ruleset===2,...(rulesProfile.ruleset===2?{familyManifestURL:'native-families-civ8.json',playbackManifestURL:'manifest-stone-thrower-up.json'}:{})});
 const originalGround=await loadOriginalGround(gl,originalEnabled,{assetMapping,...(rulesProfile.ruleset===2
   ?{manifestURL:'./local-original/regional-temple/ground-decals.json'}:{})});
 const originalTerrain=await loadOriginalTerrain(gl,originalEnabled,TEAM);
@@ -708,8 +716,10 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
   wasm.init(seed >>> 0, nAi, benchUnits, humans, local);
   if(!benchUnits&&civilizationSetup.enabled){
     const players=Math.max(2,Math.min(4,nAi+humans));
+    const territoryPercent=humans===1&&rulesProfile.id==='up15'&&$('sk-victory-condition').value==='territory'
+      ? +$('sk-territory-percent').value : undefined;
     applyMatchSettings(wasm,{...resolvedSkirmishChoices(civilizationSetup.choices(),players),
-      popLimit:+$('pop-limit').value,supplies:+$('supplies').value},players);
+      popLimit:+$('pop-limit').value,supplies:+$('supplies').value,territoryPercent},players);
   }else if(!benchUnits&&humans===1){
     wasm.skirmish_setup(+$('pop-limit').value, +$('supplies').value);
     if(referenceMode)wasm.skirmish_epoch(+$('start-epoch').value);
@@ -795,7 +805,7 @@ function advance(dt, now) {
     for (let i = 0; i < n; i += 3) {
       const kind = ev[i], dx = ev[i + 1] - cam.x, dy = ev[i + 2] - cam.y;
       const citizen = decodeCitizenDeathCue(kind);
-      if (kind >= 12 && !citizen) {
+      if (kind >= 12 && !citizen && kind !== sfx.STONE_THROWER_LAUNCH_CUE) {
         sfx.play(kind, 1, 0);
       } else {
         const distanceGain = Math.max(0, 1 - Math.hypot(dx, dy) / range);
@@ -1023,6 +1033,11 @@ function updateUi(drawn, now) {
   $('epoch').textContent = ui.ename;
   $('science').textContent = referenceMode ? `${ui.research.points.toFixed(1)} TP` : '';
   $('terr').textContent = ui.terr;
+  const territoryVictory=$('territory-victory-status'), territory=ui.territoryVictory;
+  territoryVictory.hidden=!territory;
+  territoryVictory.textContent=territory
+    ? `Kontrolliert ${territory.owned} von ${territory.total} · Ziel ${territory.target} · noch ${Math.max(0,territory.target-territory.owned)}`
+    : '';
   $('idle').textContent = `Freie Bürger: ${ui.idle}`;
   $('idle').style.visibility = ui.idle && !bench ? 'visible' : 'hidden';
   let status = `${Math.round(1000 / frameMs)} fps · worst ${worstMs.toFixed(0)} ms · sim ${simMs.toFixed(2)} ms/tick · ${ui.n} entities · ${drawn} drawn`;
@@ -1100,7 +1115,11 @@ function updateUi(drawn, now) {
 
   if (ui.win && !bench && $('end').style.display !== 'flex') {
     diplomacy.close();
-    $('endtext').textContent = ui.win === 1 ? 'Victory!' : 'Defeat';
+    if (rulesProfile.id === 'up15' && !net) {
+      $('endtext').textContent = ui.win === 1 ? 'Sie haben gewonnen.' : 'Sie haben verloren';
+    } else {
+      $('endtext').textContent = ui.win === 1 ? 'Victory!' : 'Defeat';
+    }
     $('end').style.display = 'flex';
     sfx.play(ui.win === 1 ? 13 : 11);
   }

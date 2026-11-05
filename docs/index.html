@@ -69,6 +69,7 @@
   #menu button.alt { padding:8px 14px; font-size:14px; }
   #camera-tools {position:fixed;top:45px;right:12px;display:flex;gap:3px;z-index:3;}
   #camera-tools[hidden]{display:none;}
+  #territory-victory-status[hidden]{display:none;}
   #camera-tools button{background:#182329e8;color:#e9e7cb;border:1px solid #88917b;border-radius:3px;font:600 18px system-ui;padding:4px 11px;cursor:pointer;}
   .dim { color:var(--dim); }
   #menu table { border-collapse:collapse; font-size:13px; color:var(--dim); margin-top:10px; }
@@ -135,6 +136,7 @@
   <button id="research-button">Forschung</button>
   <button id="diplomacy-button" title="Beziehungen, Friedensangebote, Bündnisse und Rohstoffgeschenke · F4">Diplomatie</button>
   <span class="r" title="Deine Gebiete. Baue ein Stadtzentrum in einem freien Gebiet.">Gebiete <b id="terr">1</b></span>
+  <span class="r" id="territory-victory-status" hidden></span>
   <button id="idle" title="Select next idle worker (F)">Idle workers: 0</button>
   <span class="sp"></span>
   <span id="perf"></span>
@@ -201,6 +203,10 @@
         <button type="button" role="tab" id="sk-environment-tab" aria-controls="sk-environment">Umgebung</button>
       </div>
       <section id="sk-game" class="skirmish-pane">
+        <div id="sk-victory-options" hidden>
+          <div class="row"><label for="sk-victory-condition">Siegbedingung</label><select id="sk-victory-condition"><option value="conquest">Eroberung</option><option value="territory">Territorienkontrolle</option></select></div>
+          <div id="sk-territory-victory" hidden><div class="row"><label for="sk-territory-percent">Zielanteil der Territorien</label><select id="sk-territory-percent"><option value="30">30 %</option><option value="40">40 %</option><option value="50" selected>50 %</option><option value="60">60 %</option><option value="70">70 %</option><option value="80">80 %</option><option value="90">90 %</option></select></div></div>
+        </div>
         <div class="row"><label for="pop-limit">Bevölkerung</label><select id="pop-limit"><option value="250">250 pro Spieler</option><option value="500" selected>500 pro Spieler</option><option value="1000">1 000 pro Spieler</option></select></div>
         <div class="row"><label for="supplies">Startvorräte</label><select id="supplies"><option value="0">Normal</option><option value="1" selected>Großzügig</option><option value="2">Sehr großzügig</option></select><span class="dim">Für alle Spieler gleich</span></div>
       </section>
@@ -273,6 +279,6 @@
   <p id="building-status" role="status" aria-live="polite"></p>
   <small>Strg / R / Komma / Punkt: 90° · mit Umschalt: 45° · Umschalt+Mausrad: 45° · Esc: abbrechen</small>
 </aside>
-<script type="module" src="main.js?v=native14"></script>
+<script type="module" src="main.js?v=native15"></script>
 </body>
 </html>

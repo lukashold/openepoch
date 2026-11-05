@@ -52,6 +52,10 @@ mod ee2_up15_attack;
 #[cfg(feature="ee2-up15")]
 mod native_attack_clock;
 mod diplomacy;
+#[cfg(feature = "ee2-native13")]
+mod ee2_conquest;
+#[cfg(feature = "ee2-native13")]
+mod ee2_territory_victory;
 mod territory;
 mod placement;
 #[cfg(all(feature = "ee2-reference",not(feature="ee2-up15")))]
@@ -307,6 +311,11 @@ pub extern "C" fn render_rotated(alpha:f32,x0:f32,y0:f32,x1:f32,y1:f32,ghost:i32
 #[cfg(feature="ee2-render-meta7")]
 #[no_mangle] pub extern "C" fn entity_alive(handle:u32)->u32{
     unsafe{(&*addr_of_mut!(GAME)).as_ref().is_some_and(|game|game.get(handle).is_some())as u32}
+}
+
+#[cfg(feature="ee2-native13")]
+#[no_mangle] pub extern "C" fn render_stone_thrower_attack_elapsed(handle:u32,render_time:f32)->f32{
+    unsafe{(&*addr_of_mut!(GAME)).as_ref().and_then(|game|game.stone_thrower_attack_elapsed(handle,render_time)).unwrap_or(-1.0)}
 }
 
 #[no_mangle]
@@ -1117,6 +1126,15 @@ mod civ8_bonus;
 pub extern "C" fn configure_match_epoch_range(packed_civs: u32, pop: u32, supplies: u32, start: u32, end: u32) -> u32 {
     unsafe { (&mut *addr_of_mut!(GAME)).as_mut().map_or(0, |game|
         game.configure_match_epoch_range(packed_civs, pop, supplies, start, end) as u32) }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_match_territory_victory(
+    packed_civs: u32, pop: u32, supplies: u32, start: u32, end: u32, percent: u32,
+) -> u32 {
+    unsafe { (&mut *addr_of_mut!(GAME)).as_mut().map_or(0, |game|
+        game.configure_match_territory_victory(packed_civs, pop, supplies, start, end, percent) as u32) }
 }
 #[cfg(feature="ee2-epoch-range13")]
 #[no_mangle]

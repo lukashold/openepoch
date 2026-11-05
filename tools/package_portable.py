@@ -131,9 +131,11 @@ def main(project=None, overlay_paths=None):
             required.add(f'docs/local-original/{family}-icons/manifest.json')
             required.update(f'docs/local-original/regional-{family}/{name}' for name in
                             ('manifest.json', 'model-seasons.json', 'team/manifest.json', 'ground-decals.json'))
-    if 'stone-thrower/regional-models.json' in main_source:
-        required.update({'docs/local-original/stone-thrower/regional-models.json',
-                         'docs/local-original/stone-thrower/lla1_stone_thrower.json'})
+    if 'stone-thrower/regional-models-native15.json' in main_source:
+        required.update({'docs/local-original/stone-thrower/regional-models-native15.json',
+                         'docs/local-original/stone-thrower/lla1_stone_thrower-native15.json'})
+    if 'manifest-stone-thrower-up.json' in main_source:
+        required.add('docs/local-original/audio/manifest-stone-thrower-up.json')
     if 'mountSkirmishMenu' in main_source:
         required.update({'docs/skirmish-menu.js', 'docs/skirmish-menu.css',
                          'docs/local-original/skirmish-native/manifest.json'})

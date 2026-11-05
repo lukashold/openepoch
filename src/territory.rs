@@ -378,9 +378,7 @@ impl Game {
         }
         self.cancel_nonhostile_orders();
         self.build_grid();
-        for t in 0..self.nplayers {
-            self.players[t].alive = self.players[t].buildings > 0;
-        }
+        self.refresh_match_alive();
         self.void_landless_alliances();
         self.prune_territory_offers();
         self.update_fog();

@@ -365,6 +365,12 @@ impl Game {
             "\"pop\":{},\"cap\":{},\"epoch\":{},\"ename\":\"{}\",\"win\":{},\"n\":{},\"tick\":{},\"terr\":{},\"local\":{},\"net\":{},",
             p.pop, p.cap, ep, EPOCH_NAMES[ep as usize], self.winner, self.sim_units, self.tick, p.terr, me, self.net
         );
+        #[cfg(feature = "ee2-native13")]
+        if let Some(rule) = self.territory_victory {
+            let standing = self.territory_standing(rule.percent);
+            let _ = write!(s, "\"territoryVictory\":{{\"percent\":{},\"owned\":{},\"total\":{},\"target\":{}}},",
+                rule.percent, standing.counts[me as usize], standing.total, standing.target);
+        }
         // selection summary
         let mut first = NOIDX;
         let mut n = 0;

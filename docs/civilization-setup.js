@@ -67,7 +67,11 @@ export function applyMatchSettings(wasm,settings,nplayers){
  if(typeof wasm.configure_match_settings!=='function')throw Error('Die Spieldatei unterstützt diese Scharmützeleinstellungen noch nicht.');
  const packed=values.reduce((n,v,i)=>n|(v<<(i*4)),0);
  let result;
- if (typeof wasm.configure_match_epoch_range === 'function') {
+ if (settings.territoryPercent !== undefined) {
+  if (!Number.isInteger(settings.territoryPercent)) throw Error('Ungültiger Zielanteil der Territorien.');
+  if(typeof wasm.configure_match_territory_victory!=='function')throw Error('Die Spieldatei unterstützt keine Territorienkontrolle.');
+  result=wasm.configure_match_territory_victory(packed,settings.popLimit,settings.supplies,settings.epoch,end,settings.territoryPercent);
+ } else if (typeof wasm.configure_match_epoch_range === 'function') {
   result = wasm.configure_match_epoch_range(packed, settings.popLimit, settings.supplies, settings.epoch, end);
  } else {
   if (end !== count - 1) throw Error('Die Spieldatei unterstützt keine Endepoche.');

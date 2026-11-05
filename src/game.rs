@@ -242,6 +242,8 @@ pub struct Game {
     pub civ_setup_open:bool,
     #[cfg(feature = "ee2-epoch-range13")]
     pub(crate) final_epoch: u8,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) territory_victory: Option<crate::ee2_territory_victory::TerritoryVictory>,
     pub groups: Vec<Vec<u32>>,
     pub push: Vec<(f32, f32)>,
     pub scratch: Vec<usize>,
@@ -320,6 +322,8 @@ impl Game {
             civ_setup_open:true,
             #[cfg(feature = "ee2-epoch-range13")]
             final_epoch: MAX_EPOCH,
+            #[cfg(feature = "ee2-native13")]
+            territory_victory: None,
             groups: vec![Vec::new(); 10],
             push: vec![(0.0, 0.0); MAXE],
             scratch: Vec::with_capacity(256),
@@ -869,6 +873,13 @@ impl Game {
             mix(crate::match_epoch_range13::MAGIC);
             mix(self.final_epoch.into());
         }
+        #[cfg(feature = "ee2-native13")]
+        if let Some(rule) = self.territory_victory {
+            mix(crate::ee2_territory_victory::MAGIC);
+            mix(rule.percent.into());
+            mix(rule.eliminated.into());
+            mix(self.winner.into());
+        }
         #[cfg(feature="ee2-civ8")]
         if self.civilizations.iter().any(|&c|c!=crate::civ8_runtime::LEGACY_NEUTRAL){
             mix(0x38564943);for c in self.civilizations{mix(c as u32);}
@@ -1004,23 +1015,61 @@ impl Game {
             #[cfg(feature="ee2-ai9-game-bridge")]
             self.tick_source_research();
             for t in 0..self.nplayers {
+                #[cfg(feature = "ee2-native13")]
+                if self.territory_victory.is_some_and(|rule| rule.eliminated(t)) {
+                    continue;
+                }
                 if self.players[t].ai && (self.tick + t as u32 * 7) % 24 == 0 {
                     self.ai_step(t as u8);
                 }
             }
             if self.tick % 20 == 0 && (self.winner == 0 || cfg!(all(feature="ee2-pack8",feature="ee2-civ8"))) {
-                for p in 0..self.nplayers {
-                    self.players[p].alive = self.players[p].buildings > 0;
-                }
+                self.refresh_match_alive();
                 if self.winner == 0 {
-                    let me = self.local as usize;
-                    if !self.players[me].alive {
-                        self.winner = 2;
-                    } else if (0..self.nplayers).all(|p| p == me || !self.players[p].alive) {
-                        self.winner = 1;
-                    }
+                    self.poll_match_outcome();
                 }
             }
+        }
+    }
+
+    pub(crate) fn refresh_match_alive(&mut self) {
+        #[cfg(feature = "ee2-native13")]
+        if !self.net && self.bench == 0 {
+            let mut living = crate::ee2_conquest::living_seats(self);
+            if let Some(rule) = self.territory_victory {
+                for (seat, alive) in living.iter_mut().enumerate() {
+                    *alive &= !rule.eliminated(seat);
+                }
+            }
+            for (player, alive) in self.players[..self.nplayers].iter_mut().zip(living) {
+                player.alive = alive;
+            }
+            return;
+        }
+        for player in &mut self.players[..self.nplayers] {
+            player.alive = player.buildings > 0;
+        }
+    }
+
+    fn match_has_winner(&self, local: usize) -> bool {
+        #[cfg(feature = "ee2-native13")]
+        if !self.net && self.bench == 0 {
+            return crate::ee2_conquest::survivors_are_allied(self);
+        }
+        (0..self.nplayers).all(|p| p == local || !self.players[p].alive)
+    }
+
+    fn poll_match_outcome(&mut self) {
+        #[cfg(feature = "ee2-native13")]
+        if let Some(rule) = self.territory_victory {
+            self.poll_territory_outcome(rule);
+            return;
+        }
+        let me = self.local as usize;
+        if !self.players[me].alive {
+            self.winner = 2;
+        } else if self.match_has_winner(me) {
+            self.winner = 1;
         }
     }
 
@@ -1214,7 +1263,14 @@ impl Game {
             e.reveal_t = 3.0;
         }
         let dmg = self.scaled_weapon_damage(e.team,e.def,w.dmg,self.players[e.team as usize].atk[class_of(d)]) * (1.0+self.fortress_attack_bonus(e));
-        self.ev(if w.kind == W_MELEE { 7.0 } else { w.kind as f32 }, e.x, e.y);
+        let sound = if w.kind == W_MELEE { 7.0 } else { w.kind as f32 };
+        #[cfg(feature="ee2-up15")]
+        let sound = match attack {
+            // LightArtillery1_01 Attack1 has its own launch sound at ApplyDamageTime.
+            Some(row) if row.id == 22 && row.epoch == 0 && row.until == 2 => 26.0,
+            _ => sound,
+        };
+        self.ev(sound, e.x, e.y);
         let direct={
             #[cfg(feature="ee2-up15")] {attack.map(|a|!a.missile).unwrap_or(w.kind==W_MELEE)}
             #[cfg(not(feature="ee2-up15"))] {w.kind==W_MELEE}

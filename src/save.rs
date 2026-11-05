@@ -73,10 +73,14 @@ impl Game {
         }
         #[cfg(feature="ee2-epoch-range13")]
         { b = crate::match_epoch_range13::wrap(b, self.final_epoch); }
+        #[cfg(feature="ee2-native13")]
+        { b = crate::ee2_territory_victory::wrap(b, self); }
         self.savebuf = b;
     }
 
     pub fn load(buf: &[u8]) -> Option<Game> {
+        #[cfg(feature="ee2-native13")]
+        let (buf, territory_victory) = crate::ee2_territory_victory::split(buf)?;
         #[cfg(feature="ee2-epoch-range13")]
         let (buf, final_epoch) = crate::match_epoch_range13::split(buf)?;
         #[cfg(feature="ee2-ai9-game-bridge")]
@@ -284,6 +288,10 @@ impl Game {
         #[cfg(feature="ee2-ai9-game-bridge")]
         if let Some(records) = native_research {
             g.native_research = Some(crate::ai9_game_save::decode(&g, records)?);
+        }
+        #[cfg(feature="ee2-native13")]
+        if let Some((rule, outcome)) = territory_victory {
+            g.restore_territory_victory(rule, outcome)?;
         }
         Some(g)
     }

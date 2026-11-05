@@ -488,8 +488,8 @@ class AssetAudit:
             if row.get('FONT') not in bindings:self.error('font-style-missing-font',key,name)
         self.stats['nativeFontVariants']=len(fonts);self.stats['nativeFontSourceAtlases']=len(cache.get('fonts',{}));self.stats['nativeFontGlyphBindings']=glyph_count;self.stats['nativeFontOriginalGlyphBindings']=original_count;self.stats['nativeFontStyleBindings']=len(data.get('fontStyles',{}))
 
-    def check_audio(self):
-        name='local-original/audio/manifest.json';base='local-original/audio'
+    def check_audio(self,name='local-original/audio/manifest.json',stat_prefix=''):
+        base='local-original/audio'
         self.ref(name,'original-audio.js','audio-manifest');data=self.read_json(name)
         assets=data.get('assets',{})
         for key,asset in assets.items():
@@ -511,10 +511,10 @@ class AssetAudit:
         ambient=data.get('ambient',{})
         if ambient.get('loop'):clip(ambient['loop'],'audio.ambient.loop')
         for i,file in enumerate(ambient.get('birds',[])):clip(file,f'audio.ambient.birds[{i}]')
-        self.stats['audioAssets']=len(assets)
+        self.stats[stat_prefix+'audioAssets']=len(assets)
         family_name=base+'/native-families.json'
         module=self.files.get('original-audio.js')
-        if family_name in self.files or (module and 'native-families.json' in module.read_text(encoding='utf8')):
+        if not stat_prefix and (family_name in self.files or (module and 'native-families.json' in module.read_text(encoding='utf8'))):
             self.check_audio_families()
 
     def check_audio_families(self):
@@ -685,7 +685,11 @@ class AssetAudit:
                 self.check_teams(base+'team/manifest.json', f'regional-{family}-')
         if 'local-original/stone-thrower/regional-models.json' in self.files:
             self.check_models('local-original/stone-thrower/regional-models.json','stone-thrower-')
+        if 'local-original/stone-thrower/regional-models-native15.json' in self.files:
+            self.check_models('local-original/stone-thrower/regional-models-native15.json','stone-thrower-clocked-')
         self.check_textures_and_ground();self.check_teams();self.check_model_seasons();self.check_audio();self.check_static_runtime()
+        if 'local-original/audio/manifest-stone-thrower-up.json' in self.files:
+            self.check_audio('local-original/audio/manifest-stone-thrower-up.json','stone-thrower-')
         if 'original-water.js' in self.files:self.check_water()
         if 'local-original/farm-composites.json' in self.files:self.check_farms()
         if 'original-hud.js' in self.files:self.check_hud()

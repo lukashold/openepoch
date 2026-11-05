@@ -147,3 +147,10 @@ In einem neuen Einzelspieler-Scharmützel mit den UP-Regeln ab der Steinzeit
 können Bogenschützen, Streitkolbenträger, Steinschleudern und Galeeren über das
 Einheitenmenü zu Veteran und Elite aufsteigen. Ein Scharmützel behält seine
 eingestellte Endepoche auch nach dem Speichern und Fortsetzen.
+
+Siegbedingungen im UP-Einzelspielerscharmützel
+Eroberung berücksichtigt kampf-, bau- und produktionsfähige Einheiten. Ein
+Bürger kann nach Verlust des letzten Stadtzentrums weiterspielen.
+Bei Territorienkontrolle lässt sich das Ziel von 30 bis 90 Prozent einstellen.
+Das Spiel zählt die Gebiete jedes Spielers und zeigt den eigenen Stand an.
+Stadtbau, Gebietstausch und Geschenke können den Gebietsstand ändern.

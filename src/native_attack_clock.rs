@@ -51,6 +51,23 @@ pub fn split_save(buf:&[u8])->Option<(&[u8],Option<&[u8]>)>{
  Some((&buf[..start],Some(tail)))
 }
 impl crate::game::Game{
+ #[cfg(feature="ee2-native13")]
+ pub(crate) fn stone_thrower_attack_elapsed(&self,handle:u32,render_time:f32)->Option<f32>{
+  use crate::{defs::DEFS,game::DT};
+  let slot=self.get(handle)?;
+  let actor=&self.ents[slot];
+  let epoch=self.players[actor.team as usize].epoch;
+  let clock=self.attack_clock[slot];
+  let start=self.tick as f32*DT;
+  let end=(self.tick as f32+1.0)*DT;
+  if actor.def!=22||epoch>=2||clock.handle!=handle||clock.flags&(STARTED|IN_ATTACK)!=(STARTED|IN_ATTACK)
+   ||!(start..=end).contains(&render_time){return None;}
+  let reload=crate::ee2_units::lookup_class(actor.def,epoch).and_then(|row|row.reload)
+   .unwrap_or(DEFS[actor.def as usize].w[0].cd);
+  let elapsed=f64::from(render_time)+f64::from(reload)-f64::from(clock.next);
+  Some((elapsed as f32).clamp(0.0,reload))
+ }
+
  pub fn write_attack_clock(&self,b:&mut Vec<u8>){let start=b.len();b.extend_from_slice(&MAGIC.to_le_bytes());b.extend_from_slice(&1u32.to_le_bytes());let at=b.len();b.extend_from_slice(&0u32.to_le_bytes());let mut count=0u32;
   for i in 0..self.high{let c=self.attack_clock[i];if self.ents[i].alive&&c.handle==self.h(i){b.extend_from_slice(&c.handle.to_le_bytes());b.extend_from_slice(&c.next.to_le_bytes());b.extend_from_slice(&(c.flags as u32).to_le_bytes());count+=1;}}
   b[at..at+4].copy_from_slice(&count.to_le_bytes());let size=(b.len()-start+8)as u32;b.extend_from_slice(&size.to_le_bytes());b.extend_from_slice(&END.to_le_bytes());
