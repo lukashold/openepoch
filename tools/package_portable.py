@@ -4,7 +4,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import stat
 import zipfile
 
@@ -17,8 +17,8 @@ def file_hash(path):
     return digest.hexdigest()
 
 
-def main():
-    project = Path(__file__).resolve().parents[1]
+def main(project=None, overlay_paths=None):
+    project = project or Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=project.parent / "OpenEpoch-Mac-Komplett.zip")
     args = parser.parse_args()
@@ -36,6 +36,18 @@ def main():
         if not path.is_file():
             raise ValueError("Required package file missing: " + name)
         files.append((path, name))
+    by_name = {name: path for path, name in files}
+    if len(by_name) != len(files):
+        raise ValueError("Duplicate game paths")
+    for name, path in (overlay_paths or {}).items():
+        relative = PurePosixPath(name)
+        if (not relative.parts or relative.is_absolute() or '..' in relative.parts or
+                ':' in name or '\\' in name or relative.as_posix() != name or
+                (name not in by_name and relative.parts[0] != 'docs') or
+                not path.is_file() or path.is_symlink()):
+            raise ValueError("Invalid package overlay path: " + name)
+        by_name[name] = path
+    files = sorted(((path, name) for name, path in by_name.items()), key=lambda pair: pair[1])
     required = {"docs/index.html", "docs/openepoch.wasm", "docs/openepoch-ee2.wasm",
                 "docs/openepoch-ee2-up15.wasm", "docs/rules-profile.js",
                 "docs/original-hud.js", "docs/original-hud-layout.js",
@@ -55,8 +67,10 @@ def main():
                 "docs/local-original/labels-native.json", "docs/local-original/climate-lighting.json",
                 "docs/local-original/models/manifest-up15.json", "docs/local-original/model-scales-up15.json",
                 "docs/local-original/season-model-textures/team/manifest.json"}
-    names = [name for _, name in files]
-    main_source=(project / 'docs/main.js').read_text(encoding='utf8')
+    names = set(by_name)
+    if len(names) != len({name.casefold() for name in names}):
+        raise ValueError("Case-insensitive package path collision")
+    main_source=by_name['docs/main.js'].read_text(encoding='utf8')
     if 'manifest-roster6.json' in main_source:
         required.update({'docs/local-original/models/manifest-roster6.json','docs/local-original/model-scales-roster6.json'})
     if 'manifest-civ8.json' in main_source:
@@ -66,7 +80,7 @@ def main():
                          'docs/local-original/audio/native-families-civ8.json','docs/local-original/pack-animations/manifest.json'})
     if 'configureOriginalDefinitions' in main_source:
         required.update({'docs/original-audio-bindings.js','docs/local-original/audio/native-families.json'})
-    if (project/'docs/original-sail-composite.js').is_file():
+    if 'docs/original-sail-composite.js' in names:
         required.update({'docs/original-sail-composite.js','docs/local-original/sails-native/manifest.json'})
     if 'loadSourceSailRuntime' in main_source:
         required.update({'docs/render-actor-metadata.js','docs/source-sail-runtime.js',
@@ -112,10 +126,18 @@ def main():
         required.update({'docs/local-original/barracks-icons/manifest.json', 'docs/local-original/regional-barracks/manifest.json',
                          'docs/local-original/regional-barracks/model-seasons.json', 'docs/local-original/regional-barracks/team/manifest.json',
                          'docs/local-original/regional-barracks/ground-decals.json'})
+    for family in ('mill', 'temple'):
+        if f'load{family.title()}Icons' in main_source:
+            required.add(f'docs/local-original/{family}-icons/manifest.json')
+            required.update(f'docs/local-original/regional-{family}/{name}' for name in
+                            ('manifest.json', 'model-seasons.json', 'team/manifest.json', 'ground-decals.json'))
+    if 'stone-thrower/regional-models.json' in main_source:
+        required.update({'docs/local-original/stone-thrower/regional-models.json',
+                         'docs/local-original/stone-thrower/lla1_stone_thrower.json'})
     if 'mountSkirmishMenu' in main_source:
         required.update({'docs/skirmish-menu.js', 'docs/skirmish-menu.css',
                          'docs/local-original/skirmish-native/manifest.json'})
-    if len(names) != len(set(names)) or not required.issubset(names):
+    if not required.issubset(names):
         raise ValueError("Incomplete or duplicated game tree")
     print("Hashing complete game files ...", flush=True)
     entries = [{"path": name, "bytes": path.stat().st_size, "sha256": file_hash(path)} for path, name in files]
@@ -138,7 +160,7 @@ def main():
             if index and index % 500 == 0:
                 print(f"Packed{index}/{len(files)} ...", flush=True)
         for name, data in (("PORTABLE-MANIFEST.json", json.dumps(manifest, ensure_ascii=False, indent=2).encode("utf-8")),
-                           ("README.txt", (project / "MAC-START.txt").read_bytes())):
+                           ("README.txt", by_name["MAC-START.txt"].read_bytes())):
             info = zipfile.ZipInfo("OpenEpoch/" + name)
             info.create_system = 3
             info.external_attr = (stat.S_IFREG | 0o644) << 16

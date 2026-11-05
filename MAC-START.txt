@@ -125,9 +125,9 @@ F4 → Territorien → Gebiet ansehen zeigt die Anforderungen für bekannte Gebi
 Zulässige eigene Einheiten per Rechtsklick in einer Festung einquartieren.
 
 Prüfstand
-Das Paket wird auf diesem Windows-Rechner separat entpackt und über seinen
-eigenen Loopback-Server geprüft. Pfade und Groß-/Kleinschreibung werden strikt
-geprüft; die enthaltenen Originalmedien werden bytegenau verglichen.
+Die Dateien im Paket werden auf diesem Windows-Rechner einzeln aus dem ZIP
+gelesen und bytegenau mit dem Spielordner verglichen. Die Spielversion wird
+zusätzlich über ihren lokalen Server geprüft.
 Ein tatsächlicher Start auf macOS/AppleSilicon oder Intel-Mac wurde hier nicht
 ausgeführt. Der Nachbau ist weiterhin kein vollständiges, regelgleiches EE2.
 
@@ -137,8 +137,13 @@ https://www.chromium.org/audio-video/
 https://support.mozilla.org/en-US/kb/html5-audio-and-video-firefox
 https://webkit.org/blog/16574/webkit-features-in-safari-18-4/
 
-Speichern im native13-Stand
+Speichern und Forschung
 Aktuelle Spielstände sichern auch laufende Packaufgaben, Wegfindungszustand
 und fliegende Geschosse sowie Bürgeridentitäten und ihren Zufallszustand.
 Ältere Stände werden geladen. Nicht gespeicherte
 Wegfindungs- und Geschosshistorie lässt sich daraus nicht wiederherstellen.
+
+In einem neuen Einzelspieler-Scharmützel mit den UP-Regeln ab der Steinzeit
+können Bogenschützen, Streitkolbenträger, Steinschleudern und Galeeren über das
+Einheitenmenü zu Veteran und Elite aufsteigen. Ein Scharmützel behält seine
+eingestellte Endepoche auch nach dem Speichern und Fortsetzen.

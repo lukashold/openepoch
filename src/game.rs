@@ -499,6 +499,16 @@ impl Game {
     pub fn place(&mut self,def:DefId,tx:i32,ty:i32,team:u8)->usize{self.place_with_rotation(def,tx,ty,team,0)}
 
     /// Would `train(b, def)` succeed right now?
+    pub(crate) fn unit_production_available(&self, team: u8, host: DefId, unit: DefId) -> bool {
+        let def = &DEFS[unit as usize];
+        let epoch = self.players[team as usize].epoch;
+        #[cfg(feature = "ee2-ai9-game-bridge")]
+        if host == MILL && self.source_stone_thrower_production(team, unit) {
+            return true;
+        }
+        def.made_at == host && def.epoch <= epoch && def.until > epoch
+    }
+
     pub fn can_train(&self, b: usize, def:QueueItem) -> bool {
         #[cfg(feature="ee2-ai9-game-bridge")]
         if crate::ai9_rank::index(def).is_some() {
@@ -536,7 +546,7 @@ impl Game {
             let k = (def - TECH0) as usize;
             k < TECHS.len() && TECHS[k].at == e.def && TECHS[k].epoch <= p.epoch && (p.tech | p.tech_busy) >> k & 1 == 0 && self.afford(e.team, &TECHS[k].cost)
         } else {
-            (def as usize) < DEFS.len() && DEFS[def as usize].made_at == e.def && DEFS[def as usize].epoch <= p.epoch && DEFS[def as usize].until > p.epoch && self.afford(e.team, &self.unit_cost(e.team,def as DefId)) && p.pop + crate::economy::population(def as DefId,p.epoch) <= p.cap
+            (def as usize) < DEFS.len() && self.unit_production_available(e.team, e.def, def as DefId) && self.afford(e.team, &self.unit_cost(e.team,def as DefId)) && p.pop + crate::economy::population(def as DefId,p.epoch) <= p.cap
         }
     }
 

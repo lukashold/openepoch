@@ -1,11 +1,14 @@
 //! A framed research state around the existing Pack save, with strict validation.
 
 use crate::ai9_game_bridge::{
-    captured_duration, captured_payment, category, game_id, is_improvement, DurableResearch,
+    captured_duration, captured_payment, category, game_id, DurableResearch,
     MISSING_CONTEXT_DELAY, RANDOM_INTERVAL, SOURCE_BINDING_SHA,
 };
 use crate::ai9_player_step::ControllerClock;
-use crate::ai9_rank::{BINDING_SHA, ELITE, NODE_COUNT, RESET_SOURCE_EPOCH, VETERAN};
+use crate::ai9_rank::{
+    self as rank, BINDING_SHA, FAMILY_COUNT, NODE_COUNT, PREVIOUS_BINDING_SHA, PREVIOUS_NODE_COUNT,
+    RESET_SOURCE_EPOCH,
+};
 use crate::ai9_research_activation::ActiveResearch;
 use crate::ai9_research_completion::CompletionLedger;
 use crate::ai9_research_dispatch::ResearchState;
@@ -16,17 +19,23 @@ pub(crate) const MAGIC: u32 = u32::from_le_bytes(*b"A9R1");
 const END: u32 = u32::from_le_bytes(*b"A9RE");
 const VERSION: u32 = 2;
 const MANUAL_VERSION: u32 = 3;
+const FAMILY_VERSION: u32 = 4;
 const HEADER: usize = 48;
-const MAX_WORDS: usize = 68;
+const MAX_WORDS: usize = 125;
 
 pub(crate) enum Records<'a> {
     Economy(&'a [u8]),
     Ranks(&'a [u8]),
     Manual(&'a [u8]),
+    Families(&'a [u8]),
 }
 
 fn version(state: &DurableResearch) -> u32 {
-    if state.manual { MANUAL_VERSION } else { VERSION }
+    if state.manual { FAMILY_VERSION } else { VERSION }
+}
+
+fn binding(state: &DurableResearch) -> &[u8; 32] {
+    if state.manual { &BINDING_SHA } else { &PREVIOUS_BINDING_SHA }
 }
 
 fn word(bytes: &[u8], at: usize) -> Option<u32> {
@@ -46,7 +55,8 @@ fn words(state: &DurableResearch) -> Vec<u32> {
     let tree = &state.tree;
     let mut out = Vec::with_capacity(MAX_WORDS);
     out.push(u32::from(state.owner));
-    out.extend(tree.flags);
+    let nodes = if state.manual { NODE_COUNT } else { PREVIOUS_NODE_COUNT };
+    out.extend_from_slice(&tree.flags[..nodes]);
     out.extend([
         clock.last_frame.to_bits(),
         clock.last_planner.to_bits(),
@@ -80,8 +90,9 @@ fn words(state: &DurableResearch) -> Vec<u32> {
 pub(crate) fn hash(state: &DurableResearch, mut mix: impl FnMut(u32)) {
     mix(MAGIC);
     mix(version(state));
-    for at in (0..BINDING_SHA.len()).step_by(4) {
-        mix(word(&BINDING_SHA, at).unwrap());
+    let sha = binding(state);
+    for at in (0..sha.len()).step_by(4) {
+        mix(word(sha, at).unwrap());
     }
     for value in words(state) {
         mix(value);
@@ -106,7 +117,7 @@ pub(crate) fn wrap(game: &Game, state: &DurableResearch, inner: &[u8]) -> Option
     ] {
         out.extend_from_slice(&value.to_le_bytes());
     }
-    out.extend_from_slice(&BINDING_SHA);
+    out.extend_from_slice(binding(state));
     out.extend_from_slice(inner);
     for value in fields {
         out.extend_from_slice(&value.to_le_bytes());
@@ -122,14 +133,20 @@ pub(crate) fn split(buf: &[u8]) -> Option<(&[u8], Option<Records<'_>>)> {
     }
     let version = match (word(buf, 4)?, buf.get(16..HEADER)?) {
         (1, bytes) if bytes == SOURCE_BINDING_SHA => 1,
-        (v @ (VERSION | MANUAL_VERSION), bytes) if bytes == BINDING_SHA => v,
+        (v @ (VERSION | MANUAL_VERSION), bytes) if bytes == PREVIOUS_BINDING_SHA => v,
+        (FAMILY_VERSION, bytes) if bytes == BINDING_SHA => FAMILY_VERSION,
         _ => return None,
     };
     let inner_len = word(buf, 8)? as usize;
     let size = word(buf, 12)? as usize;
+    let sizes = match version {
+        1 => 20..=49,
+        FAMILY_VERSION => 28..=MAX_WORDS,
+        _ => 22..=68,
+    };
     if inner_len < crate::pack8_save::HEADER
         || inner_len > 64 * 1024 * 1024
-        || !(if version == 1 { 20..=49 } else { 22..=MAX_WORDS }).contains(&size)
+        || !sizes.contains(&size)
     {
         return None;
     }
@@ -149,6 +166,7 @@ pub(crate) fn split(buf: &[u8]) -> Option<(&[u8], Option<Records<'_>>)> {
     let records = match version {
         1 => Records::Economy(fields),
         MANUAL_VERSION => Records::Manual(fields),
+        FAMILY_VERSION => Records::Families(fields),
         _ => Records::Ranks(fields),
     };
     Some((inner, Some(records)))
@@ -174,19 +192,28 @@ impl Cursor<'_> {
 }
 
 pub(crate) fn decode(game: &Game, records: Records<'_>) -> Option<DurableResearch> {
-    let (fields, legacy, manual) = match records {
-        Records::Economy(fields) => (fields, true, false),
-        Records::Ranks(fields) => (fields, false, false),
-        Records::Manual(fields) => (fields, false, true),
+    let (fields, version) = match records {
+        Records::Economy(fields) => (fields, 1),
+        Records::Ranks(fields) => (fields, VERSION),
+        Records::Manual(fields) => (fields, MANUAL_VERSION),
+        Records::Families(fields) => (fields, FAMILY_VERSION),
     };
     let mut cursor = Cursor(fields);
     let owner = u8::try_from(cursor.next()?).ok()?;
-    let flags = if legacy {
-        let [main1, economic2, economic4, main2] = cursor.array()?;
-        [main1, economic2, economic4, main2, 0x03, 0]
-    } else {
-        cursor.array()?
-    };
+    let mut flags = [0; NODE_COUNT];
+    match version {
+        1 => {
+            flags[..4].copy_from_slice(&cursor.array::<4>()?);
+            flags[rank::FIRST_RANK] = 0x03;
+        }
+        FAMILY_VERSION => flags = cursor.array()?,
+        _ => flags[..PREVIOUS_NODE_COUNT].copy_from_slice(&cursor.array::<PREVIOUS_NODE_COUNT>()?),
+    }
+    if version == MANUAL_VERSION {
+        for family in 1..FAMILY_COUNT {
+            flags[rank::pair(family)[0]] = 0x03;
+        }
+    }
     let clock = ControllerClock {
         last_frame: cursor.float()?,
         last_planner: cursor.float()?,
@@ -198,10 +225,12 @@ pub(crate) fn decode(game: &Game, records: Records<'_>) -> Option<DurableResearc
         },
     };
     let [active_count, pending_count, history_count] = cursor.array()?;
-    if pending_count > 1
-        || active_count > if legacy { 1 } else { 2 }
-        || history_count > if legacy { 2 } else { 4 }
-    {
+    let (max_active, max_history) = match version {
+        1 => (1, 2),
+        FAMILY_VERSION => (1 + FAMILY_COUNT as u32, 2 + 2 * FAMILY_COUNT as u32),
+        _ => (2, 4),
+    };
+    if pending_count > 1 || active_count > max_active || history_count > max_history {
         return None;
     }
     let mut active = Vec::new();
@@ -233,13 +262,19 @@ pub(crate) fn decode(game: &Game, records: Records<'_>) -> Option<DurableResearc
     if !cursor.0.is_empty() {
         return None;
     }
-    if legacy
+    if version == 1
         && (game.players[0].epoch != 0
             || active.iter().any(|job| game_id(job.index).is_none())
             || ledger.history.iter().any(|&index| game_id(index).is_none()))
     {
         return None;
     }
+    if version < FAMILY_VERSION && active.iter().map(|job| job.index)
+        .chain(ledger.history.iter().copied()).any(|index| index as usize >= PREVIOUS_NODE_COUNT)
+    {
+        return None;
+    }
+    let manual = version >= MANUAL_VERSION;
     let state = DurableResearch::restore(owner, manual, flags, clock, active, pending, ledger);
     validate(game, &state).then_some(state)
 }
@@ -247,16 +282,17 @@ pub(crate) fn decode(game: &Game, records: Records<'_>) -> Option<DurableResearc
 fn validate(game: &Game, state: &DurableResearch) -> bool {
     let owner = state.owner;
     let tree = &state.tree;
+    let family_count = if state.manual { FAMILY_COUNT } else { 1 };
     if game.net
         || owner != 0
         || owner as usize >= game.nplayers
         || game.players[owner as usize].epoch + 1 >= RESET_SOURCE_EPOCH
         || tree.flags[0] != 0x07
         || tree.flags[3] != 0
-        || tree.active.len() > 2
+        || tree.active.len() > 1 + family_count
         || tree.pending.len() > 1
         || (tree.active.is_empty() && !tree.pending.is_empty())
-        || tree.ledger.history.len() > 4
+        || tree.ledger.history.len() > 2 + 2 * family_count
     {
         return false;
     }
@@ -283,11 +319,13 @@ fn validate(game: &Game, state: &DurableResearch) -> bool {
     };
     let mut queued = [false; NODE_COUNT];
     let mut active_economy = false;
-    let mut active_improvement = false;
+    let mut active_families = [false; FAMILY_COUNT];
     for job in &tree.active {
+        let index = job.index as usize;
         if job.host_handle != -1
+            || !state.supports(index)
             || !valid_payment(job.index, job.cost)
-            || queued[job.index as usize]
+            || queued[index]
             || captured_duration(job.index)
                 .is_none_or(|expected| expected.to_bits() != job.duration.to_bits())
             || !job.elapsed.is_finite()
@@ -296,8 +334,8 @@ fn validate(game: &Game, state: &DurableResearch) -> bool {
         {
             return false;
         }
-        let active_kind = if is_improvement(job.index as usize) {
-            &mut active_improvement
+        let active_kind = if let Some(family) = rank::family_at(index) {
+            &mut active_families[family]
         } else {
             &mut active_economy
         };
@@ -305,7 +343,7 @@ fn validate(game: &Game, state: &DurableResearch) -> bool {
             return false;
         }
         *active_kind = true;
-        queued[job.index as usize] = true;
+        queued[index] = true;
     }
     for job in &tree.pending {
         if !active_economy
@@ -335,16 +373,22 @@ fn validate(game: &Game, state: &DurableResearch) -> bool {
     }
     let mut completed = [false; NODE_COUNT];
     let mut counts = [0; 3];
-    for &index in &tree.ledger.history {
-        if (game_id(index).is_none() && !is_improvement(index as usize))
-            || completed[index as usize]
-            || tree.flags[index as usize] != 0x07
-            || (index as usize == ELITE && !completed[VETERAN])
+    for &id in &tree.ledger.history {
+        let index = id as usize;
+        let family = rank::family_at(index);
+        if !state.supports(index)
+            || (game_id(id).is_none() && family.is_none())
+            || completed[index]
+            || tree.flags[index] != 0x07
+            || family.is_some_and(|family| {
+                let [veteran, elite] = rank::pair(family);
+                index == elite && !completed[veteran]
+            })
         {
             return false;
         }
-        completed[index as usize] = true;
-        let branch = category(index as usize);
+        completed[index] = true;
+        let branch = category(index);
         if (2..=4).contains(&branch) {
             counts[(branch - 2) as usize] += 1;
         }
@@ -358,16 +402,14 @@ fn validate(game: &Game, state: &DurableResearch) -> bool {
             0x03
         }
     };
-    if tree.flags[VETERAN] != rank_flags(VETERAN)
-        || tree.flags[ELITE]
-            != if completed[VETERAN] {
-                rank_flags(ELITE)
-            } else {
-                0
-            }
-        || (queued[ELITE] && !completed[VETERAN])
-    {
-        return false;
+    for family in 0..family_count {
+        let [veteran, elite] = rank::pair(family);
+        if tree.flags[veteran] != rank_flags(veteran)
+            || tree.flags[elite] != if completed[veteran] { rank_flags(elite) } else { 0 }
+            || (queued[elite] && !completed[veteran])
+        {
+            return false;
+        }
     }
     let current = if game.players[owner as usize].epoch == 0 {
         counts

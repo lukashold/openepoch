@@ -1,5 +1,5 @@
 // Full-tree interface. Costs, availability and command validation belong to WASM.
-import {researchCost,researchState} from './original-research-actions.js?v=research-ui';
+import {researchCost,researchState} from './original-research-actions.js?v=rank-families';
 const EPOCHS=['Steinzeit','Kupferzeit','Bronzezeit','Eisenzeit','Frühes Mittelalter','Mittelalter','Renaissance','Imperiales Zeitalter','Aufklärung','Industriezeitalter','Moderne','Atomzeitalter','Digitales Zeitalter','Gentechnisches Zeitalter','Synthetikzeitalter'];
 const BRANCHES=['Wirtschaft','Militär','Reich'];
 const HOSTS={'Town Center':'Stadtzentrum','Barracks':'Kaserne','Dock':'Hafen','Airfield':'Flugplatz','University':'Universität','Mill':'Mühle','Stable':'Stall','Market':'Markt','Temple':'Tempel','Warehouse':'Lagerhaus'};
@@ -37,7 +37,7 @@ export function researchPanel({wasm,sourceResearch,onOrder,onOpen,onClose}) {
     if(detail&&busy){
      const cancel=document.createElement('button');
      cancel.type='button';cancel.textContent='Forschung abbrechen';
-     cancel.setAttribute('aria-label',n.name+' abbrechen');
+     cancel.setAttribute('aria-label',n.name+' '+host+' abbrechen');
      cancel.onclick=()=>{if(sourceResearch.cancel(n.id))onOrder();refresh(ui);};col.append(cancel);
     }
    }

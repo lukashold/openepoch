@@ -1,4 +1,4 @@
-//! Opt-in source research for two first-epoch technologies in an actual Game.
+//! Source research for the first-epoch skirmish projection.
 
 use core::ptr::addr_of_mut;
 
@@ -7,7 +7,7 @@ use crate::ai9_planner::{AipRead, BuildRow, Context, Name, PlannerData};
 use crate::ai9_player_step::{
     step, ControllerClock, PlannerCallback, PlayerFrame, PlayerPlanner, ResearchControls,
 };
-use crate::ai9_rank::{self as rank, ELITE, NODE_COUNT, VETERAN};
+use crate::ai9_rank::{self as rank, FAMILY_COUNT, FIRST_RANK, NODE_COUNT, PREVIOUS_NODE_COUNT};
 use crate::ai9_research_activation::{ActiveResearch, PlayerTimeScale, ResearchTiming};
 use crate::ai9_research_completion::{CompletionLedger, ResearchCompletion};
 use crate::ai9_research_debit::StartAccounts;
@@ -29,7 +29,9 @@ pub(crate) struct Tree {
     pub(crate) active: Vec<ActiveResearch>,
     pub(crate) pending: Vec<PaidResearch>,
     requirements: [Vec<i32>; NODE_COUNT],
-    improvement_host: Name,
+    improvement_hosts: [Name; FAMILY_COUNT],
+    family_count: usize,
+    elite_dependents: [[i32; 1]; FAMILY_COUNT],
     families: ImprovementFamilies,
     pub(crate) ledger: CompletionLedger,
 }
@@ -65,6 +67,7 @@ fn snapshot_balance(game: &Game, owner: u8) -> [f32; 10] {
 
 impl World<'_> {
     fn completed_host_count(&self, def: DefId) -> i32 {
+        let rank_family = usize::from(DefId::MAX - def);
         self.game.ents[..self.game.high]
             .iter()
             .filter(|entity| {
@@ -72,9 +75,9 @@ impl World<'_> {
                     && entity.hp > 0.0
                     && entity.team == self.owner
                     && entity.built >= 1.0
-                    && if def == RANK_HOST {
-                        rank::class(entity.def, self.game.players[self.owner as usize].epoch)
-                            .is_some()
+                    && if rank_family < FAMILY_COUNT {
+                        rank::unit_family(entity.def, self.game.players[self.owner as usize].epoch)
+                            == Some(rank_family)
                     } else {
                         entity.def == def
                     }
@@ -114,8 +117,8 @@ impl ResearchStart for World<'_> {
             key: index as u32,
             source_epoch: SOURCE_EPOCH.get(index).copied().unwrap_or(1),
             flags: self.tree.flags[index],
-            prerequisite_index: if is_improvement(index) {
-                i32::from(RANK_HOST)
+            prerequisite_index: if let Some(family) = rank::family_at(index) {
+                i32::from(DefId::MAX - family as DefId)
             } else {
                 SOURCE_GAME_HOST[index].map_or(-1, i32::from)
             },
@@ -181,17 +184,17 @@ impl ResearchStart for World<'_> {
 impl ResearchUnlock for World<'_> {
     fn epoch_nodes(&self, epoch: i32) -> &[i32] {
         match epoch {
-            1 => &[0, VETERAN as i32, ELITE as i32, 1, 2],
+            1 if self.tree.family_count == FAMILY_COUNT => &[0, 4, 5, 6, 7, 8, 9, 10, 11, 1, 2],
+            1 => &[0, 4, 5, 1, 2],
             2 => &[3],
             _ => &[],
         }
     }
     fn completion_dependents(&self, index: i32) -> &[i32] {
-        if index as usize == VETERAN {
-            &[ELITE as i32]
-        } else {
-            &[]
-        }
+        let index = index as usize;
+        rank::family_at(index)
+            .filter(|&family| rank::pair(family)[0] == index)
+            .map_or(&[], |family| self.tree.elite_dependents[family].as_slice())
     }
     fn remaining_requirements(&mut self, index: i32) -> &mut Vec<i32> {
         &mut self.tree.requirements[index as usize]
@@ -209,7 +212,7 @@ impl ResearchUnlock for World<'_> {
         &self.tree.families
     }
     fn current_improvement_host(&self, index: i32) -> Option<&Name> {
-        is_improvement(index as usize).then_some(&self.tree.improvement_host)
+        rank::family_at(index as usize).map(|family| &self.tree.improvement_hosts[family])
     }
     fn improvement_hide_list(&self, _: i32) -> &[i32] {
         &[]
@@ -229,10 +232,12 @@ impl ResearchCompletion for World<'_> {
         self.game.rebuild_modifiers(self.owner, true);
     }
     fn apply_completion_improvement(&mut self, index: i32) {
-        let after = (index as usize - VETERAN + 1) as u8;
+        let index = index as usize;
+        let family = rank::family_at(index).unwrap();
+        let after = (index - rank::pair(family)[0] + 1) as u8;
         // The completed flag is the saved source rank. Apply the health
         // fraction change to existing units at the completion boundary.
-        rank::rescale_live_hp(self.game, self.owner, after - 1, after);
+        rank::rescale_live_hp(self.game, self.owner, family, after - 1, after);
     }
 }
 
@@ -342,12 +347,6 @@ fn source_index(id: usize) -> Option<usize> {
         .or_else(|| u32::try_from(id).ok().and_then(rank::index))
 }
 
-const RANK_HOST: DefId = crate::ids::DEF_NONE;
-
-pub(crate) fn is_improvement(index: usize) -> bool {
-    (VETERAN..=ELITE).contains(&index)
-}
-
 pub(crate) fn category(index: usize) -> i32 {
     SOURCE_BRANCH.get(index).copied().unwrap_or(5)
 }
@@ -359,7 +358,7 @@ fn quote(game: &Game, owner: u8, index: usize) -> [f32; 11] {
     // Category 5 takes 008571B0's neutral first price stage. The subsequent
     // German natural-resource callback still applies to that same quote.
     let civ = game.civilizations[owner as usize];
-    let mut cost = rank::COST;
+    let mut cost = rank::COSTS[index - FIRST_RANK];
     if civ == 0 {
         for (slot, native) in crate::economy::NATIVE_IDS.into_iter().enumerate() {
             let source_slot = native as usize;
@@ -373,7 +372,7 @@ fn quote(game: &Game, owner: u8, index: usize) -> [f32; 11] {
 }
 
 fn duration(index: usize) -> f32 {
-    SOURCE_TIME.get(index).copied().unwrap_or(rank::DURATION)
+    SOURCE_TIME.get(index).copied().unwrap_or_else(|| rank::DURATIONS[index - FIRST_RANK])
 }
 
 pub(crate) fn game_id(index: i32) -> Option<usize> {
@@ -384,12 +383,12 @@ pub(crate) fn game_id(index: i32) -> Option<usize> {
 }
 
 pub(crate) fn captured_payment(game: &Game, owner: u8, index: i32) -> Option<[f32; 11]> {
-    (game_id(index).is_some() || is_improvement(index as usize))
+    (game_id(index).is_some() || rank::family_at(index as usize).is_some())
         .then(|| quote(game, owner, index as usize))
 }
 
 pub(crate) fn captured_duration(index: i32) -> Option<f32> {
-    (game_id(index).is_some() || is_improvement(index as usize)).then(|| duration(index as usize))
+    (game_id(index).is_some() || rank::family_at(index as usize).is_some()).then(|| duration(index as usize))
 }
 
 impl DurableResearch {
@@ -402,30 +401,32 @@ impl DurableResearch {
         pending: Vec<PaidResearch>,
         ledger: CompletionLedger,
     ) -> Self {
-        let names = [
-            SOURCE_NAMES[0],
-            SOURCE_NAMES[1],
-            SOURCE_NAMES[2],
-            SOURCE_NAMES[3],
-            rank::NAMES[0],
-            rank::NAMES[1],
-        ];
-        let improvement_host = Name::new(rank::HOST).unwrap();
-        let families = ImprovementFamilies::from_init_rows([
-            (VETERAN as i32, 5, Some(&improvement_host)),
-            (ELITE as i32, 5, Some(&improvement_host)),
-        ]);
+        let names = std::array::from_fn(|index| {
+            let name = SOURCE_NAMES.get(index).copied().unwrap_or_else(|| rank::NAMES[index - FIRST_RANK]);
+            Name::new(name).unwrap()
+        });
+        let family_count = if manual { FAMILY_COUNT } else { 1 };
+        let improvement_hosts = rank::HOSTS.map(|host| Name::new(host).unwrap());
+        let families = ImprovementFamilies::from_init_rows((0..family_count).flat_map(|family| {
+            rank::pair(family).map(|index| (index as i32, 5, Some(&improvement_hosts[family])))
+        }));
+        let elite_dependents = std::array::from_fn(|family| [rank::pair(family)[1] as i32]);
         let mut requirements = std::array::from_fn(|_| Vec::new());
-        if flags[VETERAN] & 4 == 0 {
-            requirements[ELITE].push(VETERAN as i32);
+        for family in 0..family_count {
+            let [veteran, elite] = rank::pair(family);
+            if flags[veteran] & 4 == 0 {
+                requirements[elite].push(veteran as i32);
+            }
         }
         let tree = Tree {
             flags,
-            names: names.map(|name| Name::new(name).unwrap()),
+            names,
             active,
             pending,
             requirements,
-            improvement_host,
+            improvement_hosts,
+            family_count,
+            elite_dependents,
             families,
             ledger,
         };
@@ -495,10 +496,15 @@ impl DurableResearch {
         });
     }
 
-    fn rank(&self) -> u8 {
-        if self.tree.flags[ELITE] & 4 != 0 {
+    pub(crate) fn supports(&self, index: usize) -> bool {
+        index < if self.manual { NODE_COUNT } else { PREVIOUS_NODE_COUNT }
+    }
+
+    fn rank(&self, family: usize) -> u8 {
+        let [veteran, elite] = rank::pair(family);
+        if self.tree.flags[elite] & 4 != 0 {
             2
-        } else if self.tree.flags[VETERAN] & 4 != 0 {
+        } else if self.tree.flags[veteran] & 4 != 0 {
             1
         } else {
             0
@@ -518,7 +524,8 @@ impl Game {
         {
             return false;
         }
-        let mut flags = [0x07, 0, 0, 0, 0, 0];
+        let mut flags = [0; NODE_COUNT];
+        flags[0] = 0x07;
         for (index, id) in SOURCE_GAME_ID.into_iter().enumerate() {
             let Some(id) = id else { continue };
             let core = &crate::ee2_research::NODES[id];
@@ -560,11 +567,8 @@ impl Game {
     }
 
     pub(crate) fn owns_source_research(&self, owner: u8, id: usize) -> bool {
-        source_index(id).is_some()
-            && self
-                .native_research
-                .as_ref()
-                .is_some_and(|state| state.owner == owner)
+        source_index(id).is_some_and(|index| self.native_research.as_ref()
+            .is_some_and(|state| state.owner == owner && state.supports(index)))
     }
 
     pub(crate) fn source_research_busy(&self, owner: u8, id: usize) -> bool {
@@ -573,7 +577,8 @@ impl Game {
         };
         self.native_research
             .as_ref()
-            .is_some_and(|state| state.owner == owner && state.tree.flags[index] & IN_PROGRESS != 0)
+            .is_some_and(|state| state.owner == owner && state.supports(index)
+                && state.tree.flags[index] & IN_PROGRESS != 0)
     }
 
     pub(crate) fn can_source_research(&self, owner: u8, host: DefId, id: usize) -> bool {
@@ -583,12 +588,9 @@ impl Game {
         let epoch = self.players[owner as usize].epoch;
         self.native_research.as_ref().is_some_and(|state| {
             state.owner == owner
+                && state.supports(index)
                 && epoch + 1 < rank::RESET_SOURCE_EPOCH
-                && if is_improvement(index) {
-                    rank::class(host, epoch).is_some()
-                } else {
-                    SOURCE_GAME_HOST[index] == Some(host)
-                }
+                && host_matches(index, host, epoch)
                 && state.tree.flags[index] == 0x03
                 && Budget {
                     balance: snapshot_balance(self, owner),
@@ -605,7 +607,7 @@ impl Game {
         let Some(mut state) = self.native_research.take() else {
             return false;
         };
-        let result = state.owner == owner
+        let result = state.owner == owner && state.supports(index)
             && self.players[owner as usize].epoch + 1 < rank::RESET_SOURCE_EPOCH
             && state.with_wallet(self, |world| start(world, index as i32, -1));
         self.native_research = Some(state);
@@ -624,11 +626,20 @@ impl Game {
         self.native_research = Some(state);
     }
 
-    pub(crate) fn source_light_infantry_rank(&self, owner: u8) -> u8 {
-        self.native_research
-            .as_ref()
-            .filter(|state| state.owner == owner)
-            .map_or(0, DurableResearch::rank)
+    pub(crate) fn source_unit_rank(&self, owner: u8, def: DefId) -> u8 {
+        let Some(state) = self.native_research.as_ref().filter(|state| state.owner == owner) else {
+            return 0;
+        };
+        rank::unit_family(def, self.players[owner as usize].epoch).map_or(0, |family| state.rank(family))
+    }
+
+    pub(crate) fn source_stone_thrower_production(&self, owner: u8, def: DefId) -> bool {
+        // The UP class table covers the native E1 Mill production. The
+        // separate visual registry only admits this definition from E9.
+        const STONE_THROWER: DefId = 22;
+        def == STONE_THROWER
+            && self.players[owner as usize].epoch + 1 < rank::RESET_SOURCE_EPOCH
+            && self.native_research.as_ref().is_some_and(|state| state.owner == owner && state.manual)
     }
 
     pub(crate) fn reset_source_rank_for_epoch(&mut self, owner: u8) {
@@ -644,7 +655,9 @@ impl Game {
             return;
         }
         let mut state = self.native_research.take().unwrap();
-        rank::rescale_live_hp(self, owner, state.rank(), 0);
+        for family in 0..state.tree.family_count {
+            rank::rescale_live_hp(self, owner, family, state.rank(family), 0);
+        }
         state.refund_before_detaching(self);
     }
 
@@ -655,10 +668,18 @@ impl Game {
         let Some(mut state) = self.native_research.take() else {
             return false;
         };
-        let result = state.owner == self.local
+        let result = state.owner == self.local && state.supports(index)
             && state.with_wallet(self, |world| cancel(world, index as i32, -1, false));
         self.native_research = Some(state);
         result
+    }
+}
+
+fn host_matches(index: usize, def: DefId, epoch: u8) -> bool {
+    if let Some(family) = rank::family_at(index) {
+        rank::unit_family(def, epoch) == Some(family)
+    } else {
+        SOURCE_GAME_HOST[index] == Some(def)
     }
 }
 
@@ -684,6 +705,7 @@ pub extern "C" fn ai9_game_research_info(id: u32, field: u32) -> f32 {
     let Some(index) = source_index(id as usize) else { return -1.0; };
     let Some(game) = game() else { return -1.0; };
     let Some(state) = game.native_research.as_ref() else { return -1.0; };
+    if !state.supports(index) { return -1.0; }
     let owner = state.owner;
     let epoch = game.players[owner as usize].epoch;
     match field {
@@ -691,8 +713,7 @@ pub extern "C" fn ai9_game_research_info(id: u32, field: u32) -> f32 {
             let matches = game.ents[..game.high].iter().any(|entity| {
                 entity.alive && entity.hp > 0.0 && entity.team == owner && entity.built >= 1.0
                     && (field & 1 == 0 || entity.sel)
-                    && (if is_improvement(index) { rank::class(entity.def, epoch).is_some() }
-                        else { SOURCE_GAME_HOST[index] == Some(entity.def) })
+                    && host_matches(index, entity.def, epoch)
                     && (field < 2 || game.can_source_research(owner, entity.def, id as usize))
             });
             u32::from(matches) as f32
@@ -729,6 +750,9 @@ pub extern "C" fn ai9_game_research_status(id: u32) -> u32 {
     let Some(state) = game().and_then(|game| game.native_research.as_ref()) else {
         return 0;
     };
+    if !state.supports(index) {
+        return 0;
+    }
     if state
         .tree
         .active

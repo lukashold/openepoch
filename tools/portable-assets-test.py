@@ -14,7 +14,7 @@ import hashlib
 from html.parser import HTMLParser
 import json
 import math
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import posixpath
 import re
 import tempfile
@@ -37,11 +37,22 @@ def inventory(root):
     return {p.relative_to(root).as_posix():p for p in root.rglob('*') if p.is_file()}
 
 class AssetAudit:
-    def __init__(self,docs):
+    def __init__(self,docs,overlay_root=None,overlay_names=()):
         self.docs=Path(docs).resolve()
         if not self.docs.is_dir():raise ValueError(f'No docs directory: {self.docs}')
         self.files=inventory(self.docs)
         self.directories={p.relative_to(self.docs).as_posix() for p in self.docs.rglob('*') if p.is_dir()}
+        overlay_root=Path(overlay_root).resolve() if overlay_root is not None else self.docs
+        for name in overlay_names:
+            relative=PurePosixPath(name)
+            if (not relative.parts or relative.is_absolute() or '..' in relative.parts or
+                    ':' in name or '\\' in name or relative.as_posix()!=name):
+                raise ValueError(f'Invalid docs overlay name: {name}')
+            path=overlay_root/relative
+            if not path.is_file() or path.is_symlink() or path.resolve()!=path:
+                raise ValueError(f'Invalid docs overlay file: {path}')
+            self.files[name]=path
+            self.directories.update(parent.as_posix() for parent in relative.parents if parent.parts)
         self.fold=defaultdict(list)
         for path in [*self.files,*self.directories]:self.fold[path.casefold()].append(path)
         self.errors=[];self.warnings=[];self.refs=[];self.json_cache={};self.hash_cache={}
@@ -53,7 +64,9 @@ class AssetAudit:
         for names in normalized.values():
             if len(names)>1 and len(set(names))>1:self.error('unicode/case-collision',names)
         for name,path in self.files.items():
-            try:path.resolve().relative_to(self.docs)
+            resolved=path.resolve()
+            if resolved==overlay_root/name:continue
+            try:resolved.relative_to(self.docs)
             except ValueError:self.error('symlink-leaves-docs',name)
 
     def error(self,kind,detail,source=None):
@@ -665,6 +678,13 @@ class AssetAudit:
         if 'local-original/regional-barracks/manifest.json' in self.files:
             self.check_models('local-original/regional-barracks/manifest.json', 'regional-barracks-')
             self.check_teams('local-original/regional-barracks/team/manifest.json', 'regional-barracks-')
+        for family in ('mill','temple'):
+            base=f'local-original/regional-{family}/'
+            if base+'manifest.json' in self.files:
+                self.check_models(base+'manifest.json', f'regional-{family}-')
+                self.check_teams(base+'team/manifest.json', f'regional-{family}-')
+        if 'local-original/stone-thrower/regional-models.json' in self.files:
+            self.check_models('local-original/stone-thrower/regional-models.json','stone-thrower-')
         self.check_textures_and_ground();self.check_teams();self.check_model_seasons();self.check_audio();self.check_static_runtime()
         if 'original-water.js' in self.files:self.check_water()
         if 'local-original/farm-composites.json' in self.files:self.check_farms()

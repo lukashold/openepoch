@@ -3,7 +3,9 @@ import {RESOURCE_NAMES} from './economy-bar.js';
 // Native wallet order follows NATIVE_IDS in the simulation's economy module.
 const RESOURCE_WORDS = [0, 1, 5, 2, 3, 4, 6, 7, 8];
 const IMPROVEMENTS = ['Veteran', 'Elite']; // text_tt_upgrade_veteran / text_tt_upgrade_elite
-const IMPROVEMENT_EFFECT = 'Leichte Infanterie: +10 Prozentpunkte Lebenspunkte und Schaden';
+// text_<family>_01_name, in native improvement node order.
+const IMPROVEMENT_HOSTS = ['Bogenschütze', 'Streitkolbenträger', 'Steinschleuder', 'Galeere'];
+const IMPROVEMENT_EFFECT = '+10 Prozentpunkte Lebenspunkte und Schaden';
 
 export function researchCost({cost, tp}) {
  const parts = cost.flatMap((value, slot) => value ? [`${value} ${RESOURCE_NAMES[slot]}`] : []);
@@ -47,18 +49,18 @@ export function originalResearchActions(wasm) {
 
  function improvements(epoch) {
   if (!manual() || epoch > 1) return [];
-  return IMPROVEMENTS.map((name, index) => ({
-   id: wasm.ai9_game_improvement_job(index + 1), name, effect: IMPROVEMENT_EFFECT,
-   host: 'Leichte Infanterie', branch: 1, epoch,
-  }));
+  return IMPROVEMENT_HOSTS.flatMap((host, family) => IMPROVEMENTS.map((name, index) => ({
+   id: wasm.ai9_game_improvement_family_job(family, index + 1), name, effect: IMPROVEMENT_EFFECT,
+   host, branch: 1, epoch,
+  })));
  }
 
  function selectedImprovements(epoch) {
   return improvements(epoch).flatMap(row => {
    const detail = describe(row.id, true);
    if (!detail?.host || detail.status === 3) return [];
-   return [{k: 'i', id: row.id, name: row.name, ...detail,
-    tip: `${row.effect} · ${detail.seconds} Sek.${detail.status === 5 ? ' · Benötigt Veteran' : ''}`}];
+   return [{k: 'i', id: row.id, name: row.name, hostName: row.host, ...detail,
+    tip: `${row.host} · ${row.effect} · ${detail.seconds} Sek.${detail.status === 5 ? ' · Benötigt Veteran' : ''}`}];
   });
  }
 

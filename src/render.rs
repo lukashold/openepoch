@@ -467,15 +467,29 @@ impl Game {
         } else if first != NOIDX && DEFS[self.ents[first].def as usize].building && self.ents[first].built >= 1.0 {
             let bdef = self.ents[first].def;
             for (id, d) in DEFS.iter().enumerate() {
-                if d.made_at == bdef && d.epoch <= ep && d.until > ep && {
+                if self.unit_production_available(me, bdef, id as DefId) && {
                     #[cfg(feature="ee2-civ8")]{self.definition_civ_available(self.local,id as DefId)}
                     #[cfg(not(feature="ee2-civ8"))]{true}
                 } {
                     tip.clear();
-                    let _ = write!(tip, "{} HP", d.hp as i32);
-                    for w in &d.w {
+                    let hp = d.hp;
+                    #[cfg(feature="ee2-ai9-game-bridge")]
+                    let show_source_stats = self.source_unit_rank(me, id as DefId) != 0
+                        || self.source_stone_thrower_production(me, id as DefId);
+                    #[cfg(feature="ee2-ai9-game-bridge")]
+                    let hp = if show_source_stats { self.max_hp(me, id as DefId) } else { hp };
+                    let _ = write!(tip, "{} HP", hp as i32);
+                    for (_slot, w) in d.w.iter().enumerate() {
                         if w.targets != 0 {
-                            let _ = write!(tip, " \u{b7} {} dmg / {:.0} range vs", w.dmg as i32, w.range);
+                            let (damage, range) = (w.dmg, w.range);
+                            #[cfg(feature="ee2-ai9-game-bridge")]
+                            let (damage, range) = if show_source_stats && _slot == 0 {
+                                (self.effective_weapon_damage(me, id as DefId, damage),
+                                 range + self.modifiers[me as usize][id][6])
+                            } else {
+                                (damage, range)
+                            };
+                            let _ = write!(tip, " \u{b7} {} dmg / {:.0} range vs", damage as i32, range);
                             for (bit, nm) in [(LAND, " land"), (SEA, " sea"), (AIR, " air"), (SUB, " subs")] {
                                 if w.targets & bit != 0 {
                                     tip.push_str(nm);

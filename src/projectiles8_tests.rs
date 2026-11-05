@@ -10,7 +10,8 @@ fn light_infantry_rank_changes_the_damage_captured_by_a_real_arrow() {
         game.add_resource(0, slot, 1_000.0);
     }
     let shooter = game.spawn(10, 0, 100.5, 100.5);
-    for (index, rank) in crate::ai9_rank::JOBS.into_iter().enumerate() {
+    for index in 0..2 {
+        let rank = crate::ai9_rank::ai9_game_improvement_job(index as u32 + 1);
         assert!(game.train(shooter, rank));
         for _ in 0..1_201 {
             game.tick();
@@ -24,6 +25,54 @@ fn light_infantry_rank_changes_the_damage_captured_by_a_real_arrow() {
         let source_damage = ((110 + 10 * index) as f64 * f64::from(0.01_f32) * 7.0) as f32;
         assert_eq!(game.projs.pop().unwrap().dmg.to_bits(), source_damage.to_bits());
         game.kill(target);
+    }
+}
+
+#[cfg(feature = "ee2-ai9-game-bridge")]
+#[test]
+fn source_family_ranks_keep_wounded_health_and_change_real_attacks() {
+    crate::init(7, 0, 0, 1, 0);
+    assert_eq!(crate::ai9_game_bridge::ai9_game_research_setup_manual(), 1);
+    let game = crate::g();
+    for slot in 0..9 {
+        game.add_resource(0, slot, 1_000.0);
+    }
+    let families = [(9, 75.0, 5.0), (22, 85.0, 35.0), (29, 319.0, 42.0)];
+    let actors = families.map(|(def, _, _)| game.spawn(def, 0, 100.5, 100.5));
+    for &index in &actors {
+        game.ents[index].hp *= 0.375;
+    }
+    for rank in 1..=2 {
+        for (family, &index) in actors.iter().enumerate() {
+            let job = crate::ai9_rank::ai9_game_improvement_family_job(family as u32 + 1, rank);
+            assert!(game.train(index, job));
+        }
+        for _ in 0..1_605 {
+            game.tick();
+        }
+        for (family, (&index, &(def, base_hp, base_damage))) in actors.iter().zip(&families).enumerate() {
+            let scale = f64::from(100 + 10 * rank) * f64::from(0.01_f32);
+            let max = ((f64::from(base_hp) * scale) as f32 + 0.5).floor();
+            let damage = (f64::from(base_damage) * scale) as f32;
+            assert_eq!(game.max_hp(0, def), max);
+            assert_eq!(game.ents[index].hp, max * 0.375);
+            let mut attacker = game.ents[index];
+            let target = game.spawn(WORKER, 1, attacker.x + 0.75, attacker.y);
+            game.build_grid();
+            game.update_fog();
+            let weapon = DEFS[attacker.def as usize].w[0];
+            let hp = game.ents[target].hp;
+            game.fire(&mut attacker, &weapon, target);
+            if family == 0 {
+                let attacker_profile = crate::ee2_combat::profile(def, 0);
+                let multiplier = crate::ee2_combat::multiplier_from_profile(attacker_profile, WORKER, 0)
+                    .unwrap_or(MULT[W_MELEE as usize][DEFS[WORKER as usize].armor as usize]);
+                assert_eq!(game.ents[target].hp, hp - damage * multiplier);
+            } else {
+                assert_eq!(game.projs.pop().unwrap().dmg.to_bits(), damage.to_bits());
+            }
+            game.kill(target);
+        }
     }
 }
 

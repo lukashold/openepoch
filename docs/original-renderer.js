@@ -278,7 +278,7 @@ function gpuPart(gl,part,instanceBuffer,materialTexture,keepPickingGeometry=fals
  };
  // Only static resource archetypes retain CPU indices for click tests.
  const pickGeometry=keepPickingGeometry?{positions,indices:part.indices,bounds:geometryBounds(positions)}:null;
- return {vao,pose,animations:part.animations,nativeStateClips:part.nativeStateClips,activities:part.activities,count:part.indices.length,texture:materialTexture,material:modelMaterial(part),alpha:alphaState(part),depth:depthState(part),height:maxY,pickGeometry,farmPlotOffset:part.farmPlotOffset||null,pipeline:{skinned:part.skinned,textureApplyMode:part.textureApplyMode,textureUrl:part.textureUrl,textureSource:part.textureSource,texture:part.texture}};
+ return {vao,pose,animations:part.animations,nativeStateClips:part.nativeStateClips,activities:part.activities,clipVisibility:part.clipVisibility,count:part.indices.length,texture:materialTexture,material:modelMaterial(part),alpha:alphaState(part),depth:depthState(part),height:maxY,pickGeometry,farmPlotOffset:part.farmPlotOffset||null,pipeline:{skinned:part.skinned,textureApplyMode:part.textureApplyMode,textureUrl:part.textureUrl,textureSource:part.textureSource,texture:part.texture}};
 }
 
 import {regionalModelEntries,selectRegionalModel} from './original-regional-models.js?v=regional-citycenters';
@@ -465,7 +465,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    if(!parts.length)continue;
    const scaleKey=(entry.assetKind===undefined?'':assetKind+':')+id+':'+(entry.epoch??0),sea=assetKind===0&&((id>=29&&id<=36)||id===42||id===45),transform=nativeModelTransform(model,entry.regionalCivilizations?entry.nativeScaleBinding:scales.variants?.[scaleKey]);
    const yOffset=!transform.native&&sea?-(model.normalization?.offset?.[1]||0)*(model.normalization?.scale||1):0;
-   const variant={sourceId:id,assetKind,scaleKey,epoch:entry.epoch??0,until:entry.until,regionalCivilizations:entry.regionalCivilizations,sourceIdentity:entry.sourceIdentity,region:entry.region,parts,yOffset,originOffset:transform.originOffset,nativeScale:transform.native?transform.scale:null,yawOffset:entry.yawOffset??model.yawOffset??0,farUrl:entry.lodFarUrl,far:null,farRequested:false,pickBounds:resourceBounds(parts)};
+   const variant={sourceId:id,assetKind,scaleKey,epoch:entry.epoch??0,until:entry.until,regionalCivilizations:entry.regionalCivilizations,sourceIdentity:entry.sourceIdentity,region:entry.region,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),yOffset,originOffset:transform.originOffset,nativeScale:transform.native?transform.scale:null,yawOffset:entry.yawOffset??model.yawOffset??0,farUrl:entry.lodFarUrl,far:null,farRequested:false,pickBounds:resourceBounds(parts)};
    if(houseBinding){try{
     const levelParts=[parts];
     for(const level of houseBinding.levels.slice(1)){
@@ -587,15 +587,26 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     const duration=animation?.duration||1;
     const time=data[i*12+10],seed=data[i*12+6];
     const phase=packPose?.phase??((time/duration+seed)%1+1)%1;
-    const preview=!!(Math.round(data[i*12+7])&24),key=variantIndex+':'+team+':'+activity+':'+(far&&variant.farRequested?1:0)+':'+(Math.round(data[i*12+7])&24)+':'+clip+':'+once+(variant.houseLodKey===undefined?'':':house:'+variant.houseLodKey);
-    const group=groups.get(key)||{variant,team,activity,clip,once,preview,list:[],instanceIndices:[]};
+    // Parts with authored visibility events batch only with actors in the same visible state.
+    const hiddenParts=variant.hasClipVisibility?variant.parts.filter(part=>{
+     if(!part.clipVisibility)return false;
+     let visible=false;
+     for(const [seconds,show] of part.clipVisibility[clip]||[]){
+      if(seconds>phase*duration)break;
+      visible=show;
+     }
+     return !visible;
+    }):null;
+    const visibilityKey=hiddenParts?.length?':hidden:'+hiddenParts.map(part=>variant.parts.indexOf(part)).join(','):'';
+    const preview=!!(Math.round(data[i*12+7])&24),key=variantIndex+':'+team+':'+activity+':'+(far&&variant.farRequested?1:0)+':'+(Math.round(data[i*12+7])&24)+':'+clip+':'+once+(variant.houseLodKey===undefined?'':':house:'+variant.houseLodKey)+visibilityKey;
+    const group=groups.get(key)||{variant,team,activity,clip,once,preview,hiddenParts,list:[],instanceIndices:[]};
     group.instanceIndices.push(i);
     const offset=group.list.length;for(let k=0;k<12;k++)group.list.push(data[i*12+k]);
     group.list[offset+3]+=variant.yawOffset;group.list[offset+9]=phase;
     if(variant.nativeScale!==null)group.list[offset+8]=variant.nativeScale;
     groups.set(key,group);
    }
-   for(const [groupKey,{variant,team,list,activity,clip,once,preview,instanceIndices}] of groups){
+   for(const [groupKey,{variant,team,list,activity,clip,once,preview,hiddenParts,instanceIndices}] of groups){
     if(!shadow&&!capture&&variant.assetKind===1)resourceView.choices.set(id+':'+groupKey,variant);
     selectShader(shader);gl.uniform1f(shader.u.uYOffset,variant.yOffset);
     gl.uniform3fv(shader.u.uOriginOffset,variant.originOffset);
@@ -607,7 +618,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
      return dynamicGPU.get(actor,actorMetadata,variant.dynamicSailBinding.key);
     }):null;
     for(const part of variant.parts){
-     if(part.activities&&!part.activities.includes(activity))continue;
+     if(hiddenParts?.includes(part)||part.activities&&!part.activities.includes(activity))continue;
      // Native cloth shadow events/physics are still separate. Existing body
      // shadows remain byte-identical; no synthetic sail shadow is added here.
      if(part.nativeSail&&(shadow||!sailDiffuse))continue;

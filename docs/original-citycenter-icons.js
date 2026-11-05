@@ -1,5 +1,5 @@
 const profiles = {packed5: [77, 60], packed7: [308, 240]};
-const stages = {citycenter: [0, 3, 6, 9, 12, 14, 15], house: [0, 2, 4, 6, 8, 10, 12, 14, 15], dock: [0, 3, 6, 9, 10, 12, 14, 15], barracks: [0, 3, 6, 9, 12, 14, 15]};
+const stages = {citycenter: [0, 3, 6, 9, 12, 14, 15], house: [0, 2, 4, 6, 8, 10, 12, 14, 15], dock: [0, 3, 6, 9, 10, 12, 14, 15], barracks: [0, 3, 6, 9, 12, 14, 15], mill: [0, 4, 8, 11, 14, 15], temple: [0, 3, 6, 9, 12, 14, 15]};
 const regions = [0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3];
 
 export function cityCenterIconCatalog(manifest, {profile, neutralFallback = null, family = 'citycenter'} = {}) {
@@ -108,4 +108,12 @@ export function loadDockIcons(options = {}) {
 
 export function loadBarracksIcons(options = {}) {
   return loadCityCenterIcons({...options, family: 'barracks'});
+}
+
+export function loadMillIcons(options = {}) {
+  return loadCityCenterIcons({...options, family: 'mill'});
+}
+
+export function loadTempleIcons(options = {}) {
+  return loadCityCenterIcons({...options, family: 'temple'});
 }

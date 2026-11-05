@@ -19,7 +19,7 @@ impl Game {
     }
     pub fn scaled_weapon_damage(&self,team:u8,def:DefId,weapon_base:f32,player_factor:f32)->f32 {
         #[cfg(feature="ee2-ai9-game-bridge")]
-        if self.source_light_infantry_rank(team) != 0 && crate::ai9_rank::class(def, self.players[team as usize].epoch).is_some() {
+        if self.source_unit_rank(team, def) != 0 {
             return self.effective_weapon_damage(team, def, weapon_base) * player_factor;
         }
         let value=self.modifiers[team as usize][def as usize][1];
@@ -28,7 +28,7 @@ impl Game {
     pub fn max_hp(&self, team: u8, def:DefId) -> f32 {
         let hp = self.modifiers[team as usize][def as usize][0];
         #[cfg(feature="ee2-ai9-game-bridge")]
-        let hp = crate::ai9_rank::hp(self, team, def, hp, self.source_light_infantry_rank(team));
+        let hp = crate::ai9_rank::hp(self, team, def, hp, self.source_unit_rank(team, def));
         hp
     }
     pub fn production_time(&self, team: u8, def:DefId) -> f32 { self.modifiers[team as usize][def as usize][3] }
@@ -167,22 +167,25 @@ impl Game {
         }
         if adjust_health {
             #[cfg(feature="ee2-ai9-game-bridge")]
-            let ranked_ratios: Option<[f32; DEF_COUNT]> = {
-                let rank = self.source_light_infantry_rank(team);
-                (rank != 0).then(|| std::array::from_fn(|id| {
+            let ranked_hp: Option<[Option<(f32, f32)>; DEF_COUNT]> = {
+                self.native_research.as_ref().filter(|state| state.owner == team).map(|_| std::array::from_fn(|id| {
                     let def = id as DefId;
-                    let before = crate::ai9_rank::hp(self, team, def, old[id][0], rank);
-                    let after = crate::ai9_rank::hp(self, team, def, m[id][0], rank);
-                    after / before.max(0.01)
+                    let rank = self.source_unit_rank(team, def);
+                    (rank != 0).then(|| (
+                        crate::ai9_rank::hp(self, team, def, old[id][0], rank),
+                        crate::ai9_rank::hp(self, team, def, m[id][0], rank),
+                    ))
                 }))
             };
             for e in &mut self.ents[..self.high] {
                 if e.alive && e.team == team {
                     let id = e.def as usize;
-                    let ratio = m[id][0] / old[id][0].max(0.01);
                     #[cfg(feature="ee2-ai9-game-bridge")]
-                    let ratio = ranked_ratios.as_ref().map_or(ratio, |ranked| ranked[id]);
-                    e.hp *= ratio;
+                    if let Some((before, after)) = ranked_hp.as_ref().and_then(|ranked| ranked[id]) {
+                        e.hp = (e.hp / before.max(0.01)) * after;
+                        continue;
+                    }
+                    e.hp *= m[id][0] / old[id][0].max(0.01);
                 }
             }
         }

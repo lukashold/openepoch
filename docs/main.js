@@ -3,8 +3,8 @@
 import { buildAtlas, tintAtlas, CELL } from './atlas.js?v=fortress1';
 import { buildModels } from './models.js?v=fortress1';
 import { parseCheat } from './cheats.js';
-import { researchPanel } from './research.js?v=research-ui';
-import { originalResearchActions, researchCost, researchState } from './original-research-actions.js?v=research-ui';
+import { researchPanel } from './research.js?v=rank-families';
+import { originalResearchActions, researchCost, researchState } from './original-research-actions.js?v=rank-families';
 import { diplomacyPanel } from './diplomacy.js?v=fortress1';
 import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native6';
 import {loadNativeFontUI} from './original-font-ui.js?v=native6';
@@ -17,9 +17,9 @@ import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regi
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native6';
-import {loadOriginalModels} from './original-renderer.js?v=regional12';
+import {loadOriginalModels} from './original-renderer.js?v=native14';
 import {ownMapTerrainOrigin} from './original-citycenter-terrain.js?v=regional10';
-import {loadCityCenterIcons,loadHouseIcons,loadDockIcons,loadBarracksIcons} from './original-citycenter-icons.js?v=regional13';
+import {loadCityCenterIcons,loadHouseIcons,loadDockIcons,loadBarracksIcons,loadMillIcons,loadTempleIcons} from './original-citycenter-icons.js?v=regional14';
 import {loadSourceSailRuntime} from './source-sail-runtime.js?v=sails7';
 import {createRenderAssetMapping} from './original-render-namespace.js?v=native6';
 import {createFrontendNamespace} from './render-namespace.js?v=native9';
@@ -31,7 +31,7 @@ import {loadOriginalWater} from './original-water.js?v=water-farm3';
 import {createOriginalReflection} from './original-reflection.js?v=visual-seasons2';
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=epoch13';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native14';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=epoch13';
 import {createFullscreenController} from './fullscreen.js?v=building2';
@@ -472,22 +472,23 @@ mountSkirmishMenu($('menu'), {enabled:rulesProfile.ruleset===2, originalArt:orig
 const originalAssets=await loadOriginalAssets(gl,originalEnabled);
 const citizenPresentation=await loadCitizenPresentation({enabled:originalEnabled&&rulesProfile.sourceIdentityVersion===1});
 const buildingIconOptions={enabled:originalEnabled&&rulesProfile.ruleset===2,profile:'packed7',neutralFallback:'west'};
-const [cityCenterIcons,houseIcons,dockIcons,barracksIcons]=await Promise.all([
+const [cityCenterIcons,houseIcons,dockIcons,barracksIcons,millIcons,templeIcons]=await Promise.all([
   loadCityCenterIcons(buildingIconOptions),loadHouseIcons(buildingIconOptions),
   loadDockIcons(buildingIconOptions),loadBarracksIcons(buildingIconOptions),
+  loadMillIcons(buildingIconOptions),loadTempleIcons(buildingIconOptions),
 ]);
-const buildingIcons = new Map([[0, cityCenterIcons], [1, houseIcons], [3, barracksIcons], [5, dockIcons]]);
+const buildingIcons = new Map([[0, cityCenterIcons], [1, houseIcons], [3, barracksIcons], [5, dockIcons], [48, millIcons], [51, templeIcons]]);
 const buildingPortraits = new Set([...buildingIcons].filter(([, icons]) => icons.status().enabled).map(([id]) => id));
 originalAssets.citizenPresentation=citizenPresentation;
 const originalLabels=await loadOriginalLabels(rulesProfile,{definitionCount:renderNamespace.definitionCount,...(rulesProfile.ruleset===2?{manifestURL:'./local-original/labels-native-civ8.json'}:{})});
 const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,total)=>{
   $('play').textContent=`Originalgrafiken laden · ${Math.round(loaded/total*100)} %`;
-},{assetMapping,packAnimations:rulesProfile.ruleset===2,dynamicSails:rulesProfile.ruleset===2&&typeof wasm.render_meta_version==='function',lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-civ8.json',scaleManifestURL:'./local-original/model-scales-civ8.json',teamManifestURL:'./local-original/team-textures/manifest-civ8.json',regionalManifestURL:'./local-original/regional-barracks/manifest.json',terrainFallbackManifestURL:'./local-original/regional-e15-seasons/terrain-fallback.json',houseLodManifestURL:'./local-original/regional-house-lod/manifest.json',houseLodProfile:{mode:'resource',modelDetail:2,rendererCap0x200:false},citizenManifestURL:'./local-original/citizens9/manifest.json',citizenNeutralFallback:'west',sourceIdentityForActor:actor=>wasm.actor_source_identity(actor.handle)>>>0}:{})});
+},{assetMapping,packAnimations:rulesProfile.ruleset===2,dynamicSails:rulesProfile.ruleset===2&&typeof wasm.render_meta_version==='function',lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-civ8.json',scaleManifestURL:'./local-original/model-scales-civ8.json',teamManifestURL:'./local-original/team-textures/manifest-civ8.json',regionalManifestURL:'./local-original/stone-thrower/regional-models.json',terrainFallbackManifestURL:'./local-original/regional-e15-seasons/terrain-fallback.json',houseLodManifestURL:'./local-original/regional-house-lod/manifest.json',houseLodProfile:{mode:'resource',modelDetail:2,rendererCap0x200:false},citizenManifestURL:'./local-original/citizens9/manifest.json',citizenNeutralFallback:'west',sourceIdentityForActor:actor=>wasm.actor_source_identity(actor.handle)>>>0}:{})});
 const sourceSails=await loadSourceSailRuntime({wasm,namespace:renderNamespace,models:originalModels,enabled:originalEnabled&&rulesProfile.ruleset===2,decorateMetadata:metadata=>packMetadata?packMetadata.snapshot(metadata):metadata});
 if(sourceSails?.metrics.error)console.warn('Source sails:',sourceSails.metrics.error);
 sfx.configureOriginalDefinitions({wasm,bindings:originalModels.manifest?.models||[],citizenPresentation,regionalMusic:rulesProfile.ruleset===2,...(rulesProfile.ruleset===2?{familyManifestURL:'native-families-civ8.json'}:{})});
 const originalGround=await loadOriginalGround(gl,originalEnabled,{assetMapping,...(rulesProfile.ruleset===2
-  ?{manifestURL:'./local-original/regional-barracks/ground-decals.json'}:{})});
+  ?{manifestURL:'./local-original/regional-temple/ground-decals.json'}:{})});
 const originalTerrain=await loadOriginalTerrain(gl,originalEnabled,TEAM);
 originalTerrain.setLightingContext?.(originalModels.lighting);
 const originalWater=await loadOriginalWater(gl,originalEnabled);
@@ -1112,7 +1113,7 @@ function doAct(i) {
   if (a.k === 'b') { ghost = { id: a.id, size: a.size,name:label(a.name,a.id),turn:0,manual:false }; placementKey='';attackMode = false; sfx.play(20);updatePlacement();return; }
   if (a.k === 'u') { wasm.cmd_unload(); sfx.play(22); return; }
   if(a.k==='p'){if(typeof wasm.cmd_pack==='function'&&wasm.cmd_pack(a.id)){if(!selectedUnitVoice('order'))sfx.play(20);}else sfx.play(21);lastUi=0;return;}
-  if(a.k==='i'&&!a.ok){sfx.play(21);toast(researchState(a,'Leichte Infanterie'));return;}
+  if(a.k==='i'&&!a.ok){sfx.play(21);toast(researchState(a,a.hostName));return;}
   if (renderNamespace.wide?wasm.cmd_queue_job(a.id):wasm.cmd_train(a.id)) sfx.play(20);
   else { sfx.play(21); toast(a.ok ? 'Warteschlange voll' : a.k==='e' && referenceMode && ui.research.count<6 ? 'Zuerst sechs Technologien dieser Epoche erforschen' : a.tp && ui.research.points<a.tp ? 'Technologiepunkte fehlen – Bürger in Universitäten schicken' : a.k === 't' && ui.pop >= ui.cap ? 'Mehr Häuser bauen' : 'Rohstoffe fehlen'); }
 }
