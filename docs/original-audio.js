@@ -120,18 +120,28 @@ export function createOriginalAudio(options={}) {
       }).catch(()=>false);
     return loading;
   }
+  function playBinding(plan, volume=1, pan=0) {
+    if (!plan || plan.group === 'voice' && !speech) return false;
+    const index = counters.get(plan.key) || 0;
+    const record = plan.records[index % plan.records.length];
+    const buffer = buffers.get(record.file);
+    if (!buffer) { load(record.file); return false; }
+    if (plan.group === 'voice') stopVoices();
+    if (!start(buffer, volume * plan.gain * record.volume, pan, plan.group)) return false;
+    counters.set(plan.key, index + 1);
+    if (plan.group === 'voice') stats.voicePlays++;
+    else stats.effectPlays++;
+    return true;
+  }
+  function citizenDeath(context, volume, pan) {
+    if (!manifest || muted || ctx?.state !== 'running') return false;
+    return playBinding(citizenPresentation?.resolveAudio(8, 'death', context.epoch, context), volume, pan);
+  }
   function acknowledge(def,action,epoch=0,context=undefined) {
     if(!manifest||muted||ctx?.state!=='running')return false;
     const sourceCitizen=citizenPresentation?.isSourceContext(def,context);
     const plan=sourceCitizen?citizenPresentation.resolveAudio(def,action,epoch,context):typed.resolve(def,action,epoch);
-    if(plan){
-      if(plan.group==='voice'&&!speech)return false;
-      const index=counters.get(plan.key)||0,record=plan.records[index%plan.records.length],buffer=buffers.get(record.file);
-      if(!buffer){load(record.file);return false;}
-      if(plan.group==='voice')stopVoices();
-      const source=start(buffer,plan.gain*record.volume,0,plan.group);if(!source)return false;
-      counters.set(plan.key,index+1);if(plan.group==='voice')stats.voicePlays++;else stats.effectPlays++;return true;
-    }
+    if(plan)return playBinding(plan);
     if(sourceCitizen||!typed.isLegacy(def))return false;
     if(action==='select'&&manifest.buildingSelections?.[def]){
       const record=manifest.buildingSelections[def];
@@ -165,7 +175,7 @@ export function createOriginalAudio(options={}) {
     return !musicEnabled||!!tracks?.some(file=>!failed.has(file));
   }
   return {
-    prepare,acknowledge,effect,music,setDefinitionBindings,role:(id,epoch)=>typed.role(id,epoch),
+    prepare,acknowledge,citizenDeath,effect,music,setDefinitionBindings,role:(id,epoch)=>typed.role(id,epoch),
     setMuted(value){muted=value;if(value){stopMusic();stopAmbient();for(const source of [...live])stop(source);}},
     setSpeechEnabled(value){speech=value;if(!value)stopVoices();},
     setMusicEnabled(value){musicEnabled=value;if(!value)stopMusic();},

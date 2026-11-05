@@ -1,6 +1,6 @@
 // The EE2 profile uses locally extracted original recordings when available.
 // Procedural sounds and local speech remain the fallback for the standalone game.
-import { createOriginalAudio } from './original-audio.js?v=citizen9';
+import { createOriginalAudio } from './original-audio.js?v=regional10';
 const originals=createOriginalAudio();
 
 let ctx = null, master = null, noise = null;
@@ -77,6 +77,11 @@ export function acknowledge(def, action, epoch=0,context=undefined) {
 export const isMuted = () => muted;
 export const originalAudioStatus = () => originals.status();
 export const configureOriginalDefinitions = settings => originals.setDefinitionBindings(settings);
+
+export function citizenDeath(context, volume, pan) {
+  if (muted || volume < 0.02 || !ensure() || ctx.state !== 'running') return false;
+  return originals.citizenDeath(context, Math.min(1, volume), Math.max(-1, Math.min(1, pan)));
+}
 
 function env(g, t, peak, attack, decay) {
   g.gain.setValueAtTime(0.0001, t);

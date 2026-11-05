@@ -172,7 +172,7 @@ class PortableServerTest(unittest.TestCase):
         self.assertEqual(status['wasmSha256'], hashlib.sha256((self.root/'openepoch-ee2.wasm').read_bytes()).hexdigest())
         for name,digest in status['wasmSha256ByFile'].items():
             self.assertEqual(digest, hashlib.sha256((self.root/name).read_bytes()).hexdigest())
-        self.assertEqual(urllib.parse.parse_qs(urllib.parse.urlsplit(server.ready['url']).query), {'rules':['ee2'],'build':['native9']})
+        self.assertEqual(urllib.parse.parse_qs(urllib.parse.urlsplit(server.ready['url']).query), {'rules':['ee2'],'build':['native10']})
         # This is another local loopback address, never an external connection.
         # A wildcard 0.0.0.0 listener would prevent the exclusive second bind.
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as check:

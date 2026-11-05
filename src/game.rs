@@ -418,7 +418,12 @@ impl Game {
     }
 
     fn kill(&mut self, i: usize) {
-        #[cfg(feature="ee2-citizen9")] self.source_birth.discard(i);
+        #[cfg(feature="ee2-citizen9")]
+        let citizen_sound = {
+            let cue = self.citizen_death_cue(i);
+            self.source_birth.discard(i);
+            cue
+        };
         #[cfg(feature="ee2-pack8")] {self.pack_states[i]=crate::pack8::EMPTY;}
         #[cfg(feature="ee2-paidqueue7")] self.clear_queue_payments(i);
         let e = self.ents[i];
@@ -437,7 +442,10 @@ impl Game {
             if self.fx.len() < 1000 {
                 self.fx.push(Fx { x: e.x, y: e.y, size: d.size * if d.building { 1.6 } else { 1.3 }, age: 0.0, life: 0.6 });
             }
-            self.ev(if d.building { 11.0 } else { 10.0 }, e.x, e.y);
+            let sound = if d.building { 11.0 } else { 10.0 };
+            #[cfg(feature="ee2-citizen9")]
+            let sound = citizen_sound.unwrap_or(sound);
+            self.ev(sound, e.x, e.y);
         }
         let s = &mut self.ents[i];
         s.alive = false;

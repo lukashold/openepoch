@@ -8,13 +8,15 @@ import { diplomacyPanel } from './diplomacy.js?v=fortress1';
 import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native6';
 import {loadNativeFontUI} from './original-font-ui.js?v=native6';
 import {territoryClaimMessage} from './territory-help.js?v=fortress1';
-import * as sfx from './audio.js?v=native9';
+import * as sfx from './audio.js?v=regional10';
 import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=citizen9';
-import {loadCitizenPresentation} from './original-citizen-presentation.js?v=citizen9';
-import {selectedCitizenContext} from './source-citizen-context.js?v=citizen9';
+import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regional10';
+import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native6';
-import {loadOriginalModels} from './original-renderer.js?v=citizen9';
+import {loadOriginalModels} from './original-renderer.js?v=regional10';
+import {ownMapTerrainOrigin} from './original-citycenter-terrain.js?v=regional10';
+import {loadCityCenterIcons} from './original-citycenter-icons.js?v=regional10';
 import {loadSourceSailRuntime} from './source-sail-runtime.js?v=sails7';
 import {createRenderAssetMapping} from './original-render-namespace.js?v=native6';
 import {createFrontendNamespace} from './render-namespace.js?v=native9';
@@ -26,7 +28,7 @@ import {loadOriginalWater} from './original-water.js?v=water-farm3';
 import {createOriginalReflection} from './original-reflection.js?v=visual-seasons2';
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native9';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=regional10';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native9';
 import {createFullscreenController} from './fullscreen.js?v=building2';
@@ -443,11 +445,13 @@ for (const pr of [terrain, water, models, quads]) {
 const originalEnabled=referenceMode&&new URLSearchParams(location.search).get('assets')!=='procedural';
 const originalAssets=await loadOriginalAssets(gl,originalEnabled);
 const citizenPresentation=await loadCitizenPresentation({enabled:originalEnabled&&rulesProfile.sourceIdentityVersion===1});
+const cityCenterIcons=await loadCityCenterIcons({enabled:originalEnabled&&rulesProfile.ruleset===2,profile:'packed7',neutralFallback:'west'});
+const cityCenterIconsReady=cityCenterIcons.status().enabled;
 originalAssets.citizenPresentation=citizenPresentation;
 const originalLabels=await loadOriginalLabels(rulesProfile,{definitionCount:renderNamespace.definitionCount,...(rulesProfile.ruleset===2?{manifestURL:'./local-original/labels-native-civ8.json'}:{})});
 const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,total)=>{
   $('play').textContent=`Originalgrafiken laden · ${Math.round(loaded/total*100)} %`;
-},{assetMapping,packAnimations:rulesProfile.ruleset===2,dynamicSails:rulesProfile.ruleset===2&&typeof wasm.render_meta_version==='function',lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-civ8.json',scaleManifestURL:'./local-original/model-scales-civ8.json',teamManifestURL:'./local-original/team-textures/manifest-civ8.json',regionalManifestURL:'./local-original/regional9/manifest.json',citizenManifestURL:'./local-original/citizens9/manifest.json',citizenNeutralFallback:'west',sourceIdentityForActor:actor=>wasm.actor_source_identity(actor.handle)>>>0}:{})});
+},{assetMapping,packAnimations:rulesProfile.ruleset===2,dynamicSails:rulesProfile.ruleset===2&&typeof wasm.render_meta_version==='function',lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-civ8.json',scaleManifestURL:'./local-original/model-scales-civ8.json',teamManifestURL:'./local-original/team-textures/manifest-civ8.json',regionalManifestURL:'./local-original/regional-citycenters/manifest.json',terrainFallbackManifestURL:'./local-original/citycenter-terrain/manifest.json',citizenManifestURL:'./local-original/citizens9/manifest.json',citizenNeutralFallback:'west',sourceIdentityForActor:actor=>wasm.actor_source_identity(actor.handle)>>>0}:{})});
 const sourceSails=await loadSourceSailRuntime({wasm,namespace:renderNamespace,models:originalModels,enabled:originalEnabled&&rulesProfile.ruleset===2,decorateMetadata:metadata=>packMetadata?packMetadata.snapshot(metadata):metadata});
 if(sourceSails?.metrics.error)console.warn('Source sails:',sourceSails.metrics.error);
 sfx.configureOriginalDefinitions({wasm,bindings:originalModels.manifest?.models||[],citizenPresentation,...(rulesProfile.ruleset===2?{familyManifestURL:'native-families-civ8.json'}:{})});
@@ -488,6 +492,7 @@ const cam = { x: 128, y: 128, zoom: 28, heading:0 };
 const mouse = { x: 0, y: 0, down: false, sx: 0, sy: 0, drag: false, pan: false, inside: false };
 const keys = new Set();
 let running = false, paused = false, speed = 1, acc = 0, last = 0, bench = 0;
+let worldMaterialPending = null;
 let net = null;          // { ls: Lockstep, ch: RTCDataChannel } in multiplayer
 let ghost = null;        // { id, size, name, turn } while placing a building
 let placementKey='',lastWheelRotation=0;
@@ -618,6 +623,25 @@ document.body.dataset.originalBitmapFonts=String(nativeBitmapFonts.enabled);
 $('diplomacy-button').onclick=()=>{if(running&&!bench)diplomacy.open();};
 
 // ---------------------------------------------------------------- starting, saving, loading
+function bindWorldTerrainMaterial() {
+  worldMaterialPending = null;
+  if (rulesProfile.ruleset !== 2 || !originalTerrain.enabled || !originalModels.bindNativeTerrainMaterial) return;
+  originalModels.bindNativeTerrainMaterial(null);
+  const binding = (async () => {
+    const types = u8(wasm.terrain_types_ptr(), MAP * MAP);
+    const origin = ownMapTerrainOrigin({width: MAP, height: MAP, types}, originalTerrain.manifest);
+    // The procedural world renderer uses temperate materials at full detail.
+    await originalModels.bindNativeTerrainMaterial({climate: 'Temperate', detailCode: 2, origin});
+  })();
+  worldMaterialPending = binding;
+  binding.catch(error => console.warn('Stadtzentrum-Material:', error.message)).finally(() => {
+    if (worldMaterialPending === binding) {
+      worldMaterialPending = null;
+      last = performance.now();
+    }
+  });
+}
+
 function begin() {
   saveSession=Date.now();
   ghost = null; attackMode = false; paused = false; speed = 1; acc = 0; fogTick = -1; actSig = '@refresh'; worstMs = 0; ui = null;
@@ -626,6 +650,7 @@ function begin() {
   $('menu').style.display = 'none'; $('end').style.display = 'none';
   $('camera-tools').hidden=!referenceMode;
   uploadTerrain();
+  bindWorldTerrainMaterial();
   wasm.events_clear();
   running = true; last = performance.now(); lastAuto = last;
 }
@@ -714,15 +739,26 @@ function advance(dt, now) {
     const ev = f32(wasm.events_ptr(), n), range = 26 + 700 / cam.zoom;
     for (let i = 0; i < n; i += 3) {
       const kind = ev[i], dx = ev[i + 1] - cam.x, dy = ev[i + 2] - cam.y;
-      if (kind >= 12) sfx.play(kind, 1, 0);
-      else { const v = Math.max(0, 1 - Math.hypot(dx, dy) / range); sfx.play(kind, v * v * Math.min(1, 0.35 + cam.zoom / 40), dx / range * 1.4); }
+      const citizen = decodeCitizenDeathCue(kind);
+      if (kind >= 12 && !citizen) {
+        sfx.play(kind, 1, 0);
+      } else {
+        const distanceGain = Math.max(0, 1 - Math.hypot(dx, dy) / range);
+        const volume = distanceGain * distanceGain * Math.min(1, 0.35 + cam.zoom / 40);
+        const pan = dx / range * 1.4;
+        if (citizen) {
+          if (!sfx.citizenDeath(citizen, volume, pan)) sfx.play(10, volume, pan);
+        } else {
+          sfx.play(kind, volume, pan);
+        }
+      }
     }
     wasm.events_clear();
   }
 }
 // A hidden tab gets no animation frames, but a multiplayer peer must keep simulating.
 setInterval(() => {
-  if (!running || !net || !document.hidden) return;
+  if (!running || worldMaterialPending || !net || !document.hidden) return;
   const now = performance.now(), dt = Math.min(1.5, (now - last) / 1000); last = now;
   for (let t = dt; t > 0; t -= 0.3) advance(Math.min(t, 0.3), now);
 }, 200);
@@ -730,7 +766,7 @@ setInterval(() => {
 // ---------------------------------------------------------------- frame loop
 function frame(now) {
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
-  if (!running) { sfx.music(false); return; }
+  if (!running || worldMaterialPending) { sfx.music(false); return; }
   sfx.music(!paused, ui?.epoch || 0);
   frameMs += (dt * 1000 - frameMs) * 0.05;
   worstMs = Math.max(worstMs * 0.995, dt * 1000);
@@ -898,7 +934,9 @@ function frame(now) {
 const HOT = ['Q', 'W', 'E', 'R', 'T', 'Z', 'X', 'C', 'V', 'B'];
 function icon(id, px,context=undefined) {
   const c = document.createElement('canvas'); c.width = c.height = px;
-  const original=originalIcon(originalAssets,id,ui?.epoch||0,context);
+  const regional = id === 0 && ui && rulesProfile.ruleset === 2
+    ? cityCenterIcons.icon(ui.epoch, wasm.player_civilization(ui.local) >>> 0) : undefined;
+  const original=regional??originalIcon(originalAssets,id,ui?.epoch||0,context);
   if(original){
     const scale=Math.min(px/original.width,px/original.height),w=original.width*scale,h=original.height*scale;
     c.getContext('2d').drawImage(original,(px-w)/2,(px-h)/2,w,h);return c;
@@ -957,7 +995,14 @@ function updateUi(drawn, now) {
     if (s.types.length > 1) h += '<div class="types">' + s.types.map(t => `<span>${escapeLabelHtml(label(t[2],t[0],t[1]))} ×${t[1]}</span>`).join('') + '</div>';
     if (s.q.length) h += `<div class="q" id="queue"></div><div class="hp"><i style="width:${s.qp * 100}%;background:#4aa3ff"></i></div>`;
     info.innerHTML = h;
-    if(s.n===1&&s.def===8){const context=selectedCitizenContext(wasm,ui);if(context){const portrait=icon(s.def,40,context);portrait.style.cssText='vertical-align:middle;margin-right:6px';info.querySelector('h3')?.prepend(portrait);}}
+    if (s.n === 1) {
+      const context = selectedCitizenContext(wasm, ui);
+      if (context && citizenPresentation.enabled || s.def === 0 && cityCenterIconsReady) {
+        const portrait = icon(s.def, 40, context);
+        portrait.style.cssText = 'vertical-align:middle;margin-right:6px';
+        info.querySelector('h3')?.prepend(portrait);
+      }
+    }
     const q = $('queue');
     if (q) { for (const id of s.q) {const job=renderNamespace.queueJob(id);q.append(!job?glyph('?',30):job.kind===3?glyph('⬆',30):job.kind===1||job.kind===2?glyph('⚗',30):icon(job.value,30));} q.title = 'Rechtsklick oder Rücktaste: letzten Auftrag abbrechen'; }
   }
@@ -1204,6 +1249,8 @@ function toMenu() {
   diplomacy.close();
   if (running && !net && !bench) saveGame(true);
   if (net) { try { net.ch.close(); net.pc.close(); } catch { /* already gone */ } net = null; }
+  worldMaterialPending = null;
+  originalModels.bindNativeTerrainMaterial?.(null);
   running = false; $('menu').style.display = 'flex'; $('end').style.display = 'none'; $('mp').style.display = 'none';
 }
 $('quit').onclick = toMenu; $('again').onclick = toMenu;

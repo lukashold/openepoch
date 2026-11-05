@@ -1,6 +1,6 @@
 # OpenEpoch · lokaler EE2-Ausbau
 
-Arbeitsstand 05.11.2026 · native9. Das EE2-Profil verbindet die eigene Rust-/WASM-Simulation
+Arbeitsstand 05.11.2026 · native10. Das EE2-Profil verbindet die eigene Rust-/WASM-Simulation
 mit importierten Originalmodellen, Animationen, Stimmen, Musik und belegten Spielwerten.
 Die vollständige Übereinstimmung mit Empire Earth II wird weiter erarbeitet.
 
@@ -15,8 +15,11 @@ Die Bürgerproduktion wählt männliche und weibliche Bürger nach dem belegten
 Originalschritt. Beide haben ihre eigenen Originalmodelle, Animationen, Symbole
 und Stimmen aus vier Regionen und fünf Epochenstilen. Auswahl und Befehle nutzen
 die tatsächliche Identität der Einheit. Einquartieren, Transport und Laden
-erhalten sie. Stadtzentren der ersten drei Epochen verwenden die vier regionalen
-Originalmodelle und die passenden Jahreszeitentexturen.
+erhalten sie. Auch die Todesgeräusche folgen der Identität. Stadtzentren zeigen
+über alle 15 Epochen die sechs Originalstile der vier Kulturregionen. Die belegten
+Jahreszeitentexturen, Farbvarianten und regionalen Symbole liegen im
+Komplettpaket. Das Material für bestimmte Flächen der letzten Epoche wird
+beim Laden der Karte anhand der Oberfläche am Kartenursprung gebunden.
 
 Geschütze und weitere geeignete Einheiten packen beim Bewegen ein und vor dem
 Angriff aus. Die Auswahl bietet außerdem die manuellen Befehle Einpacken und
@@ -58,7 +61,7 @@ Browserbedienung und ein physischer Mac wurden dabei nicht ausgeführt.
 
 ## Komplettpaket für den Mac
 
-Das native9-Komplettpaket enthält den gemeinsam geprüften Laufzeitstand mit
+Das native10-Komplettpaket enthält den gemeinsam geprüften Laufzeitstand mit
 Originalmedien. Das zugehörige Quellpaket enthält eigenen Code, WASM-Builds und
 Prüfungen. Die vollständige Originalübereinstimmung wird weiter erarbeitet.
 
@@ -136,7 +139,7 @@ Nachmittag bei normalem Wetter gewählt. Die vollständige native Tageszeit-,
 Wetter- und Terrain-Lichtsteuerung ist noch offen.
 
 Die folgenden Abschnitte dokumentieren frühere Ausbaustände; maßgeblich ist
-der oben beschriebene Stand native9.
+der oben beschriebene Stand native10.
 
 ## Saisonale Modelle, Wasserreflexionen und Kameradrehung · visual-seasons2
 

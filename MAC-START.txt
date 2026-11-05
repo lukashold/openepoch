@@ -74,11 +74,12 @@ F4: Diplomatie. F: freie Bürger. H: Heimat. P: Pause. Cmd+S/Ctrl+S: speichern.
 Enter: Cheatdialog. icheat aktiviert Cheats; loot, sea monkeys und give tech
 sind im Einzelspieler vorhanden.
 
-Neuer Ausbau · native9
+Neuer Ausbau · native10
 Männliche und weibliche Bürger verwenden ihre Originalmodelle, Bewegungen,
 Symbole und Stimmen passend zur Region und Epoche. Das Spiel merkt sich diese
-Identität beim Einquartieren, Transport und Speichern. Die Stadtzentren der
-ersten drei Epochen zeigen regionale Modelle und Jahreszeitentexturen.
+Identität beim Einquartieren, Transport und Speichern. Das Todesgeräusch folgt
+der Identität. Die Stadtzentren aller 15 Epochen zeigen die passenden regionalen
+Originalmodelle, Originalsymbole und die belegten Jahreszeitentexturen.
 
 Die Kamera verwendet nun die aus Ghidra belegte Zoom-/Winkelkurve. Originale
 Modellmaßstäbe und Ursprünge, zusätzliche Materialwerte, höhenabhängige Schatten,
@@ -123,7 +124,7 @@ https://www.chromium.org/audio-video/
 https://support.mozilla.org/en-US/kb/html5-audio-and-video-firefox
 https://webkit.org/blog/16574/webkit-features-in-safari-18-4/
 
-Speichern im native9-Stand
+Speichern im native10-Stand
 Aktuelle Spielstände sichern auch laufende Packaufgaben, Wegfindungszustand
 und fliegende Geschosse sowie Bürgeridentitäten und ihren Zufallszustand.
 Ältere Stände werden geladen. Nicht gespeicherte

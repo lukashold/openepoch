@@ -12,3 +12,11 @@ export function selectedCitizenContext(wasm, state) {
 }
 
 export const isSourceCitizenContext = (id, context) => id === 8 && context?.sourceIdentityVersion === 1;
+
+// Presentation event emitted before the live actor slot is freed.
+export function decodeCitizenDeathCue(kind) {
+  const code = kind - 1024;
+  if (!Number.isInteger(code) || code < 0 || code >= 450) return null;
+  const context = code >>> 1;
+  return {sourceIdentityVersion: 1, sourceIdentity: code & 1, civilization: context % 15, epoch: Math.floor(context / 15)};
+}

@@ -1,5 +1,5 @@
 import {citizenPresentationCatalog} from './original-citizen-models.js?v=citizen9';
-import {isSourceCitizenContext} from './source-citizen-context.js?v=citizen9';
+import {isSourceCitizenContext} from './source-citizen-context.js?v=regional10';
 
 const iconPath = /^local-original\/citizens9\/icons\/[a-z0-9_.-]+\.png$/i;
 const recordingPath = /^local-original\/citizens9\/audio\/[a-z0-9_.-]+\.mp3$/i;
@@ -30,7 +30,7 @@ export async function loadCitizenPresentation({
     resolveAudio(id, action, epoch, context) {
       if (!isSourceCitizenContext(id, context) || !catalog) return null;
       const channel = action === 'build' ? 'order' : action;
-      if (!['select', 'order', 'attack'].includes(channel)) return null;
+      if (!['select', 'order', 'attack', 'death'].includes(channel)) return null;
       const {sourceIdentity, civilization} = context;
       const row = catalog.lookup(sourceIdentity, civilization, epoch);
       if (!row) return null;
@@ -40,7 +40,7 @@ export async function loadCitizenPresentation({
       if (!records.length) return null;
       return {
         namespace: 'native-citizen', sourceFamily: row.sourceFamily, sourceIdentity, civilization,
-        sourceEpoch: row.epoch, action: channel, records, group: 'voice', gain: 1,
+        sourceEpoch: row.epoch, action: channel, records, group: channel === 'death' ? 'effect' : 'voice', gain: 1,
         key: `citizen:${sourceIdentity}:${civilization}:${row.epoch}:${channel}`,
         legacyContextFallback: row.legacyContextFallback,
       };

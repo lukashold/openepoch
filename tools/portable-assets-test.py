@@ -652,6 +652,9 @@ class AssetAudit:
         if 'original-citizen-presentation.js' in self.files:
             self.check_citizens()
             self.check_models('local-original/regional9/manifest.json', 'regional-')
+        if 'local-original/regional-citycenters/manifest.json' in self.files:
+            self.check_models('local-original/regional-citycenters/manifest.json', 'town-centers-')
+            self.check_teams('local-original/regional-citycenters/team/manifest.json', 'town-centers-')
         self.check_textures_and_ground();self.check_teams();self.check_model_seasons();self.check_audio();self.check_static_runtime()
         if 'original-water.js' in self.files:self.check_water()
         if 'local-original/farm-composites.json' in self.files:self.check_farms()

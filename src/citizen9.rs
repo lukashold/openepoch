@@ -3,6 +3,25 @@
 //! handle reuse, saves and ownership changes; the renderer never chooses it.
 use crate::{game::*, defs::*, native_rng9::{NativeRng, CitizenIdentity}};
 
+impl Game {
+    /// Keep the sound event layout. Capture the identity before the actor
+    /// slot is freed, using an integer exactly represented in f32.
+    pub(super) fn citizen_death_cue(&self, index: usize) -> Option<f32> {
+        let actor = self.ents[index];
+        if actor.def != WORKER {
+            return None;
+        }
+        let identity = self.source_identity(self.h(index))?;
+        let team = actor.team as usize;
+        let civilization = u32::from(*self.civilizations.get(team)?);
+        let epoch = u32::from(self.players.get(team)?.epoch);
+        if identity > 1 || civilization > 14 || epoch > 14 {
+            return None;
+        }
+        Some((1024 + 2 * (epoch * 15 + civilization) + identity) as f32)
+    }
+}
+
 pub const MAGIC:u32=0x31524942; // BIR1
 pub const INNER_MAGIC:u32=0x3955454f; // OEU9: numeric8 plus mandatory source identity
 const END:u32=0x45524942; // BIRE

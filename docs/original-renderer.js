@@ -280,9 +280,10 @@ function gpuPart(gl,part,instanceBuffer,materialTexture,keepPickingGeometry=fals
  return {vao,pose,animations:part.animations,nativeStateClips:part.nativeStateClips,activities:part.activities,count:part.indices.length,texture:materialTexture,material:modelMaterial(part),alpha:alphaState(part),depth:depthState(part),height:maxY,pickGeometry,farmPlotOffset:part.farmPlotOffset||null,pipeline:{skinned:part.skinned,textureApplyMode:part.textureApplyMode,textureUrl:part.textureUrl,textureSource:part.textureSource,texture:part.texture}};
 }
 
-import {regionalModelEntries,selectRegionalModel} from './original-regional-models.js?v=regional9';
+import {regionalModelEntries,selectRegionalModel} from './original-regional-models.js?v=regional-citycenters';
 import {citizenModelEntries,selectCitizenModel} from './original-citizen-models.js?v=citizen9';
 import {loadAnimationPayload,withoutAnimationPayload} from './original-animation-payload.js?v=citizen9';
+import {createCityCenterTerrainBinding} from './original-citycenter-terrain.js?v=origin1';
 export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},options={}){
  const result={available:new Set(),models:new Map(),resourceRenderIds:new Set(),errors:[],metrics:{colorMs:0,shadowMs:0,calls:0,triangles:0,gpuMs:0},draw(){},updateTerrain(){},setLightingContext(){return false;},setLightingSettings(){return false;},setVisualCivilizations(){return false;},setSeasonPhase(){return false;},setSeasonClimate(){return false;},pickResource(){return null;}};if(!enabled)return result;
  let visualCivilizations=null;
@@ -373,6 +374,17 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
  result.prepareDynamicSails=inputs=>dynamicGPU?dynamicGPU.prepare(inputs):false;
  result.dynamicSailBounds=handle=>{const key=dynamicGPU?.sourceKey(handle);if(!key)return null;for(const variants of result.models.values())for(const variant of variants)if(variant.dynamicSailBinding?.key===key)return dynamicGPU.bounds(handle,variant);return null;};
  result.disposeDynamicSails=()=>dynamicGPU?.dispose();
+ let terrainMaterial = null;
+ if (options.terrainFallbackManifestURL) {
+  try {
+   terrainMaterial = createCityCenterTerrainBinding(await json(options.terrainFallbackManifestURL), async url => {
+    try { return await texture(gl, url, textures); }
+    catch (error) { textures.delete(url); throw error; }
+   });
+  } catch (error) { result.errors.push('Originales Gelände-Material: ' + error.message); }
+ }
+ result.bindNativeTerrainMaterial = context => terrainMaterial?.bind(context) ?? Promise.resolve(false);
+ result.nativeTerrainMaterialSnapshot = () => terrainMaterial?.snapshot() ?? null;
  const entries=[...(Array.isArray(manifest.models)?manifest.models:Object.entries(manifest.models||manifest.mapping||{}).map(([id,value])=>typeof value==='string'?{id:+id,url:value}:{id:+id,...value})),...regionalEntries,...citizenEntries];
  const loadParts=async (model,keepPickingGeometry=false,modelUrl=null)=>{
    const parts=[],selectedSeasonManifest=regionalSeasonManifest.models?.[modelUrl]?regionalSeasonManifest:seasonManifest;
@@ -413,7 +425,12 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
       return neutralGPU.get(source)||gpu.texture;
     };
     gpu.forTeam=team=>forSourceTeam(url,team);
+    const usesTerrainMaterial = terrainMaterial?.matches(modelUrl, model, part);
     gpu.forSeason=team=>{
+      if (usesTerrainMaterial) {
+        const pair = terrainMaterial.frames(yearPhase);
+        if (pair) return pair;
+      }
       const sequence=selectedSeasonManifest.sets?.[seasonClimate]?.[seasonalKey]?.urls,pair=modelSeasonFrames(sequence,yearPhase,url);
       return {first:forSourceTeam(pair.first,team),next:forSourceTeam(pair.next,team),blend:pair.blend};
     };
