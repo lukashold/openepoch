@@ -8,7 +8,7 @@ import { diplomacyPanel } from './diplomacy.js?v=fortress1';
 import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native6';
 import {loadNativeFontUI} from './original-font-ui.js?v=native6';
 import {territoryClaimMessage} from './territory-help.js?v=fortress1';
-import * as sfx from './audio.js?v=regional10';
+import * as sfx from './audio.js?v=regional11';
 import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=citizen9';
 import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regional10';
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
@@ -16,7 +16,7 @@ import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6
 import {loadNativeHud} from './original-hud.js?v=native6';
 import {loadOriginalModels} from './original-renderer.js?v=regional10';
 import {ownMapTerrainOrigin} from './original-citycenter-terrain.js?v=regional10';
-import {loadCityCenterIcons} from './original-citycenter-icons.js?v=regional10';
+import {loadCityCenterIcons,loadHouseIcons} from './original-citycenter-icons.js?v=regional11';
 import {loadSourceSailRuntime} from './source-sail-runtime.js?v=sails7';
 import {createRenderAssetMapping} from './original-render-namespace.js?v=native6';
 import {createFrontendNamespace} from './render-namespace.js?v=native9';
@@ -445,16 +445,18 @@ for (const pr of [terrain, water, models, quads]) {
 const originalEnabled=referenceMode&&new URLSearchParams(location.search).get('assets')!=='procedural';
 const originalAssets=await loadOriginalAssets(gl,originalEnabled);
 const citizenPresentation=await loadCitizenPresentation({enabled:originalEnabled&&rulesProfile.sourceIdentityVersion===1});
-const cityCenterIcons=await loadCityCenterIcons({enabled:originalEnabled&&rulesProfile.ruleset===2,profile:'packed7',neutralFallback:'west'});
-const cityCenterIconsReady=cityCenterIcons.status().enabled;
+const buildingIconOptions={enabled:originalEnabled&&rulesProfile.ruleset===2,profile:'packed7',neutralFallback:'west'};
+const [cityCenterIcons,houseIcons]=await Promise.all([loadCityCenterIcons(buildingIconOptions),loadHouseIcons(buildingIconOptions)]);
+const buildingIcons = new Map([[0, cityCenterIcons], [1, houseIcons]]);
+const buildingPortraits = new Set([...buildingIcons].filter(([, icons]) => icons.status().enabled).map(([id]) => id));
 originalAssets.citizenPresentation=citizenPresentation;
 const originalLabels=await loadOriginalLabels(rulesProfile,{definitionCount:renderNamespace.definitionCount,...(rulesProfile.ruleset===2?{manifestURL:'./local-original/labels-native-civ8.json'}:{})});
 const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,total)=>{
   $('play').textContent=`Originalgrafiken laden · ${Math.round(loaded/total*100)} %`;
-},{assetMapping,packAnimations:rulesProfile.ruleset===2,dynamicSails:rulesProfile.ruleset===2&&typeof wasm.render_meta_version==='function',lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-civ8.json',scaleManifestURL:'./local-original/model-scales-civ8.json',teamManifestURL:'./local-original/team-textures/manifest-civ8.json',regionalManifestURL:'./local-original/regional-citycenters/manifest.json',terrainFallbackManifestURL:'./local-original/citycenter-terrain/manifest.json',citizenManifestURL:'./local-original/citizens9/manifest.json',citizenNeutralFallback:'west',sourceIdentityForActor:actor=>wasm.actor_source_identity(actor.handle)>>>0}:{})});
+},{assetMapping,packAnimations:rulesProfile.ruleset===2,dynamicSails:rulesProfile.ruleset===2&&typeof wasm.render_meta_version==='function',lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-civ8.json',scaleManifestURL:'./local-original/model-scales-civ8.json',teamManifestURL:'./local-original/team-textures/manifest-civ8.json',regionalManifestURL:'./local-original/regional-houses/manifest.json',terrainFallbackManifestURL:'./local-original/regional-houses/terrain-fallback.json',citizenManifestURL:'./local-original/citizens9/manifest.json',citizenNeutralFallback:'west',sourceIdentityForActor:actor=>wasm.actor_source_identity(actor.handle)>>>0}:{})});
 const sourceSails=await loadSourceSailRuntime({wasm,namespace:renderNamespace,models:originalModels,enabled:originalEnabled&&rulesProfile.ruleset===2,decorateMetadata:metadata=>packMetadata?packMetadata.snapshot(metadata):metadata});
 if(sourceSails?.metrics.error)console.warn('Source sails:',sourceSails.metrics.error);
-sfx.configureOriginalDefinitions({wasm,bindings:originalModels.manifest?.models||[],citizenPresentation,...(rulesProfile.ruleset===2?{familyManifestURL:'native-families-civ8.json'}:{})});
+sfx.configureOriginalDefinitions({wasm,bindings:originalModels.manifest?.models||[],citizenPresentation,regionalMusic:rulesProfile.ruleset===2,...(rulesProfile.ruleset===2?{familyManifestURL:'native-families-civ8.json'}:{})});
 const originalGround=await loadOriginalGround(gl,originalEnabled,{assetMapping});
 const originalTerrain=await loadOriginalTerrain(gl,originalEnabled,TEAM);
 originalTerrain.setLightingContext?.(originalModels.lighting);
@@ -493,6 +495,7 @@ const mouse = { x: 0, y: 0, down: false, sx: 0, sy: 0, drag: false, pan: false, 
 const keys = new Set();
 let running = false, paused = false, speed = 1, acc = 0, last = 0, bench = 0;
 let worldMaterialPending = null;
+let initialMusicEpoch = 0, musicCivilization = 0;
 let net = null;          // { ls: Lockstep, ch: RTCDataChannel } in multiplayer
 let ghost = null;        // { id, size, name, turn } while placing a building
 let placementKey='',lastWheelRotation=0;
@@ -634,7 +637,7 @@ function bindWorldTerrainMaterial() {
     await originalModels.bindNativeTerrainMaterial({climate: 'Temperate', detailCode: 2, origin});
   })();
   worldMaterialPending = binding;
-  binding.catch(error => console.warn('Stadtzentrum-Material:', error.message)).finally(() => {
+  binding.catch(error => console.warn('Gebäudematerial:', error.message)).finally(() => {
     if (worldMaterialPending === binding) {
       worldMaterialPending = null;
       last = performance.now();
@@ -651,6 +654,13 @@ function begin() {
   $('camera-tools').hidden=!referenceMode;
   uploadTerrain();
   bindWorldTerrainMaterial();
+  if (rulesProfile.ruleset === 2) {
+    const ptr = wasm.ui();
+    const state = JSON.parse(dec.decode(u8(ptr, wasm.ui_len())));
+    initialMusicEpoch = state.epoch;
+    musicCivilization = wasm.player_civilization(state.local) >>> 0;
+    sfx.resetRegionalMusic();
+  }
   wasm.events_clear();
   running = true; last = performance.now(); lastAuto = last;
 }
@@ -767,7 +777,7 @@ setInterval(() => {
 function frame(now) {
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
   if (!running || worldMaterialPending) { sfx.music(false); return; }
-  sfx.music(!paused, ui?.epoch || 0);
+  sfx.music(!paused, ui?.epoch ?? initialMusicEpoch, musicCivilization);
   frameMs += (dt * 1000 - frameMs) * 0.05;
   worstMs = Math.max(worstMs * 0.995, dt * 1000);
 
@@ -934,8 +944,8 @@ function frame(now) {
 const HOT = ['Q', 'W', 'E', 'R', 'T', 'Z', 'X', 'C', 'V', 'B'];
 function icon(id, px,context=undefined) {
   const c = document.createElement('canvas'); c.width = c.height = px;
-  const regional = id === 0 && ui && rulesProfile.ruleset === 2
-    ? cityCenterIcons.icon(ui.epoch, wasm.player_civilization(ui.local) >>> 0) : undefined;
+  const regional = ui && rulesProfile.ruleset === 2
+    ? buildingIcons.get(id)?.icon(ui.epoch, wasm.player_civilization(ui.local) >>> 0) : undefined;
   const original=regional??originalIcon(originalAssets,id,ui?.epoch||0,context);
   if(original){
     const scale=Math.min(px/original.width,px/original.height),w=original.width*scale,h=original.height*scale;
@@ -997,7 +1007,7 @@ function updateUi(drawn, now) {
     info.innerHTML = h;
     if (s.n === 1) {
       const context = selectedCitizenContext(wasm, ui);
-      if (context && citizenPresentation.enabled || s.def === 0 && cityCenterIconsReady) {
+      if ((context && citizenPresentation.enabled) || buildingPortraits.has(s.def)) {
         const portrait = icon(s.def, 40, context);
         portrait.style.cssText = 'vertical-align:middle;margin-right:6px';
         info.querySelector('h3')?.prepend(portrait);
@@ -1250,6 +1260,7 @@ function toMenu() {
   if (running && !net && !bench) saveGame(true);
   if (net) { try { net.ch.close(); net.pc.close(); } catch { /* already gone */ } net = null; }
   worldMaterialPending = null;
+  sfx.resetRegionalMusic();
   originalModels.bindNativeTerrainMaterial?.(null);
   running = false; $('menu').style.display = 'flex'; $('end').style.display = 'none'; $('mp').style.display = 'none';
 }

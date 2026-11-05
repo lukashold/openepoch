@@ -1,20 +1,22 @@
 const profiles = {packed5: [77, 60], packed7: [308, 240]};
-const starts = [0, 3, 6, 9, 12, 14, 15];
+const stages = {citycenter: [0, 3, 6, 9, 12, 14, 15], house: [0, 2, 4, 6, 8, 10, 12, 14, 15]};
 const regions = [0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3];
 
-export function cityCenterIconCatalog(manifest, {profile, neutralFallback = null} = {}) {
+export function cityCenterIconCatalog(manifest, {profile, neutralFallback = null, family = 'citycenter'} = {}) {
+  if (typeof family !== 'string' || !Object.hasOwn(stages, family)) throw Error('Unknown building icon family');
+  const starts = stages[family];
   if (typeof profile !== 'string' || !Object.hasOwn(profiles, profile) || ![null, 'west'].includes(neutralFallback)) {
     throw Error('CityCenter icon profile must be explicit');
   }
   const [width, height] = profiles[profile];
   const binding = manifest?.profiles?.[profile];
-  if (manifest?.format !== 'native-citycenter-icons-v1' || binding?.rows?.length !== 24
+  if (manifest?.format !== `native-${family}-icons-v1` || binding?.rows?.length !== (starts.length - 1) * 4
       || !Array.isArray(binding.rows) || !binding.assets || binding.scale !== width / 77) {
     throw Error('Invalid CityCenter icon manifest');
   }
   const rows = new Map();
   const assets = new Map();
-  const directory = `local-original/citycenter-icons/${profile}/`;
+  const directory = `local-original/${family}-icons/${profile}/`;
   for (const row of binding.rows) {
     const {epoch, until, region, asset, civilizations} = row;
     const end = starts[starts.indexOf(epoch) + 1];
@@ -47,9 +49,9 @@ export function cityCenterIconCatalog(manifest, {profile, neutralFallback = null
 }
 
 export async function loadCityCenterIcons({
-  enabled = false, profile, neutralFallback = null,
+  enabled = false, profile, neutralFallback = null, family = 'citycenter',
   fetchFile = globalThis.fetch, bitmapFile = globalThis.createImageBitmap,
-  manifestURL = new URL('./local-original/citycenter-icons/manifest.json', import.meta.url),
+  manifestURL,
   base = new URL('./', import.meta.url),
 } = {}) {
   const images = new Map();
@@ -69,9 +71,11 @@ export async function loadCityCenterIcons({
   });
   if (!enabled) return result;
   try {
-    const response = await fetchFile(manifestURL, {cache: 'no-cache'});
+    if (typeof family !== 'string' || !Object.hasOwn(stages, family)) throw Error('Unknown building icon family');
+    const source = manifestURL ?? new URL(`./local-original/${family}-icons/manifest.json`, import.meta.url);
+    const response = await fetchFile(source, {cache: 'no-cache'});
     if (!response.ok) throw Error('CityCenter icon manifest unavailable');
-    catalog = cityCenterIconCatalog(await response.json(), {profile, neutralFallback});
+    catalog = cityCenterIconCatalog(await response.json(), {profile, neutralFallback, family});
     await Promise.all(catalog.files.map(async image => {
       try {
         const url = new URL(image.url, base);
@@ -92,4 +96,8 @@ export async function loadCityCenterIcons({
     errors.push(error.message);
   }
   return result;
+}
+
+export function loadHouseIcons(options = {}) {
+  return loadCityCenterIcons({...options, family: 'house'});
 }

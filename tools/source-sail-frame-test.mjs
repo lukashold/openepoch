@@ -45,7 +45,7 @@ const noop=()=>{},program={p:{},u:new Proxy({},{get:()=>null})};
 const gl=new Proxy({getContextAttributes:()=>({stencil:true})},{get:(o,k)=>o[k]??noop});
 const canvas={width:0,height:0,dataset:{}},quality={value:'2'};
 const context=vm.createContext({console,Float32Array,Uint32Array,Set,Math,
- running:true,worldMaterialPending:null,paused:false,net:null,speed:2,last:1000,frameMs:16.7,worstMs:0,bench:0,ui:{epoch:5},simMs:0,rulesProfile:{ruleset:w.ruleset()},
+ running:true,worldMaterialPending:null,initialMusicEpoch:0,musicCivilization:0,paused:false,net:null,speed:2,last:1000,frameMs:16.7,worstMs:0,bench:0,ui:{epoch:5},simMs:0,rulesProfile:{ruleset:w.ruleset()},
  sfx:{music:noop,play:noop},cam:{x:100,y:100,zoom:40},keys:new Set(),referenceMode:true,ghost:null,mouse:{inside:false},
  updateOriginalCamera:noop,rotateOriginalCameraHeading:noop,updateCamera:noop,panCameraScreen:noop,advance:noop,TICK:.05,acc:0,
  lastAuto:10000,lastUi:10000,lastMini:10000,lastWorkSound:10000,saveGame:noop,devicePixelRatio:1,innerWidth:1280,innerHeight:720,

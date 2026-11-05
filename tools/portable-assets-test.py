@@ -142,9 +142,10 @@ class AssetAudit:
         loaded=set()
         for i,row in enumerate(models):
             if row.get('verified') is False:continue
-            for field in ('url','lodFarUrl'):
-                if field=='lodFarUrl' and not row.get(field):continue
-                name=self.ref(row.get(field),f'{manifest_name}.models[{i}].{field}','near-model' if field=='url' else 'far-model')
+            for field, kind in [('url', 'near-model'), ('lodMiddleUrl', 'middle-model'), ('lodFarUrl', 'far-model')]:
+                if field != 'url' and not row.get(field):
+                    continue
+                name=self.ref(row.get(field),f'{manifest_name}.models[{i}].{field}',kind)
                 if not name or name in loaded:continue
                 loaded.add(name);model=self.read_json(name)
                 for j,part in enumerate(model.get('parts',[])):
@@ -655,6 +656,9 @@ class AssetAudit:
         if 'local-original/regional-citycenters/manifest.json' in self.files:
             self.check_models('local-original/regional-citycenters/manifest.json', 'town-centers-')
             self.check_teams('local-original/regional-citycenters/team/manifest.json', 'town-centers-')
+        if 'local-original/regional-houses/manifest.json' in self.files:
+            self.check_models('local-original/regional-houses/manifest.json', 'regional-buildings-')
+            self.check_teams('local-original/regional-houses/team/manifest.json', 'regional-buildings-')
         self.check_textures_and_ground();self.check_teams();self.check_model_seasons();self.check_audio();self.check_static_runtime()
         if 'original-water.js' in self.files:self.check_water()
         if 'local-original/farm-composites.json' in self.files:self.check_farms()

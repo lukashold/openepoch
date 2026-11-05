@@ -1,6 +1,6 @@
 // The EE2 profile uses locally extracted original recordings when available.
 // Procedural sounds and local speech remain the fallback for the standalone game.
-import { createOriginalAudio } from './original-audio.js?v=regional10';
+import { createOriginalAudio } from './original-audio.js?v=regional11';
 const originals=createOriginalAudio();
 
 let ctx = null, master = null, noise = null;
@@ -38,8 +38,8 @@ export const isSpeechEnabled = () => speechEnabled;
 
 // Original short procedural score. Scheduling is driven by the animation loop;
 // it does not change simulation state and resumes cleanly after leaving the game.
-export function music(active, epoch = 0) {
-  if(originals.music(active&&!muted,epoch,musicEnabled)){nextMusic=0;return;}
+export function music(active, epoch = 0, civilization = 0) {
+  if(originals.music(active&&!muted,epoch,musicEnabled,civilization)){nextMusic=0;return;}
   if (!active || muted || !musicEnabled || !ctx || ctx.state !== 'running') { nextMusic = 0; return; }
   const now = ctx.currentTime;
   if (!nextMusic || nextMusic < now - 1) nextMusic = now + .05;
@@ -77,6 +77,7 @@ export function acknowledge(def, action, epoch=0,context=undefined) {
 export const isMuted = () => muted;
 export const originalAudioStatus = () => originals.status();
 export const configureOriginalDefinitions = settings => originals.setDefinitionBindings(settings);
+export const resetRegionalMusic = () => originals.resetRegionalMusic();
 
 export function citizenDeath(context, volume, pan) {
   if (muted || volume < 0.02 || !ensure() || ctx.state !== 'running') return false;

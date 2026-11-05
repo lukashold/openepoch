@@ -1,4 +1,5 @@
 import {createTypedAudioBindings} from './original-audio-bindings.js?v=native8';
+import {createRegionalMusicPlayback} from './original-regional-music.js?v=regional11';
 // Playback of original assets extracted from the user's local EE2 installation.
 // Metadata and byte-for-byte source hashes live beside those assets. This module
 // contains no recordings and remains usable when local-original is absent.
@@ -13,8 +14,18 @@ export function createOriginalAudio(options={}) {
   let musicSource=null,musicBuffer=null,musicFile=null,musicOffset=0,musicStarted=0,musicIndex=0,musicGeneration=0,musicPendingFile=null;
   let ambientSource=null,nextBird=0,currentEpoch=0,previousPeriod=-1;
   let citizenPresentation=options.citizenPresentation||null;
+  let regionalMusicEnabled=!!options.regionalMusic, regionalMusic=null;
   let familyManifest=options.familyManifest||null,familyManifestURL=options.familyManifestURL||'native-families.json',definitionSettings={wasm:null,bindings:[]},typed=createTypedAudioBindings({familyManifest});
-  function setDefinitionBindings({wasm=null,bindings=[],familyManifestURL:url=familyManifestURL,citizenPresentation:citizens=citizenPresentation}={}){if(url!==familyManifestURL){familyManifest=null;familyManifestURL=url;}citizenPresentation=citizens;definitionSettings={wasm,bindings};typed=createTypedAudioBindings({...definitionSettings,familyManifest});if(manifest)prepareFamilyBindings();}
+  function setDefinitionBindings({wasm=null,bindings=[],familyManifestURL:url=familyManifestURL,
+    citizenPresentation:citizens=citizenPresentation,regionalMusic:useRegionalMusic=regionalMusicEnabled}={}) {
+    if(url!==familyManifestURL){familyManifest=null;familyManifestURL=url;}
+    citizenPresentation=citizens;
+    regionalMusicEnabled=useRegionalMusic;
+    if (!regionalMusicEnabled) regionalMusic?.reset();
+    definitionSettings={wasm,bindings};
+    typed=createTypedAudioBindings({...definitionSettings,familyManifest});
+    if(manifest)prepareFamilyBindings();
+  }
   const stats={voicePlays:0,effectPlays:0,musicStarts:0,ambientStarts:0};
 
   function load(file) {
@@ -165,20 +176,28 @@ export function createOriginalAudio(options={}) {
     const buffer=buffers.get(record.file);if(!buffer){load(record.file);return false;}
     start(buffer,volume*(record.volume??1),pan,'effect');stats.effectPlays++;return true;
   }
-  function music(running,epoch=0,enabledMusic=musicEnabled) {
+  function music(running,epoch=0,enabledMusic=musicEnabled,civilization=0) {
     active=running;musicEnabled=enabledMusic;currentEpoch=epoch;
     if(!manifest)return false;
+    if (regionalMusicEnabled && !regionalMusic) {
+      regionalMusic = createRegionalMusicPlayback(ctx, master, {fetchFile, onStart: () => stats.musicStarts++});
+    }
+    const regional = regionalMusicEnabled && regionalMusic?.update({running:canRun(), enabled:musicEnabled, civilization, epoch});
     if(!canRun()){stopMusic();stopAmbient();return true;}
-    if(!musicEnabled)stopMusic();else advanceMusic();
+    if (regional) {
+      if (musicFile) stopMusic(false);
+    } else if(!musicEnabled)stopMusic();else advanceMusic();
     advanceAmbient();
+    if (regional) return true;
     const tracks=currentEpoch>=10?manifest.music?.late:manifest.music?.west;
     return !musicEnabled||!!tracks?.some(file=>!failed.has(file));
   }
   return {
     prepare,acknowledge,citizenDeath,effect,music,setDefinitionBindings,role:(id,epoch)=>typed.role(id,epoch),
-    setMuted(value){muted=value;if(value){stopMusic();stopAmbient();for(const source of [...live])stop(source);}},
+    resetRegionalMusic(){regionalMusic?.reset();},
+    setMuted(value){muted=value;if(value){regionalMusic?.suspend();stopMusic();stopAmbient();for(const source of [...live])stop(source);}},
     setSpeechEnabled(value){speech=value;if(!value)stopVoices();},
-    setMusicEnabled(value){musicEnabled=value;if(!value)stopMusic();},
-    status(){return {typedAudio:typed.status(),citizens:citizenPresentation?.status()||null,enabled,ready:!!manifest,buffers:buffers.size,failed:[...failed],activeVoices:[...live].filter(x=>x.originalGroup==='voice').length,music:!!musicSource,ambient:!!ambientSource,...stats};}
+    setMusicEnabled(value){musicEnabled=value;if(!value){regionalMusic?.suspend();stopMusic();}},
+    status(){const regional=regionalMusic?.status()??null;return {typedAudio:typed.status(),citizens:citizenPresentation?.status()||null,enabled,ready:!!manifest,buffers:buffers.size,failed:[...failed],activeVoices:[...live].filter(x=>x.originalGroup==='voice').length,music:!!musicSource||!!regional?.active,regionalMusic:regional,ambient:!!ambientSource,...stats};}
   };
 }

@@ -88,6 +88,13 @@ def main():
         required.update({'docs/original-citycenter-terrain.js', 'docs/local-original/citycenter-terrain/manifest.json'})
     if 'loadCityCenterIcons' in main_source:
         required.update({'docs/original-citycenter-icons.js', 'docs/local-original/citycenter-icons/manifest.json'})
+    if 'regionalMusic:rulesProfile.ruleset===2' in main_source:
+        required.update({'docs/original-regional-music.js', 'docs/source-music-controller.js',
+                         'docs/local-original/music11/manifest.json'})
+    if 'loadHouseIcons' in main_source:
+        required.update({'docs/local-original/house-icons/manifest.json', 'docs/local-original/regional-houses/manifest.json',
+                         'docs/local-original/regional-houses/terrain-fallback.json',
+                         'docs/local-original/regional-houses/model-seasons.json', 'docs/local-original/regional-houses/team/manifest.json'})
     if len(names) != len(set(names)) or not required.issubset(names):
         raise ValueError("Incomplete or duplicated game tree")
     print("Hashing complete game files ...", flush=True)
