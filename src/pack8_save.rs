@@ -6,7 +6,7 @@ pub const END:u32=0x454b4350; // PCKE
 pub const HEADER:usize=64;pub const RECORD:usize=48;
 fn u(b:&[u8],at:usize)->Option<u32>{Some(u32::from_le_bytes(b.get(at..at+4)?.try_into().ok()?))}
 fn put(b:&mut Vec<u8>,v:u32){b.extend_from_slice(&v.to_le_bytes());}
-fn checksum(b:&[u8])->u32{b.iter().fold(2166136261u32,|a,&v|(a^v as u32).wrapping_mul(16777619))}
+pub(crate) fn checksum(b:&[u8])->u32{b.iter().fold(2166136261u32,|a,&v|(a^v as u32).wrapping_mul(16777619))}
 pub fn split(buf:&[u8])->Option<(&[u8],Option<&[u8]>)>{
  if u(buf,0)!=Some(MAGIC){return Some((buf,None));}
  if buf.len()<HEADER+36+12||u(buf,56)!=Some(RECORD as u32)||u(buf,60)!=Some(HEADER as u32)||buf.get(24..56)?!=pack8_defs::SOURCE_HASH{return None;}

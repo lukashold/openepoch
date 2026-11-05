@@ -67,10 +67,20 @@ impl Game {
         crate::civ8_save::write(self,&mut b);
         #[cfg(feature="ee2-citizen9")] if !crate::citizen9::mark_inner(&mut b){b.clear();}
         #[cfg(feature="ee2-pack8")] {if !b.is_empty(){b=self.wrap_pack_save(&b);}}
+        #[cfg(feature="ee2-ai9-game-bridge")]
+        if let Some(state) = &self.native_research {
+            b = crate::ai9_game_save::wrap(self, state, &b).unwrap_or_default();
+        }
+        #[cfg(feature="ee2-epoch-range13")]
+        { b = crate::match_epoch_range13::wrap(b, self.final_epoch); }
         self.savebuf = b;
     }
 
     pub fn load(buf: &[u8]) -> Option<Game> {
+        #[cfg(feature="ee2-epoch-range13")]
+        let (buf, final_epoch) = crate::match_epoch_range13::split(buf)?;
+        #[cfg(feature="ee2-ai9-game-bridge")]
+        let (buf, native_research) = crate::ai9_game_save::split(buf)?;
         #[cfg(feature="ee2-citizen9")] let current_source9=crate::citizen9::current_outer(buf);
         #[cfg(feature="ee2-pack8")] let (pack_core,pack_records)=crate::pack8_save::split(buf)?;
         #[cfg(feature="ee2-pack8")] let buf=pack_core;
@@ -190,7 +200,9 @@ impl Game {
             }
             g.research_points[0]+=g.tech_points as f32;g.tech_points=0;
         }
-        for p in &g.players[..g.nplayers] {if p.epoch>MAX_EPOCH {return None;}}
+        #[cfg(feature="ee2-epoch-range13")]
+        { g.final_epoch = final_epoch; }
+        for p in &g.players[..g.nplayers] {if p.epoch>g.match_final_epoch() {return None;}}
         for e in &g.ents[..high] {
             if !e.alive {continue;}
             if e.def as usize>=DEFS.len() || e.team as usize>=g.nplayers || e.qn>5 || e.ncargo as usize>CARGO_MAX {return None;}
@@ -198,6 +210,11 @@ impl Game {
             if DEFS[e.def as usize].building{let(tx,ty,side)=Game::building_bounds(e);if tx<0||ty<0||tx+side>N as i32||ty+side>N as i32{return None;}}
             if e.cargo[..e.ncargo as usize].iter().any(|&c| c as usize>=DEFS.len()) {return None;}
             if DEFS[e.def as usize].building && e.q[..e.qn as usize].iter().any(|&q| q!=RESEARCH && !original_research(q) && q as usize>=DEFS.len() && (q<TECH0 || (q-TECH0) as usize>=TECHS.len())) {return None;}
+            #[cfg(feature="ee2-epoch-range13")]
+            if g.final_epoch < MAX_EPOCH && DEFS[e.def as usize].building &&
+                g.players[e.team as usize].epoch == g.final_epoch && e.q[..e.qn as usize].contains(&RESEARCH) {
+                return None;
+            }
         }
         #[cfg(feature="ee2-civ8")]
         {
@@ -264,6 +281,10 @@ impl Game {
         }else{g.refresh_display_fog();}
         g.terr_dirty = true;
         #[cfg(feature="ee2-pack8")] g.read_pack_save(pack_records)?;
+        #[cfg(feature="ee2-ai9-game-bridge")]
+        if let Some(records) = native_research {
+            g.native_research = Some(crate::ai9_game_save::decode(&g, records)?);
+        }
         Some(g)
     }
 }

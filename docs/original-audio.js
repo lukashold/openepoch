@@ -179,7 +179,9 @@ export function createOriginalAudio(options={}) {
   function regionalPlayback() {
     if (!regionalMusicEnabled || !ctx || !master) return null;
     if (!regionalMusic) {
-      regionalMusic = createRegionalMusicPlayback(ctx, master, {fetchFile, onStart: () => stats.musicStarts++});
+      regionalMusic = createRegionalMusicPlayback(ctx, master, {
+        fetchFile, random: options.presentationRandom, onStart: () => stats.musicStarts++,
+      });
     }
     return regionalMusic;
   }

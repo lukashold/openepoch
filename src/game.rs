@@ -206,6 +206,8 @@ pub struct Game {
     pub rng: Rng,
     #[cfg(feature="ee2-citizen9")]
     pub source_birth:crate::citizen9::SourceBirth,
+    #[cfg(feature="ee2-ai9-game-bridge")]
+    pub(crate) native_research:Option<crate::ai9_game_bridge::DurableResearch>,
     pub vis: Vec<u8>,
     /// Genuine per-team exploration, independent of local display options.
     pub team_vis: Vec<u8>,
@@ -238,6 +240,8 @@ pub struct Game {
     pub civilizations:[u8;4],
     #[cfg(feature="ee2-civ8")]
     pub civ_setup_open:bool,
+    #[cfg(feature = "ee2-epoch-range13")]
+    pub(crate) final_epoch: u8,
     pub groups: Vec<Vec<u32>>,
     pub push: Vec<(f32, f32)>,
     pub scratch: Vec<usize>,
@@ -286,6 +290,8 @@ impl Game {
             rng: Rng(seed.wrapping_mul(2_654_435_761) | 1),
             #[cfg(feature="ee2-citizen9")]
             source_birth:crate::citizen9::SourceBirth::new(seed),
+            #[cfg(feature="ee2-ai9-game-bridge")]
+            native_research:None,
             vis: vec![0; NN],
             team_vis: vec![0; 4*NN], diplomacy: crate::diplomacy::Diplomacy::default(),
             territory: crate::territory::TerritoryDiplomacy::default(),
@@ -312,6 +318,8 @@ impl Game {
             civilizations:[crate::civ8_runtime::LEGACY_NEUTRAL;4],
             #[cfg(feature="ee2-civ8")]
             civ_setup_open:true,
+            #[cfg(feature = "ee2-epoch-range13")]
+            final_epoch: MAX_EPOCH,
             groups: vec![Vec::new(); 10],
             push: vec![(0.0, 0.0); MAXE],
             scratch: Vec::with_capacity(256),
@@ -492,6 +500,12 @@ impl Game {
 
     /// Would `train(b, def)` succeed right now?
     pub fn can_train(&self, b: usize, def:QueueItem) -> bool {
+        #[cfg(feature="ee2-ai9-game-bridge")]
+        if crate::ai9_rank::index(def).is_some() {
+            let host = &self.ents[b];
+            return host.alive && host.hp > 0.0 && host.built >= 1.0
+                && self.can_source_research(host.team, host.def, def as usize);
+        }
         #[cfg(feature="ee2-civ8")]
         if (def as usize)<DEFS.len()&&!self.definition_civ_available(self.ents[b].team,def as DefId){return false;}
         // The installed UP profile exposes native research, never the separate
@@ -501,6 +515,13 @@ impl Game {
         if crate::ids::decode_job(def).is_none_or(|(kind,_)|kind==2){return false;}
         let e = &self.ents[b];
         let p = &self.players[e.team as usize];
+        #[cfg(feature="ee2-ai9-game-bridge")]
+        if original_research(def) {
+            let id = (def - ORIGINAL_RESEARCH0) as usize;
+            if self.owns_source_research(e.team, id) {
+                return e.alive && e.built >= 1.0 && self.can_source_research(e.team, e.def, id);
+            }
+        }
         if !DEFS[e.def as usize].building || e.built < 1.0 || e.qn >= 5 {
             return false;
         }
@@ -524,6 +545,17 @@ impl Game {
             return false;
         }
         let team = self.ents[b].team;
+        #[cfg(feature="ee2-ai9-game-bridge")]
+        if crate::ai9_rank::index(def).is_some() {
+            return self.request_source_research(team, def as usize);
+        }
+        #[cfg(feature="ee2-ai9-game-bridge")]
+        if original_research(def) {
+            let id = (def - ORIGINAL_RESEARCH0) as usize;
+            if self.owns_source_research(team, id) {
+                return self.request_source_research(team, id);
+            }
+        }
         #[cfg(feature="ee2-paidqueue7")]
         let paid=self.quote_paid_job(b,self.ents[b].qn as usize,def,false);
         if def == RESEARCH {
@@ -822,6 +854,11 @@ impl Game {
         let mut mix = |v: u32| h = (h ^ v).wrapping_mul(16_777_619);
         mix(self.tick);
         mix(self.rng.0);
+        #[cfg(feature = "ee2-epoch-range13")]
+        if self.final_epoch != MAX_EPOCH {
+            mix(crate::match_epoch_range13::MAGIC);
+            mix(self.final_epoch.into());
+        }
         #[cfg(feature="ee2-civ8")]
         if self.civilizations.iter().any(|&c|c!=crate::civ8_runtime::LEGACY_NEUTRAL){
             mix(0x38564943);for c in self.civilizations{mix(c as u32);}
@@ -887,6 +924,8 @@ impl Game {
         #[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
         self.hash_decisions8(&mut mix);
         #[cfg(feature="ee2-citizen9")] for word in self.source_birth_hash_words(){mix(word);}
+        #[cfg(feature="ee2-ai9-game-bridge")]
+        if let Some(state) = &self.native_research { crate::ai9_game_save::hash(state, &mut mix); }
         h
     }
 
@@ -952,6 +991,8 @@ impl Game {
                 self.bench_step();
             }
         } else {
+            #[cfg(feature="ee2-ai9-game-bridge")]
+            self.tick_source_research();
             for t in 0..self.nplayers {
                 if self.players[t].ai && (self.tick + t as u32 * 7) % 24 == 0 {
                     self.ai_step(t as u8);
@@ -1408,6 +1449,8 @@ impl Game {
                     #[cfg(not(feature="ee2-paidqueue7"))] {EPOCH_TIME}
                 } {
                     #[cfg(feature="ee2-paidqueue7")] let previous_epoch=self.players[team].epoch;
+                    #[cfg(feature="ee2-ai9-game-bridge")]
+                    self.reset_source_rank_for_epoch(e.team);
                     self.players[team].epoch += 1;
                     self.players[team].researching = false;
                     let old=self.max_hp(e.team,e.def);self.rebuild_modifiers(e.team,true);e.hp*=self.max_hp(e.team,e.def)/old.max(0.01);

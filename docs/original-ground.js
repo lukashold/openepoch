@@ -137,7 +137,7 @@ export async function loadOriginalGround(gl,enabled,options={}){
   const fetchFile=options.fetch||fetch,decode=options.decode||createImageBitmap;
   const state=snapshot(gl),textures=new Map();let shader,vao,instances,height;
   try{
-    const response=await fetchFile(new URL('./local-original/ground-decals.json',import.meta.url),{cache:'no-store'});
+    const response=await fetchFile(new URL(options.manifestURL??'./local-original/ground-decals.json',import.meta.url),{cache:'no-store'});
     if(!response.ok)throw Error(`Ground manifest: ${response.status}`);
     const manifest=await response.json();result.manifest=manifest;
     // Deduplicate physical source images shared by several building bindings.

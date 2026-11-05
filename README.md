@@ -1,6 +1,6 @@
 # OpenEpoch · lokaler EE2-Ausbau
 
-Arbeitsstand 05.11.2026 · native12. Das EE2-Profil verbindet die eigene Rust-/WASM-Simulation
+Arbeitsstand 05.11.2026 · native13. Das EE2-Profil verbindet die eigene Rust-/WASM-Simulation
 mit importierten Originalmodellen, Animationen, Stimmen, Musik und belegten Spielwerten.
 Die vollständige Übereinstimmung mit Empire Earth II wird weiter erarbeitet.
 
@@ -27,6 +27,10 @@ Jahreszeiten und Symbolen über alle 15 Epochen. Bei Häusern mit gespeicherten
 Detailstufen folgt die Auswahl der Stufe aus der Originalressource.
 Häfen verwenden in allen 15 Epochen ihre Originalmodelle und Symbole,
 einschließlich der eigenen nahöstlichen Variante der zehnten Epoche.
+Kasernen zeigen die sechs Originalstile mit ihren Symbolen sowie Stadt-,
+Land- und Winterböden. Das Scharmützelmenü verwendet Originalrahmen,
+Pergament und Schaltflächen mit den Bereichen Spiel, Erweitert, Karte und
+Umgebung. Die Anordnung passt sich der Fenstergröße an.
 Das Komplettpaket enthält 70 Originalmusikdateien. Im Scharmützel bestimmen
 Kulturregion und Epoche die Titelauswahl. Im Hauptmenü laufen die beiden
 Originaltitel in der aus Ghidra ermittelten Reihenfolge, beginnend an einer
@@ -41,21 +45,30 @@ Auspacken. Die originalen Packanimationen verwenden ihre tatsächlichen Anfangs-
 und Endposen. Spielerfarben entstehen aus den originalen Textur-Patches; alle
 elf Farbzuordnungen sind durch die native Farbtabelle und Namensbildung belegt.
 
-Der Gastgeber überträgt Völker, Startepoche, Bevölkerungslimit, Startvorräte,
+Der Gastgeber überträgt Völker, Start- und Endepoche, Bevölkerungslimit, Startvorräte,
 Kartenaufdeckung und Jahreszeiten für neue UP-Mehrspielergefechte. Zufällige Völker
 werden vor dem Start aufgelöst und als konkrete Auswahl übertragen. Die älteren
-Regelprofile behalten ihre bisherigen Mehrspieler-Starteinstellungen.
+Regelstände speichern keine Endepoche und laden mit der höchsten Epoche als Grenze.
+Für die Zufallsauswahl werden erst die Völker und anschließend beide
+Epochen aus demselben Präsentationszufallsstrom bestimmt, den auch die Musik
+verwendet. Die Partie lässt sich auf eine einzige Epoche begrenzen.
+
+Neue UP-Einzelspielerpartien aus der Steinzeit bieten die rekonstruierten
+Aufträge im Stadtzentrum und Lager sowie Veteran und Elite für leichte
+Infanterie in der Kaserne. Laufende und bezahlte wartende Aufträge werden
+mitgespeichert. Ältere Spielstände behalten ihre bisherige Forschungslogik.
 
 Produktion speichert den tatsächlich bezahlten Preis und die beim Arbeitsbeginn
-festgelegte Dauer. Abbruch erstattet den gespeicherten Preis; Klassenwechsel
-berechnen wartende Aufträge neu. Aktuelle Spielstände sichern außerdem laufende
+festgelegte Dauer. Abbruch erstattet den gespeicherten Preis. Ein Klassenwechsel
+berechnet wartende Aufträge neu. Aktuelle Spielstände sichern außerdem laufende
 Packaufgaben, die für die Fortsetzung notwendige Wegfindung und fliegende
-Geschosse in ihrer tatsächlichen Reihenfolge. Das aktuelle eigene Speicherformat
-verwendet die äußere Version 4 und speichert Bürgeridentitäten und den Zustand
-des zugehörigen Zufallsstroms. Fehlende Historie
+Geschosse in ihrer tatsächlichen Reihenfolge. Der gespeicherte Spielkern
+enthält Bürgeridentitäten und den Zustand des zugehörigen Zufallsstroms.
+Zusätzliche Datenfelder sichern die Endepoche und die manuelle Forschung.
+Fehlende Historie
 älterer Spielstände wird ausdrücklich als rekonstruiert gekennzeichnet. Die
 bestehenden eigenen/Basis-WASM-Dateien und die bisherigen Speicherorte bleiben
-bestehen. Netzwerkprotokoll 16 trennt ältere Simulationsstände.
+bestehen. Netzwerkprotokoll 17 überträgt die gewählte Endepoche.
 
 Von132 klassischen Quellenfamilien sind62 angebunden;70 sowie weitere Fähigkeiten,
 weitere regionale Gebäudestile, Karteninitialisierung und native KI-Abläufe
@@ -75,7 +88,7 @@ Browserbedienung und ein physischer Mac wurden dabei nicht ausgeführt.
 
 ## Komplettpaket für den Mac
 
-Das native12-Komplettpaket enthält den gemeinsam geprüften Laufzeitstand mit
+Das native13-Komplettpaket enthält den gemeinsam geprüften Laufzeitstand mit
 Originalmedien. Das zugehörige Quellpaket enthält eigenen Code, WASM-Builds und
 Prüfungen. Die vollständige Originalübereinstimmung wird weiter erarbeitet.
 
@@ -153,7 +166,7 @@ Nachmittag bei normalem Wetter gewählt. Die vollständige native Tageszeit-,
 Wetter- und Terrain-Lichtsteuerung ist noch offen.
 
 Die folgenden Abschnitte dokumentieren frühere Ausbaustände; maßgeblich ist
-der oben beschriebene Stand native12.
+der oben beschriebene Stand native13.
 
 ## Saisonale Modelle, Wasserreflexionen und Kameradrehung · visual-seasons2
 

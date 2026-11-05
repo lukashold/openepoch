@@ -5,6 +5,36 @@
 //! networking and talks to it through the plain C ABI below.
 
 mod ai;
+#[cfg(feature = "ee2-ai9-planner-probe")]
+pub mod ai9_count;
+#[cfg(feature = "ee2-ai9-game-bridge")]
+mod ai9_game_bridge;
+#[cfg(feature = "ee2-ai9-game-bridge")]
+mod ai9_game_save;
+#[cfg(feature = "ee2-ai9-game-bridge")]
+mod ai9_rank;
+#[cfg(feature = "ee2-ai9-planner-probe")]
+pub mod ai9_player_step;
+#[cfg(feature = "ee2-ai9-planner-probe")]
+pub mod ai9_planner;
+#[cfg(feature = "ee2-ai9-planner-probe")]
+mod ai9_probe;
+#[cfg(feature = "ee2-ai9-planner-probe")]
+pub mod ai9_research_activation;
+#[cfg(feature = "ee2-ai9-planner-probe")]
+pub mod ai9_research_completion;
+#[cfg(feature = "ee2-ai9-planner-probe")]
+pub mod ai9_research_debit;
+#[cfg(feature = "ee2-ai9-planner-probe")]
+pub mod ai9_research_dispatch;
+#[cfg(feature = "ee2-ai9-planner-probe")]
+pub mod ai9_research_start;
+#[cfg(feature = "ee2-ai9-planner-probe")]
+pub mod ai9_research_tick;
+#[cfg(feature = "ee2-ai9-planner-probe")]
+pub mod ai9_research_unlock;
+#[cfg(feature = "ee2-ai9-planner-probe")]
+pub mod ai9_tech_tree;
 mod ids;
 mod cmd;
 mod defs;
@@ -88,6 +118,8 @@ mod projectiles8;
 mod decision_hash8;
 #[cfg(feature="ee2-civ8")]
 mod match_settings8;
+#[cfg(feature="ee2-epoch-range13")]
+mod match_epoch_range13;
 #[cfg(feature="ee2-roster6")]
 mod roster6_registry;
 #[cfg(feature="ee2-roster6")]
@@ -191,6 +223,8 @@ pub extern "C" fn combat_stat(attacker:u32,attacker_epoch:u32,defender:u32,defen
 pub extern "C" fn skirmish_setup(pop_limit: u32, resources: u32) -> u32 {
     let game = g();
     if game.tick != 0 || game.net || game.bench > 0 { return 0; }
+    #[cfg(feature = "ee2-ai9-game-bridge")]
+    if game.native_research.is_some() { return 0; }
     let limit = match pop_limit { 250 | 500 | 1000 => pop_limit, _ => return 0 };
     let supplies = match resources { 0 => [400.0,400.0,200.0], 1 => [800.0,800.0,400.0], 2 if cfg!(feature="ee2-reference")=>[15000.0,15000.0,7500.0],2 => [1600.0,1600.0,800.0],3 if cfg!(feature="ee2-reference")=>[200.0,200.0,0.0],4 if cfg!(feature="ee2-reference")=>[200.0,200.0,0.0], _ => return 0 };
     for t in 0..game.nplayers {
@@ -212,7 +246,9 @@ pub extern "C" fn epoch_name_ptr(index:u32)->*const u8 {EPOCH_NAMES.get(index as
 pub extern "C" fn epoch_name_len(index:u32)->u32 {EPOCH_NAMES.get(index as usize).map_or(0,|s|s.len() as u32)}
 #[no_mangle]
 pub extern "C" fn skirmish_epoch(epoch:u32)->u32 {
-    let game=g();if epoch>MAX_EPOCH as u32||game.tick!=0||game.net||game.bench>0{return 0;}
+    let game=g();if epoch>game.match_final_epoch() as u32||game.tick!=0||game.net||game.bench>0{return 0;}
+    #[cfg(feature = "ee2-ai9-game-bridge")]
+    if game.native_research.is_some() { return 0; }
     #[cfg(feature="ee2-paidqueue7")]
     if game.ents[..game.high].iter().any(|e|e.alive&&DEFS[e.def as usize].building&&e.qn>0){return 0;}
     for t in 0..game.nplayers{
@@ -828,8 +864,11 @@ pub extern "C" fn cheat_status(field: u32) -> u32 {
 pub extern "C" fn cmd_research(k: u32) -> u32 {
     #[cfg(feature = "ee2-reference")]
     {
-        if k>=180 { return 0; }
-        let game=g(); let item=ORIGINAL_RESEARCH0+k as QueueItem;
+        #[cfg(feature="ee2-ai9-game-bridge")]
+        let item = if ai9_rank::index(k).is_some() { k } else if k < 180 { ORIGINAL_RESEARCH0 + k } else { return 0; };
+        #[cfg(not(feature="ee2-ai9-game-bridge"))]
+        let item = if k < 180 { ORIGINAL_RESEARCH0 + k as QueueItem } else { return 0; };
+        let game=g();
         let selected=selected(game);
         let b=selected.iter().copied().chain(0..game.high).find(|&i| game.ents[i].alive && game.ents[i].team==game.local && game.can_train(i,item));
         if let Some(i)=b { let h=game.h(i);game.submit(C_TRAIN,0.0,0.0,item as i32,&[h]);return 1; }
@@ -1006,6 +1045,8 @@ pub extern "C" fn native_attack_stat(id:u32,epoch:u32,field:u32)->f32{
 /// The full research tree separately keeps cmd_research's global host fallback.
 #[cfg(feature="ee2-roster6")]
 #[no_mangle] pub extern "C" fn cmd_queue_job(item:u32)->u32{
+    #[cfg(feature="ee2-ai9-game-bridge")]
+    if ai9_rank::index(item).is_some() { return submit_selected_queue_job(g(),item); }
     if ids::decode_job(item).is_none(){return 0;}
     submit_selected_queue_job(g(),item)
 }
@@ -1070,6 +1111,17 @@ mod civ8_bonus;
 #[cfg(feature="ee2-civ8")]
 #[no_mangle]pub extern "C" fn configure_match_settings(packed_civs:u32,pop_limit:u32,supplies:u32,epoch:u32)->u32{
  unsafe{(&mut*addr_of_mut!(GAME)).as_mut().map_or(0,|game|game.configure_match_settings(packed_civs,pop_limit,supplies,epoch)as u32)}
+}
+#[cfg(feature="ee2-epoch-range13")]
+#[no_mangle]
+pub extern "C" fn configure_match_epoch_range(packed_civs: u32, pop: u32, supplies: u32, start: u32, end: u32) -> u32 {
+    unsafe { (&mut *addr_of_mut!(GAME)).as_mut().map_or(0, |game|
+        game.configure_match_epoch_range(packed_civs, pop, supplies, start, end) as u32) }
+}
+#[cfg(feature="ee2-epoch-range13")]
+#[no_mangle]
+pub extern "C" fn match_final_epoch() -> u32 {
+    unsafe { (&*addr_of_mut!(GAME)).as_ref().map_or(MAX_EPOCH as u32, |game| game.match_final_epoch() as u32) }
 }
 
 #[cfg(feature="ee2-civ8")]

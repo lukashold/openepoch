@@ -46,13 +46,34 @@ export function applyCivilizations(wasm,values,nplayers){
  if(wasm.configure_civilizations(packed)!==1)throw Error('Die Völker konnten für dieses neue Spiel nicht übernommen werden.');
  return true;
 }
+export function checkedEpochRange(start, end, count) {
+ if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || start > end || end >= count) {
+  throw Error('Ungültige Start- oder Endepoche.');
+ }
+}
+export function resolveEpochRange(start, end, count, word15) {
+ checkedEpochRange(start === -1 ? 0 : start, end === -1 ? count - 1 : end, count);
+ // 005A23E0 resolves the one-based source interval with the presentation
+ // stream, start first and end second. Runtime epochs are zero-based.
+ const epoch = start === -1 ? word15() % (end === -1 ? count : end + 1) : start;
+ const finalEpoch = end === -1 ? epoch + word15() % (count - epoch) : end;
+ return {epoch, finalEpoch};
+}
 export function applyMatchSettings(wasm,settings,nplayers){
  const values=checkedCivilizations(settings?.civilizations,nplayers);
- if(![250,500,1000].includes(settings.popLimit)||![0,1,2].includes(settings.supplies)||
-  !Number.isInteger(settings.epoch)||settings.epoch<0||settings.epoch>=wasm.epoch_count())throw Error('Ungültige Scharmützeleinstellungen.');
+ if(![250,500,1000].includes(settings.popLimit)||![0,1,2].includes(settings.supplies))throw Error('Ungültige Scharmützeleinstellungen.');
+ const count = wasm.epoch_count(), end = settings.finalEpoch ?? count - 1;
+ checkedEpochRange(settings.epoch, end, count);
  if(typeof wasm.configure_match_settings!=='function')throw Error('Die Spieldatei unterstützt diese Scharmützeleinstellungen noch nicht.');
  const packed=values.reduce((n,v,i)=>n|(v<<(i*4)),0);
- if(wasm.configure_match_settings(packed,settings.popLimit,settings.supplies,settings.epoch)!==1)throw Error('Die Einstellungen konnten für dieses neue Spiel nicht übernommen werden.');
+ let result;
+ if (typeof wasm.configure_match_epoch_range === 'function') {
+  result = wasm.configure_match_epoch_range(packed, settings.popLimit, settings.supplies, settings.epoch, end);
+ } else {
+  if (end !== count - 1) throw Error('Die Spieldatei unterstützt keine Endepoche.');
+  result = wasm.configure_match_settings(packed, settings.popLimit, settings.supplies, settings.epoch);
+ }
+ if(result!==1)throw Error('Die Einstellungen konnten für dieses neue Spiel nicht übernommen werden.');
  return true;
 }
 

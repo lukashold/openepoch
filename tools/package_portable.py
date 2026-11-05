@@ -108,6 +108,13 @@ def main():
                          'docs/local-original/regional-e15-seasons/with-docks/model-seasons.json',
                          'docs/local-original/regional-e15-seasons/with-docks/team/manifest.json',
                          'docs/local-original/regional-e15-seasons/terrain-fallback.json'})
+    if 'loadBarracksIcons' in main_source:
+        required.update({'docs/local-original/barracks-icons/manifest.json', 'docs/local-original/regional-barracks/manifest.json',
+                         'docs/local-original/regional-barracks/model-seasons.json', 'docs/local-original/regional-barracks/team/manifest.json',
+                         'docs/local-original/regional-barracks/ground-decals.json'})
+    if 'mountSkirmishMenu' in main_source:
+        required.update({'docs/skirmish-menu.js', 'docs/skirmish-menu.css',
+                         'docs/local-original/skirmish-native/manifest.json'})
     if len(names) != len(set(names)) or not required.issubset(names):
         raise ValueError("Incomplete or duplicated game tree")
     print("Hashing complete game files ...", flush=True)

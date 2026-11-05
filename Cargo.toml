@@ -18,6 +18,10 @@ ee2-pack8 = ["ee2-paidqueue7", "ee2-render-meta7"]
 ee2-civ8 = ["ee2-paidqueue7", "ee2-render-meta7"]
 ee2-joint8 = ["ee2-civ8", "ee2-pack8"]
 ee2-citizen9 = ["ee2-joint8"]
+ee2-epoch-range13 = ["ee2-citizen9"]
+ee2-ai9-planner-probe = ["ee2-citizen9"]
+ee2-ai9-game-bridge = ["ee2-ai9-planner-probe"]
+ee2-native13 = ["ee2-epoch-range13", "ee2-ai9-game-bridge"]
 
 [profile.release]
 opt-level = 3

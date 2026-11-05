@@ -6,7 +6,7 @@ cargo build --offline --release --target wasm32-unknown-unknown
 cp target/wasm32-unknown-unknown/release/openepoch.wasm docs/openepoch.wasm
 cargo build --offline --release --target wasm32-unknown-unknown --features ee2-reference
 cp target/wasm32-unknown-unknown/release/openepoch.wasm docs/openepoch-ee2.wasm
-cargo build --offline --release --target wasm32-unknown-unknown --features ee2-citizen9
+cargo build --offline --release --target wasm32-unknown-unknown --features ee2-native13
 cp target/wasm32-unknown-unknown/release/openepoch.wasm docs/openepoch-ee2-up15.wasm
 cp target/wasm32-unknown-unknown/release/openepoch.wasm docs/openepoch-ee2-roster6.wasm
 cp target/wasm32-unknown-unknown/release/openepoch.wasm docs/openepoch-citizen9.wasm

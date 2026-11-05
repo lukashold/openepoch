@@ -275,7 +275,7 @@ impl Game {
 
         // ---- research & army
         let wave = 8 + 5 * ep as usize;
-        let saving = ep < MAX_EPOCH && !p.researching && workers.len() >= 12 && (cfg!(feature="ee2-reference")||army.len() >= wave * 2 / 3) && (!cfg!(feature = "ee2-reference") || self.can_advance(team));
+        let saving = ep < self.match_final_epoch() && !p.researching && workers.len() >= 12 && (cfg!(feature="ee2-reference")||army.len() >= wave * 2 / 3) && (!cfg!(feature = "ee2-reference") || self.can_advance(team));
         if saving && tc != NOIDX {
             self.train(tc, RESEARCH);
         }

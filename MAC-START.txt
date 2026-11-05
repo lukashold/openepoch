@@ -74,7 +74,7 @@ F4: Diplomatie. F: freie Bürger. H: Heimat. P: Pause. Cmd+S/Ctrl+S: speichern.
 Enter: Cheatdialog. icheat aktiviert Cheats; loot, sea monkeys und give tech
 sind im Einzelspieler vorhanden.
 
-Neuer Ausbau · native12
+Neuer Ausbau · native13
 Männliche und weibliche Bürger verwenden ihre Originalmodelle, Bewegungen,
 Symbole und Stimmen passend zur Region und Epoche. Das Spiel merkt sich diese
 Identität beim Einquartieren, Transport und Speichern. Das Todesgeräusch folgt
@@ -88,6 +88,11 @@ Das Menüvideo ist in beiden EE2-Profilen enthalten, für UP in 2560 × 1440.
 Häfen haben über alle 15 Epochen ihre Originalmodelle und -symbole. Die
 Original-Jahreszeitentexturen der letzten Epoche sind auch für die dafür
 registrierten Stadtzentrum- und Hausflächen eingebunden.
+Kasernen haben sechs Originalstile mit Symbolen und passenden Bodentexturen.
+Das Scharmützelmenü hat Originalrahmen und vier Einstellungsbereiche.
+Im UP-Profil lässt sich die Start- und Endepoche fest oder per Zufall wählen.
+Neue Einzelspielerpartien aus der Steinzeit bieten erste Originalaufträge
+für Stadtzentrum, Lager und die Beförderung leichter Infanterie.
 
 Die Kamera verwendet nun die aus Ghidra belegte Zoom-/Winkelkurve. Originale
 Modellmaßstäbe und Ursprünge, zusätzliche Materialwerte, höhenabhängige Schatten,
@@ -132,7 +137,7 @@ https://www.chromium.org/audio-video/
 https://support.mozilla.org/en-US/kb/html5-audio-and-video-firefox
 https://webkit.org/blog/16574/webkit-features-in-safari-18-4/
 
-Speichern im native12-Stand
+Speichern im native13-Stand
 Aktuelle Spielstände sichern auch laufende Packaufgaben, Wegfindungszustand
 und fliegende Geschosse sowie Bürgeridentitäten und ihren Zufallszustand.
 Ältere Stände werden geladen. Nicht gespeicherte

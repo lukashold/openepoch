@@ -1,4 +1,32 @@
 use super::*;use crate::projectiles8 as ps;
+
+#[cfg(feature = "ee2-ai9-game-bridge")]
+#[test]
+fn light_infantry_rank_changes_the_damage_captured_by_a_real_arrow() {
+    crate::init(7, 0, 0, 1, 0);
+    assert_eq!(crate::ai9_game_bridge::ai9_game_research_setup(), 1);
+    let game = crate::g();
+    for slot in [0, 1, 5] {
+        game.add_resource(0, slot, 1_000.0);
+    }
+    let shooter = game.spawn(10, 0, 100.5, 100.5);
+    for (index, rank) in crate::ai9_rank::JOBS.into_iter().enumerate() {
+        assert!(game.train(shooter, rank));
+        for _ in 0..1_201 {
+            game.tick();
+        }
+        let mut attacker = game.ents[shooter];
+        let target = game.spawn(WORKER, 1, attacker.x + 3.0, attacker.y);
+        game.build_grid();
+        game.update_fog();
+        let weapon = DEFS[attacker.def as usize].w[0];
+        game.fire(&mut attacker, &weapon, target);
+        let source_damage = ((110 + 10 * index) as f64 * f64::from(0.01_f32) * 7.0) as f32;
+        assert_eq!(game.projs.pop().unwrap().dmg.to_bits(), source_damage.to_bits());
+        game.kill(target);
+    }
+}
+
 fn volley(splash:bool,recycle:bool)->(Game,usize,usize){
  let mut g=Game::new(7,0,0,2,0);for t in 0..2{g.players[t].epoch=5;g.rebuild_modifiers(t as u8,false);}
  let a=g.spawn(if splash{65}else{12},0,100.5,100.5);let target=g.spawn(WORKER,1,105.5,100.5);let nearby=g.spawn(WORKER,1,105.7,100.5);

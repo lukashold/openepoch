@@ -9,7 +9,7 @@ import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from '../doc
 import {normalizeSeasonSettings} from '../docs/original-seasons.js';
 import {normalizeOriginalHeading,originalFractionForZoom} from '../docs/original-camera.js';
 import {Lockstep,PROTOCOL_VERSION} from '../docs/net.js';
-import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings} from '../docs/civilization-setup.js';
+import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from '../docs/civilization-setup.js';
 
 const root=new URL('../',import.meta.url),analysis=new URL('../../EE2-Research/analysis/',import.meta.url);
 const sha=b=>createHash('sha256').update(b).digest('hex');
@@ -20,7 +20,7 @@ const main=sourceBytes['main.js'].toString(),html=sourceBytes['index.html'].toSt
 const segment=(a,b)=>{const start=main.indexOf(a),end=main.indexOf(b,start);assert.ok(start>=0&&end>start,a);return main.slice(start,end);};
 const controls=segment('function menuSeasonSettings()',"$('season-options').hidden");
 const profileBoot=segment("const profileSelect=$('rules-profile');",'try { const preference=');
-const start=segment('function start(', 'const db =');
+const start=segment('function resolvedSkirmishChoices', 'const db =');
 const saves=segment('const db =','// ---------------------------------------------------------------- simulation stepping');
 const channel=segment('function channel(local)',"$('mpopen').onclick");
 const seed=main.match(/^const seedOf = .*$/m)[0];
@@ -82,21 +82,23 @@ const indexedDB={open(name,version){
 async function environment(id,seat=0,qa=false,menu={}){
  const p=qa?resolveRulesProfile(`http://localhost/?${id==='own'?'':'rules=ee2&profile='+id+'&'}qa`,{up15Enabled:true}):profiles[id],w=await fresh(id),elements=new Map(),messages=[],begins=[];
  const $=id=>{if(!elements.has(id))elements.set(id,{value:'',checked:false,disabled:false,style:{},textContent:''});return elements.get(id);};
- for(const [key,value] of Object.entries({...{'pop-limit':'500',supplies:'1','start-epoch':'0','map-visibility':'2','season-start':seat?'10':'2','season-length':seat?'30':'5',seed:seat?'99':'7',mpai:seat?'2':'0'},...menu.values}))$(key).value=value;
+ for(const [key,value] of Object.entries({...{'pop-limit':'500',supplies:'1','start-epoch':'0','end-epoch':'14','map-visibility':'2','season-start':seat?'10':'2','season-length':seat?'30':'5',seed:seat?'99':'7',mpai:seat?'2':'0'},...menu.values}))$(key).value=value;
  $('season-cycle').checked=!seat;
  const render={setSeasonPhase(){}},session=createSeasonSession(w,render,render),cam={x:0,y:0,zoom:28,heading:0};
  class Element{constructor(){this.children=[];this.style={};this.value='';}append(...nodes){this.children.push(...nodes);}before(node){this.previous=node;}}
  const anchor=new Element(),civilizationSetup=createCivilizationSetup({wasm:w,document:{createElement:()=>new Element()},anchor});
  if(civilizationSetup.enabled&&menu.choices)anchor.previous.children.slice(1).forEach((row,i)=>row.children[1].value=String(menu.choices[i]));
+ let draws=0;
  const context=vm.createContext({wasm:w,rulesProfile:p,savedRulesProfileMatches,indexedDB,$,seasonSession:session,savedSeasonSettings,normalizeSeasonSettings,peerSeasonSettings,
-  civilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,
+  civilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange,
+  sfx:{presentationWord:()=>{const word=menu.words?.[draws];draws++;return word??draws*29;}},
   referenceMode:p.reference,qaMode:false,normalizeOriginalHeading,originalFractionForZoom,innerWidth:1280,innerHeight:720,MAP:256,performance,queueMicrotask,
   Lockstep,PROTOCOL_VERSION,mpStatus:t=>messages.push(t),toast:t=>messages.push(t),begin:()=>begins.push(w.game_tick()),
  });
  vm.runInContext(`let running=true,bench=0,net=null,ui=null,lastUi=0;const cam=${JSON.stringify(cam)},u8=(p,n)=>new Uint8Array(wasm.memory.buffer,p,n);
  ${controls}\n${seed}\n${start}\n${saves}\n${channel}
  globalThis.api={start,saveGame,loadGame,refreshContinue,channel,cam,getNet:()=>net,getSettings:()=>seasonSession.settings,getUi:()=>ui};`,context,{filename:'main.js actual profile start/IndexedDB/save/channel'});
- return {id,p,w,$,session,messages,begins,api:context.api};
+ return {id,p,w,$,session,messages,begins,api:context.api,draws:()=>draws};
 }
 const sessions={};const saved={};
 for(const id of ['own','base','up15']){
@@ -131,28 +133,43 @@ for(const id of ['own','base','up15']){const e=await environment(id),h=e.api.cha
 check(html.includes('for="rules-profile">Regelversion'),'Rule selector has a visible accessible label');equal((html.match(/id="rules-profile"/g)||[]).length,1,'Rule selector ID is unique');check(main.includes('await loadNativeHud(originalAssets,referenceMode)'),'Native HUD loading remains in both EE2 profiles');
 // New choices flow through the actual Main start/channel functions and real Core.
 {
- const solo=await environment('up15',0,false,{values:{'start-epoch':'5','pop-limit':'1000',supplies:'2'},choices:[0,6,5,2]});
+ const solo=await environment('up15',0,false,{values:{'start-epoch':'5','end-epoch':'6','pop-limit':'1000',supplies:'2'},choices:[0,6,5,2]});
  solo.api.start(3,713,0);equal(Array.from({length:4},(_,i)=>solo.w.player_civilization(i)),[0,6,5,2],'Singleplayer uses all four visible civilizations');
  equal(solo.w.stat(0,0),5,'Singleplayer retains the selected epoch after applying civilization traits');
+ equal(solo.w.match_final_epoch(),6,'Singleplayer uses the selected end epoch');
+ equal(solo.draws(),0,'Fixed civilizations and epochs use no presentation draws');
  await solo.api.saveGame(true);const hash=solo.w.state_hash();for(let i=0;i<7;i++)solo.w.tick();await solo.api.loadGame();
  equal(solo.w.state_hash(),hash,'Civilization-bearing save restores without applying menu traits a second time');
+ equal(solo.w.match_final_epoch(),6,'The actual save handler restores the end epoch');
  equal(Array.from({length:4},(_,i)=>solo.w.player_civilization(i)),[0,6,5,2]);
  const peers=await Promise.all([
-  environment('up15',0,false,{values:{mpai:'2','start-epoch':'5','pop-limit':'1000',supplies:'2','map-visibility':'0'},choices:[0,1,5,2]}),
-  environment('up15',1,false,{values:{mpai:'0','start-epoch':'0','pop-limit':'250',supplies:'0','map-visibility':'2'},choices:[6,3,4,7]}),
+  environment('up15',0,false,{values:{mpai:'2','start-epoch':'-1','end-epoch':'-1','pop-limit':'1000',supplies:'2','map-visibility':'0'},
+   choices:[0,1,15,2],words:[19,35,8]}),
+  environment('up15',1,false,{values:{mpai:'0','start-epoch':'0','end-epoch':'12','pop-limit':'250',supplies:'0','map-visibility':'2'},choices:[6,3,4,7]}),
  ]),pending=[[],[]],handlers=peers.map((p,i)=>p.api.channel(i));let startMessage;
  const transport=peers.map((p,i)=>({readyState:'open',send(value){if(typeof value==='string'&&JSON.parse(value).t==='start')startMessage=JSON.parse(value);pending[1-i].push(typeof value==='string'?value:value.slice(0));},close(){this.readyState='closed';handlers[i].close();}}));
  const flush=()=>{for(let guard=0;guard<100;guard++){let work=false;for(let i=0;i<2;i++)for(const value of pending[i].splice(0)){handlers[i].message(value);work=true;}if(!work)return;}throw Error('New settings handshake did not drain');};
  handlers.forEach((h,i)=>h.open(transport[i]));flush();
  equal(startMessage.civilizations,[0,6,5,2],'Host honors guest own choice and resolves the exact playing-seat civilization array');
- equal([startMessage.ai,startMessage.epoch,startMessage.popLimit,startMessage.supplies,startMessage.visibility],[2,5,1000,2,0],'Host transfers actual complete skirmish choices');
- for(const p of peers){check(p.api.getNet()?.ls instanceof Lockstep);equal(Array.from({length:4},(_,i)=>p.w.player_civilization(i)),[0,6,5,2]);equal(p.w.stat(0,0),5);}
+ equal([startMessage.ai,startMessage.epoch,startMessage.finalEpoch,startMessage.popLimit,startMessage.supplies,startMessage.visibility],[2,5,13,1000,2,0],'Host transfers actual complete skirmish choices');
+ equal([peers[0].draws(),peers[1].draws()],[3,0],'Host resolves civ then start then end from the shared presentation sequence');
+ for(const p of peers){check(p.api.getNet()?.ls instanceof Lockstep);equal(Array.from({length:4},(_,i)=>p.w.player_civilization(i)),[0,6,5,2]);equal(p.w.stat(0,0),5);equal(p.w.match_final_epoch(),13);}
  for(let tick=0;tick<100;tick++){flush();for(const p of peers)check(p.api.getNet().ls.step());flush();}
  equal(peers[0].w.state_hash(),peers[1].w.state_hash(),'Four-civilization actual worlds retain a common peer hash');
 }
-const validCfg={t:'start',protocol:PROTOCOL_VERSION,rules:2,seed:713,ai:0,epoch:0,popLimit:500,supplies:1,visibility:2,civilizations:[0,1,14,14],seasons:normalizeSeasonSettings({cycle:true,startMonth:6,minutesPerSeason:5})};
+for(const initial of [-1,0,6,14])for(const final of [-1,0,6,14]){
+ if(initial>=0&&final>=0&&initial>final)continue;
+ for(const [first,second] of [[0,0],[1,32767],[32767,1],[32767,32767]]){
+  let draws=0;
+  const a=initial===-1?1+first%(final===-1?15:final+1):initial+1;
+  const b=final===-1?a+(initial===-1?second:first)%(16-a):final+1;
+  equal(resolveEpochRange(initial,final,15,()=>[first,second][draws++]),{epoch:a-1,finalEpoch:b-1});
+  equal(draws,Number(initial===-1)+Number(final===-1));
+ }
+}
+const validCfg={t:'start',protocol:PROTOCOL_VERSION,rules:2,seed:713,ai:0,epoch:0,finalEpoch:14,popLimit:500,supplies:1,visibility:2,civilizations:[0,1,14,14],seasons:normalizeSeasonSettings({cycle:true,startMonth:6,minutesPerSeason:5})};
 const bytesOf=w=>{const p=w.save();return new Uint8Array(w.memory.buffer,p,w.save_len()).slice();};
-for(const change of [c=>delete c.civilizations,c=>c.civilizations=[0,1,0,14],c=>c.civilizations=[0,15,14,14],c=>c.civilizations=[14,1,14,14],c=>c.civilizations=[0,1,14],c=>c.civilizations='0,1,14,14',c=>c.civilizations=[0,'1',14,14],c=>c.civilizations=[0,1,-1,14],c=>c.epoch=15,c=>c.epoch=-1,c=>c.epoch='0',c=>c.popLimit=999,c=>c.popLimit='500',c=>c.supplies=3,c=>c.visibility=3,c=>c.ai=3,c=>c.seed=0,c=>c.seasons=null]){
+for(const change of [c=>delete c.civilizations,c=>c.civilizations=[0,1,0,14],c=>c.civilizations=[0,15,14,14],c=>c.civilizations=[14,1,14,14],c=>c.civilizations=[0,1,14],c=>c.civilizations='0,1,14,14',c=>c.civilizations=[0,'1',14,14],c=>c.civilizations=[0,1,-1,14],c=>c.epoch=15,c=>c.epoch=-1,c=>c.epoch='0',c=>c.popLimit=999,c=>c.popLimit='500',c=>c.supplies=3,c=>c.visibility=3,c=>c.ai=3,c=>c.seed=0,c=>c.seasons=null,c=>delete c.finalEpoch,c=>c.finalEpoch=15,c=>c.finalEpoch='14',c=>{c.epoch=3;c.finalEpoch=2;}]){
  const e=await environment('up15',1),handler=e.api.channel(1),ch={readyState:'open',send(){},close(){this.readyState='closed';handler.close();}};
  e.api.start(1,917,0);e.w.tick();handler.open(ch);const before=bytesOf(e.w),hash=e.w.state_hash();const cfg=structuredClone(validCfg);change(cfg);handler.message(JSON.stringify(cfg));
  equal(ch.readyState,'closed','Invalid new-match choice closes transport before starting');check(!e.api.getNet());equal(e.w.state_hash(),hash);equal(bytesOf(e.w),before,'Malformed match settings preserve complete world bytes');

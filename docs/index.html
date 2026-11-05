@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>OpenEpoch — browser RTS in Rust + WebAssembly</title>
 <meta name="description" content="OpenEpoch: lokales Echtzeit-Strategiespiel mit Scharmützeln, Forschung und Epochen von der Steinzeit bis in die Zukunft.">
+<link rel="stylesheet" href="skirmish-menu.css?v=native13">
 <style>
   :root { --bg:#10151b; --panel:#1a222bee; --line:#33414f; --text:#e6edf3; --dim:#93a1b0; --acc:#4aa3ff; }
   * { box-sizing: border-box; }
@@ -186,22 +187,49 @@
     <h1>Open<span>Epoch</span></h1>
 
     <p id="rules-note">Lokaler Nachbau mit Scharmützeln von der Steinzeit bis in die Zukunft.</p>
-    <p>Scharmützel von der Steinzeit bis in die Zukunft.</p>
-    <div class="row"><label for="rules-profile">Regelversion</label><select id="rules-profile"><option value="up15">EE2 · installierte UP-Regeln</option><option value="base">EE2 · Basisdaten</option><option value="own">OpenEpoch-Regeln</option></select></div>
-    <p class="dim" style="font-size:12px;margin:0 0 10px">Jede Regelversion hat eigene Spielstände. Bisherige EE2-Spielstände bleiben unter Basisdaten erhalten. Für Multiplayer wählen beide dieselbe Version.</p>
-    <div class="row"><label>KI-Gegner</label><select id="nai"><option>1</option><option>2</option><option>3</option></select>
-      <label style="width:auto;margin-left:14px">Kartenschlüssel</label><input id="seed" size="8" placeholder="zufällig"></div>
-    <div class="row"><label>Bevölkerung</label><select id="pop-limit"><option value="250">250 pro Spieler</option><option value="500" selected>500 pro Spieler</option><option value="1000">1 000 pro Spieler</option></select></div>
-    <div class="row"><label>Startvorräte</label><select id="supplies"><option value="0">Normal</option><option value="1" selected>Großzügig</option><option value="2">Sehr großzügig</option></select><span class="dim">Für alle Spieler gleich</span></div>
-    <div class="row map-options"><label for="map-visibility">Kartenaufdeckung</label><select id="map-visibility"><option value="0">Unerforscht · mit Kriegsnebel</option><option value="1">Erkundet · mit Kriegsnebel</option><option value="2">Vollständig aufgedeckt · ohne Kriegsnebel</option></select></div>
-    <p class="dim" style="font-size:12px;margin:0 0 10px">Kartenaufdeckung gilt für ein neues Scharmützel. Erkundet zeigt das Gelände; vollständig aufgedeckt zeigt auch fremde Einheiten.</p>
-    <div id="season-options" hidden>
-      <div class="row"><label for="season-start">Startmonat</label><select id="season-start"><option value="0">Januar · Winter</option><option value="1">Februar</option><option value="2">März · Frühling</option><option value="3">April</option><option value="4">Mai</option><option value="5">Juni · Sommer</option><option value="6" selected>Juli</option><option value="7">August</option><option value="8">September · Herbst</option><option value="9">Oktober</option><option value="10">November</option><option value="11">Dezember · Winter</option></select></div>
-      <div class="row"><label for="season-cycle">Jahreszeitenwechsel</label><input id="season-cycle" type="checkbox" checked><label for="season-length" style="width:auto">Dauer pro Jahreszeit</label><select id="season-length"><option value="1">1 Minute</option><option value="5" selected>5 Minuten</option><option value="10">10 Minuten</option><option value="20">20 Minuten</option><option value="30">30 Minuten</option></select></div>
-      <p class="dim" style="font-size:12px;margin:0 0 10px">Gelände, Bäume und Gebäudeböden wechseln allmählich zwischen den Monaten. Der Gastgeber bestimmt die Einstellungen im Multiplayer.</p>
+    <p class="skirmish-intro">Scharmützel von der Steinzeit bis in die Zukunft.</p>
+    <h2 id="skirmish-title" hidden>Scharmützel</h2>
+    <div class="skirmish-players">
+      <h3 id="skirmish-player-title" hidden>Spielerzuordnung</h3>
+      <div class="row" id="sk-player-options"><label for="nai">KI-Gegner</label><select id="nai"><option>1</option><option>2</option><option>3</option></select></div>
     </div>
-    <div class="row"><label>Auflösung</label><select id="quality"><option value="1">Standard · 1×</option><option value="1.5">Hoch · bis 1,5×</option><option value="2" selected>Sehr hoch · bis 2×</option></select></div>
-    <div class="row"><button id="play">Scharmützel starten</button><button id="continue" class="alt" style="display:none">Continue</button><button id="mpopen" class="alt">Multiplayer…</button><button id="menu-fullscreen" class="alt" aria-pressed="false">Vollbild</button></div>
+    <div class="skirmish-settings">
+      <div id="skirmish-tabs" role="tablist" aria-label="Scharmützeleinstellungen" hidden>
+        <button type="button" role="tab" id="sk-game-tab" aria-controls="sk-game">Spiel</button>
+        <button type="button" role="tab" id="sk-advanced-tab" aria-controls="sk-advanced">Erweitert</button>
+        <button type="button" role="tab" id="sk-map-tab" aria-controls="sk-map">Karte</button>
+        <button type="button" role="tab" id="sk-environment-tab" aria-controls="sk-environment">Umgebung</button>
+      </div>
+      <section id="sk-game" class="skirmish-pane">
+        <div class="row"><label for="pop-limit">Bevölkerung</label><select id="pop-limit"><option value="250">250 pro Spieler</option><option value="500" selected>500 pro Spieler</option><option value="1000">1 000 pro Spieler</option></select></div>
+        <div class="row"><label for="supplies">Startvorräte</label><select id="supplies"><option value="0">Normal</option><option value="1" selected>Großzügig</option><option value="2">Sehr großzügig</option></select><span class="dim">Für alle Spieler gleich</span></div>
+      </section>
+      <section id="sk-advanced" class="skirmish-pane">
+        <div class="row"><label for="rules-profile">Regelversion</label><select id="rules-profile"><option value="up15">EE2 · installierte UP-Regeln</option><option value="base">EE2 · Basisdaten</option><option value="own">OpenEpoch-Regeln</option></select></div>
+        <p class="dim" style="font-size:12px;margin:0 0 10px">Jede Regelversion hat eigene Spielstände. Für Multiplayer wählen beide dieselbe Version.</p>
+        <div class="row"><label for="quality">Auflösung</label><select id="quality"><option value="1">Standard · 1×</option><option value="1.5">Hoch · bis 1,5×</option><option value="2" selected>Sehr hoch · bis 2×</option></select></div>
+      </section>
+      <section id="sk-map" class="skirmish-pane">
+        <div class="row"><label for="seed">Kartenschlüssel</label><input id="seed" size="8" placeholder="zufällig"></div>
+        <div class="row map-options"><label for="map-visibility">Kartenaufdeckung</label><select id="map-visibility"><option value="0">Unerforscht · mit Kriegsnebel</option><option value="1">Erkundet · mit Kriegsnebel</option><option value="2">Vollständig aufgedeckt · ohne Kriegsnebel</option></select></div>
+        <p class="dim" style="font-size:12px;margin:0 0 10px">Kartenaufdeckung gilt für ein neues Scharmützel. Erkundet zeigt das Gelände; vollständig aufgedeckt zeigt auch fremde Einheiten.</p>
+      </section>
+      <section id="sk-environment" class="skirmish-pane">
+        <div id="season-options" hidden>
+          <div class="row"><label for="season-start">Startmonat</label><select id="season-start"><option value="0">Januar · Winter</option><option value="1">Februar</option><option value="2">März · Frühling</option><option value="3">April</option><option value="4">Mai</option><option value="5">Juni · Sommer</option><option value="6" selected>Juli</option><option value="7">August</option><option value="8">September · Herbst</option><option value="9">Oktober</option><option value="10">November</option><option value="11">Dezember · Winter</option></select></div>
+          <div class="row"><label for="season-cycle">Jahreszeitenwechsel</label><input id="season-cycle" type="checkbox" checked><label for="season-length" style="width:auto">Dauer pro Jahreszeit</label><select id="season-length"><option value="1">1 Minute</option><option value="5" selected>5 Minuten</option><option value="10">10 Minuten</option><option value="20">20 Minuten</option><option value="30">30 Minuten</option></select></div>
+          <p class="dim" style="font-size:12px;margin:0 0 10px">Gelände, Bäume und Gebäudeböden wechseln allmählich zwischen den Monaten. Der Gastgeber bestimmt die Einstellungen im Multiplayer.</p>
+        </div>
+      </section>
+    </div>
+    <div class="skirmish-side">
+      <section id="skirmish-overview" aria-label="Gewählte Einstellungen" hidden>
+        <h3>Scharmützel</h3>
+        <dl><dt>Epochen</dt><dd id="sk-overview-epochs"></dd>
+          <dt>Spieler</dt><dd id="sk-overview-players"></dd>
+          <dt>Kartenaufdeckung</dt><dd id="sk-overview-map"></dd></dl>
+      </section>
+    <div class="row skirmish-actions"><button id="play">Scharmützel starten</button><button id="continue" class="alt" style="display:none">Fortsetzen</button><button id="mpopen" class="alt">Mehrspieler…</button><button id="menu-fullscreen" class="alt" aria-pressed="false">Vollbild</button></div>
       <button id="previous-save" class="alt" style="display:none">Vorheriger Spielstand</button>
     <div id="mp">
       <div class="row"><button id="mphost" class="alt">Host a game</button><button id="mpjoin" class="alt">Join a game</button>
@@ -235,7 +263,8 @@
     </table>
     <p><a href="reference.html">Basiswerte</a> · <a href="catalog.html">Basis-Technologiebaum</a> · <a href="?">OpenEpoch-Regeln</a></p>
     </details>
-    <p style="margin-top:14px;font-size:12px">Eigenständiger Nachbau mit OpenEpoch-Code. Originalgrafiken und Klänge sind im vollständigen Spielpaket enthalten. <a href="https://github.com/lukashold/openepoch">Source on GitHub</a>.</p>
+    </div>
+    <p class="skirmish-footer" style="margin-top:14px;font-size:12px">Eigenständiger Nachbau mit OpenEpoch-Code. Originalgrafiken und Klänge sind im vollständigen Spielpaket enthalten. <a href="https://github.com/lukashold/openepoch">Source on GitHub</a>.</p>
   </div>
 </div>
 
@@ -244,6 +273,6 @@
   <p id="building-status" role="status" aria-live="polite"></p>
   <small>Strg / R / Komma / Punkt: 90° · mit Umschalt: 45° · Umschalt+Mausrad: 45° · Esc: abbrechen</small>
 </aside>
-<script type="module" src="main.js?v=native12-menu"></script>
+<script type="module" src="main.js?v=native13"></script>
 </body>
 </html>

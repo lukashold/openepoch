@@ -3,37 +3,39 @@
 import { buildAtlas, tintAtlas, CELL } from './atlas.js?v=fortress1';
 import { buildModels } from './models.js?v=fortress1';
 import { parseCheat } from './cheats.js';
-import { researchPanel } from './research.js?v=research3';
+import { researchPanel } from './research.js?v=research-ui';
+import { originalResearchActions, researchCost, researchState } from './original-research-actions.js?v=research-ui';
 import { diplomacyPanel } from './diplomacy.js?v=fortress1';
 import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native6';
 import {loadNativeFontUI} from './original-font-ui.js?v=native6';
 import {territoryClaimMessage} from './territory-help.js?v=fortress1';
-import * as sfx from './audio.js?v=regional12';
+import * as sfx from './audio.js?v=epoch13';
 import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=citizen9';
 import {mountOriginalShellVideo} from './original-shell-video.js?v=native12';
+import {mountSkirmishMenu} from './skirmish-menu.js?v=native13';
 import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regional10';
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native6';
 import {loadOriginalModels} from './original-renderer.js?v=regional12';
 import {ownMapTerrainOrigin} from './original-citycenter-terrain.js?v=regional10';
-import {loadCityCenterIcons,loadHouseIcons,loadDockIcons} from './original-citycenter-icons.js?v=regional12';
+import {loadCityCenterIcons,loadHouseIcons,loadDockIcons,loadBarracksIcons} from './original-citycenter-icons.js?v=regional13';
 import {loadSourceSailRuntime} from './source-sail-runtime.js?v=sails7';
 import {createRenderAssetMapping} from './original-render-namespace.js?v=native6';
 import {createFrontendNamespace} from './render-namespace.js?v=native9';
 import {createRenderActorMetadata} from './render-actor-metadata.js?v=pack8';
 import {createPackRenderMetadata} from './original-pack-states.js?v=pack8';
-import {loadOriginalGround} from './original-ground.js?v=native6';
+import {loadOriginalGround} from './original-ground.js?v=regional13';
 import {loadOriginalTerrain} from './original-terrain.js?v=native6';
 import {loadOriginalWater} from './original-water.js?v=water-farm3';
 import {createOriginalReflection} from './original-reflection.js?v=visual-seasons2';
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=regional10';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=epoch13';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
-import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native9';
+import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=epoch13';
 import {createFullscreenController} from './fullscreen.js?v=building2';
-import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings} from './civilization-setup.js?v=native9';
+import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=epoch13';
 import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=fortress1';
 import {updateOriginalCamera,originalCameraRay,originalFractionForZoom,normalizeOriginalHeading,rotateOriginalCameraHeading} from './original-camera.js?v=heading2';
 
@@ -94,14 +96,35 @@ const dec = new TextDecoder();
 const assetMapping=createRenderAssetMapping(wasm);
 const renderNamespace=createFrontendNamespace(wasm,{referenceMode,assetMapping});
 const packMetadata=createPackRenderMetadata(wasm),packActorReader=packMetadata?createRenderActorMetadata(wasm):null;
-const civilizationSetup=createCivilizationSetup({wasm,document,anchor:$('pop-limit').closest('.row')});
+const civilizationSetup=createCivilizationSetup({wasm,document,anchor:$('sk-player-options')});
 if(referenceMode){
   const row=document.createElement('div');row.className='row';
   const label=document.createElement('label');label.htmlFor='start-epoch';label.textContent='Startepoche';
   const select=document.createElement('select');select.id='start-epoch';
   for(let i=0;i<wasm.epoch_count();i++){const option=document.createElement('option');option.value=i;option.textContent=`${i+1} · ${dec.decode(u8(wasm.epoch_name_ptr(i),wasm.epoch_name_len(i)))}`;select.append(option);}
   const requested=+(new URLSearchParams(location.search).get('epoch')||0);if(requested>=0&&requested<wasm.epoch_count())select.value=requested;
-  row.append(label,select);$('pop-limit').closest('.row').before(row);
+  row.append(label,select);
+  if (typeof wasm.configure_match_epoch_range === 'function') {
+    const endLabel = document.createElement('label');
+    endLabel.htmlFor = 'end-epoch';
+    endLabel.textContent = 'Endepoche';
+    const end = select.cloneNode(true);
+    end.id = 'end-epoch';
+    end.value = wasm.epoch_count() - 1;
+    const random = document.createElement('option');
+    random.value = '-1';
+    random.textContent = 'Zufall';
+    select.append(random);
+    end.append(random.cloneNode(true));
+    const updateEpochOptions = () => {
+      for (const option of select.options) option.disabled = +end.value >= 0 && +option.value > +end.value;
+      for (const option of end.options) option.disabled = +option.value >= 0 && +option.value < +select.value;
+    };
+    select.onchange = end.onchange = updateEpochOptions;
+    updateEpochOptions();
+    row.append(endLabel, end);
+  }
+  $('pop-limit').closest('.row').before(row);
 }
 
 // ---------------------------------------------------------------- GL setup
@@ -445,23 +468,26 @@ for (const pr of [terrain, water, models, quads]) {
 }
 const originalEnabled=referenceMode&&new URLSearchParams(location.search).get('assets')!=='procedural';
 const shellMovie=mountOriginalShellVideo($('shell-movie'),originalEnabled?rulesProfile.id:null);
+mountSkirmishMenu($('menu'), {enabled:rulesProfile.ruleset===2, originalArt:originalEnabled});
 const originalAssets=await loadOriginalAssets(gl,originalEnabled);
 const citizenPresentation=await loadCitizenPresentation({enabled:originalEnabled&&rulesProfile.sourceIdentityVersion===1});
 const buildingIconOptions={enabled:originalEnabled&&rulesProfile.ruleset===2,profile:'packed7',neutralFallback:'west'};
-const [cityCenterIcons,houseIcons,dockIcons]=await Promise.all([
-  loadCityCenterIcons(buildingIconOptions),loadHouseIcons(buildingIconOptions),loadDockIcons(buildingIconOptions),
+const [cityCenterIcons,houseIcons,dockIcons,barracksIcons]=await Promise.all([
+  loadCityCenterIcons(buildingIconOptions),loadHouseIcons(buildingIconOptions),
+  loadDockIcons(buildingIconOptions),loadBarracksIcons(buildingIconOptions),
 ]);
-const buildingIcons = new Map([[0, cityCenterIcons], [1, houseIcons], [5, dockIcons]]);
+const buildingIcons = new Map([[0, cityCenterIcons], [1, houseIcons], [3, barracksIcons], [5, dockIcons]]);
 const buildingPortraits = new Set([...buildingIcons].filter(([, icons]) => icons.status().enabled).map(([id]) => id));
 originalAssets.citizenPresentation=citizenPresentation;
 const originalLabels=await loadOriginalLabels(rulesProfile,{definitionCount:renderNamespace.definitionCount,...(rulesProfile.ruleset===2?{manifestURL:'./local-original/labels-native-civ8.json'}:{})});
 const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,total)=>{
   $('play').textContent=`Originalgrafiken laden · ${Math.round(loaded/total*100)} %`;
-},{assetMapping,packAnimations:rulesProfile.ruleset===2,dynamicSails:rulesProfile.ruleset===2&&typeof wasm.render_meta_version==='function',lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-civ8.json',scaleManifestURL:'./local-original/model-scales-civ8.json',teamManifestURL:'./local-original/team-textures/manifest-civ8.json',regionalManifestURL:'./local-original/regional-e15-seasons/with-docks/manifest.json',terrainFallbackManifestURL:'./local-original/regional-e15-seasons/terrain-fallback.json',houseLodManifestURL:'./local-original/regional-house-lod/manifest.json',houseLodProfile:{mode:'resource',modelDetail:2,rendererCap0x200:false},citizenManifestURL:'./local-original/citizens9/manifest.json',citizenNeutralFallback:'west',sourceIdentityForActor:actor=>wasm.actor_source_identity(actor.handle)>>>0}:{})});
+},{assetMapping,packAnimations:rulesProfile.ruleset===2,dynamicSails:rulesProfile.ruleset===2&&typeof wasm.render_meta_version==='function',lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-civ8.json',scaleManifestURL:'./local-original/model-scales-civ8.json',teamManifestURL:'./local-original/team-textures/manifest-civ8.json',regionalManifestURL:'./local-original/regional-barracks/manifest.json',terrainFallbackManifestURL:'./local-original/regional-e15-seasons/terrain-fallback.json',houseLodManifestURL:'./local-original/regional-house-lod/manifest.json',houseLodProfile:{mode:'resource',modelDetail:2,rendererCap0x200:false},citizenManifestURL:'./local-original/citizens9/manifest.json',citizenNeutralFallback:'west',sourceIdentityForActor:actor=>wasm.actor_source_identity(actor.handle)>>>0}:{})});
 const sourceSails=await loadSourceSailRuntime({wasm,namespace:renderNamespace,models:originalModels,enabled:originalEnabled&&rulesProfile.ruleset===2,decorateMetadata:metadata=>packMetadata?packMetadata.snapshot(metadata):metadata});
 if(sourceSails?.metrics.error)console.warn('Source sails:',sourceSails.metrics.error);
 sfx.configureOriginalDefinitions({wasm,bindings:originalModels.manifest?.models||[],citizenPresentation,regionalMusic:rulesProfile.ruleset===2,...(rulesProfile.ruleset===2?{familyManifestURL:'native-families-civ8.json'}:{})});
-const originalGround=await loadOriginalGround(gl,originalEnabled,{assetMapping});
+const originalGround=await loadOriginalGround(gl,originalEnabled,{assetMapping,...(rulesProfile.ruleset===2
+  ?{manifestURL:'./local-original/regional-barracks/ground-decals.json'}:{})});
 const originalTerrain=await loadOriginalTerrain(gl,originalEnabled,TEAM);
 originalTerrain.setLightingContext?.(originalModels.lighting);
 const originalWater=await loadOriginalWater(gl,originalEnabled);
@@ -608,7 +634,8 @@ function updatePlacement(now=performance.now()){
 }
 
 let researchWasPaused=false;
-const sciencePanel=researchPanel({wasm,
+const sourceResearch=originalResearchActions(wasm);
+const sciencePanel=researchPanel({wasm,sourceResearch,
  onOrder(){sfx.play(20);lastUi=0;},
  onOpen(){researchWasPaused=paused;if(!net)paused=true;keys.clear();mouse.inside=false;},
  onClose(){paused=researchWasPaused;$('pause').textContent=paused?'Fortsetzen':'Pause';lastUi=0;}
@@ -669,18 +696,28 @@ function begin() {
   wasm.events_clear();
   running = true; last = performance.now(); lastAuto = last;
 }
+function resolvedSkirmishChoices(choices, players) {
+  const civilizations = resolveCivilizations(choices, players, {random: () => sfx.presentationWord() % 14});
+  const range = resolveEpochRange(+$('start-epoch').value, +$('end-epoch').value, wasm.epoch_count(), sfx.presentationWord);
+  return {civilizations, ...range};
+}
 function start(nAi, seed, benchUnits, humans = 1, local = 0) {
   bench = benchUnits;
   seasonSession.configure(menuSeasonSettings());
   wasm.init(seed >>> 0, nAi, benchUnits, humans, local);
   if(!benchUnits&&civilizationSetup.enabled){
     const players=Math.max(2,Math.min(4,nAi+humans));
-    applyMatchSettings(wasm,{civilizations:civilizationSetup.resolve(players),popLimit:+$('pop-limit').value,supplies:+$('supplies').value,epoch:+$('start-epoch').value},players);
+    applyMatchSettings(wasm,{...resolvedSkirmishChoices(civilizationSetup.choices(),players),
+      popLimit:+$('pop-limit').value,supplies:+$('supplies').value},players);
   }else if(!benchUnits&&humans===1){
     wasm.skirmish_setup(+$('pop-limit').value, +$('supplies').value);
     if(referenceMode)wasm.skirmish_epoch(+$('start-epoch').value);
   }
   if(!benchUnits)wasm.skirmish_visibility(+$('map-visibility').value);
+  if(!benchUnits&&humans===1&&civilizationSetup.enabled&&wasm.stat(local,0)===0
+     && typeof wasm.ai9_game_research_setup_manual==='function' && !wasm.ai9_game_research_setup_manual()){
+    toast('Originalforschung konnte für dieses Scharmützel nicht gestartet werden.');
+  }
   cam.x = benchUnits ? MAP / 2 : wasm.start_x(); cam.y = benchUnits ? MAP / 2 : wasm.start_y(); cam.zoom = benchUnits ? 11 : 28;
   cam.heading=0;
   if(referenceMode)cam.nativeFraction=benchUnits?originalFractionForZoom(11,innerWidth,innerHeight):.2;
@@ -696,7 +733,9 @@ const dbDo = async (mode, fn) => { const d = await db(); return new Promise((res
 let saveSession=Date.now();
 async function saveGame(silent) {
   if (!running || bench || net) { if (!silent) toast('Saving is only available in single-player games'); return; }
-  const ptr = wasm.save(), bytes = u8(ptr, wasm.save_len()).slice();
+  const ptr = wasm.save(), length = wasm.save_len();
+  if (!length) { if (!silent) toast('Spielstand konnte nicht gespeichert werden'); return; }
+  const bytes = u8(ptr, length).slice();
   try {
     const record={bytes,cam:{...cam},when:Date.now(),epoch:ui?ui.ename:'',session:saveSession,seasons:seasonSession.settings,rules:rulesProfile.ruleset,profile:rulesProfile.id};
     const d=await db();
@@ -962,9 +1001,9 @@ function icon(id, px,context=undefined) {
   return c;
 }
 const glyph = (ch, px) => { const d = document.createElement('div'); d.style.cssText = `font-size:${px * 0.66}px;height:${px}px;line-height:${px}px`; d.textContent = ch; return d; };
-const GLYPH = { e: '⬆', r: '⚗', u: '⚓', p:'⇄' };
+const GLYPH = { e: '⬆', r: '⚗', i: '⬆', u: '⚓', p:'⇄' };
 const LABELS = {'Worker':'Bürger','Town Center':'Stadtzentrum','House':'Haus','Farm':'Bauernhof','Barracks':'Kaserne','Workshop':'Werkstatt','Dock':'Hafen','Airfield':'Flugplatz','Watchtower':'Wachturm','Next Epoch':'Nächste Epoche','University':'Universität','Mill':'Mühle','Stable':'Stall','Market':'Markt','Temple':'Tempel','Warehouse':'Lagerhaus','Oil Rig':'Bohrturm','Uranium Mine':'Uranmine','HercFacility':'HERC-Fabrik','Fortress':'Festung'};
-const label = (name,id,count=1) => originalLabels.name(id,ui?.epoch??0,LABELS[name]||name,count);
+const label = (name,id,count=1) => sourceResearch.unitName(originalLabels.name(id,ui?.epoch??0,LABELS[name]||name,count),id,ui?.local);
 const actionUnitId = a => a&&(a.k==='b'||a.k==='t')?a.id:undefined;
 const ACTIVITIES = ['Bereit','Unterwegs','Holz fällen','Erz abbauen','Nahrung sammeln','Bauen','Im Kampf'];
 function costText(c) {return c.flatMap((value,slot)=>value?[`${value} ${!referenceMode&&slot===2?'Metall':RESOURCE_NAMES[slot]}`]:[]).join(' · ')||'Kostenlos';}
@@ -976,6 +1015,7 @@ function updateUi(drawn, now) {
     ui.act.push({k:'p',id:0,name:'Einpacken',ok:true,tip:'Die ausgewählten Einheiten für den Marsch einpacken.'},
       {k:'p',id:1,name:'Auspacken',ok:true,tip:'Die ausgewählten Einheiten in Stellung bringen.'});
   }
+  ui.act.push(...sourceResearch.selectedImprovements(ui.epoch));
   for (let i = 0; i < 3; i++) $('r' + i).textContent = ui.res[i];
   economyBar.update(ui);
   $('pop').textContent = `${ui.pop}/${ui.cap}`;
@@ -1023,7 +1063,7 @@ function updateUi(drawn, now) {
     if (q) { for (const id of s.q) {const job=renderNamespace.queueJob(id);q.append(!job?glyph('?',30):job.kind===3?glyph('⬆',30):job.kind===1||job.kind===2?glyph('⚗',30):icon(job.value,30));} q.title = 'Rechtsklick oder Rücktaste: letzten Auftrag abbrechen'; }
   }
 
-  const sig = ui.epoch+':'+ui.act.map(a => a.k + a.id).join(',');
+  const sig = ui.epoch+':'+ui.act.map(a => a.k + a.id + label(a.name,actionUnitId(a))).join(',');
   const acts = $('acts');
   if (sig !== actSig) {
     actSig = sig; acts.innerHTML = '';
@@ -1033,8 +1073,20 @@ function updateUi(drawn, now) {
       const sm = document.createElement('small'); sm.textContent = label(a.name,actionUnitId(a)); b.append(sm);
       if (HOT[i]) { const k = document.createElement('kbd'); k.textContent = HOT[i]; b.append(k); }
       b.onclick = () => doAct(i);
-      b.oncontextmenu = e => { e.preventDefault(); wasm.cmd_cancel(); };
-      b.onmouseenter = () => { const a = ui.act[i]; if (!a) return; const t = $('tip'); t.innerHTML = `<b>${escapeLabelHtml(label(a.name,actionUnitId(a)))}</b> <span class="c">${a.tp ? a.tp+' Technologiepunkte' : a.k === 'u'||a.k==='p' ? '' : costText(a.cost)}</span><br>${originalLabels.description(actionUnitId(a),ui.epoch)?escapeLabelHtml(originalLabels.description(actionUnitId(a),ui.epoch))+'<br>':''}${escapeLabelHtml(a.tip)}`; t.style.display = 'block'; };
+      b.oncontextmenu = e => {
+        e.preventDefault();const detail=sourceResearch.forAction(ui.act[i]);
+        if(detail){if(sourceResearch.cancel(detail.id)){sfx.play(20);lastUi=0;}}
+        else wasm.cmd_cancel();
+      };
+      b.onmouseenter = () => {
+        const a = ui.act[i]; if (!a) return;
+        const t = $('tip'), detail=sourceResearch.forAction(a);
+        const cost=detail?researchCost(detail):a.tp?a.tp+' Technologiepunkte':a.k==='u'||a.k==='p'?'':costText(a.cost);
+        const description=originalLabels.description(actionUnitId(a),ui.epoch);
+        const progress=detail&&[2,4].includes(detail.status)?'<br>'+escapeLabelHtml(researchState(detail,''))+' · Rechtsklick zum Abbrechen':'';
+        t.innerHTML = `<b>${escapeLabelHtml(label(a.name,actionUnitId(a)))}</b> <span class="c">${cost}</span><br>${description?escapeLabelHtml(description)+'<br>':''}${escapeLabelHtml(a.tip)}${progress}`;
+        t.style.display = 'block';
+      };
       b.onmouseleave = () => $('tip').style.display = 'none';
       acts.append(b);
     });
@@ -1060,6 +1112,7 @@ function doAct(i) {
   if (a.k === 'b') { ghost = { id: a.id, size: a.size,name:label(a.name,a.id),turn:0,manual:false }; placementKey='';attackMode = false; sfx.play(20);updatePlacement();return; }
   if (a.k === 'u') { wasm.cmd_unload(); sfx.play(22); return; }
   if(a.k==='p'){if(typeof wasm.cmd_pack==='function'&&wasm.cmd_pack(a.id)){if(!selectedUnitVoice('order'))sfx.play(20);}else sfx.play(21);lastUi=0;return;}
+  if(a.k==='i'&&!a.ok){sfx.play(21);toast(researchState(a,'Leichte Infanterie'));return;}
   if (renderNamespace.wide?wasm.cmd_queue_job(a.id):wasm.cmd_train(a.id)) sfx.play(20);
   else { sfx.play(21); toast(a.ok ? 'Warteschlange voll' : a.k==='e' && referenceMode && ui.research.count<6 ? 'Zuerst sechs Technologien dieser Epoche erforschen' : a.tp && ui.research.points<a.tp ? 'Technologiepunkte fehlen – Bürger in Universitäten schicken' : a.k === 't' && ui.pop >= ui.cap ? 'Mehr Häuser bauen' : 'Rohstoffe fehlen'); }
 }
@@ -1300,8 +1353,9 @@ function channel(local) {
             try{
               const ai=+$('mpai').value,players=2+ai,choices=civilizationSetup.choices();
               if(choices)choices[1]=m.civilizationChoice;
+              const resolved=choices?resolvedSkirmishChoices(choices,players):{civilizations:null,epoch:0,finalEpoch:null};
               const cfg = {t:'start',protocol:PROTOCOL_VERSION,rules:wasm.ruleset(),seed:(seedOf()>>>0)||1,ai,visibility:+$('map-visibility').value,seasons:menuSeasonSettings(),
-                civilizations:choices?resolveCivilizations(choices,players):null,popLimit:choices?+$('pop-limit').value:null,supplies:choices?+$('supplies').value:null,epoch:choices?+$('start-epoch').value:0};
+                ...resolved,popLimit:choices?+$('pop-limit').value:null,supplies:choices?+$('supplies').value:null};
               checkStart(cfg);ch.send(JSON.stringify(cfg));launch(cfg);
             }catch{return reject('Die Scharmützeleinstellungen konnten nicht übernommen werden.');}
           }
@@ -1320,8 +1374,9 @@ function channel(local) {
     peerSeasonSettings(cfg.seasons);
     if(civilizationSetup.enabled){
       checkedCivilizations(cfg.civilizations,2+cfg.ai);
-      if(![250,500,1000].includes(cfg.popLimit)||![0,1,2].includes(cfg.supplies)||!Number.isInteger(cfg.epoch)||cfg.epoch<0||cfg.epoch>=wasm.epoch_count())throw Error('Invalid skirmish setup');
-    }else if(cfg.civilizations!==null||cfg.popLimit!==null||cfg.supplies!==null||cfg.epoch!==0)throw Error('Unsupported civilization setup');
+      if(![250,500,1000].includes(cfg.popLimit)||![0,1,2].includes(cfg.supplies))throw Error('Invalid skirmish setup');
+      checkedEpochRange(cfg.epoch,cfg.finalEpoch,wasm.epoch_count());
+    }else if(cfg.civilizations!==null||cfg.popLimit!==null||cfg.supplies!==null||cfg.epoch!==0||cfg.finalEpoch!==null)throw Error('Unsupported civilization setup');
   }
   function launch(cfg) {
     checkStart(cfg);

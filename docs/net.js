@@ -9,7 +9,7 @@
 
 export const TURN_TICKS = 2;   // one network turn = 2 simulation ticks = 100 ms
 export const DELAY = 2;        // commands run this many turns after they are issued
-export const PROTOCOL_VERSION = 16; // SourceIdentity9/80, shared source RNG continuation and explicit host-resolved settings
+export const PROTOCOL_VERSION = 17; // Host includes the resolved skirmish end epoch.
 
 /** Turn-based command scheduler. `send(ArrayBuffer)` delivers to the peer. */
 export class Lockstep {

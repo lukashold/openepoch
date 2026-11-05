@@ -662,6 +662,9 @@ class AssetAudit:
         if 'local-original/regional-docks/manifest.json' in self.files:
             self.check_models('local-original/regional-docks/manifest.json', 'regional-docks-')
             self.check_teams('local-original/regional-docks/team/manifest.json', 'regional-docks-')
+        if 'local-original/regional-barracks/manifest.json' in self.files:
+            self.check_models('local-original/regional-barracks/manifest.json', 'regional-barracks-')
+            self.check_teams('local-original/regional-barracks/team/manifest.json', 'regional-barracks-')
         self.check_textures_and_ground();self.check_teams();self.check_model_seasons();self.check_audio();self.check_static_runtime()
         if 'original-water.js' in self.files:self.check_water()
         if 'local-original/farm-composites.json' in self.files:self.check_farms()

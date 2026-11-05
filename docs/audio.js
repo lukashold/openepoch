@@ -1,7 +1,10 @@
 // The EE2 profile uses locally extracted original recordings when available.
 // Procedural sounds and local speech remain the fallback for the standalone game.
-import { createOriginalAudio } from './original-audio.js?v=regional12';
-const originals=createOriginalAudio();
+import { createOriginalAudio } from './original-audio.js?v=epoch13';
+import {createPresentationRandom} from './source-music-controller.js?v=regional11';
+const presentationRandom = createPresentationRandom(1);
+const originals=createOriginalAudio({presentationRandom});
+export const presentationWord = () => presentationRandom.word15();
 
 let ctx = null, master = null, noise = null;
 let muted = false, voices = 0;

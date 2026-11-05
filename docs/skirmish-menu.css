@@ -1,0 +1,167 @@
+#menu.skirmish-layout .card {
+  box-sizing: border-box;
+  width: min(760px, calc(100vw - 24px));
+  padding: clamp(12px, 2vw, 24px);
+}
+#skirmish-title { margin: 0 0 10px; font-size: 1.4rem; }
+#skirmish-player-title { margin: 0 0 8px; font-size: 1.2rem; }
+#skirmish-overview { padding: 12px; }
+#skirmish-overview h3 { margin: 0 0 10px; }
+#skirmish-overview dl { margin: 0; }
+#skirmish-overview dt { font-weight: 600; }
+#skirmish-overview dd { margin: 0 0 10px; }
+#skirmish-tabs:not([hidden]) {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  padding: 6px 0;
+}
+#menu.skirmish-layout #skirmish-tabs button {
+  padding: 6px 3px;
+  font-size: clamp(12px, 1.8vw, 16px);
+  min-width: 0;
+  min-height: 34px;
+}
+#menu.skirmish-layout:not(.skirmish-original-art) #skirmish-tabs button[aria-selected="false"] {
+  color: var(--text);
+  background: #25343b;
+}
+#menu.skirmish-layout .skirmish-pane {
+  min-height: 132px;
+  padding: 1px 4px 6px;
+}
+#menu.skirmish-layout .skirmish-actions { justify-content: flex-end; }
+#menu.skirmish-layout #civilization-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 12px;
+  margin-top: 0 !important;
+}
+#menu.skirmish-layout #civilization-options .row { margin: 4px 0; }
+#menu.skirmish-layout #civilization-options label { width: auto; min-width: 66px; }
+#menu.skirmish-layout #civilization-options select { max-width: 100%; }
+#menu.skirmish-layout #skirmish-overview { display: none; }
+
+#menu.skirmish-original-art .skirmish-players,
+#menu.skirmish-original-art .skirmish-settings {
+  padding: 8px 12px;
+  color: #fff1dc;
+  text-shadow: 0 1px #271c11;
+  background-color: #654a2e;
+  background-repeat: no-repeat;
+  box-shadow: 0 1px 5px #0009;
+  position: relative;
+  --sk-frame: clamp(6px, 0.55vw, 12px);
+}
+#menu.skirmish-original-art .skirmish-players::before,
+#menu.skirmish-original-art .skirmish-settings::before {
+  content: "";
+  position: absolute;
+  inset: calc(var(--sk-frame) / -2);
+  pointer-events: none;
+  background-image: var(--sk-frame-ul), var(--sk-frame-ll), var(--sk-frame-lr), var(--sk-frame-ur),
+    var(--sk-frame-top), var(--sk-frame-left), var(--sk-frame-bottom), var(--sk-frame-right);
+  background-size: var(--sk-frame) var(--sk-frame), var(--sk-frame) var(--sk-frame),
+    var(--sk-frame) var(--sk-frame), var(--sk-frame) var(--sk-frame),
+    auto var(--sk-frame), var(--sk-frame) auto, auto var(--sk-frame), var(--sk-frame) auto;
+  background-position: left top, left bottom, right bottom, right top,
+    center top, left center, center bottom, right center;
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, repeat-x, repeat-y, repeat-x, repeat-y;
+}
+#menu.skirmish-original-art .skirmish-players {
+  background-image: var(--sk-player-left), var(--sk-player-middle), var(--sk-player-right);
+  background-position: left top, center top, right top;
+  background-size: 34% 100%, 34% 100%, 34% 100%;
+}
+#menu.skirmish-original-art .skirmish-settings {
+  margin-top: 10px;
+  background-image: var(--sk-settings-left), var(--sk-settings-middle);
+  background-position: left top, right top;
+  background-size: 50% 100%, 50% 100%;
+}
+#menu.skirmish-original-art #skirmish-tabs {
+  background: var(--sk-divider) center bottom / 100% 3px no-repeat;
+}
+#menu.skirmish-original-art .skirmish-players label,
+#menu.skirmish-original-art .skirmish-settings label,
+#menu.skirmish-original-art .skirmish-settings .dim {
+  color: inherit;
+}
+#menu.skirmish-original-art .skirmish-players select,
+#menu.skirmish-original-art .skirmish-settings select,
+#menu.skirmish-original-art .skirmish-settings input:not([type="checkbox"]) {
+  color: #2a1d12;
+  background-color: #f3e0b7;
+  border-color: #806341;
+}
+#menu.skirmish-original-art #skirmish-tabs button,
+#menu.skirmish-original-art .skirmish-actions button {
+  color: #281c11;
+  border: 0;
+  background-color: transparent;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+#menu.skirmish-original-art #skirmish-tabs button { background-image: var(--sk-tab-normal); }
+#menu.skirmish-original-art #skirmish-tabs button:hover { background-image: var(--sk-tab-hover); }
+#menu.skirmish-original-art #skirmish-tabs button[aria-selected="true"] { background-image: var(--sk-tab-active); }
+#menu.skirmish-original-art #skirmish-tabs button[aria-selected="true"]:hover { background-image: var(--sk-tab-active-hover); }
+#menu.skirmish-original-art .skirmish-actions button { background-image: var(--sk-action-normal); padding: 10px 18px; }
+#menu.skirmish-original-art .skirmish-actions button:hover { background-image: var(--sk-action-hover); }
+#menu.skirmish-original-art .skirmish-actions button:active { background-image: var(--sk-action-active); }
+#menu.skirmish-original-art .skirmish-actions button:active:hover { background-image: var(--sk-action-active-hover); }
+#menu.skirmish-original-art .skirmish-actions button:focus-visible,
+#menu.skirmish-original-art #skirmish-tabs button:focus-visible { outline: 2px solid #342414; outline-offset: 1px; }
+
+@media (min-width: 1160px) and (min-height: 740px) {
+  #menu.skirmish-original-art .card {
+    display: grid;
+    grid-template-columns: minmax(0, 58fr) minmax(0, 42fr);
+    grid-template-rows: auto minmax(265px, 48vh) minmax(250px, 1fr) auto;
+    gap: 12px;
+    width: calc(100vw - 24px);
+    height: calc(100dvh - 24px);
+    max-height: none;
+    border-radius: 0;
+  }
+  #menu.skirmish-original-art .card > h1,
+  #menu.skirmish-original-art #rules-note,
+  #menu.skirmish-original-art .skirmish-intro { display: none; }
+  #menu.skirmish-original-art #skirmish-title,
+  #menu.skirmish-original-art .skirmish-players,
+  #menu.skirmish-original-art .skirmish-footer { grid-column: 1 / -1; }
+  #menu.skirmish-original-art #skirmish-title {
+    margin: 0;
+    font: 700 clamp(26px, 2.5vw, 44px) Georgia, serif;
+    color: #fff5dd;
+  }
+  #menu.skirmish-original-art .skirmish-settings { margin-top: 0; }
+  #menu.skirmish-original-art #civilization-options {
+    grid-template-columns: 1fr;
+    padding: 8px 0 0 !important;
+    border: 0 !important;
+  }
+  #menu.skirmish-original-art #civilization-options .row {
+    margin: 0;
+    padding: clamp(6px, 1.1vh, 13px) 12px;
+  }
+  #menu.skirmish-original-art #civilization-options .row:nth-child(even) { background: #18110936; }
+  #menu.skirmish-original-art #civilization-options label { min-width: 140px; }
+  #menu.skirmish-original-art .skirmish-side { display: flex; flex-direction: column; min-width: 0; }
+  #menu.skirmish-original-art #skirmish-overview {
+    display: block;
+    flex: 1;
+    min-height: 110px;
+    color: #2a1d12;
+    background: #d1aa64 var(--sk-overview) center / 100% 100% no-repeat;
+    padding: 18px;
+    border: 3px ridge #987442;
+    overflow: auto;
+  }
+  #menu.skirmish-original-art .skirmish-footer { margin: 0 !important; }
+}
+@media (max-width: 520px) {
+  #menu.skirmish-layout #civilization-options { grid-template-columns: 1fr; }
+  #menu.skirmish-layout .skirmish-pane { min-height: 0; }
+}

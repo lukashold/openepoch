@@ -12,13 +12,25 @@ impl Game {
     /// Legacy role definitions keep their established multiplier representation.
     pub fn effective_weapon_damage(&self,team:u8,def:DefId,weapon_base:f32)->f32 {
         let value=self.modifiers[team as usize][def as usize][1];
-        if cfg!(feature="ee2-roster6")&&def>=57 {value}else{weapon_base*value}
+        let damage = if cfg!(feature="ee2-roster6")&&def>=57 {value}else{weapon_base*value};
+        #[cfg(feature="ee2-ai9-game-bridge")]
+        let damage = crate::ai9_rank::damage(self, team, def, damage);
+        damage
     }
     pub fn scaled_weapon_damage(&self,team:u8,def:DefId,weapon_base:f32,player_factor:f32)->f32 {
+        #[cfg(feature="ee2-ai9-game-bridge")]
+        if self.source_light_infantry_rank(team) != 0 && crate::ai9_rank::class(def, self.players[team as usize].epoch).is_some() {
+            return self.effective_weapon_damage(team, def, weapon_base) * player_factor;
+        }
         let value=self.modifiers[team as usize][def as usize][1];
         if cfg!(feature="ee2-roster6")&&def>=57 {value*player_factor}else{weapon_base*player_factor*value}
     }
-    pub fn max_hp(&self, team: u8, def:DefId) -> f32 { self.modifiers[team as usize][def as usize][0] }
+    pub fn max_hp(&self, team: u8, def:DefId) -> f32 {
+        let hp = self.modifiers[team as usize][def as usize][0];
+        #[cfg(feature="ee2-ai9-game-bridge")]
+        let hp = crate::ai9_rank::hp(self, team, def, hp, self.source_light_infantry_rank(team));
+        hp
+    }
     pub fn production_time(&self, team: u8, def:DefId) -> f32 { self.modifiers[team as usize][def as usize][3] }
     pub fn unit_cost(&self, team: u8, def:DefId) -> [u16;9] {
         let d = &DEFS[def as usize];
@@ -83,11 +95,23 @@ impl Game {
     }
     #[cfg(feature = "ee2-reference")]
     pub fn research_busy(&self, team: u8, k: usize) -> bool {
+        #[cfg(feature = "ee2-ai9-game-bridge")]
+        if self.source_research_busy(team, k) { return true; }
+        self.has_ordinary_research_job(team, k)
+    }
+    #[cfg(feature = "ee2-reference")]
+    pub(crate) fn has_ordinary_research_job(&self, team: u8, k: usize) -> bool {
         self.ents[..self.high].iter().any(|e| e.alive && e.team == team && e.q[..e.qn as usize].contains(&(ORIGINAL_RESEARCH0+k as QueueItem)))
+    }
+    pub(crate) fn match_final_epoch(&self) -> u8 {
+        #[cfg(feature = "ee2-epoch-range13")]
+        { self.final_epoch }
+        #[cfg(not(feature = "ee2-epoch-range13"))]
+        { MAX_EPOCH }
     }
     pub fn can_advance(&self, team: u8) -> bool {
         let p=&self.players[team as usize];
-        if p.epoch >= MAX_EPOCH || p.researching { return false; }
+        if p.epoch >= self.match_final_epoch() || p.researching { return false; }
         #[cfg(feature = "ee2-reference")]
         { self.research_count(team,p.epoch) >= 6 && self.research_points[team as usize]+0.00001 >= ADVANCE_COST[p.epoch as usize+1] }
         #[cfg(not(feature = "ee2-reference"))]
@@ -142,8 +166,24 @@ impl Game {
             for f in [0,1,2,3,4,5,7,8,9,10,12,13,14,15,16,17] { row[f]=row[f].max(if f==2||f==1||(cfg!(feature="ee2-up15")&&f==5) {0.0} else {0.05}); }
         }
         if adjust_health {
+            #[cfg(feature="ee2-ai9-game-bridge")]
+            let ranked_ratios: Option<[f32; DEF_COUNT]> = {
+                let rank = self.source_light_infantry_rank(team);
+                (rank != 0).then(|| std::array::from_fn(|id| {
+                    let def = id as DefId;
+                    let before = crate::ai9_rank::hp(self, team, def, old[id][0], rank);
+                    let after = crate::ai9_rank::hp(self, team, def, m[id][0], rank);
+                    after / before.max(0.01)
+                }))
+            };
             for e in &mut self.ents[..self.high] {
-                if e.alive && e.team == team { e.hp *= m[e.def as usize][0]/old[e.def as usize][0].max(0.01); }
+                if e.alive && e.team == team {
+                    let id = e.def as usize;
+                    let ratio = m[id][0] / old[id][0].max(0.01);
+                    #[cfg(feature="ee2-ai9-game-bridge")]
+                    let ratio = ranked_ratios.as_ref().map_or(ratio, |ranked| ranked[id]);
+                    e.hp *= ratio;
+                }
             }
         }
         self.modifiers[team as usize]=m;

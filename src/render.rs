@@ -511,7 +511,7 @@ impl Game {
                     act(&mut s,"r",item,t.name,&[0,0,0],self.can_train(first,item),0.0,if busy {"Forschung läuft"} else {"15 Sekunden Forschung · zählt für den Epochenwechsel"});
                 }
             }
-            if bdef == TC && ep < MAX_EPOCH {
+            if bdef == TC && ep < self.match_final_epoch() {
                 #[cfg(not(feature = "ee2-reference"))]
                 let c = &EPOCH_COST[ep as usize + 1];
                 #[cfg(feature = "ee2-reference")]
