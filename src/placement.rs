@@ -58,7 +58,7 @@ impl Game {
         if s == 0 || tx < 0 || ty < 0 || tx > N as i32 - s || ty > N as i32 - s {
             return false;
         }
-        if self.diplomacy.visibility >= 1 && !self.players[team as usize].ai {
+        if self.display_visibility() >= 1 && !self.players[team as usize].ai {
             return true;
         }
         (ty..ty + s)

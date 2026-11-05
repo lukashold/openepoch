@@ -3,7 +3,7 @@
 use crate::{defs::*,game::*};
 impl Game{
  pub(crate) fn configure_match_settings(&mut self,packed:u32,pop:u32,supplies:u32,epoch:u32)->bool{
-  if packed&0xffff0000!=0||![250,500,1000].contains(&pop)||supplies>4||epoch>MAX_EPOCH as u32||self.tick!=0||self.bench!=0||!self.civ_setup_open||!self.outbox.is_empty()||!self.inbox.is_empty()||self.cheats_enabled||self.instant_build{return false;}
+  if packed&0xffff0000!=0||![250,500,1000].contains(&pop)||supplies>4||epoch>MAX_EPOCH as u32||self.tick!=0||self.bench!=0||!self.civ_setup_open||!self.outbox.is_empty()||!self.inbox.is_empty()||self.cheats_enabled||self.instant_build||self.god_mode||self.fog_inverted{return false;}
   let civs=core::array::from_fn(|i|((packed>>(4*i))&15)as u8);
   if self.civilizations.iter().any(|&c|c!=crate::civ8_runtime::LEGACY_NEUTRAL)||civs.iter().any(|&c|c>crate::civ8_runtime::LEGACY_NEUTRAL)||civs[self.nplayers..].iter().any(|&c|c!=crate::civ8_runtime::LEGACY_NEUTRAL)||self.ents[..self.high].iter().any(|e|e.alive&&((DEFS[e.def as usize].building&&e.qn>0)||e.order!=O_IDLE)){return false;}
   // Nothing above mutates; configure_civilizations performs its own complete

@@ -3,6 +3,36 @@ use crate::{ee2_up15_attack as a,native_attack_clock as clock};
 fn game(epoch:u8)->Game{let mut g=Game::new(7,0,0,2,0);for i in 0..g.high{g.kill(i);}g.territory.claims.fill(NONE);g.build_grid();g.players[0].epoch=epoch;g.players[1].epoch=epoch;g.rebuild_modifiers(0,false);g.rebuild_modifiers(1,false);g.team_vis.fill(255);g}
 fn put(b:&mut[u8],at:usize,value:u32){b[at..at+4].copy_from_slice(&value.to_le_bytes());}
 fn round(g:&mut Game,i:usize,t:usize){let mut e=g.ents[i];let w=DEFS[e.def as usize].w[0];g.try_attack_round(i,&mut e,&w,t);g.ents[i]=e;}
+
+#[test]
+fn god_mode_protects_only_the_local_player_while_cheats_are_enabled() {
+    let mut game = game(10);
+    game.net = false;
+    game.cheats_enabled = true;
+    game.god_mode = true;
+    let local = game.spawn(WORKER, 0, 100.5, 100.5);
+    let enemy = game.spawn(WORKER, 1, 105.5, 100.5);
+    game.ents[local].hp = 1000.0;
+    game.ents[enemy].hp = 1000.0;
+    let local_shooter = game.spawn(16, 0, 100.5, 101.5);
+    let enemy_shooter = game.spawn(16, 1, 105.5, 101.5);
+    let mut own = game.ents[local_shooter];
+    let mut other = game.ents[enemy_shooter];
+    let weapon = &DEFS[16].w[0];
+
+    game.fire(&mut other, weapon, local);
+    game.fire(&mut own, weapon, enemy);
+    assert_eq!(game.ents[local].hp, 1000.0);
+    assert!(game.ents[enemy].hp < 1000.0);
+
+    game.cheats_enabled = false;
+    game.fire(&mut other, weapon, local);
+    let hp_after_disable = game.ents[local].hp;
+    assert!(hp_after_disable < 1000.0);
+    game.cheats_enabled = true;
+    game.fire(&mut other, weapon, local);
+    assert_eq!(game.ents[local].hp, hp_after_disable);
+}
 #[test]fn actual_antiaircraft_and_destroyer_acquire_aircraft(){
  for id in [25,32]{let mut g=game(10);let own=g.spawn(id,0,100.5,100.5);let target=g.spawn(37,1,105.5,100.5);g.build_grid();assert!(DEFS[id as usize].weapon_vs(AIR).is_some());assert!(g.rps_allows(&g.ents[own],&g.ents[target]));assert_eq!(g.acquire(&g.ents[own],&DEFS[id as usize],11.0),g.h(target));}
 }

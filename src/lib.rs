@@ -845,22 +845,64 @@ pub extern "C" fn cmd_delete() {
     g.submit(C_DELETE, 0.0, 0.0, 0, &hs);
 }
 
-/// Cheat ids: 0 enable, 1 disable, 2 loot, 3 instant build toggle, 4 technology points.
+/// Cheat ids: 0 enable, 1 disable, 2 loot, 3 instant build, 4 technology points,
+/// 5 taxes (UP), 6 punish (UP), 7 play god (UP), 8 toggle fog (UP).
 /// Results: 0 disabled/invalid, 1 applied, 2 toggle off, 3 multiplayer denied.
 #[no_mangle]
 pub extern "C" fn cheat(code: u32) -> u32 {
     let game = g();
     if game.net { return 3; }
     if code == 0 { game.cheats_enabled = true; return 1; }
-    if code == 1 { game.cheats_enabled = false; game.instant_build = false; return 1; }
+    if code == 1 {
+        game.cheats_enabled = false;
+        if !cfg!(feature = "ee2-up15") {
+            game.instant_build = false;
+        }
+        return 1;
+    }
     if !game.cheats_enabled { return 0; }
     match code {
         2 => {for r in 0..economy::RESOURCE_COUNT{game.add_resource(game.local,r,10000.0);}1},
         3 => { game.instant_build = !game.instant_build; if game.instant_build { 1 } else { 2 } },
         4 => {
-            if cfg!(feature = "ee2-reference") { game.research_points[game.local as usize] += 50.0; }
-            else { game.tech_points = game.tech_points.saturating_add(50); }
+            if cfg!(feature = "ee2-reference") {
+                let balance = &mut game.research_points[game.local as usize];
+                let next = *balance + 50.0;
+                // UP AddTechPoints compares to 999,999, but writes 99,999 on overflow.
+                *balance = if cfg!(feature = "ee2-up15") && next > 999_999.0 { 99_999.0 } else { next };
+            } else {
+                game.tech_points = game.tech_points.saturating_add(50);
+            }
             1
+        },
+        #[cfg(feature = "ee2-up15")]
+        5 => {
+            for slot in 0..economy::RESOURCE_COUNT {
+                game.add_resource(game.local, slot, -100.0);
+            }
+            1
+        },
+        #[cfg(feature = "ee2-up15")]
+        6 => {
+            if !game.god_mode_for(game.local) {
+                for actor in &mut game.ents[..game.high] {
+                    if actor.alive && actor.sel && actor.team == game.local && actor.hp > 20.0 {
+                        actor.hp -= 20.0;
+                    }
+                }
+            }
+            1
+        },
+        #[cfg(feature = "ee2-up15")]
+        7 => {
+            game.god_mode = !game.god_mode;
+            if game.god_mode { 1 } else { 2 }
+        },
+        #[cfg(feature = "ee2-up15")]
+        8 => {
+            game.fog_inverted = !game.fog_inverted;
+            game.refresh_display_fog();
+            if game.display_visibility() < 2 { 1 } else { 2 }
         },
         _ => 0,
     }
@@ -869,7 +911,7 @@ pub extern "C" fn cheat(code: u32) -> u32 {
 #[no_mangle]
 pub extern "C" fn cheat_status(field: u32) -> u32 {
     let game = g();
-    match field { 0 => game.cheats_enabled as u32, 1 => game.instant_build as u32, 2 => if cfg!(feature = "ee2-reference") {game.research_points[game.local as usize] as u32} else {game.tech_points}, _ => 0 }
+    match field { 0 => game.cheats_enabled as u32, 1 => game.instant_build as u32, 2 => if cfg!(feature = "ee2-reference") {game.research_points[game.local as usize] as u32} else {game.tech_points}, 3 => game.god_mode_for(game.local) as u32, _ => 0 }
 }
 
 /// Research from the full tree: use a selected host, otherwise the first suitable building.

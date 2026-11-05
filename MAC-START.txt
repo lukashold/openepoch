@@ -172,3 +172,12 @@ Truppentransportern stationieren. Wer seinen König verliert, scheidet aus,
 auch wenn sein Stadtzentrum noch steht. Die Modelle, Porträts und Stimmen
 des Königs wechseln mit der Epoche. Königsmord speichert seinen Modus mit
 dem Spielstand und steht für UP-Einzelspielerscharmützel zur Verfügung.
+
+Cheats im UP-Einzelspielerscharmützel
+Mit icheat die Eingabe freischalten. loot und taxes ändern alle neun
+Rohstoffkonten. punish zieht ausgewählten Einheiten mit mehr als 20 HP
+20 HP ab. play god schaltet den Schadensschutz für die eigenen Einheiten
+ein und aus. toggle fog schaltet den Kriegsnebel während der Partie um.
+sea monkeys beschleunigt Bau, Produktion und bezahlte Forschung. Den
+Sofortmodus vor idontcheat ausschalten, wenn er enden soll. Spielstände
+mit aktivem Schadensschutz oder geändertem Nebel benötigen diesen Build.

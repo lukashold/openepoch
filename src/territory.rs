@@ -575,7 +575,7 @@ impl Game {
             let seen = known[id] || actual == self.local;
             let owner = if seen { actual } else { TERR_NONE };
             let complete =
-                seen && (actual == self.local || disclosed[id] || self.diplomacy.visibility == 2);
+                seen && (actual == self.local || disclosed[id] || self.display_visibility() == 2);
             let mut counts = [0; 3];
             if complete {
                 counts = self.territory_counts(id, actual);

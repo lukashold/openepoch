@@ -115,6 +115,14 @@ impl Game {
         self.footprint_known(team,def,tx,ty,0)
     }
 
+    pub(crate) fn display_visibility(&self) -> u8 {
+        match (self.diplomacy.visibility, self.fog_inverted) {
+            (2, true) => 1,
+            (_, true) => 2,
+            (mode, false) => mode,
+        }
+    }
+
     pub fn refresh_display_fog(&mut self) {
         if self.bench > 0 {
             self.vis.fill(255);
@@ -134,13 +142,14 @@ impl Game {
             }
         }
 
-        if self.diplomacy.visibility == 1 {
+        let visibility = self.display_visibility();
+        if visibility == 1 {
             for v in &mut self.vis {
                 *v = (*v).max(128);
             }
         }
 
-        if self.diplomacy.visibility == 2 {
+        if visibility == 2 {
             self.vis.fill(255);
         }
     }
@@ -505,7 +514,7 @@ impl Game {
         let _ = write!(
             s,
             ",\"diplomacy\":{{\"local\":{},\"visibility\":{},\"players\":[",
-            me, self.diplomacy.visibility
+            me, self.display_visibility()
         );
 
         for p in 0..self.nplayers {

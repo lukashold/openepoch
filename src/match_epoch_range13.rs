@@ -108,6 +108,20 @@ mod tests {
     }
 
     #[test]
+    fn native_instant_build_completes_a_paid_epoch_at_its_first_tick() {
+        let mut game = Game::new(7, 1, 0, 1, 0);
+        assert!(game.configure_match_epoch_range(0xee10, 500, 1, 0, 1));
+        fund(&mut game, 0);
+        assert!(game.train(city(&game), RESEARCH));
+        game.instant_build = true;
+        game.tick();
+        assert_eq!(game.players[0].epoch, 1);
+        assert_eq!(game.players[1].epoch, 0);
+        assert_eq!(game.research_points[0], 268.0);
+        assert!(!game.players[0].researching);
+    }
+
+    #[test]
     fn inclusive_single_epoch_and_atomic_rejection() {
         let mut game = Game::new(7, 1, 0, 1, 0);
         let before = game.state_hash();

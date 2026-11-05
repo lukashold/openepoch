@@ -42,7 +42,8 @@ impl Game {
         b.extend_from_slice(&self.map.res);
         b.extend_from_slice(raw(&self.map.amt));
         b.extend_from_slice(&self.vis);
-        for v in [self.cheats_enabled as u32, self.instant_build as u32, self.tech_points] {
+        let cheat_flags = self.cheats_enabled as u32 | ((self.god_mode as u32) << 1) | ((self.fog_inverted as u32) << 2);
+        for v in [cheat_flags, self.instant_build as u32, self.tech_points] {
             b.extend_from_slice(&v.to_le_bytes());
         }
         b.extend_from_slice(&0x3153_4552u32.to_le_bytes()); // RES1 research extension
@@ -164,9 +165,13 @@ impl Game {
         let end = H + psz + esz + NN * 5;
         if trailer >= 12 {
             let v = |k| u32::from_le_bytes(buf[end+k..end+k+4].try_into().unwrap());
-            if v(0) > 1 || v(4) > 1 { return None; }
-            g.cheats_enabled = v(0) == 1;
-            g.instant_build = v(4) == 1 && g.cheats_enabled;
+            let allowed = if cfg!(feature = "ee2-up15") { 7 } else { 1 };
+            let flags = v(0);
+            if flags & !allowed != 0 || v(4) > 1 { return None; }
+            g.cheats_enabled = flags & 1 != 0;
+            g.god_mode = flags & 2 != 0;
+            g.fog_inverted = flags & 4 != 0;
+            g.instant_build = v(4) == 1 && (cfg!(feature = "ee2-up15") || g.cheats_enabled);
             g.tech_points = v(8);
         }
         if trailer>=132 {
@@ -182,6 +187,7 @@ impl Game {
             fill(&mut g.extra_resources,&ext[8..104]);
         }
         if has_diplomacy{g.read_diplomacy(&buf[end+trailer..end+trailer+crate::diplomacy::DIP_BYTES])?;}
+        if (g.god_mode || g.fog_inverted) && g.humans != 1 { return None; }
         if has_territory{g.read_territory(&buf[end+trailer+crate::diplomacy::DIP_BYTES..])?;}
         if g.extra_resources.iter().flatten().any(|v|!v.is_finite()||*v<0.0)||g.players.iter().flat_map(|p|p.res).any(|v|!v.is_finite()||v<0.0){return None;}
         if g.map.res.iter().any(|&v|v as usize>crate::economy::RESOURCE_COUNT){return None;}

@@ -457,13 +457,17 @@ impl DurableResearch {
     fn tick(&mut self, game: &mut Game) {
         let now = game.tick as f32 * DT;
         let balance = snapshot_balance(game, self.owner);
+        let research_tick = ResearchFrame {
+            delta: DT,
+            immediate: game.instant_build_for(self.owner),
+            precision: PRECISION,
+        };
         let mut world = World {
             game,
             tree: &mut self.tree,
             owner: self.owner,
             balance,
         };
-        let research_tick = ResearchFrame { delta: DT, immediate: false, precision: PRECISION };
         if self.manual {
             // Human orders use the native job lifecycle. They do not run the
             // research planner or draw from the source production RNG.

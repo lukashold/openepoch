@@ -232,6 +232,8 @@ pub struct Game {
     pub bench: u32,
     pub cheats_enabled: bool,
     pub instant_build: bool,
+    pub god_mode: bool,
+    pub fog_inverted: bool,
     pub tech_points: u32,
     pub research_points: [f32; 4],
     pub researched: [[u32; 6]; 4],
@@ -318,7 +320,7 @@ impl Game {
             ui: String::with_capacity(4096),
             winner: 0,
             bench,
-            cheats_enabled: false, instant_build: false, tech_points: 0,
+            cheats_enabled: false, instant_build: false, god_mode: false, fog_inverted: false, tech_points: 0,
             research_points: [0.0;4], researched: [[0;6];4], modifiers: [[[0.0;19];crate::research::DEF_COUNT];4],
             #[cfg(feature="ee2-civ8")]
             civilizations:[crate::civ8_runtime::LEGACY_NEUTRAL;4],
@@ -494,7 +496,7 @@ impl Game {
     pub fn visible(&self,j:usize)->bool {
         let t=&self.ents[j];if t.team==self.local{return true;}
         let need=if DEFS[t.def as usize].building{128}else{255};
-        (if self.diplomacy.visibility<2{self.real_fog(self.local,tile_of(t.x,t.y))}else{255})>=need&&self.detected(self.local,j)
+        (if self.display_visibility()<2{self.real_fog(self.local,tile_of(t.x,t.y))}else{255})>=need&&self.detected(self.local,j)
     }
 
     // ------------------------------------------------------------------ economy
@@ -910,6 +912,8 @@ impl Game {
         mix(self.cheats_enabled as u32);
         mix(self.instant_build as u32);
         mix(self.tech_points);
+        if self.god_mode { mix(u32::from_le_bytes(*b"GOD1")); }
+        if self.fog_inverted { mix(u32::from_le_bytes(*b"FOG1")); }
         mix(self.diplomacy.visibility as u32);
         for a in [&self.diplomacy.relation,&self.diplomacy.offers,&self.diplomacy.offer_vision,&self.diplomacy.sharing]{for &v in a{mix(v as u32);}}
         for a in [&self.diplomacy.offer_tick,&self.diplomacy.cooldown,&self.diplomacy.gifts,&self.diplomacy.neutral_since,&self.diplomacy.war_tick]{for &v in a{mix(v);}}
@@ -1344,8 +1348,9 @@ impl Game {
     fn damage(&mut self, j: usize, dmg: f32, kind: u8) {
         let (team, td) = (self.ents[j].team, &DEFS[self.ents[j].def as usize]);
         let m = MULT[kind as usize][td.armor as usize] * self.players[team as usize].dfn[class_of(td)];
+        let protected = self.god_mode_for(team);
         let t = &mut self.ents[j];
-        t.hp -= dmg * m;
+        if !protected { t.hp -= dmg * m; }
         t.flash = 0.12;
         if team == self.local && m > 0.0 && self.tick % 8 == 0 {
             let (x, y) = (t.x, t.y);
@@ -1360,7 +1365,8 @@ impl Game {
         let td=&DEFS[def as usize];
         let native=crate::ee2_combat::multiplier_from_profile(attacker_profile,def,self.players[team as usize].epoch);
         let m=native.unwrap_or(MULT[kind as usize][td.armor as usize])*self.players[team as usize].dfn[class_of(td)];
-        let t=&mut self.ents[j];t.hp-=dmg*m;t.flash=0.12;
+        let protected = self.god_mode_for(team);
+        let t=&mut self.ents[j];if !protected {t.hp-=dmg*m;}t.flash=0.12;
         if team==self.local&&m>0.0&&self.tick%8==0 {let(x,y)=(t.x,t.y);self.ev(15.0,x,y);}
     }
 
@@ -1509,8 +1515,17 @@ impl Game {
         e.stuck = 0;
     }
 
+    pub(crate) fn instant_build_for(&self, owner: u8) -> bool {
+        !self.net && self.instant_build && owner == self.local
+            && (cfg!(feature = "ee2-up15") || self.cheats_enabled)
+    }
+
+    pub(crate) fn god_mode_for(&self, owner: u8) -> bool {
+        cfg!(feature = "ee2-up15") && !self.net && self.cheats_enabled && self.god_mode && owner == self.local
+    }
+
     fn update_building(&mut self, i: usize, e: &mut Ent, d: &Def) {
-        let instant = !self.net && self.cheats_enabled && self.instant_build && e.team == self.local;
+        let instant = self.instant_build_for(e.team);
         if e.built < 1.0 && instant { e.built = 1.0; e.hp = self.max_hp(e.team,e.def); }
         #[cfg(feature="ee2-reference")]
         self.observe_city_ground(i,*e);
@@ -1552,7 +1567,7 @@ impl Game {
             let mut done = false;
             if item == RESEARCH {
                 e.qt += DT;
-                if e.qt >= {
+                if (cfg!(feature = "ee2-up15") && instant) || e.qt >= {
                     #[cfg(feature="ee2-paidqueue7")] {job_limit}
                     #[cfg(not(feature="ee2-paidqueue7"))] {EPOCH_TIME}
                 } {
@@ -1574,7 +1589,7 @@ impl Game {
                 {
                     let k=(item-ORIGINAL_RESEARCH0) as usize;
                     e.qt += DT;
-                    if e.qt + 0.00001 >= {
+                    if (cfg!(feature = "ee2-up15") && instant) || e.qt + 0.00001 >= {
                         #[cfg(feature="ee2-paidqueue7")] {job_limit}
                         #[cfg(not(feature="ee2-paidqueue7"))] {crate::ee2_research::NODES[k].time}
                     } {
@@ -2325,3 +2340,4 @@ mod pack8_tests;
 #[cfg(all(test,feature="ee2-pack8",feature="ee2-civ8"))]
 #[path="projectiles8_tests.rs"]
 mod projectiles8_tests;
+
