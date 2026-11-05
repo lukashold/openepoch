@@ -17,6 +17,7 @@ ee2-paidqueue7 = ["ee2-roster6"]
 ee2-pack8 = ["ee2-paidqueue7", "ee2-render-meta7"]
 ee2-civ8 = ["ee2-paidqueue7", "ee2-render-meta7"]
 ee2-joint8 = ["ee2-civ8", "ee2-pack8"]
+ee2-citizen9 = ["ee2-joint8"]
 
 [profile.release]
 opt-level = 3

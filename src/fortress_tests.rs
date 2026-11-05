@@ -65,7 +65,7 @@ fn odd_turn_fortress_crew_can_leave_its_wider_rotated_bounds() {
     let f=g.spawn_oriented(FORTRESS,0,104.0,104.0,core::f32::consts::FRAC_PI_4);
     assert_eq!(Game::building_bounds(&g.ents[f]).2,8);
     g.ents[f].ncargo=1;g.ents[f].cargo[0]=WORKER;g.ents[f].cargo_hp[0]=75;
-    let before=g.ents[..g.high].iter().filter(|e|e.alive).count();let mut e=g.ents[f];g.unload(&mut e);
+    let before=g.ents[..g.high].iter().filter(|e|e.alive).count();let mut e=g.ents[f];g.unload(f,&mut e);
     assert_eq!(e.ncargo,0);assert_eq!(g.ents[..g.high].iter().filter(|e|e.alive).count(),before+1);
 }
 

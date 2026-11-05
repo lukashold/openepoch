@@ -50,7 +50,7 @@ fn game()->Game{Game::new(7,1,0,1,0)}
     g.build_grid();g.refresh_display_fog();g.save();let bytes=g.savebuf.clone();
     #[cfg(feature="ee2-pack8")]let inner=crate::pack8_save::split(&bytes).unwrap().0;
     #[cfg(not(feature="ee2-pack8"))]let inner=&bytes[..];
-    assert_eq!(u32::from_le_bytes(inner[..4].try_into().unwrap()),crate::civ8_save::MAGIC);
+    assert_eq!(u32::from_le_bytes(inner[..4].try_into().unwrap()),if cfg!(feature="ee2-citizen9"){0x3955454f}else{crate::civ8_save::MAGIC});
     let mut loaded=Game::load(&bytes).expect("actual8 save");
     assert_eq!(loaded.civilizations,g.civilizations);assert_eq!(loaded.state_hash(),g.state_hash());
     loaded.save();assert_eq!(loaded.savebuf,bytes);

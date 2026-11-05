@@ -74,6 +74,12 @@ def main():
                          'docs/source-cloth-lighting.js','docs/source-cloth-arithmetic.js',
                          'docs/source-cloth-wasm.js','docs/original-dynamic-sails.js',
                          'docs/openepoch-cloth7.wasm'})
+    if 'loadCitizenPresentation' in main_source:
+        required.update({'docs/openepoch-citizen9.wasm', 'docs/source-citizen-context.js',
+                         'docs/original-citizen-presentation.js', 'docs/original-citizen-models.js',
+                         'docs/original-animation-payload.js', 'docs/local-original/citizens9/manifest.json',
+                         'docs/local-original/citizens9/presentation.json', 'docs/local-original/citizens9/team/manifest.json',
+                         'docs/original-regional-models.js', 'docs/local-original/regional9/manifest.json'})
     if len(names) != len(set(names)) or not required.issubset(names):
         raise ValueError("Incomplete or duplicated game tree")
     print("Hashing complete game files ...", flush=True)

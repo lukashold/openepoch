@@ -65,13 +65,17 @@ impl Game {
         {self.write_paid_queue(&mut b);crate::paid_queue7::append_descriptor(&mut b);}
         #[cfg(feature="ee2-civ8")]
         crate::civ8_save::write(self,&mut b);
-        #[cfg(feature="ee2-pack8")] {b=self.wrap_pack_save(&b);}
+        #[cfg(feature="ee2-citizen9")] if !crate::citizen9::mark_inner(&mut b){b.clear();}
+        #[cfg(feature="ee2-pack8")] {if !b.is_empty(){b=self.wrap_pack_save(&b);}}
         self.savebuf = b;
     }
 
     pub fn load(buf: &[u8]) -> Option<Game> {
+        #[cfg(feature="ee2-citizen9")] let current_source9=crate::citizen9::current_outer(buf);
         #[cfg(feature="ee2-pack8")] let (pack_core,pack_records)=crate::pack8_save::split(buf)?;
         #[cfg(feature="ee2-pack8")] let buf=pack_core;
+        #[cfg(feature="ee2-citizen9")] let source9_normalized=crate::citizen9::normalize_inner(buf,current_source9)?;
+        #[cfg(feature="ee2-citizen9")] let buf=source9_normalized.as_slice();
         #[cfg(feature="ee2-civ8")] let(civ_normalized,civilizations)=crate::civ8_save::normalize(buf)?;
         #[cfg(feature="ee2-civ8")] let buf=civ_normalized.as_slice();
         #[cfg(feature="ee2-paidqueue7")] let (paid_normalized,paid_chunk)=crate::paid_queue7::split_input(buf)?;

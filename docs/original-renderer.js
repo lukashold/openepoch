@@ -280,12 +280,35 @@ function gpuPart(gl,part,instanceBuffer,materialTexture,keepPickingGeometry=fals
  return {vao,pose,animations:part.animations,nativeStateClips:part.nativeStateClips,activities:part.activities,count:part.indices.length,texture:materialTexture,material:modelMaterial(part),alpha:alphaState(part),depth:depthState(part),height:maxY,pickGeometry,farmPlotOffset:part.farmPlotOffset||null,pipeline:{skinned:part.skinned,textureApplyMode:part.textureApplyMode,textureUrl:part.textureUrl,textureSource:part.textureSource,texture:part.texture}};
 }
 
+import {regionalModelEntries,selectRegionalModel} from './original-regional-models.js?v=regional9';
+import {citizenModelEntries,selectCitizenModel} from './original-citizen-models.js?v=citizen9';
+import {loadAnimationPayload,withoutAnimationPayload} from './original-animation-payload.js?v=citizen9';
 export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},options={}){
- const result={available:new Set(),models:new Map(),resourceRenderIds:new Set(),errors:[],metrics:{colorMs:0,shadowMs:0,calls:0,triangles:0,gpuMs:0},draw(){},updateTerrain(){},setLightingContext(){return false;},setLightingSettings(){return false;},setSeasonPhase(){return false;},setSeasonClimate(){return false;},pickResource(){return null;}};if(!enabled)return result;
+ const result={available:new Set(),models:new Map(),resourceRenderIds:new Set(),errors:[],metrics:{colorMs:0,shadowMs:0,calls:0,triangles:0,gpuMs:0},draw(){},updateTerrain(){},setLightingContext(){return false;},setLightingSettings(){return false;},setVisualCivilizations(){return false;},setSeasonPhase(){return false;},setSeasonClimate(){return false;},pickResource(){return null;}};if(!enabled)return result;
+ let visualCivilizations=null;
+ result.setVisualCivilizations=values=>{
+  if(values===null){visualCivilizations=null;return true;}
+  if(!values||!Number.isInteger(values.length)||values.length<1||values.length>16||Array.from(values).some(value=>!Number.isInteger(value)||value< -1||value>14))throw new RangeError('Invalid visual civilizations');
+  visualCivilizations=Object.freeze(Array.from(values));return true;
+ };
+ if(options.civilizations!==undefined)result.setVisualCivilizations(options.civilizations);
  let assetMapping;try{assetMapping=normalizeRenderAssetMapping(options.assetMapping);}catch(e){result.errors.push(e.message);return result;}
- result.assetMapping=assetMapping; let manifest,teamManifest={},scales={},seasonManifest={},seasonTeamManifest={},yearPhase,seasonClimate='Temperate',lightingData,defaultLighting=DEFAULT_MODEL_LIGHTING;
+ result.assetMapping=assetMapping; let manifest,teamManifest={},scales={},seasonManifest={},seasonTeamManifest={},regionalManifest=null,regionalEntries=[],regionalSeasonManifest={},regionalTeamManifest={},citizenManifest=null,citizenEntries=[],citizenTeamManifest={},yearPhase,seasonClimate='Temperate',lightingData,defaultLighting=DEFAULT_MODEL_LIGHTING;
  try{manifest=await json(options.manifestURL||'./local-original/models/manifest.json');}catch{return result;}
  result.manifest=manifest;
+ result.regionalModels={enabled:!!options.regionalManifestURL,loaded:0,errors:[]};
+ if(options.regionalManifestURL){try{
+  regionalManifest=await json(options.regionalManifestURL);regionalEntries=regionalModelEntries(regionalManifest);
+  if(regionalManifest.seasonManifest)regionalSeasonManifest=await json(regionalManifest.seasonManifest);
+  if(regionalManifest.teamManifest)regionalTeamManifest=await json(regionalManifest.teamManifest);
+  result.regionalManifest=regionalManifest;
+ }catch(e){regionalEntries=[];result.regionalModels.errors.push(e.message);result.errors.push('Regional models: '+e.message);}}
+ result.citizenModels={enabled:!!options.citizenManifestURL,loaded:0,errors:[]};
+ if(options.citizenManifestURL){try{
+  citizenManifest=await json(options.citizenManifestURL);citizenEntries=citizenModelEntries(citizenManifest);
+  if(citizenManifest.teamManifest)citizenTeamManifest=await json(citizenManifest.teamManifest);
+  result.citizenManifest=citizenManifest;
+ }catch(e){citizenEntries=[];result.citizenModels.errors.push(e.message);result.errors.push('Citizen models: '+e.message);}}
  const packStatus={enabled:!!options.packAnimations,models:0,errors:[]},packCache=new Map();let packManifest=null;
  result.packAnimations=packStatus;
  if(packStatus.enabled){try{
@@ -301,6 +324,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   sailStatus.manifestAvailable=true;result.sailManifest=sailManifest;
  }catch{/* Old portable folders and all existing models remain usable. */}}
  const augmentModel=async(model,entry)=>{
+  if(model.animationPayload){try{model=await loadAnimationPayload(model,{base:import.meta.url});}catch(e){result.citizenModels.errors.push(e.message);result.errors.push('Citizen motion sidecar: '+e.message);model=withoutAnimationPayload(model);}}
   const packRow=packManifest?.models.find(r=>r.id===entry.id&&r.epoch===(entry.epoch??0)&&r.modelURL===(entry.url||entry.file)&&r.sourceSha256===model.source?.sha256);
   if(packRow){try{
    if(!packCache.has(packRow.url))packCache.set(packRow.url,Promise.all([verifiedSailJSON(packRow.modelURL,packRow.parentSha256),verifiedSailJSON(packRow.url,packRow.sha256)]));
@@ -329,9 +353,9 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
  try{seasonManifest=await json('./local-original/model-seasons.json');}catch{/* Static original skins remain available in older asset folders. */}
  if(seasonManifest.teamManifest){try{seasonTeamManifest=await json(seasonManifest.teamManifest);}catch{/* Unverified or absent patch data keeps the correct neutral seasonal image. */}}
  result.seasonManifest=seasonManifest;
- result.setSeasonPhase=phase=>{yearPhase=modelYearPhase(phase);return !!seasonManifest.models;};
+ result.setSeasonPhase=phase=>{yearPhase=modelYearPhase(phase);return !!(seasonManifest.models||regionalSeasonManifest.models);};
  result.setSeasonClimate=climate=>{
-  if(!Object.hasOwn(seasonManifest.sets||{},climate))throw new RangeError('Unknown model season climate');
+  if(!Object.hasOwn(seasonManifest.sets||{},climate)&&!Object.hasOwn(regionalSeasonManifest.sets||{},climate))throw new RangeError('Unknown model season climate');
   seasonClimate=climate;return true;
  };
  let shader;
@@ -349,9 +373,9 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
  result.prepareDynamicSails=inputs=>dynamicGPU?dynamicGPU.prepare(inputs):false;
  result.dynamicSailBounds=handle=>{const key=dynamicGPU?.sourceKey(handle);if(!key)return null;for(const variants of result.models.values())for(const variant of variants)if(variant.dynamicSailBinding?.key===key)return dynamicGPU.bounds(handle,variant);return null;};
  result.disposeDynamicSails=()=>dynamicGPU?.dispose();
- const entries=Array.isArray(manifest.models)?manifest.models:Object.entries(manifest.models||manifest.mapping||{}).map(([id,value])=>typeof value==='string'?{id:+id,url:value}:{id:+id,...value});
+ const entries=[...(Array.isArray(manifest.models)?manifest.models:Object.entries(manifest.models||manifest.mapping||{}).map(([id,value])=>typeof value==='string'?{id:+id,url:value}:{id:+id,...value})),...regionalEntries,...citizenEntries];
  const loadParts=async (model,keepPickingGeometry=false,modelUrl=null)=>{
-   const parts=[];
+   const parts=[],selectedSeasonManifest=regionalSeasonManifest.models?.[modelUrl]?regionalSeasonManifest:seasonManifest;
    let sourceSailIndex=0;for(const part of model.parts){
     const sailIndex=part.nativeSail?sourceSailIndex++:null;
     const url=part.textureUrl||part.texture||manifest.textures?.[part.textureSource?.toLowerCase()]||null;
@@ -368,16 +392,16 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     if(part.nativeSail){
      gpu.nativeSail=part.nativeSail;gpu.darkTexture=darkTexture;gpu.darkTextures=darkTextures;gpu.sailIndex=sailIndex;gpu.forTeam=()=>gpu.texture;gpu.forSeason=()=>({first:gpu.texture,next:gpu.texture,blend:0});parts.push(gpu);sailStatus.parts++;continue;
     }
-    const seasonalKey=modelSeasonBinding(seasonManifest,modelUrl,model,part),neutralGPU=new Map([[url,gpu.texture]]),teamGPU=new Map(),requested=new Set();
+    const seasonalKey=modelSeasonBinding(selectedSeasonManifest,modelUrl,model,part),neutralGPU=new Map([[url,gpu.texture]]),teamGPU=new Map(),requested=new Set();
     // Preload every declared climate image before exposing the model. A seasonal
     // switch never displays an unrelated summer image while its pixels load.
     if(seasonalKey){
-     const urls=new Set(Object.values(seasonManifest.sets||{}).flatMap(climate=>climate[seasonalKey]?.urls||[]));
+     const urls=new Set(Object.values(selectedSeasonManifest.sets||{}).flatMap(climate=>climate[seasonalKey]?.urls||[]));
      for(const source of urls)neutralGPU.set(source,await texture(gl,source,textures));
     }
     const forSourceTeam=(source,team)=>{
       const suffix=['A','B','C','G'][team],key=source?.split('/').pop().replace(/\.png$/i,'').toLowerCase();
-      const patchManifest=seasonTeamManifest.texture_bindings?.[source]?seasonTeamManifest:teamManifest;
+      const patchManifest=citizenTeamManifest.texture_bindings?.[source]?citizenTeamManifest:regionalTeamManifest.texture_bindings?.[source]?regionalTeamManifest:seasonTeamManifest.texture_bindings?.[source]?seasonTeamManifest:teamManifest;
       const teamKey=patchManifest.texture_bindings?.[source]||key,variant=patchManifest.textures?.[teamKey]?.variants?.[suffix],cacheKey=source+':'+suffix;
       if(variant?.verified&&patchManifest.colour_mapping_verified){
         if(!requested.has(cacheKey)){
@@ -390,7 +414,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     };
     gpu.forTeam=team=>forSourceTeam(url,team);
     gpu.forSeason=team=>{
-      const sequence=seasonManifest.sets?.[seasonClimate]?.[seasonalKey]?.urls,pair=modelSeasonFrames(sequence,yearPhase,url);
+      const sequence=selectedSeasonManifest.sets?.[seasonClimate]?.[seasonalKey]?.urls,pair=modelSeasonFrames(sequence,yearPhase,url);
       return {first:forSourceTeam(pair.first,team),next:forSourceTeam(pair.next,team),blend:pair.blend};
     };
     parts.push(gpu);
@@ -406,10 +430,11 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    const assetKind=manifestAssetKind(entry),bindings=sourceRenderBindings(assetMapping,assetKind,id);if(!bindings.length)continue;
    const modelUrl=entry.url||entry.file,model=await augmentModel(await json(modelUrl),{...entry,id}),parts=await loadParts(model,assetKind===1,modelUrl);
    if(!parts.length)continue;
-   const scaleKey=(entry.assetKind===undefined?'':assetKind+':')+id+':'+(entry.epoch??0),sea=assetKind===0&&((id>=29&&id<=36)||id===42||id===45),transform=nativeModelTransform(model,scales.variants?.[scaleKey]);
+   const scaleKey=(entry.assetKind===undefined?'':assetKind+':')+id+':'+(entry.epoch??0),sea=assetKind===0&&((id>=29&&id<=36)||id===42||id===45),transform=nativeModelTransform(model,entry.regionalCivilizations?entry.nativeScaleBinding:scales.variants?.[scaleKey]);
    const yOffset=!transform.native&&sea?-(model.normalization?.offset?.[1]||0)*(model.normalization?.scale||1):0;
-   const variant={sourceId:id,assetKind,scaleKey,epoch:entry.epoch??0,parts,yOffset,originOffset:transform.originOffset,nativeScale:transform.native?transform.scale:null,yawOffset:entry.yawOffset??model.yawOffset??0,farUrl:entry.lodFarUrl,far:null,farRequested:false,pickBounds:resourceBounds(parts)};
+   const variant={sourceId:id,assetKind,scaleKey,epoch:entry.epoch??0,until:entry.until,regionalCivilizations:entry.regionalCivilizations,sourceIdentity:entry.sourceIdentity,region:entry.region,parts,yOffset,originOffset:transform.originOffset,nativeScale:transform.native?transform.scale:null,yawOffset:entry.yawOffset??model.yawOffset??0,farUrl:entry.lodFarUrl,far:null,farRequested:false,pickBounds:resourceBounds(parts)};
    if(dynamicBindings.has(model)){variant.dynamicSailBinding=dynamicBindings.get(model);const list=dynamicSourceVariants.get(id)||[];list.push(variant);dynamicSourceVariants.set(id,list);}
+   if(entry.sourceIdentity!==undefined)result.citizenModels.loaded++;else if(entry.regionalCivilizations)result.regionalModels.loaded++;
    if(model.nativeSailComposite){variant.sailComposite=model.nativeSailComposite;sailStatus.models++;}
    for(const {renderId}of bindings){const variants=result.models.get(renderId)||[];variants.push(variant);result.models.set(renderId,variants);result.available.add(renderId);if(assetKind===1)result.resourceRenderIds.add(renderId);}
   }catch(e){result.errors.push(e.message);console.warn('Originalmodell:',entry,e);}
@@ -467,7 +492,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   }
   return hit;
  };
- result.draw=({data,ranges,vp,epochs,zoom=80,shadow=false,eye=[0,200,0],lighting=defaultLighting,clipPlane=null,capture=false,actorMetadata=null})=>{
+ result.draw=({data,ranges,vp,epochs,zoom=80,shadow=false,eye=[0,200,0],lighting=defaultLighting,clipPlane=null,capture=false,actorMetadata=null,civilizations=visualCivilizations})=>{
   const started=performance.now();let calls=0,triangles=0,querying=false;
   const previousState=drawState(gl);
   if(!shadow&&!capture){resourceView.data=data;resourceView.ranges=ranges;resourceView.epochs=epochs;resourceView.zoom=zoom;resourceView.choices.clear();}
@@ -500,7 +525,10 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    const first=ranges[id*2],groups=new Map();
    for(let i=first;i<first+count;i++){
     const team=Math.min(3,Math.round(data[i*12+5])),epoch=epochs[team]||0;
-    let variant=variants[0];for(const v of variants){if(v.epoch<=epoch)variant=v;else break;}
+    const actor=actorMetadata?.forInstance?.(i);let identity;
+    if(options.citizenManifestURL&&variants[0].assetKind===0&&variants[0].sourceId===8&&actor&&options.sourceIdentityForActor){try{const sourceIdentity=options.sourceIdentityForActor(actor);identity=sourceIdentity===0||sourceIdentity===1?sourceIdentity:null;}catch(e){identity=null;result.citizenModels.errors.push(e.message);}}
+    const citizen=selectCitizenModel(variants,epoch,civilizations?.[team],identity,{neutralFallback:options.citizenNeutralFallback??null});
+    let variant=citizen===undefined?selectRegionalModel(variants.filter(v=>v.sourceIdentity===undefined),epoch,civilizations?.[team]):citizen;if(!variant)continue;
     const variantIndex=variants.indexOf(variant),far=(variant.nativeScale??data[i*12+8])*zoom<55;
     if(far&&variant.farUrl){
      if(!variant.farRequested){

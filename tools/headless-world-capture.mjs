@@ -26,6 +26,11 @@ import {createRenderActorMetadata} from '../docs/render-actor-metadata.js';
 // Existing epoch/scene arguments remain valid. An optional month position2.5
 // starts at month2, advances actual WASM ticks, then samples its halfway phase.
 const rawArgs=process.argv.slice(2),headingOption=rawArgs.find(arg=>arg.startsWith('--heading=')),tagOption=rawArgs.find(arg=>arg.startsWith('--tag=')),profileOption=rawArgs.find(arg=>arg.startsWith('--profile=')),wantsFarm=rawArgs.includes('--farm'),wantsShowcase=rawArgs.includes('--showcase'),wantsClassic=rawArgs.includes('--classic'),wantsSail=rawArgs.includes('--sail'),args=rawArgs.filter(arg=>!arg.startsWith('--heading=')&&!arg.startsWith('--tag=')&&!arg.startsWith('--profile=')&&arg!=='--farm'&&arg!=='--showcase'&&arg!=='--classic'&&arg!=='--sail');
+const civilizationOption=rawArgs.find(arg=>arg.startsWith('--civilization=')),savedStateOption=rawArgs.find(arg=>arg.startsWith('--saved-state='));
+const requestedCivilization=civilizationOption?Number(civilizationOption.split('=')[1]):null;
+if(requestedCivilization!==null&&(!Number.isInteger(requestedCivilization)||requestedCivilization<0||requestedCivilization>13))throw Error('Civilization must be0..13');
+if(civilizationOption&&savedStateOption)throw Error('A saved world keeps its own civilizations');
+for(let i=args.length-1;i>=0;i--)if(args[i].startsWith('--civilization=')||args[i].startsWith('--saved-state='))args.splice(i,1);
 const wantsDynamicSails=rawArgs.includes('--dynamic-sails'),clothStepsOption=rawArgs.find(arg=>arg.startsWith('--cloth-steps='));
 const wantsVoyage=rawArgs.includes('--sail-voyage'),voyageTicksOption=rawArgs.find(arg=>arg.startsWith('--voyage-ticks-per-step=')),voyageTicksPerStep=Number(voyageTicksOption?.split('=')[1]??1);
 if(!Number.isInteger(voyageTicksPerStep)||voyageTicksPerStep<0||voyageTicksPerStep>4)throw Error('Voyage ticks per cloth step must be0..4');
@@ -55,6 +60,8 @@ const sha=value=>createHash('sha256').update(value).digest('hex');
 const captureScriptSha256=sha(await fs.readFile(new URL(import.meta.url)));
 const sourceNames=['main.js','index.html','rules-profile.js','season-session.js','original-terrain.js','native-terrain-lightmap.js','native-terrain-lighting.js','original-render-namespace.js','render-namespace.js','original-water.js','original-ground.js','original-ground-native.js','original-scale.js','original-renderer.js','original-lighting.js','original-model-seasons.js','original-camera.js','original-seasons.js','original-reflection.js','original-hud.js','original-hud-layout.js','local-original/terrain-native/manifest.json','local-original/water-native/manifest.json','local-original/ground-decals.json','local-original/models/manifest.json','local-original/models/manifest-up15.json','local-original/models/manifest-roster6.json','local-original/model-scales.json','local-original/model-scales-up15.json','local-original/model-scales-roster6.json','local-original/climate-lighting.json','local-original/model-seasons.json','local-original/farm-composites.json','local-original/hud-native/manifest.json','local-original/season-model-textures/team/manifest.json','local-original/team-textures/manifest.json'];
 sourceNames.push('original-pack-states.js','civilization-setup.js','local-original/models/manifest-civ8.json','local-original/model-scales-civ8.json','local-original/team-textures/manifest-civ8.json','local-original/pack-animations/manifest.json');
+sourceNames.push('original-regional-models.js','local-original/regional9/manifest.json','local-original/regional9/model-seasons.json','local-original/regional9/team/manifest.json',
+ 'original-citizen-models.js','original-animation-payload.js','local-original/citizens9/manifest.json','local-original/citizens9/team/manifest.json');
 sourceNames.push('original-sail-composite.js','local-original/sails-native/manifest.json');
 sourceNames.push('render-actor-metadata.js','original-dynamic-sails.js','source-sail-runtime.js','source-sail-controller.js','source-cloth-wasm.js','source-cloth-kernel.js','source-cloth-lighting.js','source-cloth-arithmetic.js','openepoch-cloth7.wasm');
 const sourceFiles=Object.fromEntries(await Promise.all(sourceNames.map(async name=>[name,sha(await fs.readFile(new URL(`../docs/${name}`,import.meta.url)))])));
@@ -63,7 +70,10 @@ const assetMapping=createRenderAssetMapping(wasm),renderNamespace=createFrontend
 const packMetadata=createPackRenderMetadata(wasm),packActorReader=packMetadata?createRenderActorMetadata(wasm):null;
 const sourceKey=raw=>{const row=renderNamespace.asset(raw);return renderNamespace.wide?row&&row.kind<=1?`${row.kind}:${row.sourceId}`:null:String(raw);};
 const manifestKey=row=>assetMapping?`${manifestAssetKind(row)}:${row.id}`:String(row.id);
-wasm.init(7,1,0,1,0);wasm.skirmish_epoch(epoch);wasm.skirmish_visibility(2);
+wasm.init(7,1,0,1,0);
+if(requestedCivilization!==null&&wasm.configure_civilizations(0xeee0|requestedCivilization)!==1)throw Error('Actual civilization setup failed');
+wasm.skirmish_epoch(epoch);wasm.skirmish_visibility(2);
+if(savedStateOption){const saved=await fs.readFile(savedStateOption.slice('--saved-state='.length)),p=wasm.load_alloc(saved.length);new Uint8Array(wasm.memory.buffer,p,saved.length).set(saved);if(wasm.load_apply()!==1)throw Error('Actual saved state rejected');}
 if(wantsShowcase&&(epoch!==14||requestedProfile!=='up15'))throw Error('Production showcase requires UP epoch15');
 const productionShowcase=wantsShowcase?createUpProductionShowcase(wasm):null;
 if(wantsClassic&&(wantsShowcase||wantsFarm||wantsSail||epoch!==9||requestedProfile!=='up15'))throw Error('Classic fixture requires UP epoch10 and a separate scene');
@@ -128,6 +138,8 @@ const used=new Set(),neededEpochs=new Map();for(let i=0;i<count;i++){
  const id=sourceKey(data[i*12+4]),team=Math.min(3,Math.round(data[i*12+5]));if(id===null)continue;used.add(id);
  const set=neededEpochs.get(id)||new Set();set.add(epochs[team]);neededEpochs.set(id,set);
 }
+const readonlySave=()=>{const p=wasm.save();return Buffer.from(new Uint8Array(wasm.memory.buffer,p,wasm.save_len()));};
+const readonlyBefore=wantsDynamicSails?null:{bytes:readonlySave(),hash:wasm.state_hash()};
 const nativeFetch=globalThis.fetch,nativeBitmap=globalThis.createImageBitmap;
 globalThis.fetch=async url=>{
  const path=fileURLToPath(url),buffer=await fs.readFile(path);
@@ -146,8 +158,10 @@ globalThis.fetch=async url=>{
 globalThis.createImageBitmap=async blob=>({width:blob.bytes.readUInt32BE(16),height:blob.bytes.readUInt32BE(20),url:blob.url,close(){}});
 try{
  const gl=new RecordingGL(),teams=[[.27,.59,1],[.94,.27,.24],[.31,.86,.39],[.96,.82,.27],[1,1,1],[1,1,1],[1,1,1],[.3,.75,1]];
- const modelOptions={assetMapping,packAnimations:rulesProfile.ruleset===2,dynamicSails:wantsDynamicSails,lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-civ8.json',scaleManifestURL:'./local-original/model-scales-civ8.json',teamManifestURL:'./local-original/team-textures/manifest-civ8.json'}:{})};
+ const modelOptions={assetMapping,packAnimations:rulesProfile.ruleset===2,dynamicSails:wantsDynamicSails,lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-civ8.json',scaleManifestURL:'./local-original/model-scales-civ8.json',teamManifestURL:'./local-original/team-textures/manifest-civ8.json',regionalManifestURL:'./local-original/regional9/manifest.json',citizenManifestURL:'./local-original/citizens9/manifest.json',citizenNeutralFallback:'west',sourceIdentityForActor:actor=>wasm.actor_source_identity(actor.handle)>>>0}:{})};
  const terrain=await loadOriginalTerrain(gl,true,teams),models=await loadOriginalModels(gl,true,teams,()=>{},modelOptions),ground=await loadOriginalGround(gl,true,{assetMapping}),nativeWater=await loadOriginalWater(gl,true);
+ const visualCivilizations=typeof wasm.player_civilization==='function'?[0,1,2,3].map(team=>wasm.player_civilization(team)):null;
+ if(rulesProfile.ruleset===2)models.setVisualCivilizations?.(visualCivilizations);
  terrain.setLightingContext?.(models.lighting);
  if(!terrain.enabled||!ground.enabled||!nativeWater.enabled||terrain.errors.length||models.errors.length||ground.errors.length||nativeWater.errors.length)throw Error(JSON.stringify({terrain:terrain.errors,models:models.errors,ground:ground.errors,water:nativeWater.errors}));
  terrain.updateMap({heights,types});nativeWater.updateMap({heights,types});models.updateTerrain(heights);ground.updateTerrain(heights);
@@ -230,6 +244,8 @@ try{
  models.draw({data,ranges,vp:view.vp,epochs,zoom:cam.zoom,eye:view.eye,actorMetadata});
  gl.depthMask(false);nativeWater.drawWater({vp:view.vp,time:12,fogTexture:fog,reflectionTexture:reflection?.texture,reflectionVP:reflection?.vp??view.vp});
  if(sourceCloth){sourceCloth.afterDrawGpu=models.dynamicSails.state();if(sourceCloth.afterDrawGpu.uploads!==sourceCloth.gpu.uploads||sourceCloth.afterDrawGpu.frame!==sourceCloth.gpu.frame)throw Error('Draw passes advanced or rebuilt source cloth');sourceCloth.allPassesReusePreparedFrame=true;}
+ let rendererGuard=null;
+ if(readonlyBefore){const after=readonlySave();if(wasm.state_hash()!==readonlyBefore.hash||!after.equals(readonlyBefore.bytes))throw Error('Source rendering changed the simulation/save');rendererGuard={saveUnchanged:true,simulationHash:wasm.state_hash()>>>0,saveSha256:sha(after)};}
  const recorded=gl.payload();
  const shaderHashes=Object.fromEntries(Object.entries(recorded.programs).map(([id,program])=>[id,{vertexSha256:sha(program.vertex),fragmentSha256:sha(program.fragment)}]));
  const payload={format:'openepoch-production-world-capture-v1',width,height,epoch:epoch+1,scene,cam,eye:view.eye,instances:count,modelBindings:models.manifest.models.length,epochs,rulesProfile,
@@ -238,7 +254,7 @@ try{
   sourceHashes:{wasmSha256:sha(bytes),captureScriptSha256,auxiliary:{'tools/native5-production-showcase.mjs':sha(await fs.readFile(new URL('./native5-production-showcase.mjs',import.meta.url))),'tools/ordinary-classic-fixture.mjs':sha(await fs.readFile(new URL('./ordinary-classic-fixture.mjs',import.meta.url))),'tools/ordinary-sail-fixture.mjs':sha(await fs.readFile(new URL('./ordinary-sail-fixture.mjs',import.meta.url))),'tools/ordinary-sail-voyage.mjs':sha(await fs.readFile(new URL('./ordinary-sail-voyage.mjs',import.meta.url)))},files:sourceFiles,shaders:shaderHashes},
   reflection:{enabled:useReflection,draws:reflectionDraws,width:reflection?.width,height:reflection?.height,vp:reflection?Array.from(reflection.vp):undefined,eye:reflection?.eye,clipPlane:useReflection?[0,1,0,0]:undefined,texture:reflection?.texture.id,policy:'Planar world-y0 reflection, terrain and object clip; framebuffer resolution and shader discard are WebGL adapters.'},
   modelSeason:{available:typeof models.setSeasonPhase==='function',metrics:{...models.metrics}},
-  modelOptions,lighting:models.lighting,initialSails:models.initialSails,sourceCloth,modelScaleBindingCount:models.scaleManifest?.entries?.length??models.scaleManifest?.bindings?.length,
+  modelOptions,visualCivilizations,regionalModels:models.regionalModels,citizenModels:models.citizenModels,rendererGuard,lighting:models.lighting,initialSails:models.initialSails,sourceCloth,modelScaleBindingCount:models.scaleManifest?.entries?.length??models.scaleManifest?.bindings?.length,
   nativeWater:{enabled:nativeWater.enabled,metrics:{...nativeWater.metrics},material:'Source Skin1/2/4 product/lerp vertex channels; separate reflection alpha0.32 overlay',adapters:nativeWater.manifest.adapter},
   renderNamespace:{revision:renderNamespace.revision,definitionCount:renderNamespace.definitionCount,rangeLength:renderNamespace.rangeLength},
   farmFixture,productionShowcase,classicFixture,sailFixture,sailVoyageFixture,modelBindingsUsed:models.manifest.models.map(row=>({id:row.id,epoch:row.epoch,url:row.url,assetKind:manifestAssetKind(row),sourceFamily:row.sourceFamily})),

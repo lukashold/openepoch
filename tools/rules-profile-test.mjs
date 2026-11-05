@@ -169,4 +169,4 @@ const report={format:'openepoch-rules-profile-integration-tests-v2',passed:true,
  limitations:['The in-memory IndexedDB event adapter validates production namespace/transaction choices, not browser disk persistence.','Native HUD interaction/source crop checks are separate; this test checks that both EE2 numerical profiles keep native HUD loading.']};
 const reportName=process.argv.find(arg=>arg.startsWith('--report='))?.slice(9)||'rules-profile-tests.json';
 if(!/^[a-z0-9-]+\.json$/i.test(reportName))throw Error('Invalid report filename');
-await fs.writeFile(new URL(reportName,analysis),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify({passed:true,checks,profiles:network,sourceHashes,productionUp15Enabled:UP15_PROFILE_ENABLED}));
+await fs.mkdir(analysis,{recursive:true});await fs.writeFile(new URL(reportName,analysis),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify({passed:true,checks,profiles:network,sourceHashes,productionUp15Enabled:UP15_PROFILE_ENABLED}));

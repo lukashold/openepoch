@@ -3,9 +3,9 @@
 const INVALID=0xffffffff,STRIDE=12;
 export function createFrontendNamespace(wasm,{referenceMode=false,assetMapping=null}={}){
  const revision=typeof wasm.schema_revision==='function'?wasm.schema_revision()>>>0:0;
- if(![0,6,7,8].includes(revision))throw Error('Unsupported presentation schema '+revision);
- // Save revisions7/8 retain the typed presentation layout6.
- const wide=revision===6||revision===7||revision===8,definitionCount=wide?wasm.definition_count()>>>0:57;
+ if(![0,6,7,8,9].includes(revision))throw Error('Unsupported presentation schema '+revision);
+ // Save revisions7/8/9 retain the typed presentation layout6.
+ const wide=[6,7,8,9].includes(revision),definitionCount=wide?wasm.definition_count()>>>0:57;
  if(!definitionCount||definitionCount>65536)throw Error('Invalid definition count');
  const rangeLength=wide?wasm.render_range_len()>>>0:512;
  if(!rangeLength||rangeLength%2||rangeLength>2*0x1000000)throw Error('Invalid render range length');

@@ -1,6 +1,6 @@
 // The EE2 profile uses locally extracted original recordings when available.
 // Procedural sounds and local speech remain the fallback for the standalone game.
-import { createOriginalAudio } from './original-audio.js?v=native8';
+import { createOriginalAudio } from './original-audio.js?v=citizen9';
 const originals=createOriginalAudio();
 
 let ctx = null, master = null, noise = null;
@@ -57,15 +57,15 @@ const RESPONSE = {
 };
 // Use a local German system voice if one is available. Browsers without speech
 // synthesis retain the existing synthesized confirmation sound.
-export function acknowledge(def, action, epoch=0) {
+export function acknowledge(def, action, epoch=0,context=undefined) {
   if (muted || def < 0) return false;
   // Buildings use their original selection effect independently of the voice toggle.
   const role=originals.role(def,epoch);if(!role)return false;
-  if(role.building)return originals.acknowledge(def,action,epoch);
+  if(role.building)return originals.acknowledge(def,action,epoch,context);
   if(!role.mobile)return false;
   if(!speechEnabled)return false;
   const now = performance.now(); if (now - lastSpeech < 900) return false;
-  if(originals.acknowledge(def,action,epoch)){window.speechSynthesis?.cancel();lastSpeech=now;return true;}
+  if(originals.acknowledge(def,action,epoch,context)){window.speechSynthesis?.cancel();lastSpeech=now;return true;}
   if(!window.speechSynthesis||!window.SpeechSynthesisUtterance)return false;
   const voice = window.speechSynthesis.getVoices().find(v => /^de[-_]/i.test(v.lang) && v.localService);
   if (!voice) return false;

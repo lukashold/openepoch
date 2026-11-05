@@ -72,7 +72,7 @@ fn paid_queue_roundtrip_preserves_price_flags_and_rejects_forged_bindings(){
     for(offset,value)in[(0,0),(4,3),(8,3),(12,u32::MAX),(16,9),(20,u32::MAX),(24,4),(28,f32::NAN.to_bits()),(28,(-1.0_f32).to_bits()),(72,f32::NAN.to_bits()),(72,(-2.0_f32).to_bits())]{
         let mut bad=good.clone();bad[start+offset..start+offset+4].copy_from_slice(&value.to_le_bytes());assert!(Game::load(&bad).is_none(),"forged offset{offset}");
     }
-    assert_eq!(u32::from_le_bytes(inner[..4].try_into().unwrap()),if cfg!(feature="ee2-civ8"){0x3855454f}else{paid_queue7::SAVE_MAGIC});
+    assert_eq!(u32::from_le_bytes(inner[..4].try_into().unwrap()),if cfg!(feature="ee2-citizen9"){0x3955454f}else if cfg!(feature="ee2-civ8"){0x3855454f}else{paid_queue7::SAVE_MAGIC});
 }
 
 #[test]

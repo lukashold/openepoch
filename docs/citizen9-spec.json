@@ -1,0 +1,22 @@
+{
+  "format": "native-citizen9-source-identity-spec-v1",
+  "numericDefinition": 8,
+  "identities": {
+    "0": "CitizenM",
+    "1": "CitizenF",
+    "2": "notCitizen"
+  },
+  "sourceAuditSha256": "38ef8e97cb862caa5d06db29cefd157120852f1962d02ffd078dbaef20fa941c",
+  "birth": "Normal production exact Citizen name; advance shared u32LCG; append M/F by updated bit16.",
+  "rng": {
+    "multiplier": 1664525,
+    "increment": 1013904223
+  },
+  "rngOrigins": {
+    "0": "own match-seed adapter; native global initialization/consumption not established",
+    "1": "older own save; absent source RNG history reconstructed from saved match seed"
+  },
+  "cargo": "Female bits index actual passenger slots. Noncitizen slots cannot carry such bits. Unload preserves identity without a draw.",
+  "startingForces": "Existing own starting citizens remain explicit CitizenM; source starting-forces choice is separate.",
+  "fingerprint": "4784b83d6a350ea891624c730fd4e69cbd34a5b928e7ff333abcdb6db61bf2d8"
+}

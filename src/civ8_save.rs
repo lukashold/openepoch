@@ -48,6 +48,16 @@ pub fn normalize(input:&[u8])->Option<(Vec<u8>,[u8;4])>{
 ///Modern8 validates its outer wrapper before deriving the unchanged paid-prefix
 ///length. The gameplay loader already normalizes8 and takes the no-copy branch.
 pub fn paid_prefix_view(input:&[u8])->Option<&[u8]>{
+    // A read-only numeric component inspector may view OEU9 after checking its
+    // descriptor. This is not a full save load: Game::load separately requires
+    // PKW4 plus its complete BIR1 source-identity chunk before normalization.
+    #[cfg(feature="ee2-citizen9")]
+    if u(input,0)?==crate::citizen9::INNER_MAGIC{
+        let numeric8=crate::citizen9::normalize_inner(input,true)?;
+        let(normalized,_)=normalize(&numeric8)?;
+        let length=crate::paid_queue7::strip_wrapper(&normalized)?.0.len();
+        return input.get(..length);
+    }
     if u(input,0)?==MAGIC{
         let(normalized,_)=normalize(input)?;
         let length=crate::paid_queue7::strip_wrapper(&normalized)?.0.len();

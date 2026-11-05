@@ -4,7 +4,7 @@ export const UP15_PROFILE_ENABLED=true;
 const PROFILES=Object.freeze({
  own:Object.freeze({id:'own',ruleset:0,label:'OpenEpoch-Regeln',wasm:'openepoch.wasm?v=combat-season1',database:'openepoch-v2'}),
  base:Object.freeze({id:'base',ruleset:1,label:'EE2 · Basisdaten',wasm:'openepoch-ee2.wasm?v=combat-season1',database:'openepoch-ee2-reference-v2'}),
- up15:Object.freeze({id:'up15',ruleset:2,label:'EE2 · installierte UP-Regeln',wasm:'openepoch-ee2-up15.wasm?v=native8',schemaRevision:8,definitionCount:80,packSchemaRevision:3,requiredExports:['configure_match_settings','pack_selected_count','cmd_pack','render_pack_version','navigation_history_unknown','projectile_history_unknown'],database:'openepoch-ee2-up15-v1'}),
+ up15:Object.freeze({id:'up15',ruleset:2,label:'EE2 · installierte UP-Regeln',wasm:'openepoch-ee2-up15.wasm?v=native9',schemaRevision:9,definitionCount:80,packSchemaRevision:4,requiredExports:['configure_match_settings','pack_selected_count','cmd_pack','render_pack_version','navigation_history_unknown','projectile_history_unknown','source_identity_version','actor_source_identity','selected_actor_handle','source_rng_origin','source_rng_history_unknown'],sourceIdentityVersion:1,database:'openepoch-ee2-up15-v1'}),
 });
 
 export function resolveRulesProfile(input,{up15Enabled=UP15_PROFILE_ENABLED}={}){
@@ -30,6 +30,7 @@ export function assertRulesProfile(wasm,profile){
  if(profile.schemaRevision!==undefined&&(typeof wasm.schema_revision!=='function'||wasm.schema_revision()!==profile.schemaRevision))throw Error('Falsches Speicher-/Einheitenformat. Entpacke das vollständige aktuelle Paket erneut.');
  if(profile.definitionCount!==undefined&&(typeof wasm.definition_count!=='function'||wasm.definition_count()!==profile.definitionCount))throw Error('Falsches Speicher-/Einheitenformat: Einheitensatz stimmt nicht überein.');
  if(profile.requiredExports?.some(name=>typeof wasm[name]!=='function'))throw Error('Falsches Speicher-/Einheitenformat: Spielbefehle oder Starteinstellungen fehlen.');
+ if(profile.sourceIdentityVersion!==undefined&&(typeof wasm.source_identity_version!=='function'||wasm.source_identity_version()!==profile.sourceIdentityVersion))throw Error('Falsches Speicher-/Einheitenformat: Bürgeridentitäten fehlen.');
  if(profile.packSchemaRevision!==undefined&&(typeof wasm.pack_schema_revision!=='function'||wasm.pack_schema_revision()!==profile.packSchemaRevision))throw Error('Falsches Speicher-/Einheitenformat: Wegfindungs- und Aufgabenstand stimmt nicht überein.');
  return wasm;
 }

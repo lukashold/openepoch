@@ -59,6 +59,10 @@ fn put(b:&mut[u8],o:usize,v:u32){b[o..o+4].copy_from_slice(&v.to_le_bytes());}
 }
 #[test]fn pack8_legacy_load_marks_unknown_history_without_guessing_prior_flags_or_allocator(){
  let mut g=world(1);let i=actor(&mut g);g.tick=20;g.order_pack(&[i],true);g.save();let inner=ps::split(&g.savebuf).unwrap().0;
+ // Deliberately create an old numeric8 component for the migration test. A
+ // current OEU9 component alone is rejected because its BIR1 is mandatory.
+ #[cfg(feature="ee2-citizen9")]let numeric8=crate::citizen9::normalize_inner(inner,true).unwrap();
+ #[cfg(feature="ee2-citizen9")]let inner=numeric8.as_slice();
  assert_eq!(u32::from_le_bytes(inner[..4].try_into().unwrap()),if cfg!(feature="ee2-civ8"){0x3855454f}else{crate::paid_queue7::SAVE_MAGIC});let mut l=Game::load(inner).unwrap();assert_eq!(l.pack_states[i].flags,0);assert!(l.pack_states[i].history_unknown);assert_ne!(l.state_hash(),g.state_hash());
  l.save();let l2=Game::load(&l.savebuf).unwrap();assert_eq!(l.state_hash(),l2.state_hash());assert!(l2.pack_states[i].history_unknown);
 }
@@ -76,7 +80,7 @@ fn put(b:&mut[u8],o:usize,v:u32){b[o..o+4].copy_from_slice(&v.to_le_bytes());}
 }
 #[test]fn pack8_malformed_envelope_records_allocator_and_inner_are_atomic(){
  let mut g=world(1);let i=actor(&mut g);g.tick=20;g.order_pack(&[i],true);g.save();let good=g.savebuf.clone();let before=g.state_hash();let core=u32::from_le_bytes(good[8..12].try_into().unwrap())as usize;let r=ps::HEADER+core;let mut cases=Vec::new();
- for(o,v)in[(0,0),(4,4),(8,u32::MAX),(12,MAXE as u32+1),(16,0),(20,DEFS.len()as u32+1),(24,0),(56,0),(60,0),(r,g.h(i)^65536),(r+4,1),(r+8,3),(r+12,2),(r+16,2),(r+20,f32::NAN.to_bits()),(r+24,(-1.0f32).to_bits()),(r+28,f32::INFINITY.to_bits()),(r+32,(1000.0f32).to_bits()),(r+36,4),(r+44,(-1.0f32).to_bits()),(ps::HEADER+12,57)]{let mut b=good.clone();put(&mut b,o,v);seal(&mut b);cases.push(b);}
+ for(o,v)in[(0,0),(4,if cfg!(feature="ee2-citizen9"){5}else{4}),(8,u32::MAX),(12,MAXE as u32+1),(16,0),(20,DEFS.len()as u32+1),(24,0),(56,0),(60,0),(r,g.h(i)^65536),(r+4,1),(r+8,3),(r+12,2),(r+16,2),(r+20,f32::NAN.to_bits()),(r+24,(-1.0f32).to_bits()),(r+28,f32::INFINITY.to_bits()),(r+32,(1000.0f32).to_bits()),(r+36,4),(r+44,(-1.0f32).to_bits()),(ps::HEADER+12,57)]{let mut b=good.clone();put(&mut b,o,v);seal(&mut b);cases.push(b);}
  let a=r+ps::RECORD;let mut b=good.clone();put(&mut b,a,i as u32);seal(&mut b);cases.push(b);
  let mut b=good.clone();let v=b[a..a+4].to_vec();b[a+4..a+8].copy_from_slice(&v);seal(&mut b);cases.push(b);
  for n in[0,1,4,35,63,64,good.len()-1,good.len()-12]{cases.push(good[..n].to_vec());}let mut b=good.clone();b.push(0);cases.push(b);

@@ -23,8 +23,8 @@ for(const [name,filename]of [['own','openepoch.wasm'],['base','openepoch-ee2.was
  equal(api.queueJob(name==='own'?200:64),{kind:name==='own'?2:1,value:0},'Legacy research/tech job');
  equal(api.queueJob(8),{kind:0,value:8},'Legacy citizen job');binaries[name]={sha256:value.sha256,bytes:value.bytes};
 }
-const value=await binary(wideURL),w=value.wasm;check([6,7].includes(w.schema_revision()),'Candidate advertises a supported typed schema');
-for(const revision of [0xffffffff,5,8]){assert.throws(()=>createFrontendNamespace({...w,schema_revision:()=>revision}),/Unsupported presentation schema/);checks++;}
+const value=await binary(wideURL),w=value.wasm;check([6,7,8,9].includes(w.schema_revision()),'Candidate advertises a supported typed schema');
+for(const revision of [0xffffffff,5,10]){assert.throws(()=>createFrontendNamespace({...w,schema_revision:()=>revision}),/Unsupported presentation schema/);checks++;}
 // These are deliberately called before init, matching production startup.
 const mapping=createRenderAssetMapping(w),api=createFrontendNamespace(w,{referenceMode:true,assetMapping:mapping});
 equal(api.definitionCount,w.definition_count(),'Static catalogue before init');equal(api.rangeLength,w.ranges_len(),'Range export aliases before init');
@@ -64,4 +64,5 @@ for(const epoch of [0,7,14]){
 }
 binaries.roster6={sha256:value.sha256,bytes:value.bytes};
 const report={format:'openepoch-native6-render-namespace-tests-v1',passed:true,checks,binaries,scenes,sourceHashes:{adapter:sha(await fs.readFile(new URL('../docs/render-namespace.js',import.meta.url))),mapping:sha(await fs.readFile(mappingURL))},scope:'Actual pre-init metadata, typed jobs, real WASM render streams/ranges and non-mutating fallback buffers; no browser or original executable.'};
-await fs.writeFile(new URL('../../EE2-Research/analysis/native6-render-namespace-tests.json',import.meta.url),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));
+await fs.mkdir(new URL('../../EE2-Research/analysis/',import.meta.url),{recursive:true});
+await fs.writeFile(new URL('../../EE2-Research/analysis/native'+w.schema_revision()+'-render-namespace-tests.json',import.meta.url),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));

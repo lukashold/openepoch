@@ -32,7 +32,7 @@ export function createUpProductionShowcase(wasm){
  }
  if(goals.size)throw Error('No actual production host offered role(s): '+[...goals]);
  const n=wasm.render(1,0,0,256,256,-1,0,0),instances=new Float32Array(wasm.memory.buffer,wasm.inst_ptr(),n*12);
- const typed=typeof wasm.schema_revision==='function'&&[6,7,8].includes(wasm.schema_revision());
+ const typed=typeof wasm.schema_revision==='function'&&[6,7,8,9].includes(wasm.schema_revision());
  const spawned=trained.map(({id})=>({id,instances:Array.from({length:n},(_,i)=>i).filter(i=>{const raw=instances[i*12+4];return typed?(wasm.render_asset_kind(raw)>>>0)===0&&(wasm.render_asset_source_id(raw)>>>0)===id:raw===id;}).length}));
  if(spawned.some(row=>!row.instances))throw Error('Trained source role did not reach production render stream');
  return {built,trained,spawned,tick:wasm.game_tick(),

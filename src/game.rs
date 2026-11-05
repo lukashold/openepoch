@@ -204,6 +204,8 @@ pub struct Game {
     pub nplayers: usize,
     pub tick: u32,
     pub rng: Rng,
+    #[cfg(feature="ee2-citizen9")]
+    pub source_birth:crate::citizen9::SourceBirth,
     pub vis: Vec<u8>,
     /// Genuine per-team exploration, independent of local display options.
     pub team_vis: Vec<u8>,
@@ -282,6 +284,8 @@ impl Game {
             nplayers,
             tick: 0,
             rng: Rng(seed.wrapping_mul(2_654_435_761) | 1),
+            #[cfg(feature="ee2-citizen9")]
+            source_birth:crate::citizen9::SourceBirth::new(seed),
             vis: vec![0; NN],
             team_vis: vec![0; 4*NN], diplomacy: crate::diplomacy::Diplomacy::default(),
             territory: crate::territory::TerritoryDiplomacy::default(),
@@ -393,6 +397,7 @@ impl Game {
         let gen = self.ents[i].gen;
         self.ents[i] = Ent { alive: true, def, team, gen, x, y, px: x, py: y, ox: x, oy: y, hp: self.max_hp(team,def), rot:angle,prot:angle,..E0 };
         #[cfg(feature="ee2-pack8")] self.pack_reset(i);
+        #[cfg(feature="ee2-citizen9")] self.source_birth.register(i,self.h(i),def==WORKER);
         #[cfg(feature="ee2-reference")]
         { self.city_ground[i]=crate::city_ground::EMPTY; self.sync_city_ground_entry(i); }
         #[cfg(feature="ee2-up15")]
@@ -413,6 +418,7 @@ impl Game {
     }
 
     fn kill(&mut self, i: usize) {
+        #[cfg(feature="ee2-citizen9")] self.source_birth.discard(i);
         #[cfg(feature="ee2-pack8")] {self.pack_states[i]=crate::pack8::EMPTY;}
         #[cfg(feature="ee2-paidqueue7")] self.clear_queue_payments(i);
         let e = self.ents[i];
@@ -714,7 +720,7 @@ impl Game {
         let t = (key & 0xffff) as usize;
         for &i in ids {
             if DEFS[self.ents[i].def as usize].has(F_RESEARCH|F_EXTRACT|F_DROPOFF|F_GARRISON) {
-                let mut e=self.ents[i]; self.unload(&mut e); self.ents[i]=e;
+                let mut e=self.ents[i]; self.unload(i,&mut e); self.ents[i]=e;
                 continue;
             }
             let e = &mut self.ents[i];
@@ -733,7 +739,7 @@ impl Game {
         }
     }
 
-    fn unload(&mut self, e: &mut Ent) {
+    fn unload(&mut self, _host:usize, e: &mut Ent) {
         let lt = self.map.snap(e.x, e.y, 0);
         let (lx, ly) = ((lt % N) as f32 + 0.5, (lt / N) as f32 + 0.5);
         let exit_radius_squared=if DEFS[e.def as usize].building {20.0_f32.max((Self::building_half(e)+1.0).powi(2))}else{20.0};
@@ -741,15 +747,24 @@ impl Game {
             return; // no beach within reach: keep everyone aboard
         }
         let old_count=e.ncargo as usize;let mut remaining=0;
+        #[cfg(feature="ee2-citizen9")] let source_mask=self.source_birth.slots[_host].cargo_females;
+        #[cfg(feature="ee2-citizen9")] let mut remaining_source_mask=0_u32;
         for k in 0..old_count {
             let (a, r) = (k as f32 * 2.4, 0.45 * (k as f32).sqrt());
             let (mut x, mut y) = (lx + a.cos() * r, ly + a.sin() * r);
             if !self.map.pass[0][tile_of(x, y)] { x = lx; y = ly; }
             let u = self.spawn(e.cargo[k], e.team, x, y);
-            if u != NOIDX { self.ents[u].hp = self.max_hp(e.team,e.cargo[k]) * (e.cargo_hp[k] as f32 / 100.0).min(1.0); }
-            else {e.cargo[remaining]=e.cargo[k];e.cargo_hp[remaining]=e.cargo_hp[k];remaining+=1;}
+            if u != NOIDX {
+                self.ents[u].hp = self.max_hp(e.team,e.cargo[k]) * (e.cargo_hp[k] as f32 / 100.0).min(1.0);
+                #[cfg(feature="ee2-citizen9")] if e.cargo[k]==WORKER&&source_mask>>k&1!=0{self.set_citizen_identity(u,crate::native_rng9::CitizenIdentity::Female);}
+            }else {
+                e.cargo[remaining]=e.cargo[k];e.cargo_hp[remaining]=e.cargo_hp[k];
+                #[cfg(feature="ee2-citizen9")] if source_mask>>k&1!=0{remaining_source_mask|=1<<remaining;}
+                remaining+=1;
+            }
         }
         e.cargo[remaining..old_count].fill(0);e.cargo_hp[remaining..old_count].fill(0);e.ncargo=remaining as u8;
+        #[cfg(feature="ee2-citizen9")] {self.source_birth.slots[_host].cargo_females=remaining_source_mask;}
     }
 
     fn do_board(&mut self, i: usize, e: &mut Ent, d: &Def, want: &mut (f32, f32), moving: &mut bool) {
@@ -767,6 +782,7 @@ impl Game {
         if if td.building{(t.x-e.x).abs().max((t.y-e.y).abs())<=Self::building_half(&t)+0.95}else{(t.x-e.x).powi(2)+(t.y-e.y).powi(2)<2.8*2.8}{
             if (t.ncargo as usize)<CARGO_MAX && self.cargo_slots_used(&t)+slots<=self.cargo_capacity(t.team,t.def) {
                 let maxhp=self.max_hp(e.team,e.def);
+                #[cfg(feature="ee2-citizen9")] self.source_birth.set_cargo(j,t.ncargo as usize,e.def==WORKER&&self.source_birth.slots[i].identity==1);
                 let tr = &mut self.ents[j];
                 tr.cargo[tr.ncargo as usize] = e.def;
                 tr.cargo_hp[tr.ncargo as usize] = (e.hp / maxhp * 100.0).clamp(1.0, 100.0) as u8;
@@ -862,6 +878,7 @@ impl Game {
         self.hash_projectiles(&mut mix);
         #[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
         self.hash_decisions8(&mut mix);
+        #[cfg(feature="ee2-citizen9")] for word in self.source_birth_hash_words(){mix(word);}
         h
     }
 
@@ -1436,7 +1453,9 @@ impl Game {
                 // population was already reserved when queued; cap can still drop if houses die
                 if e.qt >= time && (self.players[team].pop <= self.players[team].cap || self.bench > 0) {
                     let (sx, sy) = self.spawn_point(e, d, ud);
+                    #[cfg(feature="ee2-citizen9")] let source_identity=if item==WORKER as QueueItem{Some(self.source_birth.production_identity())}else{None};
                     let u = self.spawn(item as DefId, e.team, sx, sy);
+                    #[cfg(feature="ee2-citizen9")] if u!=NOIDX{if let Some(identity)=source_identity{self.set_citizen_identity(u,identity);}}
                     if u != NOIDX && e.rx >= 0.0 {
                         let rt = tile_of(e.rx, e.ry);
                         if ud.has(F_WORKER) && self.map.res[rt] != R_NONE {
@@ -1445,7 +1464,8 @@ impl Game {
                             self.order_move(&[u], e.rx, e.ry, false);
                         }
                     }
-                    done = true;
+                    #[cfg(not(feature="ee2-citizen9"))] {done = true;}
+                    #[cfg(feature="ee2-citizen9")] {done = u!=NOIDX;}
                 }
             }
             if done {
@@ -1656,7 +1676,7 @@ impl Game {
                 O_UNLOAD => {
                     let dist = ((e.ox - e.x).powi(2) + (e.oy - e.y).powi(2)).sqrt();
                     if dist < 1.3 || e.stuck > 20 {
-                        self.unload(&mut e);
+                        self.unload(i,&mut e);
                         Self::set_idle(&mut e);
                     } else {
                         let (ox, oy) = (e.ox, e.oy);
@@ -2084,8 +2104,8 @@ mod territory_cargo_tests{
  use super::*;
  #[test]fn unload_at_entity_limit_preserves_unspawned_passengers(){
   let mut g=Game::new(7,0,0,2,0);let city=g.ents[0];let mut e=city;e.ncargo=3;e.cargo[..3].fill(WORKER);e.cargo_hp[..3].copy_from_slice(&[30,60,90]);
-  g.free.clear();g.unload(&mut e);assert_eq!(e.ncargo,3);assert_eq!(e.cargo_hp[..3],[30,60,90]);
-  let slot=g.high as u16;g.free.push(slot);g.unload(&mut e);assert_eq!(e.ncargo,2);assert_eq!(e.cargo_hp[..2],[60,90]);assert!(g.ents[slot as usize].alive);assert!((g.ents[slot as usize].hp/g.max_hp(0,WORKER)-0.3).abs()<0.0001);
+  g.free.clear();g.unload(0,&mut e);assert_eq!(e.ncargo,3);assert_eq!(e.cargo_hp[..3],[30,60,90]);
+  let slot=g.high as u16;g.free.push(slot);g.unload(0,&mut e);assert_eq!(e.ncargo,2);assert_eq!(e.cargo_hp[..2],[60,90]);assert!(g.ents[slot as usize].alive);assert!((g.ents[slot as usize].hp/g.max_hp(0,WORKER)-0.3).abs()<0.0001);
  }
  #[test]fn transferred_cargo_keeps_people_but_respects_recipient_work_limit(){
   let mut g=Game::new(7,0,0,2,0);let (x,y)=g.map.starts[0];let u=g.spawn(UNIVERSITY,0,x as f32+7.0,y as f32);g.ents[u].ncargo=3;g.ents[u].cargo[..3].fill(WORKER);g.ents[u].cargo_hp[..3].fill(100);let id=g.map.terr[tile_of(x as f32,y as f32)];g.modifiers[1][UNIVERSITY as usize][11]=1.0;

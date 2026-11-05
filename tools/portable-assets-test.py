@@ -154,6 +154,12 @@ class AssetAudit:
                     elif part.get('textureSource'):
                         self.warnings.append({'kind':'source-texture-with-white-material-fallback','source':f'{name}.parts[{j}]','textureSource':part['textureSource']})
                 self.local_urls(model.get('sourceTextures',[]),name+'.sourceTextures','model-texture-audit')
+                payload = model.get('animationPayload')
+                if payload:
+                    sidecar = self.ref(payload.get('url'), name + '.animationPayload', 'sampled-animation')
+                    if sidecar and (self.files[sidecar].stat().st_size != payload.get('bytes')
+                                    or self.digest(sidecar) != payload.get('sha256')):
+                        self.error('animation-payload-byte-mismatch', sidecar, name)
                 # Animation arrays are irrelevant to URL resolution and can be
                 # hundreds of MB. Retain only the metadata needed by the later
                 # auxiliary scan, so this audit also fits smaller Mac machines.
@@ -166,6 +172,20 @@ class AssetAudit:
             self.hash_ref(row,f'{manifest_name}.epochIconBindings[{i}]','epoch-icon')
         self.stats[stat_prefix+'epochIconBindings']=len(manifest.get('epochIconBindings',[]))
         self.local_urls(manifest.get('textures',{}),manifest_name+'.textures','model-material-map')
+
+    def check_citizens(self):
+        base = 'local-original/citizens9/'
+        self.check_models(base + 'manifest.json', 'citizen-')
+        self.check_teams(base + 'team/manifest.json', 'citizen-')
+        manifest = base + 'presentation.json'
+        self.ref(manifest, 'original-citizen-presentation.js', 'citizen-presentation')
+        data = self.read_json(manifest)
+        for name, icon in data.get('icons', {}).items():
+            self.hash_ref(icon, manifest + '.icons.' + name, 'citizen-icon')
+        for name, event in data.get('events', {}).items():
+            file = self.ref(event.get('recording'), manifest + '.events.' + name, 'citizen-voice')
+            if file and self.digest(file) != event.get('sha256'):
+                self.error('citizen-voice-byte-mismatch', file, manifest)
 
     def check_textures_and_ground(self):
         name='local-original/textures.json';self.ref(name,'original-assets.js','texture-manifest');data=self.read_json(name)
@@ -629,6 +649,9 @@ class AssetAudit:
             self.check_models('local-original/models/manifest-up15.json','up15-')
         if 'local-original/models/manifest-roster6.json' in self.files:
             self.check_models('local-original/models/manifest-roster6.json','roster6-')
+        if 'original-citizen-presentation.js' in self.files:
+            self.check_citizens()
+            self.check_models('local-original/regional9/manifest.json', 'regional-')
         self.check_textures_and_ground();self.check_teams();self.check_model_seasons();self.check_audio();self.check_static_runtime()
         if 'original-water.js' in self.files:self.check_water()
         if 'local-original/farm-composites.json' in self.files:self.check_farms()

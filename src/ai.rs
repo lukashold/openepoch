@@ -436,6 +436,9 @@ mod civ8_ai_tests {
         let mut old=raw[..nav].to_vec();old[4..8].copy_from_slice(&1u32.to_le_bytes());
         let sum=old.iter().fold(2166136261u32,|a,&v|(a^v as u32).wrapping_mul(16777619));let length=(old.len()+12)as u32;
         for word in[length,sum,crate::pack8_save::END]{old.extend_from_slice(&word.to_le_bytes());}
+        // Source9's identity-bearing OEU9 marker cannot be stripped into an old
+        // version1 envelope. Native8 still runs the original cache-gap proof.
+        #[cfg(feature="ee2-citizen9")]{assert!(Game::load(&old).is_none());return;}
         let mut loaded=Game::load(&old).unwrap();
         assert!(g.map.fields.iter().filter(|f|!f.dir.is_empty()).count()>4);
         assert!(loaded.map.fields.iter().all(|f|f.dir.is_empty()));

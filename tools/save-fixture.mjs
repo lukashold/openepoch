@@ -11,9 +11,9 @@ const NN=256*256;
 export function saveLayout(bytes){
  const packEnvelope=unwrapPackSave(bytes);bytes=packEnvelope.core;
  const d=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength),players=d.getUint32(8,true),entities=d.getUint32(4,true)*d.getUint32(32,true);
- const end=36+4*players+entities+5*NN,magic=d.getUint32(0,true),civ8=magic===0x3855454f,paidqueue7=magic===0x3755454f||civ8,roster6=magic===0x3655454f||paidqueue7,up15=magic===0x3555454f||roster6,reference=magic===0x3252454f||up15,prefix=reference?236:132;
+ const end=36+4*players+entities+5*NN,magic=d.getUint32(0,true),citizen9=magic===0x3955454f,civ8=magic===0x3855454f||citizen9,paidqueue7=magic===0x3755454f||civ8,roster6=magic===0x3655454f||paidqueue7,up15=magic===0x3555454f||roster6,reference=magic===0x3252454f||up15,prefix=reference?236:132;
  const descriptorBytes=roster6?52:0,descriptor=roster6?bytes.length-52:null,civBytes=civ8?36:0,civ=civ8?descriptor-civBytes:null,payloadEnd=bytes.length-descriptorBytes-civBytes;
- if(roster6){assert.equal(d.getUint32(descriptor,true),0x31533652);assert.equal(d.getUint32(descriptor+4,true),civ8?8:paidqueue7?7:6);assert.equal(d.getUint32(bytes.length-8,true),52);assert.equal(d.getUint32(bytes.length-4,true),0x45533652);}
+ if(roster6){assert.equal(d.getUint32(descriptor,true),0x31533652);assert.equal(d.getUint32(descriptor+4,true),citizen9?9:civ8?8:paidqueue7?7:6);assert.equal(d.getUint32(bytes.length-8,true),52);assert.equal(d.getUint32(bytes.length-4,true),0x45533652);}
  if(civ8){assert.equal(d.getUint32(civ,true),0x31564943);assert.equal(d.getUint32(civ+4,true),1);assert.equal(d.getUint32(civ+8,true),4);for(let i=0;i<4;i++)assert.ok(d.getUint32(civ+12+i*4,true)<=14);assert.equal(d.getUint32(civ+28,true),36);assert.equal(d.getUint32(civ+32,true),0x45564943);}
  const paidBytes=paidqueue7?d.getUint32(payloadEnd-8,true):0,paid=paidqueue7?payloadEnd-paidBytes:null,dataEnd=payloadEnd-paidBytes;
  if(paidqueue7){assert.ok(paidBytes>=20&&paidBytes<=20+8192*5*64);assert.equal(d.getUint32(payloadEnd-4,true),0x45505150);assert.equal(d.getUint32(paid,true),0x31505150);assert.equal(d.getUint32(paid+4,true),2);assert.equal(d.getUint32(descriptor+8,true),civ8?1:2);assert.equal(paidBytes,20+64*d.getUint32(paid+8,true));}
@@ -23,7 +23,7 @@ export function saveLayout(bytes){
  const cityBytes=currentEnd>end+prefix+DIP_BYTES+TER_BYTES&&d.getUint32(currentEnd-4,true)===CITY_END?d.getUint32(currentEnd-8,true):0;
  assert.ok(cityBytes===0||(cityBytes>=20&&cityBytes<=20+8192*8&&cityBytes<=currentEnd),'bounded CGD1 footer size');
  const legacyEnd=currentEnd-cityBytes,city=cityBytes?legacyEnd:null;
- return {d,end,prefix,dip:end+prefix,ter:end+prefix+DIP_BYTES,realFog:end+prefix+600,displayFog:end-NN,reference,up15,roster6,paidqueue7,paid,paidBytes,payloadEnd,legacyEnd,city,cityBytes,attack,attackBytes,currentEnd,dataEnd,descriptor,descriptorBytes,civ8,civ,civBytes,core:bytes,packEnvelope};
+ return {d,end,prefix,dip:end+prefix,ter:end+prefix+DIP_BYTES,realFog:end+prefix+600,displayFog:end-NN,reference,up15,roster6,paidqueue7,paid,paidBytes,payloadEnd,legacyEnd,city,cityBytes,attack,attackBytes,currentEnd,dataEnd,descriptor,descriptorBytes,citizen9,civ8,civ,civBytes,core:bytes,packEnvelope};
 }
 export function assertCurrentSave(bytes){
  const l=saveLayout(bytes);

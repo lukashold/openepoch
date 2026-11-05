@@ -1,10 +1,6 @@
 # OpenEpoch · lokaler EE2-Ausbau
 
-GitHub enthält Quellcode, fertige WASM-Builds, Tests und Importwerkzeuge.
-Originalmedien im ignorierten Ordner `docs/local-original/` werden lokal importiert
-oder aus dem separaten vollständigen Spielpaket übernommen.
-
-Arbeitsstand 04.11.2026 · native8. Das EE2-Profil verbindet die eigene Rust-/WASM-Simulation
+Arbeitsstand 05.11.2026 · native9. Das EE2-Profil verbindet die eigene Rust-/WASM-Simulation
 mit importierten Originalmodellen, Animationen, Stimmen, Musik und belegten Spielwerten.
 Die vollständige Übereinstimmung mit Empire Earth II wird weiter erarbeitet.
 
@@ -14,6 +10,13 @@ Modellen, ihren Originalanimationen, Originalsymbolen und deutschen Namen.
 Die Völkerwahl begrenzt die Produktion passend zur Epoche. Bereits ausgebildete
 Einheiten bleiben nach dem Ende ihres Produktionszeitraums erhalten. Beim Anklicken
 und Befehlen folgen ihre Stimmen auch den im Original belegten Elternklassen.
+
+Die Bürgerproduktion wählt männliche und weibliche Bürger nach dem belegten
+Originalschritt. Beide haben ihre eigenen Originalmodelle, Animationen, Symbole
+und Stimmen aus vier Regionen und fünf Epochenstilen. Auswahl und Befehle nutzen
+die tatsächliche Identität der Einheit. Einquartieren, Transport und Laden
+erhalten sie. Stadtzentren der ersten drei Epochen verwenden die vier regionalen
+Originalmodelle und die passenden Jahreszeitentexturen.
 
 Geschütze und weitere geeignete Einheiten packen beim Bewegen ein und vor dem
 Angriff aus. Die Auswahl bietet außerdem die manuellen Befehle Einpacken und
@@ -31,13 +34,14 @@ festgelegte Dauer. Abbruch erstattet den gespeicherten Preis; Klassenwechsel
 berechnen wartende Aufträge neu. Aktuelle Spielstände sichern außerdem laufende
 Packaufgaben, die für die Fortsetzung notwendige Wegfindung und fliegende
 Geschosse in ihrer tatsächlichen Reihenfolge. Das aktuelle eigene Speicherformat
-verwendet die äußere Version3. Fehlende Historie
+verwendet die äußere Version 4 und speichert Bürgeridentitäten und den Zustand
+des zugehörigen Zufallsstroms. Fehlende Historie
 älterer Spielstände wird ausdrücklich als rekonstruiert gekennzeichnet. Die
 bestehenden eigenen/Basis-WASM-Dateien und die bisherigen Speicherorte bleiben
-bestehen. Netzwerkprotokoll15 trennt ältere Simulationsstände.
+bestehen. Netzwerkprotokoll 16 trennt ältere Simulationsstände.
 
 Von132 klassischen Quellenfamilien sind62 angebunden;70 sowie weitere Fähigkeiten,
-regionale Gebäude-/Bürgerdarstellungen, Karteninitialisierung und native KI-Abläufe
+weitere regionale Gebäudestile, Karteninitialisierung und native KI-Abläufe
 sind weitere konkrete Arbeitsbereiche. Die aktuelle KI bleibt ein eigener Adapter.
 
 Karavellen und Linienschiffe verwenden die originalen sechs beziehungsweise zwölf
@@ -48,13 +52,13 @@ an. Originale lokale Raster und Rechenfolgen sind belegt; Zeittakt, Sichtauswahl
 und die Zuordnung zur eigenen Welt bleiben ausdrücklich Adapter.
 
 Die gemeinsamen Prüfungen und der genaue Restumfang werden unter
-`research/analysis/native8-*.json` dokumentiert. Die Dateien `native6-*.json`
+`../EE2-Research/analysis/native8-*.json` dokumentiert. Die Dateien `native6-*.json`
 und `native61-*.json` enthalten die davor geprüften Ausbaustufen.
 Browserbedienung und ein physischer Mac wurden dabei nicht ausgeführt.
 
 ## Komplettpaket für den Mac
 
-Das native8-Komplettpaket enthält den gemeinsam geprüften Laufzeitstand mit
+Das native9-Komplettpaket enthält den gemeinsam geprüften Laufzeitstand mit
 Originalmedien. Das zugehörige Quellpaket enthält eigenen Code, WASM-Builds und
 Prüfungen. Die vollständige Originalübereinstimmung wird weiter erarbeitet.
 
@@ -120,11 +124,11 @@ migriert. Projektile im Flug sind weiterhin flüchtig und damit eine offene
 Spielstandlücke. Alle neuen
 Bilder, Farmzustände und Wassermedien liegen im Komplettpaket. Die Quellen und
 Prüfungen sind unter [UP-Profil](docs/EE2-UP15-PROFIL.md),
-[Profil-/Spielstandprüfung](research/analysis/native5-rules-profile-tests.json),
-[Diplomatie](research/analysis/native5-diplomacy-integration.json),
-[Modellbeleuchtung](research/analysis/native5-lighting-integration.json),
-[Farm und Gebäudeböden](research/analysis/native3-farm-ground-integration.json)
-und [Wasser](research/analysis/native3-water-implementation.json) dokumentiert.
+[Profil-/Spielstandprüfung](../EE2-Research/analysis/native5-rules-profile-tests.json),
+[Diplomatie](../EE2-Research/analysis/native5-diplomacy-integration.json),
+[Modellbeleuchtung](../EE2-Research/analysis/native5-lighting-integration.json),
+[Farm und Gebäudeböden](../EE2-Research/analysis/native3-farm-ground-integration.json)
+und [Wasser](../EE2-Research/analysis/native3-water-implementation.json) dokumentiert.
 
 Modelle nutzen die belegte Farb-/Lichtkette und die passenden statischen bzw.
 skinned Materialpfade. Als Anwendungseinstellung ist gemäßigtes Klima am
@@ -132,7 +136,7 @@ Nachmittag bei normalem Wetter gewählt. Die vollständige native Tageszeit-,
 Wetter- und Terrain-Lichtsteuerung ist noch offen.
 
 Die folgenden Abschnitte dokumentieren frühere Ausbaustände; maßgeblich ist
-der oben beschriebene Stand native8.
+der oben beschriebene Stand native9.
 
 ## Saisonale Modelle, Wasserreflexionen und Kameradrehung · visual-seasons2
 
@@ -159,10 +163,10 @@ Speicherstände sowie Szenen mit Sommer, Winter, Monatsübergang, Zukunft und90�
 Ansicht auf einem echten GLES-Framebuffer. Ein Start auf physischem macOS und
 vollständige Bildgleichheit mit dem Original sind weiterhin nicht geprüft.
 
-[Saisonale Modelle](research/analysis/native-model-season-integration.json),
-[Reflexionspipeline](research/analysis/native-reflection-implementation.json),
-[Kameradrehung](research/analysis/native-camera-heading-evidence.json),
-[Eingaben und Spielstände](research/analysis/visual-controls-tests.json).
+[Saisonale Modelle](../EE2-Research/analysis/native-model-season-integration.json),
+[Reflexionspipeline](../EE2-Research/analysis/native-reflection-implementation.json),
+[Kameradrehung](../EE2-Research/analysis/native-camera-heading-evidence.json),
+[Eingaben und Spielstände](../EE2-Research/analysis/visual-controls-tests.json).
 
 ## Kampfregeln und Jahreszeiten · combat-season1
 
@@ -200,10 +204,10 @@ Wetterereignisse, volle Original-KI, alle Zivilisationen, Spezialfähigkeiten,
 der gesamte Einheitenkatalog und native Beleuchtung sind weiterhin unvollständig.
 Es handelt sich weiterhin nicht um ein fertiges1:1-Empire-Earth-II.
 
-[Kampfintegration](research/analysis/native-combat-integration.json),
-[Stadtradius](research/analysis/native-city-ground-integration.json),
-[Kalenderbelege](research/analysis/native-calendar-evidence.json),
-[GPU-Weltszenen](research/analysis/native-season-world-qa.json).
+[Kampfintegration](../EE2-Research/analysis/native-combat-integration.json),
+[Stadtradius](../EE2-Research/analysis/native-city-ground-integration.json),
+[Kalenderbelege](../EE2-Research/analysis/native-calendar-evidence.json),
+[GPU-Weltszenen](../EE2-Research/analysis/native-season-world-qa.json).
 
 Die folgenden Abschnitte dokumentieren die vorherigen Ausbauschritte; deren
 Hashes und damalige Grenzen gehören jeweils zum genannten Stand.
@@ -243,9 +247,9 @@ oder einen Start auf einem echten Mac. Zwölf Szenarien mit je 600 Ticks haben
 gegenüber fortress1 identische Simulationshashes, Rohstoffe und Speicherstände.
 Die neue WASM-API ergänzt ausschließlich lesende Geländeklassen-Exporte.
 
-[Kamera-/Skalierungsbelege](research/analysis/native-render-evidence.json),
-[vollständige Medienprüfung](research/analysis/native-render-portable-assets.json),
-[unveränderte Simulation](research/analysis/graphics-build-equivalence.json).
+[Kamera-/Skalierungsbelege](../EE2-Research/analysis/native-render-evidence.json),
+[vollständige Medienprüfung](../EE2-Research/analysis/native-render-portable-assets.json),
+[unveränderte Simulation](../EE2-Research/analysis/graphics-build-equivalence.json).
 
 ## Festungen und Gebietserwerb · fortress1
 
@@ -286,10 +290,10 @@ Anspruchsreihenfolge und gespeicherte Garnisons-HP in Ein-Prozent-Schritten
 bleiben ausdrücklich begrenzte Adapter. Die vollständige native RPS-Matrix,
 alle Spezialfähigkeiten, Kultursets und das gesamte Einheitenangebot fehlen noch.
 
-[Quellen und Ghidra-Adressen](research/Festung-und-Gebietserwerb.txt),
-[belegter PopCount-Slotgetter](research/analysis/fortress-population-binding.json),
-[Fortress-Prüfungen](research/analysis/fortress-territory-tests.json),
-[Regressionen](research/analysis/fortress-regression-tests.json).
+[Quellen und Ghidra-Adressen](../EE2-Research/Festung-und-Gebietserwerb.txt),
+[belegter PopCount-Slotgetter](../EE2-Research/analysis/fortress-population-binding.json),
+[Fortress-Prüfungen](../EE2-Research/analysis/fortress-territory-tests.json),
+[Regressionen](../EE2-Research/analysis/fortress-regression-tests.json).
 
 ## Bauen und Vollbild · building2
 
@@ -329,7 +333,7 @@ dreifacher Bauzeit ist damit nicht vollständig umgesetzt. Alte Spielstände mit
 mehreren Stadtzentren bleiben ladbar. Das Speicherlayout ist unverändert;
 Dieser vorherige Ausbauschritt verwendete Protokoll8 für Festungen und die neuen Gebietsregeln.
 
-[Originalbelege und Ghidra-Adressen](research/Stadtzentren-und-Gebaeuderotation.txt).
+[Originalbelege und Ghidra-Adressen](../EE2-Research/Stadtzentren-und-Gebaeuderotation.txt).
 
 Aktueller Enginebuild: EE2 `8B5C1A021F2642DBEFE9F6FA8BBFB7B0BD273E366B07B63312C6581FECCD69FD`,
 Basis `FEE97BEC031288416FDAFBBAD83CE838D3C00E9971EFC399ED908F57F12BED4D`.
@@ -343,7 +347,7 @@ sind durch ihre Under*-Kinder und DDF-Maße belegt; die Darstellung folgt dem
 Terrain und verwendet das unveränderte Originalalpha. Die native Auswahl der
 drei Texturslots nach Epoche sowie Rural/Urban ist noch ungeklärt. Die aktuelle
 Darstellung verwendet ausdrücklich Rural-Slot 0 als eigenen Adapter.
-[Quellen und Grenzen](research/Originale-Gebaeudeboeden.md).
+[Quellen und Grenzen](../EE2-Research/Originale-Gebaeudeboeden.md).
 
 Doppeldecker, Bomber und Hubschrauber verwenden nun die originalen Idle-,
 Bewegungs- und Angriffsclips mit 48 Samples für bewegte Propeller/Rotorteile.
@@ -421,8 +425,8 @@ Gegner oder 400 ohne gemeinsamen Gegner. Sie akzeptiert nur, wenn beide noch
 keinen anderen Bündnispartner haben. Bei Pause läuft diese Antwortzeit nicht weiter.
 Gebäude-/Mobil-Sichtstufen, Zeitverträge, Grenzrechte, Zölle und separate
 Geschenke ausgewählter Einheiten gehören noch nicht zum implementierten Teilumfang.
-Originalbelege: `research/Diplomatie-und-Sicht.txt` und
-`research/analysis/diplomacy-visibility-evidence.json`.
+Originalbelege: `../EE2-Research/Diplomatie-und-Sicht.txt` und
+`../EE2-Research/analysis/diplomacy-visibility-evidence.json`.
 Die bestätigten Diplomatie-/Kartensichtbelege stehen unten als vorheriger
 Stand. Die neuen WASM-Prüfungen und die gezielte Browserabnahme sind bestanden.
 
@@ -471,8 +475,8 @@ sonst mindestens zehn Prozent Mehrwert. Das ist eine eigene Preisregel,
 keine rekonstruierte Original-KI. Mehrspieler verwendet jetzt Protokoll 6;
 TER1 ergänzt das Speicherformat um 524 Bytes hinter dem unveränderten DIP1.
 
-Originalbefunde: `research/Territorien-und-Diplomatie.txt` und
-`research/analysis/territory-evidence.json`. Build-/WASM- und Browserbelege stehen unten; die nachfolgenden 991E-Belege
+Originalbefunde: `../EE2-Research/Territorien-und-Diplomatie.txt` und
+`../EE2-Research/analysis/territory-evidence.json`. Build-/WASM- und Browserbelege stehen unten; die nachfolgenden 991E-Belege
 beschreiben
 den vorherigen Diplomatie-/Kartensichtstand.
 
@@ -576,7 +580,7 @@ Visualzeilen; 125 bleiben ohne vollständigen Originalwechsel. Das ist keine
 Fertigstellungsquote des ganzen Spiels. Weitere Kulturen, Modelle, Animationen
 und Effekte fehlen weiterhin. Der vollständige Einheiten-/Produktionskatalog
 und Spezialfähigkeiten sind ebenfalls offen.
-[Grafikabdeckung](research/analysis/graphics-coverage.txt).
+[Grafikabdeckung](../EE2-Research/analysis/graphics-coverage.txt).
 
 Die korrigierten Bürger-/Skinning-Exporte bestehen die unabhängige Datenprüfung.
 Industrie-Bürger mit 50/50 HP sind im echten Browser sowohl als Near- als auch
@@ -629,10 +633,10 @@ sich die Reihenfolge der UI-Loganzeige. Zehn repräsentative echte WASM-Fälle
 mit 877 Prüfungen bestätigen für 5C→6E gleiche Simulation und bytegleiche
 Speicherstände trotz unterschiedlicher UI-Leserate; die korrigierte Chronologie
 wurde separat geprüft. Der lange Soak wurde nicht als neuer 6E-Lauf ausgegeben.
-Belege: `research/analysis/territory-tests.json`,
-`research/analysis/diplomacy-tests.json`,
-`research/analysis/territory-logsort-equivalence.json` und
-`research/analysis/economy-ai-soak.json`.
+Belege: `../EE2-Research/analysis/territory-tests.json`,
+`../EE2-Research/analysis/diplomacy-tests.json`,
+`../EE2-Research/analysis/territory-logsort-equivalence.json` und
+`../EE2-Research/analysis/economy-ai-soak.json`.
 
 Die gezielte echte Browserabnahme ist bestanden. Zwei lokale Browserclients
 verbanden sich über die echte WebRTC-Einladungs-/Antwortoberfläche mit Protokoll 6
@@ -660,7 +664,7 @@ unverändert sichtbar und keine Browserwarnungen/-fehler.
 
 Belegbilder: [Territorien und Geschenk](territory-diplomacy-preview.jpg),
 [lokaler WebRTC-Tausch](territory-swap-preview.jpg).
-[Browserbericht](research/analysis/territory-browser-check.json).
+[Browserbericht](../EE2-Research/analysis/territory-browser-check.json).
 
 Vorheriger Diplomatie-/Kartensicht-Build vor Gebietsübergaben, SHA256:
 
@@ -674,13 +678,13 @@ Beziehungswechsel, drei Kartenmodi, KI-Antworten und Speicherstände. Beide
 Profile bestehen je zehn Rust-Tests. Auch die bisherigen Kernregressionen sind
 bestanden, einschließlich echter älterer 47-/53-/56-Definitionen-Spielstände,
 43 Forschungswirkungsszenarien und des Forschungsdurchlaufs180/15.
-Beleg: `research/analysis/diplomacy-tests.json`.
+Beleg: `../EE2-Research/analysis/diplomacy-tests.json`.
 
 Die Vier-KI-CPU-Stressfixtures wurden mit genau diesem vorherigen EE2-Build erneut
 20 Simulationsminuten ab Steinzeit und zehn ab Epoche 10 ausgeführt: keine
 Warnungen oder Progressionsfehler. Kampfwellen-Fristen sind in diesen
 Stressfixtures verschoben; das ist keine vollständige Partie-/Bildratenabnahme.
-Beleg: `research/analysis/economy-ai-soak.json`. Der historische Vergleich BAE9→2A12 ist
+Beleg: `../EE2-Research/analysis/economy-ai-soak.json`. Der historische Vergleich BAE9→2A12 ist
 mit portablen eigenen WASM-Fixtures erneut bestätigt; er ist kein Nachweis,
 dass der neue Diplomatiestand dieselben Zustände wie jener Altbuild erzeugt.
 
@@ -708,7 +712,7 @@ Belegbilder: [Diplomatie](diplomacy-preview.jpg),
 [aufgedeckte Karte](revealed-map-preview.jpg),
 [erkundete Karte](explored-map-preview.jpg),
 [frischer Start mit Kartenoption](map-settings-preview.jpg).
-[Maschinenlesbarer Browserbericht](research/analysis/diplomacy-browser-check.json).
+[Maschinenlesbarer Browserbericht](../EE2-Research/analysis/diplomacy-browser-check.json).
 
 Der vorherige Wirtschafts-/Assetabschluss bestand seine Engineprüfungen.
 Nach dessen Metadatenregeneration blieben 30 Laufzeit-Vergleichsfälle gegenüber
@@ -756,7 +760,7 @@ Belegbilder: [Industriesicht](economy-industry-preview.jpg) und
 Ein frischer normaler Start mit allen 15 Startepochen und Originalgrafiken
 wurde abschließend ohne Browserwarnungen oder -fehler geladen.
 Die maschinenlesbaren UI-Belege stehen in
-`research/analysis/economy-browser-check.json`.
+`../EE2-Research/analysis/economy-browser-check.json`.
 Aktuelle FPS oder eine vollständige visuelle Spielabnahme werden nicht behauptet.
 
 Offen bleiben unter anderem der volle produktive Katalog, Kampfmatrix und
@@ -768,11 +772,11 @@ nicht vollständig bestätigt. Die Simulation und der Renderer sind eigene
 Implementierungen; dekompilierte Original-Codepassagen wurden nicht übernommen.
 
 Quellnachweise und Grenzen:
-`research/Einheiten-und-Kosten.txt`,
-`research/Forschung-und-Universitaet.txt`,
-`research/Originalgrafiken-und-Sound.txt`,
-`research/Originaltreue-Stand.txt`,
-`research/Diplomatie-und-Sicht.txt`.
+`../EE2-Research/Einheiten-und-Kosten.txt`,
+`../EE2-Research/Forschung-und-Universitaet.txt`,
+`../EE2-Research/Originalgrafiken-und-Sound.txt`,
+`../EE2-Research/Originaltreue-Stand.txt`,
+`../EE2-Research/Diplomatie-und-Sicht.txt`.
 
 ## Attribution
 

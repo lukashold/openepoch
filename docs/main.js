@@ -8,14 +8,16 @@ import { diplomacyPanel } from './diplomacy.js?v=fortress1';
 import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native6';
 import {loadNativeFontUI} from './original-font-ui.js?v=native6';
 import {territoryClaimMessage} from './territory-help.js?v=fortress1';
-import * as sfx from './audio.js?v=native8';
-import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=native6';
+import * as sfx from './audio.js?v=native9';
+import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=citizen9';
+import {loadCitizenPresentation} from './original-citizen-presentation.js?v=citizen9';
+import {selectedCitizenContext} from './source-citizen-context.js?v=citizen9';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native6';
-import {loadOriginalModels} from './original-renderer.js?v=pack-sails8';
+import {loadOriginalModels} from './original-renderer.js?v=citizen9';
 import {loadSourceSailRuntime} from './source-sail-runtime.js?v=sails7';
 import {createRenderAssetMapping} from './original-render-namespace.js?v=native6';
-import {createFrontendNamespace} from './render-namespace.js?v=native8';
+import {createFrontendNamespace} from './render-namespace.js?v=native9';
 import {createRenderActorMetadata} from './render-actor-metadata.js?v=pack8';
 import {createPackRenderMetadata} from './original-pack-states.js?v=pack8';
 import {loadOriginalGround} from './original-ground.js?v=native6';
@@ -24,11 +26,11 @@ import {loadOriginalWater} from './original-water.js?v=water-farm3';
 import {createOriginalReflection} from './original-reflection.js?v=visual-seasons2';
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native8';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native9';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
-import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native8';
+import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native9';
 import {createFullscreenController} from './fullscreen.js?v=building2';
-import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings} from './civilization-setup.js?v=native8';
+import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings} from './civilization-setup.js?v=native9';
 import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=fortress1';
 import {updateOriginalCamera,originalCameraRay,originalFractionForZoom,normalizeOriginalHeading,rotateOriginalCameraHeading} from './original-camera.js?v=heading2';
 
@@ -440,13 +442,15 @@ for (const pr of [terrain, water, models, quads]) {
 }
 const originalEnabled=referenceMode&&new URLSearchParams(location.search).get('assets')!=='procedural';
 const originalAssets=await loadOriginalAssets(gl,originalEnabled);
+const citizenPresentation=await loadCitizenPresentation({enabled:originalEnabled&&rulesProfile.sourceIdentityVersion===1});
+originalAssets.citizenPresentation=citizenPresentation;
 const originalLabels=await loadOriginalLabels(rulesProfile,{definitionCount:renderNamespace.definitionCount,...(rulesProfile.ruleset===2?{manifestURL:'./local-original/labels-native-civ8.json'}:{})});
 const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,total)=>{
   $('play').textContent=`Originalgrafiken laden · ${Math.round(loaded/total*100)} %`;
-},{assetMapping,packAnimations:rulesProfile.ruleset===2,dynamicSails:rulesProfile.ruleset===2&&typeof wasm.render_meta_version==='function',lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-civ8.json',scaleManifestURL:'./local-original/model-scales-civ8.json',teamManifestURL:'./local-original/team-textures/manifest-civ8.json'}:{})});
+},{assetMapping,packAnimations:rulesProfile.ruleset===2,dynamicSails:rulesProfile.ruleset===2&&typeof wasm.render_meta_version==='function',lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-civ8.json',scaleManifestURL:'./local-original/model-scales-civ8.json',teamManifestURL:'./local-original/team-textures/manifest-civ8.json',regionalManifestURL:'./local-original/regional9/manifest.json',citizenManifestURL:'./local-original/citizens9/manifest.json',citizenNeutralFallback:'west',sourceIdentityForActor:actor=>wasm.actor_source_identity(actor.handle)>>>0}:{})});
 const sourceSails=await loadSourceSailRuntime({wasm,namespace:renderNamespace,models:originalModels,enabled:originalEnabled&&rulesProfile.ruleset===2,decorateMetadata:metadata=>packMetadata?packMetadata.snapshot(metadata):metadata});
 if(sourceSails?.metrics.error)console.warn('Source sails:',sourceSails.metrics.error);
-sfx.configureOriginalDefinitions({wasm,bindings:originalModels.manifest?.models||[],...(rulesProfile.ruleset===2?{familyManifestURL:'native-families-civ8.json'}:{})});
+sfx.configureOriginalDefinitions({wasm,bindings:originalModels.manifest?.models||[],citizenPresentation,...(rulesProfile.ruleset===2?{familyManifestURL:'native-families-civ8.json'}:{})});
 const originalGround=await loadOriginalGround(gl,originalEnabled,{assetMapping});
 const originalTerrain=await loadOriginalTerrain(gl,originalEnabled,TEAM);
 originalTerrain.setLightingContext?.(originalModels.lighting);
@@ -778,6 +782,8 @@ function frame(now) {
   const n = (wasm.render_rotated||wasm.render)(alpha, x0, y0, x1, y1, gid, gx, gy,ghost?.turn||0);
   const ranges = n ? new Uint32Array(wasm.memory.buffer, wasm.ranges_ptr(), renderNamespace.rangeLength) : null;
   const renderEpochs=[0,1,2,3].map(t=>wasm.stat(t,0));
+  if(rulesProfile.ruleset===2)originalModels.setVisualCivilizations?.([0,1,2,3].map(team=>wasm.player_civilization(team)));
+
   // Own visual clock: once before every scene pass. Pause/wait freezes cloth;
   // solo speed scales the explicit delta. Native helpers apply their own cap.
   let actorMetadata=sourceSails?.advance({count:n,instances:f32(wasm.inst_ptr(),n*STRIDE),epochs:renderEpochs,
@@ -890,14 +896,14 @@ function frame(now) {
 
 // ---------------------------------------------------------------- HUD
 const HOT = ['Q', 'W', 'E', 'R', 'T', 'Z', 'X', 'C', 'V', 'B'];
-function icon(id, px) {
+function icon(id, px,context=undefined) {
   const c = document.createElement('canvas'); c.width = c.height = px;
-  const original=originalIcon(originalAssets,id,ui?.epoch||0);
+  const original=originalIcon(originalAssets,id,ui?.epoch||0,context);
   if(original){
     const scale=Math.min(px/original.width,px/original.height),w=original.width*scale,h=original.height*scale;
     c.getContext('2d').drawImage(original,(px-w)/2,(px-h)/2,w,h);return c;
   }
-  const fallbackId=renderNamespace.unitFallbackId(id);
+  const fallbackId=context?.sourceIdentityVersion===1?-1:renderNamespace.unitFallbackId(id);
   if(fallbackId>=0)c.getContext('2d').drawImage(iconAtlas, (fallbackId % 16) * CELL, ((fallbackId / 16) | 0) * CELL, CELL, CELL, 0, 0, px, px);
   return c;
 }
@@ -951,6 +957,7 @@ function updateUi(drawn, now) {
     if (s.types.length > 1) h += '<div class="types">' + s.types.map(t => `<span>${escapeLabelHtml(label(t[2],t[0],t[1]))} ×${t[1]}</span>`).join('') + '</div>';
     if (s.q.length) h += `<div class="q" id="queue"></div><div class="hp"><i style="width:${s.qp * 100}%;background:#4aa3ff"></i></div>`;
     info.innerHTML = h;
+    if(s.n===1&&s.def===8){const context=selectedCitizenContext(wasm,ui);if(context){const portrait=icon(s.def,40,context);portrait.style.cssText='vertical-align:middle;margin-right:6px';info.querySelector('h3')?.prepend(portrait);}}
     const q = $('queue');
     if (q) { for (const id of s.q) {const job=renderNamespace.queueJob(id);q.append(!job?glyph('?',30):job.kind===3?glyph('⬆',30):job.kind===1||job.kind===2?glyph('⚗',30):icon(job.value,30));} q.title = 'Rechtsklick oder Rücktaste: letzten Auftrag abbrechen'; }
   }
@@ -1108,7 +1115,7 @@ function idleWorker() { const i = wasm.select_idle_worker(); if (i !== -1 && i >
 function toggleMute() { sfx.setMuted(!sfx.isMuted()); $('mute').textContent = sfx.isMuted() ? 'Ton aus' : 'Ton an'; }
 function selectedUnitVoice(action) {
   const ptr = wasm.ui(); const state = JSON.parse(dec.decode(u8(ptr, wasm.ui_len()))),selected=state.sel;
-  if (selected.n) return sfx.acknowledge(selected.def, action,state.epoch);
+  if (selected.n) return sfx.acknowledge(selected.def, action,state.epoch,selectedCitizenContext(wasm,state));
   return false;
 }
 

@@ -12,15 +12,16 @@ export function createOriginalAudio(options={}) {
   const buffers=new Map(),pending=new Map(),failed=new Set(),live=new Set(),counters=new Map();
   let musicSource=null,musicBuffer=null,musicFile=null,musicOffset=0,musicStarted=0,musicIndex=0,musicGeneration=0,musicPendingFile=null;
   let ambientSource=null,nextBird=0,currentEpoch=0,previousPeriod=-1;
+  let citizenPresentation=options.citizenPresentation||null;
   let familyManifest=options.familyManifest||null,familyManifestURL=options.familyManifestURL||'native-families.json',definitionSettings={wasm:null,bindings:[]},typed=createTypedAudioBindings({familyManifest});
-  function setDefinitionBindings({wasm=null,bindings=[],familyManifestURL:url=familyManifestURL}={}){if(url!==familyManifestURL){familyManifest=null;familyManifestURL=url;}definitionSettings={wasm,bindings};typed=createTypedAudioBindings({...definitionSettings,familyManifest});if(manifest)prepareFamilyBindings();}
+  function setDefinitionBindings({wasm=null,bindings=[],familyManifestURL:url=familyManifestURL,citizenPresentation:citizens=citizenPresentation}={}){if(url!==familyManifestURL){familyManifest=null;familyManifestURL=url;}citizenPresentation=citizens;definitionSettings={wasm,bindings};typed=createTypedAudioBindings({...definitionSettings,familyManifest});if(manifest)prepareFamilyBindings();}
   const stats={voicePlays:0,effectPlays:0,musicStarts:0,ambientStarts:0};
 
   function load(file) {
     if(!file||!ctx||failed.has(file))return Promise.resolve(null);
     if(buffers.has(file))return Promise.resolve(buffers.get(file));
     if(pending.has(file))return pending.get(file);
-    const url=new URL(file,base),hash=manifest?.assets?.[file.toLowerCase()]?.sha256||familyManifest?.assets?.[file]?.sha256;
+    const url=new URL(file,base),hash=manifest?.assets?.[file.toLowerCase()]?.sha256||familyManifest?.assets?.[file]?.sha256||citizenPresentation?.assetHash(file);
     if(hash)url.searchParams.set('v',hash.slice(0,16));
     const p=fetchFile(url,{cache:'force-cache'})
       .then(r=>{if(!r.ok)throw Error('Original audio unavailable');return r.arrayBuffer();})
@@ -101,7 +102,7 @@ export function createOriginalAudio(options={}) {
   async function prepareFamilyBindings(){
     if(!familyManifest){try{const response=await fetchFile(new URL(familyManifestURL,base),{cache:'no-cache'});if(response.ok)familyManifest=await response.json();}catch{}}
     try{typed=createTypedAudioBindings({...definitionSettings,familyManifest});}catch{familyManifest=null;typed=createTypedAudioBindings(definitionSettings);}
-    for(const file of typed.usedFiles())load(file);
+    for(const file of [...typed.usedFiles(),...(citizenPresentation?.usedFiles()||[])])load(file);
   }
   async function prepare(context,destination) {
     if(!enabled||typeof context?.decodeAudioData!=='function')return false;
@@ -119,9 +120,10 @@ export function createOriginalAudio(options={}) {
       }).catch(()=>false);
     return loading;
   }
-  function acknowledge(def,action,epoch=0) {
+  function acknowledge(def,action,epoch=0,context=undefined) {
     if(!manifest||muted||ctx?.state!=='running')return false;
-    const plan=typed.resolve(def,action,epoch);
+    const sourceCitizen=citizenPresentation?.isSourceContext(def,context);
+    const plan=sourceCitizen?citizenPresentation.resolveAudio(def,action,epoch,context):typed.resolve(def,action,epoch);
     if(plan){
       if(plan.group==='voice'&&!speech)return false;
       const index=counters.get(plan.key)||0,record=plan.records[index%plan.records.length],buffer=buffers.get(record.file);
@@ -130,7 +132,7 @@ export function createOriginalAudio(options={}) {
       const source=start(buffer,plan.gain*record.volume,0,plan.group);if(!source)return false;
       counters.set(plan.key,index+1);if(plan.group==='voice')stats.voicePlays++;else stats.effectPlays++;return true;
     }
-    if(!typed.isLegacy(def))return false;
+    if(sourceCitizen||!typed.isLegacy(def))return false;
     if(action==='select'&&manifest.buildingSelections?.[def]){
       const record=manifest.buildingSelections[def];
       const file=typeof record==='string'?record:record.file;const buffer=buffers.get(file);
@@ -167,6 +169,6 @@ export function createOriginalAudio(options={}) {
     setMuted(value){muted=value;if(value){stopMusic();stopAmbient();for(const source of [...live])stop(source);}},
     setSpeechEnabled(value){speech=value;if(!value)stopVoices();},
     setMusicEnabled(value){musicEnabled=value;if(!value)stopMusic();},
-    status(){return {typedAudio:typed.status(),enabled,ready:!!manifest,buffers:buffers.size,failed:[...failed],activeVoices:[...live].filter(x=>x.originalGroup==='voice').length,music:!!musicSource,ambient:!!ambientSource,...stats};}
+    status(){return {typedAudio:typed.status(),citizens:citizenPresentation?.status()||null,enabled,ready:!!manifest,buffers:buffers.size,failed:[...failed],activeVoices:[...live].filter(x=>x.originalGroup==='voice').length,music:!!musicSource,ambient:!!ambientSource,...stats};}
   };
 }

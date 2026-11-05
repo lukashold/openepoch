@@ -53,7 +53,8 @@ const ICON_EPOCH_PATTERNS={
   51:/^icon_unit_temple_(\d+)(?:_we)?$/,52:/^icon_unit_warehouse_(\d+)$/,
   56:/^icon_unit_fortress_(\d+)(?:_we)?$/
 };
-export function originalIcon(assets,id,epoch){
+export function originalIcon(assets,id,epoch,context=undefined){
+  if(id===8&&context?.sourceIdentityVersion===1)return assets.citizenPresentation?.icon(id,epoch,context);
   // The untyped atlas uses only the 57 legacy definition slots. New unit IDs
   // must resolve through typed native bindings, never resource/projectile cells.
   const legacy=Number.isInteger(id)&&id>=0&&id<57,pattern=legacy?ICON_EPOCH_PATTERNS[id]:null;let chosen=legacy?assets.icons.get(id):undefined,latest=0;

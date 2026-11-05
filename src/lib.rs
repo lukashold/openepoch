@@ -714,7 +714,7 @@ pub extern "C" fn cmd_pack(unpacked:u32)->u32{
 }
 
 #[cfg(feature="ee2-pack8")]
-#[no_mangle]pub extern "C" fn pack_schema_revision()->u32{if cfg!(feature="ee2-civ8"){3}else{1}}
+#[no_mangle]pub extern "C" fn pack_schema_revision()->u32{if cfg!(feature="ee2-citizen9"){4}else if cfg!(feature="ee2-civ8"){3}else{1}}
 #[cfg(feature="ee2-pack8")]
 #[no_mangle]pub extern "C" fn render_pack_version()->u32{1}
 #[cfg(feature="ee2-pack8")]
@@ -972,7 +972,7 @@ pub extern "C" fn native_attack_stat(id:u32,epoch:u32,field:u32)->f32{
 }
 
 #[cfg(feature="ee2-roster6")]
-#[no_mangle] pub extern "C" fn schema_revision()->u32{if cfg!(feature="ee2-civ8"){8}else if cfg!(feature="ee2-paidqueue7"){7}else{6}}
+#[no_mangle] pub extern "C" fn schema_revision()->u32{if cfg!(feature="ee2-citizen9"){9}else if cfg!(feature="ee2-civ8"){8}else if cfg!(feature="ee2-paidqueue7"){7}else{6}}
 #[cfg(feature="ee2-paidqueue7")]
 #[no_mangle] pub extern "C" fn queue_price(handle:u32,position:u32,native_resource:u32)->f32{
     let game=g();let Some(b)=game.get(handle)else{return -1.0;};
@@ -1100,4 +1100,38 @@ mod civ8_bonus;
  for id in 0..80{for field in 0..4{assert!(combat_stat(id,5,79,5,field).is_finite());}}
  assert_eq!(combat_stat(80,0,0,0,0),-1.0);assert_eq!(combat_stat(0,0,80,0,0),-1.0);
  assert_eq!(state_hash(),before);let game=g();game.save();assert!(game.savebuf==bytes);
+}
+
+#[cfg(feature="ee2-citizen9")]mod native_rng9;
+#[cfg(feature="ee2-citizen9")]mod citizen9;
+#[cfg(feature="ee2-citizen9")]mod citizen9_spec;
+#[cfg(feature="ee2-citizen9")]
+#[no_mangle]pub extern "C" fn source_identity_version()->u32{1}
+#[cfg(feature="ee2-citizen9")]
+#[no_mangle]pub extern "C" fn actor_source_identity(handle:u32)->u32{
+ unsafe{(&*addr_of_mut!(GAME)).as_ref().and_then(|game|game.source_identity(handle)).unwrap_or(u32::MAX)}
+}
+#[cfg(feature="ee2-citizen9")]
+#[no_mangle]pub extern "C" fn cargo_source_identity(handle:u32,position:u32)->u32{
+ unsafe{(&*addr_of_mut!(GAME)).as_ref().and_then(|game|{
+  let i=game.get(handle)?;let e=game.ents[i];if position>=e.ncargo as u32{return None;}
+  if e.cargo[position as usize]!=WORKER{return Some(citizen9::NOT_CITIZEN);}
+  Some((game.source_birth.slots[i].cargo_females>>position)&1)
+ }).unwrap_or(u32::MAX)}
+}
+#[cfg(feature="ee2-citizen9")]
+#[no_mangle]pub extern "C" fn source_rng_state()->u32{
+ unsafe{(&*addr_of_mut!(GAME)).as_ref().map_or(0,|game|game.source_birth.rng.state())}
+}
+#[cfg(feature="ee2-citizen9")]
+#[no_mangle]pub extern "C" fn source_rng_origin()->u32{
+ unsafe{(&*addr_of_mut!(GAME)).as_ref().map_or(u32::MAX,|game|game.source_birth.origin)}
+}
+#[cfg(feature="ee2-citizen9")]
+#[no_mangle]pub extern "C" fn selected_actor_handle()->u32{
+ unsafe{(&*addr_of_mut!(GAME)).as_ref().and_then(|game|selected(game).first().map(|&i|game.h(i))).unwrap_or(u32::MAX)}
+}
+#[cfg(feature="ee2-citizen9")]
+#[no_mangle]pub extern "C" fn source_rng_history_unknown()->u32{
+ unsafe{(&*addr_of_mut!(GAME)).as_ref().map_or(1,|game|u32::from(game.source_birth.origin==1))}
 }
