@@ -67,7 +67,7 @@ export function diplomacyPanel({wasm,referenceMode,onOrder=()=>{},onOpen=()=>{},
  const dialog=el('dialog');dialog.id='diplomacy-dialog';dialog.setAttribute('aria-labelledby','diplomacy-title');
  const panelTexture=document.getElementById('bottom')?.style.getPropertyValue('--ee2-panel');if(panelTexture)dialog.style.setProperty('--ee2-panel',panelTexture);
  const header=el('header'),heading=el('h2','Diplomatie');heading.id='diplomacy-title';const closeButton=el('button','Schließen · Esc');closeButton.type='button';header.append(heading,closeButton);
- const intro=el('p','Verhandle Frieden und Bündnisse, schenke Rohstoffe oder tausche Territorien. Freie Bündnisse ändern das Ziel des Einzelsiegs nicht.');
+ const intro=el('p','Verhandle Frieden und Bündnisse, schenke Rohstoffe oder tausche Territorien.');
  const pause=el('div',undefined,'dip-pause');pause.append(el('span','Das Spiel ist pausiert.'));const resumeButton=el('button','Spiel fortsetzen');resumeButton.onclick=resume;pause.append(resumeButton);
  const layout=el('div',undefined,'dip-layout'),players=el('nav',undefined,'dip-players');players.setAttribute('aria-label','Spieler');
  const detail=el('section',undefined,'dip-detail'),name=el('h3'),relation=el('span',undefined,'dip-relation'),theirRelation=el('p',undefined,'dip-note'),rights=el('p',undefined,'dip-note');
@@ -130,14 +130,17 @@ export function diplomacyPanel({wasm,referenceMode,onOrder=()=>{},onOpen=()=>{},
   for(const p of opponents){const item=playerButtons.get(p.team);item.title.textContent=p.name||`Spieler ${p.team+1}${p.ai?' · KI':''}`;item.sub.textContent=(p.alive?RELATIONS[p.relation]||'Neutral':'Ausgeschieden')+(p.territoryIncoming?' · Tauschangebot':'');item.button.setAttribute('aria-pressed',String(target===p.team));}
   const p=current();detail.hidden=!p;
   if(p){
+   const allianceAllowed=ui.soleSurvivor?.allianceAllowed!==false;
    name.textContent=p.name||`Spieler ${p.team+1}${p.ai?' · KI':''}`;relation.textContent=p.alive?RELATIONS[p.relation]||'Neutral':'Ausgeschieden';
    theirRelation.hidden=!p.alive||p.theirRelation===undefined||p.theirRelation===p.relation;theirRelation.textContent=`Haltung zu dir: ${RELATIONS[p.theirRelation]||'Neutral'}`;
-   rights.textContent=p.relation===2?(p.sharedVision?'Ihr teilt eure Sicht miteinander.':'Bündnis ohne gemeinsame Sicht.'):'Frieden und Bündnisse benötigen die Zustimmung des anderen Spielers.';
+   rights.textContent=p.relation===2?(p.sharedVision?'Ihr teilt eure Sicht miteinander.':'Bündnis ohne gemeinsame Sicht.')
+    :allianceAllowed?'Frieden und Bündnisse benötigen die Zustimmung des anderen Spielers.':'Die letzten beiden Spieler kämpfen einzeln um den Sieg.';
    const offerName=(kind,full)=>kind===2?(full?'Bündnis mit gemeinsamer Sicht':'Bündnis ohne gemeinsame Sicht'):kind===3?'Gemeinsame Sicht':kind===4?'Gemeinsame Sicht beenden':'Frieden';
    offer.hidden=!p.alive||!p.incoming;offerText.textContent=offerName(p.incoming,p.incomingAllianceVision)+' · Angebot erhalten';
    outgoing.hidden=!p.alive||!p.outgoing;outgoingText.textContent=offerName(p.outgoing,p.outgoingAllianceVision)+' · Antwort ausstehend';
    const waiting=p.cooldown>0;cooldown.hidden=!p.alive||!waiting||!!p.outgoing;cooldown.textContent=`Neues Angebot in ${Math.ceil(p.cooldown||0)} Sek.`;
-   peace.disabled=!p.alive||(p.relation!==0&&p.theirRelation!==0)||!!p.outgoing||waiting;alliance.disabled=!p.alive||p.relation!==1||(p.theirRelation!==undefined&&p.theirRelation!==1)||!!p.outgoing||waiting;war.disabled=!p.alive||p.relation===0;
+   peace.disabled=!p.alive||(p.relation!==0&&p.theirRelation!==0)||!!p.outgoing||waiting;alliance.disabled=!allianceAllowed||!p.alive||p.relation!==1||(p.theirRelation!==undefined&&p.theirRelation!==1)||!!p.outgoing||waiting;war.disabled=!p.alive||p.relation===0;
+   accept.disabled=!allianceAllowed&&p.incoming===2;
    visionLabel.hidden=!p.alive||p.relation!==1;vision.disabled=alliance.disabled;
    visionChange.hidden=!p.alive||p.relation!==2;visionChange.disabled=!!p.outgoing||waiting;visionChange.textContent=p.sharedVision?'Gemeinsame Sicht beenden':'Gemeinsame Sicht anbieten';
    giftLabel.hidden=!p.alive;gift.hidden=!p.alive;funds.hidden=!p.alive;

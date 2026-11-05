@@ -56,6 +56,8 @@ mod diplomacy;
 mod ee2_conquest;
 #[cfg(feature = "ee2-native13")]
 mod ee2_territory_victory;
+#[cfg(feature = "ee2-native13")]
+mod ee2_sole_survivor;
 mod territory;
 mod placement;
 #[cfg(all(feature = "ee2-reference",not(feature="ee2-up15")))]
@@ -1135,6 +1137,15 @@ pub extern "C" fn configure_match_territory_victory(
 ) -> u32 {
     unsafe { (&mut *addr_of_mut!(GAME)).as_mut().map_or(0, |game|
         game.configure_match_territory_victory(packed_civs, pop, supplies, start, end, percent) as u32) }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_match_sole_survivor(
+    packed_civs: u32, pop: u32, supplies: u32, start: u32, end: u32,
+) -> u32 {
+    unsafe { (&mut *addr_of_mut!(GAME)).as_mut().map_or(0, |game|
+        game.configure_match_sole_survivor(packed_civs, pop, supplies, start, end) as u32) }
 }
 #[cfg(feature="ee2-epoch-range13")]
 #[no_mangle]

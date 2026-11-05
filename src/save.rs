@@ -75,10 +75,14 @@ impl Game {
         { b = crate::match_epoch_range13::wrap(b, self.final_epoch); }
         #[cfg(feature="ee2-native13")]
         { b = crate::ee2_territory_victory::wrap(b, self); }
+        #[cfg(feature="ee2-native13")]
+        { b = crate::ee2_sole_survivor::wrap(b, self); }
         self.savebuf = b;
     }
 
     pub fn load(buf: &[u8]) -> Option<Game> {
+        #[cfg(feature="ee2-native13")]
+        let (buf, sole_survivor) = crate::ee2_sole_survivor::split(buf)?;
         #[cfg(feature="ee2-native13")]
         let (buf, territory_victory) = crate::ee2_territory_victory::split(buf)?;
         #[cfg(feature="ee2-epoch-range13")]
@@ -292,6 +296,10 @@ impl Game {
         #[cfg(feature="ee2-native13")]
         if let Some((rule, outcome)) = territory_victory {
             g.restore_territory_victory(rule, outcome)?;
+        }
+        #[cfg(feature="ee2-native13")]
+        if let Some((rule, outcome)) = sole_survivor {
+            g.restore_sole_survivor(rule, outcome)?;
         }
         Some(g)
     }

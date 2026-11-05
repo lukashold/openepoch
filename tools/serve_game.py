@@ -221,7 +221,7 @@ def main(argv=None):
     except OSError as error:
         print("Lokaler Spielserver konnte nicht starten: " + str(error), file=sys.stderr)
         return 2
-    url = f"http://{HOST}:{port}/?rules=ee2&build=native15"
+    url = f"http://{HOST}:{port}/?rules=ee2&build=native16"
     print("READY " + json.dumps({"url": url, "host": HOST, "port": port, "reused": reused}), flush=True)
     if port != args.port and args.port:
         print(f"Port{args.port} war belegt. Dieses Mal wird Port{port} verwendet; gespeicherte Spiele im Browser sind an den Port gebunden.", flush=True)

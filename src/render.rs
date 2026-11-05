@@ -371,6 +371,12 @@ impl Game {
             let _ = write!(s, "\"territoryVictory\":{{\"percent\":{},\"owned\":{},\"total\":{},\"target\":{}}},",
                 rule.percent, standing.counts[me as usize], standing.total, standing.target);
         }
+        #[cfg(feature = "ee2-native13")]
+        if let Some(rule) = self.sole_survivor {
+            let seconds = if self.winner == 0 { rule.remaining_seconds(self.tick).unwrap_or(-1) } else { -1 };
+            let _ = write!(s, "\"soleSurvivor\":{{\"players\":{},\"allianceAllowed\":{},\"seconds\":{}}},",
+                rule.active(self.nplayers).count_ones(), self.sole_alliances_allowed(), seconds);
+        }
         // selection summary
         let mut first = NOIDX;
         let mut n = 0;
@@ -481,7 +487,7 @@ impl Game {
                     let hp = d.hp;
                     #[cfg(feature="ee2-ai9-game-bridge")]
                     let show_source_stats = self.source_unit_rank(me, id as DefId) != 0
-                        || self.source_stone_thrower_production(me, id as DefId);
+                        || self.source_light_artillery_production(me, id as DefId);
                     #[cfg(feature="ee2-ai9-game-bridge")]
                     let hp = if show_source_stats { self.max_hp(me, id as DefId) } else { hp };
                     let _ = write!(tip, "{} HP", hp as i32);

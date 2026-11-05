@@ -5,11 +5,11 @@ import { buildModels } from './models.js?v=fortress1';
 import { parseCheat } from './cheats.js';
 import { researchPanel } from './research.js?v=rank-families';
 import { originalResearchActions, researchCost, researchState } from './original-research-actions.js?v=rank-families';
-import { diplomacyPanel } from './diplomacy.js?v=fortress1';
+import { diplomacyPanel } from './diplomacy.js?v=native16';
 import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native6';
 import {loadNativeFontUI} from './original-font-ui.js?v=native6';
 import {territoryClaimMessage} from './territory-help.js?v=fortress1';
-import * as sfx from './audio.js?v=stone-launch';
+import * as sfx from './audio.js?v=stone-wheels';
 import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=citizen9';
 import {mountOriginalShellVideo} from './original-shell-video.js?v=native12';
 import {mountSkirmishMenu} from './skirmish-menu.js?v=native13';
@@ -17,9 +17,9 @@ import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regi
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native6';
-import {loadOriginalModels} from './original-renderer.js?v=native15';
+import {loadOriginalModels} from './original-renderer.js?v=native16s';
 import {ownMapTerrainOrigin} from './original-citycenter-terrain.js?v=regional10';
-import {loadCityCenterIcons,loadHouseIcons,loadDockIcons,loadBarracksIcons,loadMillIcons,loadTempleIcons} from './original-citycenter-icons.js?v=regional14';
+import {loadCityCenterIcons,loadHouseIcons,loadDockIcons,loadBarracksIcons,loadMillIcons,loadTempleIcons,loadLightArtilleryIcons} from './original-citycenter-icons.js?v=lightartillery16';
 import {loadSourceSailRuntime} from './source-sail-runtime.js?v=sails7';
 import {createRenderAssetMapping} from './original-render-namespace.js?v=native6';
 import {createFrontendNamespace} from './render-namespace.js?v=native9';
@@ -31,11 +31,11 @@ import {loadOriginalWater} from './original-water.js?v=water-farm3';
 import {createOriginalReflection} from './original-reflection.js?v=visual-seasons2';
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native15';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native16';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=epoch13';
 import {createFullscreenController} from './fullscreen.js?v=building2';
-import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native15';
+import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native16';
 import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=fortress1';
 import {updateOriginalCamera,originalCameraRay,originalFractionForZoom,normalizeOriginalHeading,rotateOriginalCameraHeading} from './original-camera.js?v=heading2';
 
@@ -474,24 +474,25 @@ victoryOptions.hidden=rulesProfile.id!=='up15';
 const victoryCondition=$('sk-victory-condition');
 function updateVictoryOptions(){
   $('sk-territory-victory').hidden=victoryOptions.hidden||victoryCondition.value!=='territory';
+  $('sk-sole-victory').hidden=victoryOptions.hidden||victoryCondition.value!=='conquest';
 }
 victoryCondition.addEventListener('change',updateVictoryOptions);
 updateVictoryOptions();
 const originalAssets=await loadOriginalAssets(gl,originalEnabled);
 const citizenPresentation=await loadCitizenPresentation({enabled:originalEnabled&&rulesProfile.sourceIdentityVersion===1});
-const buildingIconOptions={enabled:originalEnabled&&rulesProfile.ruleset===2,profile:'packed7',neutralFallback:'west'};
-const [cityCenterIcons,houseIcons,dockIcons,barracksIcons,millIcons,templeIcons]=await Promise.all([
-  loadCityCenterIcons(buildingIconOptions),loadHouseIcons(buildingIconOptions),
-  loadDockIcons(buildingIconOptions),loadBarracksIcons(buildingIconOptions),
-  loadMillIcons(buildingIconOptions),loadTempleIcons(buildingIconOptions),
+const regionalIconOptions={enabled:originalEnabled&&rulesProfile.ruleset===2,profile:'packed7',neutralFallback:'west'};
+const [cityCenterIcons,houseIcons,dockIcons,barracksIcons,millIcons,templeIcons,lightArtilleryIcons]=await Promise.all([
+  loadCityCenterIcons(regionalIconOptions),loadHouseIcons(regionalIconOptions),
+  loadDockIcons(regionalIconOptions),loadBarracksIcons(regionalIconOptions),
+  loadMillIcons(regionalIconOptions),loadTempleIcons(regionalIconOptions),loadLightArtilleryIcons(regionalIconOptions),
 ]);
-const buildingIcons = new Map([[0, cityCenterIcons], [1, houseIcons], [3, barracksIcons], [5, dockIcons], [48, millIcons], [51, templeIcons]]);
-const buildingPortraits = new Set([...buildingIcons].filter(([, icons]) => icons.status().enabled).map(([id]) => id));
+const regionalIcons = new Map([[0, cityCenterIcons], [1, houseIcons], [3, barracksIcons], [5, dockIcons], [22, lightArtilleryIcons], [48, millIcons], [51, templeIcons]]);
+const regionalPortraits = new Set([...regionalIcons].filter(([, icons]) => icons.status().enabled).map(([id]) => id));
 originalAssets.citizenPresentation=citizenPresentation;
 const originalLabels=await loadOriginalLabels(rulesProfile,{definitionCount:renderNamespace.definitionCount,...(rulesProfile.ruleset===2?{manifestURL:'./local-original/labels-native-civ8.json'}:{})});
 const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,total)=>{
   $('play').textContent=`Originalgrafiken laden · ${Math.round(loaded/total*100)} %`;
-},{assetMapping,packAnimations:rulesProfile.ruleset===2,dynamicSails:rulesProfile.ruleset===2&&typeof wasm.render_meta_version==='function',lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-civ8.json',scaleManifestURL:'./local-original/model-scales-civ8.json',teamManifestURL:'./local-original/team-textures/manifest-civ8.json',regionalManifestURL:'./local-original/stone-thrower/regional-models-native15.json',stoneAttackElapsedForActor:actor=>wasm.render_stone_thrower_attack_elapsed(actor.handle,actor.renderTime),terrainFallbackManifestURL:'./local-original/regional-e15-seasons/terrain-fallback.json',houseLodManifestURL:'./local-original/regional-house-lod/manifest.json',houseLodProfile:{mode:'resource',modelDetail:2,rendererCap0x200:false},citizenManifestURL:'./local-original/citizens9/manifest.json',citizenNeutralFallback:'west',sourceIdentityForActor:actor=>wasm.actor_source_identity(actor.handle)>>>0}:{})});
+},{assetMapping,packAnimations:rulesProfile.ruleset===2,dynamicSails:rulesProfile.ruleset===2&&typeof wasm.render_meta_version==='function',lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-civ8.json',scaleManifestURL:'./local-original/model-scales-civ8.json',teamManifestURL:'./local-original/team-textures/manifest-civ8.json',regionalManifestURL:'./local-original/artillery-native16/regional-models.json',stoneAttackElapsedForActor:actor=>wasm.render_stone_thrower_attack_elapsed(actor.handle,actor.renderTime),terrainFallbackManifestURL:'./local-original/regional-e15-seasons/terrain-fallback.json',houseLodManifestURL:'./local-original/regional-house-lod/manifest.json',houseLodProfile:{mode:'resource',modelDetail:2,rendererCap0x200:false},citizenManifestURL:'./local-original/citizens9/manifest.json',citizenNeutralFallback:'west',sourceIdentityForActor:actor=>wasm.actor_source_identity(actor.handle)>>>0}:{})});
 const sourceSails=await loadSourceSailRuntime({wasm,namespace:renderNamespace,models:originalModels,enabled:originalEnabled&&rulesProfile.ruleset===2,decorateMetadata:metadata=>packMetadata?packMetadata.snapshot(metadata):metadata});
 if(sourceSails?.metrics.error)console.warn('Source sails:',sourceSails.metrics.error);
 sfx.configureOriginalDefinitions({wasm,bindings:originalModels.manifest?.models||[],citizenPresentation,regionalMusic:rulesProfile.ruleset===2,...(rulesProfile.ruleset===2?{familyManifestURL:'native-families-civ8.json',playbackManifestURL:'manifest-stone-thrower-up.json'}:{})});
@@ -686,6 +687,7 @@ function bindWorldTerrainMaterial() {
 }
 
 function begin() {
+  sfx.stopStoneThrowerWheels();
   saveSession=Date.now();
   ghost = null; attackMode = false; paused = false; speed = 1; acc = 0; fogTick = -1; actSig = '@refresh'; worstMs = 0; ui = null;
   $('speed').textContent = '1×'; $('pause').textContent = 'Pause';
@@ -716,10 +718,13 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
   wasm.init(seed >>> 0, nAi, benchUnits, humans, local);
   if(!benchUnits&&civilizationSetup.enabled){
     const players=Math.max(2,Math.min(4,nAi+humans));
-    const territoryPercent=humans===1&&rulesProfile.id==='up15'&&$('sk-victory-condition').value==='territory'
+    const originalSkirmish=humans===1&&rulesProfile.id==='up15';
+    const victoryMode=$('sk-victory-condition').value;
+    const territoryPercent=originalSkirmish&&victoryMode==='territory'
       ? +$('sk-territory-percent').value : undefined;
+    const soleSurvivor=originalSkirmish&&victoryMode==='conquest'&&$('sk-sole-survivor').checked;
     applyMatchSettings(wasm,{...resolvedSkirmishChoices(civilizationSetup.choices(),players),
-      popLimit:+$('pop-limit').value,supplies:+$('supplies').value,territoryPercent},players);
+      popLimit:+$('pop-limit').value,supplies:+$('supplies').value,territoryPercent,soleSurvivor},players);
   }else if(!benchUnits&&humans===1){
     wasm.skirmish_setup(+$('pop-limit').value, +$('supplies').value);
     if(referenceMode)wasm.skirmish_epoch(+$('start-epoch').value);
@@ -801,16 +806,14 @@ function advance(dt, now) {
   // sound cues the simulation queued up
   const n = wasm.events_len();
   if (n) {
-    const ev = f32(wasm.events_ptr(), n), range = 26 + 700 / cam.zoom;
+    const ev = f32(wasm.events_ptr(), n);
     for (let i = 0; i < n; i += 3) {
       const kind = ev[i], dx = ev[i + 1] - cam.x, dy = ev[i + 2] - cam.y;
       const citizen = decodeCitizenDeathCue(kind);
       if (kind >= 12 && !citizen && kind !== sfx.STONE_THROWER_LAUNCH_CUE) {
         sfx.play(kind, 1, 0);
       } else {
-        const distanceGain = Math.max(0, 1 - Math.hypot(dx, dy) / range);
-        const volume = distanceGain * distanceGain * Math.min(1, 0.35 + cam.zoom / 40);
-        const pan = dx / range * 1.4;
+        const {volume,pan}=sfx.spatialSound(dx,dy,cam.zoom);
         if (citizen) {
           if (!sfx.citizenDeath(citizen, volume, pan)) sfx.play(10, volume, pan);
         } else {
@@ -884,6 +887,7 @@ function frame(now) {
   const n = (wasm.render_rotated||wasm.render)(alpha, x0, y0, x1, y1, gid, gx, gy,ghost?.turn||0);
   const ranges = n ? new Uint32Array(wasm.memory.buffer, wasm.ranges_ptr(), renderNamespace.rangeLength) : null;
   const renderEpochs=[0,1,2,3].map(t=>wasm.stat(t,0));
+  const stoneThrowerWheels=originalEnabled&&rulesProfile.ruleset===2&&!paused&&!document.hidden&&!(net&&net.ls.waiting)?[]:null;
   if(rulesProfile.ruleset===2)originalModels.setVisualCivilizations?.([0,1,2,3].map(team=>wasm.player_civilization(team)));
 
   // Own visual clock: once before every scene pass. Pause/wait freezes cloth;
@@ -961,8 +965,9 @@ function frame(now) {
       instOffset(ranges[id * 2]);
       gl.drawArraysInstanced(gl.TRIANGLES, mesh.first[template], mesh.count[template], cnt);
     }
-    originalModels.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,vp:view.vp,epochs:renderEpochs,zoom:cam.zoom,eye:view.eye,actorMetadata});
+    originalModels.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,vp:view.vp,epochs:renderEpochs,zoom:cam.zoom,eye:view.eye,actorMetadata,stoneThrowerWheels});
   }
+  if(rulesProfile.ruleset===2)sfx.updateStoneThrowerWheels(actorMetadata?.session,stoneThrowerWheels,cam);
 
   // Native base-water depth/alpha followed by the separate reflection overlay.
   gl.enable(gl.BLEND); gl.depthMask(false);
@@ -1001,7 +1006,7 @@ const HOT = ['Q', 'W', 'E', 'R', 'T', 'Z', 'X', 'C', 'V', 'B'];
 function icon(id, px,context=undefined) {
   const c = document.createElement('canvas'); c.width = c.height = px;
   const regional = ui && rulesProfile.ruleset === 2
-    ? buildingIcons.get(id)?.icon(ui.epoch, wasm.player_civilization(ui.local) >>> 0) : undefined;
+    ? regionalIcons.get(id)?.icon(ui.epoch, wasm.player_civilization(ui.local) >>> 0) : undefined;
   const original=regional??originalIcon(originalAssets,id,ui?.epoch||0,context);
   if(original){
     const scale=Math.min(px/original.width,px/original.height),w=original.width*scale,h=original.height*scale;
@@ -1038,6 +1043,11 @@ function updateUi(drawn, now) {
   territoryVictory.textContent=territory
     ? `Kontrolliert ${territory.owned} von ${territory.total} · Ziel ${territory.target} · noch ${Math.max(0,territory.target-territory.owned)}`
     : '';
+  const soleStatus=$('sole-survivor-status'), sole=ui.soleSurvivor;
+  soleStatus.hidden=!sole||!!ui.win;
+  soleStatus.textContent=!sole ? '' : sole.seconds>=0
+    ? `Bündnisse werden in ${sole.seconds} Sekunden aufgelöst!`
+    : sole.players===2 ? 'Einziger Überlebender · zwei Spieler übrig' : `Einziger Überlebender · ${sole.players} Spieler übrig`;
   $('idle').textContent = `Freie Bürger: ${ui.idle}`;
   $('idle').style.visibility = ui.idle && !bench ? 'visible' : 'hidden';
   let status = `${Math.round(1000 / frameMs)} fps · worst ${worstMs.toFixed(0)} ms · sim ${simMs.toFixed(2)} ms/tick · ${ui.n} entities · ${drawn} drawn`;
@@ -1069,7 +1079,7 @@ function updateUi(drawn, now) {
     info.innerHTML = h;
     if (s.n === 1) {
       const context = selectedCitizenContext(wasm, ui);
-      if ((context && citizenPresentation.enabled) || buildingPortraits.has(s.def)) {
+      if ((context && citizenPresentation.enabled) || regionalPortraits.has(s.def)) {
         const portrait = icon(s.def, 40, context);
         portrait.style.cssText = 'vertical-align:middle;margin-right:6px';
         info.querySelector('h3')?.prepend(portrait);
@@ -1242,7 +1252,8 @@ canvas.addEventListener('wheel', e => {
 }, { passive: false });
 
 function setSpeed(i) { if (net) return; speed = SPEEDS[Math.min(SPEEDS.length - 1, Math.max(0, i))]; $('speed').textContent = speed + '×'; }
-function togglePause() { if (net) return toast('No pausing in multiplayer'); paused = !paused; $('pause').textContent = paused ? 'Fortsetzen' : 'Pause'; }
+function togglePause() { if (net) return toast('No pausing in multiplayer'); paused = !paused; if(paused)sfx.stopStoneThrowerWheels(); $('pause').textContent = paused ? 'Fortsetzen' : 'Pause'; }
+document.addEventListener('visibilitychange',()=>{if(document.hidden)sfx.stopStoneThrowerWheels();});
 function jumpToSelection() { const x = wasm.sel_center(0); if (x >= 0) { cam.x = x; cam.y = wasm.sel_center(1); } }
 function goHome(){const territory=ui?.diplomacy?.territories?.find(area=>area.owner===ui.local);cam.x=territory?.x??wasm.start_x();cam.y=territory?.y??wasm.start_y();}
 function idleWorker() { const i = wasm.select_idle_worker(); if (i !== -1 && i >>> 0 !== 0xffffffff) { cam.x = wasm.ent_x(i); cam.y = wasm.ent_y(i); lastUi = 0; selectedUnitVoice('select'); } }

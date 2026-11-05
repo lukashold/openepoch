@@ -466,6 +466,13 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    const scaleKey=(entry.assetKind===undefined?'':assetKind+':')+id+':'+(entry.epoch??0),sea=assetKind===0&&((id>=29&&id<=36)||id===42||id===45),transform=nativeModelTransform(model,entry.regionalCivilizations?entry.nativeScaleBinding:scales.variants?.[scaleKey]);
    const yOffset=!transform.native&&sea?-(model.normalization?.offset?.[1]||0)*(model.normalization?.scale||1):0;
    const variant={sourceId:id,assetKind,scaleKey,epoch:entry.epoch??0,until:entry.until,regionalCivilizations:entry.regionalCivilizations,sourceIdentity:entry.sourceIdentity,region:entry.region,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),nativeAttackClock:entry.nativeAttackClock===true,yOffset,originOffset:transform.originOffset,nativeScale:transform.native?transform.scale:null,yawOffset:entry.yawOffset??model.yawOffset??0,farUrl:entry.lodFarUrl,far:null,farRequested:false,pickBounds:resourceBounds(parts)};
+   if(assetKind===0&&id===22&&entry.verified&&model.databaseVisualBinding?.visualDefinition==='LightArtillery1_01'
+      &&entry.epoch===0&&entry.until===2&&entry.source?.sha256===model.source?.sha256){
+    // Only clips with the original moving-state KF can start its text-key sound.
+    const sources = ['8b98e42397fa4a68b1f8363849636c450582195c14c7a37b0bf46436676dda14',
+                     '282a8d02f347eb41d49e26bc93d038e05a13006dc3395f9e95c7703608e3c800'];
+    variant.stoneThrowerWheelClips = new Set(model.animationSources?.filter(row=>sources.includes(row.sha256)).map(row=>row.name));
+   }
    if(houseBinding){try{
     const levelParts=[parts];
     for(const level of houseBinding.levels.slice(1)){
@@ -534,7 +541,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   }
   return hit;
  };
- result.draw=({data,ranges,vp,epochs,zoom=80,shadow=false,eye=[0,200,0],lighting=defaultLighting,clipPlane=null,capture=false,actorMetadata=null,civilizations=visualCivilizations})=>{
+ result.draw=({data,ranges,vp,epochs,zoom=80,shadow=false,eye=[0,200,0],lighting=defaultLighting,clipPlane=null,capture=false,actorMetadata=null,civilizations=visualCivilizations,stoneThrowerWheels=null})=>{
   const started=performance.now();let calls=0,triangles=0,querying=false;
   const previousState=drawState(gl);
   if(!shadow&&!capture){resourceView.data=data;resourceView.ranges=ranges;resourceView.epochs=epochs;resourceView.zoom=zoom;resourceView.choices.clear();}
@@ -552,6 +559,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   gl.uniform3fv(shader.u.uSpecularLight,lighting.specular||lighting.sun||DEFAULT_MODEL_LIGHTING.sun);gl.uniform1i(shader.u.uNativeLighting,lighting.native?1:0);
   gl.activeTexture(gl.TEXTURE0+6);gl.bindTexture(gl.TEXTURE_2D,heightTexture);gl.uniform1i(shader.u.uTerrainSize,heightSize);gl.uniform1i(shader.u.uTerrainEnabled,heightReady?1:0);
   let activeShader=shader,sailDiffuse=null;
+  const collectStoneThrowerWheels=stoneThrowerWheels&&!shadow&&!capture&&!clipPlane;
   if(sailShader&&!shadow){try{sailDiffuse=nativeInitialSailDiffuse({ambient:lighting.sourceAmbient,diffuse:lighting.sourceDiffuse,sunDirection:lighting.sourceDirection});}catch(e){sailError(e.message);}}
   const selectShader=target=>{
    if(activeShader===target)return;
@@ -605,6 +613,9 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     }):null;
     const visibilityKey=hiddenParts?.length?':hidden:'+hiddenParts.map(part=>variant.parts.indexOf(part)).join(','):'';
     const preview=!!(Math.round(data[i*12+7])&24),key=variantIndex+':'+team+':'+activity+':'+(far&&variant.farRequested?1:0)+':'+(Math.round(data[i*12+7])&24)+':'+clip+':'+once+(variant.houseLodKey===undefined?'':':house:'+variant.houseLodKey)+visibilityKey;
+    if(collectStoneThrowerWheels&&!preview&&actor?.def===22&&epoch<2&&variant.stoneThrowerWheelClips?.has(clip)){
+     stoneThrowerWheels.push({handle:actor.handle,clip,x:actor.renderX,y:actor.renderY});
+    }
     const group=groups.get(key)||{variant,team,activity,clip,once,preview,hiddenParts,list:[],instanceIndices:[]};
     group.instanceIndices.push(i);
     const offset=group.list.length;for(let k=0;k<12;k++)group.list.push(data[i*12+k]);

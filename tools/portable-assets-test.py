@@ -687,6 +687,8 @@ class AssetAudit:
             self.check_models('local-original/stone-thrower/regional-models.json','stone-thrower-')
         if 'local-original/stone-thrower/regional-models-native15.json' in self.files:
             self.check_models('local-original/stone-thrower/regional-models-native15.json','stone-thrower-clocked-')
+        if 'local-original/artillery-native16/regional-models.json' in self.files:
+            self.check_models('local-original/artillery-native16/regional-models.json','artillery-progression-')
         self.check_textures_and_ground();self.check_teams();self.check_model_seasons();self.check_audio();self.check_static_runtime()
         if 'local-original/audio/manifest-stone-thrower-up.json' in self.files:
             self.check_audio('local-original/audio/manifest-stone-thrower-up.json','stone-thrower-')

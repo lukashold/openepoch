@@ -633,12 +633,17 @@ impl Game {
         rank::unit_family(def, self.players[owner as usize].epoch).map_or(0, |family| state.rank(family))
     }
 
-    pub(crate) fn source_stone_thrower_production(&self, owner: u8, def: DefId) -> bool {
-        // The UP class table covers the native E1 Mill production. The
-        // separate visual registry only admits this definition from E9.
-        const STONE_THROWER: DefId = 22;
-        def == STONE_THROWER
-            && self.players[owner as usize].epoch + 1 < rank::RESET_SOURCE_EPOCH
+    pub(crate) fn source_light_artillery_production(&self, owner: u8, def: DefId) -> bool {
+        const LIGHT_ARTILLERY: DefId = 22;
+        if def != LIGHT_ARTILLERY {
+            return false;
+        }
+        let epoch = self.players[owner as usize].epoch;
+        if cfg!(feature = "ee2-native13") && !self.net && self.bench == 0 {
+            // The UP tech tree assigns the entire LightArtillery1 class to the Mill.
+            return crate::ee2_units::lookup_class(def, epoch).is_some();
+        }
+        epoch + 1 < rank::RESET_SOURCE_EPOCH
             && self.native_research.as_ref().is_some_and(|state| state.owner == owner && state.manual)
     }
 

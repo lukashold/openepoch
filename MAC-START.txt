@@ -154,3 +154,11 @@ Bürger kann nach Verlust des letzten Stadtzentrums weiterspielen.
 Bei Territorienkontrolle lässt sich das Ziel von 30 bis 90 Prozent einstellen.
 Das Spiel zählt die Gebiete jedes Spielers und zeigt den eigenen Stand an.
 Stadtbau, Gebietstausch und Geschenke können den Gebietsstand ändern.
+
+Bei Eroberung ist „Einziger Überlebender“ standardmäßig ausgewählt. Sind
+alle verbleibenden Spieler miteinander verbündet, beginnt ein Countdown.
+Das Spiel löst die Bündnisse beim ersten Takt nach Ablauf von zehn Sekunden.
+
+Die Mühle bildet die leichte Artillerie in jeder Epoche aus. Die Modelle
+und Symbole wechseln mit der Epoche, von der Steinschleuder bis zur
+Fusionswerfer.

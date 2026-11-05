@@ -195,6 +195,10 @@ impl Game {
             return false;
         }
 
+        #[cfg(not(feature = "ee2-native13"))]
+        let alliance_allowed = true;
+        #[cfg(feature = "ee2-native13")]
+        let alliance_allowed = self.sole_alliances_allowed();
         match action {
             0 | 1 => {
                 self.diplomacy.offers[i] == 0
@@ -202,7 +206,7 @@ impl Game {
                     && if action == 0 {
                         self.relation(from, to) == WAR || self.relation(to, from) == WAR
                     } else {
-                        resource <= 1
+                        alliance_allowed && resource <= 1
                             && self.relation(from, to) == NEUTRAL
                             && self.relation(to, from) == NEUTRAL
                     }
@@ -213,6 +217,7 @@ impl Game {
             3 | 4 => {
                 self.diplomacy.offers[j] != 0
                     && (self.diplomacy.offers[j] <= 2 || self.allied(from, to))
+                    && (action == 4 || self.diplomacy.offers[j] != 2 || alliance_allowed)
             }
 
             5 => {
@@ -270,6 +275,48 @@ impl Game {
         }
     }
 
+    fn declare_war(&mut self, from: u8, to: u8) {
+        let i = from as usize * 4 + to as usize;
+        let j = to as usize * 4 + from as usize;
+        if self.allied(from, to) {
+            self.diplomacy.relation[j] = NEUTRAL;
+            self.diplomacy.neutral_since[j] = self.tick;
+        }
+        self.diplomacy.relation[i] = WAR;
+        self.diplomacy.war_tick[i] = self.tick;
+        self.diplomacy.offers[i] = 0;
+        self.diplomacy.offers[j] = 0;
+        self.diplomacy.sharing[i] = 0;
+        self.diplomacy.sharing[j] = 0;
+        self.diplomacy.gifts[i] = 0;
+        self.diplomacy.gifts[j] = 0;
+        self.dip_event(from, to, 2, 0, 0, 0);
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn clear_sole_diplomacy_offers(&mut self) {
+        self.diplomacy.offers.fill(0);
+        self.diplomacy.offer_vision.fill(0);
+        self.diplomacy.offer_tick.fill(0);
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn force_sole_survivor_war(&mut self, active: u8) {
+        self.clear_sole_diplomacy_offers();
+        for from in 0..self.nplayers {
+            for to in from + 1..self.nplayers {
+                let pair = (1 << from) | (1 << to);
+                if active & pair != pair { continue; }
+                for (a, b) in [(from as u8, to as u8), (to as u8, from as u8)] {
+                    if !self.hostile(a, b) { self.declare_war(a, b); }
+                }
+            }
+        }
+        self.prune_territory_offers();
+        self.cancel_nonhostile_orders();
+        self.refresh_display_fog();
+    }
+
     pub fn apply_diplomacy(
         &mut self,
         from: u8,
@@ -296,19 +343,7 @@ impl Game {
             }
 
             2 => {
-                if self.allied(from, to) {
-                    self.diplomacy.relation[j] = NEUTRAL;
-                    self.diplomacy.neutral_since[j] = self.tick;
-                }
-                self.diplomacy.relation[i] = WAR;
-                self.diplomacy.war_tick[i] = self.tick;
-                self.diplomacy.offers[i] = 0;
-                self.diplomacy.offers[j] = 0;
-                self.diplomacy.sharing[i] = 0;
-                self.diplomacy.sharing[j] = 0;
-                self.diplomacy.gifts[i] = 0;
-                self.diplomacy.gifts[j] = 0;
-                self.dip_event(from, to, 2, 0, 0, 0);
+                self.declare_war(from, to);
             }
 
             3 => {

@@ -134,6 +134,10 @@ def main(project=None, overlay_paths=None):
     if 'stone-thrower/regional-models-native15.json' in main_source:
         required.update({'docs/local-original/stone-thrower/regional-models-native15.json',
                          'docs/local-original/stone-thrower/lla1_stone_thrower-native15.json'})
+    if 'artillery-native16/regional-models.json' in main_source:
+        required.update({'docs/local-original/artillery-native16/regional-models.json',
+                         'docs/local-original/stone-thrower/lla1_stone_thrower-native15.json',
+                         'docs/local-original/lightartillery1-icons/manifest.json'})
     if 'manifest-stone-thrower-up.json' in main_source:
         required.add('docs/local-original/audio/manifest-stone-thrower-up.json')
     if 'mountSkirmishMenu' in main_source:

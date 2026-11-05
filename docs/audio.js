@@ -1,6 +1,6 @@
 // The EE2 profile uses locally extracted original recordings when available.
 // Procedural sounds and local speech remain the fallback for the standalone game.
-import { createOriginalAudio } from './original-audio.js?v=stone-launch';
+import { createOriginalAudio } from './original-audio.js?v=stone-wheels';
 import {createPresentationRandom} from './source-music-controller.js?v=regional11';
 const presentationRandom = createPresentationRandom(1);
 const originals=createOriginalAudio({presentationRandom});
@@ -83,6 +83,16 @@ export const configureOriginalDefinitions = settings => originals.setDefinitionB
 export const resetRegionalMusic = () => originals.resetRegionalMusic();
 export const rebindRegionalMusic = () => originals.rebindRegionalMusic();
 export const menuMusic = () => originals.menuMusic(musicEnabled);
+export const stopStoneThrowerWheels = () => originals.stopStoneThrowerWheels();
+export function spatialSound(dx,dy,zoom) {
+  const range=26+700/zoom;
+  const gain=Math.max(0,1-Math.hypot(dx,dy)/range);
+  return {volume:gain*gain*Math.min(1,.35+zoom/40),pan:dx/range*1.4};
+}
+export function updateStoneThrowerWheels(session,actors,cam) {
+  const tracks=actors?.map(({handle,clip,x,y})=>({handle,clip,...spatialSound(x-cam.x,y-cam.y,cam.zoom)}));
+  originals.updateStoneThrowerWheels(session,tracks);
+}
 
 export function citizenDeath(context, volume, pan) {
   if (muted || volume < 0.02 || !ensure() || ctx.state !== 'running') return false;

@@ -11,6 +11,8 @@ export function createOriginalAudio(options={}) {
   const base=options.base || DEFAULT_BASE;
   let ctx=null,master=null,manifest=null,loading=null,muted=false,speech=true,musicEnabled=true,active=false;
   const buffers=new Map(),pending=new Map(),failed=new Set(),live=new Set(),counters=new Map();
+  const wheelLoops=new Map();
+  let wheelSession=null;
   let musicSource=null,musicBuffer=null,musicFile=null,musicOffset=0,musicStarted=0,musicIndex=0,musicGeneration=0,musicPendingFile=null;
   let ambientSource=null,nextBird=0,currentEpoch=0,previousPeriod=-1;
   let citizenPresentation=options.citizenPresentation||null;
@@ -56,12 +58,55 @@ export function createOriginalAudio(options={}) {
     if(group==='effect'&&live.size>32)return null;
     const source=ctx.createBufferSource();source.buffer=buffer;source.loop=loop;
     const gain=ctx.createGain();gain.gain.value=Math.max(0,Math.min(1,volume));
-    let output=gain;
-    if(ctx.createStereoPanner){const p=ctx.createStereoPanner();p.pan.value=Math.max(-1,Math.min(1,pan));gain.connect(p);output=p;}
-    source.connect(gain);output.connect(master);source.originalGroup=group;live.add(source);
+    const panner=ctx.createStereoPanner?.();
+    const output=panner??gain;
+    if(panner){panner.pan.value=Math.max(-1,Math.min(1,pan));gain.connect(panner);}
+    source.connect(gain);output.connect(master);source.originalGroup=group;
+    if(group==='wheel'){
+      source.updateSpatialMix=(volume,pan)=>{
+        gain.gain.value=Math.max(0,Math.min(1,volume));
+        if(panner)panner.pan.value=Math.max(-1,Math.min(1,pan));
+      };
+    }else live.add(source);
     source.originalCleanup=()=>{try{gain.disconnect();if(output!==gain)output.disconnect();}catch{}};
     source.onended=()=>{live.delete(source);source.originalCleanup();};
     source.start(0,Math.max(0,offset));return source;
+  }
+  function stopStoneThrowerWheels() {
+    for(const {source} of wheelLoops.values())stop(source);
+    wheelLoops.clear();
+    wheelSession=null;
+  }
+  function updateStoneThrowerWheels(session, tracks) {
+    const event=manifest?.nativeStoneThrowerEffects?.events?.fx_move_wheeled_04;
+    if(muted||ctx?.state!=='running'||!session||!tracks?.length||!event?.loop||!event.file
+      ||!Number.isInteger(event.maxInstances)||event.maxInstances<1||!Number.isFinite(event.volume)){
+      stopStoneThrowerWheels();
+      return;
+    }
+    if(wheelSession!==session)stopStoneThrowerWheels();
+    wheelSession=session;
+    const wanted=new Map(tracks.filter(track=>track.volume>=.02).map(track=>[track.handle,track]));
+    for(const [handle,row] of wheelLoops){
+      if(wanted.get(handle)?.clip===row.clip)continue;
+      stop(row.source);
+      wheelLoops.delete(handle);
+    }
+    const buffer=buffers.get(event.file);
+    if(!buffer){if(wanted.size)load(event.file);return;}
+    for(const track of [...wanted.values()].sort((a,b)=>b.volume-a.volume||a.handle-b.handle)){
+      const previous=wheelLoops.get(track.handle), volume=event.volume*track.volume;
+      if(previous){previous.source.updateSpatialMix(volume,track.pan);continue;}
+      if(wheelLoops.size>=event.maxInstances)continue;
+      const source=start(buffer,volume,track.pan,'wheel',true);
+      if(!source)continue;
+      wheelLoops.set(track.handle,{clip:track.clip,source});
+      const ended=source.onended;
+      source.onended=()=>{
+        ended();
+        if(wheelLoops.get(track.handle)?.source===source)wheelLoops.delete(track.handle);
+      };
+    }
   }
   function stopVoices() {for(const source of [...live])if(source.originalGroup==='voice')stop(source);}
   function stopMusic(preserve=true) {
@@ -198,6 +243,7 @@ export function createOriginalAudio(options={}) {
     active = false;
     musicEnabled = enabledMusic;
     stopAmbient();
+    stopStoneThrowerWheels();
     if (musicFile) stopMusic(false);
     return regionalPlayback()?.update({mode: 'menu', running: !muted, enabled: musicEnabled}) ?? false;
   }
@@ -215,10 +261,11 @@ export function createOriginalAudio(options={}) {
     return !musicEnabled||!!tracks?.some(file=>!failed.has(file));
   }
   return {
-    prepare,acknowledge,citizenDeath,effect,music,menuMusic,setDefinitionBindings,role:(id,epoch)=>typed.role(id,epoch),
+    prepare,acknowledge,citizenDeath,effect,music,menuMusic,setDefinitionBindings,updateStoneThrowerWheels,stopStoneThrowerWheels,
+    role:(id,epoch)=>typed.role(id,epoch),
     resetRegionalMusic(){regionalMusic?.reset();},
     rebindRegionalMusic(){regionalMusic?.rebind();},
-    setMuted(value){muted=value;if(value){regionalMusic?.suspend();stopMusic();stopAmbient();for(const source of [...live])stop(source);}},
+    setMuted(value){muted=value;if(value){regionalMusic?.suspend();stopMusic();stopAmbient();stopStoneThrowerWheels();for(const source of [...live])stop(source);}},
     setSpeechEnabled(value){speech=value;if(!value)stopVoices();},
     setMusicEnabled(value){musicEnabled=value;if(!value){regionalMusic?.suspend();stopMusic();}},
     status(){const regional=regionalMusic?.status()??null;return {typedAudio:typed.status(),citizens:citizenPresentation?.status()||null,enabled,ready:!!manifest,buffers:buffers.size,failed:[...failed],activeVoices:[...live].filter(x=>x.originalGroup==='voice').length,music:!!musicSource||!!regional?.active,regionalMusic:regional,ambient:!!ambientSource,...stats};}
