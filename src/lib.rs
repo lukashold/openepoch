@@ -846,8 +846,8 @@ pub extern "C" fn cmd_delete() {
 }
 
 /// Cheat ids: 0 enable, 1 disable, 2 loot, 3 instant build, 4 technology points,
-/// 5 taxes (UP), 6 punish (UP), 7 play god (UP), 8 toggle fog (UP).
-/// Results: 0 disabled/invalid, 1 applied, 2 toggle off, 3 multiplayer denied.
+/// 5 taxes (UP), 6 punish (UP), 7 play god (UP), 8 toggle fog (UP), 9 epoch up (UP).
+/// Results: 0 disabled/invalid, 1 applied, 2 toggle off, 3 multiplayer denied, 4 at final epoch.
 #[no_mangle]
 pub extern "C" fn cheat(code: u32) -> u32 {
     let game = g();
@@ -904,6 +904,8 @@ pub extern "C" fn cheat(code: u32) -> u32 {
             game.refresh_display_fog();
             if game.display_visibility() < 2 { 1 } else { 2 }
         },
+        #[cfg(feature = "ee2-native13")]
+        9 => if game.force_epoch_advance() { 1 } else { 4 },
         _ => 0,
     }
 }

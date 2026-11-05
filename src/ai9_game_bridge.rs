@@ -670,6 +670,22 @@ impl Game {
         state.refund_before_detaching(self);
     }
 
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn refund_source_research_for_epoch(&mut self, owner: u8) {
+        if self.native_research.as_ref().is_some_and(|state| state.owner == owner) {
+            let mut state = self.native_research.take().unwrap();
+            state.with_wallet(self, |world| {
+                let jobs: Vec<_> = world.tree.active.iter().map(|job| job.index)
+                    .chain(world.tree.pending.iter().map(|job| job.index)).collect();
+                for index in jobs {
+                    let removed = cancel(world, index, -1, false);
+                    debug_assert!(removed);
+                }
+            });
+            self.native_research = Some(state);
+        }
+    }
+
     fn cancel_source_research(&mut self, id: usize) -> bool {
         let Some(index) = source_index(id) else {
             return false;

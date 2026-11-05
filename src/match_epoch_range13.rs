@@ -13,6 +13,45 @@ impl Game {
         self.final_epoch = end as u8;
         true
     }
+
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn force_epoch_advance(&mut self) -> bool {
+        use crate::{defs::original_research, game::RESEARCH};
+
+        let owner = self.local;
+        let seat = owner as usize;
+        let previous = self.players[seat].epoch;
+        if previous >= self.match_final_epoch() {
+            return false;
+        }
+
+        let points_before_refunds = self.research_points[seat];
+        for host in 0..self.high {
+            if !self.ents[host].alive || self.ents[host].team != owner {
+                continue;
+            }
+            let mut position = 0;
+            while position < self.ents[host].qn as usize {
+                let job = self.ents[host].q[position];
+                if job == RESEARCH || original_research(job) {
+                    self.cancel_paid_job(host, position);
+                } else {
+                    position += 1;
+                }
+            }
+        }
+        self.refund_source_research_for_epoch(owner);
+        if self.research_points[seat] > points_before_refunds {
+            self.research_points[seat] = self.research_points[seat].min(999_999.0);
+        }
+
+        self.reset_source_rank_for_epoch(owner);
+        self.players[seat].epoch = previous + 1;
+        self.players[seat].researching = false;
+        self.rebuild_modifiers(owner, true);
+        self.apply_paid_main(owner, previous);
+        true
+    }
 }
 
 fn word(buf: &[u8], at: usize) -> Option<u32> {

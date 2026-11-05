@@ -2,7 +2,7 @@
 // The simulation lives in openepoch.wasm (Rust); this file never touches game rules.
 import { buildAtlas, tintAtlas, CELL } from './atlas.js?v=fortress1';
 import { buildModels } from './models.js?v=fortress1';
-import { parseCheat } from './cheats.js?v=native18';
+import { parseCheat } from './cheats.js?v=native19';
 import { researchPanel } from './research.js?v=rank-families';
 import { originalResearchActions, researchCost, researchState } from './original-research-actions.js?v=rank-families';
 import { diplomacyPanel } from './diplomacy.js?v=native17';
@@ -32,7 +32,7 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=skirmish-climates';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native18';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native19';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=epoch13';
 import {createFullscreenController} from './fullscreen.js?v=building2';
@@ -1303,7 +1303,7 @@ $('cheat-form').addEventListener('submit', e => {
   e.preventDefault(); const code = parseCheat($('cheat-input').value,rulesProfile.ruleset===2);
   if (code === null) { $('cheat-result').textContent = 'Unbekannter Cheat. Verfügbare Befehle stehen oben.'; return; }
   const result = wasm.cheat(code);
-  const messages = ['Cheats aktiviert.', rulesProfile.ruleset===2?'Cheat-Eingabe deaktiviert.':'Cheats deaktiviert. Sofortbau ist aus.', referenceMode?'Bis zu 10.000 Einheiten je Rohstoff erhalten.':'+10.000 Nahrung, Holz und Metall.', result === 2 ? 'Sofortbau aus.' : 'Sofortbau an.', 'Forschungskonto aktualisiert.', 'Bis zu 100 Einheiten je Rohstoff abgezogen.', 'Strafbefehl für die Auswahl ausgeführt.', result===2?'Schadensschutz aus.':'Schadensschutz an.', result===2?'Kriegsnebel aus.':'Kriegsnebel an.'];
+  const messages = ['Cheats aktiviert.', rulesProfile.ruleset===2?'Cheat-Eingabe deaktiviert.':'Cheats deaktiviert. Sofortbau ist aus.', referenceMode?'Bis zu 10.000 Einheiten je Rohstoff erhalten.':'+10.000 Nahrung, Holz und Metall.', result === 2 ? 'Sofortbau aus.' : 'Sofortbau an.', 'Forschungskonto aktualisiert.', 'Bis zu 100 Einheiten je Rohstoff abgezogen.', 'Strafbefehl für die Auswahl ausgeführt.', result===2?'Schadensschutz aus.':'Schadensschutz an.', result===2?'Kriegsnebel aus.':'Kriegsnebel an.', result===4?'Die Endepoche ist erreicht.':'In die nächste Epoche gewechselt.'];
   $('cheat-result').textContent = result === 3 ? 'Nur im Einzelspieler verfügbar.' : result === 0 ? 'Zuerst icheat eingeben.' : messages[code] + ` Guthaben: ${wasm.cheat_status(2)} Technologiepunkte.`;
   $('cheat-input').value = ''; $('cheat-input').focus(); lastUi = 0;
 });

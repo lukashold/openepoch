@@ -179,5 +179,6 @@ Rohstoffkonten. punish zieht ausgewählten Einheiten mit mehr als 20 HP
 20 HP ab. play god schaltet den Schadensschutz für die eigenen Einheiten
 ein und aus. toggle fog schaltet den Kriegsnebel während der Partie um.
 sea monkeys beschleunigt Bau, Produktion und bezahlte Forschung. Den
-Sofortmodus vor idontcheat ausschalten, wenn er enden soll. Spielstände
-mit aktivem Schadensschutz oder geändertem Nebel benötigen diesen Build.
+Sofortmodus vor idontcheat ausschalten, wenn er enden soll. epoch up
+wechselt direkt in die nächste Epoche. Laufende bezahlte Forschung wird
+abgebrochen und erstattet. Die gewählte Endepoche bleibt gültig.
