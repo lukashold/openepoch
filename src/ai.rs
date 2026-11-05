@@ -106,6 +106,8 @@ impl Game {
                     _ => idle.push(i),
                 }
             } else {
+                #[cfg(feature="ee2-native13")]
+                if e.def == crate::ee2_regicide::KING { continue; }
                 army.push(i);
             }
         }
@@ -389,7 +391,7 @@ mod civ8_ai_tests {
         // Includes legal upper-census IDs64..79, surviving obsolete units and
         // buildings. Previously the first such actor indexed beyond count64.
         g.ai_step(1);
-        assert_eq!(DEFS.len(),80);
+        assert_eq!(SAVE_DEFINITION_COUNT,80);
         for def in 64..80 {assert!(g.ents[..g.high].iter().any(|e|e.alive&&e.team==1&&e.def as usize==def));}
     }
 

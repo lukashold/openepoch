@@ -1,5 +1,5 @@
 const profiles = {packed5: [77, 60], packed7: [308, 240]};
-const stages = {citycenter: [0, 3, 6, 9, 12, 14, 15], house: [0, 2, 4, 6, 8, 10, 12, 14, 15], dock: [0, 3, 6, 9, 10, 12, 14, 15], barracks: [0, 3, 6, 9, 12, 14, 15], mill: [0, 4, 8, 11, 14, 15], temple: [0, 3, 6, 9, 12, 14, 15], lightartillery1: [0, 2, 4, 6, 8, 10, 12, 14, 15]};
+const stages = {citycenter: [0, 3, 6, 9, 12, 14, 15], house: [0, 2, 4, 6, 8, 10, 12, 14, 15], dock: [0, 3, 6, 9, 10, 12, 14, 15], barracks: [0, 3, 6, 9, 12, 14, 15], mill: [0, 4, 8, 11, 14, 15], temple: [0, 3, 6, 9, 12, 14, 15], lightartillery1: [0, 2, 4, 6, 8, 10, 12, 14, 15], warehouse: [0, 3, 6, 9, 12, 14, 15], stable: [1, 4, 7, 10, 13, 15], kingregicide: [0, 5, 10, 15]};
 const regions = [0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3];
 
 export function cityCenterIconCatalog(manifest, {profile, neutralFallback = null, family = 'citycenter'} = {}) {
@@ -37,7 +37,7 @@ export function cityCenterIconCatalog(manifest, {profile, neutralFallback = null
   return Object.freeze({
     files: Object.freeze([...assets.values()]),
     lookup(epoch, civilization) {
-      if (!Number.isInteger(epoch) || epoch < 0 || epoch >= 15 || !Number.isInteger(civilization)) return null;
+      if (!Number.isInteger(epoch) || epoch < starts[0] || epoch >= 15 || !Number.isInteger(civilization)) return null;
       const westernFallback = civilization === 14 && neutralFallback === 'west';
       const region = westernFallback ? 0 : regions[civilization === -1 ? 0 : civilization];
       if (region === undefined) return null;
@@ -120,4 +120,16 @@ export function loadTempleIcons(options = {}) {
 
 export function loadLightArtilleryIcons(options = {}) {
   return loadCityCenterIcons({...options, family: 'lightartillery1'});
+}
+
+export function loadWarehouseIcons(options = {}) {
+  return loadCityCenterIcons({...options, family: 'warehouse'});
+}
+
+export function loadStableIcons(options = {}) {
+  return loadCityCenterIcons({...options, family: 'stable'});
+}
+
+export function loadKingIcons(options = {}) {
+  return loadCityCenterIcons({...options, family: 'kingregicide'});
 }

@@ -281,12 +281,12 @@ function gpuPart(gl,part,instanceBuffer,materialTexture,keepPickingGeometry=fals
  return {vao,pose,animations:part.animations,nativeStateClips:part.nativeStateClips,activities:part.activities,clipVisibility:part.clipVisibility,count:part.indices.length,texture:materialTexture,material:modelMaterial(part),alpha:alphaState(part),depth:depthState(part),height:maxY,pickGeometry,farmPlotOffset:part.farmPlotOffset||null,pipeline:{skinned:part.skinned,textureApplyMode:part.textureApplyMode,textureUrl:part.textureUrl,textureSource:part.textureSource,texture:part.texture}};
 }
 
-import {regionalModelEntries,selectRegionalModel} from './original-regional-models.js?v=regional-citycenters';
+import {regionalModelEntries,selectRegionalModel} from './original-regional-models.js?v=regicide';
 import {citizenModelEntries,selectCitizenModel} from './original-citizen-models.js?v=citizen9';
 import {loadAnimationPayload,withoutAnimationPayload} from './original-animation-payload.js?v=citizen9';
 import {createCityCenterTerrainBinding} from './original-citycenter-terrain.js?v=origin1';
 export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},options={}){
- const result={available:new Set(),models:new Map(),resourceRenderIds:new Set(),errors:[],metrics:{colorMs:0,shadowMs:0,calls:0,triangles:0,gpuMs:0},draw(){},updateTerrain(){},setLightingContext(){return false;},setLightingSettings(){return false;},setVisualCivilizations(){return false;},setHouseLodProfile(){return false;},setSeasonPhase(){return false;},setSeasonClimate(){return false;},pickResource(){return null;}};if(!enabled)return result;
+ const result={available:new Set(),models:new Map(),resourceRenderIds:new Set(),errors:[],seasonClimates:['Temperate'],climateErrors:[],metrics:{colorMs:0,shadowMs:0,calls:0,triangles:0,gpuMs:0},draw(){},updateTerrain(){},setLightingContext(){return false;},setLightingSettings(){return false;},setVisualCivilizations(){return false;},setHouseLodProfile(){return false;},setSeasonPhase(){return false;},setSeasonClimate(){return false;},pickResource(){return null;}};if(!enabled)return result;
  let visualCivilizations=null;
  result.setVisualCivilizations=values=>{
   if(values===null){visualCivilizations=null;return true;}
@@ -295,7 +295,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
  };
  if(options.civilizations!==undefined)result.setVisualCivilizations(options.civilizations);
  let assetMapping;try{assetMapping=normalizeRenderAssetMapping(options.assetMapping);}catch(e){result.errors.push(e.message);return result;}
- result.assetMapping=assetMapping; let manifest,teamManifest={},scales={},seasonManifest={},seasonTeamManifest={},regionalManifest=null,regionalEntries=[],regionalSeasonManifest={},regionalTeamManifest={},citizenManifest=null,citizenEntries=[],citizenTeamManifest={},yearPhase,seasonClimate='Temperate',lightingData,defaultLighting=DEFAULT_MODEL_LIGHTING;
+ result.assetMapping=assetMapping; let manifest,teamManifest={},scales={},seasonManifest={},seasonTeamManifest={},regionalManifest=null,regionalEntries=[],regionalSeasonManifest={},regionalTeamManifest={},additionalRegionalTeam={},citizenManifest=null,citizenEntries=[],citizenTeamManifest={},yearPhase,seasonClimate='Temperate',lightingData,defaultLighting=DEFAULT_MODEL_LIGHTING;
  try{manifest=await json(options.manifestURL||'./local-original/models/manifest.json');}catch{return result;}
  result.manifest=manifest;
  result.regionalModels={enabled:!!options.regionalManifestURL,loaded:0,errors:[]};
@@ -305,6 +305,13 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   if(regionalManifest.teamManifest)regionalTeamManifest=await json(regionalManifest.teamManifest);
   result.regionalManifest=regionalManifest;
  }catch(e){regionalEntries=[];result.regionalModels.errors.push(e.message);result.errors.push('Regional models: '+e.message);}}
+ if(options.additionalRegionalManifestURL){try{
+  const additional=await json(options.additionalRegionalManifestURL);
+  const rows=regionalModelEntries(additional);
+  regionalEntries.push(...rows);
+  result.additionalRegionalAudio=rows.filter(row=>row.regionalFallback&&row.sourceFamily);
+  if(additional.teamManifest)additionalRegionalTeam=await json(additional.teamManifest);
+ }catch(e){result.regionalModels.errors.push(e.message);result.errors.push('Additional regional models: '+e.message);}}
  result.citizenModels={enabled:!!options.citizenManifestURL,loaded:0,errors:[]};
  if(options.citizenManifestURL){try{
   citizenManifest=await json(options.citizenManifestURL);citizenEntries=citizenModelEntries(citizenManifest);
@@ -355,9 +362,13 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
  try{seasonManifest=await json('./local-original/model-seasons.json');}catch{/* Static original skins remain available in older asset folders. */}
  if(seasonManifest.teamManifest){try{seasonTeamManifest=await json(seasonManifest.teamManifest);}catch{/* Unverified or absent patch data keeps the correct neutral seasonal image. */}}
  result.seasonManifest=seasonManifest;
+ const climateProfiles=options.climateProfiles||{},unavailableClimates=new Set();
+ const authoredSequence=(manifest,climate,key)=>manifest.sets?.[climate]?.[key]?.urls;
+ const profileSequence=(manifest,climate,key)=>authoredSequence(manifest,climate,key)||climateProfiles[climate]?.body[key];
  result.setSeasonPhase=phase=>{yearPhase=modelYearPhase(phase);return !!(seasonManifest.models||regionalSeasonManifest.models);};
  result.setSeasonClimate=climate=>{
-  if(!Object.hasOwn(seasonManifest.sets||{},climate)&&!Object.hasOwn(regionalSeasonManifest.sets||{},climate))throw new RangeError('Unknown model season climate');
+  if(!Object.hasOwn(seasonManifest.sets||{},climate)&&!Object.hasOwn(regionalSeasonManifest.sets||{},climate)&&!Object.hasOwn(climateProfiles,climate))throw new RangeError('Unknown model season climate');
+  if(unavailableClimates.has(climate))return false;
   seasonClimate=climate;return true;
  };
  let shader;
@@ -419,10 +430,21 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     if(seasonalKey){
      const urls=new Set(Object.values(selectedSeasonManifest.sets||{}).flatMap(climate=>climate[seasonalKey]?.urls||[]));
      for(const source of urls)neutralGPU.set(source,await texture(gl,source,textures));
+     for(const climate of Object.keys(climateProfiles)){
+      if(authoredSequence(selectedSeasonManifest,climate,seasonalKey))continue;
+      for(const source of climateProfiles[climate].body[seasonalKey]||[]){
+       if(neutralGPU.has(source))continue;
+       try{neutralGPU.set(source,await texture(gl,source,textures));}
+       catch(error){unavailableClimates.add(climate);result.climateErrors.push(climate+': '+error.message);}
+      }
+     }
     }
     const forSourceTeam=(source,team)=>{
       const suffix=['A','B','C','G'][team],key=source?.split('/').pop().replace(/\.png$/i,'').toLowerCase();
-      const patchManifest=citizenTeamManifest.texture_bindings?.[source]?citizenTeamManifest:regionalTeamManifest.texture_bindings?.[source]?regionalTeamManifest:seasonTeamManifest.texture_bindings?.[source]?seasonTeamManifest:teamManifest;
+      const patchManifest=citizenTeamManifest.texture_bindings?.[source]?citizenTeamManifest
+       :additionalRegionalTeam.texture_bindings?.[source]?additionalRegionalTeam
+       :regionalTeamManifest.texture_bindings?.[source]?regionalTeamManifest
+       :seasonTeamManifest.texture_bindings?.[source]?seasonTeamManifest:teamManifest;
       const teamKey=patchManifest.texture_bindings?.[source]||key,variant=patchManifest.textures?.[teamKey]?.variants?.[suffix],cacheKey=source+':'+suffix;
       if(variant?.verified&&patchManifest.colour_mapping_verified){
         if(!requested.has(cacheKey)){
@@ -440,7 +462,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
         const pair = terrainMaterial.frames(yearPhase);
         if (pair) return pair;
       }
-      const sequence=selectedSeasonManifest.sets?.[seasonClimate]?.[seasonalKey]?.urls,pair=modelSeasonFrames(sequence,yearPhase,url);
+      const sequence=profileSequence(selectedSeasonManifest,seasonClimate,seasonalKey),pair=modelSeasonFrames(sequence,yearPhase,url);
       return {first:forSourceTeam(pair.first,team),next:forSourceTeam(pair.next,team),blend:pair.blend};
     };
     parts.push(gpu);
@@ -465,7 +487,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    if(!parts.length)continue;
    const scaleKey=(entry.assetKind===undefined?'':assetKind+':')+id+':'+(entry.epoch??0),sea=assetKind===0&&((id>=29&&id<=36)||id===42||id===45),transform=nativeModelTransform(model,entry.regionalCivilizations?entry.nativeScaleBinding:scales.variants?.[scaleKey]);
    const yOffset=!transform.native&&sea?-(model.normalization?.offset?.[1]||0)*(model.normalization?.scale||1):0;
-   const variant={sourceId:id,assetKind,scaleKey,epoch:entry.epoch??0,until:entry.until,regionalCivilizations:entry.regionalCivilizations,sourceIdentity:entry.sourceIdentity,region:entry.region,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),nativeAttackClock:entry.nativeAttackClock===true,yOffset,originOffset:transform.originOffset,nativeScale:transform.native?transform.scale:null,yawOffset:entry.yawOffset??model.yawOffset??0,farUrl:entry.lodFarUrl,far:null,farRequested:false,pickBounds:resourceBounds(parts)};
+   const variant={sourceId:id,assetKind,scaleKey,epoch:entry.epoch??0,until:entry.until,regionalCivilizations:entry.regionalCivilizations,regionalFallback:entry.regionalFallback===true,sourceIdentity:entry.sourceIdentity,region:entry.region,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),nativeAttackClock:entry.nativeAttackClock===true,yOffset,originOffset:transform.originOffset,nativeScale:transform.native?transform.scale:null,yawOffset:entry.yawOffset??model.yawOffset??0,farUrl:entry.lodFarUrl,far:null,farRequested:false,pickBounds:resourceBounds(parts)};
    if(assetKind===0&&id===22&&entry.verified&&model.databaseVisualBinding?.visualDefinition==='LightArtillery1_01'
       &&entry.epoch===0&&entry.until===2&&entry.source?.sha256===model.source?.sha256){
     // Only clips with the original moving-state KF can start its text-key sound.
@@ -489,6 +511,15 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   }catch(e){result.errors.push(e.message);console.warn('Originalmodell:',entry,e);}
  }
  for(const list of result.models.values())list.sort((a,b)=>a.epoch-b.epoch);
+ if(result.models.size){
+  const profile=lightingData?.profiles?.[options.lightingSettings?.profile??'native155'];
+  for(const [name, extra] of Object.entries(climateProfiles)){
+   if(name!=='Temperate'&&!unavailableClimates.has(name)&&profile?.climates?.[name]?.Afternoon&&
+     (Object.hasOwn(seasonManifest.sets||{},name)||Object.hasOwn(regionalSeasonManifest.sets||{},name)||Object.keys(extra.body).length)){
+    result.seasonClimates.push(name);
+   }
+  }
+ }
  gl.useProgram(shader.p);gl.uniform1i(shader.u.uDiffuse,0);gl.uniform1i(shader.u.uDiffuseNext,7);gl.uniform1i(shader.u.uFog,2);gl.uniform1i(shader.u.uFrames,5);gl.uniform1i(shader.u.uTerrain,6);gl.uniform3fv(shader.u.uTeam,new Float32Array(teams.flat()));
  const heightTexture=gl.createTexture();let heightSize=1,heightReady=false;
  const uploadHeights=(values,size)=>{

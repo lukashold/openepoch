@@ -56,6 +56,10 @@ impl Game {
     /// 0053a0f0 binds table C14970 ('popCount') through C14974, and 0053acfe
     /// writes that inherited property to +A0. Eligibility comes from Garrisonable.
     pub fn fortress_slot_cost(&self,team:u8,def:DefId)->Option<usize> {
+        #[cfg(feature="ee2-native13")]
+        if def == crate::ee2_regicide::KING {
+            return Some(1);
+        }
         #[cfg(feature="ee2-reference")]
         {
             let row=crate::ee2_units::lookup_class(def,self.players[team as usize].epoch)
@@ -145,6 +149,10 @@ impl Game {
                 if let Some(v)=row.damage{if cfg!(feature="ee2-roster6")&&i>=57 {m[i][1]=v;}else if d.w[0].dmg>0.0{m[i][1]=v/d.w[0].dmg;}}
                 if cfg!(feature="ee2-up15") {if let Some(v)=row.raw_speed {m[i][2]=v;}}
                 if cfg!(feature="ee2-up15")||i==FORTRESS as usize {if let Some(v)=row.range {m[i][6]=v-d.w[0].range;}}
+            }
+            #[cfg(feature="ee2-native13")]
+            if i == crate::ee2_regicide::KING as usize {
+                crate::ee2_regicide::king_modifiers(self.players[team as usize].epoch, &mut m[i]);
             }
         }
         let baseline=m;

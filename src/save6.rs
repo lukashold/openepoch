@@ -52,7 +52,7 @@ fn strip_descriptor(b: &[u8]) -> Option<&[u8]> {
     if u32v(c, 0)? != META
         || u32v(c, 4)? != 6
         || u32v(c, 8)? != 1
-        || !((c.get(12..44)?==REGISTRY && u32v(b,12)? as usize==DEFS.len()) || (u32v(b,12)?==57 && c.get(12..44)?==crate::roster6_registry::PREVIOUS_57) || (cfg!(feature="ee2-civ8")&&u32v(b,12)?==61&&c.get(12..44)?==crate::roster6_registry::FINGERPRINT))
+        || !((c.get(12..44)?==REGISTRY && u32v(b,12)? as usize==SAVE_DEFINITION_COUNT) || (u32v(b,12)?==57 && c.get(12..44)?==crate::roster6_registry::PREVIOUS_57) || (cfg!(feature="ee2-civ8")&&u32v(b,12)?==61&&c.get(12..44)?==crate::roster6_registry::FINGERPRINT))
         || u32v(c, 44)? != META_BYTES as u32
         || u32v(c, 48)? != END
     {
@@ -216,7 +216,7 @@ fn validate_player(r: &[u8]) -> Option<()> {
     }
     Some(())
 }
-pub fn normalize_input(input: &[u8]) -> Option<Vec<u8>> {
+pub fn normalize_input(input: &[u8], current_actor_defs: usize) -> Option<Vec<u8>> {
     if core::mem::size_of::<Ent>() != ENT6 || core::mem::size_of::<Player>() != PLAYER {
         return None;
     }
@@ -233,10 +233,11 @@ pub fn normalize_input(input: &[u8]) -> Option<Vec<u8>> {
         return None;
     }
     let stride = if legacy { ENT5 } else { ENT6 };
-    if u32v(b, 4)? as usize != stride || u32v(b, 8)? as usize != PLAYER || (if legacy {u32v(b,12)?!=57}else{u32v(b,12)? as usize!=DEFS.len()&&u32v(b,12)?!=57&&!(cfg!(feature="ee2-civ8")&&u32v(b,12)?==61)}) {
+    if u32v(b, 4)? as usize != stride || u32v(b, 8)? as usize != PLAYER || (if legacy {u32v(b,12)?!=57}else{u32v(b,12)? as usize!=SAVE_DEFINITION_COUNT&&u32v(b,12)?!=57&&!(cfg!(feature="ee2-civ8")&&u32v(b,12)?==61)}) {
         return None;
     }
     let input_defs=u32v(b,12)? as usize;
+    let actor_defs = if input_defs == SAVE_DEFINITION_COUNT { current_actor_defs } else { input_defs };
     let high = u32v(b, 32)? as usize;
     if high > MAXE {
         return None;
@@ -251,7 +252,7 @@ pub fn normalize_input(input: &[u8]) -> Option<Vec<u8>> {
     for i in 0..high {
         let e=read_entity(&b[entities_start+i*stride..entities_start+(i+1)*stride],legacy)?;
         if e.alive {
-            if e.def as usize>=input_defs || e.cargo[..e.ncargo as usize].iter().any(|&id|id as usize>=input_defs){return None;}
+            if e.def as usize>=actor_defs || e.cargo[..e.ncargo as usize].iter().any(|&id|id as usize>=actor_defs){return None;}
             if DEFS[e.def as usize].building && e.q[..e.qn as usize].iter().any(|&q|crate::ids::decode_job(q).is_some_and(|(kind,value)|kind==0&&value as usize>=input_defs)){return None;}
         }
         ents.push(e);
@@ -259,7 +260,7 @@ pub fn normalize_input(input: &[u8]) -> Option<Vec<u8>> {
     let mut out = b[..36].to_vec();
     put32(&mut out, 0, MAGIC6);
     put32(&mut out, 4, ENT6 as u32);
-    put32(&mut out,12,DEFS.len()as u32);
+    put32(&mut out,12,SAVE_DEFINITION_COUNT as u32);
     out.extend_from_slice(&b[36..entities_start]);
     write_entities(&ents, &mut out);
     out.extend_from_slice(&b[rest..]);

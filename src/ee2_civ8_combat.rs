@@ -1009,14 +1009,23 @@ const ADJUSTMENTS:[(u32,u16);516]=[
  (26935306,350),
 ];
 #[inline] pub fn profile(id:DefId,epoch:u8)->u16 {
+ #[cfg(feature="ee2-native13")]
+ if id == crate::ee2_regicide::KING && epoch < 15 { return PROFILES.len() as u16; }
  PROFILE_BY_DEF_EPOCH.get(id as usize).and_then(|row|row.get(epoch as usize)).copied().unwrap_or(UNKNOWN_PROFILE)
 }
+#[inline] fn resolve_profile(index:u16)->Option<CombatProfile> {
+ #[cfg(feature="ee2-native13")]
+ if index as usize == PROFILES.len() {
+  return Some(CombatProfile{rps:34,upgrade:65535}); // KingRegicide, SpecialForces
+ }
+ PROFILES.get(index as usize).copied()
+}
 #[inline] pub fn base_percent(attacker_profile:u16,defender_profile:u16)->Option<u16> {
- let attacker=PROFILES.get(attacker_profile as usize)?;let defender=PROFILES.get(defender_profile as usize)?;
+ let attacker=resolve_profile(attacker_profile)?;let defender=resolve_profile(defender_profile)?;
  Some(RPS_PERCENT[defender.rps as usize][attacker.rps as usize])
 }
 pub fn adjustment_percent(attacker_profile:u16,defender_profile:u16)->Option<u16> {
- let attacker=PROFILES.get(attacker_profile as usize)?;let defender=PROFILES.get(defender_profile as usize)?;
+ let attacker=resolve_profile(attacker_profile)?;let defender=resolve_profile(defender_profile)?;
  let key=((attacker.upgrade as u32)<<16)|defender.upgrade as u32;
  Some(ADJUSTMENTS.binary_search_by_key(&key,|entry|entry.0).map(|index|ADJUSTMENTS[index].1).unwrap_or(100))
 }

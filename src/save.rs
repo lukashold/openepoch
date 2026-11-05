@@ -30,7 +30,7 @@ impl Game {
     pub fn save(&mut self) {
         let mut b = std::mem::take(&mut self.savebuf);
         b.clear();
-        let head = [MAGIC, size_of::<Ent>() as u32, size_of::<Player>() as u32, DEFS.len() as u32, self.seed0, self.n_ai, self.tick, self.rng.0, self.high as u32];
+        let head = [MAGIC, size_of::<Ent>() as u32, size_of::<Player>() as u32, SAVE_DEFINITION_COUNT as u32, self.seed0, self.n_ai, self.tick, self.rng.0, self.high as u32];
         for v in head {
             b.extend_from_slice(&v.to_le_bytes());
         }
@@ -77,10 +77,17 @@ impl Game {
         { b = crate::ee2_territory_victory::wrap(b, self); }
         #[cfg(feature="ee2-native13")]
         { b = crate::ee2_sole_survivor::wrap(b, self); }
+        #[cfg(feature="ee2-native13")]
+        { b = crate::ee2_regicide::wrap(b, self); }
         self.savebuf = b;
     }
 
     pub fn load(buf: &[u8]) -> Option<Game> {
+        #[cfg(feature="ee2-native13")]
+        let (buf, regicide) = crate::ee2_regicide::split(buf)?;
+        let actor_definition_count = SAVE_DEFINITION_COUNT;
+        #[cfg(feature="ee2-native13")]
+        let actor_definition_count = if regicide.is_some() { DEFS.len() } else { actor_definition_count };
         #[cfg(feature="ee2-native13")]
         let (buf, sole_survivor) = crate::ee2_sole_survivor::split(buf)?;
         #[cfg(feature="ee2-native13")]
@@ -99,7 +106,7 @@ impl Game {
         #[cfg(feature="ee2-paidqueue7")] let (paid_normalized,paid_chunk)=crate::paid_queue7::split_input(buf)?;
         #[cfg(feature="ee2-paidqueue7")] let buf=paid_normalized.as_slice();
         #[cfg(feature="ee2-roster6")]
-        let normalized=crate::save6::normalize_input(buf)?;
+        let normalized=crate::save6::normalize_input(buf, actor_definition_count)?;
         #[cfg(feature="ee2-roster6")]
         let buf=normalized.as_slice();
         #[cfg(feature="ee2-up15")]
@@ -121,14 +128,14 @@ impl Game {
         let remainder=if has_territory{total_trailer-crate::territory::TERR_BYTES}else{total_trailer};
         let has_diplomacy=remainder>=crate::diplomacy::DIP_BYTES;
         let trailer=if has_diplomacy{remainder-crate::diplomacy::DIP_BYTES}else{remainder};
-        if u(0) != (if cfg!(feature="ee2-paidqueue7"){0x3655_454f}else{MAGIC}) || u(1) as usize != size_of::<Ent>() || u(2) as usize != size_of::<Player>() || (u(3) as usize != DEFS.len() && u(3)!=47 && !(cfg!(feature="ee2-reference")&&(u(3)==53||u(3)==55||u(3)==56))) || ![0,12,132,236].contains(&trailer) {
+        if u(0) != (if cfg!(feature="ee2-paidqueue7"){0x3655_454f}else{MAGIC}) || u(1) as usize != size_of::<Ent>() || u(2) as usize != size_of::<Player>() || (u(3) as usize != SAVE_DEFINITION_COUNT && u(3)!=47 && !(cfg!(feature="ee2-reference")&&(u(3)==53||u(3)==55||u(3)==56))) || ![0,12,132,236].contains(&trailer) {
             return None;
         }
         #[cfg(feature="ee2-up15")]
-        if u(3) as usize!=DEFS.len() || trailer!=236 || !has_diplomacy || !has_territory || city_chunk.is_none(){return None;}
+        if u(3) as usize!=SAVE_DEFINITION_COUNT || trailer!=236 || !has_diplomacy || !has_territory || city_chunk.is_none(){return None;}
         if u(5)>3{return None;}
         #[cfg(feature="ee2-reference")]
-        if city_chunk.is_some() && (trailer!=236 || !has_diplomacy || !has_territory || u(3) as usize!=DEFS.len()) {return None;}
+        if city_chunk.is_some() && (trailer!=236 || !has_diplomacy || !has_territory || u(3) as usize!=SAVE_DEFINITION_COUNT) {return None;}
         let humans=if has_diplomacy{u32::from_le_bytes(buf[end+trailer+8..end+trailer+12].try_into().ok()?)}else{1};
         if !(1..=2).contains(&humans){return None;}
         let mut g = Game::new(u(4), u(5), 0, humans, 0);
@@ -213,11 +220,11 @@ impl Game {
         for p in &g.players[..g.nplayers] {if p.epoch>g.match_final_epoch() {return None;}}
         for e in &g.ents[..high] {
             if !e.alive {continue;}
-            if e.def as usize>=DEFS.len() || e.team as usize>=g.nplayers || e.qn>5 || e.ncargo as usize>CARGO_MAX {return None;}
+            if e.def as usize>=actor_definition_count || e.team as usize>=g.nplayers || e.qn>5 || e.ncargo as usize>CARGO_MAX {return None;}
             if !e.x.is_finite()||!e.y.is_finite()||!e.rot.is_finite()||!e.prot.is_finite(){return None;}
             if DEFS[e.def as usize].building{let(tx,ty,side)=Game::building_bounds(e);if tx<0||ty<0||tx+side>N as i32||ty+side>N as i32{return None;}}
-            if e.cargo[..e.ncargo as usize].iter().any(|&c| c as usize>=DEFS.len()) {return None;}
-            if DEFS[e.def as usize].building && e.q[..e.qn as usize].iter().any(|&q| q!=RESEARCH && !original_research(q) && q as usize>=DEFS.len() && (q<TECH0 || (q-TECH0) as usize>=TECHS.len())) {return None;}
+            if e.cargo[..e.ncargo as usize].iter().any(|&c| c as usize>=actor_definition_count) {return None;}
+            if DEFS[e.def as usize].building && e.q[..e.qn as usize].iter().any(|&q| q!=RESEARCH && !original_research(q) && q as usize>=SAVE_DEFINITION_COUNT && (q<TECH0 || (q-TECH0) as usize>=TECHS.len())) {return None;}
             #[cfg(feature="ee2-epoch-range13")]
             if g.final_epoch < MAX_EPOCH && DEFS[e.def as usize].building &&
                 g.players[e.team as usize].epoch == g.final_epoch && e.q[..e.qn as usize].contains(&RESEARCH) {
@@ -300,6 +307,10 @@ impl Game {
         #[cfg(feature="ee2-native13")]
         if let Some((rule, outcome)) = sole_survivor {
             g.restore_sole_survivor(rule, outcome)?;
+        }
+        #[cfg(feature="ee2-native13")]
+        if let Some((rule, outcome)) = regicide {
+            g.restore_regicide(rule, outcome)?;
         }
         Some(g)
     }

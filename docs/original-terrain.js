@@ -21,7 +21,8 @@ uniform vec3 uTeam[8];uniform float uPx,uSeasonBlend;uniform vec2 uSeasonMonths;
 uniform bool uClipEnabled;uniform vec4 uClipPlane;in vec3 vP;in vec3 vN;out vec4 outColor;
 ${COMMON}
 vec3 seasonSample(highp sampler2DArray source,vec2 uv){
- return mix(texture(source,vec3(uv,uSeasonMonths.x)).rgb,texture(source,vec3(uv,uSeasonMonths.y)).rgb,uSeasonBlend);
+ vec2 layers=min(uSeasonMonths,vec2(float(textureSize(source,0).z-1)));
+ return mix(texture(source,vec3(uv,layers.x)).rgb,texture(source,vec3(uv,layers.y)).rgb,uSeasonBlend);
 }
 void main(){
  if(uClipEnabled&&dot(vec4(vP,1.),uClipPlane)<0.)discard;
@@ -170,7 +171,7 @@ const sameArray=(a,b)=>a&&b&&a.length===b.length&&a.every((value,i)=>value===b[i
 
 export async function loadOriginalTerrain(gl,enabled,teams,options={}){
  const result={enabled:false,errors:[],metrics:{terrainCalls:0,waterCalls:0,seasonSlot:6,seasonNext:7,seasonBlend:0,images:0,classification:'none',lightmapBuilds:0,lightmapUploads:0,lightmapBytes:0,lightmapBuildMs:0,nativeLighting:false,lightingFallback:'missing-context'},
-  policy:'native-images-own-map-material-adapter',updateMap(){},drawTerrain(){},drawWater(){},setLightingContext(){return false;},setSeasonPhase(){return false;},async setSeason(){return false;}};
+  policy:'native-images-own-map-material-adapter',seasonClimates:['Temperate'],climateErrors:[],updateMap(){},drawTerrain(){},drawWater(){},setLightingContext(){return false;},setSeasonClimate(){return false;},setSeasonPhase(){return false;},async setSeason(){return false;}};
  if(!enabled)return result;
  try{
   const resolveAsset=url=>new URL(url,options.assetBaseURL||import.meta.url);
@@ -186,22 +187,46 @@ export async function loadOriginalTerrain(gl,enabled,teams,options={}){
    if(!images.has(url))images.set(url,(async()=>{const response=await fetch(resolveAsset(url));if(!response.ok)throw new Error(`${url}: ${response.status}`);return createImageBitmap(await response.blob(),{premultiplyAlpha:'none',colorSpaceConversion:'none'});})());
    return images.get(url);
   };
-  const roles={};let lastFields=null,season={month0:6,month1:7,blend:0};
-  // All twelve native monthly images are resident, so phase changes cannot
-  // depend on asynchronous fetch order, rendering speed or a wall clock.
-  for(const role of ROLES){
-   const definition=manifest.textureDefinitions[manifest.runtimeRoles[role].textureDefinition];
-   const urls=manifest.seasonalSets[definition.seasonalSet].urls;
+  let lastFields=null,season={month0:6,month1:7,blend:0};
+  const roleSets=new Map(), arrays=new Map();
+  const uploadMonthly=async urls=>{
+   if(!Array.isArray(urls)||![1,12].includes(urls.length))throw new Error('Invalid native terrain season list');
    const frames=await Promise.all(urls.map(bitmap)),width=frames[0].width,height=frames[0].height;
-   if(frames.length!==12||frames.some(frame=>frame.width!==width||frame.height!==height))throw new Error('Native monthly texture sizes must match without rescaling');
+   if(frames.some(frame=>frame.width!==width||frame.height!==height))throw new Error('Native monthly texture sizes must match without rescaling');
    const array=gl.createTexture();gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D_ARRAY,array);
-   gl.texStorage3D(gl.TEXTURE_2D_ARRAY,1+Math.floor(Math.log2(Math.max(width,height))),gl.RGBA8,width,height,12);
-   for(let month=0;month<12;month++)gl.texSubImage3D(gl.TEXTURE_2D_ARRAY,0,0,0,month,width,height,1,gl.RGBA,gl.UNSIGNED_BYTE,frames[month]);
+   gl.texStorage3D(gl.TEXTURE_2D_ARRAY,1+Math.floor(Math.log2(Math.max(width,height))),gl.RGBA8,width,height,frames.length);
+   for(let month=0;month<frames.length;month++)gl.texSubImage3D(gl.TEXTURE_2D_ARRAY,0,0,0,month,width,height,1,gl.RGBA,gl.UNSIGNED_BYTE,frames[month]);
    gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
    gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_S,gl.REPEAT);gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_WRAP_T,gl.REPEAT);gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
-   roles[role]=array;
+   return array;
+  };
+  async function loadRoles(climate, profile) {
+   const textures={};
+   for(const role of ROLES){
+    const definition=manifest.textureDefinitions[manifest.runtimeRoles[role].textureDefinition];
+    let urls=profile ? profile[role].urls : manifest.seasonalSets[definition.seasonalSet].urls;
+    if(profile&&urls.every(url=>url===urls[0]))urls=urls.slice(0,1);
+    const key=JSON.stringify(urls);
+    if(!arrays.has(key))arrays.set(key,uploadMonthly(urls));
+    textures[role]=await arrays.get(key);
+   }
+   roleSets.set(climate,textures);
   }
-  for(const frame of await Promise.all(images.values()))frame.close();
+  await loadRoles('Temperate');
+  for(const [name, profile] of Object.entries(options.climateProfiles||{})){
+   if(name==='Temperate')continue;
+   try{
+    await loadRoles(name,profile.terrain);
+    result.seasonClimates.push(name);
+   }catch(error){result.climateErrors.push(name+': '+error.message);}
+  }
+  let roles=roleSets.get('Temperate');
+  result.setSeasonClimate=name=>{
+   if(!roleSets.has(name))return false;
+   roles=roleSets.get(name);
+   return true;
+  };
+  for(const frame of await Promise.allSettled(images.values()))if(frame.status==='fulfilled')frame.value.close();
   result.metrics.images=cache.size+images.size;
   const dataTexture=()=>{const t=gl.createTexture();gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,t);for(const key of [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER])gl.texParameteri(gl.TEXTURE_2D,key,gl.LINEAR);for(const key of [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T])gl.texParameteri(gl.TEXTURE_2D,key,gl.CLAMP_TO_EDGE);return t;};
   const weightsTexture=dataTexture(),heightTexture=dataTexture();

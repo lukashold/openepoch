@@ -28,9 +28,8 @@ export function nativeUrbanAt(x,z,cities){
   }
   return false;
 }
-export function groundSeasonFrames(sprite,phase){
+export function groundSeasonFrames(sprite,phase,urls=sprite?.seasonalUrls){
   if(!sprite)return null;
-  const urls=sprite.seasonalUrls;
   if(!Number.isFinite(phase)||!urls?.length)return{first:sprite.url,next:sprite.url,blend:0};
   let normalized=phase%1;if(normalized<0)normalized+=1;
   const position=normalized*urls.length,index=Math.floor(position);
@@ -130,12 +129,13 @@ function restore(gl,state){
 export async function loadOriginalGround(gl,enabled,options={}){
   const result={enabled:false,entries:new Map(),errors:[],manifest:null,
     policy:'native-epoch-slots; CityManager callback, explicit rural fallback when absent',metrics:{calls:0,instances:0},
-    updateTerrain(){},draw(){},setSeasonPhase(){return false;}};
+    seasonClimates:['Temperate'],climateErrors:[],updateTerrain(){},draw(){},setSeasonClimate(){return false;},setSeasonPhase(){return false;}};
   if(!enabled)return result;
   let assetMapping;try{assetMapping=normalizeRenderAssetMapping(options.assetMapping);}catch(error){result.errors.push(error.message);return result;}
   result.assetMapping=assetMapping;
   const fetchFile=options.fetch||fetch,decode=options.decode||createImageBitmap;
   const state=snapshot(gl),textures=new Map();let shader,vao,instances,height;
+  const groundProfiles=Object.entries(options.climateProfiles||{}).filter(([name])=>name!=='Temperate');
   try{
     const response=await fetchFile(new URL(options.manifestURL??'./local-original/ground-decals.json',import.meta.url),{cache:'no-store'});
     if(!response.ok)throw Error(`Ground manifest: ${response.status}`);
@@ -147,7 +147,10 @@ export async function loadOriginalGround(gl,enabled,options={}){
       // All source-declared slots are distinct bindings. Preload their physical
       // images once so a later epoch/context change cannot retain the old floor.
       const declared=[...(entry.rural||[]),...(entry.urban||[]),...(entry.death?.rural||[]),...(entry.death?.urban||[])];
-      const sprites=declared.flatMap(sprite=>[sprite,...(sprite.seasonalUrls||[]).map(url=>({...sprite,url}))]);
+      const sprites=declared.flatMap(sprite=>{
+        const climateUrls=groundProfiles.flatMap(([,profile])=>profile.ground[sprite.sprite?.toLowerCase()]||[]);
+        return [sprite,...(sprite.seasonalUrls||[]).map(url=>({...sprite,url})),...climateUrls.map(url=>({...sprite,url,optionalClimate:true}))];
+      });
       for(const sprite of sprites){
       if(!sprite?.url||entryTextures.has(sprite.url))continue;
       // Unsupported source transforms must fail explicitly, never be ignored.
@@ -169,7 +172,7 @@ export async function loadOriginalGround(gl,enabled,options={}){
           gl.generateMipmap(gl.TEXTURE_2D);textures.set(sprite.url,texture);
         }
         entryTextures.set(sprite.url,texture);
-      }catch(error){result.errors.push(error.message);}
+      }catch(error){(sprite.optionalClimate?result.climateErrors:result.errors).push(error.message);}
       }
       if(entryTextures.size)for(const {renderId}of bindings)result.entries.set(renderId,{entry,sourceId:+entry.id,assetKind:0,texture:entryTextures.get(selectGroundSprite(entry)?.url),textures:entryTextures});
     }
@@ -197,7 +200,19 @@ export async function loadOriginalGround(gl,enabled,options={}){
   }catch(error){result.errors.push(error.message);console.warn('Original-Gebäudeböden:',error);}
   finally{restore(gl,state);}
   if(!result.enabled)return result;
-  let yearPhase;
+  for(const [name,profile] of groundProfiles){
+    const ready=[...result.entries.values()].every(({entry,textures})=>[...entry.rural,...entry.urban].every(sprite=>{
+      const sequence=profile.ground[sprite.sprite.toLowerCase()];
+      return sequence?.length&&sequence.every(url=>textures.has(url));
+    }));
+    if(ready)result.seasonClimates.push(name);
+  }
+  let yearPhase, climateGround=null;
+  result.setSeasonClimate=name=>{
+    if(!result.seasonClimates.includes(name))return false;
+    climateGround=name==='Temperate'?null:options.climateProfiles[name].ground;
+    return true;
+  };
   result.setSeasonPhase=({month0,month1=(month0+1)%12,blend=0})=>{
     if(!Number.isInteger(month0)||month0<0||month0>11||month1!==(month0+1)%12||!Number.isFinite(blend)||blend<0||blend>1)throw new RangeError('Invalid ground season phase');
     yearPhase=(month0+blend)/12;return true;
@@ -217,7 +232,8 @@ export async function loadOriginalGround(gl,enabled,options={}){
         const instance=data.subarray(i*STRIDE,(i+1)*STRIDE),team=Math.round(instance[5]);
         const placement=groundPlacement(entry,instance);if(!placement)continue;
         const hasOwner=epochs[team]!==undefined,urban=typeof isUrbanAt==='function'&&!!isUrbanAt(instance[0],instance[1],team,sourceId,i,id);
-        const sprite=selectGroundSprite(entry,{epoch:epochs[team]??0,hasOwner,urban}),frames=groundSeasonFrames(sprite,yearPhase);
+        const sprite=selectGroundSprite(entry,{epoch:epochs[team]??0,hasOwner,urban});
+        const frames=groundSeasonFrames(sprite,yearPhase,climateGround?.[sprite?.sprite?.toLowerCase()]);
         const texture=textures.get(frames?.first),textureB=textures.get(frames?.next);
         if(!texture||!textureB)continue;
         const key=JSON.stringify([frames.first,frames.next,frames.blend]);

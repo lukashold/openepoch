@@ -517,8 +517,8 @@ class AssetAudit:
         if not stat_prefix and (family_name in self.files or (module and 'native-families.json' in module.read_text(encoding='utf8'))):
             self.check_audio_families()
 
-    def check_audio_families(self):
-        name='local-original/audio/native-families.json';base='local-original/audio'
+    def check_audio_families(self,name='local-original/audio/native-families.json'):
+        base='local-original/audio'
         self.ref(name,'original-audio.js','native-family-audio-manifest');data=self.read_json(name)
         if data.get('format')!='ee2-native-family-audio-v1':self.error('native-family-audio-format',name);return
         assets=data.get('assets',{});events=data.get('events',{});families=data.get('families',{})
@@ -689,9 +689,26 @@ class AssetAudit:
             self.check_models('local-original/stone-thrower/regional-models-native15.json','stone-thrower-clocked-')
         if 'local-original/artillery-native16/regional-models.json' in self.files:
             self.check_models('local-original/artillery-native16/regional-models.json','artillery-progression-')
+        if 'local-original/regional-stable/regional-models-native17.json' in self.files:
+            self.check_models('local-original/regional-stable/regional-models-native17.json','regional-buildings-native17-')
+        if 'local-original/king-regicide/manifest.json' in self.files:
+            self.check_models('local-original/king-regicide/manifest.json','king-regicide-')
+            self.check_teams('local-original/king-regicide/team/manifest.json','king-regicide-')
+        for family in ('warehouse','stable','kingregicide'):
+            name=f'local-original/{family}-icons/manifest.json'
+            if name not in self.files:continue
+            self.ref(name,'original-citycenter-icons.js','regional-icon-manifest')
+            for profile,rows in self.read_json(name).get('profiles',{}).items():
+                for key,asset in rows.get('assets',{}).items():
+                    source=f'{name}.{profile}.{key}'
+                    target=self.ref(asset.get('url'),source,'regional-icon')
+                    if target and self.digest(target)!=asset.get('sha256'):
+                        self.error('regional-icon-hash-mismatch',target,source)
         self.check_textures_and_ground();self.check_teams();self.check_model_seasons();self.check_audio();self.check_static_runtime()
         if 'local-original/audio/manifest-stone-thrower-up.json' in self.files:
             self.check_audio('local-original/audio/manifest-stone-thrower-up.json','stone-thrower-')
+        if 'local-original/audio/native-families-civ8-regicide.json' in self.files:
+            self.check_audio_families('local-original/audio/native-families-civ8-regicide.json')
         if 'original-water.js' in self.files:self.check_water()
         if 'local-original/farm-composites.json' in self.files:self.check_farms()
         if 'original-hud.js' in self.files:self.check_hud()

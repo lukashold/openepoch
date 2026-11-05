@@ -316,6 +316,12 @@ Attack{id:76,epoch:5,until:15,present:true,missile:true,visual_kind:1,min_mobile
 Attack{id:77,epoch:5,until:15,present:true,missile:true,visual_kind:3,min_mobile:0.0_f32,min_immobile:0.0_f32,angle:0.5199999809265137_f32,apply_time:0.28999999165534973_f32,pack_time:1.0_f32,unpack_time:1.0_f32,splash:0.0_f32,friendly:0.0_f32,latent:false,auto_target:true,attack_on_move:false,ordnance:0,air:false,mobile:true,projectile_speed:Some(6.0_f32)},
 Attack{id:78,epoch:10,until:15,present:true,missile:true,visual_kind:5,min_mobile:0.0_f32,min_immobile:0.0_f32,angle:0.5199999809265137_f32,apply_time:0.30000001192092896_f32,pack_time:1.0_f32,unpack_time:1.0_f32,splash:0.0_f32,friendly:0.0_f32,latent:false,auto_target:true,attack_on_move:false,ordnance:0,air:false,mobile:true,projectile_speed:Some(11.0_f32)},
 Attack{id:79,epoch:0,until:15,present:true,missile:false,visual_kind:0,min_mobile:0.0_f32,min_immobile:0.0_f32,angle:0.5199999809265137_f32,apply_time:0.5_f32,pack_time:1.0_f32,unpack_time:1.0_f32,splash:0.0_f32,friendly:0.0_f32,latent:false,auto_target:true,attack_on_move:false,ordnance:0,air:false,mobile:true,projectile_speed:None},
+#[cfg(feature="ee2-native13")]
+Attack{id:80,epoch:0,until:5,present:true,missile:false,visual_kind:0,min_mobile:0.0,min_immobile:0.0,angle:0.52,apply_time:0.5,pack_time:1.0,unpack_time:1.0,splash:0.0,friendly:0.0,latent:false,auto_target:true,attack_on_move:false,ordnance:0,air:false,mobile:true,projectile_speed:None},
+#[cfg(feature="ee2-native13")]
+Attack{id:80,epoch:5,until:10,present:true,missile:false,visual_kind:0,min_mobile:0.0,min_immobile:0.0,angle:0.52,apply_time:1.2,pack_time:1.0,unpack_time:1.0,splash:0.0,friendly:0.0,latent:false,auto_target:true,attack_on_move:false,ordnance:0,air:false,mobile:true,projectile_speed:None},
+#[cfg(feature="ee2-native13")]
+Attack{id:80,epoch:10,until:15,present:true,missile:false,visual_kind:2,min_mobile:0.0,min_immobile:0.0,angle:0.52,apply_time:0.6,pack_time:1.0,unpack_time:1.0,splash:0.0,friendly:0.0,latent:false,auto_target:true,attack_on_move:false,ordnance:0,air:false,mobile:true,projectile_speed:None},
 ];
 pub fn lookup(id:DefId,epoch:u8)->Option<&'static Attack>{ROWS.iter().find(|r|r.id==id&&epoch>=r.epoch&&epoch<r.until)}
 pub fn min_range(a:&Attack,target_mobile:bool)->f32{let r=if target_mobile{a.min_mobile}else{a.min_immobile};if r==0.0&&a.splash>0.0&&!a.air{a.splash}else{r}}

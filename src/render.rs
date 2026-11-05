@@ -346,6 +346,30 @@ impl Game {
                 }
             }
         }
+        #[cfg(feature = "ee2-native13")]
+        if self.regicide.is_some() {
+            const CROWN: [[i32; 2]; 12] = [
+                [-3,-2], [0,-2], [3,-2],
+                [-2,-1], [0,-1], [2,-1],
+                [-2,0], [-1,0], [0,0], [1,0], [2,0], [0,1],
+            ];
+            let king = crate::ee2_regicide::KING;
+            for (index, e) in self.ents[..self.high].iter().enumerate() {
+                let stationed = (0..e.ncargo as usize).any(|slot| e.cargo[slot] == king && e.cargo_hp[slot] > 0);
+                if !e.alive || !(stationed || (e.def == king && self.visible(index))) {
+                    continue;
+                }
+                let (x, y) = (e.x.floor() as i32, e.y.floor() as i32);
+                let team = TEAM[e.team as usize];
+                for [dx, dy] in CROWN {
+                    let (x, y) = (x + dx, y + dy);
+                    if (0..N as i32).contains(&x) && (0..N as i32).contains(&y) {
+                        let o = (y as usize * N + x as usize) * 4;
+                        self.mini[o..o+3].copy_from_slice(&team);
+                    }
+                }
+            }
+        }
     }
 
     /// HUD state as a small JSON document; the page polls it a few times a second.
@@ -372,10 +396,14 @@ impl Game {
                 rule.percent, standing.counts[me as usize], standing.total, standing.target);
         }
         #[cfg(feature = "ee2-native13")]
-        if let Some(rule) = self.sole_survivor {
+        if let Some(rule) = self.sole_rules() {
             let seconds = if self.winner == 0 { rule.remaining_seconds(self.tick).unwrap_or(-1) } else { -1 };
             let _ = write!(s, "\"soleSurvivor\":{{\"players\":{},\"allianceAllowed\":{},\"seconds\":{}}},",
                 rule.active(self.nplayers).count_ones(), self.sole_alliances_allowed(), seconds);
+        }
+        #[cfg(feature = "ee2-native13")]
+        if self.regicide.is_some() {
+            let _ = write!(s, "\"regicide\":{{\"kingAlive\":{}}},", self.king_owners() & (1 << me) != 0);
         }
         // selection summary
         let mut first = NOIDX;

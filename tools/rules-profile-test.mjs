@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {resolveRulesProfile,rulesProfileURL,loadRulesWasm,assertRulesProfile,savedRulesProfileMatches,UP15_PROFILE_ENABLED} from '../docs/rules-profile.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from '../docs/season-session.js';
+import {checkedClimate,peerClimates,savedClimate} from '../docs/skirmish-climates.js';
 import {normalizeSeasonSettings} from '../docs/original-seasons.js';
 import {normalizeOriginalHeading,originalFractionForZoom} from '../docs/original-camera.js';
 import {Lockstep,PROTOCOL_VERSION} from '../docs/net.js';
@@ -13,7 +14,7 @@ import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedC
 
 const root=new URL('../',import.meta.url),analysis=new URL('../../EE2-Research/analysis/',import.meta.url);
 const sha=b=>createHash('sha256').update(b).digest('hex');
-const sourceNames=['main.js','index.html','rules-profile.js','net.js','season-session.js','civilization-setup.js'];
+const sourceNames=['main.js','index.html','rules-profile.js','net.js','season-session.js','skirmish-climates.js','civilization-setup.js'];
 const sourceBytes=Object.fromEntries(await Promise.all(sourceNames.map(async name=>[name,await fs.readFile(new URL('docs/'+name,root))])));
 const sourceHashes=Object.fromEntries(Object.entries(sourceBytes).map(([name,bytes])=>[name,sha(bytes)]));
 const main=sourceBytes['main.js'].toString(),html=sourceBytes['index.html'].toString();
@@ -82,14 +83,17 @@ const indexedDB={open(name,version){
 async function environment(id,seat=0,qa=false,menu={}){
  const p=qa?resolveRulesProfile(`http://localhost/?${id==='own'?'':'rules=ee2&profile='+id+'&'}qa`,{up15Enabled:true}):profiles[id],w=await fresh(id),elements=new Map(),messages=[],begins=[];
  const $=id=>{if(!elements.has(id))elements.set(id,{value:'',checked:false,disabled:false,style:{},textContent:''});return elements.get(id);};
- for(const [key,value] of Object.entries({...{'pop-limit':'500',supplies:'1','start-epoch':'0','end-epoch':'14','map-visibility':'2','season-start':seat?'10':'2','season-length':seat?'30':'5',seed:seat?'99':'7',mpai:seat?'2':'0'},...menu.values}))$(key).value=value;
+ for(const [key,value] of Object.entries({...{'pop-limit':'500',supplies:'1','start-epoch':'0','end-epoch':'14','map-visibility':'2','map-climate':'0','season-start':seat?'10':'2','season-length':seat?'30':'5',seed:seat?'99':'7',mpai:seat?'2':'0'},...menu.values}))$(key).value=value;
  $('season-cycle').checked=!seat;
- const render={setSeasonPhase(){}},session=createSeasonSession(w,render,render),cam={x:0,y:0,zoom:28,heading:0};
+ const render={setSeasonPhase(){},setSeasonClimate(){},setLightingSettings(){},setLightingContext(){}};
+ const climates=menu.climates??[0],climateControl=$('map-climate'),menuClimate=()=>checkedClimate(+climateControl.value,climates);
+ const session=createSeasonSession(w,render,render,render,climates),cam={x:0,y:0,zoom:28,heading:0};
  class Element{constructor(){this.children=[];this.style={};this.value='';}append(...nodes){this.children.push(...nodes);}before(node){this.previous=node;}}
  const anchor=new Element(),civilizationSetup=createCivilizationSetup({wasm:w,document:{createElement:()=>new Element()},anchor});
  if(civilizationSetup.enabled&&menu.choices)anchor.previous.children.slice(1).forEach((row,i)=>row.children[1].value=String(menu.choices[i]));
  let draws=0;
  const context=vm.createContext({wasm:w,rulesProfile:p,savedRulesProfileMatches,indexedDB,$,seasonSession:session,savedSeasonSettings,normalizeSeasonSettings,peerSeasonSettings,
+  checkedClimate,peerClimates,savedClimate,climates,climateControl,menuClimate,
   civilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange,
   sfx:{presentationWord:()=>{const word=menu.words?.[draws];draws++;return word??draws*29;}},
   referenceMode:p.reference,qaMode:false,normalizeOriginalHeading,originalFractionForZoom,innerWidth:1280,innerHeight:720,MAP:256,performance,queueMicrotask,
@@ -127,6 +131,48 @@ for(const id of ['own','base','up15']){
  for(const p of peers){const worker=p.w.select_idle_worker();check(worker!==0xffffffff,'Actual local worker can issue a network command');p.w.select_none();p.w.select_point(p.w.ent_x(worker),p.w.ent_y(worker),0,0,0,0,256,256);p.w.cmd_context(p.w.start_x()+5,p.w.start_y()+3,0);check(p.w.outbox_len()>0,'Actual profile command enters the network outbox');}
  for(let tick=0;tick<180;tick++){flush();for(const p of peers)check(p.api.getNet().ls.step(),'Actual profile lockstep tick advances');flush();}
  equal(peers[0].w.state_hash(),peers[1].w.state_hash(),'Actual profile simulation stays synchronized');check(peers.every(p=>!p.api.getNet().ls.desync),'No profile lockstep desync');check(commandPackets>=2,'Genuine player commands cross the queued transport');network.push({profile:id,ruleset:peers[0].w.ruleset(),ticks:peers[0].w.game_tick(),packets,commandPackets,stateHash:peers[0].w.state_hash()>>>0});
+}
+{
+ const climates=[0,1,2,3];
+ const solo=await environment('up15',0,false,{climates,values:{'map-climate':'3'}});
+ solo.api.start(1,71,0);
+ equal(solo.session.climate,3,'Singleplayer starts with the chosen climate');
+ await solo.api.saveGame(true);
+ const store=databases.get(solo.p.database),record=store.get('slot1');
+ equal(record.climate,3,'New save persists a nondefault climate');
+ solo.$('map-climate').value='1';solo.api.start(1,72,0);
+ await solo.api.loadGame();equal(solo.session.climate,3,'Load restores the saved climate');
+ const legacy=structuredClone(record);delete legacy.climate;store.set('slot1',legacy);
+ await solo.api.loadGame();equal(solo.session.climate,0,'Old saves restore Temperate');
+ const forged=structuredClone(record);forged.climate='3';store.set('slot1',forged);
+ const before=solo.w.state_hash(),begins=solo.begins.length;
+ await solo.api.loadGame();equal(solo.w.state_hash(),before,'Malformed climate leaves current simulation intact');
+ equal(solo.begins.length,begins,'Malformed climate does not start a session');
+ store.set('slot1',structuredClone(saved.up15));
+
+ for(const [selected,guestClimates] of [[3,climates],[0,[0]],[3,[0]]]){
+  const peers=await Promise.all([environment('up15',0,false,{climates,values:{'map-climate':String(selected)}}),
+   environment('up15',1,false,{climates:guestClimates})]);
+  const queue=[[],[]],handlers=peers.map((p,i)=>p.api.channel(i));
+  let startMessage;
+  const channels=peers.map((_,i)=>({readyState:'open',send(message){
+   if(typeof message==='string'&&JSON.parse(message).t==='start')startMessage=JSON.parse(message);
+   queue[1-i].push(typeof message==='string'?message:message.slice(0));
+  },close(){this.readyState='closed';handlers[i].close();}}));
+  handlers.forEach((h,i)=>h.open(channels[i]));
+  for(let guard=0;queue.some(q=>q.length);guard++){
+   assert.ok(guard<20,'Climate handshake drains');
+   for(let i=0;i<2;i++)for(const msg of queue[i].splice(0))handlers[i].message(msg);
+  }
+  if(selected&&!guestClimates.includes(selected)){
+   equal(startMessage,undefined,'Unsupported guest climate prevents the match from starting');
+   check(peers[0].messages.some(text=>text.includes('Originalgrafiken für dieses Klima')));
+  }else{
+   equal(startMessage.climate,selected||undefined,'Handshake uses a backward-compatible default climate');
+   for(const peer of peers){check(peer.api.getNet()?.ls instanceof Lockstep);equal(peer.session.climate,selected);}
+   equal(peers[0].w.state_hash(),peers[1].w.state_hash(),'Climate negotiation preserves peer simulation state');
+  }
+ }
 }
 for(const id of ['own','base','up15'])for(const other of ['own','base','up15'])if(id!==other){const e=await environment(id),h=e.api.channel(1),ch={readyState:'open',send(){},close(){this.readyState='closed';h.close();}};h.open(ch);h.message(JSON.stringify({t:'hello',protocol:PROTOCOL_VERSION,rules:profiles[other].ruleset}));equal(ch.readyState,'closed','Different numerical profiles reject in real channel');check(!e.api.getNet(),'Cross-profile hello cannot initialize multiplayer');}
 for(const id of ['own','base','up15']){const e=await environment(id),h=e.api.channel(1),ch={readyState:'open',send(){},close(){this.readyState='closed';h.close();}};h.open(ch);h.message(JSON.stringify({t:'hello',protocol:PROTOCOL_VERSION-1,rules:e.p.ruleset}));equal(ch.readyState,'closed','All profiles reject an older network protocol');check(!e.api.getNet(),'Old protocol cannot initialize multiplayer');}

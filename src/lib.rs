@@ -58,6 +58,8 @@ mod ee2_conquest;
 mod ee2_territory_victory;
 #[cfg(feature = "ee2-native13")]
 mod ee2_sole_survivor;
+#[cfg(feature = "ee2-native13")]
+mod ee2_regicide;
 mod territory;
 mod placement;
 #[cfg(all(feature = "ee2-reference",not(feature="ee2-up15")))]
@@ -1147,6 +1149,14 @@ pub extern "C" fn configure_match_sole_survivor(
     unsafe { (&mut *addr_of_mut!(GAME)).as_mut().map_or(0, |game|
         game.configure_match_sole_survivor(packed_civs, pop, supplies, start, end) as u32) }
 }
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_match_regicide(
+    packed_civs: u32, pop: u32, supplies: u32, start: u32, end: u32, sole: u32,
+) -> u32 {
+    unsafe { (&mut *addr_of_mut!(GAME)).as_mut().map_or(0, |game|
+        game.configure_match_regicide(packed_civs, pop, supplies, start, end, sole) as u32) }
+}
 #[cfg(feature="ee2-epoch-range13")]
 #[no_mangle]
 pub extern "C" fn match_final_epoch() -> u32 {
@@ -1179,7 +1189,8 @@ pub extern "C" fn match_final_epoch() -> u32 {
  assert!(combat_stat(79,0,8,0,0)>0.0);assert!(combat_stat(65,5,0,5,0)>0.0);
  assert!(combat_stat(12,5,79,0,3)>=0.0);
  for id in 0..80{for field in 0..4{assert!(combat_stat(id,5,79,5,field).is_finite());}}
- assert_eq!(combat_stat(80,0,0,0,0),-1.0);assert_eq!(combat_stat(0,0,80,0,0),-1.0);
+ let unknown=DEFS.len() as u32;
+ assert_eq!(combat_stat(unknown,0,0,0,0),-1.0);assert_eq!(combat_stat(0,0,unknown,0,0),-1.0);
  assert_eq!(state_hash(),before);let game=g();game.save();assert!(game.savebuf==bytes);
 }
 

@@ -55,6 +55,9 @@ Wasserreflexionen sowie saisonale Gebäude- und Baumtexturen sind enthalten.
 Im Scharmützelmenü lassen sich Startmonat, Jahreszeitenwechsel und Dauer wählen.
 Ohne Wechsel bleibt der gewählte Monat erhalten. Pause hält den Wechsel an.
 Spielstände behalten diese Einstellungen; alte Spielstände zeigen festen Sommer.
+Unter Klima stehen Gemäßigt, Trocken, Tropisch und Tundra zur Verfügung. Die
+Auswahl ändert Gelände, Gebäudeböden und Beleuchtung. Ältere Spielstände ohne
+Klimaangabe verwenden Gemäßigt.
 Im Mehrspieler bestimmt der Gastgeber die Jahreszeiten. Beide Spieler benötigen
 denselben Regelstand mit Netzwerkprotokoll14.
 
@@ -160,5 +163,12 @@ alle verbleibenden Spieler miteinander verbündet, beginnt ein Countdown.
 Das Spiel löst die Bündnisse beim ersten Takt nach Ablauf von zehn Sekunden.
 
 Die Mühle bildet die leichte Artillerie in jeder Epoche aus. Die Modelle
-und Symbole wechseln mit der Epoche, von der Steinschleuder bis zur
-Fusionswerfer.
+und Symbole wechseln mit der Epoche, von der Steinschleuder bis zum
+Fusionswerfer. Lager und Stall verwenden die Originalsymbole ihrer Epoche.
+
+Bei Königsmord beginnt jeder Spieler mit einem König am ersten eigenen
+Stadtzentrum. Der König lässt sich bewegen und in Festungen und
+Truppentransportern stationieren. Wer seinen König verliert, scheidet aus,
+auch wenn sein Stadtzentrum noch steht. Die Modelle, Porträts und Stimmen
+des Königs wechseln mit der Epoche. Königsmord speichert seinen Modus mit
+dem Spielstand und steht für UP-Einzelspielerscharmützel zur Verfügung.

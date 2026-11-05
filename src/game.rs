@@ -246,6 +246,8 @@ pub struct Game {
     pub(crate) territory_victory: Option<crate::ee2_territory_victory::TerritoryVictory>,
     #[cfg(feature = "ee2-native13")]
     pub(crate) sole_survivor: Option<crate::ee2_sole_survivor::SoleSurvivor>,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) regicide: Option<crate::ee2_regicide::Regicide>,
     pub groups: Vec<Vec<u32>>,
     pub push: Vec<(f32, f32)>,
     pub scratch: Vec<usize>,
@@ -328,6 +330,8 @@ impl Game {
             territory_victory: None,
             #[cfg(feature = "ee2-native13")]
             sole_survivor: None,
+            #[cfg(feature = "ee2-native13")]
+            regicide: None,
             groups: vec![Vec::new(); 10],
             push: vec![(0.0, 0.0); MAXE],
             scratch: Vec::with_capacity(256),
@@ -891,6 +895,14 @@ impl Game {
             mix(rule.eliminated.into());
             mix(self.winner.into());
         }
+        #[cfg(feature = "ee2-native13")]
+        if let Some(rule) = self.regicide {
+            mix(crate::ee2_regicide::MAGIC);
+            mix(rule.state.eliminated.into());
+            mix(rule.state.deadline.to_bits());
+            mix(rule.sole.into());
+            mix(self.winner.into());
+        }
         #[cfg(feature="ee2-civ8")]
         if self.civilizations.iter().any(|&c|c!=crate::civ8_runtime::LEGACY_NEUTRAL){
             mix(0x38564943);for c in self.civilizations{mix(c as u32);}
@@ -1036,7 +1048,8 @@ impl Game {
             }
             let poll_result = self.tick % 20 == 0;
             #[cfg(feature = "ee2-native13")]
-            let poll_result = poll_result || (self.sole_survivor.is_some() && self.winner == 0);
+            let poll_result = poll_result
+                || ((self.sole_survivor.is_some() || self.regicide.is_some()) && self.winner == 0);
             if poll_result && (self.winner == 0 || cfg!(all(feature="ee2-pack8",feature="ee2-civ8"))) {
                 self.refresh_match_alive();
                 if self.winner == 0 {
@@ -1050,6 +1063,7 @@ impl Game {
     fn eliminated_by_victory(&self, seat: usize) -> bool {
         self.territory_victory.is_some_and(|rule| rule.eliminated(seat))
             || self.sole_survivor.is_some_and(|rule| rule.eliminated(seat))
+            || self.regicide.is_some_and(|rule| rule.state.eliminated(seat))
     }
 
     pub(crate) fn refresh_match_alive(&mut self) {
@@ -1078,6 +1092,11 @@ impl Game {
     }
 
     fn poll_match_outcome(&mut self) {
+        #[cfg(feature = "ee2-native13")]
+        if let Some(rule) = self.regicide {
+            self.poll_regicide_outcome(rule);
+            return;
+        }
         #[cfg(feature = "ee2-native13")]
         if let Some(rule) = self.sole_survivor {
             self.poll_sole_outcome(rule);
@@ -1675,6 +1694,13 @@ impl Game {
             }
         }
         (b.x, b.y)
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn regicide_spawn_point(&self, city: &Ent) -> Option<(f32, f32)> {
+        let king = &DEFS[crate::ee2_regicide::KING as usize];
+        let point = self.spawn_point(city, &DEFS[TC as usize], king);
+        self.map.pass[0][tile_of(point.0, point.1)].then_some(point)
     }
 
     fn update_ent(&mut self, i: usize) {

@@ -1,7 +1,7 @@
 use crate::{game::*,defs::*};
 fn game()->Game{Game::new(7,1,0,1,0)}
 #[test]fn eighty_source_definitions_and_cross64_ids(){
-    assert_eq!(DEFS.len(),80);assert_eq!(DEFS[64].name,"UniqueUnitBabylonian2");
+    assert_eq!(SAVE_DEFINITION_COUNT,80);assert_eq!(DEFS[64].name,"UniqueUnitBabylonian2");
     assert_eq!(DEFS[79].name,"UniqueUnitTurkish1");
     assert_eq!(crate::ids::decode_job(crate::ids::unit_job(79)),Some((0,79)));
     assert_eq!(crate::ids::render_source(crate::ids::unit_render(79)as crate::ids::RenderId),79);

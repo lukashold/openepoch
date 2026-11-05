@@ -4,7 +4,7 @@ use crate::{game::{Game, DT}, pack8_save};
 
 pub(crate) const MAGIC: u32 = u32::from_le_bytes(*b"VCS1");
 const HEADER: usize = 20;
-const IDLE: f32 = -1.0;
+pub(crate) const IDLE: f32 = -1.0;
 const DISBAND_SECONDS: f32 = 10.0;
 
 #[derive(Clone, Copy)]
@@ -44,7 +44,21 @@ impl Game {
     }
 
     pub(crate) fn sole_alliances_allowed(&self) -> bool {
-        self.sole_survivor.is_none_or(|rule| rule.active(self.nplayers).count_ones() != 2)
+        self.sole_rules().is_none_or(|rule| rule.active(self.nplayers).count_ones() != 2)
+    }
+
+    pub(crate) fn sole_rules(&self) -> Option<SoleSurvivor> {
+        self.sole_survivor.or_else(|| self.regicide.filter(|rule| rule.sole).map(|rule| rule.state))
+    }
+
+    pub(crate) fn poll_sole_disband(&mut self, rule: &mut SoleSurvivor, candidates: u8) {
+        let now = self.tick as f32 * DT;
+        if rule.deadline == IDLE {
+            rule.deadline = now + DISBAND_SECONDS;
+        } else if now > rule.deadline {
+            self.force_sole_survivor_war(candidates);
+            rule.deadline = IDLE;
+        }
     }
 
     pub(crate) fn poll_sole_outcome(&mut self, mut rule: SoleSurvivor) {
@@ -57,13 +71,7 @@ impl Game {
         let survivors = rule.active(self.nplayers);
         let local = 1 << self.local;
         if survivors.count_ones() > 1 && crate::ee2_conquest::survivors_are_allied(self) {
-            let now = self.tick as f32 * DT;
-            if rule.deadline == IDLE {
-                rule.deadline = now + DISBAND_SECONDS;
-            } else if now > rule.deadline {
-                self.force_sole_survivor_war(candidates);
-                rule.deadline = IDLE;
-            }
+            self.poll_sole_disband(&mut rule, candidates);
         } else if survivors.count_ones() == 2 && survivors != candidates {
             // 005B3110 clears offers at the transition into the final pair.
             self.clear_sole_diplomacy_offers();

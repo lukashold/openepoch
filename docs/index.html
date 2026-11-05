@@ -69,6 +69,7 @@
   #menu button.alt { padding:8px 14px; font-size:14px; }
   #camera-tools {position:fixed;top:45px;right:12px;display:flex;gap:3px;z-index:3;}
   #camera-tools[hidden]{display:none;}
+  #map-climate-row[hidden]{display:none;}
   #territory-victory-status[hidden],#sole-survivor-status[hidden]{display:none;}
   #camera-tools button{background:#182329e8;color:#e9e7cb;border:1px solid #88917b;border-radius:3px;font:600 18px system-ui;padding:4px 11px;cursor:pointer;}
   .dim { color:var(--dim); }
@@ -205,7 +206,7 @@
       </div>
       <section id="sk-game" class="skirmish-pane">
         <div id="sk-victory-options" hidden>
-          <div class="row"><label for="sk-victory-condition">Siegbedingung</label><select id="sk-victory-condition"><option value="conquest">Eroberung</option><option value="territory">Territorienkontrolle</option></select></div>
+          <div class="row"><label for="sk-victory-condition">Siegbedingung</label><select id="sk-victory-condition"><option value="conquest">Eroberung</option><option value="regicide">Königsmord</option><option value="territory">Territorienkontrolle</option></select></div>
           <div id="sk-sole-victory"><div class="row"><label for="sk-sole-survivor">Einziger Überlebender</label><input id="sk-sole-survivor" type="checkbox" checked></div></div>
           <div id="sk-territory-victory" hidden><div class="row"><label for="sk-territory-percent">Zielanteil der Territorien</label><select id="sk-territory-percent"><option value="30">30 %</option><option value="40">40 %</option><option value="50" selected>50 %</option><option value="60">60 %</option><option value="70">70 %</option><option value="80">80 %</option><option value="90">90 %</option></select></div></div>
         </div>
@@ -219,6 +220,7 @@
       </section>
       <section id="sk-map" class="skirmish-pane">
         <div class="row"><label for="seed">Kartenschlüssel</label><input id="seed" size="8" placeholder="zufällig"></div>
+        <div class="row map-options" id="map-climate-row" hidden><label for="map-climate">Klima</label><select id="map-climate"><option value="0" selected>Gemäßigt</option><option value="1">Trocken</option><option value="2">Tropisch</option><option value="3">Tundra (1.6)</option></select></div>
         <div class="row map-options"><label for="map-visibility">Kartenaufdeckung</label><select id="map-visibility"><option value="0">Unerforscht · mit Kriegsnebel</option><option value="1">Erkundet · mit Kriegsnebel</option><option value="2">Vollständig aufgedeckt · ohne Kriegsnebel</option></select></div>
         <p class="dim" style="font-size:12px;margin:0 0 10px">Kartenaufdeckung gilt für ein neues Scharmützel. Erkundet zeigt das Gelände; vollständig aufgedeckt zeigt auch fremde Einheiten.</p>
       </section>
@@ -281,6 +283,6 @@
   <p id="building-status" role="status" aria-live="polite"></p>
   <small>Strg / R / Komma / Punkt: 90° · mit Umschalt: 45° · Umschalt+Mausrad: 45° · Esc: abbrechen</small>
 </aside>
-<script type="module" src="main.js?v=native16"></script>
+<script type="module" src="main.js?v=native17"></script>
 </body>
 </html>

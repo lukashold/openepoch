@@ -5,7 +5,7 @@ import { buildModels } from './models.js?v=fortress1';
 import { parseCheat } from './cheats.js';
 import { researchPanel } from './research.js?v=rank-families';
 import { originalResearchActions, researchCost, researchState } from './original-research-actions.js?v=rank-families';
-import { diplomacyPanel } from './diplomacy.js?v=native16';
+import { diplomacyPanel } from './diplomacy.js?v=native17';
 import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native6';
 import {loadNativeFontUI} from './original-font-ui.js?v=native6';
 import {territoryClaimMessage} from './territory-help.js?v=fortress1';
@@ -17,25 +17,26 @@ import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regi
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native6';
-import {loadOriginalModels} from './original-renderer.js?v=native16s';
+import {loadOriginalModels} from './original-renderer.js?v=native17-climates';
 import {ownMapTerrainOrigin} from './original-citycenter-terrain.js?v=regional10';
-import {loadCityCenterIcons,loadHouseIcons,loadDockIcons,loadBarracksIcons,loadMillIcons,loadTempleIcons,loadLightArtilleryIcons} from './original-citycenter-icons.js?v=lightartillery16';
+import {loadCityCenterIcons,loadHouseIcons,loadDockIcons,loadBarracksIcons,loadMillIcons,loadTempleIcons,loadLightArtilleryIcons,loadWarehouseIcons,loadStableIcons,loadKingIcons} from './original-citycenter-icons.js?v=native17';
 import {loadSourceSailRuntime} from './source-sail-runtime.js?v=sails7';
 import {createRenderAssetMapping} from './original-render-namespace.js?v=native6';
 import {createFrontendNamespace} from './render-namespace.js?v=native9';
 import {createRenderActorMetadata} from './render-actor-metadata.js?v=pack8';
 import {createPackRenderMetadata} from './original-pack-states.js?v=pack8';
-import {loadOriginalGround} from './original-ground.js?v=regional13';
-import {loadOriginalTerrain} from './original-terrain.js?v=native6';
+import {loadOriginalGround} from './original-ground.js?v=skirmish-climates';
+import {loadOriginalTerrain} from './original-terrain.js?v=skirmish-climates';
 import {loadOriginalWater} from './original-water.js?v=water-farm3';
 import {createOriginalReflection} from './original-reflection.js?v=visual-seasons2';
 import {normalizeSeasonSettings} from './original-seasons.js';
-import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native16';
+import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=skirmish-climates';
+import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native17';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=epoch13';
 import {createFullscreenController} from './fullscreen.js?v=building2';
-import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native16';
+import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native17';
 import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=fortress1';
 import {updateOriginalCamera,originalCameraRay,originalFractionForZoom,normalizeOriginalHeading,rotateOriginalCameraHeading} from './original-camera.js?v=heading2';
 
@@ -474,34 +475,42 @@ victoryOptions.hidden=rulesProfile.id!=='up15';
 const victoryCondition=$('sk-victory-condition');
 function updateVictoryOptions(){
   $('sk-territory-victory').hidden=victoryOptions.hidden||victoryCondition.value!=='territory';
-  $('sk-sole-victory').hidden=victoryOptions.hidden||victoryCondition.value!=='conquest';
+  $('sk-sole-victory').hidden=victoryOptions.hidden||victoryCondition.value==='territory';
 }
 victoryCondition.addEventListener('change',updateVictoryOptions);
 updateVictoryOptions();
 const originalAssets=await loadOriginalAssets(gl,originalEnabled);
 const citizenPresentation=await loadCitizenPresentation({enabled:originalEnabled&&rulesProfile.sourceIdentityVersion===1});
 const regionalIconOptions={enabled:originalEnabled&&rulesProfile.ruleset===2,profile:'packed7',neutralFallback:'west'};
-const [cityCenterIcons,houseIcons,dockIcons,barracksIcons,millIcons,templeIcons,lightArtilleryIcons]=await Promise.all([
+const [cityCenterIcons,houseIcons,dockIcons,barracksIcons,millIcons,templeIcons,lightArtilleryIcons,warehouseIcons,stableIcons,kingIcons]=await Promise.all([
   loadCityCenterIcons(regionalIconOptions),loadHouseIcons(regionalIconOptions),
   loadDockIcons(regionalIconOptions),loadBarracksIcons(regionalIconOptions),
-  loadMillIcons(regionalIconOptions),loadTempleIcons(regionalIconOptions),loadLightArtilleryIcons(regionalIconOptions),
+  loadMillIcons(regionalIconOptions),loadTempleIcons(regionalIconOptions),loadLightArtilleryIcons(regionalIconOptions),loadWarehouseIcons(regionalIconOptions),loadStableIcons(regionalIconOptions),loadKingIcons(regionalIconOptions),
 ]);
-const regionalIcons = new Map([[0, cityCenterIcons], [1, houseIcons], [3, barracksIcons], [5, dockIcons], [22, lightArtilleryIcons], [48, millIcons], [51, templeIcons]]);
+const regionalIcons = new Map([[0, cityCenterIcons], [1, houseIcons], [3, barracksIcons], [5, dockIcons], [22, lightArtilleryIcons], [48, millIcons], [49, stableIcons], [51, templeIcons], [52, warehouseIcons], [80, kingIcons]]);
 const regionalPortraits = new Set([...regionalIcons].filter(([, icons]) => icons.status().enabled).map(([id]) => id));
 originalAssets.citizenPresentation=citizenPresentation;
-const originalLabels=await loadOriginalLabels(rulesProfile,{definitionCount:renderNamespace.definitionCount,...(rulesProfile.ruleset===2?{manifestURL:'./local-original/labels-native-civ8.json'}:{})});
+const originalLabels=await loadOriginalLabels(rulesProfile,{definitionCount:renderNamespace.definitionCount,...(rulesProfile.ruleset===2?{manifestURL:'./local-original/labels-native-civ8-regicide.json'}:{})});
+const climateProfiles=await loadSkirmishClimates(originalEnabled&&rulesProfile.ruleset===2);
 const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,total)=>{
   $('play').textContent=`Originalgrafiken laden · ${Math.round(loaded/total*100)} %`;
-},{assetMapping,packAnimations:rulesProfile.ruleset===2,dynamicSails:rulesProfile.ruleset===2&&typeof wasm.render_meta_version==='function',lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-civ8.json',scaleManifestURL:'./local-original/model-scales-civ8.json',teamManifestURL:'./local-original/team-textures/manifest-civ8.json',regionalManifestURL:'./local-original/artillery-native16/regional-models.json',stoneAttackElapsedForActor:actor=>wasm.render_stone_thrower_attack_elapsed(actor.handle,actor.renderTime),terrainFallbackManifestURL:'./local-original/regional-e15-seasons/terrain-fallback.json',houseLodManifestURL:'./local-original/regional-house-lod/manifest.json',houseLodProfile:{mode:'resource',modelDetail:2,rendererCap0x200:false},citizenManifestURL:'./local-original/citizens9/manifest.json',citizenNeutralFallback:'west',sourceIdentityForActor:actor=>wasm.actor_source_identity(actor.handle)>>>0}:{})});
+},{assetMapping,climateProfiles,packAnimations:rulesProfile.ruleset===2,dynamicSails:rulesProfile.ruleset===2&&typeof wasm.render_meta_version==='function',lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-civ8.json',scaleManifestURL:'./local-original/model-scales-civ8.json',teamManifestURL:'./local-original/team-textures/manifest-civ8.json',regionalManifestURL:'./local-original/regional-stable/regional-models-native17.json',additionalRegionalManifestURL:'./local-original/king-regicide/manifest.json',stoneAttackElapsedForActor:actor=>wasm.render_stone_thrower_attack_elapsed(actor.handle,actor.renderTime),terrainFallbackManifestURL:'./local-original/regional-e15-seasons/terrain-fallback.json',houseLodManifestURL:'./local-original/regional-house-lod/manifest.json',houseLodProfile:{mode:'resource',modelDetail:2,rendererCap0x200:false},citizenManifestURL:'./local-original/citizens9/manifest.json',citizenNeutralFallback:'west',sourceIdentityForActor:actor=>wasm.actor_source_identity(actor.handle)>>>0}:{})});
 const sourceSails=await loadSourceSailRuntime({wasm,namespace:renderNamespace,models:originalModels,enabled:originalEnabled&&rulesProfile.ruleset===2,decorateMetadata:metadata=>packMetadata?packMetadata.snapshot(metadata):metadata});
 if(sourceSails?.metrics.error)console.warn('Source sails:',sourceSails.metrics.error);
-sfx.configureOriginalDefinitions({wasm,bindings:originalModels.manifest?.models||[],citizenPresentation,regionalMusic:rulesProfile.ruleset===2,...(rulesProfile.ruleset===2?{familyManifestURL:'native-families-civ8.json',playbackManifestURL:'manifest-stone-thrower-up.json'}:{})});
+sfx.configureOriginalDefinitions({wasm,bindings:[...(originalModels.manifest?.models||[]),...(originalModels.additionalRegionalAudio||[])],citizenPresentation,regionalMusic:rulesProfile.ruleset===2,...(rulesProfile.ruleset===2?{familyManifestURL:'native-families-civ8-regicide.json',playbackManifestURL:'manifest-stone-thrower-up.json'}:{})});
 const originalGround=await loadOriginalGround(gl,originalEnabled,{assetMapping,...(rulesProfile.ruleset===2
   ?{manifestURL:'./local-original/regional-temple/ground-decals.json'}:{})});
-const originalTerrain=await loadOriginalTerrain(gl,originalEnabled,TEAM);
+const originalTerrain=await loadOriginalTerrain(gl,originalEnabled,TEAM,{climateProfiles});
 originalTerrain.setLightingContext?.(originalModels.lighting);
 const originalWater=await loadOriginalWater(gl,originalEnabled);
-const seasonSession=createSeasonSession(wasm,originalTerrain,originalGround,originalModels);
+const climates=supportedSkirmishClimates(climateProfiles,originalTerrain,originalGround,originalModels);
+const seasonSession=createSeasonSession(wasm,originalTerrain,originalGround,originalModels,climates);
+const climateControl=$('map-climate');
+for(const option of climateControl.options)option.hidden=option.disabled=!climates.includes(+option.value);
+$('map-climate-row').hidden=climates.length<2;
+try{const previous=localStorage.getItem('openepoch-map-climate');if(previous!==null&&climates.includes(+previous))climateControl.value=previous;}catch{/* optional preference */}
+climateControl.onchange=()=>{try{localStorage.setItem('openepoch-map-climate',climateControl.value);}catch{/* optional preference */}};
+const menuClimate=()=>checkedClimate(+climateControl.value,climates);
 const originalReflection=createOriginalReflection(gl);
 let reflectionError=null;
 await loadOriginalEpochIcons(originalAssets,originalModels.manifest);
@@ -714,7 +723,7 @@ function resolvedSkirmishChoices(choices, players) {
 }
 function start(nAi, seed, benchUnits, humans = 1, local = 0) {
   bench = benchUnits;
-  seasonSession.configure(menuSeasonSettings());
+  seasonSession.configure(menuSeasonSettings(),benchUnits?0:menuClimate());
   wasm.init(seed >>> 0, nAi, benchUnits, humans, local);
   if(!benchUnits&&civilizationSetup.enabled){
     const players=Math.max(2,Math.min(4,nAi+humans));
@@ -722,9 +731,10 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
     const victoryMode=$('sk-victory-condition').value;
     const territoryPercent=originalSkirmish&&victoryMode==='territory'
       ? +$('sk-territory-percent').value : undefined;
-    const soleSurvivor=originalSkirmish&&victoryMode==='conquest'&&$('sk-sole-survivor').checked;
+    const regicide=originalSkirmish&&victoryMode==='regicide';
+    const soleSurvivor=originalSkirmish&&(victoryMode==='conquest'||regicide)&&$('sk-sole-survivor').checked;
     applyMatchSettings(wasm,{...resolvedSkirmishChoices(civilizationSetup.choices(),players),
-      popLimit:+$('pop-limit').value,supplies:+$('supplies').value,territoryPercent,soleSurvivor},players);
+      popLimit:+$('pop-limit').value,supplies:+$('supplies').value,territoryPercent,regicide,soleSurvivor},players);
   }else if(!benchUnits&&humans===1){
     wasm.skirmish_setup(+$('pop-limit').value, +$('supplies').value);
     if(referenceMode)wasm.skirmish_epoch(+$('start-epoch').value);
@@ -753,7 +763,8 @@ async function saveGame(silent) {
   if (!length) { if (!silent) toast('Spielstand konnte nicht gespeichert werden'); return; }
   const bytes = u8(ptr, length).slice();
   try {
-    const record={bytes,cam:{...cam},when:Date.now(),epoch:ui?ui.ename:'',session:saveSession,seasons:seasonSession.settings,rules:rulesProfile.ruleset,profile:rulesProfile.id};
+    const record={bytes,cam:{...cam},when:Date.now(),epoch:ui?ui.ename:'',session:saveSession,seasons:seasonSession.settings,
+      ...(seasonSession.climate?{climate:seasonSession.climate}:{}),rules:rulesProfile.ruleset,profile:rulesProfile.id};
     const d=await db();
     await new Promise((resolve,reject)=>{
       const tx=d.transaction('saves','readwrite'),store=tx.objectStore('saves'),old=store.get('slot1');
@@ -768,13 +779,15 @@ async function loadGame(slot='slot1') {
   const s = await dbDo('readonly', st => st.get(slot)).catch(() => null);
   if (!s) return toast('No saved game found');
   if(!savedRulesProfileMatches(s,rulesProfile))return toast('Dieser Spielstand gehört zu einer anderen Regelversion. Wähle im Menü die passende Regelversion.');
-  let seasons;try{seasons=savedSeasonSettings(s);}catch{return toast('Die Jahreszeiteneinstellungen des Spielstands sind ungültig.');}
+  let seasons,climate;
+  try{seasons=savedSeasonSettings(s);climate=savedClimate(s,climates);}
+  catch{return toast('Die Jahreszeiten- oder Klimaeinstellungen des Spielstands sind ungültig.');}
   const ptr = wasm.load_alloc(s.bytes.length);
   u8(ptr, s.bytes.length).set(s.bytes);
   if (!wasm.load_apply()) return toast('Dieser Spielstand ist mit dieser Regelversion nicht kompatibel.');
   net = null; bench = 0; Object.assign(cam, s.cam);
   cam.heading=normalizeOriginalHeading(s.cam?.heading??0);
-  seasonSession.configure(seasons);setSeasonControls(seasons);
+  seasonSession.configure(seasons,climate);setSeasonControls(seasons);climateControl.value=climate;
   if(referenceMode)cam.nativeFraction=Number.isFinite(s.cam?.nativeFraction)?s.cam.nativeFraction:originalFractionForZoom(s.cam?.zoom??28,innerWidth,innerHeight);
   begin(); toast('Spielstand geladen');
 }
@@ -1044,10 +1057,13 @@ function updateUi(drawn, now) {
     ? `Kontrolliert ${territory.owned} von ${territory.total} · Ziel ${territory.target} · noch ${Math.max(0,territory.target-territory.owned)}`
     : '';
   const soleStatus=$('sole-survivor-status'), sole=ui.soleSurvivor;
-  soleStatus.hidden=!sole||!!ui.win;
-  soleStatus.textContent=!sole ? '' : sole.seconds>=0
+  const regicide=ui.regicide;
+  soleStatus.hidden=(!sole&&!regicide)||!!ui.win;
+  const soleText=!sole ? '' : sole.seconds>=0
     ? `Bündnisse werden in ${sole.seconds} Sekunden aufgelöst!`
     : sole.players===2 ? 'Einziger Überlebender · zwei Spieler übrig' : `Einziger Überlebender · ${sole.players} Spieler übrig`;
+  const regicideText=regicide ? (regicide.kingAlive ? 'Königsmord · König lebt' : 'Königsmord · König gefallen') : '';
+  soleStatus.textContent=[regicideText,soleText].filter(Boolean).join(' · ');
   $('idle').textContent = `Freie Bürger: ${ui.idle}`;
   $('idle').style.visibility = ui.idle && !bench ? 'visible' : 'hidden';
   let status = `${Math.round(1000 / frameMs)} fps · worst ${worstMs.toFixed(0)} ms · sim ${simMs.toFixed(2)} ms/tick · ${ui.n} entities · ${drawn} drawn`;
@@ -1369,7 +1385,8 @@ function channel(local) {
   return {
     open(c) {
       ch = c;
-      ch.send(JSON.stringify({t:'hello', protocol:PROTOCOL_VERSION, rules:wasm.ruleset(),civilizationChoice:civilizationSetup.choice(0)}));
+      ch.send(JSON.stringify({t:'hello', protocol:PROTOCOL_VERSION, rules:wasm.ruleset(),civilizationChoice:civilizationSetup.choice(0),
+        ...(climates.length>1?{climates}:{})}));
       mpStatus('Verbunden – Spielversion wird geprüft …');
     },
     message(d) {
@@ -1378,6 +1395,8 @@ function channel(local) {
         if(rejected)return;
         if (m.t === 'hello') {
           if (m.protocol !== PROTOCOL_VERSION || m.rules !== wasm.ruleset()) { rejected = true; mpStatus('Unterschiedliche Spielversion oder Regelprofile. Beide müssen denselben Stand öffnen.'); ch.close(); return; }
+          let guestClimates;
+          try{guestClimates=peerClimates(m.climates);}catch{return reject('Ungültige Klimaauswahl des Mitspielers.');}
           if(civilizationSetup.enabled){try{civilizationChoice(m.civilizationChoice);}catch{return reject('Ungültige Völkerwahl des Mitspielers.');}}
           else if(m.civilizationChoice!=null)return reject('Die Völkerwahl passt nicht zur Regelversion.');
           if (local === 0 && !net) {
@@ -1385,8 +1404,10 @@ function channel(local) {
               const ai=+$('mpai').value,players=2+ai,choices=civilizationSetup.choices();
               if(choices)choices[1]=m.civilizationChoice;
               const resolved=choices?resolvedSkirmishChoices(choices,players):{civilizations:null,epoch:0,finalEpoch:null};
+              const climate=menuClimate();
+              if(!guestClimates.includes(climate))return reject('Die Originalgrafiken für dieses Klima fehlen beim Mitspieler.');
               const cfg = {t:'start',protocol:PROTOCOL_VERSION,rules:wasm.ruleset(),seed:(seedOf()>>>0)||1,ai,visibility:+$('map-visibility').value,seasons:menuSeasonSettings(),
-                ...resolved,popLimit:choices?+$('pop-limit').value:null,supplies:choices?+$('supplies').value:null};
+                ...(climate?{climate}:{}),...resolved,popLimit:choices?+$('pop-limit').value:null,supplies:choices?+$('supplies').value:null};
               checkStart(cfg);ch.send(JSON.stringify(cfg));launch(cfg);
             }catch{return reject('Die Scharmützeleinstellungen konnten nicht übernommen werden.');}
           }
@@ -1403,6 +1424,7 @@ function channel(local) {
   function checkStart(cfg){
     if(cfg.protocol!==PROTOCOL_VERSION||cfg.rules!==wasm.ruleset()||![0,1,2].includes(cfg.visibility)||!Number.isInteger(cfg.seed)||cfg.seed<1||cfg.seed>0xffffffff||![0,1,2].includes(cfg.ai))throw Error('Invalid new match settings');
     peerSeasonSettings(cfg.seasons);
+    checkedClimate(cfg.climate,climates);
     if(civilizationSetup.enabled){
       checkedCivilizations(cfg.civilizations,2+cfg.ai);
       if(![250,500,1000].includes(cfg.popLimit)||![0,1,2].includes(cfg.supplies))throw Error('Invalid skirmish setup');
@@ -1414,7 +1436,7 @@ function channel(local) {
     wasm.init(cfg.seed >>> 0, cfg.ai, 0, 2, local);
     if(civilizationSetup.enabled)applyMatchSettings(wasm,cfg,2+cfg.ai);
     wasm.skirmish_visibility(cfg.visibility);
-    seasonSession.configure(peerSeasonSettings(cfg.seasons));setSeasonControls(seasonSession.settings);
+    seasonSession.configure(peerSeasonSettings(cfg.seasons),cfg.climate);setSeasonControls(seasonSession.settings);climateControl.value=seasonSession.climate;
     net = { ch, pc, ls: null };
     net.ls = new Lockstep(wasm, local, buf => { if (ch.readyState === 'open') ch.send(buf); });
     bench = 0; cam.x = wasm.start_x(); cam.y = wasm.start_y(); cam.zoom = 28;

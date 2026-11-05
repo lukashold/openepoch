@@ -11,7 +11,7 @@ pub fn split(buf:&[u8])->Option<(&[u8],Option<&[u8]>)>{
  if u(buf,0)!=Some(MAGIC){return Some((buf,None));}
  if buf.len()<HEADER+36+12||u(buf,56)!=Some(RECORD as u32)||u(buf,60)!=Some(HEADER as u32)||buf.get(24..56)?!=pack8_defs::SOURCE_HASH{return None;}
  let version=u(buf,4)?;if version!=1&&!(cfg!(all(feature="ee2-pack8",feature="ee2-civ8"))&&(version==2||version==3||(cfg!(feature="ee2-citizen9")&&version==4))){return None;}
- let core=u(buf,8)?as usize;let count=u(buf,12)?as usize;if core<36||core>64*1024*1024||count>MAXE||u(buf,20)?as usize!=crate::defs::DEFS.len(){return None;}
+ let core=u(buf,8)?as usize;let count=u(buf,12)?as usize;if core<36||core>64*1024*1024||count>MAXE||u(buf,20)?as usize!=crate::defs::SAVE_DEFINITION_COUNT{return None;}
  let records=HEADER.checked_add(core)?;let base_end=records.checked_add(count.checked_mul(RECORD)?)?.checked_add((MAXE-count).checked_mul(4)?)?;
  let mut end=base_end;
  #[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
@@ -32,7 +32,7 @@ impl Game{
   #[cfg(feature="ee2-citizen9")] if !self.validate_source_birth(){return Vec::new();}
   let count=self.ents[..self.high].iter().filter(|e|e.alive).count();let mut b=Vec::with_capacity(HEADER+inner.len()+count*RECORD+self.free.len()*4+12);
   let version=if cfg!(feature="ee2-citizen9"){4}else if cfg!(all(feature="ee2-pack8",feature="ee2-civ8")){3}else{1};
-  for v in[MAGIC,version,inner.len()as u32,count as u32,u(inner,0).unwrap(),crate::defs::DEFS.len()as u32]{put(&mut b,v);}b.extend_from_slice(&pack8_defs::SOURCE_HASH);put(&mut b,RECORD as u32);put(&mut b,HEADER as u32);b.extend_from_slice(inner);
+  for v in[MAGIC,version,inner.len()as u32,count as u32,u(inner,0).unwrap(),crate::defs::SAVE_DEFINITION_COUNT as u32]{put(&mut b,v);}b.extend_from_slice(&pack8_defs::SOURCE_HASH);put(&mut b,RECORD as u32);put(&mut b,HEADER as u32);b.extend_from_slice(inner);
   for i in 0..self.high{if self.ents[i].alive{for v in words(self.canonical_pack(i)){put(&mut b,v);}}}
   // The old loader reconstructs a sorted free list. Retain actual allocation
   // order here so the next real generation handle survives a modern load.

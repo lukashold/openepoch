@@ -38,6 +38,7 @@ export function selectRegionalModel(variants, epoch, civilization) {
   else break;
  }
  // Own neutral14 and unavailable contexts use the existing asset.
+ base ??= variants.find(variant => variant.regionalFallback && epoch >= variant.epoch && epoch < variant.until) || null;
  if (base === null || !Number.isInteger(civilization) || civilization < 0 || civilization > 13) return base;
  const selected = variants.find(variant => variant.regionalCivilizations?.includes(civilization) &&
   epoch >= variant.epoch && epoch < variant.until);

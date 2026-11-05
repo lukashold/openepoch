@@ -319,7 +319,7 @@ pub fn strip_wrapper(input:&[u8])->Option<(&[u8],Option<&[u8]>)>{
     if u32v(input,0)?!=SAVE_MAGIC{return Some((input,None));}
     let descriptor=input.len().checked_sub(52)?;let d=input.get(descriptor..)?;
     if u32v(d,0)?!=META||u32v(d,4)?!=7||u32v(d,8)?!=2||d.get(12..44)?!=crate::roster6_registry::FINGERPRINT||u32v(d,44)?!=52||u32v(d,48)?!=META_END{return None;}
-    if u32v(input,12)? as usize!=DEFS.len()&&!(cfg!(feature="ee2-civ8")&&u32v(input,12)?==61){return None;}
+    if u32v(input,12)? as usize!=SAVE_DEFINITION_COUNT&&!(cfg!(feature="ee2-civ8")&&u32v(input,12)?==61){return None;}
     let payload=input.get(..descriptor)?;
     if u32v(payload,payload.len().checked_sub(4)?)?!=END{return None;}
     let length=u32v(payload,payload.len().checked_sub(8)?)? as usize;

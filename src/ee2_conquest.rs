@@ -1,10 +1,15 @@
 //! UP Conquest presence uses the source behavior bindings for the current roster.
 
-use crate::defs::DEFS;
+use crate::defs::{DEFS, SAVE_DEFINITION_COUNT};
 use crate::game::Game;
 
 include!("ee2_conquest_rows.rs");
-const _: [(); DEFS.len()] = [(); CONQUEST_CAPABLE.len()];
+const _: [(); SAVE_DEFINITION_COUNT] = [(); CONQUEST_CAPABLE.len()];
+const _: [(); DEFS.len()] = [(); CONQUEST_CAPABLE.len() + 1];
+
+fn capable(def: crate::ids::DefId) -> bool {
+    def == crate::ee2_regicide::KING || CONQUEST_CAPABLE[def as usize]
+}
 
 pub(crate) fn living_seats(game: &Game) -> [bool; 4] {
     let mut living = [false; 4];
@@ -16,9 +21,9 @@ pub(crate) fn living_seats(game: &Game) -> [bool; 4] {
         if living[owner] {
             continue;
         }
-        living[owner] = CONQUEST_CAPABLE[actor.def as usize]
+        living[owner] = capable(actor.def)
             || (0..actor.ncargo as usize).any(|slot| {
-                actor.cargo_hp[slot] > 0 && CONQUEST_CAPABLE[actor.cargo[slot] as usize]
+                actor.cargo_hp[slot] > 0 && capable(actor.cargo[slot])
             });
     }
     living

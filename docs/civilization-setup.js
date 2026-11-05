@@ -71,6 +71,9 @@ export function applyMatchSettings(wasm,settings,nplayers){
   if (!Number.isInteger(settings.territoryPercent)) throw Error('Ungültiger Zielanteil der Territorien.');
   if(typeof wasm.configure_match_territory_victory!=='function')throw Error('Die Spieldatei unterstützt keine Territorienkontrolle.');
   result=wasm.configure_match_territory_victory(packed,settings.popLimit,settings.supplies,settings.epoch,end,settings.territoryPercent);
+ } else if (settings.regicide === true) {
+  if(typeof wasm.configure_match_regicide!=='function')throw Error('Die Spieldatei unterstützt Königsmord noch nicht.');
+  result=wasm.configure_match_regicide(packed,settings.popLimit,settings.supplies,settings.epoch,end,+(settings.soleSurvivor!==false));
  } else if (settings.soleSurvivor === true) {
   if(typeof wasm.configure_match_sole_survivor!=='function')throw Error('Die Spieldatei unterstützt den Modus Einziger Überlebender noch nicht.');
   result=wasm.configure_match_sole_survivor(packed,settings.popLimit,settings.supplies,settings.epoch,end);

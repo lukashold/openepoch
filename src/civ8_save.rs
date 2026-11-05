@@ -30,7 +30,7 @@ pub fn normalize(input:&[u8])->Option<(Vec<u8>,[u8;4])>{
         if u(input,0)?==crate::save6::MAGIC6 && ![57,61].contains(&u(input,12)?){return None;}
         return Some((input.to_vec(),[crate::civ8_runtime::LEGACY_NEUTRAL;4]));
     }
-    if u(input,4)?!=176||u(input,8)?!=96||u(input,12)? as usize!=DEFS.len(){return None;}
+    if u(input,4)?!=176||u(input,8)?!=96||u(input,12)? as usize!=SAVE_DEFINITION_COUNT{return None;}
     let descriptor=input.len().checked_sub(52)?;let d=&input[descriptor..];
     if u(d,0)?!=META||u(d,4)?!=8||u(d,8)?!=1||d.get(12..44)?!=crate::civ8_registry::FINGERPRINT||u(d,44)?!=52||u(d,48)?!=META_END{return None;}
     let start=descriptor.checked_sub(BYTES)?;let c=&input[start..descriptor];
