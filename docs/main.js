@@ -8,15 +8,16 @@ import { diplomacyPanel } from './diplomacy.js?v=fortress1';
 import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native6';
 import {loadNativeFontUI} from './original-font-ui.js?v=native6';
 import {territoryClaimMessage} from './territory-help.js?v=fortress1';
-import * as sfx from './audio.js?v=regional11';
+import * as sfx from './audio.js?v=regional12';
 import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=citizen9';
+import {mountOriginalShellVideo} from './original-shell-video.js?v=native12';
 import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regional10';
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native6';
-import {loadOriginalModels} from './original-renderer.js?v=regional10';
+import {loadOriginalModels} from './original-renderer.js?v=regional12';
 import {ownMapTerrainOrigin} from './original-citycenter-terrain.js?v=regional10';
-import {loadCityCenterIcons,loadHouseIcons} from './original-citycenter-icons.js?v=regional11';
+import {loadCityCenterIcons,loadHouseIcons,loadDockIcons} from './original-citycenter-icons.js?v=regional12';
 import {loadSourceSailRuntime} from './source-sail-runtime.js?v=sails7';
 import {createRenderAssetMapping} from './original-render-namespace.js?v=native6';
 import {createFrontendNamespace} from './render-namespace.js?v=native9';
@@ -443,17 +444,20 @@ for (const pr of [terrain, water, models, quads]) {
   if (pr.u.uTeam) gl.uniform3fv(pr.u.uTeam, teamFlat);
 }
 const originalEnabled=referenceMode&&new URLSearchParams(location.search).get('assets')!=='procedural';
+const shellMovie=mountOriginalShellVideo($('shell-movie'),originalEnabled?rulesProfile.id:null);
 const originalAssets=await loadOriginalAssets(gl,originalEnabled);
 const citizenPresentation=await loadCitizenPresentation({enabled:originalEnabled&&rulesProfile.sourceIdentityVersion===1});
 const buildingIconOptions={enabled:originalEnabled&&rulesProfile.ruleset===2,profile:'packed7',neutralFallback:'west'};
-const [cityCenterIcons,houseIcons]=await Promise.all([loadCityCenterIcons(buildingIconOptions),loadHouseIcons(buildingIconOptions)]);
-const buildingIcons = new Map([[0, cityCenterIcons], [1, houseIcons]]);
+const [cityCenterIcons,houseIcons,dockIcons]=await Promise.all([
+  loadCityCenterIcons(buildingIconOptions),loadHouseIcons(buildingIconOptions),loadDockIcons(buildingIconOptions),
+]);
+const buildingIcons = new Map([[0, cityCenterIcons], [1, houseIcons], [5, dockIcons]]);
 const buildingPortraits = new Set([...buildingIcons].filter(([, icons]) => icons.status().enabled).map(([id]) => id));
 originalAssets.citizenPresentation=citizenPresentation;
 const originalLabels=await loadOriginalLabels(rulesProfile,{definitionCount:renderNamespace.definitionCount,...(rulesProfile.ruleset===2?{manifestURL:'./local-original/labels-native-civ8.json'}:{})});
 const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,total)=>{
   $('play').textContent=`Originalgrafiken laden · ${Math.round(loaded/total*100)} %`;
-},{assetMapping,packAnimations:rulesProfile.ruleset===2,dynamicSails:rulesProfile.ruleset===2&&typeof wasm.render_meta_version==='function',lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-civ8.json',scaleManifestURL:'./local-original/model-scales-civ8.json',teamManifestURL:'./local-original/team-textures/manifest-civ8.json',regionalManifestURL:'./local-original/regional-houses/manifest.json',terrainFallbackManifestURL:'./local-original/regional-houses/terrain-fallback.json',citizenManifestURL:'./local-original/citizens9/manifest.json',citizenNeutralFallback:'west',sourceIdentityForActor:actor=>wasm.actor_source_identity(actor.handle)>>>0}:{})});
+},{assetMapping,packAnimations:rulesProfile.ruleset===2,dynamicSails:rulesProfile.ruleset===2&&typeof wasm.render_meta_version==='function',lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-civ8.json',scaleManifestURL:'./local-original/model-scales-civ8.json',teamManifestURL:'./local-original/team-textures/manifest-civ8.json',regionalManifestURL:'./local-original/regional-e15-seasons/with-docks/manifest.json',terrainFallbackManifestURL:'./local-original/regional-e15-seasons/terrain-fallback.json',houseLodManifestURL:'./local-original/regional-house-lod/manifest.json',houseLodProfile:{mode:'resource',modelDetail:2,rendererCap0x200:false},citizenManifestURL:'./local-original/citizens9/manifest.json',citizenNeutralFallback:'west',sourceIdentityForActor:actor=>wasm.actor_source_identity(actor.handle)>>>0}:{})});
 const sourceSails=await loadSourceSailRuntime({wasm,namespace:renderNamespace,models:originalModels,enabled:originalEnabled&&rulesProfile.ruleset===2,decorateMetadata:metadata=>packMetadata?packMetadata.snapshot(metadata):metadata});
 if(sourceSails?.metrics.error)console.warn('Source sails:',sourceSails.metrics.error);
 sfx.configureOriginalDefinitions({wasm,bindings:originalModels.manifest?.models||[],citizenPresentation,regionalMusic:rulesProfile.ruleset===2,...(rulesProfile.ruleset===2?{familyManifestURL:'native-families-civ8.json'}:{})});
@@ -651,6 +655,7 @@ function begin() {
   $('speed').textContent = '1×'; $('pause').textContent = 'Pause';
   for (const id of ['speed', 'pause', 'save']) $(id).style.display = net ? 'none' : '';
   $('menu').style.display = 'none'; $('end').style.display = 'none';
+  shellMovie(false);
   $('camera-tools').hidden=!referenceMode;
   uploadTerrain();
   bindWorldTerrainMaterial();
@@ -659,7 +664,7 @@ function begin() {
     const state = JSON.parse(dec.decode(u8(ptr, wasm.ui_len())));
     initialMusicEpoch = state.epoch;
     musicCivilization = wasm.player_civilization(state.local) >>> 0;
-    sfx.resetRegionalMusic();
+    sfx.rebindRegionalMusic();
   }
   wasm.events_clear();
   running = true; last = performance.now(); lastAuto = last;
@@ -776,7 +781,8 @@ setInterval(() => {
 // ---------------------------------------------------------------- frame loop
 function frame(now) {
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
-  if (!running || worldMaterialPending) { sfx.music(false); return; }
+  if (!running) { sfx.menuMusic(); return; }
+  if (worldMaterialPending) return;
   sfx.music(!paused, ui?.epoch ?? initialMusicEpoch, musicCivilization);
   frameMs += (dt * 1000 - frameMs) * 0.05;
   worstMs = Math.max(worstMs * 0.995, dt * 1000);
@@ -1260,9 +1266,10 @@ function toMenu() {
   if (running && !net && !bench) saveGame(true);
   if (net) { try { net.ch.close(); net.pc.close(); } catch { /* already gone */ } net = null; }
   worldMaterialPending = null;
-  sfx.resetRegionalMusic();
   originalModels.bindNativeTerrainMaterial?.(null);
   running = false; $('menu').style.display = 'flex'; $('end').style.display = 'none'; $('mp').style.display = 'none';
+  shellMovie(true);
+  sfx.menuMusic();
 }
 $('quit').onclick = toMenu; $('again').onclick = toMenu;
 const seedOf = () => { const v = parseInt($('seed').value, 10); return Number.isFinite(v) && v > 0 ? v : (Math.random() * 2 ** 31) | 0 || 1; };

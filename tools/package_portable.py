@@ -89,12 +89,25 @@ def main():
     if 'loadCityCenterIcons' in main_source:
         required.update({'docs/original-citycenter-icons.js', 'docs/local-original/citycenter-icons/manifest.json'})
     if 'regionalMusic:rulesProfile.ruleset===2' in main_source:
-        required.update({'docs/original-regional-music.js', 'docs/source-music-controller.js',
+        required.update({'docs/original-regional-music.js', 'docs/source-music-controller.js', 'docs/source-menu-music.js',
                          'docs/local-original/music11/manifest.json'})
     if 'loadHouseIcons' in main_source:
         required.update({'docs/local-original/house-icons/manifest.json', 'docs/local-original/regional-houses/manifest.json',
                          'docs/local-original/regional-houses/terrain-fallback.json',
                          'docs/local-original/regional-houses/model-seasons.json', 'docs/local-original/regional-houses/team/manifest.json'})
+    if 'houseLodManifestURL' in main_source:
+        required.update({'docs/original-house-lod.js', 'docs/local-original/regional-house-lod/manifest.json'})
+    if 'loadDockIcons' in main_source:
+        required.update({'docs/local-original/dock-icons/manifest.json', 'docs/local-original/regional-docks/manifest.json',
+                         'docs/local-original/regional-docks/model-seasons.json', 'docs/local-original/regional-docks/team/manifest.json'})
+    if 'mountOriginalShellVideo' in main_source:
+        required.update({'docs/original-shell-video.js', 'docs/local-original/shell-video/fe-base.mp4',
+                         'docs/local-original/shell-video/fe-up15.mp4', 'docs/local-original/shell-video/manifest.json'})
+    if 'regional-e15-seasons/with-docks/manifest.json' in main_source:
+        required.update({'docs/local-original/regional-e15-seasons/with-docks/manifest.json',
+                         'docs/local-original/regional-e15-seasons/with-docks/model-seasons.json',
+                         'docs/local-original/regional-e15-seasons/with-docks/team/manifest.json',
+                         'docs/local-original/regional-e15-seasons/terrain-fallback.json'})
     if len(names) != len(set(names)) or not required.issubset(names):
         raise ValueError("Incomplete or duplicated game tree")
     print("Hashing complete game files ...", flush=True)

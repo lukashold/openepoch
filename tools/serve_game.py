@@ -10,6 +10,7 @@ import io
 import json
 import os
 from pathlib import Path
+import re
 import signal
 import socket
 import sys
@@ -22,7 +23,7 @@ import webbrowser
 
 HOST = "127.0.0.1"
 STATUS_PATH = "/__openepoch__/status"
-SERVER_VERSION = 2
+SERVER_VERSION = 3
 WASM_FILES = ("openepoch.wasm", "openepoch-ee2.wasm", "openepoch-ee2-up15.wasm")
 
 
@@ -49,14 +50,19 @@ class GameHandler(SimpleHTTPRequestHandler):
         ".ogg": "audio/ogg",
         ".wav": "audio/wav",
         ".mp3": "audio/mpeg",
+        ".mp4": "video/mp4",
     }
 
     def end_headers(self):
         self.send_header("Cache-Control", "no-cache")
         self.send_header("X-Content-Type-Options", "nosniff")
+        if getattr(self, "video_response", False):
+            self.send_header("Accept-Ranges", "bytes")
         super().end_headers()
 
     def send_head(self):
+        self.video_response = False
+        self.range_remaining = None
         port = self.server.server_address[1]
         if self.headers.get("Host", "") not in {
             f"127.0.0.1:{port}", f"localhost:{port}"
@@ -80,7 +86,58 @@ class GameHandler(SimpleHTTPRequestHandler):
         if not contained:
             self.send_error(403, "Outside game directory")
             return None
+        if target.suffix.lower() == ".mp4" and target.is_file():
+            self.video_response = True
+            interval = re.fullmatch(r"bytes=([0-9]{0,20})-([0-9]{0,20})", self.headers.get("Range", ""))
+            if interval and any(interval.groups()):
+                return self.video_range(target, *interval.groups())
         return super().send_head()
+
+    def video_range(self, target, first, last):
+        try:
+            source = target.open("rb")
+        except OSError:
+            self.send_error(404, "Video unavailable")
+            return None
+        try:
+            stat = os.fstat(source.fileno())
+            length = stat.st_size
+            modified = self.date_time_string(stat.st_mtime)
+            if self.headers.get("If-Range", modified) != modified:
+                source.close()
+                return super().send_head()
+            start = int(first) if first else max(0, length - int(last))
+            end = min(int(last), length - 1) if first and last else length - 1
+            if start > end:
+                source.close()
+                self.send_response(416)
+                self.send_header("Content-Range", f"bytes */{length}")
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return None
+            source.seek(start)
+            self.range_remaining = end - start + 1
+            self.send_response(206)
+            self.send_header("Content-Type", "video/mp4")
+            self.send_header("Content-Range", f"bytes {start}-{end}/{length}")
+            self.send_header("Content-Length", str(self.range_remaining))
+            self.send_header("Last-Modified", modified)
+            self.end_headers()
+            return source
+        except BaseException:
+            source.close()
+            raise
+
+    def copyfile(self, source, outputfile):
+        if self.range_remaining is None:
+            return super().copyfile(source, outputfile)
+        remaining = self.range_remaining
+        while remaining:
+            block = source.read(min(remaining, 64 * 1024))
+            if not block:
+                break
+            outputfile.write(block)
+            remaining -= len(block)
 
     def list_directory(self, path):
         self.send_error(404, "No directory listing")
@@ -164,7 +221,7 @@ def main(argv=None):
     except OSError as error:
         print("Lokaler Spielserver konnte nicht starten: " + str(error), file=sys.stderr)
         return 2
-    url = f"http://{HOST}:{port}/?rules=ee2&build=native11"
+    url = f"http://{HOST}:{port}/?rules=ee2&build=native12"
     print("READY " + json.dumps({"url": url, "host": HOST, "port": port, "reused": reused}), flush=True)
     if port != args.port and args.port:
         print(f"Port{args.port} war belegt. Dieses Mal wird Port{port} verwendet; gespeicherte Spiele im Browser sind an den Port gebunden.", flush=True)

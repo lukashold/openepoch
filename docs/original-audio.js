@@ -1,5 +1,5 @@
 import {createTypedAudioBindings} from './original-audio-bindings.js?v=native8';
-import {createRegionalMusicPlayback} from './original-regional-music.js?v=regional11';
+import {createRegionalMusicPlayback} from './original-regional-music.js?v=regional12';
 // Playback of original assets extracted from the user's local EE2 installation.
 // Metadata and byte-for-byte source hashes live beside those assets. This module
 // contains no recordings and remains usable when local-original is absent.
@@ -176,13 +176,24 @@ export function createOriginalAudio(options={}) {
     const buffer=buffers.get(record.file);if(!buffer){load(record.file);return false;}
     start(buffer,volume*(record.volume??1),pan,'effect');stats.effectPlays++;return true;
   }
+  function regionalPlayback() {
+    if (!regionalMusicEnabled || !ctx || !master) return null;
+    if (!regionalMusic) {
+      regionalMusic = createRegionalMusicPlayback(ctx, master, {fetchFile, onStart: () => stats.musicStarts++});
+    }
+    return regionalMusic;
+  }
+  function menuMusic(enabledMusic=musicEnabled) {
+    active = false;
+    musicEnabled = enabledMusic;
+    stopAmbient();
+    if (musicFile) stopMusic(false);
+    return regionalPlayback()?.update({mode: 'menu', running: !muted, enabled: musicEnabled}) ?? false;
+  }
   function music(running,epoch=0,enabledMusic=musicEnabled,civilization=0) {
     active=running;musicEnabled=enabledMusic;currentEpoch=epoch;
     if(!manifest)return false;
-    if (regionalMusicEnabled && !regionalMusic) {
-      regionalMusic = createRegionalMusicPlayback(ctx, master, {fetchFile, onStart: () => stats.musicStarts++});
-    }
-    const regional = regionalMusicEnabled && regionalMusic?.update({running:canRun(), enabled:musicEnabled, civilization, epoch});
+    const regional = regionalPlayback()?.update({running:canRun(), enabled:musicEnabled, civilization, epoch});
     if(!canRun()){stopMusic();stopAmbient();return true;}
     if (regional) {
       if (musicFile) stopMusic(false);
@@ -193,8 +204,9 @@ export function createOriginalAudio(options={}) {
     return !musicEnabled||!!tracks?.some(file=>!failed.has(file));
   }
   return {
-    prepare,acknowledge,citizenDeath,effect,music,setDefinitionBindings,role:(id,epoch)=>typed.role(id,epoch),
+    prepare,acknowledge,citizenDeath,effect,music,menuMusic,setDefinitionBindings,role:(id,epoch)=>typed.role(id,epoch),
     resetRegionalMusic(){regionalMusic?.reset();},
+    rebindRegionalMusic(){regionalMusic?.rebind();},
     setMuted(value){muted=value;if(value){regionalMusic?.suspend();stopMusic();stopAmbient();for(const source of [...live])stop(source);}},
     setSpeechEnabled(value){speech=value;if(!value)stopVoices();},
     setMusicEnabled(value){musicEnabled=value;if(!value){regionalMusic?.suspend();stopMusic();}},

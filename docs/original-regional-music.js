@@ -1,4 +1,5 @@
 import {createAmbientUpdate, createPresentationRandom} from './source-music-controller.js?v=regional11';
+import {createMenuMusicUpdate} from './source-menu-music.js?v=regional12';
 
 const regions = ['West', 'FarEast', 'MiddleEast', 'MesoAmerican'];
 const civilizationRegions = [0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3];
@@ -21,6 +22,9 @@ function validateManifest(data) {
   for (const row of [...data.regionSets, ...data.epochSets]) {
     if (!Array.isArray(row.files) || row.files.some(name => !Object.hasOwn(data.assets, name))) throw Error('Unbound soundtrack file');
   }
+  if (!Array.isArray(data.menu) || data.menu.length !== 2 || data.menu.some(name => !Object.hasOwn(data.assets, name))) {
+    throw Error('Unbound menu soundtrack');
+  }
   const {fracSilentPieces, timeSilenceLow, timeSilenceHigh, numLoopsLow, numLoopsHigh} = data.settings;
   if (!Number.isFinite(fracSilentPieces) || fracSilentPieces < 0 || fracSilentPieces > 1
       || !Number.isFinite(timeSilenceLow) || !Number.isFinite(timeSilenceHigh) || timeSilenceLow < 0 || timeSilenceLow > timeSilenceHigh
@@ -39,7 +43,7 @@ export function createRegionalMusicPlayback(context, output, {
   onStart = () => {},
   volume = .32,
 } = {}) {
-  let manifest = null, controller = null, status = 'loading', error = null;
+  let manifest = null, controller = null, menu = null, mode = null, status = 'loading', error = null;
   let active = null, fading = null, request = null, readyPiece = null;
   let audible = false, lastTime = null;
   const cache = new Map(), failed = new Set();
@@ -48,6 +52,7 @@ export function createRegionalMusicPlayback(context, output, {
     if (!response.ok) throw Error('Original soundtrack unavailable');
     manifest = validateManifest(await response.json());
     controller = createAmbientUpdate(manifest.settings, random);
+    menu = createMenuMusicUpdate(manifest.menu, random);
     status = 'ready';
     return true;
   }).catch(reason => { status = 'unavailable'; error = reason.message; return false; });
@@ -151,14 +156,26 @@ export function createRegionalMusicPlayback(context, output, {
   function reset() {
     suspend();
     active = null;
-    request = readyPiece = null;
+    rebind();
     controller?.reset();
   }
 
-  function update({running, enabled, civilization, epoch}) {
+  function rebind() {
+    mode = null;
+    request = readyPiece = null;
+    lastTime = null;
+  }
+
+  function update({running, enabled, civilization, epoch, mode: targetMode = 'game'}) {
     if (status === 'unavailable') return false;
     if (!running || !enabled || context.state !== 'running') { suspend(); return true; }
     if (status !== 'ready') return true;
+    if (targetMode !== mode) {
+      rebind();
+      mode = targetMode;
+      if (mode === 'menu') menu.reset();
+      else controller.reset();
+    }
     audible = true;
     const now = context.currentTime;
     const elapsedSeconds = lastTime === null ? 0 : Math.max(0, now - lastTime);
@@ -167,9 +184,10 @@ export function createRegionalMusicPlayback(context, output, {
     // Neutral slot 14 is the own game's western presentation adapter.
     const region = civilization === -1 || civilization === 14 ? 0 : civilizationRegions[civilization];
     const period = epoch >= 0 && epoch < 15 ? epoch < 10 ? 0 : epoch < 13 ? 1 : 2 : undefined;
-    const membership = {region: manifest.regionSets[region] ?? null, epoch: manifest.epochSets[period] ?? null};
+    const membership = mode === 'menu' ? {region: null, epoch: null}
+      : {region: manifest.regionSets[region] ?? null, epoch: manifest.epochSets[period] ?? null};
     if (failed.size) {
-      const eligible = [...(membership.region?.files ?? []), ...(membership.epoch?.files ?? [])];
+      const eligible = mode === 'menu' ? manifest.menu : [...(membership.region?.files ?? []), ...(membership.epoch?.files ?? [])];
       if (eligible.length && eligible.every(file => failed.has(file))) { suspend(); return false; }
     }
     const pending = request ?? readyPiece;
@@ -183,7 +201,7 @@ export function createRegionalMusicPlayback(context, output, {
       return true;
     }
     const stream = active ? {positionMs: Math.floor(position(active) * 1000), durationMs: Math.floor(active.buffer.duration * 1000)} : null;
-    const plan = controller.update({membership, elapsedSeconds, stream});
+    const plan = mode === 'menu' ? menu.update(stream) : controller.update({membership, elapsedSeconds, stream});
     if (plan?.kind === 'fade') fadeActive(plan.fadeSeconds);
     if (plan?.kind === 'play') {
       const selected = {plan, membership};
@@ -191,7 +209,11 @@ export function createRegionalMusicPlayback(context, output, {
       load(plan.file).then(buffer => {
         if (request !== selected) return;
         request = null;
-        if (!buffer) { controller.reset(); return; }
+        if (!buffer) {
+          if (mode === 'menu') menu.reset();
+          else controller.reset();
+          return;
+        }
         if (audible) activate(plan, buffer);
         else readyPiece = {...selected, buffer};
       });
@@ -199,7 +221,7 @@ export function createRegionalMusicPlayback(context, output, {
     return true;
   }
 
-  return Object.freeze({ready, update, suspend, reset,
+  return Object.freeze({ready, update, suspend, reset, rebind,
     status: () => ({status, error, file: active?.file ?? null, active: !!active?.source,
-      fading: fading?.file ?? null, cached: cache.size, failed: [...failed], sourceState: random.state()})});
+      fading: fading?.file ?? null, mode, cached: cache.size, failed: [...failed], sourceState: random.state()})});
 }

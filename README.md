@@ -1,6 +1,6 @@
 # OpenEpoch · lokaler EE2-Ausbau
 
-Arbeitsstand 05.11.2026 · native11. Das EE2-Profil verbindet die eigene Rust-/WASM-Simulation
+Arbeitsstand 05.11.2026 · native12. Das EE2-Profil verbindet die eigene Rust-/WASM-Simulation
 mit importierten Originalmodellen, Animationen, Stimmen, Musik und belegten Spielwerten.
 Die vollständige Übereinstimmung mit Empire Earth II wird weiter erarbeitet.
 
@@ -18,14 +18,22 @@ die tatsächliche Identität der Einheit. Einquartieren, Transport und Laden
 erhalten sie. Auch die Todesgeräusche folgen der Identität. Stadtzentren zeigen
 über alle 15 Epochen die sechs Originalstile der vier Kulturregionen. Die belegten
 Jahreszeitentexturen, Farbvarianten und regionalen Symbole liegen im
-Komplettpaket. Das Material für bestimmte Flächen der letzten Epoche wird
-beim Laden der Karte anhand der Oberfläche am Kartenursprung gebunden.
+Komplettpaket. Für Stadtzentren und Häuser der letzten Epoche werden die
+registrierten Originaltexturen aus den vom Patch geladenen Saisontabellen
+verwendet. Die aktuelle Scharmützelkarte verwendet gemäßigtes Klima.
 
 Häuser verwenden ihre acht Originalstile mit den passenden Modellen,
-Jahreszeiten und Symbolen über alle 15 Epochen. Das Komplettpaket enthält 70
-Originalmusikdateien. Im Scharmützel bestimmen Kulturregion und Epoche die
-Titelauswahl. Wiederholungen und Übergänge folgen dem rekonstruierten Controller
-über die Audiowiedergabe des Browsers.
+Jahreszeiten und Symbolen über alle 15 Epochen. Bei Häusern mit gespeicherten
+Detailstufen folgt die Auswahl der Stufe aus der Originalressource.
+Häfen verwenden in allen 15 Epochen ihre Originalmodelle und Symbole,
+einschließlich der eigenen nahöstlichen Variante der zehnten Epoche.
+Das Komplettpaket enthält 70 Originalmusikdateien. Im Scharmützel bestimmen
+Kulturregion und Epoche die Titelauswahl. Im Hauptmenü laufen die beiden
+Originaltitel in der aus Ghidra ermittelten Reihenfolge, beginnend an einer
+zufällig ausgewählten Stelle. Die Wiedergabe startet nach der ersten
+Interaktion und blendet beim Wechsel zwischen Menü und Partie über.
+Das animierte Menü nutzt die vollständige Originalschleife, im UP-Profil
+mit 2560 × 1440 Pixeln. Die Videos sind für die Browserwiedergabe als MP4 kodiert.
 
 Geschütze und weitere geeignete Einheiten packen beim Bewegen ein und vor dem
 Angriff aus. Die Auswahl bietet außerdem die manuellen Befehle Einpacken und
@@ -67,7 +75,7 @@ Browserbedienung und ein physischer Mac wurden dabei nicht ausgeführt.
 
 ## Komplettpaket für den Mac
 
-Das native11-Komplettpaket enthält den gemeinsam geprüften Laufzeitstand mit
+Das native12-Komplettpaket enthält den gemeinsam geprüften Laufzeitstand mit
 Originalmedien. Das zugehörige Quellpaket enthält eigenen Code, WASM-Builds und
 Prüfungen. Die vollständige Originalübereinstimmung wird weiter erarbeitet.
 
@@ -145,7 +153,7 @@ Nachmittag bei normalem Wetter gewählt. Die vollständige native Tageszeit-,
 Wetter- und Terrain-Lichtsteuerung ist noch offen.
 
 Die folgenden Abschnitte dokumentieren frühere Ausbaustände; maßgeblich ist
-der oben beschriebene Stand native11.
+der oben beschriebene Stand native12.
 
 ## Saisonale Modelle, Wasserreflexionen und Kameradrehung · visual-seasons2
 

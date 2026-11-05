@@ -1,5 +1,5 @@
 const profiles = {packed5: [77, 60], packed7: [308, 240]};
-const stages = {citycenter: [0, 3, 6, 9, 12, 14, 15], house: [0, 2, 4, 6, 8, 10, 12, 14, 15]};
+const stages = {citycenter: [0, 3, 6, 9, 12, 14, 15], house: [0, 2, 4, 6, 8, 10, 12, 14, 15], dock: [0, 3, 6, 9, 10, 12, 14, 15]};
 const regions = [0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3];
 
 export function cityCenterIconCatalog(manifest, {profile, neutralFallback = null, family = 'citycenter'} = {}) {
@@ -100,4 +100,8 @@ export async function loadCityCenterIcons({
 
 export function loadHouseIcons(options = {}) {
   return loadCityCenterIcons({...options, family: 'house'});
+}
+
+export function loadDockIcons(options = {}) {
+  return loadCityCenterIcons({...options, family: 'dock'});
 }

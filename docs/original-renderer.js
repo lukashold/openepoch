@@ -1,4 +1,5 @@
 import {normalizeRenderAssetMapping,sourceRenderBindings,manifestAssetKind} from './original-render-namespace.js';
+import {bindHouseLodParts,houseLodBindings,houseLodProfile,readHouseLodModel} from './original-house-lod.js?v=range11';
 export {createRenderAssetMapping} from './original-render-namespace.js';
 // Textured NIF geometry converted locally by tools/extract_ee2_models.py.
 // This renderer does not inspect original files or alter the deterministic simulation.
@@ -285,7 +286,7 @@ import {citizenModelEntries,selectCitizenModel} from './original-citizen-models.
 import {loadAnimationPayload,withoutAnimationPayload} from './original-animation-payload.js?v=citizen9';
 import {createCityCenterTerrainBinding} from './original-citycenter-terrain.js?v=origin1';
 export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},options={}){
- const result={available:new Set(),models:new Map(),resourceRenderIds:new Set(),errors:[],metrics:{colorMs:0,shadowMs:0,calls:0,triangles:0,gpuMs:0},draw(){},updateTerrain(){},setLightingContext(){return false;},setLightingSettings(){return false;},setVisualCivilizations(){return false;},setSeasonPhase(){return false;},setSeasonClimate(){return false;},pickResource(){return null;}};if(!enabled)return result;
+ const result={available:new Set(),models:new Map(),resourceRenderIds:new Set(),errors:[],metrics:{colorMs:0,shadowMs:0,calls:0,triangles:0,gpuMs:0},draw(){},updateTerrain(){},setLightingContext(){return false;},setLightingSettings(){return false;},setVisualCivilizations(){return false;},setHouseLodProfile(){return false;},setSeasonPhase(){return false;},setSeasonClimate(){return false;},pickResource(){return null;}};if(!enabled)return result;
  let visualCivilizations=null;
  result.setVisualCivilizations=values=>{
   if(values===null){visualCivilizations=null;return true;}
@@ -385,6 +386,14 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
  }
  result.bindNativeTerrainMaterial = context => terrainMaterial?.bind(context) ?? Promise.resolve(false);
  result.nativeTerrainMaterialSnapshot = () => terrainMaterial?.snapshot() ?? null;
+ const houseLodStatus={enabled:!!options.houseLodManifestURL,models:0,groups:0,errors:[]};
+ result.houseLod=houseLodStatus;let houseLodModels=new Map(),houseLodSettings=null;
+ const houseLodError=error=>{houseLodStatus.errors.push(error.message);result.errors.push('House LOD: '+error.message);};
+ result.setHouseLodProfile=settings=>{if(!houseLodStatus.enabled)return false;houseLodSettings=houseLodProfile(settings);return true;};
+ if(houseLodStatus.enabled){try{
+  houseLodModels=houseLodBindings(await json(options.houseLodManifestURL));
+  if(options.houseLodProfile!==undefined)result.setHouseLodProfile(options.houseLodProfile);
+ }catch(error){houseLodModels.clear();houseLodError(error);}}
  const entries=[...(Array.isArray(manifest.models)?manifest.models:Object.entries(manifest.models||manifest.mapping||{}).map(([id,value])=>typeof value==='string'?{id:+id,url:value}:{id:+id,...value})),...regionalEntries,...citizenEntries];
  const loadParts=async (model,keepPickingGeometry=false,modelUrl=null)=>{
    const parts=[],selectedSeasonManifest=regionalSeasonManifest.models?.[modelUrl]?regionalSeasonManifest:seasonManifest;
@@ -445,11 +454,27 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   try{
    const id=+(entry.id??entry.def);if(!Number.isFinite(id))continue;
    const assetKind=manifestAssetKind(entry),bindings=sourceRenderBindings(assetMapping,assetKind,id);if(!bindings.length)continue;
-   const modelUrl=entry.url||entry.file,model=await augmentModel(await json(modelUrl),{...entry,id}),parts=await loadParts(model,assetKind===1,modelUrl);
+   const modelUrl=entry.url||entry.file;
+   let houseBinding=assetKind===0&&id===1?houseLodModels.get(modelUrl):null,body;
+   if(houseBinding){try{
+    if(!entry.nativeScaleBinding?.verified||entry.nativeScaleBinding.sourceScale!==houseBinding.sourceScale
+       ||entry.nativeScaleBinding.sourceSha256!==houseBinding.sourceSha256)throw new Error('House LOD scale differs');
+    body=await readHouseLodModel(houseBinding,houseBinding.levels[0],import.meta.url);
+   }catch(error){houseBinding=null;houseLodError(error);}}
+   const model=await augmentModel(body??await json(modelUrl),{...entry,id}),parts=await loadParts(model,assetKind===1,modelUrl);
    if(!parts.length)continue;
    const scaleKey=(entry.assetKind===undefined?'':assetKind+':')+id+':'+(entry.epoch??0),sea=assetKind===0&&((id>=29&&id<=36)||id===42||id===45),transform=nativeModelTransform(model,entry.regionalCivilizations?entry.nativeScaleBinding:scales.variants?.[scaleKey]);
    const yOffset=!transform.native&&sea?-(model.normalization?.offset?.[1]||0)*(model.normalization?.scale||1):0;
    const variant={sourceId:id,assetKind,scaleKey,epoch:entry.epoch??0,until:entry.until,regionalCivilizations:entry.regionalCivilizations,sourceIdentity:entry.sourceIdentity,region:entry.region,parts,yOffset,originOffset:transform.originOffset,nativeScale:transform.native?transform.scale:null,yawOffset:entry.yawOffset??model.yawOffset??0,farUrl:entry.lodFarUrl,far:null,farRequested:false,pickBounds:resourceBounds(parts)};
+   if(houseBinding){try{
+    const levelParts=[parts];
+    for(const level of houseBinding.levels.slice(1)){
+     const source=await readHouseLodModel(houseBinding,level,import.meta.url);
+     levelParts.push(await loadParts(source,false,level.url));
+    }
+    variant.selectHouseLod=bindHouseLodParts(houseBinding,levelParts);
+    houseLodStatus.models++;houseLodStatus.groups+=houseBinding.groups.length;
+   }catch(error){houseLodError(error);}}
    if(dynamicBindings.has(model)){variant.dynamicSailBinding=dynamicBindings.get(model);const list=dynamicSourceVariants.get(id)||[];list.push(variant);dynamicSourceVariants.set(id,list);}
    if(entry.sourceIdentity!==undefined)result.citizenModels.loaded++;else if(entry.regionalCivilizations)result.regionalModels.loaded++;
    if(model.nativeSailComposite){variant.sailComposite=model.nativeSailComposite;sailStatus.models++;}
@@ -547,7 +572,8 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     const citizen=selectCitizenModel(variants,epoch,civilizations?.[team],identity,{neutralFallback:options.citizenNeutralFallback??null});
     let variant=citizen===undefined?selectRegionalModel(variants.filter(v=>v.sourceIdentity===undefined),epoch,civilizations?.[team]):citizen;if(!variant)continue;
     const variantIndex=variants.indexOf(variant),far=(variant.nativeScale??data[i*12+8])*zoom<55;
-    if(far&&variant.farUrl){
+    if(houseLodSettings&&variant.selectHouseLod)variant=variant.selectHouseLod(variant,data,i,eye,houseLodSettings);
+    else if(far&&variant.farUrl){
      if(!variant.farRequested){
       variant.farRequested=true;const near=variant;
       json(near.farUrl).then(model=>augmentModel(model,{id:near.sourceId,assetKind:near.assetKind,epoch:near.epoch})).then(async model=>({model,parts:await loadParts(model,near.assetKind===1,near.farUrl)})).then(({model,parts})=>{near.far={...near,parts,pickBounds:resourceBounds(parts),sailComposite:model.nativeSailComposite,dynamicSailBinding:null};}).catch(e=>{result.errors.push(e.message);console.warn('Original-Fernmodell:',e);});
@@ -561,7 +587,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     const duration=animation?.duration||1;
     const time=data[i*12+10],seed=data[i*12+6];
     const phase=packPose?.phase??((time/duration+seed)%1+1)%1;
-    const preview=!!(Math.round(data[i*12+7])&24),key=variantIndex+':'+team+':'+activity+':'+(far&&variant.farRequested?1:0)+':'+(Math.round(data[i*12+7])&24)+':'+clip+':'+once;
+    const preview=!!(Math.round(data[i*12+7])&24),key=variantIndex+':'+team+':'+activity+':'+(far&&variant.farRequested?1:0)+':'+(Math.round(data[i*12+7])&24)+':'+clip+':'+once+(variant.houseLodKey===undefined?'':':house:'+variant.houseLodKey);
     const group=groups.get(key)||{variant,team,activity,clip,once,preview,list:[],instanceIndices:[]};
     group.instanceIndices.push(i);
     const offset=group.list.length;for(let k=0;k<12;k++)group.list.push(data[i*12+k]);

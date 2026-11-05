@@ -146,9 +146,9 @@ class PortableServerTest(unittest.TestCase):
         for server in reversed(self.servers):
             server.close()
 
-    def request(self, server, path='/', method='GET'):
+    def request(self, server, path='/', method='GET', headers=None):
         url = urllib.parse.urljoin(server.base+'/', path)
-        with urllib.request.urlopen(urllib.request.Request(url, method=method), timeout=4) as response:
+        with urllib.request.urlopen(urllib.request.Request(url, method=method, headers=headers or {}), timeout=4) as response:
             return response.status, response.headers, response.read()
 
     def status(self, server):
@@ -157,7 +157,7 @@ class PortableServerTest(unittest.TestCase):
         self.assertEqual(headers.get_content_type(), 'application/json')
         value = json.loads(body)
         self.assertEqual(value['application'], 'openepoch')
-        self.assertEqual(value['serverVersion'], 2)
+        self.assertEqual(value['serverVersion'], 3)
         self.assertRegex(value['rootToken'], r'^[0-9a-f]{16}$')
         self.assertEqual(set(value['wasmSha256ByFile']), {'openepoch.wasm','openepoch-ee2.wasm','openepoch-ee2-up15.wasm'})
         self.assertEqual(value['wasmSha256'], value['wasmSha256ByFile']['openepoch-ee2.wasm'])
@@ -172,7 +172,7 @@ class PortableServerTest(unittest.TestCase):
         self.assertEqual(status['wasmSha256'], hashlib.sha256((self.root/'openepoch-ee2.wasm').read_bytes()).hexdigest())
         for name,digest in status['wasmSha256ByFile'].items():
             self.assertEqual(digest, hashlib.sha256((self.root/name).read_bytes()).hexdigest())
-        self.assertEqual(urllib.parse.parse_qs(urllib.parse.urlsplit(server.ready['url']).query), {'rules':['ee2'],'build':['native11']})
+        self.assertEqual(urllib.parse.parse_qs(urllib.parse.urlsplit(server.ready['url']).query), {'rules':['ee2'],'build':['native12']})
         # This is another local loopback address, never an external connection.
         # A wildcard 0.0.0.0 listener would prevent the exclusive second bind.
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as check:
@@ -216,6 +216,39 @@ class PortableServerTest(unittest.TestCase):
         self.assertIn(headers.get_content_type(), ('audio/wav', 'audio/x-wav', 'audio/vnd.wave', 'audio/wave'))
         self.assertEqual(hashlib.sha256(body).hexdigest(), pcm['sha256'])
         self.assertTrue(body.startswith(b'RIFF') and body[8:12] == b'WAVE')
+
+    def test_video_byte_ranges(self):
+        content = bytes(range(32))
+        (self.root/'cut scene.mp4').write_bytes(content)
+        server = self.launch()
+        path = '/cut%20scene.mp4?version=original'
+        status, headers, body = self.request(server, path)
+        self.assertEqual((status, body), (200, content))
+        self.assertEqual(headers.get_content_type(), 'video/mp4')
+        self.assertEqual(headers['Accept-Ranges'], 'bytes')
+        for value, start, end in (('bytes=0-1', 0, 1), ('bytes=3-', 3, 31),
+                                  ('bytes=-7', 25, 31), ('bytes=28-99', 28, 31),
+                                  ('bytes=-99', 0, 31)):
+            with self.subTest(value=value):
+                status, headers, body = self.request(server, path, headers={'Range': value})
+                self.assertEqual((status, body), (206, content[start:end+1]))
+                self.assertEqual(headers['Content-Range'], f'bytes {start}-{end}/32')
+                self.assertEqual(headers['Content-Length'], str(end-start+1))
+        status, headers, body = self.request(server, path, 'HEAD', {'Range': 'bytes=3-6'})
+        self.assertEqual((status, headers['Content-Length'], body), (206, '4', b''))
+        status, headers, body = self.request(server, path, headers={
+            'Range': 'bytes=3-6', 'If-Range': headers['Last-Modified']})
+        self.assertEqual((status, body), (206, content[3:7]))
+        for request in ({'Range': 'bytes=0-1,3-4'}, {'Range': 'bytes=123456789012345678901-'},
+                        {'Range': 'bytes=0-1', 'If-Range': 'different-version'}):
+            status, _, body = self.request(server, path, headers=request)
+            self.assertEqual((status, body), (200, content))
+        for value in ('bytes=32-', 'bytes=4-3', 'bytes=-0'):
+            with self.subTest(value=value), self.assertRaises(urllib.error.HTTPError) as raised:
+                self.request(server, path, headers={'Range': value})
+            with raised.exception as response:
+                self.assertEqual((response.code, response.headers['Content-Range'], response.read()),
+                                 (416, 'bytes */32', b''))
 
     def test_identical_root_reuses_existing_listener(self):
         first = self.launch()
@@ -374,7 +407,7 @@ if __name__ == '__main__':
     if args.report:
         digest=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
         report={'format':'openepoch-portable-server-tests-v3','passed':result.wasSuccessful(),
-            'platform':sys.platform,'pythonVersion':sys.version.split()[0],'serverVersion':2,
+            'platform':sys.platform,'pythonVersion':sys.version.split()[0],'serverVersion':3,
             'testsRun':result.testsRun,'failures':len(result.failures),'errors':len(result.errors),'skipped':len(result.skipped),
             'sourceHashes':{'tools/serve_game.py':digest(SERVER),'tools/portable-server-test.py':digest(Path(__file__).resolve())},
             'wasmSha256ByFile':{name:digest(DOCS/name) for name in ('openepoch.wasm','openepoch-ee2.wasm','openepoch-ee2-up15.wasm')},
