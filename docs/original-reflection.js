@@ -14,7 +14,7 @@ export function reflectedViewProjection(vp,height=0){
  return result;
 }
 
-function saveState(gl){
+export function saveSceneGLState(gl){
  const get=key=>gl.getParameter(key),active=get(gl.ACTIVE_TEXTURE),textures=[];
  // Production passes use both 2D and array textures through unit13. Retaining
  // all fragment slots also protects callers which use a different binding map.
@@ -30,7 +30,7 @@ function saveState(gl){
   frontFace:get(gl.FRONT_FACE),cullFace:get(gl.CULL_FACE_MODE),program:get(gl.CURRENT_PROGRAM),vao:get(gl.VERTEX_ARRAY_BINDING),array:get(gl.ARRAY_BUFFER_BINDING),
   flags:[gl.BLEND,gl.DEPTH_TEST,gl.CULL_FACE,gl.SCISSOR_TEST,gl.STENCIL_TEST].map(cap=>[cap,gl.isEnabled(cap)])};
 }
-function restoreState(gl,state){
+export function restoreSceneGLState(gl,state){
  gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER,state.draw);gl.bindFramebuffer(gl.READ_FRAMEBUFFER,state.read);gl.bindRenderbuffer(gl.RENDERBUFFER,state.renderbuffer);
  gl.viewport(...state.viewport);gl.scissor(...state.scissor);gl.clearColor(...state.clearColor);gl.clearDepth(state.clearDepth);gl.clearStencil(state.clearStencil);
  gl.colorMask(...state.colorMask);gl.depthMask(state.depthMask);gl.depthFunc(state.depthFunc);gl.stencilMaskSeparate(gl.FRONT,state.stencilMask);gl.stencilMaskSeparate(gl.BACK,state.stencilBackMask);
@@ -79,7 +79,7 @@ export function createOriginalReflection(gl,{resolutionScale=1,maxSize=2048}={})
    if(busy)throw new Error('Recursive water reflection capture');
    if(!finiteArray(eye,3)||!finiteArray(clearColor,4)||!Number.isFinite(width)||width<1||!Number.isFinite(height)||height<1||typeof drawScene!=='function')throw new RangeError('Invalid water reflection pass');
    const reflectionVP=reflectedViewProjection(vp,waterHeight),reflectedEye=[eye[0],2*waterHeight-eye[1],eye[2]],clipPlane=[0,1,0,-waterHeight];
-   const state=saveState(gl);busy=true;
+   const state=saveSceneGLState(gl);busy=true;
    try{
     for(let i=retired.length-1;i>=0;i--)if(!state.textures.some(pair=>pair[0]===retired[i].texture)&&state.draw!==retired[i].framebuffer&&state.read!==retired[i].framebuffer){destroy(retired[i]);retired.splice(i,1);}
     allocate(width,height);
@@ -95,7 +95,7 @@ export function createOriginalReflection(gl,{resolutionScale=1,maxSize=2048}={})
     if(value&&typeof value.then==='function')throw new TypeError('Reflection drawScene must be synchronous');
     metrics.frames++;
     return {texture:target.texture,vp:reflectionVP,eye:reflectedEye,width:target.width,height:target.height,waterHeight};
-   }finally{busy=false;restoreState(gl,state);}
+   }finally{busy=false;restoreSceneGLState(gl,state);}
   },
   dispose(){if(busy)throw new Error('Cannot dispose during reflection capture');destroy(target);for(const row of retired)destroy(row);retired.length=0;target=null;disposed=true;},
  };

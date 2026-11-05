@@ -403,7 +403,12 @@ impl Game {
         }
         #[cfg(feature = "ee2-native13")]
         if self.regicide.is_some() {
-            let _ = write!(s, "\"regicide\":{{\"kingAlive\":{}}},", self.king_owners() & (1 << me) != 0);
+            let _ = write!(s, "\"regicide\":{{\"kingAlive\":{}}},\"fullmapKings\":[", self.king_owners() & (1 << me) != 0);
+            for (index, (owner, x, y, stationed)) in self.fullmap_king_markers().enumerate() {
+                if index != 0 { s.push(','); }
+                let _ = write!(s, "{{\"owner\":{owner},\"x\":{x},\"y\":{y},\"stationed\":{stationed}}}");
+            }
+            s.push_str("],");
         }
         // selection summary
         let mut first = NOIDX;

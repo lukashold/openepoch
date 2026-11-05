@@ -1,0 +1,32 @@
+#fullmap-button[hidden] { display:none; }
+#fullmap { position:fixed; inset:0; max-width:none; max-height:none; width:100%; height:100%; margin:0; border:0; padding:0; overflow:hidden; background:#0d1719; color:#f1ead7; }
+#fullmap canvas, .fullmap-top, .fullmap-bottom, .fullmap-options, .fullmap-close { position:absolute; }
+#fullmap canvas { cursor:crosshair; touch-action:none; }
+.fullmap-border { position:absolute; display:grid; grid-template-columns:10px 1fr 10px; grid-template-rows:10px 1fr 10px; pointer-events:none; }
+.fullmap-border span { background-size:100% 100%; }
+.fullmap-top, .fullmap-bottom { background:#383c36 center/100% 100% no-repeat; }
+.fullmap-bottom { background-color:#1b2627; }
+.fullmap-options { overflow:auto; padding:16px; border:2px ridge #a09776; background:#171b18c9 center/100% 100%; }
+.fullmap-options h2 { font-size:clamp(15px,1.7vw,24px); margin:0 0 10px; }
+.fullmap-options p { margin:0 0 10px; color:#d2cbb8; font-size:clamp(11px,1.05vw,15px); }
+.fullmap-options label { position:relative; display:flex; min-height:42px; gap:8px; align-items:center; padding:4px; border-bottom:1px solid #bab19a45; cursor:pointer; }
+.fullmap-options label:focus-within { outline:2px solid #e1ca8d; outline-offset:-2px; }
+.fullmap-options i { display:none; }
+.fullmap-original .fullmap-options input { position:absolute; opacity:0; }
+.fullmap-original .fullmap-options i { display:block; flex:0 0 32px; height:32px; background:center/100% 100%; }
+.fullmap-close { display:grid; place-items:center; border:1px solid #b6ab89; border-radius:3px; background:#31392d center/100% 100% no-repeat; color:#fff; font-size:30px; line-height:1; cursor:pointer; }
+.fullmap-original .fullmap-close { border:0; background-color:transparent; }
+.fullmap-original .fullmap-close:hover { background-image:var(--rollover) !important; }
+.fullmap-original .fullmap-close:active { background-image:var(--pressed) !important; }
+#fullmap .fullmap-pip { position:absolute; outline:2px ridge #9b9885; cursor:grab; }
+#fullmap .fullmap-pip:active { cursor:grabbing; }
+.fullmap-pip-logo { position:absolute; background:center/100% 100% no-repeat; pointer-events:none; }
+.fullmap-pip-controls { position:absolute; inset:0; pointer-events:none; }
+.fullmap-pip-controls button { position:absolute; border:0; padding:0; background:transparent center/100% 100% no-repeat; color:#fff; pointer-events:auto; cursor:pointer; }
+.fullmap-pip-controls button:hover { background-image:var(--rollover) !important; }
+#fullmap .fullmap-pip[hidden], .fullmap-pip-logo[hidden], .fullmap-pip-controls[hidden] { display:none; }
+@media (max-width:800px) {
+  .fullmap-options { padding:6px; }
+  .fullmap-options label { font-size:12px; line-height:1.2; }
+  .fullmap-original .fullmap-options i { flex-basis:22px; height:22px; }
+}

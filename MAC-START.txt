@@ -46,6 +46,8 @@ Bedienung
 Das Menüsymbol rechts neben der Epochenleiste öffnet Speichern, Musik, Stimmen,
 Vollbild und Hauptmenü. Forschung und Diplomatie stehen links unten neben der
 Minikarte. Die Rahmen wechseln mit den Epochen zwischen Stein, Pergament und Metall.
+Mit Tab oder „Karte“ öffnest du die Weltkarte im UP-Regelsatz. Ein Doppelklick
+auf eine Kartenposition zentriert die Hauptkamera. Tab oder Esc schließt die Karte.
 
 Strg+Pfeil links/rechts: Kamera drehen, mit Umschalt schneller. Die drei
 Kameraknöpfe rechts oben drehen45° oder richten die Ansicht nach Norden aus.

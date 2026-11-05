@@ -92,6 +92,25 @@ impl Game {
         mask
     }
 
+    pub(crate) fn fullmap_king_markers(&self) -> impl Iterator<Item = (u8, f32, f32, bool)> + '_ {
+        (0..self.nplayers as u8).filter_map(move |owner| {
+            if !self.players[owner as usize].alive {
+                return None;
+            }
+            self.ents[..self.high].iter().enumerate().find_map(|(index, actor)| {
+                if !actor.alive || actor.hp <= 0.0 || actor.team != owner {
+                    return None;
+                }
+                let stationed = (0..actor.ncargo as usize)
+                    .any(|slot| actor.cargo[slot] == KING && actor.cargo_hp[slot] > 0);
+                // 00761FD0 follows the King to its garrison host and, by default,
+                // reveals that mark without the free-standing actor's LOS test.
+                (stationed || (actor.def == KING && self.visible(index)))
+                    .then_some((owner, actor.x, actor.y, stationed))
+            })
+        })
+    }
+
     pub(crate) fn poll_regicide_outcome(&mut self, mut rule: Regicide) {
         let candidates = rule.state.active(self.nplayers);
         let mut survivors = candidates;
@@ -286,5 +305,29 @@ mod tests {
         loaded.ents[fort].hp = 0.0;
         loaded.tick();
         assert_eq!(loaded.winner, 2);
+    }
+
+    #[test]
+    fn fullmap_crown_follows_an_enemy_garrison_beyond_line_of_sight() {
+        let mut game = start(1, 5, 1);
+        let rival = king(&game, 1);
+        let actor = game.ents[rival];
+        let tile = tile_of(actor.x, actor.y);
+        assert_eq!(game.fullmap_king_markers().map(|entry| entry.0).collect::<Vec<_>>(), [0]);
+        game.team_vis[tile] = 255;
+        assert!(game.fullmap_king_markers().any(|entry| entry == (1, actor.x, actor.y, false)));
+
+        game.team_vis[tile] = 0;
+        let fort = game.spawn(FORTRESS, 1, actor.x, actor.y);
+        assert_ne!(fort, NOIDX);
+        game.order_board(&[rival], fort);
+        game.tick();
+        assert!(!game.visible(fort));
+        assert!(game.fullmap_king_markers().any(|entry| entry == (1, actor.x, actor.y, true)));
+        game.save();
+        let restored = Game::load(&game.savebuf).unwrap();
+        assert_eq!(restored.fullmap_king_markers().collect::<Vec<_>>(), game.fullmap_king_markers().collect::<Vec<_>>());
+        game.players[1].alive = false;
+        assert_eq!(game.fullmap_king_markers().map(|entry| entry.0).collect::<Vec<_>>(), [0]);
     }
 }

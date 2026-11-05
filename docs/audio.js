@@ -155,8 +155,9 @@ const SOUNDS = {
 
 /** Play sound `kind` at volume 0..1 and stereo position -1..1. */
 export const STONE_THROWER_LAUNCH_CUE = 26;
+export const FULLMAP_CUE = 27;
 export function play(kind, vol = 1, pan = 0) {
-  const fallbackKind = kind === STONE_THROWER_LAUNCH_CUE ? 3 : kind;
+  const fallbackKind = kind === STONE_THROWER_LAUNCH_CUE ? 3 : kind === FULLMAP_CUE ? 20 : kind;
   const s = SOUNDS[fallbackKind];
   if (muted || !s || vol < 0.02 || !ensure() || ctx.state !== 'running') return;
   const now = ctx.currentTime;

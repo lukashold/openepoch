@@ -6,6 +6,7 @@
 <title>OpenEpoch — browser RTS in Rust + WebAssembly</title>
 <meta name="description" content="OpenEpoch: lokales Echtzeit-Strategiespiel mit Scharmützeln, Forschung und Epochen von der Steinzeit bis in die Zukunft.">
 <link rel="stylesheet" href="skirmish-menu.css?v=native13">
+<link rel="stylesheet" href="fullmap.css?v=native20">
 <style>
   :root { --bg:#10151b; --panel:#1a222bee; --line:#33414f; --text:#e6edf3; --dim:#93a1b0; --acc:#4aa3ff; }
   * { box-sizing: border-box; }
@@ -150,6 +151,7 @@
   <button id="speed" title="Game speed (+ / -)">1×</button>
   <button id="pause" title="Pause (P)">Pause</button>
   <button id="fullscreen" title="Vollbild · F11" aria-pressed="false">Vollbild</button>
+  <button id="fullmap-button" title="Weltkarte · Tab" aria-haspopup="dialog" aria-controls="fullmap" hidden>Karte</button>
   <button id="quit">Menü</button>
 </div>
 
@@ -158,6 +160,20 @@
   <div id="info"></div>
   <div id="acts"></div>
 </div>
+<dialog id="fullmap" aria-labelledby="fullmap-title">
+  <canvas aria-label="Weltkarte"></canvas>
+  <div class="fullmap-border" aria-hidden="true"></div>
+  <div class="fullmap-top" aria-hidden="true"></div>
+  <div class="fullmap-bottom" aria-hidden="true"></div>
+  <div class="fullmap-options">
+    <h2 id="fullmap-title">Kartenoptionen</h2>
+    <p>Doppelklick auf die Karte, um zur Position zu springen.</p>
+  </div>
+  <canvas class="fullmap-pip" aria-label="Bild-in-Bild-Vorschau" hidden></canvas>
+  <div class="fullmap-pip-logo" aria-hidden="true" hidden></div>
+  <div class="fullmap-pip-controls" role="group" aria-label="Bild-in-Bild-Lesezeichen" hidden></div>
+  <button class="fullmap-close" type="button" title="Karte schließen · Tab oder Esc" aria-label="Karte schließen" autofocus>×</button>
+</dialog>
 <div id="tip"></div>
 <div id="box"></div>
 <div id="toast"></div>
@@ -285,6 +301,6 @@
   <p id="building-status" role="status" aria-live="polite"></p>
   <small>Strg / R / Komma / Punkt: 90° · mit Umschalt: 45° · Umschalt+Mausrad: 45° · Esc: abbrechen</small>
 </aside>
-<script type="module" src="main.js?v=native19"></script>
+<script type="module" src="main.js?v=native20"></script>
 </body>
 </html>

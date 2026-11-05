@@ -9,7 +9,7 @@ import { diplomacyPanel } from './diplomacy.js?v=native17';
 import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native6';
 import {loadNativeFontUI} from './original-font-ui.js?v=native6';
 import {territoryClaimMessage} from './territory-help.js?v=fortress1';
-import * as sfx from './audio.js?v=stone-wheels';
+import * as sfx from './audio.js?v=native20';
 import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=citizen9';
 import {mountOriginalShellVideo} from './original-shell-video.js?v=native12';
 import {mountSkirmishMenu} from './skirmish-menu.js?v=native13';
@@ -25,6 +25,7 @@ import {createRenderAssetMapping} from './original-render-namespace.js?v=native6
 import {createFrontendNamespace} from './render-namespace.js?v=native9';
 import {createRenderActorMetadata} from './render-actor-metadata.js?v=pack8';
 import {createPackRenderMetadata} from './original-pack-states.js?v=pack8';
+import {createFullmapPipBridge} from './original-fullmap-pip-bridge.js';
 import {loadOriginalGround} from './original-ground.js?v=skirmish-climates';
 import {loadOriginalTerrain} from './original-terrain.js?v=skirmish-climates';
 import {loadOriginalWater} from './original-water.js?v=water-farm3';
@@ -32,13 +33,14 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=skirmish-climates';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native19';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native20';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=epoch13';
 import {createFullscreenController} from './fullscreen.js?v=building2';
 import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native17';
 import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=fortress1';
 import {updateOriginalCamera,originalCameraRay,originalFractionForZoom,normalizeOriginalHeading,rotateOriginalCameraHeading} from './original-camera.js?v=heading2';
+import {createFullmap} from './fullmap.js?v=native20';
 
 const $ = id => document.getElementById(id);
 const canvas = $('gl');
@@ -553,6 +555,11 @@ let lastWorkSound = 0;
 let ui = null, actSig = '', lastGroup = { n: -1, t: 0 }, lastClick = 0;
 let simMs = 0, frameMs = 16.7, worstMs = 0, fogTick = -1, lastUi = 0, lastMini = 0, lastAuto = 0, waitSince = 0;
 const SPEEDS = [0.5, 1, 2, 4];
+const fullmapPip = createFullmapPipBridge({gl,canvas,available:()=>referenceMode&&originalTerrain.enabled&&running&&!bench,
+  mainPose:()=>cam, setMainFocus(x,y){cam.x=x;cam.y=y;updateCamera();}, heightAt:groundAt,
+  resolveUnit:handle=>wasm.entity_alive?.(handle)?{x:wasm.ent_x(handle),y:wasm.ent_y(handle)}:null,
+  onOpen(){keys.clear();cancelMapGesture();cancelBuilding();attackMode=false;},
+  onClose(){keys.clear();cancelMapGesture();}});
 
 // ---------------------------------------------------------------- camera
 // At heading0 the eye sits south of and above the look-at point.
@@ -675,6 +682,14 @@ const nativeBitmapFonts=await loadNativeFontUI({enabled:referenceMode&&originalA
 document.body.dataset.originalBitmapFonts=String(nativeBitmapFonts.enabled);
 $('diplomacy-button').onclick=()=>{if(running&&!bench)diplomacy.open();};
 
+const fullmap = rulesProfile.ruleset===2&&packActorReader ? createFullmap({
+  dialog:$('fullmap'),wasm,metadata:packActorReader,size:MAP,teams:TEAM,originalArt:originalEnabled,
+  pip:fullmapPip,
+  onAccept(point){if(!fullmapPip.accept(point)){[cam.x,cam.y]=point;updateCamera();}},
+  onToggle(){keys.clear();cancelMapGesture();$('tip').style.display='none';sfx.play(sfx.FULLMAP_CUE);},
+}) : null;
+$('fullmap-button').onclick=()=>{if(running&&!bench&&!modalOpen())fullmap?.open();};
+
 // ---------------------------------------------------------------- starting, saving, loading
 function bindWorldTerrainMaterial() {
   worldMaterialPending = null;
@@ -696,7 +711,10 @@ function bindWorldTerrainMaterial() {
 }
 
 function begin() {
+  fullmapPip.reset();
   sfx.stopStoneThrowerWheels();
+  fullmap?.close();
+  fullmap?.invalidate();
   saveSession=Date.now();
   ghost = null; attackMode = false; paused = false; speed = 1; acc = 0; fogTick = -1; actSig = '@refresh'; worstMs = 0; ui = null;
   $('speed').textContent = '1×'; $('pause').textContent = 'Pause';
@@ -704,6 +722,7 @@ function begin() {
   $('menu').style.display = 'none'; $('end').style.display = 'none';
   shellMovie(false);
   $('camera-tools').hidden=!referenceMode;
+  $('fullmap-button').hidden=!fullmap||!!bench;
   uploadTerrain();
   bindWorldTerrainMaterial();
   if (rulesProfile.ruleset === 2) {
@@ -845,6 +864,47 @@ setInterval(() => {
 }, 200);
 
 // ---------------------------------------------------------------- frame loop
+function drawFullmapPipScene(pipView, alpha, renderEpochs, now) {
+  const {vp,eye,zoom,width,height} = pipView;
+  const corners = [[0,0],[width,0],[width,height],[0,height]].map(([x,y])=>{
+    const ray=originalCameraRay(pipView,x,y,width,height);
+    const depth=Math.min(pipView.far,-eye[1]/Math.min(-.0001,ray[1]));
+    return [eye[0]+ray[0]*depth,eye[2]+ray[2]*depth];
+  });
+  const x=corners.map(point=>point[0]),y=corners.map(point=>point[1]);
+  const count=(wasm.render_rotated||wasm.render)(alpha,Math.min(...x)-2,Math.min(...y)-2,
+    Math.max(...x)+2,Math.max(...y)+6,-1,0,0,0);
+  originalTerrain.drawTerrain({vao:vaoT,vp,px:1/zoom,fogTexture,territoryTexture,capture:true});
+  if(count){
+    const data=f32(wasm.inst_ptr(),count*STRIDE),ranges=new Uint32Array(wasm.memory.buffer,wasm.ranges_ptr(),renderNamespace.rangeLength);
+    const actorMetadata=packMetadata?packMetadata.snapshot(packActorReader.snapshot({count,instances:data,namespace:renderNamespace})):null;
+    originalGround.draw({data,ranges,vp,epochs:renderEpochs,isUrbanAt:(x,z)=>!!wasm.ground_urban_at(x,z)});
+    gl.bindBuffer(gl.ARRAY_BUFFER,instBuf);
+    gl.bufferData(gl.ARRAY_BUFFER,renderNamespace.fallbackInstances(data),gl.STREAM_DRAW);
+    drawFallbackModels(vp,ranges);
+    originalModels.draw({data,ranges,vp,eye,zoom,epochs:renderEpochs,actorMetadata,capture:true});
+  }
+  if(originalWater.enabled){
+    originalWater.drawWater({vp,time:now/1000,fogTexture});
+  }else{
+    gl.enable(gl.BLEND);gl.depthMask(false);
+    originalTerrain.drawWater({vao:vaoW,vp,time:now/1000,eye,fogTexture});
+  }
+}
+
+function drawFallbackModels(vp,ranges) {
+  gl.enable(gl.BLEND);
+  gl.useProgram(models.p);gl.bindVertexArray(vaoM);gl.bindBuffer(gl.ARRAY_BUFFER,instBuf);
+  gl.uniformMatrix4fv(models.u.uVP,false,vp);gl.uniform1i(models.u.uShadow,0);
+  for(let id=0;id<renderNamespace.slotCount;id++){
+    if(originalModels.available.has(id))continue;
+    const template=renderNamespace.fallbackModelId(id);
+    if(template<0||template>=240)continue;
+    const count=ranges[id*2+1];if(!count||!mesh.count[template])continue;
+    instOffset(ranges[id*2]);gl.drawArraysInstanced(gl.TRIANGLES,mesh.first[template],mesh.count[template],count);
+  }
+}
+
 function frame(now) {
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
   if (!running) { sfx.menuMusic(); return; }
@@ -853,8 +913,8 @@ function frame(now) {
   frameMs += (dt * 1000 - frameMs) * 0.05;
   worstMs = Math.max(worstMs * 0.995, dt * 1000);
 
-  const pan = 22 / cam.zoom * 60 * dt * (keys.has('Shift') ? 2 : 1);
-  const rotating=referenceMode&&!ghost&&keys.has('Control');
+  const pan = fullmap?.isOpen()?0:22 / cam.zoom * 60 * dt * (keys.has('Shift') ? 2 : 1);
+  const rotating=referenceMode&&!fullmap?.isOpen()&&!ghost&&keys.has('Control');
   if(rotating){
     // Installed hotkeys bind Ctrl+arrows; angular speed is an input adapter.
     const turn=(keys.has('ArrowLeft')?1:0)-(keys.has('ArrowRight')?1:0);
@@ -879,7 +939,7 @@ function frame(now) {
   gl.viewport(0, 0, w, h);
 
   // textures that change
-  if (wasm.map_dirty()) { bindTexture(1,mapTexture); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, MAP, MAP, gl.RGBA, gl.UNSIGNED_BYTE, u8(wasm.map_ptr(), MAP * MAP * 4)); uploadOriginalTerrainClasses(); }
+  if (wasm.map_dirty()) { bindTexture(1,mapTexture); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, MAP, MAP, gl.RGBA, gl.UNSIGNED_BYTE, u8(wasm.map_ptr(), MAP * MAP * 4)); uploadOriginalTerrainClasses(); fullmap?.invalidate(); }
   if (wasm.terr_dirty()) { const p = wasm.terr_ptr(); bindTexture(3,territoryTexture); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, MAP, MAP, gl.RGBA, gl.UNSIGNED_BYTE, u8(p, MAP * MAP * 4)); }
   const tickNow = wasm.game_tick()>>>0;
   const seasonPhase=seasonSession.update();
@@ -966,18 +1026,7 @@ function frame(now) {
       gl.disable(gl.STENCIL_TEST); gl.depthMask(true);
     }
     // one instanced draw per model type
-    gl.enable(gl.BLEND);
-    gl.useProgram(models.p); gl.bindVertexArray(vaoM); gl.bindBuffer(gl.ARRAY_BUFFER, instBuf);
-    gl.uniformMatrix4fv(models.u.uVP, false, view.vp); gl.uniform1i(models.u.uShadow,0);
-    for (let id = 0; id < renderNamespace.slotCount; id++) {
-      if(originalModels.available.has(id))continue;
-      const template=renderNamespace.fallbackModelId(id);
-      if(template<0||template>=240)continue;
-      const cnt = ranges[id * 2 + 1];
-      if (!cnt || !mesh.count[template]) continue;
-      instOffset(ranges[id * 2]);
-      gl.drawArraysInstanced(gl.TRIANGLES, mesh.first[template], mesh.count[template], cnt);
-    }
+    drawFallbackModels(view.vp,ranges);
     originalModels.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,vp:view.vp,epochs:renderEpochs,zoom:cam.zoom,eye:view.eye,actorMetadata,stoneThrowerWheels});
   }
   if(rulesProfile.ruleset===2)sfx.updateStoneThrowerWheels(actorMetadata?.session,stoneThrowerWheels,cam);
@@ -1012,6 +1061,8 @@ function frame(now) {
 
   if (now - lastUi > 100) { lastUi = now; updateUi(n, now); }
   if (now - lastMini > 250) { lastMini = now; drawMini(); }
+  fullmap?.paint(now,ui,corners);
+  if(fullmapPip.isOpen())fullmapPip.draw(dt,pipView=>drawFullmapPipScene(pipView,alpha,renderEpochs,now));
 }
 
 // ---------------------------------------------------------------- HUD
@@ -1140,6 +1191,7 @@ function updateUi(drawn, now) {
   nativeHud.update(ui,seasonSession.settings);
 
   if (ui.win && !bench && $('end').style.display !== 'flex') {
+    fullmap?.close();
     diplomacy.close();
     if (rulesProfile.id === 'up15' && !net) {
       $('endtext').textContent = ui.win === 1 ? 'Sie haben gewonnen.' : 'Sie haben verloren';
@@ -1184,7 +1236,7 @@ mini.addEventListener('contextmenu', e => e.preventDefault());
 
 // ---------------------------------------------------------------- input
 const box = $('box');
-const modalOpen=()=>$('cheat-dialog').open||$('research-dialog').open||diplomacy.isOpen();
+const modalOpen=()=>$('cheat-dialog').open||$('research-dialog').open||diplomacy.isOpen()||fullmap?.isOpen();
 function cancelMapGesture(){mouse.down=false;mouse.drag=false;mouse.pan=false;mouse.inside=false;mini.dragging=false;box.style.display='none';canvas.style.cursor='default';}
 const fullscreen=createFullscreenController({buttons:[$('fullscreen'),$('menu-fullscreen')],notify:toast,
   onChange(){keys.clear();cancelMapGesture();updateCamera();}});
@@ -1309,7 +1361,16 @@ $('cheat-form').addEventListener('submit', e => {
 });
 addEventListener('keydown', e => {
   if(e.key==='F11'){e.preventDefault();if(!e.repeat)fullscreen.toggle();return;}
+  if(fullmap?.isOpen()){
+    if(e.key==='Escape'||(e.key==='Tab'&&!e.shiftKey&&!e.altKey&&!e.ctrlKey&&!e.metaKey)){
+      e.preventDefault();if(!e.repeat)fullmap.close();
+    } else fullmap.pipKey(e);
+    return;
+  }
   if ($('cheat-dialog').open || $('research-dialog').open || diplomacy.isOpen()) return;
+  if(fullmap&&running&&!bench&&!ui?.win&&e.key==='Tab'&&!e.ctrlKey&&!e.altKey&&!e.metaKey&&!e.shiftKey){
+    e.preventDefault();if(!e.repeat)fullmap.open();return;
+  }
   if(e.target.closest?.('#building-controls,#camera-tools')&&['Enter',' '].includes(e.key))return;
   if (e.key === 'Enter' && !['INPUT','SELECT','TEXTAREA','BUTTON'].includes(e.target.tagName)) { e.preventDefault(); openCheats(); return; }
   if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;
@@ -1362,6 +1423,8 @@ $('voices').onclick = () => { sfx.setSpeechEnabled(!sfx.isSpeechEnabled()); $('v
 $('save').onclick = () => saveGame();
 $('speed').onclick = () => setSpeed((SPEEDS.indexOf(speed) + 1) % SPEEDS.length);
 function toMenu() {
+  fullmap?.close();
+  $('fullmap-button').hidden=true;
   $('camera-tools').hidden=true;
   cancelBuilding();
   diplomacy.close();
@@ -1476,6 +1539,6 @@ else if (qs.has('seed')) start(+qs.get('ai') || 1, +qs.get('seed') || 1, 0);
 // ?warm=600 fast-forwards that many ticks; ?zoom= ?x= ?y= place the camera
 for (let i = +qs.get('warm') || 0; i > 0 && running; i--) wasm.tick();
 for (const k of ['zoom', 'x', 'y']) if (qs.has(k)) cam[k] = +qs.get(k);
-window.openepoch = { wasm, rulesProfile, renderNamespace, cam, gl, frame, start, saveGame, loadGame, toWorld, channel, seasonSession, nativeDiplomacy, nativeBitmapFonts, get net() { return net; } };
+window.openepoch = { wasm, rulesProfile, renderNamespace, cam, gl, frame, start, saveGame, loadGame, toWorld, channel, seasonSession, nativeDiplomacy, nativeBitmapFonts, fullmapPip, get net() { return net; } };
 const loop = now => { requestAnimationFrame(loop); frame(now); };
 requestAnimationFrame(loop);
