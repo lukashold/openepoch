@@ -30,12 +30,15 @@ fn world_point(airport: &Ent, [x, y]: [f32; 2]) -> [f32; 2] {
 }
 
 pub(crate) fn departure(airport: &Ent) -> Departure {
-    let [x, y] = world_point(airport, START);
-    let [end_x, end_y] = world_point(airport, END);
+    let [[x, y], [end_x, end_y]] = markers(airport);
     // 007E9CA0..CB8 stores the differences before 00A1DD10 performs
     // FPATAN. Keep the signed angle of the renderer's ground coordinates.
     let heading = f64::from(end_y - y).atan2(f64::from(end_x - x)) as f32;
     Departure { x, y, heading }
+}
+
+pub(crate) fn markers(airport: &Ent) -> [[f32; 2]; 2] {
+    [world_point(airport, START), world_point(airport, END)]
 }
 
 impl Game {

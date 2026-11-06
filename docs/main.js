@@ -34,7 +34,7 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=skirmish-climates';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native32';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native34';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=epoch13';
 import {createFullscreenController} from './fullscreen.js?v=building2';
@@ -1763,7 +1763,7 @@ const mpStatus = t => $('mpstatus').textContent = t;
 let pending = null;
 function channel(local) {
   let ch = null, pc = null, rejected = false, remoteWarplans, remoteCapture = false, remoteCaptureAnimation = false;
-  let remoteInfantryRoster = false, remoteProductionRoster = false, remoteTradeRoute = false, remoteAirMission = false, remoteAirRunway = false, remoteAirTakeoff = false;
+  let remoteInfantryRoster = false, remoteProductionRoster = false, remoteTradeRoute = false, remoteAirMission = false, remoteAirRunway = false, remoteAirTakeoff = false, remoteAirLanding = false;
   const supportsCapture = typeof wasm.capture_configure_peer === 'function';
   const supportsCaptureAnimation = supportsCapture && typeof wasm.capture_animation_configure_peer === 'function';
   const supportsInfantryRoster = typeof wasm.infantry_roster_configure_peer === 'function';
@@ -1772,6 +1772,7 @@ function channel(local) {
   const supportsAir = airMissionAvailable&&typeof wasm.air_mission_configure_peer === 'function';
   const supportsRunway = supportsAir&&typeof wasm.air_runway_configure_peer === 'function';
   const supportsTakeoff = supportsRunway&&typeof wasm.air_takeoff_configure_peer === 'function';
+  const supportsLanding = supportsTakeoff&&typeof wasm.air_landing_configure_peer === 'function';
   return {
     open(c) {
       ch = c;
@@ -1785,6 +1786,7 @@ function channel(local) {
         ...(supportsAir?{airMission:1}:{}),
         ...(supportsRunway?{airRunway:1}:{}),
         ...(supportsTakeoff?{airTakeoff:1}:{}),
+        ...(supportsLanding?{airLanding:1}:{}),
         ...(climates.length>1?{climates}:{})}));
       mpStatus('Verbunden – Spielversion wird geprüft …');
     },
@@ -1807,6 +1809,7 @@ function channel(local) {
           remoteAirMission=m.airMission===1;
           remoteAirRunway=remoteAirMission&&m.airRunway===1;
           remoteAirTakeoff=remoteAirRunway&&m.airTakeoff===1;
+          remoteAirLanding=remoteAirTakeoff&&m.airLanding===1;
           if (local === 0 && !net) {
             try{
               const ai=+$('mpai').value,players=2+ai,choices=civilizationSetup.choices();
@@ -1823,6 +1826,7 @@ function channel(local) {
                 ...(supportsAir&&remoteAirMission?{airMission:1}:{}),
                 ...(supportsRunway&&remoteAirRunway?{airRunway:1}:{}),
                 ...(supportsTakeoff&&remoteAirTakeoff?{airTakeoff:1}:{}),
+                ...(supportsLanding&&remoteAirLanding?{airLanding:1}:{}),
                 ...resolved,popLimit:choices?+$('pop-limit').value:null,supplies:choices?+$('supplies').value:null};
               checkStart(cfg);ch.send(JSON.stringify(cfg));launch(cfg);
             }catch{return reject('Die Scharmützeleinstellungen konnten nicht übernommen werden.');}
@@ -1849,6 +1853,7 @@ function channel(local) {
     if(cfg.airMission!==undefined&&(cfg.airMission!==1||!supportsAir||!remoteAirMission))throw Error('Unsupported air mission');
     if(cfg.airRunway!==undefined&&(cfg.airRunway!==1||cfg.airMission!==1||!supportsRunway||!remoteAirRunway))throw Error('Unsupported air runway');
     if(cfg.airTakeoff!==undefined&&(cfg.airTakeoff!==1||cfg.airRunway!==1||!supportsTakeoff||!remoteAirTakeoff))throw Error('Unsupported air takeoff');
+    if(cfg.airLanding!==undefined&&(cfg.airLanding!==1||cfg.airTakeoff!==1||!supportsLanding||!remoteAirLanding))throw Error('Unsupported air landing');
     if(civilizationSetup.enabled){
       checkedCivilizations(cfg.civilizations,2+cfg.ai);
       if(![250,500,1000].includes(cfg.popLimit)||![0,1,2].includes(cfg.supplies))throw Error('Invalid skirmish setup');
@@ -1868,6 +1873,7 @@ function channel(local) {
     if(cfg.airMission===1&&!wasm.air_mission_configure_peer(1))throw Error('Air mission setup failed');
     if(cfg.airRunway===1&&!wasm.air_runway_configure_peer(1))throw Error('Air runway setup failed');
     if(cfg.airTakeoff===1&&!wasm.air_takeoff_configure_peer(1))throw Error('Air takeoff setup failed');
+    if(cfg.airLanding===1&&!wasm.air_landing_configure_peer(1))throw Error('Air landing setup failed');
     seasonSession.configure(peerSeasonSettings(cfg.seasons),cfg.climate);setSeasonControls(seasonSession.settings);climateControl.value=seasonSession.climate;
     net = { ch, pc, ls: null };
     net.ls = new Lockstep(wasm, local, buf => { if (ch.readyState === 'open') ch.send(buf); });

@@ -14,6 +14,12 @@ mod runway32;
 #[cfg(feature = "ee2-native13")]
 mod takeoff33;
 #[cfg(feature = "ee2-native13")]
+mod aircraft_steering;
+#[cfg(feature = "ee2-native13")]
+mod landing_geometry;
+#[cfg(feature = "ee2-native13")]
+mod landing34;
+#[cfg(feature = "ee2-native13")]
 mod battle_signals;
 #[cfg(feature = "ee2-native13")]
 mod capture_animation26;
@@ -853,6 +859,21 @@ pub extern "C" fn air_takeoff_height(handle: u32) -> f32 {
     if game.get(handle).is_some_and(|i| game.ents[i].team == game.local || game.visible(i)) {
         game.takeoff_height(handle, 1.0).unwrap_or(f32::NAN)
     } else { f32::NAN }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn air_landing_configure_peer(enabled: u32) -> u32 {
+    u32::from(enabled <= 1 && g().configure_peer_air_landing(enabled != 0))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn air_landing_status(handle: u32, field: u32) -> u32 {
+    let game = g();
+    if game.get(handle).is_some_and(|i| game.visible(i)) {
+        game.landing.status(handle, field)
+    } else { 0 }
 }
 
 #[cfg(feature = "ee2-native13")]

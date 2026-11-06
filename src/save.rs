@@ -55,6 +55,8 @@ impl Game {
         let options = options | if self.air_runway_enabled { crate::runway32::SAVE_FLAG } else { 0 };
         #[cfg(feature="ee2-native13")]
         let options = options | if self.air_takeoff_enabled { crate::takeoff33::SAVE_FLAG } else { 0 };
+        #[cfg(feature="ee2-native13")]
+        let options = options | if self.air_landing_enabled { crate::landing34::SAVE_FLAG } else { 0 };
         for v in [options, self.instant_build as u32, self.tech_points] {
             b.extend_from_slice(&v.to_le_bytes());
         }
@@ -106,10 +108,14 @@ impl Game {
         { b = self.wrap_air_save(b); }
         #[cfg(feature="ee2-native13")]
         { b = self.wrap_takeoff_save(b); }
+        #[cfg(feature="ee2-native13")]
+        { b = self.wrap_landing_save(b); }
         self.savebuf = b;
     }
 
     pub fn load(buf: &[u8]) -> Option<Game> {
+        #[cfg(feature="ee2-native13")]
+        let (buf, landing) = crate::landing34::split_save(buf)?;
         #[cfg(feature="ee2-native13")]
         let (buf, takeoff) = crate::takeoff33::split_save(buf)?;
         #[cfg(feature="ee2-native13")]
@@ -213,6 +219,7 @@ impl Game {
             g.air_missions_enabled = false;
             g.air_runway_enabled = false;
             g.air_takeoff_enabled = false;
+            g.air_landing_enabled = false;
         }
         if trailer >= 12 {
             let v = |k| u32::from_le_bytes(buf[end+k..end+k+4].try_into().unwrap());
@@ -220,7 +227,7 @@ impl Game {
             #[cfg(feature="ee2-native13")]
             let allowed = allowed | crate::infantry_roster27::SAVE_FLAG | crate::production_roster29::SAVE_FLAG |
                 crate::game::trade30::SAVE_FLAG | crate::air31::SAVE_FLAG | crate::runway32::SAVE_FLAG |
-                crate::takeoff33::SAVE_FLAG;
+                crate::takeoff33::SAVE_FLAG | crate::landing34::SAVE_FLAG;
             let flags = v(0);
             if flags & !allowed != 0 || v(4) > 1 { return None; }
             g.cheats_enabled = flags & 1 != 0;
@@ -234,8 +241,10 @@ impl Game {
                 g.air_missions_enabled = flags & crate::air31::SAVE_FLAG != 0;
                 g.air_runway_enabled = flags & crate::runway32::SAVE_FLAG != 0;
                 g.air_takeoff_enabled = flags & crate::takeoff33::SAVE_FLAG != 0;
+                g.air_landing_enabled = flags & crate::landing34::SAVE_FLAG != 0;
                 if g.air_runway_enabled && !g.air_missions_enabled { return None; }
                 if g.air_takeoff_enabled && !g.air_runway_enabled { return None; }
+                if g.air_landing_enabled && !g.air_takeoff_enabled { return None; }
             }
             g.instant_build = v(4) == 1 && (cfg!(feature = "ee2-up15") || g.cheats_enabled);
             g.tech_points = v(8);
@@ -381,6 +390,8 @@ impl Game {
         g.restore_air_save(air)?;
         #[cfg(feature="ee2-native13")]
         g.restore_takeoff_save(takeoff)?;
+        #[cfg(feature="ee2-native13")]
+        g.restore_landing_save(landing)?;
         g.build_grid();
         if has_territory&&!g.validate_territory_state(){return None;}
         if !has_diplomacy {

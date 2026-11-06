@@ -265,6 +265,14 @@ impl Game {
         self.aircraft.is_parked(index, actor)
     }
 
+    pub(crate) fn air_landing_home(&self, handle: u32) -> Option<u32> {
+        let frame = self.aircraft.aircraft.get(&handle)?;
+        if frame.phase != Phase::Returning || frame.waypoints.len() != 1 { return None; }
+        let index = self.get(handle)?;
+        self.air_host(frame.home, self.ents[index].team)?;
+        Some(frame.home)
+    }
+
     pub(crate) fn air_can_fire(&self, index: usize) -> bool {
         self.aircraft.aircraft.get(&self.h(index)).is_none_or(|a| a.phase == Phase::Flying && a.ordnance > 0)
     }
@@ -281,6 +289,7 @@ impl Game {
         if !self.air_missions_enabled || !mission_aircraft(self.ents[index].def) { return; }
         let handle = self.h(index);
         if let Some(frame) = self.aircraft.aircraft.get_mut(&handle).filter(|frame| frame.phase != Phase::Stationed) {
+            self.landing.clear(handle);
             frame.phase = Phase::Flying;
             frame.mission = false;
             frame.waypoints.clear();
@@ -291,6 +300,7 @@ impl Game {
         if !self.air_missions_enabled { return; }
         let handle = self.h(index);
         self.takeoff.clear(handle);
+        self.landing.clear(handle);
         self.aircraft.aircraft.remove(&handle);
         for airport in self.aircraft.airports.values_mut() {
             airport.registered.retain(|&actor| actor != handle);
@@ -381,7 +391,9 @@ impl Game {
         if !self.air_missions_enabled { return; }
         for &(index, _) in changed {
             let handle = self.h(index);
+            self.landing.clear(handle);
             if let Some(airport) = self.aircraft.airports.get_mut(&handle) {
+                self.landing.clear_host(handle);
                 airport.mission = None;
                 airport.takeoff.clear();
             }
@@ -596,6 +608,7 @@ impl State {
         frame.return_pending = false;
         frame.waypoints.clear();
         game.takeoff.clear(handle);
+        game.landing.clear(handle);
         self.airports.get_mut(&home).unwrap().stored.push(handle);
         let (x, y) = (game.ents[host].x, game.ents[host].y);
         game.order_stop(&[index]);
@@ -629,6 +642,7 @@ impl State {
         let Some(index) = game.get(home) else { return; };
         let origin = [game.ents[index].x, game.ents[index].y];
         for handle in airport.registered.into_iter().rev() {
+            game.landing.clear(handle);
             let Some(index) = game.get(handle) else { continue; };
             let Some(frame) = self.aircraft.get_mut(&handle) else { continue; };
             frame.home = NONE;
@@ -723,6 +737,7 @@ impl State {
         if frame.phase == Phase::Returning && frame.home == home { return; }
         let previous = frame.home;
         if !self.reserve(home, handle) { return; }
+        game.landing.clear(handle);
         let frame = self.aircraft.get_mut(&handle).unwrap();
         if !matches!(path, ReturnPath::AfterCurrent) { frame.waypoints.clear(); }
         if matches!(path, ReturnPath::ReverseMission) && frame.mission {
@@ -763,6 +778,7 @@ impl State {
             if frame.phase == Phase::Stationed { continue; }
             if game.takeoff.rolling(handle) { continue; }
             if frame.home != NONE && game.air_host(frame.home, actor.team).is_none() {
+                game.landing.clear(handle);
                 let previous = frame.home;
                 frame.home = NONE;
                 frame.phase = Phase::Flying;
@@ -777,6 +793,11 @@ impl State {
                 if frame.mission {
                     self.approach_mission_target(game, handle, index);
                 }
+                continue;
+            }
+            if frame.phase == Phase::Returning && frame.waypoints.len() == 1 && game.use_runway_landing(index) {
+                let home = frame.home;
+                if game.landing.complete(handle, home) { self.station(game, handle, home); }
                 continue;
             }
             if !reached(&actor, frame.waypoints[0]) { continue; }

@@ -100,6 +100,7 @@ impl Game {
     }
 
     pub(crate) fn set_air_takeoff_enabled(&mut self, enabled: bool) {
+        if !enabled { self.air_landing_enabled = false; }
         if self.air_takeoff_enabled != enabled {
             self.air_takeoff_enabled = enabled;
             for team in 0..self.nplayers {
@@ -168,6 +169,13 @@ impl Game {
             if alpha == 1.0 { flight.height }
             else { flight.previous_height + (flight.height - flight.previous_height) * alpha }
         })
+    }
+
+    pub(crate) fn follow_air_height(&mut self, handle: u32, actor: &Ent, clearance: f32, rate: f32) {
+        if let Some(flight) = self.takeoff.0.get_mut(&handle) {
+            flight.previous_height = flight.height;
+            flight.height = approach_height(flight.height, terrain_ahead(&self.map, actor) + clearance, rate);
+        }
     }
 
     pub(crate) fn wrap_takeoff_save(&self, core: Vec<u8>) -> Vec<u8> {
