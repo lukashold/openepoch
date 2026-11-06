@@ -4,6 +4,9 @@ import {fullmapScreenPoint,fullmapWorldPoint} from './fullmap-pointer.js';
 import {composeFullmapTerrain,loadFullmapTerrainArt,sampleFullmapTiles} from './fullmap-terrain.js';
 import {loadOriginalFullmapArt} from './original-fullmap-art.js';
 import {nativeMetaEpoch} from './original-hud-layout.js';
+import {createFullmapSpriteCache} from './fullmap-sprites.js';
+import {paintFullmapTerritoryLabels,readFullmapTerritoryLabels} from './fullmap-territory-names.js';
+import {createOriginalWarplanPane} from './original-warplan-pane.js';
 
 const FILTERS = {units:'Einheiten', buildings:'Gebäude und Mauern', resources:'Ressourcen und Bäume', territories:'Territorien'};
 const PREFS = 'openepoch-fullmap-options-v1';
@@ -27,7 +30,9 @@ function rect(node, geometry) {
   Object.assign(node.style,{left:`${x}px`,top:`${y}px`,width:`${width}px`,height:`${height}px`});
 }
 
-export function createFullmap({dialog,wasm,metadata,size,teams,originalArt,onAccept,onToggle,onPreview,pip}) {
+export function createFullmap({dialog,wasm,metadata,size,teams,originalArt,territoryNameCatalog,bitmapFonts,
+  onAccept,onToggle,onPreview,pip,drawFlares,warplanCue,
+  warplanPeer,warplanRecipient,warplanClock}) {
   const canvas = dialog.querySelector('canvas');
   const draw = canvas.getContext('2d', {alpha:false});
   const close = dialog.querySelector('.fullmap-close');
@@ -48,16 +53,24 @@ export function createFullmap({dialog,wasm,metadata,size,teams,originalArt,onAcc
   const terrainDraw = surface(RASTER), layerDraw = surface(size);
   const overlay = layerDraw.createImageData(size,size);
   const bounds = {minX:0,minY:0,maxX:size-1,maxY:size-1};
-  const images = new Map(), tinted = new Map();
+  const {image,colorize} = createFullmapSpriteCache(teams);
   const switches = new Map();
   let layout, lastShape = '', lastOptions = '', lastDraw = -Infinity;
   let previousPrimaryDown = -Infinity;
   let art, terrainArt, catalog, started, terrainReady, previewPointer, pipDrag;
   let terrain;
+  const warplans = createOriginalWarplanPane({host:dialog,options:pane,playCue:warplanCue,
+    peer:warplanPeer,recipient:warplanRecipient,clock:warplanClock,teams,refresh:()=>{
+    lastDraw = -Infinity;
+    previousPrimaryDown = -Infinity;
+  }});
 
   let saved;
   try { saved = JSON.parse(localStorage.getItem(PREFS)); } catch { /* optional preferences */ }
-  const options = Object.fromEntries(Object.keys(FILTERS).map(key=>[key,saved?.[key] !== false]));
+  const filters = typeof wasm.fullmap_territory_labels_build === 'function'
+    && typeof wasm.fullmap_territory_labels_ptr === 'function'
+    ? {...FILTERS,terrNames:'Territoriennamen'} : FILTERS;
+  const options = Object.fromEntries(Object.keys(filters).map(key=>[key,saved?.[key] !== false]));
   const pipWidgets = new Map();
   const pipViewport = () => pipCanvas.hidden ? null : pipCanvas.getBoundingClientRect();
   const bookmark = (slot,action,time=performance.now()/1000) => pip?.bookmark(slot,action,
@@ -75,7 +88,7 @@ export function createFullmap({dialog,wasm,metadata,size,teams,originalArt,onAcc
       pipWidgets.set(name,{slot,button});
     }
   }
-  for (const [key,label] of Object.entries(FILTERS)) {
+  for (const [key,label] of Object.entries(filters)) {
     const row = document.createElement('label'), input = document.createElement('input');
     const mark = document.createElement('i');
     input.type = 'checkbox'; input.checked = options[key];
@@ -100,34 +113,6 @@ export function createFullmap({dialog,wasm,metadata,size,teams,originalArt,onAcc
     if (!originalArt) return;
     loadOriginalFullmapArt(true).then(value=>{ art=value; lastShape=''; }).catch(error=>console.warn(error));
     loadFullmapTerrainArt().then(value=>{ terrainArt=value; terrainReady=false; }).catch(error=>console.warn(error));
-  }
-
-  function image(sprite) {
-    if (!sprite) return null;
-    if (!images.has(sprite.url)) {
-      const img = new Image();
-      img.decoding = 'async'; img.src = sprite.url;
-      images.set(sprite.url,img);
-    }
-    const img = images.get(sprite.url);
-    return img.complete && img.naturalWidth ? img : null;
-  }
-
-  function colorize(sprite,img,owner) {
-    const key = `${sprite.url}:${owner}`;
-    if (!tinted.has(key)) {
-      const ctx = surface(img.naturalWidth);
-      ctx.canvas.height = img.naturalHeight;
-      ctx.drawImage(img,0,0);
-      const pixels = ctx.getImageData(0,0,ctx.canvas.width,ctx.canvas.height);
-      const color = teams[owner].map(value=>Math.round(value*255)/255);
-      for (let offset=0; offset<pixels.data.length; offset+=4) {
-        for (let channel=0; channel<3; channel++) pixels.data[offset+channel] *= color[channel];
-      }
-      ctx.putImageData(pixels,0,0);
-      tinted.set(key,ctx.canvas);
-    }
-    return tinted.get(key);
   }
 
   function resize(epoch) {
@@ -173,7 +158,8 @@ export function createFullmap({dialog,wasm,metadata,size,teams,originalArt,onAcc
       const dpr = Math.min(devicePixelRatio||1,2);
       canvas.width=Math.max(1,Math.round(map.width*dpr));
       canvas.height=Math.max(1,Math.round(map.height*dpr));
-      layout = {dpr,width:map.width,height:map.height,projection:{left:0,top:0,right:map.width,bottom:map.height}};
+      layout = {dpr,width:map.width,height:map.height,viewportWidth:width,viewportHeight:height,
+        projection:{left:0,top:0,right:map.width,bottom:map.height}};
       lastShape = shape;
       lastOptions = '';
     }
@@ -222,6 +208,7 @@ export function createFullmap({dialog,wasm,metadata,size,teams,originalArt,onAcc
     if (!terrainReady) refreshTerrain();
     const {width,height,dpr,projection} = layout;
     const project = (x,y) => fullmapScreenPoint(x,bounds.maxY-y,projection,bounds);
+    warplans.layout(art,dialog.clientWidth,dialog.clientHeight,ui.epoch);
     const sourceSide = terrainArt ? RASTER : size;
     draw.setTransform(dpr,0,0,dpr,0,0);
     draw.imageSmoothingEnabled = true;
@@ -272,11 +259,21 @@ export function createFullmap({dialog,wasm,metadata,size,teams,originalArt,onAcc
       corners().forEach(([x,y],i)=>draw[i?'lineTo':'moveTo'](...project(x,y)));
       draw.closePath(); draw.stroke();
     }
+    if (options.terrNames) paintFullmapTerritoryLabels(draw,readFullmapTerritoryLabels(wasm),project,layout,
+      {names:territoryNameCatalog?.names,bitmapFonts});
+    warplans.paint(draw,(x,y)=>fullmapScreenPoint(x,y,projection,bounds),dialog.clientWidth);
+    drawFlares?.(draw,project,64,'fullmap');
+  }
+
+  function nativePoint(event, integerInput = false) {
+    const {left,top,right,bottom} = canvas.getBoundingClientRect();
+    const x = integerInput ? Math.trunc(event.clientX) : event.clientX;
+    const y = integerInput ? Math.trunc(event.clientY) : event.clientY;
+    return fullmapWorldPoint(x,y,{left,top,right,bottom},bounds);
   }
 
   function point(event) {
-    const {left,top,right,bottom} = canvas.getBoundingClientRect();
-    const world = fullmapWorldPoint(event.clientX,event.clientY,{left,top,right,bottom},bounds);
+    const world = nativePoint(event);
     return world ? [world[0],bounds.maxY-world[1]] : null;
   }
 
@@ -301,11 +298,17 @@ export function createFullmap({dialog,wasm,metadata,size,teams,originalArt,onAcc
     previewPointer = undefined;
     pipDrag = undefined;
     pip?.close();
+    warplans.close();
     onPreview?.(null);
     onToggle?.(false);
   });
   close.onclick = closeMap;
+  canvas.addEventListener('contextmenu',event=>{
+    if(warplans.capturing())event.preventDefault();
+  });
   canvas.addEventListener('pointerdown',event=>{
+    if(warplans.modal()){event.preventDefault();return;}
+    if(warplans.capturing()&&warplans.pointer('down',event,nativePoint(event,true))){event.preventDefault();return;}
     if (event.button !== 0 || event.isPrimary === false) return;
     const world = point(event);
     if (!world) return;
@@ -323,6 +326,7 @@ export function createFullmap({dialog,wasm,metadata,size,teams,originalArt,onAcc
     }
   });
   canvas.addEventListener('pointermove',event=>{
+    if(warplans.capturing()&&warplans.pointer('move',event,nativePoint(event,true)))return;
     if (event.pointerId !== previewPointer) return;
     const world=point(event);
     onPreview?.(world);
@@ -367,5 +371,5 @@ export function createFullmap({dialog,wasm,metadata,size,teams,originalArt,onAcc
     return true;
   }
 
-  return {open:openMap,close:closeMap,isOpen:()=>dialog.open,paint,pipKey,invalidate:()=>terrainReady=false};
+  return {open:openMap,close:closeMap,isOpen:()=>dialog.open,paint,pipKey,warplans,invalidate:()=>terrainReady=false};
 }

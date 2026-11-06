@@ -228,7 +228,10 @@ export function createOriginalAudio(options={}) {
     if(!manifest||muted||ctx?.state!=='running')return false;
     const record=manifest.effects[String(kind)];if(!record)return false;
     const buffer=buffers.get(record.file);if(!buffer){load(record.file);return false;}
-    start(buffer,volume*(record.volume??1),pan,'effect');stats.effectPlays++;return true;
+    if (record.maxInstances>0 && [...live].filter(source=>source.originalEffect===kind).length>=record.maxInstances) return true;
+    const source=start(buffer,volume*(record.volume??1),pan,'effect');
+    if(source)source.originalEffect=kind;
+    stats.effectPlays++;return true;
   }
   function regionalPlayback() {
     if (!regionalMusicEnabled || !ctx || !master) return null;

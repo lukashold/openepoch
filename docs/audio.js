@@ -1,6 +1,6 @@
 // The EE2 profile uses locally extracted original recordings when available.
 // Procedural sounds and local speech remain the fallback for the standalone game.
-import { createOriginalAudio } from './original-audio.js?v=stone-wheels';
+import { createOriginalAudio } from './original-audio.js?v=native21';
 import {createPresentationRandom} from './source-music-controller.js?v=regional11';
 const presentationRandom = createPresentationRandom(1);
 const originals=createOriginalAudio({presentationRandom});
@@ -156,8 +156,14 @@ const SOUNDS = {
 /** Play sound `kind` at volume 0..1 and stereo position -1..1. */
 export const STONE_THROWER_LAUNCH_CUE = 26;
 export const FULLMAP_CUE = 27;
+const WARPLAN_CUES = Object.freeze({ui_warplans_path_addPoint:28,ui_warplans_path_finish:29});
+export function playWarplanCue(name) {
+  if (!Object.hasOwn(WARPLAN_CUES,name) || muted || !ensure() || ctx.state!=='running') return;
+  const kind=WARPLAN_CUES[name];
+  if (!originals.effect(kind)) play(kind);
+}
 export function play(kind, vol = 1, pan = 0) {
-  const fallbackKind = kind === STONE_THROWER_LAUNCH_CUE ? 3 : kind === FULLMAP_CUE ? 20 : kind;
+  const fallbackKind = kind === STONE_THROWER_LAUNCH_CUE ? 3 : kind>=FULLMAP_CUE && kind<=29 ? 20 : kind;
   const s = SOUNDS[fallbackKind];
   if (muted || !s || vol < 0.02 || !ensure() || ctx.state !== 'running') return;
   const now = ctx.currentTime;

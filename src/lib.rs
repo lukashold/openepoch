@@ -60,6 +60,12 @@ mod ee2_territory_victory;
 mod ee2_sole_survivor;
 #[cfg(feature = "ee2-native13")]
 mod ee2_regicide;
+#[cfg(feature = "ee2-native13")]
+mod fullmap_labels21;
+#[cfg(feature = "ee2-native13")]
+mod territory_name_catalog21;
+#[cfg(feature = "ee2-native13")]
+mod territory_names21;
 mod territory;
 mod placement;
 #[cfg(all(feature = "ee2-reference",not(feature="ee2-up15")))]
@@ -366,6 +372,26 @@ pub extern "C" fn terr_dirty() -> u32 {
 pub extern "C" fn terr_ptr() -> *const u8 {
     g().terr_tex();
     g().terr_rgba.as_ptr()
+}
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn fullmap_territory_labels_build() -> u32 {
+    g().project_fullmap_territory_labels()
+}
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn fullmap_territory_labels_ptr() -> *const u32 {
+    g().fullmap_territory_labels.as_ptr().cast()
+}
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn territory_names_catalog_version() -> u32 {
+    territory_name_catalog21::VERSION
+}
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_territory_names(version: u32) -> u32 {
+    g().configure_territory_names(version) as u32
 }
 #[no_mangle]
 pub extern "C" fn minimap() -> *const u8 {

@@ -51,6 +51,6 @@ export async function loadNativeFontUI({enabled=true,hud,diplomacy,document:doc=
  }
  win.addEventListener?.('resize',schedule);listeners.push(['resize',schedule]);
  update();
- const api={enabled:true,errors:[],update,dispose(){if(disposed)return;disposed=true;api.enabled=false;for(const observer of observers)observer.disconnect();for(const [type,fn]of listeners)win.removeEventListener?.(type,fn);layer.dispose();fonts.dispose();bindings.clear();},status(){return {enabled:!disposed,...layer.status(),fontVariants:Object.keys(fonts.manifest.fonts).length,source:'shipped-cache-and-current-GDI',limits:['Native wrap and alternate-font layers remain unbound.']};}};
+ const api={enabled:true,errors:[],bitmapFonts:fonts,update,dispose(){if(disposed)return;disposed=true;api.enabled=false;for(const observer of observers)observer.disconnect();for(const [type,fn]of listeners)win.removeEventListener?.(type,fn);layer.dispose();fonts.dispose();bindings.clear();},status(){return {enabled:!disposed,...layer.status(),fontVariants:Object.keys(fonts.manifest.fonts).length,source:'shipped-cache-and-current-GDI',limits:['Native wrap and alternate-font layers remain unbound.']};}};
  return api;
 }

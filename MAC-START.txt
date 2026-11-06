@@ -48,6 +48,11 @@ Vollbild und Hauptmenü. Forschung und Diplomatie stehen links unten neben der
 Minikarte. Die Rahmen wechseln mit den Epochen zwischen Stein, Pergament und Metall.
 Mit Tab oder „Karte“ öffnest du die Weltkarte im UP-Regelsatz. Ein Doppelklick
 auf eine Kartenposition zentriert die Hauptkamera. Tab oder Esc schließt die Karte.
+Im Solo-Scharmützel setzt Alt+Y eine Kartenmarkierung. Ein Linksklick setzt sie,
+ein Rechtsklick bricht ab. Der Filter „Territoriennamen“ zeigt entdeckte Gebiete.
+Im Reiter „Kriegspläne“ zeichnest du mit Linksklick Wegpunkte und beendest den
+Pfad mit Rechtsklick. Zwei Spieler mit diesem Stand können ihre Pfade versenden,
+anzeigen, annehmen und ablehnen.
 
 Strg+Pfeil links/rechts: Kamera drehen, mit Umschalt schneller. Die drei
 Kameraknöpfe rechts oben drehen45° oder richten die Ansicht nach Norden aus.

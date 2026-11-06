@@ -160,6 +160,8 @@ impl Game {
             }
         }
         if owner != self.towner {
+            #[cfg(feature = "ee2-native13")]
+            self.name_territory_owner_changes(&owner);
             self.towner = owner;
             self.terr_dirty = true;
         }

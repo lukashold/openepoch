@@ -80,10 +80,14 @@ impl Game {
         { b = crate::ee2_sole_survivor::wrap(b, self); }
         #[cfg(feature="ee2-native13")]
         { b = crate::ee2_regicide::wrap(b, self); }
+        #[cfg(feature="ee2-native13")]
+        { b = crate::territory_names21::wrap(b, self.territory_names.as_ref()); }
         self.savebuf = b;
     }
 
     pub fn load(buf: &[u8]) -> Option<Game> {
+        #[cfg(feature="ee2-native13")]
+        let (buf, territory_names) = crate::territory_names21::split(buf)?;
         #[cfg(feature="ee2-native13")]
         let (buf, regicide) = crate::ee2_regicide::split(buf)?;
         let actor_definition_count = SAVE_DEFINITION_COUNT;
@@ -317,6 +321,10 @@ impl Game {
         #[cfg(feature="ee2-native13")]
         if let Some((rule, outcome)) = regicide {
             g.restore_regicide(rule, outcome)?;
+        }
+        #[cfg(feature="ee2-native13")]
+        if let Some(names) = territory_names {
+            g.restore_territory_names(names)?;
         }
         Some(g)
     }

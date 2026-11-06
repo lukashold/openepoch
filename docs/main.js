@@ -7,9 +7,9 @@ import { researchPanel } from './research.js?v=rank-families';
 import { originalResearchActions, researchCost, researchState } from './original-research-actions.js?v=rank-families';
 import { diplomacyPanel } from './diplomacy.js?v=native17';
 import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native6';
-import {loadNativeFontUI} from './original-font-ui.js?v=native6';
+import {loadNativeFontUI} from './original-font-ui.js?v=native21names';
 import {territoryClaimMessage} from './territory-help.js?v=fortress1';
-import * as sfx from './audio.js?v=native20';
+import * as sfx from './audio.js?v=native21';
 import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=citizen9';
 import {mountOriginalShellVideo} from './original-shell-video.js?v=native12';
 import {mountSkirmishMenu} from './skirmish-menu.js?v=native13';
@@ -33,14 +33,17 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=skirmish-climates';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native20';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native21';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=epoch13';
 import {createFullscreenController} from './fullscreen.js?v=building2';
 import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native17';
 import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=fortress1';
 import {updateOriginalCamera,originalCameraRay,originalFractionForZoom,normalizeOriginalHeading,rotateOriginalCameraHeading} from './original-camera.js?v=heading2';
-import {createFullmap} from './fullmap.js?v=native20';
+import {createFullmap} from './fullmap.js?v=native21';
+import {createPlayerFlare} from './player-flare.js';
+import {loadFullmapTerritoryNameCatalog} from './fullmap-territory-names.js';
+import {createWarplanPeer,WARPLAN_PEER_VERSION} from './original-warplan-peer.js';
 
 const $ = id => document.getElementById(id);
 const canvas = $('gl');
@@ -680,13 +683,36 @@ const nativeDiplomacy=await enhanceOriginalDiplomacy(diplomacy,{wasm,enabled:ref
 document.body.dataset.originalDiplomacy=String(nativeDiplomacy.enabled);
 const nativeBitmapFonts=await loadNativeFontUI({enabled:referenceMode&&originalAssets.enabled,hud:nativeHud,diplomacy:nativeDiplomacy});
 document.body.dataset.originalBitmapFonts=String(nativeBitmapFonts.enabled);
+const territoryNameCatalog = rulesProfile.id === 'up15' ? await loadFullmapTerritoryNameCatalog(wasm) : null;
+const territoryNamesRequested = new URLSearchParams(location.search).get('territoryNames') === '1';
 $('diplomacy-button').onclick=()=>{if(running&&!bench)diplomacy.open();};
 
+const playerFlare = createPlayerFlare({mapSize:MAP,tickSeconds:TICK,originalArt:originalEnabled,local:()=>ui?.local,teams:TEAM,
+  onMode(active){
+    $('player-flare-button').setAttribute('aria-pressed',String(active));
+    canvas.style.cursor=active?'crosshair':'default';
+  }});
+function armPlayerFlare(){
+  if(rulesProfile.ruleset!==2||!running||bench||net||!ui||ui.win||modalOpen())return;
+  cancelMapGesture();cancelBuilding();attackMode=false;
+  playerFlare.arm();
+}
+$('player-flare-button').onclick=armPlayerFlare;
+
+function warplanRecipient(){
+  if(!net||net.ls?.alone||!ui)return null;
+  const player=ui.diplomacy?.players?.find(row=>row.team===1-ui.local&&row.alive&&!row.ai);
+  return player?{relation:player.relation,name:`Spieler ${player.team+1}`}:null;
+}
 const fullmap = rulesProfile.ruleset===2&&packActorReader ? createFullmap({
   dialog:$('fullmap'),wasm,metadata:packActorReader,size:MAP,teams:TEAM,originalArt:originalEnabled,
+  territoryNameCatalog,bitmapFonts:nativeBitmapFonts.bitmapFonts,
+  warplanPeer:()=>net?.warplans,warplanRecipient,warplanClock:()=>wasm.game_tick()*TICK,
+  warplanCue:sfx.playWarplanCue,
   pip:fullmapPip,
   onAccept(point){if(!fullmapPip.accept(point)){[cam.x,cam.y]=point;updateCamera();}},
-  onToggle(){keys.clear();cancelMapGesture();$('tip').style.display='none';sfx.play(sfx.FULLMAP_CUE);},
+  onToggle(open){keys.clear();playerFlare.cancel();playerFlare.setMapOpen(open);cancelMapGesture();$('tip').style.display='none';sfx.play(sfx.FULLMAP_CUE);},
+  drawFlares:playerFlare.draw,
 }) : null;
 $('fullmap-button').onclick=()=>{if(running&&!bench&&!modalOpen())fullmap?.open();};
 
@@ -711,9 +737,11 @@ function bindWorldTerrainMaterial() {
 }
 
 function begin() {
+  playerFlare.reset(wasm.game_tick()>>>0);
   fullmapPip.reset();
   sfx.stopStoneThrowerWheels();
   fullmap?.close();
+  fullmap?.warplans.reset();
   fullmap?.invalidate();
   saveSession=Date.now();
   ghost = null; attackMode = false; paused = false; speed = 1; acc = 0; fogTick = -1; actSig = '@refresh'; worstMs = 0; ui = null;
@@ -723,6 +751,7 @@ function begin() {
   shellMovie(false);
   $('camera-tools').hidden=!referenceMode;
   $('fullmap-button').hidden=!fullmap||!!bench;
+  $('player-flare-button').hidden=!fullmap||!!bench||!!net;
   uploadTerrain();
   bindWorldTerrainMaterial();
   if (rulesProfile.ruleset === 2) {
@@ -759,6 +788,10 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
     if(referenceMode)wasm.skirmish_epoch(+$('start-epoch').value);
   }
   if(!benchUnits)wasm.skirmish_visibility(+$('map-visibility').value);
+  if(!benchUnits && humans===1 && rulesProfile.id==='up15' && territoryNamesRequested
+      && !(territoryNameCatalog && wasm.configure_territory_names?.(territoryNameCatalog.catalog))) {
+    toast('Die originalen Gebietsnamen konnten für dieses Scharmützel nicht geladen werden.');
+  }
   if(!benchUnits&&humans===1&&civilizationSetup.enabled&&wasm.stat(local,0)===0
      && typeof wasm.ai9_game_research_setup_manual==='function' && !wasm.ai9_game_research_setup_manual()){
     toast('Originalforschung konnte für dieses Scharmützel nicht gestartet werden.');
@@ -942,6 +975,7 @@ function frame(now) {
   if (wasm.map_dirty()) { bindTexture(1,mapTexture); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, MAP, MAP, gl.RGBA, gl.UNSIGNED_BYTE, u8(wasm.map_ptr(), MAP * MAP * 4)); uploadOriginalTerrainClasses(); fullmap?.invalidate(); }
   if (wasm.terr_dirty()) { const p = wasm.terr_ptr(); bindTexture(3,territoryTexture); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, MAP, MAP, gl.RGBA, gl.UNSIGNED_BYTE, u8(p, MAP * MAP * 4)); }
   const tickNow = wasm.game_tick()>>>0;
+  playerFlare.update(tickNow,dt);
   const seasonPhase=seasonSession.update();
   if(qaMode)canvas.dataset.season=JSON.stringify(seasonPhase);
   if (fogTick !== tickNow || fogTick < 0) {
@@ -1223,10 +1257,11 @@ function drawMini() {
   mctx.strokeStyle = '#fff'; mctx.lineWidth = 1.5; mctx.beginPath();
   c.forEach((q, i) => i ? mctx.lineTo(q[0], q[1]) : mctx.moveTo(q[0], q[1]));
   mctx.closePath(); mctx.stroke();
+  playerFlare.draw(mctx,(x,y)=>[x,y],48*MAP/Math.max(1,mini.clientWidth));
 }
 function miniWorld(e) { const r = mini.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * MAP, (e.clientY - r.top) / r.height * MAP]; }
 mini.addEventListener('mousedown', e => {
-  if(modalOpen())return;
+  if(modalOpen()||playerFlare.isArmed())return;
   const [x, y] = miniWorld(e);
   if (e.button === 2) { wasm.cmd_context(x, y, 0); if (!selectedUnitVoice('order')) sfx.play(22); } else { cam.x = x; cam.y = y; mini.dragging = true; }
 });
@@ -1244,7 +1279,7 @@ addEventListener('pointerdown', sfx.unlock, { once: false });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('mousedown', e => {
   mouse.x = e.clientX; mouse.y = e.clientY;
-  if (!running||modalOpen()) return;
+  if (!running||modalOpen()||playerFlare.isArmed()) return;
   const [wx, wy] = toWorld(e.clientX, e.clientY);
   if (e.button === 1) { mouse.pan = true; e.preventDefault(); return; }
   if (e.button === 2) {
@@ -1290,6 +1325,10 @@ addEventListener('mousemove', e => {
 document.addEventListener('mouseleave', () => mouse.inside = false);
 addEventListener('mouseup', e => {
   if(modalOpen()){cancelMapGesture();return;}
+  if(playerFlare.isArmed()){
+    const point=e.button===0 ? (e.target===canvas?toWorld(e.clientX,e.clientY):e.target===mini?miniWorld(e):null) : null;
+    if(playerFlare.release(e.button,point))return;
+  }
   if (e.button === 1) mouse.pan = false;
   if (e.button !== 0 || !mouse.down) return;
   mouse.down = false; box.style.display = 'none';
@@ -1362,6 +1401,7 @@ $('cheat-form').addEventListener('submit', e => {
 addEventListener('keydown', e => {
   if(e.key==='F11'){e.preventDefault();if(!e.repeat)fullscreen.toggle();return;}
   if(fullmap?.isOpen()){
+    if(fullmap.warplans.key(e))return;
     if(e.key==='Escape'||(e.key==='Tab'&&!e.shiftKey&&!e.altKey&&!e.ctrlKey&&!e.metaKey)){
       e.preventDefault();if(!e.repeat)fullmap.close();
     } else fullmap.pipKey(e);
@@ -1377,6 +1417,10 @@ addEventListener('keydown', e => {
   keys.add(e.key);
   if (!running) return;
   const k = e.key.length === 1 ? e.key.toUpperCase() : e.key;
+  if(e.altKey&&!e.ctrlKey&&!e.metaKey&&k==='Y'&&rulesProfile.ruleset===2&&!bench&&!net){
+    e.preventDefault();if(!e.repeat)armPlayerFlare();return;
+  }
+  if(k==='Escape'&&playerFlare.cancel()){e.preventDefault();return;}
   if(ghost&&!e.metaKey&&(e.key==='Control'||k==='R'||e.code==='Comma'||e.code==='Period')){
     e.preventDefault();if(!e.repeat)rotateBuilding(e.code==='Comma'?-1:1,e.shiftKey);return;
   }
@@ -1423,6 +1467,8 @@ $('voices').onclick = () => { sfx.setSpeechEnabled(!sfx.isSpeechEnabled()); $('v
 $('save').onclick = () => saveGame();
 $('speed').onclick = () => setSpeed((SPEEDS.indexOf(speed) + 1) % SPEEDS.length);
 function toMenu() {
+  playerFlare.reset(0);
+  $('player-flare-button').hidden=true;
   fullmap?.close();
   $('fullmap-button').hidden=true;
   $('camera-tools').hidden=true;
@@ -1446,11 +1492,12 @@ for (const b of document.querySelectorAll('[data-bench]')) b.onclick = () => { n
 const mpStatus = t => $('mpstatus').textContent = t;
 let pending = null;
 function channel(local) {
-  let ch = null, pc = null, rejected = false;
+  let ch = null, pc = null, rejected = false, remoteWarplans;
   return {
     open(c) {
       ch = c;
       ch.send(JSON.stringify({t:'hello', protocol:PROTOCOL_VERSION, rules:wasm.ruleset(),civilizationChoice:civilizationSetup.choice(0),
+        ...(originalEnabled&&fullmap?{warplans:WARPLAN_PEER_VERSION}:{}),
         ...(climates.length>1?{climates}:{})}));
       mpStatus('Verbunden – Spielversion wird geprüft …');
     },
@@ -1464,6 +1511,7 @@ function channel(local) {
           try{guestClimates=peerClimates(m.climates);}catch{return reject('Ungültige Klimaauswahl des Mitspielers.');}
           if(civilizationSetup.enabled){try{civilizationChoice(m.civilizationChoice);}catch{return reject('Ungültige Völkerwahl des Mitspielers.');}}
           else if(m.civilizationChoice!=null)return reject('Die Völkerwahl passt nicht zur Regelversion.');
+          remoteWarplans=m.warplans;
           if (local === 0 && !net) {
             try{
               const ai=+$('mpai').value,players=2+ai,choices=civilizationSetup.choices();
@@ -1478,11 +1526,11 @@ function channel(local) {
           }
         } else if (m.t === 'start' && local === 1 && !net) {
           try{checkStart(m);launch(m);}catch{return reject('Ungültige Spielversion, Völker- oder Scharmützeleinstellungen.');}
-        }
+        } else if (net?.ch===ch) net.warplans?.receive(m);
       }
       else if (net) net.ls.receive(d);
     },
-    close() { if (net && !net.ls.alone) { net.ls.dropPeer(); toast('The other player disconnected'); } else if (!net && !rejected) mpStatus('Connection closed.'); },
+    close() { if (net?.ch===ch && !net.ls.alone) { net.ls.dropPeer(); net.warplans?.cancelPending(); toast('The other player disconnected'); } else if (!net && !rejected) mpStatus('Connection closed.'); },
     setPc(p) { pc = p; },
   };
   function reject(message){rejected=true;mpStatus(message);ch.close();}
@@ -1504,6 +1552,11 @@ function channel(local) {
     seasonSession.configure(peerSeasonSettings(cfg.seasons),cfg.climate);setSeasonControls(seasonSession.settings);climateControl.value=seasonSession.climate;
     net = { ch, pc, ls: null };
     net.ls = new Lockstep(wasm, local, buf => { if (ch.readyState === 'open') ch.send(buf); });
+    if(originalEnabled&&fullmap&&remoteWarplans===WARPLAN_PEER_VERSION)net.warplans=createWarplanPeer({
+      local,peerVersion:remoteWarplans,end:MAP-1,recipientAvailable:()=>!!warplanRecipient(),
+      post:packet=>{if(ch.readyState!=='open')return false;ch.send(JSON.stringify(packet));return true;},
+      onChange:fullmap.warplans.refresh,onCommit:fullmap.warplans.commit,
+    });
     bench = 0; cam.x = wasm.start_x(); cam.y = wasm.start_y(); cam.zoom = 28;
     cam.heading=0;
     if(referenceMode)cam.nativeFraction=.2;

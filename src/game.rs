@@ -250,6 +250,8 @@ pub struct Game {
     pub(crate) sole_survivor: Option<crate::ee2_sole_survivor::SoleSurvivor>,
     #[cfg(feature = "ee2-native13")]
     pub(crate) regicide: Option<crate::ee2_regicide::Regicide>,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) territory_names: Option<crate::territory_names21::TerritoryNames>,
     pub groups: Vec<Vec<u32>>,
     pub push: Vec<(f32, f32)>,
     pub scratch: Vec<usize>,
@@ -266,6 +268,8 @@ pub struct Game {
     pub towner: [u8; 32],
     pub terr_rgba: Vec<u8>,
     pub terr_dirty: bool,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fullmap_territory_labels: [crate::fullmap_labels21::TerritoryLabel; crate::fullmap_labels21::CAPACITY],
     /// Sound cues for the page: (kind, x, y) triples.
     pub events: Vec<f32>,
     pub outbox: Vec<u8>,
@@ -334,6 +338,8 @@ impl Game {
             sole_survivor: None,
             #[cfg(feature = "ee2-native13")]
             regicide: None,
+            #[cfg(feature = "ee2-native13")]
+            territory_names: None,
             groups: vec![Vec::new(); 10],
             push: vec![(0.0, 0.0); MAXE],
             scratch: Vec::with_capacity(256),
@@ -346,6 +352,8 @@ impl Game {
             towner: [255; 32],
             terr_rgba: vec![0; NN * 4],
             terr_dirty: true,
+            #[cfg(feature = "ee2-native13")]
+            fullmap_territory_labels: [Default::default(); crate::fullmap_labels21::CAPACITY],
             events: Vec::with_capacity(256),
             outbox: Vec::with_capacity(1024),
             inbox: Vec::new(),
@@ -904,6 +912,12 @@ impl Game {
             mix(rule.state.deadline.to_bits());
             mix(rule.sole.into());
             mix(self.winner.into());
+        }
+        #[cfg(feature = "ee2-native13")]
+        if let Some(names) = &self.territory_names {
+            mix(crate::territory_names21::MAGIC);
+            mix(crate::territory_name_catalog21::VERSION);
+            for id in names.ids { mix(id.into()); }
         }
         #[cfg(feature="ee2-civ8")]
         if self.civilizations.iter().any(|&c|c!=crate::civ8_runtime::LEGACY_NEUTRAL){

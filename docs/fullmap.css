@@ -25,6 +25,18 @@
 .fullmap-pip-controls button { position:absolute; border:0; padding:0; background:transparent center/100% 100% no-repeat; color:#fff; pointer-events:auto; cursor:pointer; }
 .fullmap-pip-controls button:hover { background-image:var(--rollover) !important; }
 #fullmap .fullmap-pip[hidden], .fullmap-pip-logo[hidden], .fullmap-pip-controls[hidden] { display:none; }
+.fullmap-warplan-button, .fullmap-warplan-tools { position:absolute; background:transparent center/100% 100% no-repeat; }
+.fullmap-warplan-button { border:0; padding:0; color:#fff; cursor:pointer; }
+.fullmap-warplan-button:not(:disabled):hover { background-image:var(--rollover) !important; }
+.fullmap-warplan-button:disabled { cursor:default; }
+.fullmap-warplan-ledger { position:absolute; overflow:auto; box-sizing:border-box; padding:10px; background:center/100% 100%; }
+.fullmap-warplan-ledger button { display:block; width:100%; margin:3px 0; text-align:left; }
+.fullmap-warplan-ledger button[aria-pressed="true"] { outline:1px solid #e1ca8d; }
+.fullmap-warplan-chooser { position:absolute; inset:0; z-index:2; display:grid; place-items:center; background:#14171180; }
+.fullmap-warplan-chooser[hidden] { display:none; }
+.fullmap-warplan-chooser > div { width:min(512px,88%); padding:16px; border:2px ridge #b6a582; background:#33362b; }
+.fullmap-warplan-chooser h2 { margin:0 0 10px; font-size:20px; }
+.fullmap-warplan-chooser button { margin:6px 8px 0 0; }
 @media (max-width:800px) {
   .fullmap-options { padding:6px; }
   .fullmap-options label { font-size:12px; line-height:1.2; }
