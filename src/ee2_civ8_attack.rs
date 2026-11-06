@@ -323,5 +323,9 @@ Attack{id:80,epoch:5,until:10,present:true,missile:false,visual_kind:0,min_mobil
 #[cfg(feature="ee2-native13")]
 Attack{id:80,epoch:10,until:15,present:true,missile:false,visual_kind:2,min_mobile:0.0,min_immobile:0.0,angle:0.52,apply_time:0.6,pack_time:1.0,unpack_time:1.0,splash:0.0,friendly:0.0,latent:false,auto_target:true,attack_on_move:false,ordnance:0,air:false,mobile:true,projectile_speed:None},
 ];
-pub fn lookup(id:DefId,epoch:u8)->Option<&'static Attack>{ROWS.iter().find(|r|r.id==id&&epoch>=r.epoch&&epoch<r.until)}
+pub fn lookup(id:DefId,epoch:u8)->Option<&'static Attack>{
+ #[cfg(feature="ee2-native13")]
+ if id == crate::air31_defs::FIGHTER_BOMBER { return crate::air31_defs::fighter_bomber_attack(epoch); }
+ ROWS.iter().find(|r|r.id==id&&epoch>=r.epoch&&epoch<r.until)
+}
 pub fn min_range(a:&Attack,target_mobile:bool)->f32{let r=if target_mobile{a.min_mobile}else{a.min_immobile};if r==0.0&&a.splash>0.0&&!a.air{a.splash}else{r}}

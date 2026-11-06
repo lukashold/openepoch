@@ -5,6 +5,7 @@ use crate::ee2_units::UnitRow;
 
 pub(crate) const TRADE_CART: DefId = 81;
 pub(crate) const MERCHANT_SHIP: DefId = 82;
+pub(crate) const TRADE_DEFINITION_COUNT: usize = MERCHANT_SHIP as usize + 1;
 
 const CART: Def = Def {
     name: "Handelskarren", epoch: 1, until: 15, dom: LAND, building: false, size: 0.8,

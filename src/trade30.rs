@@ -119,6 +119,11 @@ impl Game {
         self.trade.is_hidden(index, actor)
     }
 
+    pub(crate) fn trade_wait_active(&self, handle: u32) -> bool {
+        self.get(handle).is_some_and(|index| self.trade_actor_ready(index)) &&
+            self.trade.routes.get(&handle).is_some_and(|route| route.at_host)
+    }
+
     pub(crate) fn trade_interrupt(&mut self, index: usize) {
         if self.trade_enabled && is_trader(self.ents[index].def) {
             self.trade.cancel(self.h(index));

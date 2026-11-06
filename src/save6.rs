@@ -255,7 +255,11 @@ pub fn normalize_input(input: &[u8], current_actor_defs: usize) -> Option<Vec<u8
             if e.def as usize>=actor_defs || e.cargo[..e.ncargo as usize].iter().any(|&id|id as usize>=actor_defs){return None;}
             if DEFS[e.def as usize].building && e.q[..e.qn as usize].iter().any(|&q| {
                 #[cfg(feature="ee2-native13")]
-                if actor_defs == DEFS.len() && crate::trade30_defs::is_trader(q as DefId) { return false; }
+                if actor_defs >= crate::trade30_defs::TRADE_DEFINITION_COUNT &&
+                    crate::trade30_defs::is_trader(q as DefId) { return false; }
+                #[cfg(feature="ee2-native13")]
+                if actor_defs > crate::air31_defs::FIGHTER_BOMBER as usize &&
+                    q as DefId == crate::air31_defs::FIGHTER_BOMBER { return false; }
                 crate::ids::decode_job(q).is_some_and(|(kind,value)|kind==0&&value as usize>=input_defs)
             }) { return None; }
         }

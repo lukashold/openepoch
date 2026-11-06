@@ -24,18 +24,20 @@ export function createOriginalAudio(options={}) {
     selectedFamilyManifest=familyManifest;
     try { typed=createTypedAudioBindings({...definitionSettings,familyManifest}); }
     catch { familyManifest=selectedFamilyManifest=null;typed=createTypedAudioBindings(definitionSettings); }
-    if(!additionalFamilyManifest)return;
-    try{
-      if(additionalFamilyManifest.format!=='ee2-native-family-audio-v1')return;
-      const combined={...additionalFamilyManifest};
-      for(const key of ['families','events','assets']){
-        const inherited=familyManifest?.[key]||{},added=additionalFamilyManifest[key]||{};
-        if(Object.keys(added).some(name=>Object.hasOwn(inherited,name)))return;
-        combined[key]={...inherited,...added};
-      }
-      typed=createTypedAudioBindings({...definitionSettings,familyManifest:combined});
-      selectedFamilyManifest=combined;
-    }catch{/* A missing or inconsistent optional family keeps existing voices. */}
+    const additions=Array.isArray(additionalFamilyManifest)?additionalFamilyManifest:[additionalFamilyManifest];
+    for(const addition of additions){
+      if(addition?.format!=='ee2-native-family-audio-v1')continue;
+      try{
+        const combined={...addition};
+        for(const key of ['families','events','assets']){
+          const inherited=selectedFamilyManifest?.[key]||{},added=addition[key]||{};
+          if(Object.keys(added).some(name=>Object.hasOwn(inherited,name)))throw Error('Overlapping native sound family');
+          combined[key]={...inherited,...added};
+        }
+        typed=createTypedAudioBindings({...definitionSettings,familyManifest:combined});
+        selectedFamilyManifest=combined;
+      }catch{/* A missing or inconsistent optional family keeps existing voices. */}
+    }
   }
   function setDefinitionBindings({wasm=null,bindings=[],familyManifestURL:url=familyManifestURL,
     citizenPresentation:citizens=citizenPresentation,regionalMusic:useRegionalMusic=regionalMusicEnabled,

@@ -318,7 +318,7 @@ impl Game {
         }
         for &(i, new_team) in &objects {
             #[cfg(feature = "ee2-native13")]
-            { self.forget_capture_actor(i); self.mark_capture_gift(i); }
+            { self.forget_capture_actor(i); self.mark_capture_gift(i); self.trade_interrupt(i); }
             #[cfg(feature="ee2-reference")]
             self.sync_city_ground_entry(i);
             let old = self.ents[i];
@@ -358,6 +358,8 @@ impl Game {
             #[cfg(feature="ee2-reference")]
             self.sync_city_ground_entry(i);
         }
+        #[cfg(feature="ee2-native13")]
+        self.air_transferred_assets(&objects);
         // Citizens already walking to a donated farm, ship, city or construction
         // site keep their ownership and stop their now-invalid old-owner job.
         for i in 0..self.high {

@@ -354,16 +354,29 @@ impl Game {
                     }
                 }
             }
-            if best != NOIDX {
-                let (tx, ty) = (self.ents[best].x, self.ents[best].y);
-                self.order_move(&army, tx, ty, true);
-                self.players[ti].ai_next_attack = self.tick + 20 * 100;
+            let (x, y, delay) = if best != NOIDX {
+                (self.ents[best].x, self.ents[best].y, 20 * 100)
             } else if (0..self.nplayers).any(|p|self.players[p].alive&&self.hostile(team,p as u8)) {
                 // Scout deterministic map sectors, never hidden enemy entity
                 // coordinates. Real sight then permits a targeted attack wave.
                 let k=(self.tick/400+team as u32*5+self.seed0)%16;
-                self.order_move(&army,32.0+(k%4) as f32*64.0,32.0+(k/4) as f32*64.0,true);
-                self.players[ti].ai_next_attack=self.tick+400;
+                (32.0+(k%4) as f32*64.0, 32.0+(k/4) as f32*64.0, 400)
+            } else {
+                return;
+            };
+            self.order_move(&army, x, y, true);
+            self.players[ti].ai_next_attack = self.tick + delay;
+            #[cfg(feature="ee2-native13")]
+            if self.air_missions_enabled {
+                let target = (best != NOIDX).then(|| self.h(best));
+                for &airport in &prod {
+                    if self.ents[airport].def == AIRFIELD {
+                        self.air_assign(airport, Some(crate::air31::Mission {
+                            waypoints: vec![[x, y]],
+                            target,
+                        }));
+                    }
+                }
             }
         }
     }

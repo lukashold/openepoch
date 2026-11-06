@@ -29,6 +29,7 @@ pub const C_PLACE_ROTATED:u8=16;
 #[cfg(feature="ee2-pack8")]pub const C_PACK:u8=17;
 #[cfg(feature="ee2-native13")]pub const C_CAPTURE:u8=18;
 #[cfg(feature="ee2-native13")]pub const C_TRADE_ROUTE:u8=19;
+#[cfg(feature="ee2-native13")]pub const C_AIR_MISSION:u8=20;
 
 const HEAD: usize = 14; // kind, count, a, b, c
 
@@ -88,6 +89,11 @@ impl Game {
 
     pub fn apply(&mut self, team: u8, kind: u8, a: f32, b: f32, c: i32, hs: &[u32]) {
         if !a.is_finite() || !b.is_finite() || team as usize >= self.nplayers {
+            return;
+        }
+        #[cfg(feature = "ee2-native13")]
+        if kind == C_AIR_MISSION {
+            self.air_command(team, a, b, c, hs);
             return;
         }
         #[cfg(feature="ee2-civ8")]

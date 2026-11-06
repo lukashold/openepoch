@@ -26,7 +26,11 @@ impl Game{
   for r in b[HEADER..b.len()-4].chunks_exact(RECORD){
    let w:Vec<u32>=(0..16).map(|k|u(r,k*4).unwrap()).collect();let f=|k|f32::from_bits(w[k]);
    if [0,1,2,3,4,5,7,8,11,14,15].iter().any(|&i|!f(i).is_finite())||[0,1,2,3,4,5].iter().any(|&i|f(i)<0.0||f(i)>N as f32)||[7,8,11,14].iter().any(|&i|f(i)<0.0)||f(15)<=0.0{return None;}
-   if (w[6]!=NONE&&(w[6]&65535)as usize>=MAXE)||w[9]>W_BOMB as u32||w[10]as usize>=self.nplayers||w[12]&!15!=0||(w[13]!=crate::ee2_combat::UNKNOWN_PROFILE as u32&&w[13]as usize>=crate::ee2_combat::PROFILES.len()){return None;}
+   let profile=w[13];
+   let allowed=profile==crate::ee2_combat::UNKNOWN_PROFILE as u32||(profile as usize)<crate::ee2_combat::PROFILES.len();
+   #[cfg(feature="ee2-native13")]
+   let allowed=allowed||(self.air_missions_enabled&&profile==u32::from(crate::ee2_combat::profile(crate::air31_defs::FIGHTER_BOMBER,10)));
+   if (w[6]!=NONE&&(w[6]&65535)as usize>=MAXE)||w[9]>W_BOMB as u32||w[10]as usize>=self.nplayers||w[12]&!15!=0||!allowed{return None;}
    projs.push(Proj{x:f(0),y:f(1),px:f(2),py:f(3),tx:f(4),ty:f(5),tgt:w[6],speed:f(7),dmg:f(8),kind:w[9]as u8,team:w[10]as u8,splash:f(11),targets:w[12]as u8,attacker_profile:w[13]as u16,friendly_ratio:f(14),d0:f(15),
     #[cfg(feature = "ee2-native13")]
     attack_source: NONE,

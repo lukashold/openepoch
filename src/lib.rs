@@ -6,6 +6,10 @@
 
 mod ai;
 #[cfg(feature = "ee2-native13")]
+mod air31;
+#[cfg(feature = "ee2-native13")]
+mod air31_defs;
+#[cfg(feature = "ee2-native13")]
 mod battle_signals;
 #[cfg(feature = "ee2-native13")]
 mod capture_animation26;
@@ -179,6 +183,8 @@ use map::*;
 
 static mut GAME: Option<Box<Game>> = None;
 static mut LOADBUF: Vec<u8> = Vec::new();
+#[cfg(feature = "ee2-native13")]
+static mut AIR_MISSION_POINTS: [f32; air31::MAX_WAYPOINTS * 2] = [0.0; air31::MAX_WAYPOINTS * 2];
 
 /// Distinguishes incompatible rulesets in tests and clients.
 #[no_mangle]
@@ -642,7 +648,7 @@ pub extern "C" fn select_quad(ax: f32, ay: f32, bx: f32, by: f32, cx: f32, cy: f
             let e = &g.ents[i];
             let d = &DEFS[e.def as usize];
             #[cfg(feature = "ee2-native13")]
-            if g.trade_hidden(i, e) { continue; }
+            if g.trade_hidden(i, e) || g.air_parked(i, e) { continue; }
             if e.alive && e.team == me && !d.building && (pass == 1 || !d.has(F_WORKER)) {
                 let (sx, sy) = seen_ent(g, e, d);
                 if inside(sx, sy) {
@@ -672,7 +678,7 @@ pub extern "C" fn select_point(x: f32, y: f32, add: u32, same: u32, vx0: f32, vy
         let (def, me) = (g.ents[i].def, g.local);
         for index in 0..g.high {
             #[cfg(feature = "ee2-native13")]
-            if g.trade_hidden(index, &g.ents[index]) { continue; }
+            if g.trade_hidden(index, &g.ents[index]) || g.air_parked(index, &g.ents[index]) { continue; }
             let e = &mut g.ents[index];
             if e.alive && e.team == me && e.def == def && e.x >= vx0 && e.x <= vx1 && e.y >= vy0 && e.y <= vy1 {
                 e.sel = true;
@@ -796,6 +802,81 @@ pub extern "C" fn trade_selected_count() -> u32 {
 
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
+pub extern "C" fn trade_wait_active(handle: u32) -> u32 {
+    let game = g();
+    u32::from(game.get(handle).is_some_and(|index| game.ents[index].team == game.local || game.visible(index)) &&
+        game.trade_wait_active(handle))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn air_mission_configure_peer(enabled: u32) -> u32 {
+    u32::from(enabled <= 1 && g().configure_peer_air_missions(enabled != 0))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn air_mission_status(handle: u32, field: u32) -> u32 {
+    g().air_mission_status(handle, field)
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn air_mission_points_ptr() -> *mut f32 {
+    addr_of_mut!(AIR_MISSION_POINTS).cast::<f32>()
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn air_mission_target_at(x: f32, y: f32) -> u32 {
+    if !x.is_finite() || !y.is_finite() { return NONE; }
+    let game = g();
+    if !game.air_missions_enabled { return NONE; }
+    let index = pick_where(game, x, y, |i, _| game.air_valid_target(game.local, game.h(i)));
+    if index == NOIDX { NONE } else { game.h(index) }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn cmd_air_mission_route(count: u32, target: u32) -> u32 {
+    if count as usize > air31::MAX_WAYPOINTS || (count == 0 && target == NONE) { return 0; }
+    let game = g();
+    if !game.air_missions_enabled || (target != NONE && !game.air_valid_target(game.local, target)) { return 0; }
+    let mut payload: Vec<_> = selected(game).into_iter().map(|i| game.h(i))
+        .filter(|&handle| game.air_mission_status(handle, 0) == 1).take(200).collect();
+    let hosts = payload.len();
+    if hosts == 0 { return 0; }
+    payload.push(target);
+    let points = unsafe { std::slice::from_raw_parts(air_mission_points_ptr(), count as usize * 2) };
+    if !points.iter().all(|v| (0.0..N as f32).contains(v)) { return 0; }
+    payload.extend(points.iter().map(|v| v.to_bits()));
+    game.submit(C_AIR_MISSION, count as f32, hosts as f32, air31::SET_ROUTE, &payload);
+    hosts as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn cmd_air_mission_action(action: u32) -> u32 {
+    if !(air31::CANCEL as u32..=air31::AUTO as u32).contains(&action) { return 0; }
+    let game = g();
+    if !game.air_missions_enabled { return 0; }
+    let hs: Vec<_> = selected(game).into_iter().map(|i| game.h(i)).filter(|&h| {
+        let kind = game.air_mission_status(h, 0);
+        match action as i32 {
+            air31::CANCEL => kind == 1,
+            air31::RECALL => kind == 1 && game.air_mission_status(h, 6) != 0 ||
+                kind == 2 && game.air_mission_status(h, 5) != 0,
+            air31::ADD => kind == 1 && game.air_mission_status(h, 3) != 0 || kind == 2,
+            _ => kind == 1 && game.air_mission_status(h, 6) != 0,
+        }
+    }).collect();
+    if hs.is_empty() { return 0; }
+    game.submit(C_AIR_MISSION, 0.0, 0.0, action as i32, &hs);
+    hs.len() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
 pub extern "C" fn trade_home_valid(home: u32) -> u32 {
     let game = g();
     u32::from(game.get(home).is_some_and(|i| game.trade_host_for_selection(i, NONE, &selected(game))))
@@ -898,6 +979,9 @@ pub extern "C" fn cmd_context(x: f32, y: f32, attack_move: u32) {
         return;
     }
     if DEFS[g.ents[ids[0]].def as usize].building {
+        #[cfg(feature = "ee2-native13")]
+        if g.air_missions_enabled { ids.retain(|&i| g.ents[i].def != AIRFIELD); }
+        if ids.is_empty() { return; }
         let all = handles(g, &ids);
         g.submit(C_RALLY, x, y, 0, &all);
         return;
@@ -908,6 +992,18 @@ pub extern "C" fn cmd_context(x: f32, y: f32, attack_move: u32) {
         return;
     }
     let j = pick(g, x, y, false);
+    #[cfg(feature = "ee2-native13")]
+    if j != NOIDX && g.air_missions_enabled && g.ents[j].def == AIRFIELD && g.ents[j].team == g.local &&
+        g.ents[j].built >= 1.0 {
+        let mut aircraft = Vec::new();
+        ids.retain(|&i| {
+            if !air31_defs::mission_aircraft(g.ents[i].def) { return true; }
+            aircraft.push(g.h(i));
+            false
+        });
+        if !aircraft.is_empty() { g.submit(C_BOARD, x, y, g.h(j) as i32, &aircraft); }
+        if ids.is_empty() { return; }
+    }
     #[cfg(feature = "ee2-native13")]
     if j != NOIDX && matches!(g.ents[j].def, MARKET | DOCK) {
         let target = g.h(j);
@@ -1005,6 +1101,11 @@ pub extern "C" fn cmd_pack(unpacked:u32)->u32{
 pub extern "C" fn cmd_unload() {
     let g = g();
     for i in selected(g) {
+        #[cfg(feature = "ee2-native13")]
+        if g.air_missions_enabled && g.ents[i].def == AIRFIELD {
+            g.submit(C_AIR_MISSION, 0.0, 0.0, air31::SCRAMBLE, &[g.h(i)]);
+            continue;
+        }
         if g.ents[i].ncargo > 0 {
             let (x, y, h) = (g.ents[i].x, g.ents[i].y, g.h(i));
             g.submit(C_UNLOAD, x, y, 0, &[h]);

@@ -148,6 +148,14 @@ def main(project=None, overlay_paths=None):
                          'docs/local-original/trade-presentation/sail-manifest.json',
                          'docs/local-original/audio/native-families-trade-presentation.json',
                          'docs/local-original/trade-route/manifest.json'})
+    if 'loadFighterBomberPresentation' in main_source:
+        required.update({'docs/local-original/fighter-bomber/manifest.json',
+                         'docs/local-original/fighter-bomber/team-manifest.json',
+                         'docs/local-original/audio/native-families-fighter-bomber.json'})
+    if 'loadAirMissionArt' in main_source:
+        required.update({'docs/air-mission-order.js', 'docs/local-original/air-mission-ui/manifest.json'})
+    if 'loadTradeWaitArt' in main_source:
+        required.update({'docs/trade-wait-status.js', 'docs/local-original/trade-wait/manifest.json'})
     if 'manifest-stone-thrower-up.json' in main_source:
         required.add('docs/local-original/audio/manifest-stone-thrower-up.json')
     if 'mountSkirmishMenu' in main_source:

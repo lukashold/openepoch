@@ -1,11 +1,11 @@
 // Optional media extracted from the user's installed game. Game definitions
 // own the IDs and availability. This catalog only projects source families.
-const CATALOG = 'local-original/trade-presentation/manifest.json';
-const CATALOG_SHA = 'db08f20a02cbd1fd1f3e559ac15df1b5e1e58c596cf57c2f8543521ddc22f341';
 const CONTROL = 'local-original/trade-route/manifest.json';
 const CONTROL_SHA = 'a8d3567c9abe47a4a398916c86ea2d50075e34c346a79ef01b838c90fe3e1079';
-const sourceIds = {TradeCart: 81, MerchantShip: 82};
-const starts = {TradeCart: [1, 5, 10, 15], MerchantShip: [0, 5, 10, 15]};
+const TRADE = {folder:'trade-presentation',sha:'db08f20a02cbd1fd1f3e559ac15df1b5e1e58c596cf57c2f8543521ddc22f341',
+  format:'ee2-native-trade-presentation-v1',ids:{TradeCart:81,MerchantShip:82},starts:{TradeCart:[1,5,10,15],MerchantShip:[0,5,10,15]}};
+const FIGHTER_BOMBER = {folder:'fighter-bomber',sha:'b1e5280f590a6b96871b13628be58387fc507c43882c7817d5b871127900cd86',
+  format:'ee2-native-fighter-bomber-presentation-v1',ids:{FighterBomber:83},starts:{FighterBomber:[10,11,12,13,14,15]}};
 const relative = (path, prefix) => typeof path === 'string' && path.startsWith(prefix) && /^[\w./-]+$/.test(path) && !path.split('/').includes('..');
 const hash = value => /^[a-f0-9]{64}$/.test(value || '');
 
@@ -19,32 +19,34 @@ async function verified(fetchFile, url, sha256) {
   return bytes;
 }
 
-export async function loadTradePresentation({enabled, fetchFile = globalThis.fetch, bitmap = globalThis.createImageBitmap,
+async function loadPresentation(spec,{enabled, fetchFile = globalThis.fetch, bitmap = globalThis.createImageBitmap,
   base = new URL('./', import.meta.url)} = {}) {
   if (!enabled) return null;
+  const root=`local-original/${spec.folder}/`;
   const decode = async (url, sha) => JSON.parse(new TextDecoder().decode(await verified(fetchFile, new URL(url, base), sha)));
   try {
-    const catalog = await decode(CATALOG, CATALOG_SHA);
-    if (catalog.format !== 'ee2-native-trade-presentation-v1' || catalog.profile !== 'up15-csv5' || catalog.rows?.length !== 6) throw Error('Unexpected trade presentation catalog');
+    const catalog = await decode(root+'manifest.json',spec.sha);
+    const count=Object.values(spec.starts).reduce((total,epochs)=>total+epochs.length-1,0);
+    if (catalog.format !== spec.format || catalog.profile !== 'up15-csv5' || catalog.rows?.length !== count) throw Error('Unexpected original presentation catalog');
     const rows = new Map(), seen = new Set();
     for (const row of catalog.rows) {
-      const id = sourceIds[row.family], interval = starts[row.family], index = interval?.indexOf(row.epoch);
+      const id = spec.ids[row.family], interval = spec.starts[row.family], index = interval?.indexOf(row.epoch);
       const icon = row.icons?.packed7;
       if (!id || index < 0 || interval[index + 1] !== row.until || seen.has(`${id}:${row.epoch}`) || row.model.sourceFamily !== row.family ||
-          !relative(row.model.url, 'local-original/trade-presentation/models/') || !hash(row.model.sha256) ||
-          (row.model.lodFarUrl && (!relative(row.model.lodFarUrl, 'local-original/trade-presentation/models/') || !hash(row.model.lodFarSha256))) ||
-          !relative(icon?.url, 'local-original/trade-presentation/icons/packed7/') || !hash(icon.sha256) || icon.width !== 308 || icon.height !== 240) throw Error('Invalid trade presentation row');
+          !relative(row.model.url, root+'models/') || !hash(row.model.sha256) ||
+          (row.model.lodFarUrl && (!relative(row.model.lodFarUrl, root+'models/') || !hash(row.model.lodFarSha256))) ||
+          !relative(icon?.url, root+'icons/packed7/') || !hash(icon.sha256) || icon.width !== 308 || icon.height !== 240) throw Error('Invalid original presentation row');
       seen.add(`${id}:${row.epoch}`);
       const entries = rows.get(id) || [];
       entries.push(row);
       rows.set(id, entries);
     }
-    const modelRows = catalog.rows.map(row => ({...row.model, id: sourceIds[row.family], regionalFallback: true}));
+    const modelRows = catalog.rows.map(row => ({...row.model, id: spec.ids[row.family], regionalFallback: true}));
     const lookup = (id, epoch) => rows.get(id)?.find(row => epoch >= row.epoch && epoch < row.until);
     const bitmaps = new Map();
     const [teamManifest, sailManifest, audioManifest] = await Promise.all([
       decode(catalog.teamManifest, catalog.teamManifestSha256).catch(() => null),
-      decode(catalog.sailManifest, catalog.sailManifestSha256).catch(() => null),
+      catalog.sailManifest?decode(catalog.sailManifest, catalog.sailManifestSha256).catch(() => null):null,
       decode(catalog.audioManifest, catalog.audioManifestSha256).catch(() => null),
       ...catalog.rows.map(async row => {
         const icon = row.icons.packed7;
@@ -66,6 +68,9 @@ export async function loadTradePresentation({enabled, fetchFile = globalThis.fet
     return null;
   }
 }
+
+export const loadTradePresentation = options => loadPresentation(TRADE,options);
+export const loadFighterBomberPresentation = options => loadPresentation(FIGHTER_BOMBER,options);
 
 export async function loadTradeRouteArt({enabled, fetchFile = globalThis.fetch, base = new URL('./', import.meta.url)} = {}) {
   if (!enabled) return null;

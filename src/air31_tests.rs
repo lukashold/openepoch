@@ -1,0 +1,180 @@
+use super::*;
+use crate::cmd::C_AIR_MISSION;
+use crate::map::{R_GOLD, R_OIL};
+
+fn scenario(epoch: u8, local: u32) -> (Game, usize) {
+    let mut game = Game::new(7, 0, 0, 2, local);
+    assert!(game.configure_peer_air_missions(true));
+    for team in 0..2 {
+        game.players[team as usize].epoch = epoch;
+        game.rebuild_modifiers(team, false);
+        for slot in 0..9 { game.add_resource(team, slot, 1000.0); }
+    }
+    let airport = game.spawn(AIRFIELD, 0, 84.5, 118.5);
+    game.build_grid();
+    game.update_fog();
+    (game, airport)
+}
+
+fn advance_until(game: &mut Game, limit: usize, condition: impl Fn(&Game) -> bool) {
+    for _ in 0..limit {
+        if condition(game) { return; }
+        game.tick();
+    }
+    assert!(condition(game), "condition unsatisfied at tick {}", game.tick);
+}
+
+fn restored(game: &mut Game) -> Game {
+    game.save();
+    let mut copy = Game::load(&game.savebuf).expect("air mission archive should load");
+    assert_eq!(copy.state_hash(), game.state_hash());
+    copy.save();
+    assert_eq!(copy.savebuf, game.savebuf);
+    copy
+}
+
+#[test]
+fn paid_aircraft_is_stationed_and_scrambles_after_a_save() {
+    let (mut game, airport) = scenario(10, 0);
+    let airport_handle = game.h(airport);
+    let gold = R_GOLD as usize - 1;
+    let oil = R_OIL as usize - 1;
+    let before = [game.resource(0, 1), game.resource(0, gold), game.resource(0, oil)];
+    assert!(game.train(airport, FIGHTER_BOMBER as _));
+    assert_eq!([before[0] - game.resource(0, 1), before[1] - game.resource(0, gold),
+        before[2] - game.resource(0, oil)], [60.0, 120.0, 90.0]);
+    let mut game = restored(&mut game);
+    advance_until(&mut game, 1180, |g| g.air_mission_status(airport_handle, 1) == 1);
+    assert!(game.tick >= 1170);
+    let handle = game.aircraft.airports[&airport_handle].stored[0];
+    let index = game.get(handle).unwrap();
+    assert_eq!(game.ents[index].def, FIGHTER_BOMBER);
+    assert_eq!(game.air_mission_status(handle, 1), 14);
+    assert!(!game.visible(index));
+    let mut game = restored(&mut game);
+    let start_rng = game.source_birth.rng;
+    let mut expected = start_rng;
+    launch_jitter(&mut expected);
+    game.apply(0, C_AIR_MISSION, 0.0, 0.0, SCRAMBLE, &[airport_handle]);
+    advance_until(&mut game, 20, |g| g.visible(index));
+    assert_eq!(game.source_birth.rng, expected);
+    assert_eq!(game.h(index), handle);
+    assert_eq!(game.air_mission_status(handle, 5), 1);
+    assert_eq!(game.air_mission_status(airport_handle, 1), 0);
+    assert_eq!(restored(&mut game).air_mission_status(handle, 1), 14);
+}
+
+#[test]
+fn five_waypoints_are_atomic_and_a_cancel_returns_the_same_plane() {
+    let (mut game, airport) = scenario(12, 0);
+    let airport_handle = game.h(airport);
+    let actor = game.spawn(FIGHTER_BOMBER, 0, 84.5, 118.5);
+    let handle = game.h(actor);
+    assert!(game.air_station_produced(actor, airport));
+    let route: [[f32; 2]; 5] = [[105.5, 118.5], [124.5, 118.5], [135.5, 123.5], [140.5, 126.5], [151.5, 128.5]];
+    let mut packet = vec![airport_handle, NONE];
+    packet.extend(route.iter().flatten().map(|v| v.to_bits()));
+    let before = game.state_hash();
+    game.apply(0, C_AIR_MISSION, 6.0, 1.0, SET_ROUTE, &packet);
+    assert_eq!(game.state_hash(), before);
+    let mut corrupt = packet.clone();
+    corrupt[3] = f32::NAN.to_bits();
+    game.apply(0, C_AIR_MISSION, 5.0, 1.0, SET_ROUTE, &corrupt);
+    assert_eq!(game.state_hash(), before);
+    game.apply(0, C_AIR_MISSION, 5.0, 1.0, SET_ROUTE, &packet);
+    assert_eq!(game.air_mission_status(airport_handle, 3), 1);
+    advance_until(&mut game, 20, |g| g.visible(actor));
+    assert_eq!(game.air_mission_status(handle, 3), 1);
+    advance_until(&mut game, 500, |g| g.ents[actor].x > 113.0);
+    let mut game = restored(&mut game);
+    game.apply(0, C_AIR_MISSION, 0.0, 0.0, CANCEL, &[airport_handle]);
+    assert_eq!(game.air_mission_status(airport_handle, 3), 0);
+    assert_eq!(game.aircraft.aircraft[&handle].phase, Phase::Returning);
+    assert_eq!(game.aircraft.aircraft[&handle].waypoints[0], route[4]);
+    let mut game = restored(&mut game);
+    advance_until(&mut game, 2500, |g| !g.visible(actor));
+    assert_eq!(game.air_mission_status(airport_handle, 1), 1);
+    assert_eq!(game.h(actor), handle);
+}
+
+#[test]
+fn aircraft_attack_uses_finite_rounds_then_rearms_at_an_airport_pulse() {
+    let (mut game, airport) = scenario(10, 0);
+    let airport_handle = game.h(airport);
+    let actor = game.spawn(FIGHTER_BOMBER, 0, 90.5, 118.5);
+    let handle = game.h(actor);
+    assert!(game.air_station_produced(actor, airport));
+    let target = game.spawn(AIRFIELD, 1, 104.5, 118.5);
+    game.ents[target].hp = 100_000.0;
+    game.apply(0, C_AIR_MISSION, 0.0, 0.0, SCRAMBLE, &[airport_handle]);
+    advance_until(&mut game, 20, |g| g.visible(actor));
+    for _ in 0..4000 {
+        game.team_vis[crate::map::tile_of(104.5, 118.5)] = 255;
+        if game.air_mission_status(handle, 1) == 0 { break; }
+        if game.ents[actor].order != O_ATTACK { game.order_attack(&[actor], target); }
+        game.tick();
+    }
+    assert_eq!(game.air_mission_status(handle, 1), 0);
+    assert!(game.ents[target].hp < 100_000.0);
+    assert_eq!(game.aircraft.aircraft[&handle].phase, Phase::Returning);
+    advance_until(&mut game, 2000, |g| !g.visible(actor));
+    assert_eq!(game.air_mission_status(handle, 1), 0);
+    game.save();
+    let (_, air) = split_air_save(&game.savebuf).unwrap();
+    assert!(State::decode(&game, air.unwrap()).is_some(), "AIR1 payload roundtrips on the source game");
+    let mut projectile_bytes = Vec::new();
+    game.append_projectiles(&mut projectile_bytes);
+    let (mut probe, _) = scenario(10, 0);
+    assert!(probe.read_projectiles(Some(&projectile_bytes)).is_some(), "projectile payload roundtrips");
+    let mut game = restored(&mut game);
+    advance_until(&mut game, 20, |g| g.air_mission_status(handle, 1) == 14);
+    assert_eq!(game.air_mission_status(airport_handle, 1), 1);
+}
+
+#[test]
+fn airborne_planes_reserve_their_seat_and_rebase_after_home_loss() {
+    let (mut game, airport) = scenario(10, 0);
+    let backup = game.spawn(AIRFIELD, 0, 118.5, 118.5);
+    let home = game.h(airport);
+    let backup_handle = game.h(backup);
+    let actors: Vec<_> = (0..CAPACITY).map(|_| {
+        let actor = game.spawn(FIGHTER_BOMBER, 0, 84.5, 118.5);
+        assert!(game.air_station_produced(actor, airport));
+        actor
+    }).collect();
+    game.apply(0, C_AIR_MISSION, 0.0, 0.0, SCRAMBLE, &[home]);
+    advance_until(&mut game, 20, |g| g.visible(actors[0]));
+    assert_eq!(game.aircraft.airports[&home].registered.len(), CAPACITY);
+    assert_eq!(game.aircraft.airports[&home].stored.len(), CAPACITY - 1);
+    let extra = game.spawn(FIGHTER_BOMBER, 0, 84.5, 118.5);
+    assert!(!game.air_station_produced(extra, airport));
+    assert!(game.visible(extra));
+    let flying = game.h(actors[0]);
+    assert_eq!(restored(&mut game).aircraft.airports[&home].registered[0], flying);
+    game.ents[airport].hp = 0.0;
+    game.tick();
+    assert!(actors[1..].iter().all(|&actor| !game.ents[actor].alive));
+    assert_eq!(game.aircraft.aircraft[&flying].home, backup_handle);
+    assert_eq!(game.aircraft.aircraft[&flying].phase, Phase::Returning);
+    advance_until(&mut game, 1200, |g| g.air_mission_status(backup_handle, 1) == 1);
+    assert_eq!(game.aircraft.airports[&backup_handle].stored, [flying]);
+}
+
+#[test]
+fn empty_aircraft_without_a_pending_return_uses_the_two_second_actor_pulse() {
+    let (mut game, airport) = scenario(10, 0);
+    let home = game.h(airport);
+    let index = game.spawn(37, 0, 84.5, 118.5);
+    let handle = game.h(index);
+    assert!(game.air_station_produced(index, airport));
+    game.apply(0, C_AIR_MISSION, 0.0, 0.0, SCRAMBLE, &[home]);
+    advance_until(&mut game, 20, |g| g.visible(index));
+    game.ents[index].x = 130.5;
+    game.aircraft.aircraft.get_mut(&handle).unwrap().ordnance = 1;
+    game.air_fire(index, false);
+    assert!(!game.aircraft.aircraft[&handle].return_pending);
+    let expected = (game.tick + 1..=game.tick + 40)
+        .find(|&tick| actor_pulse(tick, phase_key(handle, 0), 2.0)).unwrap();
+    advance_until(&mut game, 40, |g| g.aircraft.aircraft[&handle].phase == Phase::Returning);
+    assert_eq!(game.tick, expected);
+}

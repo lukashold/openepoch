@@ -250,6 +250,60 @@ class AssetAudit:
             sprite=route['cursors'][state]
             verified(sprite['url'],sprite['sha256'],'trade-route-cursor',route_name,sprite['bytes'])
 
+    def check_pinned_media(self,url,digest,source,group,size=None):
+        target=self.ref(url,source,group)
+        if target and (self.digest(target)!=digest or (size is not None and self.files[target].stat().st_size!=size)):
+            self.error('pinned-media-byte-mismatch',target,source)
+        return target
+
+    def check_aircraft(self):
+        name='local-original/fighter-bomber/manifest.json'
+        self.ref(name,'original-trade-presentation.js','fighter-bomber-catalog')
+        catalog=self.read_json(name)
+        rows=catalog.get('rows',[])
+        stages=[(row.get('epoch'),row.get('until'),row.get('model',{}).get('id')) for row in rows]
+        if catalog.get('format')!='ee2-native-fighter-bomber-presentation-v1' or stages!=[(epoch,epoch+1,83) for epoch in range(10,15)]:
+            self.error('fighter-bomber-catalog-format',name);return
+        self.check_models(name,'fighter-bomber-',[row['model'] for row in rows])
+        for row in rows:
+            model=row['model']
+            self.check_pinned_media(model['url'],model['sha256'],name,'fighter-bomber-model')
+            for profile in ('packed5','packed7'):
+                icon=row.get('icons',{}).get(profile,{})
+                self.check_pinned_media(icon.get('url'),icon.get('sha256'),name,'fighter-bomber-icon',icon.get('bytes'))
+        team=self.check_pinned_media(catalog.get('teamManifest'),catalog.get('teamManifestSha256'),name,'fighter-bomber-team-manifest')
+        if team:self.check_teams(team,'fighter-bomber-')
+        audio=self.check_pinned_media(catalog.get('audioManifest'),catalog.get('audioManifestSha256'),name,'fighter-bomber-audio-manifest')
+        if audio:self.check_audio_families(audio)
+
+    def check_air_mission_art(self):
+        name='local-original/air-mission-ui/manifest.json'
+        self.ref(name,'air-mission-order.js','air-mission-catalog')
+        data=self.read_json(name)
+        if data.get('format')!='ee2-native-air-mission-ui-v1':
+            self.error('air-mission-catalog-format',name);return
+        for profile in ('packed5','packed7'):
+            actions=data.get('profiles',{}).get(profile,{}).get('actions',{})
+            for action in ('set','cancel','scramble','launch','recall'):
+                for state in ('idle','hover','pressed','hoverPressed'):
+                    sprite=actions.get(action,{}).get(state,{})
+                    source=f'{name}.{profile}.{action}.{state}'
+                    self.check_pinned_media(sprite.get('url'),sprite.get('sha256'),source,'air-mission-button')
+
+    def check_trade_wait_art(self):
+        name='local-original/trade-wait/manifest.json'
+        self.ref(name,'trade-wait-status.js','trade-wait-catalog')
+        data=self.read_json(name)
+        if data.get('format')!='ee2-native-trade-wait-art-v1':
+            self.error('trade-wait-catalog-format',name);return
+        for profile in ('packed5','packed7'):
+            tray=data.get('profiles',{}).get(profile,{})
+            sprites={'icon':tray.get('icon',{})}
+            sprites.update({theme:tray.get('backgrounds',{}).get(theme,{}) for theme in ('1','2','3')})
+            for state,sprite in sprites.items():
+                self.check_pinned_media(sprite.get('url'),sprite.get('sha256'),f'{name}.{profile}.{state}',
+                                        'trade-wait-sprite',sprite.get('bytes'))
+
     def check_textures_and_ground(self):
         name='local-original/textures.json';self.ref(name,'original-assets.js','texture-manifest');data=self.read_json(name)
         for group,mapping in data.items():
@@ -757,6 +811,9 @@ class AssetAudit:
                     if name and self.digest(name) != row.get(sha_key):
                         self.error('production-model-hash-mismatch', name, production)
         if 'original-trade-presentation.js' in self.files:self.check_trade()
+        if 'air-mission-order.js' in self.files:
+            self.check_aircraft();self.check_air_mission_art()
+        if 'trade-wait-status.js' in self.files:self.check_trade_wait_art()
         if 'local-original/king-regicide/manifest.json' in self.files:
             self.check_models('local-original/king-regicide/manifest.json','king-regicide-')
             self.check_teams('local-original/king-regicide/team/manifest.json','king-regicide-')

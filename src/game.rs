@@ -225,6 +225,10 @@ pub struct Game {
     pub(crate) trade_enabled: bool,
     #[cfg(feature = "ee2-native13")]
     pub(crate) trade: trade30::State,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) air_missions_enabled: bool,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) aircraft: crate::air31::State,
     pub fx: Vec<Fx>,
     pub players: [Player; 4],
     // Kept outside Player so existing repr(C) saves retain their layout.
@@ -344,6 +348,10 @@ impl Game {
             trade_enabled: humans == 1 && bench == 0,
             #[cfg(feature = "ee2-native13")]
             trade: trade30::State::default(),
+            #[cfg(feature = "ee2-native13")]
+            air_missions_enabled: humans == 1 && bench == 0,
+            #[cfg(feature = "ee2-native13")]
+            aircraft: crate::air31::State::default(),
             fx: Vec::with_capacity(1024),
             players: [Player::default(); 4],
             extra_resources: [[0.0;6];4],
@@ -482,6 +490,8 @@ impl Game {
         let d = &DEFS[def as usize];
         let gen = self.ents[i].gen;
         self.ents[i] = Ent { alive: true, def, team, gen, x, y, px: x, py: y, ox: x, oy: y, hp: self.max_hp(team,def), rot:angle,prot:angle,..E0 };
+        #[cfg(feature = "ee2-native13")]
+        self.air_register(i);
         #[cfg(feature="ee2-pack8")] self.pack_reset(i);
         #[cfg(feature="ee2-citizen9")] self.source_birth.register(i,self.h(i),def==WORKER);
         #[cfg(feature="ee2-reference")]
@@ -503,7 +513,9 @@ impl Game {
         self.map.nav_ver += 1;
     }
 
-    fn kill(&mut self, i: usize) {
+    pub(crate) fn kill(&mut self, i: usize) {
+        #[cfg(feature = "ee2-native13")]
+        self.air_remove(i);
         #[cfg(feature = "ee2-native13")]
         self.trade_interrupt(i);
         #[cfg(feature = "ee2-native13")]
@@ -561,13 +573,13 @@ impl Game {
     #[inline]
     pub fn can_see(&self, team:u8, j:usize)->bool {
         #[cfg(feature = "ee2-native13")]
-        if self.trade_hidden(j, &self.ents[j]) { return false; }
+        if self.trade_hidden(j, &self.ents[j]) || self.air_parked(j, &self.ents[j]) { return false; }
         let t=&self.ents[j];t.team==team||(self.real_fog(team,tile_of(t.x,t.y))==255&&self.detected(team,j))
     }
     /// Display visibility deliberately differs from combat visibility.
     pub fn visible(&self,j:usize)->bool {
         #[cfg(feature = "ee2-native13")]
-        if self.trade_hidden(j, &self.ents[j]) { return false; }
+        if self.trade_hidden(j, &self.ents[j]) || self.air_parked(j, &self.ents[j]) { return false; }
         let t=&self.ents[j];if t.team==self.local{return true;}
         let need=if DEFS[t.def as usize].building{128}else{255};
         (if self.display_visibility()<2{self.real_fog(self.local,tile_of(t.x,t.y))}else{255})>=need&&self.detected(self.local,j)
@@ -588,6 +600,8 @@ impl Game {
 
     /// Would `train(b, def)` succeed right now?
     pub(crate) fn unit_production_available(&self, team: u8, host: DefId, unit: DefId) -> bool {
+        #[cfg(feature = "ee2-native13")]
+        if !self.air_production_enabled(unit) { return false; }
         #[cfg(feature="ee2-native13")]
         if crate::trade30_defs::is_trader(unit) && !self.trade_enabled { return false; }
         #[cfg(feature="ee2-native13")]
@@ -736,7 +750,9 @@ impl Game {
         let mut k = 0.0f32;
         for &i in ids {
             #[cfg(feature = "ee2-native13")]
-            self.trade_interrupt(i);
+            if self.air_parked(i, &self.ents[i]) { continue; }
+            #[cfg(feature = "ee2-native13")]
+            { self.trade_interrupt(i); self.air_interrupt(i); }
             let e = &mut self.ents[i];
             let d = &DEFS[e.def as usize];
             if d.building || !e.alive {
@@ -774,6 +790,8 @@ impl Game {
         let td = &DEFS[t.def as usize];
         let h = self.h(tj);
         for &i in ids {
+            #[cfg(feature = "ee2-native13")]
+            if self.air_parked(i, &self.ents[i]) { continue; }
             if !self.hostile(self.ents[i].team,t.team)||!self.can_see(self.ents[i].team,tj){continue;}
             let d = &DEFS[self.ents[i].def as usize];
             if d.building {
@@ -785,6 +803,8 @@ impl Game {
                 }
                 continue;
             }
+            #[cfg(feature = "ee2-native13")]
+            self.air_interrupt(i);
             let key = self.key_for(d.dom, t.x, t.y);
             #[cfg(feature="ee2-pack8")] self.pack_interrupt(i);
             let e = &mut self.ents[i];
@@ -835,6 +855,11 @@ impl Game {
     /// Land units walk to a transport ship and climb aboard.
     pub fn order_board(&mut self, ids: &[usize], tj: usize) {
         let t = self.ents[tj];
+        #[cfg(feature = "ee2-native13")]
+        if t.def == AIRFIELD && self.air_missions_enabled {
+            self.air_order_land(ids, tj);
+            return;
+        }
         let research = DEFS[t.def as usize].has(F_RESEARCH|F_EXTRACT|F_DROPOFF);
         if (!DEFS[t.def as usize].has(F_TRANSPORT|F_GARRISON) && !research) || t.built < 1.0 {
             return;
@@ -1015,6 +1040,8 @@ impl Game {
         if self.production_roster_enabled { mix(u32::from_le_bytes(*b"PRD1")); }
         #[cfg(feature = "ee2-native13")]
         if self.trade_enabled { self.trade.hash(&mut mix); }
+        #[cfg(feature = "ee2-native13")]
+        if self.air_missions_enabled { self.aircraft.hash(&mut mix); }
         #[cfg(feature="ee2-civ8")]
         if self.civilizations.iter().any(|&c|c!=crate::civ8_runtime::LEGACY_NEUTRAL){
             mix(0x38564943);for c in self.civilizations{mix(c as u32);}
@@ -1090,7 +1117,7 @@ impl Game {
     pub fn order_stop(&mut self, ids: &[usize]) {
         for &i in ids {
             #[cfg(feature = "ee2-native13")]
-            self.trade_interrupt(i);
+            { self.trade_interrupt(i); self.air_interrupt(i); }
             #[cfg(feature="ee2-pack8")] self.pack_interrupt(i);
             self.native_stop_attack(i);
             let e = &mut self.ents[i];
@@ -1121,7 +1148,7 @@ impl Game {
         for i in 0..self.high {
             if self.ents[i].alive {
                 #[cfg(feature = "ee2-native13")]
-                if self.trade_hidden(i, &self.ents[i]) { continue; }
+                if self.trade_hidden(i, &self.ents[i]) || self.air_parked(i, &self.ents[i]) { continue; }
                 self.update_ent(i);
             }
         }
@@ -1144,6 +1171,8 @@ impl Game {
         }
         #[cfg(feature = "ee2-native13")]
         self.tick_trade();
+        #[cfg(feature = "ee2-native13")]
+        self.tick_aircraft();
         if city_death{self.rebuild_territories();self.void_landless_alliances();}
         #[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
         self.recount_paid_players();
@@ -1262,7 +1291,7 @@ impl Game {
             }
             alive += 1;
             #[cfg(feature = "ee2-native13")]
-            let spatial = !self.trade.is_hidden(index, e);
+            let spatial = !self.trade.is_hidden(index, e) && !self.aircraft.is_parked(index, e);
             #[cfg(not(feature = "ee2-native13"))]
             let spatial = { let _ = index; true };
             if spatial {
@@ -1297,7 +1326,7 @@ impl Game {
         for (i, e) in self.ents[..self.high].iter().enumerate() {
             if e.alive {
                 #[cfg(feature = "ee2-native13")]
-                if self.trade.is_hidden(i, e) { continue; }
+                if self.trade.is_hidden(i, e) || self.aircraft.is_parked(i, e) { continue; }
                 let c = cell_of(e.x, e.y);
                 g.items[g.cursor[c] as usize] = i as u16;
                 g.cursor[c] += 1;
@@ -1312,7 +1341,7 @@ impl Game {
     }
 
     #[inline]
-    fn rps_allows(&self,attacker:&Ent,defender:&Ent)->bool {
+    pub(crate) fn rps_allows(&self,attacker:&Ent,defender:&Ent)->bool {
         #[cfg(feature="ee2-reference")]
         {return crate::ee2_combat::can_target(attacker.def,self.players[attacker.team as usize].epoch,defender.def,self.players[defender.team as usize].epoch).unwrap_or(true);}
         #[cfg(not(feature="ee2-reference"))]
@@ -1394,6 +1423,12 @@ impl Game {
     }
 
     fn try_attack_round(&mut self,index:usize,e:&mut Ent,w:&Wpn,tj:usize){
+        #[cfg(feature = "ee2-native13")]
+        if !self.air_can_fire(index) {
+            self.native_stop_attack(index);
+            e.tgt = NONE;
+            return;
+        }
         #[cfg(feature="ee2-pack8")] if self.pack_wait_for_attack(index,e){return;}
         #[cfg(feature="ee2-up15")]
         if let Some(a)=crate::ee2_up15_attack::lookup(e.def,self.players[e.team as usize].epoch){
@@ -1418,11 +1453,15 @@ impl Game {
     }
     fn fire(&mut self, _source_index: usize, e: &mut Ent, w: &Wpn, tj: usize) {
         if !self.hostile(e.team,self.ents[tj].team)||!self.can_see(e.team,tj)||!self.rps_allows(e,&self.ents[tj]){e.tgt=NONE;return;}
+        #[cfg(feature = "ee2-native13")]
+        if !self.air_can_fire(_source_index) { e.tgt = NONE; return; }
         #[cfg(feature="ee2-reference")]
         let attacker_profile=crate::ee2_combat::profile(e.def,self.players[e.team as usize].epoch);
         let mut w=*w;
         #[cfg(feature="ee2-up15")]
         let attack=crate::ee2_up15_attack::lookup(e.def,self.players[e.team as usize].epoch);
+        #[cfg(feature = "ee2-native13")]
+        self.air_fire(_source_index, attack.is_some_and(|row| row.missile));
         #[cfg(feature="ee2-up15")]
         if let Some(a)=attack {w.kind=a.visual_kind;w.splash=a.splash;}
         // Both Cannonball and TankShell use our existing shell projectile.
@@ -1798,7 +1837,11 @@ impl Game {
                     #[cfg(feature="ee2-citizen9")] let source_identity=if item==WORKER as QueueItem{Some(self.source_birth.production_identity())}else{None};
                     let u = self.spawn(item as DefId, e.team, sx, sy);
                     #[cfg(feature="ee2-citizen9")] if u!=NOIDX{if let Some(identity)=source_identity{self.set_citizen_identity(u,identity);}}
-                    if u != NOIDX && e.rx >= 0.0 {
+                    #[cfg(feature = "ee2-native13")]
+                    let stationed = u != NOIDX && self.air_station_produced(u, i);
+                    #[cfg(not(feature = "ee2-native13"))]
+                    let stationed = false;
+                    if u != NOIDX && e.rx >= 0.0 && !stationed {
                         let rt = tile_of(e.rx, e.ry);
                         if ud.has(F_WORKER) && self.map.res[rt] != R_NONE {
                             self.order_gather(&[u], rt);
@@ -1912,6 +1955,14 @@ impl Game {
             e.revealed = self.detect_mask(&e);
         }
         let plane = d.has(F_PLANE);
+        let may_engage = true;
+        #[cfg(feature = "ee2-native13")]
+        let may_engage = may_engage && self.air_can_fire(i);
+        if !may_engage {
+            self.native_stop_attack(i);
+            e.tgt = NONE;
+            if e.order == O_ATTACK { Self::set_idle(&mut e); }
+        }
 
         // ---- resolve the current target
         if e.order == O_ATTACK {
@@ -1941,7 +1992,7 @@ impl Game {
                 _ => {self.native_stop_attack(i);e.tgt = NONE;},
             }
         }
-        if tj == NOIDX && stagger && d.armed() && e.order <= O_AMOVE {
+        if may_engage && tj == NOIDX && stagger && d.armed() && e.order <= O_AMOVE {
             let range=d.max_range()+self.modifiers[e.team as usize][e.def as usize][6];
             let r = if e.order == O_MOVE { range } else { self.modifiers[e.team as usize][e.def as usize][5].max(range + 1.0) };
             e.tgt = self.acquire(&e, d, r);
@@ -2266,7 +2317,7 @@ impl Game {
                 continue;
             }
             #[cfg(feature = "ee2-native13")]
-            if self.trade_hidden(i, e) { continue; }
+            if self.trade_hidden(i, e) || self.air_parked(i, e) { continue; }
             let d = &DEFS[e.def as usize];
             if d.building || d.has(F_PLANE) {
                 continue;
@@ -2344,7 +2395,7 @@ impl Game {
                 continue;
             }
             #[cfg(feature = "ee2-native13")]
-            if self.trade_hidden(_index, e) { continue; }
+            if self.trade_hidden(_index, e) || self.air_parked(_index, e) { continue; }
             let r = self.modifiers[e.team as usize][e.def as usize][5];
             let (cx, cy) = (e.x as i32, e.y as i32);
             let ri = r as i32;
