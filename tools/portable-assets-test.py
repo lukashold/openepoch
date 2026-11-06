@@ -379,6 +379,36 @@ class AssetAudit:
                             or self.files[file].stat().st_size!=20+4*words[1]):
                         self.error('air-takeoff-animation-header',file,binding)
 
+    def check_air_flight_audio(self):
+        loader='air-flight-audio.js'
+        name='local-original/air-flight-audio/manifest.json'
+        match=re.search(r"const manifestHash='([0-9a-f]{64})'",self.files[loader].read_text(encoding='utf8'))
+        if not match:
+            self.error('air-flight-audio-manifest-pin',loader)
+            return
+        if not self.check_pinned_media(name,match[1],loader,'air-flight-audio-catalog'):
+            return
+        catalog=self.read_json(name)
+        rows=catalog.get('rows',[])
+        events=catalog.get('events',{})
+        identities={(row.get('definition'),row.get('epoch')) for row in rows}
+        if catalog.get('format')!='ee2-native-air-flight-audio-v1' or len(rows)!=15 or len(identities)!=15 or len(events)!=8:
+            self.error('air-flight-audio-catalog-format',name)
+            return
+        for event,record in events.items():
+            self.check_pinned_media(record.get('url'),record.get('sha256'),f'{name}.events.{event}',
+                                    'air-flight-audio-sample',record.get('bytes'))
+        for index,row in enumerate(rows):
+            origin=f'{name}.rows[{index}]'
+            states=row.get('states',{})
+            if set(states)!={'idle','walk','attack1','death'}:
+                self.error('air-flight-audio-state-set',origin)
+                continue
+            for kind,state in states.items():
+                for key in state.get('keys',[]):
+                    if key.get('event') not in events or key.get('type') not in {'PLAY_SOUND','START_SOUND','STOP_SOUND'}:
+                        self.error('air-flight-audio-key-binding',origin,kind)
+
     def check_textures_and_ground(self):
         name='local-original/textures.json';self.ref(name,'original-assets.js','texture-manifest');data=self.read_json(name)
         for group,mapping in data.items():
@@ -890,6 +920,7 @@ class AssetAudit:
             self.check_aircraft();self.check_air_mission_art()
         if 'air-mission-flag.js' in self.files:self.check_air_mission_flag()
         if 'air-takeoff.js' in self.files:self.check_air_takeoff()
+        if 'air-flight-audio.js' in self.files:self.check_air_flight_audio()
         if 'trade-wait-status.js' in self.files:self.check_trade_wait_art()
         if 'local-original/king-regicide/manifest.json' in self.files:
             self.check_models('local-original/king-regicide/manifest.json','king-regicide-')

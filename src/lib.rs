@@ -20,6 +20,8 @@ mod landing_geometry;
 #[cfg(feature = "ee2-native13")]
 mod landing34;
 #[cfg(feature = "ee2-native13")]
+mod air_audio35;
+#[cfg(feature = "ee2-native13")]
 mod battle_signals;
 #[cfg(feature = "ee2-native13")]
 mod capture_animation26;
@@ -482,7 +484,52 @@ pub extern "C" fn events_len() -> u32 {
 }
 #[no_mangle]
 pub extern "C" fn events_clear() {
-    g().events.clear();
+    let game = g();
+    game.events.clear();
+    #[cfg(feature = "ee2-native13")]
+    game.air_audio.clear_shots();
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn air_audio_version() -> u32 { 1 }
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn air_audio_prepare(alpha: f32) -> u32 {
+    let game = g();
+    game.prepare_air_audio(alpha);
+    game.air_audio.current.len() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn air_audio_current_ptr() -> *const u8 {
+    g().air_audio.current.as_ptr().cast()
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn air_audio_transition_count() -> u32 {
+    g().air_audio.transitions.len() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn air_audio_transition_ptr() -> *const u8 {
+    g().air_audio.transitions.as_ptr().cast()
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn air_audio_shot_at(index: u32) -> u32 {
+    g().air_audio.shot(index as usize)
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn air_audio_shot_duration(index: u32) -> f32 {
+    g().air_audio.shot_duration(index as usize)
 }
 
 // ---- save games -----------------------------------------------------------

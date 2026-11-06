@@ -238,6 +238,8 @@ pub struct Game {
     #[cfg(feature = "ee2-native13")]
     pub(crate) landing: crate::landing34::State,
     #[cfg(feature = "ee2-native13")]
+    pub(crate) air_audio: crate::air_audio35::State,
+    #[cfg(feature = "ee2-native13")]
     pub(crate) aircraft: crate::air31::State,
     pub fx: Vec<Fx>,
     pub players: [Player; 4],
@@ -370,6 +372,8 @@ impl Game {
             air_landing_enabled: humans == 1 && bench == 0,
             #[cfg(feature = "ee2-native13")]
             landing: crate::landing34::State::default(),
+            #[cfg(feature = "ee2-native13")]
+            air_audio: crate::air_audio35::State::default(),
             #[cfg(feature = "ee2-native13")]
             aircraft: crate::air31::State::default(),
             fx: Vec::with_capacity(1024),
@@ -1164,6 +1168,8 @@ impl Game {
         for e in &mut self.ents[..self.high]{if e.alive&&e.def==FARM{e.carry=0.0;}}
         self.tick += 1;
         #[cfg(feature = "ee2-native13")]
+        self.air_audio.prune(self.tick);
+        #[cfg(feature = "ee2-native13")]
         if let Some(signals) = &mut self.battle_signals { signals.update_groups(DT, &self.ents); }
         if self.bench==0{self.update_diplomacy();}
         #[cfg(feature = "ee2-native13")]
@@ -1192,6 +1198,8 @@ impl Game {
         let mut deaths=false;let mut city_death=false;
         for i in 0..self.high {
             if self.ents[i].alive && self.ents[i].hp <= 0.0 {
+                #[cfg(feature = "ee2-native13")]
+                self.observe_air_death_audio(i);
                 deaths=true;city_death|=self.ents[i].def==TC;self.kill(i);
             }
         }
@@ -1464,6 +1472,10 @@ impl Game {
             if c.handle!=handle{*c=crate::native_attack_clock::Clock{handle,next:0.0,flags:0};}
             let event=crate::native_attack_clock::step(now,reload,a.apply_time,&mut c.next,&mut c.flags);
             let remaining=(c.next-now).max(0.0);e.cd=remaining;
+            #[cfg(feature = "ee2-native13")]
+            if event == crate::native_attack_clock::Event::Start {
+                self.observe_air_attack_audio(index, e, now, reload);
+            }
             if event==crate::native_attack_clock::Event::Fire{self.fire(index,e,w,tj);e.cd=remaining;}
             return;
         }
@@ -1515,7 +1527,11 @@ impl Game {
             Some(row) if row.id == 22 && row.epoch == 0 && row.until == 2 => 26.0,
             _ => sound,
         };
+        #[cfg(feature = "ee2-native13")]
+        let event_start = self.events.len();
         self.ev(sound, e.x, e.y);
+        #[cfg(feature = "ee2-native13")]
+        self.mark_air_shot(_source_index, event_start);
         let direct={
             #[cfg(feature="ee2-up15")] {attack.map(|a|!a.missile).unwrap_or(w.kind==W_MELEE)}
             #[cfg(not(feature="ee2-up15"))] {w.kind==W_MELEE}
@@ -1976,6 +1992,8 @@ impl Game {
             self.ents[i] = e;
             return;
         }
+        #[cfg(feature = "ee2-native13")]
+        if d.has(F_PLANE) { self.observe_air_motion_audio(i, &e); }
         #[cfg(feature = "ee2-native13")]
         if d.has(F_PLANE) && (self.advance_landing(i, &mut e) || self.advance_takeoff(i, &mut e)) {
             self.ents[i] = e;

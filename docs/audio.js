@@ -2,11 +2,14 @@
 // Procedural sounds and local speech remain the fallback for the standalone game.
 import { createOriginalAudio } from './original-audio.js?v=native33';
 import {createPresentationRandom} from './source-music-controller.js?v=regional11';
+import {createAirFlightPlayback} from './air-flight-audio.js?v=native35';
+import {takeoffSpatialMix} from './air-takeoff.js?v=native33';
 const presentationRandom = createPresentationRandom(1);
 const originals=createOriginalAudio({presentationRandom});
 export const presentationWord = () => presentationRandom.word15();
 
 let ctx = null, master = null, noise = null;
+let airFlightPresentation = null, airFlightPlayback = null;
 let muted = false, voices = 0;
 let musicEnabled = true, speechEnabled = true, nextMusic = 0, musicStep = 0, lastSpeech = -999;
 let speechIndex = 0;
@@ -28,6 +31,21 @@ function ensure() {
 }
 /** Browsers only allow audio after a user gesture; call this from one. */
 export function unlock() { if (ensure() && ctx.state === 'suspended') ctx.resume(); }
+export function configureAirFlightAudio(presentation) {
+  airFlightPresentation=presentation;
+  airFlightPlayback?.reset();
+  airFlightPlayback=null;
+}
+export function frameAirFlightAudio(frame) {
+  if(!ctx||!airFlightPresentation)return;
+  airFlightPlayback??=createAirFlightPlayback({presentation:airFlightPresentation,
+    context:ctx,destination:master,mix:takeoffSpatialMix});
+  airFlightPlayback.frame(frame);
+}
+export function airFlightAttackHandled(definition,epoch,duration) {
+  return airFlightPlayback?.handlesAttack(definition,epoch,duration)??false;
+}
+export function resetAirFlightAudio() { airFlightPlayback?.reset(); }
 export function setMuted(m) {
   muted = m;
   originals.setMuted(m);

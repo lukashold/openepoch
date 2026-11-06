@@ -273,6 +273,10 @@ impl Game {
         Some(frame.home)
     }
 
+    pub(crate) fn air_audio_returning(&self, handle: u32) -> bool {
+        self.aircraft.aircraft.get(&handle).is_some_and(|frame| frame.phase == Phase::Returning)
+    }
+
     pub(crate) fn air_can_fire(&self, index: usize) -> bool {
         self.aircraft.aircraft.get(&self.h(index)).is_none_or(|a| a.phase == Phase::Flying && a.ordnance > 0)
     }
@@ -301,6 +305,7 @@ impl Game {
         let handle = self.h(index);
         self.takeoff.clear(handle);
         self.landing.clear(handle);
+        self.air_audio.forget(handle);
         self.aircraft.aircraft.remove(&handle);
         for airport in self.aircraft.airports.values_mut() {
             airport.registered.retain(|&actor| actor != handle);
@@ -392,6 +397,7 @@ impl Game {
         for &(index, _) in changed {
             let handle = self.h(index);
             self.landing.clear(handle);
+            self.air_audio.forget(handle);
             if let Some(airport) = self.aircraft.airports.get_mut(&handle) {
                 self.landing.clear_host(handle);
                 airport.mission = None;
@@ -602,6 +608,7 @@ impl State {
         let Some(host) = game.air_host(home, game.ents[index].team) else { return false; };
         if self.aircraft.get(&handle).is_none_or(|frame| frame.phase == Phase::Stationed) ||
             !self.reserve(home, handle) { return false; }
+        game.observe_air_parking_audio(index);
         let frame = self.aircraft.get_mut(&handle).unwrap();
         frame.phase = Phase::Stationed;
         frame.mission = false;

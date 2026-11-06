@@ -9,7 +9,7 @@ import { diplomacyPanel } from './diplomacy.js?v=native17';
 import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native6';
 import {loadNativeFontUI} from './original-font-ui.js?v=native21names';
 import {territoryClaimMessage} from './territory-help.js?v=fortress1';
-import * as sfx from './audio.js?v=native33';
+import * as sfx from './audio.js?v=native35';
 import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=citizen9';
 import {mountOriginalShellVideo} from './original-shell-video.js?v=native12';
 import {mountSkirmishMenu} from './skirmish-menu.js?v=native13';
@@ -34,7 +34,7 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=skirmish-climates';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native34';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native35';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=epoch13';
 import {createFullscreenController} from './fullscreen.js?v=building2';
@@ -51,6 +51,7 @@ import {createTradeWaitStatus,loadTradeWaitArt,selectedTradeWait} from './trade-
 import {airActions,airMissionActions,airMissionSelection,airMissionTrainingKey,createAirMissionOrder,decorateAirMissionButton,loadAirMissionArt,supportsAirMission} from './air-mission-order.js?v=native32';
 import {loadAirMissionFlag,projectAirMissionFlags,readAirMissionVisualRoutes} from './air-mission-flag.js?v=native32';
 import {createTakeoffAudioClock,loadAirTakeoff,takeoffElapsed} from './air-takeoff.js?v=native33';
+import {loadAirFlightAudio,readAirFlightAudio} from './air-flight-audio.js?v=native35';
 import {loadFullmapCityNameCatalog,loadFullmapTerritoryNameCatalog} from './fullmap-territory-names.js?v=native22';
 import {createWarplanPeer,WARPLAN_PEER_VERSION} from './original-warplan-peer.js';
 
@@ -506,7 +507,7 @@ const citizenPresentation=await loadCitizenPresentation({enabled:originalEnabled
 const tradeAvailable=rulesProfile.ruleset===2&&supportsTradeRoute(wasm);
 const airMissionAvailable=rulesProfile.ruleset===2&&supportsAirMission(wasm);
 const hasTakeoffState=typeof wasm.air_takeoff_start_tick==='function';
-const [tradePresentation,tradeRouteArt,tradeWaitArt,fighterBomberPresentation,airMissionArt,airMissionFlag,airTakeoff]=await Promise.all([
+const [tradePresentation,tradeRouteArt,tradeWaitArt,fighterBomberPresentation,airMissionArt,airMissionFlag,airTakeoff,airFlightAudio]=await Promise.all([
   loadTradePresentation({enabled:originalEnabled&&rulesProfile.ruleset===2&&renderNamespace.definitionCount>82}),
   loadTradeRouteArt({enabled:originalEnabled&&tradeAvailable}),
   loadTradeWaitArt({enabled:originalEnabled&&tradeAvailable&&typeof wasm.trade_wait_active==='function'}),
@@ -514,12 +515,14 @@ const [tradePresentation,tradeRouteArt,tradeWaitArt,fighterBomberPresentation,ai
   loadAirMissionArt({enabled:originalEnabled&&airMissionAvailable}),
   loadAirMissionFlag(gl,{enabled:originalEnabled&&airMissionAvailable&&typeof wasm.air_mission_visual_routes==='function'}),
   loadAirTakeoff({enabled:originalEnabled&&airMissionAvailable&&hasTakeoffState}),
+  loadAirFlightAudio({enabled:originalEnabled&&airMissionAvailable&&wasm.air_audio_version?.()===1}),
 ]);
 const takeoffSample={tick:0,alpha:0};
 const takeoffStartTick=handle=>wasm.air_takeoff_start_tick(handle)>>>0;
 const takeoffAudio=airTakeoff?createTakeoffAudioClock({presentation:airTakeoff,startTick:takeoffStartTick,
   play:sfx.playTakeoff,stop:sfx.stopTakeoff}):null;
 sfx.bindTakeoffEvents(airTakeoff?.events);
+sfx.configureAirFlightAudio(airFlightAudio);
 const tradeWaitStatus=createTradeWaitStatus($('trade-wait-status'),tradeWaitArt);
 const regionalIconOptions={enabled:originalEnabled&&rulesProfile.ruleset===2,profile:'packed7',neutralFallback:'west'};
 const [cityCenterIcons,houseIcons,dockIcons,barracksIcons,millIcons,templeIcons,lightArtilleryIcons,warehouseIcons,stableIcons,kingIcons]=await Promise.all([
@@ -834,6 +837,7 @@ function bindWorldTerrainMaterial() {
 function begin() {
   originalModels.clearResourcePicks();
   takeoffAudio?.reset();
+  sfx.resetAirFlightAudio();
   airMissionFlag?.reset();
   tradeWaitStatus.update(false);
   tradeRoute?.cancel();tradePress=null;
@@ -982,6 +986,10 @@ function advance(dt, now) {
   if (n) {
     const ev = f32(wasm.events_ptr(), n);
     for (let i = 0; i < n; i += 3) {
+      if(airFlightAudio){
+        const shot=wasm.air_audio_shot_at(i/3)>>>0;
+        if(shot&&sfx.airFlightAttackHandled(shot&0xffff,shot>>>16,wasm.air_audio_shot_duration(i/3)))continue;
+      }
       const kind = ev[i], dx = ev[i + 1] - cam.x, dy = ev[i + 2] - cam.y;
       const citizen = decodeCitizenDeathCue(kind);
       if (kind >= 12 && !citizen && kind !== sfx.STONE_THROWER_LAUNCH_CUE && kind !== sfx.CAPTURE_COMPLETE_CUE) {
@@ -1141,6 +1149,8 @@ function frame(now) {
     deltaSeconds:dt*(net?1:speed),runPhysics:!paused&&!(net&&net.ls.waiting)})??null;
   if(!actorMetadata&&packMetadata)actorMetadata=packMetadata.snapshot(packActorReader.snapshot({count:n,instances:f32(wasm.inst_ptr(),n*STRIDE),namespace:renderNamespace}));
   takeoffAudio?.update({...takeoffSample,session:actorMetadata?.session,actors:actorMetadata?.actors??[],epochs:renderEpochs,view,
+    running:!paused&&!document.hidden&&!(net&&net.ls.waiting)});
+  if(airFlightAudio)sfx.frameAirFlightAudio({...readAirFlightAudio(wasm,alpha),world:wasm.render_meta_session(),view,
     running:!paused&&!document.hidden&&!(net&&net.ls.waiting)});
   let mission=null;
   if(airMissionFlag){
@@ -1593,8 +1603,8 @@ canvas.addEventListener('wheel', e => {
 }, { passive: false });
 
 function setSpeed(i) { if (net) return; speed = SPEEDS[Math.min(SPEEDS.length - 1, Math.max(0, i))]; $('speed').textContent = speed + '×'; }
-function togglePause() { if (net) return toast('No pausing in multiplayer'); paused = !paused; if(paused){sfx.stopStoneThrowerWheels();takeoffAudio?.reset();tradeRoute?.cancel();airMission?.cancel();} $('pause').textContent = paused ? 'Fortsetzen' : 'Pause'; }
-document.addEventListener('visibilitychange',()=>{if(document.hidden){sfx.stopStoneThrowerWheels();takeoffAudio?.reset();}});
+function togglePause() { if (net) return toast('No pausing in multiplayer'); paused = !paused; if(paused){sfx.stopStoneThrowerWheels();takeoffAudio?.reset();sfx.resetAirFlightAudio();tradeRoute?.cancel();airMission?.cancel();} $('pause').textContent = paused ? 'Fortsetzen' : 'Pause'; }
+document.addEventListener('visibilitychange',()=>{if(document.hidden){sfx.stopStoneThrowerWheels();takeoffAudio?.reset();sfx.resetAirFlightAudio();}});
 function jumpToSelection() { const x = wasm.sel_center(0); if (x >= 0) { cam.x = x; cam.y = wasm.sel_center(1); } }
 function focusNextBattle(pip) {
   if (pip && !fullmapPip.isOpen()) return false;
@@ -1734,6 +1744,7 @@ $('speed').onclick = () => setSpeed((SPEEDS.indexOf(speed) + 1) % SPEEDS.length)
 function toMenu() {
   cancelMapGesture();
   takeoffAudio?.reset();
+  sfx.resetAirFlightAudio();
   airMissionFlag?.reset();
   tradeWaitStatus.update(false);
   playerFlare.reset(0);
