@@ -6,6 +6,11 @@
 
 use crate::defs::*;
 use crate::map::*;
+#[cfg(feature = "ee2-native13")]
+#[path = "capture25.rs"]
+mod capture25;
+#[cfg(feature = "ee2-native13")]
+pub(crate) use capture25::split_capture_save;
 #[cfg(all(test,feature="ee2-reference"))]
 #[path="fortress_tests.rs"]
 mod fortress_tests;
@@ -29,6 +34,8 @@ pub const O_GATHER: u8 = 4;
 pub const O_BUILD: u8 = 5;
 pub const O_BOARD: u8 = 6;
 pub const O_UNLOAD: u8 = 7;
+#[cfg(feature = "ee2-native13")]
+pub const O_CAPTURE: u8 = 8;
 /// Marker in `Ent::stuck`: the unit walked onto a transport, remove it without an explosion.
 const BOARDED: u8 = 255;
 
@@ -201,6 +208,10 @@ pub struct Game {
     pub projs: Vec<Proj>,
     #[cfg(feature = "ee2-native13")]
     pub(crate) battle_signals: Option<crate::battle_signals::BattleSignals>,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) capture: capture25::State,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) capture_enabled: bool,
     pub fx: Vec<Fx>,
     pub players: [Player; 4],
     // Kept outside Player so existing repr(C) saves retain their layout.
@@ -306,6 +317,10 @@ impl Game {
             projs: Vec::with_capacity(4096),
             #[cfg(feature = "ee2-native13")]
             battle_signals: None,
+            #[cfg(feature = "ee2-native13")]
+            capture: capture25::State::default(),
+            #[cfg(feature = "ee2-native13")]
+            capture_enabled: humans == 1 && bench == 0,
             fx: Vec::with_capacity(1024),
             players: [Player::default(); 4],
             extra_resources: [[0.0;6];4],
@@ -466,6 +481,8 @@ impl Game {
     }
 
     fn kill(&mut self, i: usize) {
+        #[cfg(feature = "ee2-native13")]
+        self.forget_capture_actor(i);
         #[cfg(feature = "ee2-native13")]
         self.retire_city_name(i);
         #[cfg(feature="ee2-citizen9")]
@@ -946,6 +963,8 @@ impl Game {
             mix(names.ids.len() as u32);
             for (&handle, &id) in &names.ids { mix(handle); mix(id.into()); }
         }
+        #[cfg(feature = "ee2-native13")]
+        self.capture.hash(&mut mix);
         #[cfg(feature="ee2-civ8")]
         if self.civilizations.iter().any(|&c|c!=crate::civ8_runtime::LEGACY_NEUTRAL){
             mix(0x38564943);for c in self.civilizations{mix(c as u32);}
@@ -1042,6 +1061,8 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         if let Some(signals) = &mut self.battle_signals { signals.update_groups(DT, &self.ents); }
         if self.bench==0{self.update_diplomacy();}
+        #[cfg(feature = "ee2-native13")]
+        self.tick_capture_state();
         self.map.budget = 4;
         self.build_grid();
         if self.bench==0{self.update_territory_diplomacy();}
@@ -1106,6 +1127,8 @@ impl Game {
         }
         #[cfg(feature = "ee2-native13")]
         if let Some(signals) = &mut self.battle_signals { signals.update_markers(DT); }
+        #[cfg(feature = "ee2-native13")]
+        self.reconcile_capture_orders();
     }
 
     #[cfg(feature = "ee2-native13")]
@@ -1947,6 +1970,12 @@ impl Game {
                 O_BOARD => self.do_board(i, &mut e, d, &mut want, &mut moving),
                 O_GATHER => self.do_gather(i,&mut e, d, &mut want, &mut moving),
                 O_BUILD => self.do_build(&mut e, d, &mut want, &mut moving),
+                #[cfg(feature = "ee2-native13")]
+                O_CAPTURE => {
+                    let (direction, movement) = self.do_capture(i, &mut e, d);
+                    face = direction;
+                    if let Some(velocity) = movement { want = velocity; moving = true; }
+                }
                 _ => {}
             }
         }

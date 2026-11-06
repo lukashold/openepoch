@@ -20,12 +20,14 @@ export function createBattleFlare({wasm,originalArt}) {
   function update(delta) {
     const count = wasm.battle_signal_count();
     const pointer = wasm.battle_signal_ptr()>>>0;
-    const bytes = new DataView(wasm.memory.buffer,pointer,count*16);
+    const stride = wasm.battle_signal_stride?.() ?? 16;
+    const bytes = new DataView(wasm.memory.buffer,pointer,count*stride);
     markers = [];
     for (let index=0; index<count; index++) {
-      const offset = index*16;
+      const offset = index*stride;
       if (bytes.getFloat32(offset+12,true)>0) markers.push({id:bytes.getUint32(offset,true),
-        x:bytes.getFloat32(offset+4,true),y:bytes.getFloat32(offset+8,true)});
+        x:bytes.getFloat32(offset+4,true),y:bytes.getFloat32(offset+8,true),
+        kind:stride===20?bytes.getUint32(offset+16,true):2});
     }
     if (markers.length && originalArt && !loading) {
       loading = true;
@@ -50,8 +52,9 @@ export function createBattleFlare({wasm,originalArt}) {
   }
 
   function draw(ctx,project,size,surface='mini') {
-    const {stem,frames} = ANIMATION[surface];
-    for (const {id,x,y} of markers) {
+    const {frames} = ANIMATION[surface];
+    for (const {id,x,y,kind} of markers) {
+      const stem = surface==='fullmap'&&kind===3?'spr_flare_capture_':ANIMATION[surface].stem;
       const position = project(x,y);
       if (!position) continue;
       const [sx,sy] = position;

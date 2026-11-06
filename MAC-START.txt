@@ -60,6 +60,10 @@ Angriffe auf eigene Einheiten und Gebäude erscheinen als Schlachtsignale auf
 der Mini- und Weltkarte. Mit der Leertaste springst du zu den letzten Schlachten.
 Umschalt + Leertaste wechselt die Position im geöffneten Bild-in-Bild-Fenster.
 Auf der Weltkarte kannst du die Schlachtsignale ausblenden.
+Mit Z und einem Linksklick können geeignete Infanteristen ein feindliches
+Gebäude erobern. Der rote Balken zeigt dessen verbleibenden Widerstand.
+Rechtsklick oder Esc bricht die Zielauswahl ab. Im Mehrspieler steht der
+Befehl zur Verfügung, wenn beide Spieler diese Spielversion unterstützen.
 Im Reiter „Kriegspläne“ zeichnest du mit Linksklick Wegpunkte und beendest den
 Pfad mit Rechtsklick. Die Karte zeichnet den Pfad mit abgerundeten Kurven und
 einer Pfeilspitze. Zwei Spieler mit diesem Stand können ihre Pfade versenden,

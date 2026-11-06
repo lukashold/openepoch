@@ -9,7 +9,7 @@ import { diplomacyPanel } from './diplomacy.js?v=native17';
 import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native6';
 import {loadNativeFontUI} from './original-font-ui.js?v=native21names';
 import {territoryClaimMessage} from './territory-help.js?v=fortress1';
-import * as sfx from './audio.js?v=native21';
+import * as sfx from './audio.js?v=native25';
 import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=citizen9';
 import {mountOriginalShellVideo} from './original-shell-video.js?v=native12';
 import {mountSkirmishMenu} from './skirmish-menu.js?v=native13';
@@ -33,7 +33,7 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=skirmish-climates';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native24';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native25';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=epoch13';
 import {createFullscreenController} from './fullscreen.js?v=building2';
@@ -42,7 +42,8 @@ import {createBuildingControls,nextBuildingTurn,placementMessage} from './buildi
 import {updateOriginalCamera,originalCameraRay,originalFractionForZoom,normalizeOriginalHeading,rotateOriginalCameraHeading} from './original-camera.js?v=heading2';
 import {createFullmap} from './fullmap.js?v=native24';
 import {createPlayerFlare} from './player-flare.js?v=native24';
-import {createBattleFlare} from './battle-flare.js?v=native24';
+import {createBattleFlare} from './battle-flare.js?v=native25';
+import {createCaptureOrder,captureOrderText} from './capture-order.js?v=native25';
 import {loadFullmapCityNameCatalog,loadFullmapTerritoryNameCatalog} from './fullmap-territory-names.js?v=native22';
 import {createWarplanPeer,WARPLAN_PEER_VERSION} from './original-warplan-peer.js';
 
@@ -362,11 +363,19 @@ void main(){
     col = vec4(mix(vec3(.6,1.,.6), uTeam[team], .35),1.)*a*.95;
   } else if (vB.x < 241.5) {                                       // health / progress bar
     float y = abs(vL.y), x = vL.x+.5;
-    if (y > .075) discard;
-    vec3 c = team==7 ? vec3(.3,.75,1.) : mix(vec3(.95,.2,.15), vec3(.25,.9,.3), smoothstep(.2,.7,vB.z));
-    if (x > vB.z) c = vec3(.1);
-    if (y > .045) c = vec3(0.);
-    col = vec4(c,1.);
+    if (team==6) {
+      if (y > 1./24.) discard;
+      vec3 low=vec3(150.,16.,16.), mid=vec3(200.,32.,32.), high=vec3(255.,32.,32.);
+      vec3 c = vB.z<.5 ? mix(low,mid,clamp((vB.z-.1)*2.5,0.,1.))
+        : mix(mid,high,clamp((vB.z-.5)*2.5000002384,0.,1.));
+      col = x>vB.z ? vec4(vec3(.2)*.95,.95) : vec4(c/255.,1.);
+    } else {
+      if (y > .075) discard;
+      vec3 c = team==7 ? vec3(.3,.75,1.) : mix(vec3(.95,.2,.15), vec3(.25,.9,.3), smoothstep(.2,.7,vB.z));
+      if (x > vB.z) c = vec3(.1);
+      if (y > .045) c = vec3(0.);
+      col = vec4(c,1.);
+    }
   } else if (vB.x < 242.5) {                                       // explosion
     float t = vB.z, q = r/(.3+.7*t);
     float a = (1.-smoothstep(.55,1.,q))*(1.-t*t);
@@ -695,6 +704,15 @@ const playerFlare = createPlayerFlare({mapSize:MAP,tickSeconds:TICK,originalArt:
     canvas.style.cursor=active?'crosshair':'default';
   }});
 const battleFlare = typeof wasm.battle_signals_enable === 'function' ? createBattleFlare({wasm,originalArt:originalEnabled}) : null;
+const captureOrder = typeof wasm.cmd_capture_at === 'function' ? createCaptureOrder({canvas,originalArt:originalEnabled,
+  canOrder:()=>running&&!bench&&!ui?.win&&wasm.capture_selection_count()>0,
+  pickTarget:(x,y)=>wasm.capture_target_at(x,y),issue:(x,y)=>wasm.cmd_capture_at(x,y)}) : null;
+function armCapture() {
+  if (!captureOrder || modalOpen() || !wasm.capture_selection_count()) return false;
+  const point=mouse.inside?toWorld(mouse.x,mouse.y):null;
+  cancelMapGesture();cancelBuilding();attackMode=false;playerFlare.cancel();
+  return captureOrder.arm(point);
+}
 function armPlayerFlare(){
   if(rulesProfile.ruleset!==2||!running||bench||net||!ui||ui.win||modalOpen())return;
   cancelMapGesture();cancelBuilding();attackMode=false;
@@ -887,7 +905,7 @@ function advance(dt, now) {
     for (let i = 0; i < n; i += 3) {
       const kind = ev[i], dx = ev[i + 1] - cam.x, dy = ev[i + 2] - cam.y;
       const citizen = decodeCitizenDeathCue(kind);
-      if (kind >= 12 && !citizen && kind !== sfx.STONE_THROWER_LAUNCH_CUE) {
+      if (kind >= 12 && !citizen && kind !== sfx.STONE_THROWER_LAUNCH_CUE && kind !== sfx.CAPTURE_COMPLETE_CUE) {
         sfx.play(kind, 1, 0);
       } else {
         const {volume,pan}=sfx.spatialSound(dx,dy,cam.zoom);
@@ -1203,7 +1221,8 @@ function updateUi(drawn, now) {
     if (q) { for (const id of s.q) {const job=renderNamespace.queueJob(id);q.append(!job?glyph('?',30):job.kind===3?glyph('⬆',30):job.kind===1||job.kind===2?glyph('⚗',30):icon(job.value,30));} q.title = 'Rechtsklick oder Rücktaste: letzten Auftrag abbrechen'; }
   }
 
-  const sig = ui.epoch+':'+ui.act.map(a => a.k + a.id + label(a.name,actionUnitId(a))).join(',');
+  const canCapture=!!captureOrder&&!bench&&!ui.win&&wasm.capture_selection_count()>0;
+  const sig = ui.epoch+':'+ui.act.map(a => a.k + a.id + label(a.name,actionUnitId(a))).join(',')+':'+canCapture;
   const acts = $('acts');
   if (sig !== actSig) {
     actSig = sig; acts.innerHTML = '';
@@ -1211,7 +1230,9 @@ function updateUi(drawn, now) {
       const b = document.createElement('button'); b.className = 'act'; b.dataset.i = i;
       b.append(GLYPH[a.k] ? glyph(GLYPH[a.k], 44) : icon(a.id, 44));
       const sm = document.createElement('small'); sm.textContent = label(a.name,actionUnitId(a)); b.append(sm);
-      if (HOT[i]) { const k = document.createElement('kbd'); k.textContent = HOT[i]; b.append(k); }
+      if (HOT[i] && !(canCapture && HOT[i] === captureOrderText.shortcut)) {
+        const k = document.createElement('kbd'); k.textContent = HOT[i]; b.append(k);
+      }
       b.onclick = () => doAct(i);
       b.oncontextmenu = e => {
         e.preventDefault();const detail=sourceResearch.forAction(ui.act[i]);
@@ -1230,8 +1251,15 @@ function updateUi(drawn, now) {
       b.onmouseleave = () => $('tip').style.display = 'none';
       acts.append(b);
     });
+    if (canCapture) {
+      const b = document.createElement('button'); b.className='act'; b.title=captureOrderText.description;
+      captureOrder.decorateButton(b,ui.epoch);
+      const caption=document.createElement('small');caption.textContent=captureOrderText.label;b.append(caption);
+      const key=document.createElement('kbd');key.textContent=captureOrderText.shortcut;b.append(key);
+      b.onclick=armCapture;acts.append(b);
+    }
   }
-  [...acts.children].forEach((b, i) => b.classList.toggle('no', !ui.act[i].ok));
+  ui.act.forEach((action,i)=>acts.children[i]?.classList.toggle('no',!action.ok));
   sciencePanel.refresh(ui);
   diplomacy.refresh(ui);
   $('diplomacy-button').disabled=!!bench;
@@ -1254,7 +1282,7 @@ function updateUi(drawn, now) {
 function doAct(i) {
   const a = ui && ui.act[i];
   if (!a) return;
-  if (a.k === 'b') { ghost = { id: a.id, size: a.size,name:label(a.name,a.id),turn:0,manual:false }; placementKey='';attackMode = false; sfx.play(20);updatePlacement();return; }
+  if (a.k === 'b') { captureOrder?.cancel();ghost = { id: a.id, size: a.size,name:label(a.name,a.id),turn:0,manual:false }; placementKey='';attackMode = false; sfx.play(20);updatePlacement();return; }
   if (a.k === 'u') { wasm.cmd_unload(); sfx.play(22); return; }
   if(a.k==='p'){if(typeof wasm.cmd_pack==='function'&&wasm.cmd_pack(a.id)){if(!selectedUnitVoice('order'))sfx.play(20);}else sfx.play(21);lastUi=0;return;}
   if(a.k==='i'&&!a.ok){sfx.play(21);toast(researchState(a,a.hostName));return;}
@@ -1276,6 +1304,7 @@ function drawMini() {
 function miniWorld(e) { const r = mini.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * MAP, (e.clientY - r.top) / r.height * MAP]; }
 mini.addEventListener('mousedown', e => {
   if(modalOpen()||playerFlare.isArmed())return;
+  if(e.button===2&&captureOrder?.cancel())return;
   const [x, y] = miniWorld(e);
   if (e.button === 2) { wasm.cmd_context(x, y, 0); if (!selectedUnitVoice('order')) sfx.play(22); } else { cam.x = x; cam.y = y; mini.dragging = true; }
 });
@@ -1286,7 +1315,7 @@ mini.addEventListener('contextmenu', e => e.preventDefault());
 // ---------------------------------------------------------------- input
 const box = $('box');
 const modalOpen=()=>$('cheat-dialog').open||$('research-dialog').open||diplomacy.isOpen()||fullmap?.isOpen();
-function cancelMapGesture(){mouse.down=false;mouse.drag=false;mouse.pan=false;mouse.inside=false;mini.dragging=false;box.style.display='none';canvas.style.cursor='default';}
+function cancelMapGesture(){captureOrder?.cancel();mouse.down=false;mouse.drag=false;mouse.pan=false;mouse.inside=false;mini.dragging=false;box.style.display='none';canvas.style.cursor='default';}
 const fullscreen=createFullscreenController({buttons:[$('fullscreen'),$('menu-fullscreen')],notify:toast,
   onChange(){keys.clear();cancelMapGesture();updateCamera();}});
 addEventListener('pointerdown', sfx.unlock, { once: false });
@@ -1294,6 +1323,7 @@ canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('mousedown', e => {
   mouse.x = e.clientX; mouse.y = e.clientY;
   if (!running||modalOpen()||playerFlare.isArmed()) return;
+  if (captureOrder?.active()) { if (e.button===2) captureOrder.cancel(); return; }
   const [wx, wy] = toWorld(e.clientX, e.clientY);
   if (e.button === 1) { mouse.pan = true; e.preventDefault(); return; }
   if (e.button === 2) {
@@ -1327,6 +1357,7 @@ addEventListener('mousemove', e => {
   if(ghost&&e.target!==canvas&&!mouse.pan){mouse.inside=false;return;}
   if (mouse.pan) panCameraScreen(-e.movementX/cam.zoom,-e.movementY/(cam.zoom*Math.sin(view.pitch??PITCH)));
   mouse.x = e.clientX; mouse.y = e.clientY; mouse.inside = true;
+  if (captureOrder?.active()) captureOrder.update(e.target===canvas?toWorld(mouse.x,mouse.y):null);
   if (mouse.down) {
     if (Math.abs(mouse.x - mouse.sx) + Math.abs(mouse.y - mouse.sy) > 6) mouse.drag = true;
     if (mouse.drag) {
@@ -1342,6 +1373,13 @@ addEventListener('mouseup', e => {
   if(playerFlare.isArmed()){
     const point=e.button===0 ? (e.target===canvas?toWorld(e.clientX,e.clientY):e.target===mini?miniWorld(e):null) : null;
     if(playerFlare.release(e.button,point))return;
+  }
+  if (captureOrder?.active()) {
+    if (e.button===0 && e.target===canvas && captureOrder.release(toWorld(e.clientX,e.clientY))) {
+      if (!selectedUnitVoice('attack')) sfx.play(22);
+      lastUi=0;
+    }
+    return;
   }
   if (e.button === 1) mouse.pan = false;
   if (e.button !== 0 || !mouse.down) return;
@@ -1447,6 +1485,7 @@ addEventListener('keydown', e => {
     e.preventDefault();if(!e.repeat)armPlayerFlare();return;
   }
   if(k==='Escape'&&playerFlare.cancel()){e.preventDefault();return;}
+  if(k==='Escape'&&captureOrder?.cancel()){e.preventDefault();return;}
   if(ghost&&!e.metaKey&&(e.key==='Control'||k==='R'||e.code==='Comma'||e.code==='Period')){
     e.preventDefault();if(!e.repeat)rotateBuilding(e.code==='Comma'?-1:1,e.shiftKey);return;
   }
@@ -1459,10 +1498,13 @@ addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && k === 'S') { e.preventDefault(); saveGame(); return; }
   if(referenceMode&&!ghost&&e.ctrlKey&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();keys.add('Control');return;}
   if (e.ctrlKey || e.metaKey) return;
+  if (k===captureOrderText.shortcut && !e.altKey && captureOrder && wasm.capture_selection_count()) {
+    if(!e.shiftKey){e.preventDefault();if(!e.repeat)armCapture();}return;
+  }
   const hi = HOT.indexOf(k);
   if (hi >= 0 && ui && ui.act[hi]) { doAct(hi); return; }
   switch (k) {
-    case 'A': attackMode = true; ghost = null; canvas.style.cursor = 'crosshair'; break;
+    case 'A': captureOrder?.cancel();attackMode = true; ghost = null; canvas.style.cursor = 'crosshair'; break;
     case 'S': wasm.cmd_stop(); break;
     case 'U': wasm.cmd_unload(); break;
     case 'M': toggleMute(); break;
@@ -1493,6 +1535,7 @@ $('voices').onclick = () => { sfx.setSpeechEnabled(!sfx.isSpeechEnabled()); $('v
 $('save').onclick = () => saveGame();
 $('speed').onclick = () => setSpeed((SPEEDS.indexOf(speed) + 1) % SPEEDS.length);
 function toMenu() {
+  captureOrder?.cancel();
   playerFlare.reset(0);
   battleFlare?.reset(false);
   $('player-flare-button').hidden=true;
@@ -1519,12 +1562,14 @@ for (const b of document.querySelectorAll('[data-bench]')) b.onclick = () => { n
 const mpStatus = t => $('mpstatus').textContent = t;
 let pending = null;
 function channel(local) {
-  let ch = null, pc = null, rejected = false, remoteWarplans;
+  let ch = null, pc = null, rejected = false, remoteWarplans, remoteCapture = false;
+  const supportsCapture = typeof wasm.capture_configure_peer === 'function';
   return {
     open(c) {
       ch = c;
       ch.send(JSON.stringify({t:'hello', protocol:PROTOCOL_VERSION, rules:wasm.ruleset(),civilizationChoice:civilizationSetup.choice(0),
         ...(originalEnabled&&fullmap?{warplans:WARPLAN_PEER_VERSION}:{}),
+        ...(supportsCapture?{capture:1}:{}),
         ...(climates.length>1?{climates}:{})}));
       mpStatus('Verbunden – Spielversion wird geprüft …');
     },
@@ -1539,6 +1584,7 @@ function channel(local) {
           if(civilizationSetup.enabled){try{civilizationChoice(m.civilizationChoice);}catch{return reject('Ungültige Völkerwahl des Mitspielers.');}}
           else if(m.civilizationChoice!=null)return reject('Die Völkerwahl passt nicht zur Regelversion.');
           remoteWarplans=m.warplans;
+          remoteCapture=m.capture===1;
           if (local === 0 && !net) {
             try{
               const ai=+$('mpai').value,players=2+ai,choices=civilizationSetup.choices();
@@ -1547,7 +1593,8 @@ function channel(local) {
               const climate=menuClimate();
               if(!guestClimates.includes(climate))return reject('Die Originalgrafiken für dieses Klima fehlen beim Mitspieler.');
               const cfg = {t:'start',protocol:PROTOCOL_VERSION,rules:wasm.ruleset(),seed:(seedOf()>>>0)||1,ai,visibility:+$('map-visibility').value,seasons:menuSeasonSettings(),
-                ...(climate?{climate}:{}),...resolved,popLimit:choices?+$('pop-limit').value:null,supplies:choices?+$('supplies').value:null};
+                ...(climate?{climate}:{}),...(supportsCapture&&remoteCapture?{capture:1}:{}),
+                ...resolved,popLimit:choices?+$('pop-limit').value:null,supplies:choices?+$('supplies').value:null};
               checkStart(cfg);ch.send(JSON.stringify(cfg));launch(cfg);
             }catch{return reject('Die Scharmützeleinstellungen konnten nicht übernommen werden.');}
           }
@@ -1565,6 +1612,7 @@ function channel(local) {
     if(cfg.protocol!==PROTOCOL_VERSION||cfg.rules!==wasm.ruleset()||![0,1,2].includes(cfg.visibility)||!Number.isInteger(cfg.seed)||cfg.seed<1||cfg.seed>0xffffffff||![0,1,2].includes(cfg.ai))throw Error('Invalid new match settings');
     peerSeasonSettings(cfg.seasons);
     checkedClimate(cfg.climate,climates);
+    if(cfg.capture!==undefined&&(cfg.capture!==1||!supportsCapture||!remoteCapture))throw Error('Unsupported capture command');
     if(civilizationSetup.enabled){
       checkedCivilizations(cfg.civilizations,2+cfg.ai);
       if(![250,500,1000].includes(cfg.popLimit)||![0,1,2].includes(cfg.supplies))throw Error('Invalid skirmish setup');
@@ -1576,6 +1624,7 @@ function channel(local) {
     wasm.init(cfg.seed >>> 0, cfg.ai, 0, 2, local);
     if(civilizationSetup.enabled)applyMatchSettings(wasm,cfg,2+cfg.ai);
     wasm.skirmish_visibility(cfg.visibility);
+    if(cfg.capture===1&&!wasm.capture_configure_peer(1))throw Error('Capture setup failed');
     seasonSession.configure(peerSeasonSettings(cfg.seasons),cfg.climate);setSeasonControls(seasonSession.settings);climateControl.value=seasonSession.climate;
     net = { ch, pc, ls: null };
     net.ls = new Lockstep(wasm, local, buf => { if (ch.readyState === 'open') ch.send(buf); });

@@ -156,6 +156,7 @@ const SOUNDS = {
 /** Play sound `kind` at volume 0..1 and stereo position -1..1. */
 export const STONE_THROWER_LAUNCH_CUE = 26;
 export const FULLMAP_CUE = 27;
+export const CAPTURE_COMPLETE_CUE = 30;
 const WARPLAN_CUES = Object.freeze({ui_warplans_path_addPoint:28,ui_warplans_path_finish:29});
 export function playWarplanCue(name) {
   if (!Object.hasOwn(WARPLAN_CUES,name) || muted || !ensure() || ctx.state!=='running') return;
@@ -163,7 +164,7 @@ export function playWarplanCue(name) {
   if (!originals.effect(kind)) play(kind);
 }
 export function play(kind, vol = 1, pan = 0) {
-  const fallbackKind = kind === STONE_THROWER_LAUNCH_CUE ? 3 : kind>=FULLMAP_CUE && kind<=29 ? 20 : kind;
+  const fallbackKind = kind === STONE_THROWER_LAUNCH_CUE ? 3 : kind>=FULLMAP_CUE && kind<=CAPTURE_COMPLETE_CUE ? 20 : kind;
   const s = SOUNDS[fallbackKind];
   if (muted || !s || vol < 0.02 || !ensure() || ctx.state !== 'running') return;
   const now = ctx.currentTime;

@@ -56,14 +56,15 @@ struct Participants {
 
 struct Group {
     point: Point,
+    kind: u32,
     radius_sq: f32,
     empty: f32,
     seats: [Participants; SEATS],
 }
 
 impl Group {
-    fn new(point: Point) -> Self {
-        Self { point, radius_sq: INITIAL_RADIUS_SQ, empty: EMPTY_SECONDS, seats: Default::default() }
+    fn new(point: Point, kind: u32) -> Self {
+        Self { point, kind, radius_sq: INITIAL_RADIUS_SQ, empty: EMPTY_SECONDS, seats: Default::default() }
     }
 
     fn update(&mut self, elapsed: f32, entities: &[Ent]) -> bool {
@@ -104,12 +105,13 @@ struct Marker {
     id: u32,
     point: Point,
     remaining: f32,
+    kind: u32,
 }
 
 #[derive(Default)]
 pub(crate) struct BattleSignals {
     groups: Vec<Group>,
-    pending: VecDeque<Point>,
+    pending: VecDeque<(Point, u32)>,
     markers: Vec<Marker>,
     warning: f32,
     marker_wait: f32,
@@ -118,7 +120,7 @@ pub(crate) struct BattleSignals {
 }
 
 impl BattleSignals {
-    fn observe(&mut self, actor: Actor, victim: bool) -> (usize, bool) {
+    fn observe(&mut self, actor: Actor, victim: bool, kind: u32) -> (usize, bool) {
         let mut selected = None;
         let mut membership = None;
         for (index, group) in self.groups.iter().enumerate() {
@@ -133,7 +135,7 @@ impl BattleSignals {
             }
         }
         let index = selected.unwrap_or_else(|| {
-            self.groups.push(Group::new(actor.point));
+            self.groups.push(Group::new(actor.point, kind));
             self.groups.len() - 1
         });
         let group = &mut self.groups[index];
@@ -152,17 +154,23 @@ impl BattleSignals {
 
     /// Returns the independent local audio alert, which is throttled across groups.
     pub(crate) fn hit(&mut self, local: u8, victim: Actor, origin: Option<Actor>, killed: bool) -> bool {
-        let (group, first) = self.observe(victim, true);
+        self.record(local, victim, origin, killed, 2)
+    }
+
+    pub(crate) fn hit_capture(&mut self, local: u8, victim: Actor, origin: Actor, killed: bool) -> bool {
+        self.record(local, victim, Some(origin), killed, 3)
+    }
+
+    fn record(&mut self, local: u8, victim: Actor, origin: Option<Actor>, killed: bool, kind: u32) -> bool {
+        let (group, first) = self.observe(victim, true, kind);
         if killed {
             self.groups[group].seats[victim.seat].members.retain(|member| member.handle != victim.handle);
         }
-        let victim_point = self.groups[group].point;
-        let point = origin.map_or(victim_point, |attacker| {
-            let (group, _) = self.observe(attacker, false);
-            self.groups[group].point
+        let group = origin.map_or(group, |attacker| {
+            self.observe(attacker, false, self.groups[group].kind).0
         });
         if victim.seat != usize::from(local) { return false; }
-        if first { self.pending.push_back(point); }
+        if first { self.pending.push_back((self.groups[group].point, self.groups[group].kind)); }
         if self.warning > 0.0 { return false; }
         self.warning = WARNING_SECONDS;
         true
@@ -179,9 +187,9 @@ impl BattleSignals {
             if marker.remaining > 0.0 { marker.remaining -= elapsed; }
         }
         if self.marker_wait > 0.0 { return; }
-        let Some(point) = self.pending.pop_front() else { return; };
+        let Some((point, kind)) = self.pending.pop_front() else { return; };
         if self.markers.len() == MARKER_LIMIT { self.markers.remove(0); }
-        self.markers.push(Marker { id: self.marker_id, point, remaining: MARKER_SECONDS });
+        self.markers.push(Marker { id: self.marker_id, point, remaining: MARKER_SECONDS, kind });
         self.marker_wait = MARKER_GAP_SECONDS;
         self.marker_id = self.marker_id.wrapping_add(1);
         self.cycle_index = self.markers.len() - 1;
@@ -210,6 +218,9 @@ pub extern "C" fn battle_signal_ptr() -> *const u32 {
 }
 
 #[no_mangle]
+pub extern "C" fn battle_signal_stride() -> u32 { core::mem::size_of::<Marker>() as u32 }
+
+#[no_mangle]
 pub extern "C" fn battle_signal_cycle() -> *const f32 {
     crate::g().battle_signals.as_mut().and_then(BattleSignals::cycle).map_or(core::ptr::null(), |point| point.as_ptr())
 }
@@ -231,7 +242,7 @@ mod tests {
         assert!(battle.pending.is_empty());
         assert!(battle.hit(0, victim, Some(attacker), false));
         assert!(!battle.hit(0, victim, Some(attacker), false));
-        assert_eq!(battle.pending.iter().copied().collect::<Vec<_>>(), [[30.0, 40.0]]);
+        assert_eq!(battle.pending.iter().copied().collect::<Vec<_>>(), [([30.0, 40.0], 2)]);
         assert_eq!(battle.groups.len(), 2);
         battle.update_groups(39.0, &[]);
         assert!(!battle.hit(0, victim, None, false));
@@ -262,16 +273,16 @@ mod tests {
         let first = actor(0x10000, 0, [100.0, 100.0]);
         let boundary = actor(0x10001, 1, [110.0, 110.0]);
         let overlap = actor(0x10002, 2, [105.0, 105.0]);
-        assert_eq!(battle.observe(first, false), (0, false));
-        assert_eq!(battle.observe(boundary, false), (1, false));
-        assert_eq!(battle.observe(overlap, true), (1, true));
-        assert_eq!(battle.observe(Actor { point: [108.0, 108.0], ..first }, true), (0, true));
+        assert_eq!(battle.observe(first, false, 2), (0, false));
+        assert_eq!(battle.observe(boundary, false, 2), (1, false));
+        assert_eq!(battle.observe(overlap, true, 2), (1, true));
+        assert_eq!(battle.observe(Actor { point: [108.0, 108.0], ..first }, true, 2), (0, true));
     }
 
     #[test]
     fn marker_queue_keeps_ten_and_cycles_newest_first_even_after_expiry() {
         let mut battle = BattleSignals::default();
-        battle.pending.extend((0..12).map(|id| [id as f32, 8.0]));
+        battle.pending.extend((0..12).map(|id| ([id as f32, 8.0], 2)));
         battle.update_markers(0.0);
         assert_eq!(battle.markers.len(), 1);
         battle.update_markers(4.0);

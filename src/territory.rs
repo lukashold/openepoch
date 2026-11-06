@@ -317,6 +317,8 @@ impl Game {
             }
         }
         for &(i, new_team) in &objects {
+            #[cfg(feature = "ee2-native13")]
+            { self.forget_capture_actor(i); self.mark_capture_gift(i); }
             #[cfg(feature="ee2-reference")]
             self.sync_city_ground_entry(i);
             let old = self.ents[i];
@@ -379,6 +381,8 @@ impl Game {
             }
         }
         self.cancel_nonhostile_orders();
+        #[cfg(feature = "ee2-native13")]
+        self.reconcile_capture_orders();
         self.build_grid();
         self.refresh_match_alive();
         self.void_landless_alliances();

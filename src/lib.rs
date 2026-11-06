@@ -7,6 +7,8 @@
 mod ai;
 #[cfg(feature = "ee2-native13")]
 mod battle_signals;
+#[cfg(feature = "ee2-native13")]
+mod capture_math25;
 #[cfg(feature = "ee2-ai9-planner-probe")]
 pub mod ai9_count;
 #[cfg(feature = "ee2-ai9-game-bridge")]
@@ -725,6 +727,48 @@ pub extern "C" fn sel_center(axis: u32) -> f32 {
 }
 
 // ---- commands: resolved here against what the player sees, then submitted --
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn capture_configure_peer(enabled: u32) -> u32 {
+    u32::from(enabled <= 1 && g().configure_peer_capture(enabled != 0))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn capture_selection_count() -> u32 {
+    let game = g();
+    selected(game).into_iter().filter(|&index| game.capture_actor_ready(index)).count() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn capture_target_at(x: f32, y: f32) -> u32 {
+    if !x.is_finite() || !y.is_finite() { return 0; }
+    let game = g();
+    let target = pick(game, x, y, false);
+    u32::from(target != NOIDX && game.capture_allowed(game.local, target))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn cmd_capture_at(x: f32, y: f32) -> u32 {
+    if capture_target_at(x, y) == 0 { return 0; }
+    let game = g();
+    let target = game.h(pick(game, x, y, false));
+    let ids: Vec<_> = selected(game).into_iter().filter(|&index| game.capture_actor_ready(index)).collect();
+    if ids.is_empty() { return 0; }
+    let hs = handles(game, &ids);
+    game.submit(C_CAPTURE, 0.0, 0.0, target as i32, &hs);
+    hs.len() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn capture_progress(handle: u32) -> f32 {
+    let game = g();
+    game.get(handle).filter(|&index| game.can_see(game.local, index)).and_then(|index| game.capture_progress(index)).unwrap_or(-1.0)
+}
 
 /// Right click: attack / gather / build / board / unload / move / set rally.
 #[no_mangle]

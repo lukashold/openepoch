@@ -27,6 +27,7 @@ pub const C_DIPLOMACY:u8=14;
 pub const C_TERRITORY:u8=15;
 pub const C_PLACE_ROTATED:u8=16;
 #[cfg(feature="ee2-pack8")]pub const C_PACK:u8=17;
+#[cfg(feature="ee2-native13")]pub const C_CAPTURE:u8=18;
 
 const HEAD: usize = 14; // kind, count, a, b, c
 
@@ -112,6 +113,12 @@ impl Game {
                     self.order_attack(&ids, j);
                 }
             }
+            #[cfg(feature = "ee2-native13")]
+            C_CAPTURE => {
+                if a == 0.0 && b == 0.0 {
+                    if let Some(j) = target { self.order_capture(&ids, j); }
+                }
+            }
             C_WORK => {
                 if let Some(j) = target.filter(|&j| self.ents[j].team == team && DEFS[self.ents[j].def as usize].building) {
                     self.order_building(&ids, j);
@@ -159,7 +166,7 @@ impl Game {
                 for &i in &ids {
                     city |= self.ents[i].def == TC;
                     #[cfg(feature = "ee2-native13")]
-                    self.retire_city_name(i);
+                    { self.retire_city_name(i); self.forget_capture_actor(i); }
                     self.ents[i].hp = 0.0;
                 }
                 if city{self.rebuild_territories();self.void_landless_alliances();}
@@ -167,6 +174,8 @@ impl Game {
             }
             _ => {}
         }
+        #[cfg(feature = "ee2-native13")]
+        self.reconcile_capture_orders();
         #[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
         self.recount_paid_players();
     }

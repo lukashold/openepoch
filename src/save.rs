@@ -86,10 +86,14 @@ impl Game {
         { b = crate::city_names22::wrap(b, self.city_names.as_ref()); }
         #[cfg(feature="ee2-native13")]
         { b = crate::city_memory23::wrap(b, self.city_memory.as_ref()); }
+        #[cfg(feature="ee2-native13")]
+        { b = self.wrap_capture_save(b); }
         self.savebuf = b;
     }
 
     pub fn load(buf: &[u8]) -> Option<Game> {
+        #[cfg(feature="ee2-native13")]
+        let (buf, capture) = split_capture_save(buf)?;
         #[cfg(feature="ee2-native13")]
         let (buf, city_memory) = crate::city_memory23::split(buf)?;
         #[cfg(feature="ee2-native13")]
@@ -342,6 +346,8 @@ impl Game {
         if let Some(memory) = city_memory {
             g.restore_city_memory(memory)?;
         }
+        #[cfg(feature="ee2-native13")]
+        g.restore_capture_save(capture)?;
         Some(g)
     }
 }

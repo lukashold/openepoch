@@ -66,6 +66,10 @@ pub const ACT_COMBAT: f32 = 6.0;
 impl Game {
     fn render_activity(&self, e: &Ent, d: &Def, speed: f32) -> (f32, f32) {
         if speed > 0.25 { return (ACT_WALK, e.rot); }
+        #[cfg(feature = "ee2-native13")]
+        if e.order == O_CAPTURE && e.cd > 0.0 {
+            return (ACT_COMBAT, e.rot);
+        }
         if cfg!(feature="ee2-reference")&&d.has(F_WORKER)&&e.order==O_GATHER&&e.q[1]==1{return (ACT_IDLE,e.rot);}
         if d.has(F_WORKER) && e.order == O_GATHER {
             let (tx, ty, reach) = if let Some(j) = self.get(e.otgt) {
@@ -245,6 +249,13 @@ impl Game {
             if e.sel || (e.hp < maxhp && !far) {
                 let w = (d.rad() * 2.0).clamp(0.8, 3.0);
                 put(&mut o, x, y, alt + top, 0.0, S_BAR, team, (e.hp / maxhp).clamp(0.0, 1.0), FL_NOFOG, w);
+            }
+            #[cfg(feature = "ee2-native13")]
+            if d.building && !far && self.can_see(me, i) {
+                if let Some(progress) = self.capture_progress(i) {
+                    let width = (d.rad() * 2.0).clamp(0.8, 3.0);
+                    put(&mut o, x, y, alt + top - (0.25_f32 - 0.13_f32), 0.0, S_BAR, 6.0, 1.0 - progress, FL_NOFOG, width);
+                }
             }
             if d.building && e.qn > 0 && e.team == me && !far {
                 put(&mut o, x, y, alt + top + 0.28, 0.0, S_BAR, 7.0, (e.qt / qtime(e.q[0])).clamp(0.0, 1.0), FL_NOFOG, d.size * 0.8);
