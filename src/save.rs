@@ -47,6 +47,8 @@ impl Game {
         let options = options | if self.infantry_roster_enabled { crate::infantry_roster27::SAVE_FLAG } else { 0 };
         #[cfg(feature="ee2-native13")]
         let options = options | if self.production_roster_enabled { crate::production_roster29::SAVE_FLAG } else { 0 };
+        #[cfg(feature="ee2-native13")]
+        let options = options | if self.trade_enabled { crate::game::trade30::SAVE_FLAG } else { 0 };
         for v in [options, self.instant_build as u32, self.tech_points] {
             b.extend_from_slice(&v.to_le_bytes());
         }
@@ -92,10 +94,14 @@ impl Game {
         { b = crate::city_memory23::wrap(b, self.city_memory.as_ref()); }
         #[cfg(feature="ee2-native13")]
         { b = self.wrap_capture_save(b); }
+        #[cfg(feature="ee2-native13")]
+        { b = self.wrap_trade_save(b); }
         self.savebuf = b;
     }
 
     pub fn load(buf: &[u8]) -> Option<Game> {
+        #[cfg(feature="ee2-native13")]
+        let (buf, trade) = crate::game::trade30::split_save(buf)?;
         #[cfg(feature="ee2-native13")]
         let (buf, capture) = split_capture_save(buf)?;
         #[cfg(feature="ee2-native13")]
@@ -108,7 +114,9 @@ impl Game {
         let (buf, regicide) = crate::ee2_regicide::split(buf)?;
         let actor_definition_count = SAVE_DEFINITION_COUNT;
         #[cfg(feature="ee2-native13")]
-        let actor_definition_count = if regicide.is_some() { DEFS.len() } else { actor_definition_count };
+        let actor_definition_count = if regicide.is_some() { crate::ee2_regicide::KING as usize + 1 } else { actor_definition_count };
+        #[cfg(feature="ee2-native13")]
+        let actor_definition_count = if trade.is_some() { DEFS.len() } else { actor_definition_count };
         #[cfg(feature="ee2-native13")]
         let (buf, sole_survivor) = crate::ee2_sole_survivor::split(buf)?;
         #[cfg(feature="ee2-native13")]
@@ -183,11 +191,14 @@ impl Game {
         fill(&mut g.map.amt, take(NN * 2));
         g.vis.copy_from_slice(take(NN));
         let end = H + psz + esz + NN * 5;
+        #[cfg(feature="ee2-native13")]
+        { g.trade_enabled = false; }
         if trailer >= 12 {
             let v = |k| u32::from_le_bytes(buf[end+k..end+k+4].try_into().unwrap());
             let allowed = if cfg!(feature = "ee2-up15") { 7 } else { 1 };
             #[cfg(feature="ee2-native13")]
-            let allowed = allowed | crate::infantry_roster27::SAVE_FLAG | crate::production_roster29::SAVE_FLAG;
+            let allowed = allowed | crate::infantry_roster27::SAVE_FLAG | crate::production_roster29::SAVE_FLAG |
+                crate::game::trade30::SAVE_FLAG;
             let flags = v(0);
             if flags & !allowed != 0 || v(4) > 1 { return None; }
             g.cheats_enabled = flags & 1 != 0;
@@ -197,6 +208,7 @@ impl Game {
             {
                 g.infantry_roster_enabled = flags & crate::infantry_roster27::SAVE_FLAG != 0;
                 g.production_roster_enabled = flags & crate::production_roster29::SAVE_FLAG != 0;
+                g.trade_enabled = flags & crate::game::trade30::SAVE_FLAG != 0;
             }
             g.instant_build = v(4) == 1 && (cfg!(feature = "ee2-up15") || g.cheats_enabled);
             g.tech_points = v(8);
@@ -254,10 +266,18 @@ impl Game {
         for e in &g.ents[..high] {
             if !e.alive {continue;}
             if e.def as usize>=actor_definition_count || e.team as usize>=g.nplayers || e.qn>5 || e.ncargo as usize>CARGO_MAX {return None;}
+            #[cfg(feature="ee2-native13")]
+            if regicide.is_none() && (e.def == crate::ee2_regicide::KING ||
+                e.cargo[..e.ncargo as usize].contains(&crate::ee2_regicide::KING)) { return None; }
             if !e.x.is_finite()||!e.y.is_finite()||!e.rot.is_finite()||!e.prot.is_finite(){return None;}
             if DEFS[e.def as usize].building{let(tx,ty,side)=Game::building_bounds(e);if tx<0||ty<0||tx+side>N as i32||ty+side>N as i32{return None;}}
             if e.cargo[..e.ncargo as usize].iter().any(|&c| c as usize>=actor_definition_count) {return None;}
-            if DEFS[e.def as usize].building && e.q[..e.qn as usize].iter().any(|&q| q!=RESEARCH && !original_research(q) && q as usize>=SAVE_DEFINITION_COUNT && (q<TECH0 || (q-TECH0) as usize>=TECHS.len())) {return None;}
+            if DEFS[e.def as usize].building && e.q[..e.qn as usize].iter().any(|&q| {
+                #[cfg(feature="ee2-native13")]
+                if trade.is_some() && crate::trade30_defs::is_trader(q as DefId) { return false; }
+                q != RESEARCH && !original_research(q) && q as usize >= SAVE_DEFINITION_COUNT &&
+                    (q < TECH0 || (q - TECH0) as usize >= TECHS.len())
+            }) { return None; }
             #[cfg(feature="ee2-epoch-range13")]
             if g.final_epoch < MAX_EPOCH && DEFS[e.def as usize].building &&
                 g.players[e.team as usize].epoch == g.final_epoch && e.q[..e.qn as usize].contains(&RESEARCH) {
@@ -320,6 +340,8 @@ impl Game {
             for k in 0..32{let h=g.territory.claims[k];if h==NONE{continue;}let i=g.get(h)?;let e=g.ents[i];if k>=g.map.tseeds.len()||e.def!=TC||e.hp<=0.0||g.map.terr[tile_of(e.x,e.y)] as usize!=k{return None;}}
         }
         if cfg!(feature="ee2-reference") && u(3)<57 {g.seed_legacy_territory_claims();}
+        #[cfg(feature="ee2-native13")]
+        g.restore_trade_save(trade)?;
         g.build_grid();
         if has_territory&&!g.validate_territory_state(){return None;}
         if !has_diplomacy {

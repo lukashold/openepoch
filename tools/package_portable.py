@@ -141,6 +141,13 @@ def main(project=None, overlay_paths=None):
     if 'production-visuals/manifest.json' in main_source:
         required.update({'docs/local-original/production-visuals/manifest.json',
                          'docs/local-original/production-visuals/team-manifest.json'})
+    if 'loadTradePresentation' in main_source:
+        required.update({'docs/original-trade-presentation.js', 'docs/trade-route.js',
+                         'docs/local-original/trade-presentation/manifest.json',
+                         'docs/local-original/trade-presentation/team-manifest.json',
+                         'docs/local-original/trade-presentation/sail-manifest.json',
+                         'docs/local-original/audio/native-families-trade-presentation.json',
+                         'docs/local-original/trade-route/manifest.json'})
     if 'manifest-stone-thrower-up.json' in main_source:
         required.add('docs/local-original/audio/manifest-stone-thrower-up.json')
     if 'mountSkirmishMenu' in main_source:

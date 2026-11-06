@@ -15,6 +15,14 @@ mod capture_math25;
 mod infantry_roster27;
 #[cfg(feature = "ee2-native13")]
 mod production_roster29;
+#[cfg(feature = "ee2-native13")]
+mod trade30_defs;
+#[cfg(feature = "ee2-native13")]
+mod trade30_credit;
+#[cfg(feature = "ee2-native13")]
+mod trade30_queue;
+#[cfg(feature = "ee2-native13")]
+mod trade30_quote;
 #[cfg(feature = "ee2-ai9-planner-probe")]
 pub mod ai9_count;
 #[cfg(feature = "ee2-ai9-game-bridge")]
@@ -576,12 +584,16 @@ fn seen_ent(g: &Game, e: &Ent, d: &Def) -> (f32, f32) {
 
 /// Entity under the cursor that the player can see. `(x, y)` is a point on the terrain.
 fn pick(g: &Game, x: f32, y: f32, own: bool) -> usize {
+    pick_where(g, x, y, |_, e| !own || e.team == g.local)
+}
+
+fn pick_where(g: &Game, x: f32, y: f32, allowed: impl Fn(usize, &Ent) -> bool) -> usize {
     let (x, y) = seen_at(g, x, y, g.map.height(x, y).max(0.0));
     let mut best = NOIDX;
     let mut bd = f32::MAX;
     for i in 0..g.high {
         let e = &g.ents[i];
-        if !e.alive || (own && e.team != g.local) || !g.visible(i) {
+        if !e.alive || !allowed(i, e) || !g.visible(i) {
             continue;
         }
         let d = &DEFS[e.def as usize];
@@ -629,6 +641,8 @@ pub extern "C" fn select_quad(ax: f32, ay: f32, bx: f32, by: f32, cx: f32, cy: f
         for i in 0..g.high {
             let e = &g.ents[i];
             let d = &DEFS[e.def as usize];
+            #[cfg(feature = "ee2-native13")]
+            if g.trade_hidden(i, e) { continue; }
             if e.alive && e.team == me && !d.building && (pass == 1 || !d.has(F_WORKER)) {
                 let (sx, sy) = seen_ent(g, e, d);
                 if inside(sx, sy) {
@@ -656,7 +670,10 @@ pub extern "C" fn select_point(x: f32, y: f32, add: u32, same: u32, vx0: f32, vy
     }
     if same != 0 {
         let (def, me) = (g.ents[i].def, g.local);
-        for e in g.ents[..g.high].iter_mut() {
+        for index in 0..g.high {
+            #[cfg(feature = "ee2-native13")]
+            if g.trade_hidden(index, &g.ents[index]) { continue; }
+            let e = &mut g.ents[index];
             if e.alive && e.team == me && e.def == def && e.x >= vx0 && e.x <= vx1 && e.y >= vy0 && e.y <= vy1 {
                 e.sel = true;
             }
@@ -766,6 +783,50 @@ pub extern "C" fn production_roster_configure_peer(enabled: u32) -> u32 {
 
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
+pub extern "C" fn trade_route_configure_peer(enabled: u32) -> u32 {
+    u32::from(enabled <= 1 && g().configure_peer_trade_route(enabled != 0))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn trade_selected_count() -> u32 {
+    let game = g();
+    selected(game).into_iter().filter(|&i| game.trade_actor_ready(i)).count() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn trade_home_valid(home: u32) -> u32 {
+    let game = g();
+    u32::from(game.get(home).is_some_and(|i| game.trade_host_for_selection(i, NONE, &selected(game))))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn trade_endpoint_at(x: f32, y: f32, home: u32) -> u32 {
+    if !x.is_finite() || !y.is_finite() { return NONE; }
+    let game = g();
+    if !game.trade_enabled { return NONE; }
+    let selection = selected(game);
+    let endpoint = pick_where(game, x, y, |index, e| {
+        matches!(e.def, MARKET | DOCK) && game.trade_host_for_selection(index, home, &selection)
+    });
+    if endpoint == NOIDX { NONE } else { game.h(endpoint) }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn cmd_trade_route(home: u32, destination: u32) -> u32 {
+    let game = g();
+    let ids = game.trade_candidates(game.local, home, destination, &selected(game));
+    if ids.is_empty() { return 0; }
+    let hs = handles(game, &ids);
+    game.submit(C_TRADE_ROUTE, (home & 0xffff) as f32, (home >> 16) as f32, destination as i32, &hs);
+    hs.len() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
 pub extern "C" fn capture_animation_request(handle: u32) -> u32 {
     g().capture_animation_pose(handle).map_or(0, |pose| pose.request())
 }
@@ -831,22 +892,37 @@ pub extern "C" fn active_capture_glow(handle: u32) -> u32 {
 pub extern "C" fn cmd_context(x: f32, y: f32, attack_move: u32) {
     let g = g();
     let ids = selected(g);
+    #[cfg(feature = "ee2-native13")]
+    let mut ids = ids;
     if ids.is_empty() {
         return;
     }
-    let all = handles(g, &ids);
     if DEFS[g.ents[ids[0]].def as usize].building {
+        let all = handles(g, &ids);
         g.submit(C_RALLY, x, y, 0, &all);
         return;
     }
     if attack_move != 0 {
+        let all = handles(g, &ids);
         g.submit(C_AMOVE, x, y, 0, &all);
         return;
     }
+    let j = pick(g, x, y, false);
+    #[cfg(feature = "ee2-native13")]
+    if j != NOIDX && matches!(g.ents[j].def, MARKET | DOCK) {
+        let target = g.h(j);
+        let chosen = g.trade_automatic_choices(g.local, target, &ids);
+        if !chosen.is_empty() {
+            let hs: Vec<_> = chosen.iter().map(|&(index, _)| g.h(index)).collect();
+            g.submit(C_TRADE_ROUTE, 65535.0, 65535.0, target as i32, &hs);
+            ids.retain(|index| chosen.binary_search_by_key(index, |&(actor, _)| actor).is_err());
+            if ids.is_empty() { return; }
+        }
+    }
+    let all = handles(g, &ids);
     let part = |g: &Game, f: &dyn Fn(&Ent, &Def) -> bool| -> Vec<u32> { ids.iter().copied().filter(|&i| f(&g.ents[i], &DEFS[g.ents[i].def as usize])).map(|i| g.h(i)).collect() };
     let workers = part(g, &|_, d| d.has(F_WORKER));
     let others = part(g, &|_, d| !d.has(F_WORKER));
-    let j = pick(g, x, y, false);
     if j != NOIDX {
         let t = g.ents[j];
         let td = &DEFS[t.def as usize];
@@ -1104,7 +1180,10 @@ pub extern "C" fn research_tree() -> *const u8 {
             let researched=game.has_research(game.local,k); let busy=game.research_busy(game.local,k);
             let host=game.ents[..game.high].iter().any(|e| e.alive && e.team==game.local && e.def==n.host && e.built>=1.0);
             let can=game.ents[..game.high].iter().enumerate().any(|(i,e)| e.alive && e.team==game.local && game.can_train(i,ORIGINAL_RESEARCH0+k as QueueItem));
-            let _=write!(s,"{}{{\"id\":{},\"name\":\"{}\",\"effect\":\"{}\",\"epoch\":{},\"branch\":{},\"host\":\"{}\",\"cost\":{},\"done\":{},\"busy\":{},\"hostBuilt\":{},\"ok\":{}}}",if k>0 {","}else{""},k,n.name,n.note,n.epoch,n.branch,DEFS[n.host as usize].name,n.cost,researched,busy,host,can);
+            let effect = n.note;
+            #[cfg(feature = "ee2-native13")]
+            let effect = if game.trade_enabled { game::trade30::research_note(k).unwrap_or(effect) } else { effect };
+            let _=write!(s,"{}{{\"id\":{},\"name\":\"{}\",\"effect\":\"{}\",\"epoch\":{},\"branch\":{},\"host\":\"{}\",\"cost\":{},\"done\":{},\"busy\":{},\"hostBuilt\":{},\"ok\":{}}}",if k>0 {","}else{""},k,n.name,effect,n.epoch,n.branch,DEFS[n.host as usize].name,n.cost,researched,busy,host,can);
         }
     }
     s.push(']');game.ui=s;game.ui.as_ptr()

@@ -28,6 +28,7 @@ pub const C_TERRITORY:u8=15;
 pub const C_PLACE_ROTATED:u8=16;
 #[cfg(feature="ee2-pack8")]pub const C_PACK:u8=17;
 #[cfg(feature="ee2-native13")]pub const C_CAPTURE:u8=18;
+#[cfg(feature="ee2-native13")]pub const C_TRADE_ROUTE:u8=19;
 
 const HEAD: usize = 14; // kind, count, a, b, c
 
@@ -117,6 +118,13 @@ impl Game {
             C_CAPTURE => {
                 if a == 0.0 && b == 0.0 {
                     if let Some(j) = target { self.order_capture(&ids, j); }
+                }
+            }
+            #[cfg(feature = "ee2-native13")]
+            C_TRADE_ROUTE => {
+                let word = |v: f32| (0.0..=65535.0).contains(&v) && v.fract() == 0.0;
+                if word(a) && word(b) {
+                    self.order_trade_route(team, a as u32 | ((b as u32) << 16), c as u32, &ids);
                 }
             }
             C_WORK => {

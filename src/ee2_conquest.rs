@@ -5,10 +5,10 @@ use crate::game::Game;
 
 include!("ee2_conquest_rows.rs");
 const _: [(); SAVE_DEFINITION_COUNT] = [(); CONQUEST_CAPABLE.len()];
-const _: [(); DEFS.len()] = [(); CONQUEST_CAPABLE.len() + 1];
+const _: [(); DEFS.len()] = [(); CONQUEST_CAPABLE.len() + 3];
 
 fn capable(def: crate::ids::DefId) -> bool {
-    def == crate::ee2_regicide::KING || CONQUEST_CAPABLE[def as usize]
+    def == crate::ee2_regicide::KING || CONQUEST_CAPABLE.get(def as usize).copied().unwrap_or(false)
 }
 
 pub(crate) fn living_seats(game: &Game) -> [bool; 4] {

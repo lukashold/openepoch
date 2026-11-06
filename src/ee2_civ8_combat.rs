@@ -1010,13 +1010,23 @@ const ADJUSTMENTS:[(u32,u16);516]=[
 ];
 #[inline] pub fn profile(id:DefId,epoch:u8)->u16 {
  #[cfg(feature="ee2-native13")]
- if id == crate::ee2_regicide::KING && epoch < 15 { return PROFILES.len() as u16; }
+ if epoch < 15 {
+  let index = PROFILES.len() as u16;
+  match id {
+   crate::ee2_regicide::KING => return index,
+   crate::trade30_defs::TRADE_CART if epoch >= 1 => return index + 1,
+   crate::trade30_defs::MERCHANT_SHIP => return index + 2,
+   _ => {}
+  }
+ }
  PROFILE_BY_DEF_EPOCH.get(id as usize).and_then(|row|row.get(epoch as usize)).copied().unwrap_or(UNKNOWN_PROFILE)
 }
 #[inline] fn resolve_profile(index:u16)->Option<CombatProfile> {
  #[cfg(feature="ee2-native13")]
- if index as usize == PROFILES.len() {
-  return Some(CombatProfile{rps:34,upgrade:65535}); // KingRegicide, SpecialForces
+ if let Some(extra) = (index as usize).checked_sub(PROFILES.len()) {
+  // Cart uses LandNonCombat and MerchantShip inherits SeaNonCombat.
+  // The current roster has no Sniper, the only explicit TradeCart pair override.
+  return [34, 11, 31].get(extra).map(|&rps| CombatProfile { rps, upgrade: 65535 });
  }
  PROFILES.get(index as usize).copied()
 }

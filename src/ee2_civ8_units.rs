@@ -521,6 +521,8 @@ pub fn lookup(id:DefId,epoch:u8)->Option<&'static UnitRow>{
 }
 /// Complete declared progression of the bound source class, not a claim of visual equivalence.
 pub fn lookup_class(id:DefId,epoch:u8)->Option<&'static UnitRow>{
+ #[cfg(feature="ee2-native13")]
+ if crate::trade30_defs::is_trader(id) { return crate::trade30_defs::lookup(id,epoch); }
  CLASS_ROWS.iter().find(|row|row.id==id && epoch>=row.epoch && epoch<row.until)
 }
 /// Zero-based native production-node epoch. This is separate from the bound visual variant epoch.

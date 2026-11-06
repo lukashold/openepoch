@@ -19,16 +19,35 @@ export function createOriginalAudio(options={}) {
   let regionalMusicEnabled=!!options.regionalMusic, regionalMusic=null;
   let playbackManifestURL='manifest.json';
   let familyManifest=options.familyManifest||null,familyManifestURL=options.familyManifestURL||'native-families.json',definitionSettings={wasm:null,bindings:[]},typed=createTypedAudioBindings({familyManifest});
+  let additionalFamilyManifest=null,selectedFamilyManifest=familyManifest;
+  function bindFamilies() {
+    selectedFamilyManifest=familyManifest;
+    try { typed=createTypedAudioBindings({...definitionSettings,familyManifest}); }
+    catch { familyManifest=selectedFamilyManifest=null;typed=createTypedAudioBindings(definitionSettings); }
+    if(!additionalFamilyManifest)return;
+    try{
+      if(additionalFamilyManifest.format!=='ee2-native-family-audio-v1')return;
+      const combined={...additionalFamilyManifest};
+      for(const key of ['families','events','assets']){
+        const inherited=familyManifest?.[key]||{},added=additionalFamilyManifest[key]||{};
+        if(Object.keys(added).some(name=>Object.hasOwn(inherited,name)))return;
+        combined[key]={...inherited,...added};
+      }
+      typed=createTypedAudioBindings({...definitionSettings,familyManifest:combined});
+      selectedFamilyManifest=combined;
+    }catch{/* A missing or inconsistent optional family keeps existing voices. */}
+  }
   function setDefinitionBindings({wasm=null,bindings=[],familyManifestURL:url=familyManifestURL,
     citizenPresentation:citizens=citizenPresentation,regionalMusic:useRegionalMusic=regionalMusicEnabled,
-    playbackManifestURL:playbackURL=playbackManifestURL}={}) {
+    playbackManifestURL:playbackURL=playbackManifestURL,additionalFamilyManifest:additional=null}={}) {
     if(url!==familyManifestURL){familyManifest=null;familyManifestURL=url;}
     citizenPresentation=citizens;
     regionalMusicEnabled=useRegionalMusic;
     playbackManifestURL=playbackURL;
     if (!regionalMusicEnabled) regionalMusic?.reset();
     definitionSettings={wasm,bindings};
-    typed=createTypedAudioBindings({...definitionSettings,familyManifest});
+    additionalFamilyManifest=additional;
+    bindFamilies();
     if(manifest)prepareFamilyBindings();
   }
   const stats={voicePlays:0,effectPlays:0,musicStarts:0,ambientStarts:0};
@@ -37,7 +56,7 @@ export function createOriginalAudio(options={}) {
     if(!file||!ctx||failed.has(file))return Promise.resolve(null);
     if(buffers.has(file))return Promise.resolve(buffers.get(file));
     if(pending.has(file))return pending.get(file);
-    const url=new URL(file,base),hash=manifest?.assets?.[file.toLowerCase()]?.sha256||familyManifest?.assets?.[file]?.sha256||citizenPresentation?.assetHash(file);
+    const url=new URL(file,base),hash=manifest?.assets?.[file.toLowerCase()]?.sha256||selectedFamilyManifest?.assets?.[file]?.sha256||citizenPresentation?.assetHash(file);
     if(hash)url.searchParams.set('v',hash.slice(0,16));
     const p=fetchFile(url,{cache:'force-cache'})
       .then(r=>{if(!r.ok)throw Error('Original audio unavailable');return r.arrayBuffer();})
@@ -160,7 +179,7 @@ export function createOriginalAudio(options={}) {
   }
   async function prepareFamilyBindings(){
     if(!familyManifest){try{const response=await fetchFile(new URL(familyManifestURL,base),{cache:'no-cache'});if(response.ok)familyManifest=await response.json();}catch{}}
-    try{typed=createTypedAudioBindings({...definitionSettings,familyManifest});}catch{familyManifest=null;typed=createTypedAudioBindings(definitionSettings);}
+    bindFamilies();
     for(const file of [...typed.usedFiles(),...(citizenPresentation?.usedFiles()||[])])load(file);
   }
   async function prepare(context,destination) {

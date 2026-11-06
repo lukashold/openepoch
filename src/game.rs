@@ -11,6 +11,9 @@ use crate::map::*;
 mod capture25;
 #[cfg(feature = "ee2-native13")]
 pub(crate) use capture25::split_capture_save;
+#[cfg(feature = "ee2-native13")]
+#[path = "trade30.rs"]
+pub(crate) mod trade30;
 #[cfg(all(test,feature="ee2-reference"))]
 #[path="fortress_tests.rs"]
 mod fortress_tests;
@@ -218,6 +221,10 @@ pub struct Game {
     pub(crate) infantry_roster_enabled: bool,
     #[cfg(feature="ee2-native13")]
     pub(crate) production_roster_enabled: bool,
+    #[cfg(feature="ee2-native13")]
+    pub(crate) trade_enabled: bool,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) trade: trade30::State,
     pub fx: Vec<Fx>,
     pub players: [Player; 4],
     // Kept outside Player so existing repr(C) saves retain their layout.
@@ -333,6 +340,10 @@ impl Game {
             infantry_roster_enabled: humans == 1 && bench == 0,
             #[cfg(feature="ee2-native13")]
             production_roster_enabled: humans == 1 && bench == 0,
+            #[cfg(feature="ee2-native13")]
+            trade_enabled: humans == 1 && bench == 0,
+            #[cfg(feature = "ee2-native13")]
+            trade: trade30::State::default(),
             fx: Vec::with_capacity(1024),
             players: [Player::default(); 4],
             extra_resources: [[0.0;6];4],
@@ -494,6 +505,8 @@ impl Game {
 
     fn kill(&mut self, i: usize) {
         #[cfg(feature = "ee2-native13")]
+        self.trade_interrupt(i);
+        #[cfg(feature = "ee2-native13")]
         self.forget_capture_actor(i);
         #[cfg(feature = "ee2-native13")]
         self.retire_city_name(i);
@@ -547,10 +560,14 @@ impl Game {
     }
     #[inline]
     pub fn can_see(&self, team:u8, j:usize)->bool {
+        #[cfg(feature = "ee2-native13")]
+        if self.trade_hidden(j, &self.ents[j]) { return false; }
         let t=&self.ents[j];t.team==team||(self.real_fog(team,tile_of(t.x,t.y))==255&&self.detected(team,j))
     }
     /// Display visibility deliberately differs from combat visibility.
     pub fn visible(&self,j:usize)->bool {
+        #[cfg(feature = "ee2-native13")]
+        if self.trade_hidden(j, &self.ents[j]) { return false; }
         let t=&self.ents[j];if t.team==self.local{return true;}
         let need=if DEFS[t.def as usize].building{128}else{255};
         (if self.display_visibility()<2{self.real_fog(self.local,tile_of(t.x,t.y))}else{255})>=need&&self.detected(self.local,j)
@@ -571,6 +588,8 @@ impl Game {
 
     /// Would `train(b, def)` succeed right now?
     pub(crate) fn unit_production_available(&self, team: u8, host: DefId, unit: DefId) -> bool {
+        #[cfg(feature="ee2-native13")]
+        if crate::trade30_defs::is_trader(unit) && !self.trade_enabled { return false; }
         #[cfg(feature="ee2-native13")]
         if let Some(available) = self.source_infantry_offer(team, unit) {
             return host == BARRACKS && available;
@@ -716,6 +735,8 @@ impl Game {
         let ks = self.key_for(SEA, x, y);
         let mut k = 0.0f32;
         for &i in ids {
+            #[cfg(feature = "ee2-native13")]
+            self.trade_interrupt(i);
             let e = &mut self.ents[i];
             let d = &DEFS[e.def as usize];
             if d.building || !e.alive {
@@ -823,11 +844,14 @@ impl Game {
         let mut first = None;
         for &i in ids {
             if t.def==FORTRESS && self.fortress_slot_cost(t.team,self.ents[i].def).is_none() {continue;}
-            let e = &mut self.ents[i];
+            let e = &self.ents[i];
             let d = &DEFS[e.def as usize];
             if d.building || d.dom != LAND || e.team != t.team || (research && !d.has(F_WORKER)) {
                 continue;
             }
+            #[cfg(feature = "ee2-native13")]
+            self.trade_interrupt(i);
+            let e = &mut self.ents[i];
             e.order = O_BOARD;
             e.otgt = h;
             #[cfg(feature="ee2-up15")]
@@ -989,6 +1013,8 @@ impl Game {
         if self.infantry_roster_enabled { mix(u32::from_le_bytes(*b"INF1")); }
         #[cfg(feature = "ee2-native13")]
         if self.production_roster_enabled { mix(u32::from_le_bytes(*b"PRD1")); }
+        #[cfg(feature = "ee2-native13")]
+        if self.trade_enabled { self.trade.hash(&mut mix); }
         #[cfg(feature="ee2-civ8")]
         if self.civilizations.iter().any(|&c|c!=crate::civ8_runtime::LEGACY_NEUTRAL){
             mix(0x38564943);for c in self.civilizations{mix(c as u32);}
@@ -1063,6 +1089,8 @@ impl Game {
 
     pub fn order_stop(&mut self, ids: &[usize]) {
         for &i in ids {
+            #[cfg(feature = "ee2-native13")]
+            self.trade_interrupt(i);
             #[cfg(feature="ee2-pack8")] self.pack_interrupt(i);
             self.native_stop_attack(i);
             let e = &mut self.ents[i];
@@ -1092,6 +1120,8 @@ impl Game {
         if self.bench==0{self.update_territory_diplomacy();}
         for i in 0..self.high {
             if self.ents[i].alive {
+                #[cfg(feature = "ee2-native13")]
+                if self.trade_hidden(i, &self.ents[i]) { continue; }
                 self.update_ent(i);
             }
         }
@@ -1112,6 +1142,8 @@ impl Game {
                 deaths=true;city_death|=self.ents[i].def==TC;self.kill(i);
             }
         }
+        #[cfg(feature = "ee2-native13")]
+        self.tick_trade();
         if city_death{self.rebuild_territories();self.void_landless_alliances();}
         #[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
         self.recount_paid_players();
@@ -1223,12 +1255,20 @@ impl Game {
         let mut cap = [0u32; 4];
         let mut bld = [0u32; 4];
         let mut n = 0;
-        for e in &self.ents[..self.high] {
+        let mut alive = 0;
+        for (index, e) in self.ents[..self.high].iter().enumerate() {
             if !e.alive {
                 continue;
             }
-            n += 1;
-            g.start[cell_of(e.x, e.y) + 1] += 1;
+            alive += 1;
+            #[cfg(feature = "ee2-native13")]
+            let spatial = !self.trade.is_hidden(index, e);
+            #[cfg(not(feature = "ee2-native13"))]
+            let spatial = { let _ = index; true };
+            if spatial {
+                n += 1;
+                g.start[cell_of(e.x, e.y) + 1] += 1;
+            }
             let d = &DEFS[e.def as usize];
             let t = e.team as usize;
             pop[t] += crate::economy::population(e.def,self.players[t].epoch);
@@ -1247,7 +1287,7 @@ impl Game {
                 }
             }
         }
-        self.sim_units = n;
+        self.sim_units = alive;
         for c in 0..GC * GC {
             g.start[c + 1] += g.start[c];
             g.cursor[c] = g.start[c];
@@ -1256,6 +1296,8 @@ impl Game {
         g.items.resize(n as usize, 0);
         for (i, e) in self.ents[..self.high].iter().enumerate() {
             if e.alive {
+                #[cfg(feature = "ee2-native13")]
+                if self.trade.is_hidden(i, e) { continue; }
                 let c = cell_of(e.x, e.y);
                 g.items[g.cursor[c] as usize] = i as u16;
                 g.cursor[c] += 1;
@@ -2223,6 +2265,8 @@ impl Game {
             if !e.alive {
                 continue;
             }
+            #[cfg(feature = "ee2-native13")]
+            if self.trade_hidden(i, e) { continue; }
             let d = &DEFS[e.def as usize];
             if d.building || d.has(F_PLANE) {
                 continue;
@@ -2295,10 +2339,12 @@ impl Game {
                 *v = 128;
             }
         }
-        for e in &self.ents[..self.high] {
+        for (_index, e) in self.ents[..self.high].iter().enumerate() {
             if !e.alive {
                 continue;
             }
+            #[cfg(feature = "ee2-native13")]
+            if self.trade_hidden(_index, e) { continue; }
             let r = self.modifiers[e.team as usize][e.def as usize][5];
             let (cx, cy) = (e.x as i32, e.y as i32);
             let ri = r as i32;
@@ -2351,8 +2397,12 @@ impl Game {
                 }
                 // pick a random late-game unit of the matching domain
                 let mut def = 0 as DefId;
+                #[cfg(feature="ee2-native13")]
+                let benchmark_definitions = crate::ee2_regicide::KING as u32 + 1;
+                #[cfg(not(feature="ee2-native13"))]
+                let benchmark_definitions = DEFS.len() as u32;
                 for _ in 0..40 {
-                    let k = WORKER as u32 + 1 + self.rng.range(DEFS.len() as u32 - WORKER as u32 - 1);
+                    let k = WORKER as u32 + 1 + self.rng.range(benchmark_definitions - WORKER as u32 - 1);
                     let dd = &DEFS[k as usize];
                     let dom = if dd.dom == SUB { SEA } else { dd.dom };
                     if dom == want && dd.epoch >= 4 {

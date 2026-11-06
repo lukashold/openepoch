@@ -355,6 +355,8 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    productionStatus.manifestAvailable=true;
   }catch(error){productionStatus.errors.push(error.message);}}
  }
+ const tradePresentation=options.tradePresentation;
+ const tradeEntries=tradePresentation?.modelRows?.map(row=>({...row,tradePresentation:true}))||[];
  const sailStatus={enabled:options.initialSails!==false,manifestAvailable:false,models:0,parts:0,errors:[]},sailErrors=new Set(),sailComposites=new Map();let sailManifest=null,sailShader=null,dynamicSailShader=null;const dynamicBindings=new WeakMap();
  result.initialSails=sailStatus;
  const sailError=message=>{if(!sailErrors.has(message)){sailErrors.add(message);sailStatus.errors.push(message);result.errors.push(message);}};
@@ -380,13 +382,15 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    model={...model,nativeCapture:{clips,contexts:captureBinding.contexts},parts:model.parts.map((part,index)=>({...part,animations:{...part.animations,...animations[index]}}))};
    captureStatus.models++;
   }catch(error){if(!captureStatus.errors.includes(error.message))captureStatus.errors.push(error.message);}}
-  const row=sailManifest?.models?.find(r=>r.source?.sha256===model.source?.sha256&&r.epoch===(entry.epoch??0));if(!row||(!row.effect&&!options.dynamicSails))return model;
+  const tradeSails=entry.tradePresentation&&tradePresentation?.sailManifest;
+  const sourceSails=tradeSails||sailManifest;
+  const row=sourceSails?.models?.find(r=>r.source?.sha256===model.source?.sha256&&r.epoch===(entry.epoch??0));if(!sailStatus.enabled||!row||(!row.effect&&!options.dynamicSails))return model;
   try{
    if(!sailComposites.has(row.url))sailComposites.set(row.url,verifiedModelJSON(row.url,row.sha256));
    const composite=await sailComposites.get(row.url);
-   if(composite.assetKind!==manifestAssetKind(entry)||composite.id!==entry.id||composite.epoch!==(entry.epoch??0))return model;
+   if(composite.assetKind!==manifestAssetKind(entry)||(tradeSails?composite.family!==entry.sourceFamily:composite.id!==entry.id)||composite.epoch!==(entry.epoch??0))return model;
    const augmented=appendInitialSailParts(model,composite);
-   if(options.dynamicSails){try{dynamicBindings.set(augmented,createDynamicSailBinding(model,composite,sailManifest,entry.yawOffset??model.yawOffset??0));}catch(e){sailError(e.message);}}
+   if(options.dynamicSails&&!tradeSails){try{dynamicBindings.set(augmented,createDynamicSailBinding(model,composite,sourceSails,entry.yawOffset??model.yawOffset??0));}catch(e){sailError(e.message);}}
    return augmented;
   }catch(e){sailError(e.message);return model;}
  };
@@ -446,7 +450,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   houseLodModels=houseLodBindings(await json(options.houseLodManifestURL));
   if(options.houseLodProfile!==undefined)result.setHouseLodProfile(options.houseLodProfile);
  }catch(error){houseLodModels.clear();houseLodError(error);}}
- const entries=[...(Array.isArray(manifest.models)?manifest.models:Object.entries(manifest.models||manifest.mapping||{}).map(([id,value])=>typeof value==='string'?{id:+id,url:value}:{id:+id,...value})),...regionalEntries,...citizenEntries];
+ const entries=[...(Array.isArray(manifest.models)?manifest.models:Object.entries(manifest.models||manifest.mapping||{}).map(([id,value])=>typeof value==='string'?{id:+id,url:value}:{id:+id,...value})),...regionalEntries,...citizenEntries,...tradeEntries];
  const loadParts=async (model,keepPickingGeometry=false,modelUrl=null,teamOverride=null)=>{
    const parts=[],selectedSeasonManifest=regionalSeasonManifest.models?.[modelUrl]?regionalSeasonManifest:seasonManifest;
    let sourceSailIndex=0;for(const part of model.parts){
@@ -564,12 +568,13 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
        ||entry.nativeScaleBinding.sourceSha256!==houseBinding.sourceSha256)throw new Error('House LOD scale differs');
     body=await readHouseLodModel(houseBinding,houseBinding.levels[0],import.meta.url);
    }catch(error){houseBinding=null;houseLodError(error);}}
-   const model=await augmentModel(body??await json(modelUrl),{...entry,id}),parts=await loadParts(model,assetKind===1,modelUrl);
+   const model=await augmentModel(body??await (entry.tradePresentation?verifiedModelJSON(modelUrl,entry.sha256,'Original trade model'):json(modelUrl)),{...entry,id}),parts=await loadParts(model,assetKind===1,modelUrl,entry.tradePresentation?tradePresentation.teamManifest:null);
    if(!parts.length)continue;
    const scaleKey=(entry.assetKind===undefined?'':assetKind+':')+id+':'+(entry.epoch??0),sea=assetKind===0&&((id>=29&&id<=36)||id===42||id===45),transform=nativeModelTransform(model,entry.regionalCivilizations?entry.nativeScaleBinding:scales.variants?.[scaleKey]);
    const yOffset=!transform.native&&sea?-(model.normalization?.offset?.[1]||0)*(model.normalization?.scale||1):0;
    const variant={sourceId:id,assetKind,scaleKey,epoch:entry.epoch??0,until:entry.until,regionalCivilizations:entry.regionalCivilizations,regionalFallback:entry.regionalFallback===true,sourceIdentity:entry.sourceIdentity,region:entry.region,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),nativeAttackClock:entry.nativeAttackClock===true,yOffset,originOffset:transform.originOffset,nativeScale:transform.native?transform.scale:null,yawOffset:entry.yawOffset??model.yawOffset??0,farUrl:entry.lodFarUrl,far:null,farRequested:false,pickBounds:resourceBounds(parts)};
    variant.nativeCapture=model.nativeCapture;
+   if(entry.tradePresentation)variant.tradeEntry=entry;
    if(assetKind===0&&id===22&&entry.verified&&model.databaseVisualBinding?.visualDefinition==='LightArtillery1_01'
       &&entry.epoch===0&&entry.until===2&&entry.source?.sha256===model.source?.sha256){
     // Only clips with the original moving-state KF can start its text-key sound.
@@ -591,6 +596,14 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    if(model.nativeSailComposite){variant.sailComposite=model.nativeSailComposite;sailStatus.models++;}
    for(const {renderId}of bindings){const variants=result.models.get(renderId)||[];variants.push(variant);result.models.set(renderId,variants);result.available.add(renderId);if(assetKind===1)result.resourceRenderIds.add(renderId);}
   }catch(e){result.errors.push(e.message);console.warn('Originalmodell:',entry,e);}
+ }
+ // Trade has no separate legacy original model row. Use procedural fallback
+ // for the whole family if any of its required Near stages are unavailable.
+ for(const id of new Set(tradeEntries.map(entry=>entry.id))){
+  for(const {renderId} of sourceRenderBindings(assetMapping,0,id)){
+   if(result.models.get(renderId)?.filter(variant=>variant.tradeEntry).length===3)continue;
+   result.models.delete(renderId);result.available.delete(renderId);
+  }
  }
  for(const list of result.models.values())list.sort((a,b)=>a.epoch-b.epoch);
  if(result.models.size){
@@ -719,7 +732,9 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     else if(far&&variant.farUrl){
      if(!variant.farRequested){
       variant.farRequested=true;const near=variant;
-      json(near.farUrl).then(model=>augmentModel(model,{id:near.sourceId,assetKind:near.assetKind,epoch:near.epoch},'far')).then(async model=>({model,parts:await loadParts(model,near.assetKind===1,near.farUrl)})).then(({model,parts})=>{near.far={...near,parts,pickBounds:resourceBounds(parts),sailComposite:model.nativeSailComposite,dynamicSailBinding:null,nativeCapture:model.nativeCapture};}).catch(e=>{result.errors.push(e.message);console.warn('Original-Fernmodell:',e);});
+      const trade=near.tradeEntry;
+      const request=trade?verifiedModelJSON(near.farUrl,trade.lodFarSha256,'Original Far trade model'):json(near.farUrl);
+      request.then(model=>augmentModel(model,trade||{id:near.sourceId,assetKind:near.assetKind,epoch:near.epoch},'far')).then(async model=>({model,parts:await loadParts(model,near.assetKind===1,near.farUrl,trade?tradePresentation.teamManifest:null)})).then(({model,parts})=>{near.far={...near,parts,pickBounds:resourceBounds(parts),sailComposite:model.nativeSailComposite,dynamicSailBinding:null,nativeCapture:model.nativeCapture};}).catch(e=>{result.errors.push(e.message);console.warn('Original-Fernmodell:',e);});
      }
      if(variant.far)variant=variant.far;
     }

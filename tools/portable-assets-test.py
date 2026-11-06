@@ -147,10 +147,10 @@ class AssetAudit:
         elif isinstance(value,str) and value.startswith('local-original/'):
             self.ref(value,source,group)
 
-    def check_models(self,manifest_name='local-original/models/manifest.json',stat_prefix=''):
+    def check_models(self,manifest_name='local-original/models/manifest.json',stat_prefix='',models=None):
         self.ref(manifest_name,'original-renderer.js','model-manifest')
         manifest=self.read_json(manifest_name)
-        models=manifest.get('models',[])
+        if models is None:models=manifest.get('models',[])
         self.stats[stat_prefix+'modelBindings']=len(models)
         loaded=set()
         for i,row in enumerate(models):
@@ -200,6 +200,55 @@ class AssetAudit:
             file = self.ref(event.get('recording'), manifest + '.events.' + name, 'citizen-voice')
             if file and self.digest(file) != event.get('sha256'):
                 self.error('citizen-voice-byte-mismatch', file, manifest)
+
+    def check_trade(self):
+        loader='original-trade-presentation.js'
+        catalog_name='local-original/trade-presentation/manifest.json'
+        route_name='local-original/trade-route/manifest.json'
+        self.ref(catalog_name,loader,'trade-catalog')
+        self.ref(route_name,loader,'trade-route-catalog')
+        catalog=self.read_json(catalog_name)
+        route=self.read_json(route_name)
+        if catalog.get('format')!='ee2-native-trade-presentation-v1' or route.get('format')!='ee2-native-trade-route-art-v1':
+            self.error('trade-catalog-format',catalog_name,loader)
+            return
+
+        def verified(url,digest,group,source,size=None):
+            name=self.ref(url,source,group)
+            if name and (self.digest(name)!=digest or (size is not None and self.files[name].stat().st_size!=size)):
+                self.error('trade-asset-byte-mismatch',name,source)
+            return name
+
+        rows=catalog['rows']
+        if len(rows)!=6:
+            self.error('trade-model-stage-count',len(rows),catalog_name)
+        self.check_models(catalog_name,'trade-',[row['model'] for row in rows])
+        for row in rows:
+            model=row['model']
+            verified(model['url'],model['sha256'],'trade-model',catalog_name)
+            if model.get('lodFarUrl'):
+                verified(model['lodFarUrl'],model['lodFarSha256'],'trade-model-far',catalog_name)
+            for icon in row['icons'].values():
+                verified(icon['url'],icon['sha256'],'trade-icon',catalog_name,icon['bytes'])
+        team=verified(catalog['teamManifest'],catalog['teamManifestSha256'],'trade-team-manifest',catalog_name)
+        if team:self.check_teams(team,'trade-')
+        audio=verified(catalog['audioManifest'],catalog['audioManifestSha256'],'trade-audio-manifest',catalog_name)
+        if audio:self.check_audio_families(audio)
+        sails=verified(catalog['sailManifest'],catalog['sailManifestSha256'],'trade-sail-manifest',catalog_name)
+        if sails:
+            sail_data=self.read_json(sails)
+            for asset in sail_data['assets'].values():
+                verified(asset['url'],asset['sha256'],'trade-sail-texture',sails,asset['bytes'])
+            for model in sail_data['models']:
+                name=verified(model['url'],model['sha256'],'trade-sail-mesh',sails,model['bytes'])
+                if name:self.local_urls(self.read_json(name),name,'trade-sail-material')
+        for theme in ('1','2','3'):
+            for state in ('idle','hover','pressed'):
+                sprite=route['buttons'][theme][state]
+                verified(sprite['url'],sprite['sha256'],'trade-route-button',route_name,sprite['bytes'])
+        for state in ('valid','invalid'):
+            sprite=route['cursors'][state]
+            verified(sprite['url'],sprite['sha256'],'trade-route-cursor',route_name,sprite['bytes'])
 
     def check_textures_and_ground(self):
         name='local-original/textures.json';self.ref(name,'original-assets.js','texture-manifest');data=self.read_json(name)
@@ -707,6 +756,7 @@ class AssetAudit:
                     name = self.ref(row[url_key], f'{production}.models[{index}]', 'production-model')
                     if name and self.digest(name) != row.get(sha_key):
                         self.error('production-model-hash-mismatch', name, production)
+        if 'original-trade-presentation.js' in self.files:self.check_trade()
         if 'local-original/king-regicide/manifest.json' in self.files:
             self.check_models('local-original/king-regicide/manifest.json','king-regicide-')
             self.check_teams('local-original/king-regicide/team/manifest.json','king-regicide-')
