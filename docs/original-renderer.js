@@ -515,6 +515,13 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    }
    return parts;
  };
+ const rallyAttachments=new WeakMap();
+ result.rallyAttachment=actor=>rallyAttachments.get(actor);
+ function rallyTag(model){
+  const point=options.rallyTargetTags?.[model.source?.sha256]?.point, n=model.normalization;
+  if(!point||!n)return null;
+  return [point[0],point[2],-point[1]].map((value,index)=>(value+n.offset[index])*n.scale);
+ }
  const regionalCaptureVariant=(entry,lod)=>{
   const url=lod==='near'?entry.url:entry.lodFarUrl,digest=lod==='near'?entry.sha256:entry.lodFarSha256;
   if(!url)return null;
@@ -528,7 +535,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     const gpu=await loadParts({...model,parts},false,url,regionalCaptureTeam);
     record.variant={assetKind:0,parts:gpu,hasClipVisibility:gpu.some(part=>part.clipVisibility),
      nativeCapture:{clips},nativeScale:transform.scale,originOffset:transform.originOffset,yOffset:0,
-     yawOffset:entry.yawOffset??model.yawOffset??0};
+     yawOffset:entry.yawOffset??model.yawOffset??0,rallyTag:rallyTag(model)};
     regionalCaptureStatus[lod]++;
    }).catch(error=>{regionalCaptureStatus.errors.push(`${url}: ${error.message}`);});
   }
@@ -548,7 +555,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     if(!parts.length)throw new Error('Production model has no renderable parts');
     record.variant={sourceId:entry.id,assetKind:0,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),
      nativeScale:transform.scale,originOffset:transform.originOffset,yOffset:0,farRequested:lod==='far',
-     yawOffset:entry.yawOffset??model.yawOffset??0};
+     yawOffset:entry.yawOffset??model.yawOffset??0,rallyTag:rallyTag(model)};
     productionStatus[lod]++;
    }).catch(error=>{productionStatus.errors.push(`${url}: ${error.message}`);});
   }
@@ -572,7 +579,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    if(!parts.length)continue;
    const scaleKey=(entry.assetKind===undefined?'':assetKind+':')+id+':'+(entry.epoch??0),sea=assetKind===0&&((id>=29&&id<=36)||id===42||id===45),transform=nativeModelTransform(model,entry.regionalCivilizations?entry.nativeScaleBinding:scales.variants?.[scaleKey]);
    const yOffset=!transform.native&&sea?-(model.normalization?.offset?.[1]||0)*(model.normalization?.scale||1):0;
-   const variant={sourceId:id,assetKind,scaleKey,epoch:entry.epoch??0,until:entry.until,regionalCivilizations:entry.regionalCivilizations,regionalFallback:entry.regionalFallback===true,sourceIdentity:entry.sourceIdentity,region:entry.region,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),nativeAttackClock:entry.nativeAttackClock===true,yOffset,originOffset:transform.originOffset,nativeScale:transform.native?transform.scale:null,yawOffset:entry.yawOffset??model.yawOffset??0,farUrl:entry.lodFarUrl,far:null,farRequested:false,pickBounds:resourceBounds(parts)};
+   const variant={sourceId:id,assetKind,scaleKey,epoch:entry.epoch??0,until:entry.until,regionalCivilizations:entry.regionalCivilizations,regionalFallback:entry.regionalFallback===true,sourceIdentity:entry.sourceIdentity,region:entry.region,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),nativeAttackClock:entry.nativeAttackClock===true,yOffset,originOffset:transform.originOffset,nativeScale:transform.native?transform.scale:null,yawOffset:entry.yawOffset??model.yawOffset??0,farUrl:entry.lodFarUrl,far:null,farRequested:false,pickBounds:resourceBounds(parts),rallyTag:rallyTag(model)};
    variant.nativeCapture=model.nativeCapture;
    if(entry.presentation)variant.presentationEntry=entry;
    if(assetKind===0&&id===22&&entry.verified&&model.databaseVisualBinding?.visualDefinition==='LightArtillery1_01'
@@ -736,9 +743,15 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
       variant.farRequested=true;const near=variant;
       const presentation=near.presentationEntry;
       const request=presentation?verifiedModelJSON(near.farUrl,presentation.lodFarSha256,'Original Far unit model'):json(near.farUrl);
-      request.then(model=>augmentModel(model,presentation||{id:near.sourceId,assetKind:near.assetKind,epoch:near.epoch},'far')).then(async model=>({model,parts:await loadParts(model,near.assetKind===1,near.farUrl,presentation?.presentation?.teamManifest)})).then(({model,parts})=>{near.far={...near,parts,pickBounds:resourceBounds(parts),sailComposite:model.nativeSailComposite,dynamicSailBinding:null,nativeCapture:model.nativeCapture};}).catch(e=>{result.errors.push(e.message);console.warn('Original-Fernmodell:',e);});
+      request.then(model=>augmentModel(model,presentation||{id:near.sourceId,assetKind:near.assetKind,epoch:near.epoch},'far')).then(async model=>({model,parts:await loadParts(model,near.assetKind===1,near.farUrl,presentation?.presentation?.teamManifest)})).then(({model,parts})=>{near.far={...near,parts,pickBounds:resourceBounds(parts),sailComposite:model.nativeSailComposite,dynamicSailBinding:null,nativeCapture:model.nativeCapture,rallyTag:rallyTag(model)};}).catch(e=>{result.errors.push(e.message);console.warn('Original-Fernmodell:',e);});
      }
      if(variant.far)variant=variant.far;
+    }
+    if(variant.rallyTag&&actor&&!shadow&&!clipPlane){
+     const scale=variant.nativeScale??data[i*12+8], yaw=actor.renderYaw+variant.yawOffset;
+     const [x,y,z]=variant.rallyTag.map((value,index)=>(value+variant.originOffset[index])*scale);
+     const c=Math.cos(yaw),s=Math.sin(yaw);
+     rallyAttachments.set(actor,[actor.renderX+x*c-z*s,actor.renderAltitude+y+variant.yOffset*scale,actor.renderY+x*s+z*c]);
     }
     const activity=Math.round(data[i*12+11]),requestedClip=['idle','walk','wood','mine','food','build','combat'][activity]||'idle';
     const packPose=nativePackPose(actor,{sourceId,team,data,index:i,parts:variant.parts});

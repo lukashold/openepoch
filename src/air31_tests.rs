@@ -178,3 +178,45 @@ fn empty_aircraft_without_a_pending_return_uses_the_two_second_actor_pulse() {
     advance_until(&mut game, 40, |g| g.aircraft.aircraft[&handle].phase == Phase::Returning);
     assert_eq!(game.tick, expected);
 }
+
+#[test]
+fn a_real_launch_uses_both_airport_runway_markers_and_preserves_the_rng_draws() {
+    let (mut game, airport) = scenario(10, 0);
+    assert!(game.configure_peer_air_runway(true));
+    game.ents[airport].rot = std::f32::consts::FRAC_PI_4;
+    let host = game.h(airport);
+    let actor = game.spawn(FIGHTER_BOMBER, 0, 84.5, 118.5);
+    let handle = game.h(actor);
+    assert!(game.air_station_produced(actor, airport));
+    let pose = crate::runway32::departure(&game.ents[airport]);
+    let mut rng = game.source_birth.rng;
+    let jitter = launch_jitter(&mut rng);
+    game.apply(0, C_AIR_MISSION, 0.0, 0.0, SCRAMBLE, &[host]);
+    advance_until(&mut game, 20, |g| g.visible(actor));
+    let e = game.ents[actor];
+    assert_eq!((e.x, e.y, e.rot), (pose.x, pose.y, pose.heading));
+    assert_eq!((e.px, e.py, e.prot), (pose.x, pose.y, pose.heading));
+    assert_eq!((e.ox, e.oy), (game.ents[airport].x + jitter, game.ents[airport].y + jitter));
+    assert_eq!(game.source_birth.rng, rng);
+    assert_eq!(game.h(actor), handle);
+    assert!(restored(&mut game).air_runway_enabled);
+}
+
+#[test]
+fn visual_route_snapshot_hides_an_unseen_actor_and_preserves_simulation_state() {
+    let (mut game, airport) = scenario(10, 0);
+    let host = game.h(airport);
+    let enemy = game.spawn(AIRFIELD, 1, 110.5, 119.5);
+    let target = game.h(enemy);
+    let tile = crate::map::tile_of(game.ents[enemy].x, game.ents[enemy].y);
+    game.team_vis[tile] = 255;
+    assert!(game.air_assign(airport, Some(Mission { waypoints: vec![[120.0, 119.0]], target: Some(target) })));
+    let before = game.state_hash();
+    let snapshot = game.air_mission_visual_route(host).unwrap();
+    assert_eq!((snapshot.host, snapshot.target, snapshot.team, snapshot.count), (host, target, 0, 1));
+    assert_eq!(&snapshot.points[..2], &[120.0, 119.0]);
+    assert_eq!(game.state_hash(), before);
+    game.team_vis[tile] = 128;
+    assert_eq!(game.air_mission_visual_route(host).unwrap().target, NONE);
+    assert!(game.air_mission_visual_route(target).is_none());
+}

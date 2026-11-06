@@ -51,6 +51,8 @@ impl Game {
         let options = options | if self.trade_enabled { crate::game::trade30::SAVE_FLAG } else { 0 };
         #[cfg(feature="ee2-native13")]
         let options = options | if self.air_missions_enabled { crate::air31::SAVE_FLAG } else { 0 };
+        #[cfg(feature="ee2-native13")]
+        let options = options | if self.air_runway_enabled { crate::runway32::SAVE_FLAG } else { 0 };
         for v in [options, self.instant_build as u32, self.tech_points] {
             b.extend_from_slice(&v.to_le_bytes());
         }
@@ -200,13 +202,13 @@ impl Game {
         g.vis.copy_from_slice(take(NN));
         let end = H + psz + esz + NN * 5;
         #[cfg(feature="ee2-native13")]
-        { g.trade_enabled = false; g.air_missions_enabled = false; }
+        { g.trade_enabled = false; g.air_missions_enabled = false; g.air_runway_enabled = false; }
         if trailer >= 12 {
             let v = |k| u32::from_le_bytes(buf[end+k..end+k+4].try_into().unwrap());
             let allowed = if cfg!(feature = "ee2-up15") { 7 } else { 1 };
             #[cfg(feature="ee2-native13")]
             let allowed = allowed | crate::infantry_roster27::SAVE_FLAG | crate::production_roster29::SAVE_FLAG |
-                crate::game::trade30::SAVE_FLAG | crate::air31::SAVE_FLAG;
+                crate::game::trade30::SAVE_FLAG | crate::air31::SAVE_FLAG | crate::runway32::SAVE_FLAG;
             let flags = v(0);
             if flags & !allowed != 0 || v(4) > 1 { return None; }
             g.cheats_enabled = flags & 1 != 0;
@@ -218,6 +220,8 @@ impl Game {
                 g.production_roster_enabled = flags & crate::production_roster29::SAVE_FLAG != 0;
                 g.trade_enabled = flags & crate::game::trade30::SAVE_FLAG != 0;
                 g.air_missions_enabled = flags & crate::air31::SAVE_FLAG != 0;
+                g.air_runway_enabled = flags & crate::runway32::SAVE_FLAG != 0;
+                if g.air_runway_enabled && !g.air_missions_enabled { return None; }
             }
             g.instant_build = v(4) == 1 && (cfg!(feature = "ee2-up15") || g.cheats_enabled);
             g.tech_points = v(8);

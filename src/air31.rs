@@ -52,6 +52,17 @@ pub(crate) struct Mission {
     pub(crate) target: Option<u32>,
 }
 
+#[repr(C)]
+pub struct VisualRoute {
+    host: u32,
+    target: u32,
+    count: u32,
+    team: u32,
+    points: [f32; MAX_WAYPOINTS * 2],
+}
+
+const _: [(); 56] = [(); std::mem::size_of::<VisualRoute>()];
+
 #[derive(Clone, Copy, Eq, PartialEq)]
 enum Launch {
     Scramble,
@@ -110,6 +121,7 @@ impl Game {
             return false;
         }
         self.air_missions_enabled = enabled;
+        if !enabled { self.air_runway_enabled = false; }
         true
     }
 
@@ -143,6 +155,24 @@ impl Game {
             5 => u32::from(frame.phase != Phase::Stationed && self.air_host(frame.home, actor.team).is_some()),
             _ => 0,
         }
+    }
+
+    pub(crate) fn air_mission_visual_route(&self, host: u32) -> Option<VisualRoute> {
+        if !self.air_missions_enabled { return None; }
+        let index = self.air_mission_host(host, self.local)?;
+        let team = self.ents[index].team;
+        let mission = self.aircraft.airports.get(&host).and_then(|airport| airport.mission.as_ref());
+        let mut route = VisualRoute { host, target: NONE, count: 0, team: team.into(), points: [0.0; MAX_WAYPOINTS * 2] };
+        if let Some(mission) = mission {
+            route.count = mission.waypoints.len() as u32;
+            for (at, point) in mission.waypoints.iter().enumerate() {
+                route.points[at * 2..at * 2 + 2].copy_from_slice(point);
+            }
+            route.target = mission.target.filter(|&target| self.get(target).is_some_and(|index| {
+                self.ents[index].hp > 0.0 && self.can_see(team, index)
+            })).unwrap_or(NONE);
+        }
+        Some(route)
     }
 
     pub(crate) fn air_valid_target(&self, team: u8, handle: u32) -> bool {
@@ -860,6 +890,13 @@ impl State {
             let jitter = launch_jitter(&mut game.source_birth.rng);
             let spawn = |value: f32| value.clamp(1.0, N as f32 - 1.0);
             let point = [spawn(building.x + jitter), spawn(building.y + jitter)];
+            if game.air_runway_enabled {
+                let pose = crate::runway32::departure(&building);
+                let aircraft = &mut game.ents[index];
+                (aircraft.x, aircraft.y) = (pose.x, pose.y);
+                (aircraft.px, aircraft.py) = (pose.x, pose.y);
+                (aircraft.rot, aircraft.prot) = (pose.heading, pose.heading);
+            }
             frame.waypoints.push_back(point);
             if frame.mission {
                 frame.waypoints.extend(airport.mission.as_ref().unwrap().waypoints.iter().copied());

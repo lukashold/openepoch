@@ -228,6 +228,8 @@ pub struct Game {
     #[cfg(feature = "ee2-native13")]
     pub(crate) air_missions_enabled: bool,
     #[cfg(feature = "ee2-native13")]
+    pub(crate) air_runway_enabled: bool,
+    #[cfg(feature = "ee2-native13")]
     pub(crate) aircraft: crate::air31::State,
     pub fx: Vec<Fx>,
     pub players: [Player; 4],
@@ -350,6 +352,8 @@ impl Game {
             trade: trade30::State::default(),
             #[cfg(feature = "ee2-native13")]
             air_missions_enabled: humans == 1 && bench == 0,
+            #[cfg(feature = "ee2-native13")]
+            air_runway_enabled: humans == 1 && bench == 0,
             #[cfg(feature = "ee2-native13")]
             aircraft: crate::air31::State::default(),
             fx: Vec::with_capacity(1024),
@@ -1042,6 +1046,8 @@ impl Game {
         if self.trade_enabled { self.trade.hash(&mut mix); }
         #[cfg(feature = "ee2-native13")]
         if self.air_missions_enabled { self.aircraft.hash(&mut mix); }
+        #[cfg(feature = "ee2-native13")]
+        if self.air_runway_enabled { mix(crate::runway32::HASH_TAG); }
         #[cfg(feature="ee2-civ8")]
         if self.civilizations.iter().any(|&c|c!=crate::civ8_runtime::LEGACY_NEUTRAL){
             mix(0x38564943);for c in self.civilizations{mix(c as u32);}

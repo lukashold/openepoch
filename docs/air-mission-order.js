@@ -80,7 +80,7 @@ export async function loadAirMissionArt({enabled, profile = 'packed7', fetchFile
   }
 }
 
-export function createAirMissionOrder({wasm, canvas, caption, mapSize, host, onChange = () => {}}) {
+export function createAirMissionOrder({wasm, canvas, caption, mapSize, host, invalidCursor, onChange = () => {}}) {
   let selected = none, oldCursor = '';
   const points = [];
   const active = () => selected !== none;
@@ -126,18 +126,30 @@ export function createAirMissionOrder({wasm, canvas, caption, mapSize, host, onC
     cancel();
     return ordered;
   }
-  function release(point) {
-    if (!validate() || point?.length !== 2) return 0;
+  function place(point) {
+    if (point?.length !== 2) return null;
     const location = point.map(Math.fround);
-    if (!location.every(value => Number.isFinite(value) && value >= 0 && value < mapSize)) return 0;
-    const target = wasm.air_mission_target_at(...location) >>> 0;
+    if (!location.every(value => Number.isFinite(value) && value >= 0 && value < mapSize)) return null;
+    return {location,target:wasm.air_mission_target_at(...location)>>>0};
+  }
+  function preview(point) {
+    if(!validate())return null;
+    const hit=place(point);
+    if(invalidCursor)canvas.style.cursor=hit?oldCursor:invalidCursor;
+    return {points:hit?.target===none?[...points,hit.location]:points.slice(),target:hit?.target??none};
+  }
+  function release(point) {
+    if (!validate()) return 0;
+    const hit=place(point);
+    if (!hit) return 0;
+    const {target,location}=hit;
     if (target !== none) return commit(target);
     points.push(location);
     if (points.length === waypointLimit) return commit();
     refresh();
     return 0;
   }
-  return {active, validate, arm, cancel, release, finish:() => commit()};
+  return {active, validate, arm, cancel, release, preview, finish:() => commit()};
 }
 
 export function decorateAirMissionButton(button, role, {art, active, auto} = {}) {

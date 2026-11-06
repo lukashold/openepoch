@@ -10,6 +10,8 @@ mod air31;
 #[cfg(feature = "ee2-native13")]
 mod air31_defs;
 #[cfg(feature = "ee2-native13")]
+mod runway32;
+#[cfg(feature = "ee2-native13")]
 mod battle_signals;
 #[cfg(feature = "ee2-native13")]
 mod capture_animation26;
@@ -185,6 +187,8 @@ static mut GAME: Option<Box<Game>> = None;
 static mut LOADBUF: Vec<u8> = Vec::new();
 #[cfg(feature = "ee2-native13")]
 static mut AIR_MISSION_POINTS: [f32; air31::MAX_WAYPOINTS * 2] = [0.0; air31::MAX_WAYPOINTS * 2];
+#[cfg(feature = "ee2-native13")]
+static mut AIR_MISSION_VISUAL_ROUTES: Vec<air31::VisualRoute> = Vec::new();
 
 /// Distinguishes incompatible rulesets in tests and clients.
 #[no_mangle]
@@ -816,8 +820,31 @@ pub extern "C" fn air_mission_configure_peer(enabled: u32) -> u32 {
 
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
+pub extern "C" fn air_runway_configure_peer(enabled: u32) -> u32 {
+    u32::from(enabled <= 1 && g().configure_peer_air_runway(enabled != 0))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
 pub extern "C" fn air_mission_status(handle: u32, field: u32) -> u32 {
     g().air_mission_status(handle, field)
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn air_mission_visual_routes() -> u32 {
+    let game = g();
+    let routes = unsafe { &mut *addr_of_mut!(AIR_MISSION_VISUAL_ROUTES) };
+    routes.clear();
+    routes.extend((0..game.high).filter(|&index| game.ents[index].alive && game.ents[index].sel)
+        .filter_map(|index| game.air_mission_visual_route(game.h(index))));
+    routes.len() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn air_mission_visual_routes_ptr() -> *const air31::VisualRoute {
+    unsafe { (&*core::ptr::addr_of!(AIR_MISSION_VISUAL_ROUTES)).as_ptr() }
 }
 
 #[cfg(feature = "ee2-native13")]

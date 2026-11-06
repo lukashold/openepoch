@@ -304,6 +304,26 @@ class AssetAudit:
                 self.check_pinned_media(sprite.get('url'),sprite.get('sha256'),f'{name}.{profile}.{state}',
                                         'trade-wait-sprite',sprite.get('bytes'))
 
+    def check_air_mission_flag(self):
+        loader='air-mission-flag.js'
+        name='local-original/air-mission-flag/manifest.json'
+        match=re.search(r"const manifestHash='([0-9a-f]{64})'",self.files[loader].read_text(encoding='utf8'))
+        if not match:
+            self.error('air-mission-flag-manifest-pin',loader);return
+        if not self.check_pinned_media(name,match[1],loader,'air-mission-flag-catalog'):return
+        data=self.read_json(name)
+        textures=data.get('textures',{})
+        if data.get('format')!='ee2-air-mission-flag-v1' or set(textures)!={'pole','base','dark','ribbon','invalid'}:
+            self.error('air-mission-flag-catalog-format',name);return
+        for role,record in textures.items():
+            source=f'{name}.textures.{role}'
+            file=self.check_pinned_media(record.get('url'),record.get('sha256'),source,'air-mission-flag-texture')
+            if file:
+                with self.files[file].open('rb') as stream:header=stream.read(24)
+                size=[int.from_bytes(header[16:20],'big'),int.from_bytes(header[20:24],'big')]
+                if len(header)!=24 or header[:8]!=b'\x89PNG\r\n\x1a\n' or header[12:16]!=b'IHDR' or size!=record.get('size'):
+                    self.error('air-mission-flag-png-dimensions',file,source)
+
     def check_textures_and_ground(self):
         name='local-original/textures.json';self.ref(name,'original-assets.js','texture-manifest');data=self.read_json(name)
         for group,mapping in data.items():
@@ -813,6 +833,7 @@ class AssetAudit:
         if 'original-trade-presentation.js' in self.files:self.check_trade()
         if 'air-mission-order.js' in self.files:
             self.check_aircraft();self.check_air_mission_art()
+        if 'air-mission-flag.js' in self.files:self.check_air_mission_flag()
         if 'trade-wait-status.js' in self.files:self.check_trade_wait_art()
         if 'local-original/king-regicide/manifest.json' in self.files:
             self.check_models('local-original/king-regicide/manifest.json','king-regicide-')

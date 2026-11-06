@@ -1,0 +1,85 @@
+//! Airport runway points shared by the original E11 and E13 body models.
+
+use crate::game::{Ent, Game};
+
+pub(crate) const SAVE_FLAG: u32 = 1 << 7;
+pub(crate) const HASH_TAG: u32 = u32::from_le_bytes(*b"RWY1");
+const SCALE: f64 = f32::from_bits(0x3ce7b46a) as f64;
+// Convert the source NIF X,Y plane to the renderer's X,-Y ground plane.
+const START: [f32; 2] = [f32::from_bits(0xc247a497), -f32::from_bits(0x42c823f0)];
+const END: [f32; 2] = [f32::from_bits(0xc247a497), -f32::from_bits(0xc2db79b7)];
+
+#[derive(Clone, Copy)]
+pub(crate) struct Departure {
+    pub x: f32,
+    pub y: f32,
+    pub heading: f32,
+}
+
+fn world_point(airport: &Ent, [x, y]: [f32; 2]) -> [f32; 2] {
+    let (sin, cos) = airport.rot.sin_cos();
+    let (s, c, x, y) = (f64::from(sin), f64::from(cos), f64::from(x), f64::from(y));
+    // 008E6970 stores each rotated component as f32. 008741E0 stores the
+    // scaled Y before translation, while X remains extended through addition.
+    let rx = f64::from((x * c - y * s) as f32);
+    let ry = f64::from((x * s + y * c) as f32);
+    [
+        (rx * SCALE + f64::from(airport.x)) as f32,
+        (f64::from((ry * SCALE) as f32) + f64::from(airport.y)) as f32,
+    ]
+}
+
+pub(crate) fn departure(airport: &Ent) -> Departure {
+    let [x, y] = world_point(airport, START);
+    let [end_x, end_y] = world_point(airport, END);
+    // 007E9CA0..CB8 stores the differences before 00A1DD10 performs
+    // FPATAN. Keep the signed angle of the renderer's ground coordinates.
+    let heading = f64::from(end_y - y).atan2(f64::from(end_x - x)) as f32;
+    Departure { x, y, heading }
+}
+
+impl Game {
+    pub(crate) fn configure_peer_air_runway(&mut self, enabled: bool) -> bool {
+        if !self.net || self.bench != 0 || self.tick != 0 || !self.outbox.is_empty() ||
+            !self.inbox.is_empty() || (enabled && !self.air_missions_enabled) {
+            return false;
+        }
+        self.air_runway_enabled = enabled;
+        true
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::game::E0;
+
+    #[test]
+    fn airport_rotation_rotates_the_runway_and_the_departure_direction() {
+        let mut airport = Ent { x: 100.5, y: 110.5, ..E0 };
+        let distance = |a: f32, b: f32| (a - b).abs();
+        let (base_x, base_y) = (-1.411688, -2.830412);
+        for step in 0..8 {
+            let angle = step as f32 * std::f32::consts::FRAC_PI_4;
+            airport.rot = angle;
+            let (sin, cos) = angle.sin_cos();
+            let pose = departure(&airport);
+            assert!(distance(pose.x, airport.x + base_x * cos - base_y * sin) < 0.0001);
+            assert!(distance(pose.y, airport.y + base_x * sin + base_y * cos) < 0.0001);
+            assert!(distance(pose.heading.cos(), -sin) < 0.0001);
+            assert!(distance(pose.heading.sin(), cos) < 0.0001);
+        }
+    }
+
+    #[test]
+    fn runway_capability_requires_air_missions_and_tick_zero() {
+        let mut world = Game::new(7, 0, 0, 2, 0);
+        assert!(!world.configure_peer_air_runway(true));
+        assert!(world.configure_peer_air_missions(true));
+        assert!(world.configure_peer_air_runway(true));
+        assert!(world.configure_peer_air_missions(false));
+        assert!(!world.air_runway_enabled);
+        world.tick();
+        assert!(!world.configure_peer_air_runway(false));
+    }
+}

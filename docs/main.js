@@ -17,7 +17,7 @@ import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regi
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native6';
-import {loadOriginalModels} from './original-renderer.js?v=native31';
+import {loadOriginalModels} from './original-renderer.js?v=native32';
 import {ownMapTerrainOrigin} from './original-citycenter-terrain.js?v=regional10';
 import {loadCityCenterIcons,loadHouseIcons,loadDockIcons,loadBarracksIcons,loadMillIcons,loadTempleIcons,loadLightArtilleryIcons,loadWarehouseIcons,loadStableIcons,loadKingIcons} from './original-citycenter-icons.js?v=native17';
 import {loadSourceSailRuntime} from './source-sail-runtime.js?v=sails7';
@@ -26,7 +26,7 @@ import {createFrontendNamespace} from './render-namespace.js?v=native31';
 import {createRenderActorMetadata} from './render-actor-metadata.js?v=pack8';
 import {createPackRenderMetadata} from './original-pack-states.js?v=pack8';
 import {createFullmapPipBridge} from './original-fullmap-pip-bridge.js';
-import {loadOriginalGround} from './original-ground.js?v=native28';
+import {loadOriginalGround,sampleGroundHeight} from './original-ground.js?v=native28';
 import {createCaptureGlow} from './capture-glow.js?v=native28';
 import {loadOriginalTerrain} from './original-terrain.js?v=skirmish-climates';
 import {loadOriginalWater} from './original-water.js?v=water-farm3';
@@ -34,7 +34,7 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=skirmish-climates';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native31';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native32';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=epoch13';
 import {createFullscreenController} from './fullscreen.js?v=building2';
@@ -48,7 +48,8 @@ import {createCaptureOrder,captureOrderText} from './capture-order.js?v=native25
 import {createTradeRoute,supportsTradeRoute,tradeRouteText} from './trade-route.js?v=native30';
 import {loadFighterBomberPresentation,loadTradePresentation,loadTradeRouteArt} from './original-trade-presentation.js?v=native31';
 import {createTradeWaitStatus,loadTradeWaitArt,selectedTradeWait} from './trade-wait-status.js?v=native31';
-import {airActions,airMissionActions,airMissionSelection,airMissionTrainingKey,createAirMissionOrder,decorateAirMissionButton,loadAirMissionArt,supportsAirMission} from './air-mission-order.js?v=native31';
+import {airActions,airMissionActions,airMissionSelection,airMissionTrainingKey,createAirMissionOrder,decorateAirMissionButton,loadAirMissionArt,supportsAirMission} from './air-mission-order.js?v=native32';
+import {loadAirMissionFlag,projectAirMissionFlags,readAirMissionVisualRoutes} from './air-mission-flag.js?v=native32';
 import {loadFullmapCityNameCatalog,loadFullmapTerritoryNameCatalog} from './fullmap-territory-names.js?v=native22';
 import {createWarplanPeer,WARPLAN_PEER_VERSION} from './original-warplan-peer.js';
 
@@ -503,12 +504,13 @@ const originalAssets=await loadOriginalAssets(gl,originalEnabled);
 const citizenPresentation=await loadCitizenPresentation({enabled:originalEnabled&&rulesProfile.sourceIdentityVersion===1});
 const tradeAvailable=rulesProfile.ruleset===2&&supportsTradeRoute(wasm);
 const airMissionAvailable=rulesProfile.ruleset===2&&supportsAirMission(wasm);
-const [tradePresentation,tradeRouteArt,tradeWaitArt,fighterBomberPresentation,airMissionArt]=await Promise.all([
+const [tradePresentation,tradeRouteArt,tradeWaitArt,fighterBomberPresentation,airMissionArt,airMissionFlag]=await Promise.all([
   loadTradePresentation({enabled:originalEnabled&&rulesProfile.ruleset===2&&renderNamespace.definitionCount>82}),
   loadTradeRouteArt({enabled:originalEnabled&&tradeAvailable}),
   loadTradeWaitArt({enabled:originalEnabled&&tradeAvailable&&typeof wasm.trade_wait_active==='function'}),
   loadFighterBomberPresentation({enabled:originalEnabled&&rulesProfile.ruleset===2&&renderNamespace.definitionCount>83}),
   loadAirMissionArt({enabled:originalEnabled&&airMissionAvailable}),
+  loadAirMissionFlag(gl,{enabled:originalEnabled&&airMissionAvailable&&typeof wasm.air_mission_visual_routes==='function'}),
 ]);
 const tradeWaitStatus=createTradeWaitStatus($('trade-wait-status'),tradeWaitArt);
 const regionalIconOptions={enabled:originalEnabled&&rulesProfile.ruleset===2,profile:'packed7',neutralFallback:'west'};
@@ -531,7 +533,7 @@ const capturePoseForActor = typeof wasm.capture_animation_request === 'function'
 } : null;
 const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,total)=>{
   $('play').textContent=`Originalgrafiken laden · ${Math.round(loaded/total*100)} %`;
-},{assetMapping,climateProfiles,capturePoseForActor,tradePresentation,fighterBomberPresentation,packAnimations:rulesProfile.ruleset===2,dynamicSails:rulesProfile.ruleset===2&&typeof wasm.render_meta_version==='function',lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-civ8.json',scaleManifestURL:'./local-original/model-scales-civ8.json',teamManifestURL:'./local-original/team-textures/manifest-civ8.json',regionalManifestURL:'./local-original/regional-stable/regional-models-native17.json',additionalRegionalManifestURL:'./local-original/king-regicide/manifest.json',productionRegionalManifestURL:'./local-original/production-visuals/manifest.json',stoneAttackElapsedForActor:actor=>wasm.render_stone_thrower_attack_elapsed(actor.handle,actor.renderTime),terrainFallbackManifestURL:'./local-original/regional-e15-seasons/terrain-fallback.json',houseLodManifestURL:'./local-original/regional-house-lod/manifest.json',houseLodProfile:{mode:'resource',modelDetail:2,rendererCap0x200:false},citizenManifestURL:'./local-original/citizens9/manifest.json',citizenNeutralFallback:'west',sourceIdentityForActor:actor=>wasm.actor_source_identity(actor.handle)>>>0}:{})});
+},{assetMapping,climateProfiles,capturePoseForActor,tradePresentation,fighterBomberPresentation,rallyTargetTags:airMissionFlag?.targetTags,packAnimations:rulesProfile.ruleset===2,dynamicSails:rulesProfile.ruleset===2&&typeof wasm.render_meta_version==='function',lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-civ8.json',scaleManifestURL:'./local-original/model-scales-civ8.json',teamManifestURL:'./local-original/team-textures/manifest-civ8.json',regionalManifestURL:'./local-original/regional-stable/regional-models-native17.json',additionalRegionalManifestURL:'./local-original/king-regicide/manifest.json',productionRegionalManifestURL:'./local-original/production-visuals/manifest.json',stoneAttackElapsedForActor:actor=>wasm.render_stone_thrower_attack_elapsed(actor.handle,actor.renderTime),terrainFallbackManifestURL:'./local-original/regional-e15-seasons/terrain-fallback.json',houseLodManifestURL:'./local-original/regional-house-lod/manifest.json',houseLodProfile:{mode:'resource',modelDetail:2,rendererCap0x200:false},citizenManifestURL:'./local-original/citizens9/manifest.json',citizenNeutralFallback:'west',sourceIdentityForActor:actor=>wasm.actor_source_identity(actor.handle)>>>0}:{})});
 const sourceSails=await loadSourceSailRuntime({wasm,namespace:renderNamespace,models:originalModels,enabled:originalEnabled&&rulesProfile.ruleset===2,decorateMetadata:metadata=>packMetadata?packMetadata.snapshot(metadata):metadata});
 if(sourceSails?.metrics.error)console.warn('Source sails:',sourceSails.metrics.error);
 const unitPresentations=[tradePresentation,fighterBomberPresentation].filter(Boolean);
@@ -736,7 +738,7 @@ const tradeRoute=tradeAvailable?createTradeRoute({canvas,caption:$('trade-route-
   selectionKey:()=>`${wasm.trade_selected_count()}:${wasm.selected_actor_handle?.()>>>0}`,
   pick:(x,y,home)=>wasm.trade_endpoint_at(x,y,home),issue:(home,destination)=>wasm.cmd_trade_route(home,destination),
   homeValid:typeof wasm.trade_home_valid==='function'?home=>wasm.trade_home_valid(home)!==0:undefined}) : null;
-const airMission=airMissionAvailable?createAirMissionOrder({wasm,canvas,caption:$('air-mission-caption'),mapSize:MAP,
+const airMission=airMissionAvailable?createAirMissionOrder({wasm,canvas,caption:$('air-mission-caption'),mapSize:MAP,invalidCursor:airMissionFlag?.invalidCursor,
   host(){
     if(!running||bench||ui?.win||modalOpen())return 0xffffffff;
     const handle=wasm.selected_actor_handle()>>>0;
@@ -747,7 +749,9 @@ const airMission=airMissionAvailable?createAirMissionOrder({wasm,canvas,caption:
 let tradePress=null, airPress=null;
 function armAirMission() {
   if(!airMission||modalOpen()||!running) return false;
+  const inside=mouse.inside;
   cancelMapGesture();cancelBuilding();attackMode=false;playerFlare.cancel();
+  mouse.inside=inside;
   return airMission.arm();
 }
 function airMissionFeedback(ordered) {
@@ -819,6 +823,7 @@ function bindWorldTerrainMaterial() {
 
 function begin() {
   originalModels.clearResourcePicks();
+  airMissionFlag?.reset();
   tradeWaitStatus.update(false);
   tradeRoute?.cancel();tradePress=null;
   airMission?.cancel();airPress=null;
@@ -996,7 +1001,23 @@ function drawCaptureGlow(vp,actorMetadata){
   originalGround.drawCaptureGlow({vp,...projected});
 }
 
-function drawFullmapPipScene(pipView, alpha, renderEpochs, now) {
+function drawAirMissionFlags(vp,actorMetadata,mission) {
+  if(!mission?.records.length)return;
+  const projectHeight=(x,z)=>Math.max(0,sampleGroundHeight(heights,x,z));
+  const worldAt=handle=>{
+    if(!wasm.entity_alive(handle))return null;
+    const slot=handle&65535,x=wasm.ent_x(slot),z=wasm.ent_y(slot);
+    return [x,projectHeight(x,z),z];
+  };
+  const routes=projectAirMissionFlags(mission.records,mission.draft,{
+    actorAt:handle=>actorMetadata?.forHandle(handle),
+    attachmentAt:actor=>originalModels.rallyAttachment?.(actor),
+    hostAt:worldAt,targetAt:worldAt,groundAt:projectHeight
+  });
+  airMissionFlag.draw({vp,routes,groundAt:projectHeight});
+}
+
+function drawFullmapPipScene(pipView, alpha, renderEpochs, now, mission) {
   const {vp,eye,zoom,width,height} = pipView;
   const corners = [[0,0],[width,0],[width,height],[0,height]].map(([x,y])=>{
     const ray=originalCameraRay(pipView,x,y,width,height);
@@ -1024,6 +1045,7 @@ function drawFullmapPipScene(pipView, alpha, renderEpochs, now) {
     originalTerrain.drawWater({vao:vaoW,vp,time:now/1000,eye,fogTexture});
   }
   drawCaptureGlow(vp,actorMetadata);
+  drawAirMissionFlags(vp,actorMetadata,mission);
 }
 
 function drawFallbackModels(vp,ranges) {
@@ -1106,6 +1128,13 @@ function frame(now) {
   let actorMetadata=sourceSails?.advance({count:n,instances:f32(wasm.inst_ptr(),n*STRIDE),epochs:renderEpochs,
     deltaSeconds:dt*(net?1:speed),runPhysics:!paused&&!(net&&net.ls.waiting)})??null;
   if(!actorMetadata&&packMetadata)actorMetadata=packMetadata.snapshot(packActorReader.snapshot({count:n,instances:f32(wasm.inst_ptr(),n*STRIDE),namespace:renderNamespace}));
+  let mission=null;
+  if(airMissionFlag){
+    const draft=airMission?.active()?airMission.preview(mouse.inside&&document.elementFromPoint(mouse.x,mouse.y)===canvas?toWorld(mouse.x,mouse.y):null):null;
+    const records=readAirMissionVisualRoutes(wasm).filter(route=>draft?draft.points.length||draft.target!==0xffffffff:
+      route.points.length||route.target!==0xffffffff);
+    if(airMissionFlag.prepare(records,{deltaSeconds:dt*(net?1:speed),runPhysics:!paused&&!(net&&net.ls.waiting),lighting:originalModels.lighting}))mission={records,draft};
+  }
   if(qaMode&&sourceSails)canvas.dataset.sourceSails=JSON.stringify(sourceSails.metrics);
   let reflection=null;
   if(originalTerrain.enabled&&!reflectionError){
@@ -1183,6 +1212,7 @@ function frame(now) {
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }
   drawCaptureGlow(view.vp,actorMetadata);
+  drawAirMissionFlags(view.vp,actorMetadata,mission);
 
   if (n) {
     gl.useProgram(quads.p); gl.bindVertexArray(vaoQ); gl.bindBuffer(gl.ARRAY_BUFFER, instBuf);
@@ -1201,7 +1231,7 @@ function frame(now) {
   if (now - lastUi > 100) { lastUi = now; updateUi(n, now); }
   if (now - lastMini > 250) { lastMini = now; drawMini(); }
   fullmap?.paint(now,ui,corners);
-  if(fullmapPip.isOpen())fullmapPip.draw(dt,pipView=>drawFullmapPipScene(pipView,alpha,renderEpochs,now));
+  if(fullmapPip.isOpen())fullmapPip.draw(dt,pipView=>drawFullmapPipScene(pipView,alpha,renderEpochs,now,mission));
 }
 
 // ---------------------------------------------------------------- HUD
@@ -1689,6 +1719,7 @@ $('save').onclick = () => saveGame();
 $('speed').onclick = () => setSpeed((SPEEDS.indexOf(speed) + 1) % SPEEDS.length);
 function toMenu() {
   cancelMapGesture();
+  airMissionFlag?.reset();
   tradeWaitStatus.update(false);
   playerFlare.reset(0);
   battleFlare?.reset(false);
@@ -1717,13 +1748,14 @@ const mpStatus = t => $('mpstatus').textContent = t;
 let pending = null;
 function channel(local) {
   let ch = null, pc = null, rejected = false, remoteWarplans, remoteCapture = false, remoteCaptureAnimation = false;
-  let remoteInfantryRoster = false, remoteProductionRoster = false, remoteTradeRoute = false, remoteAirMission = false;
+  let remoteInfantryRoster = false, remoteProductionRoster = false, remoteTradeRoute = false, remoteAirMission = false, remoteAirRunway = false;
   const supportsCapture = typeof wasm.capture_configure_peer === 'function';
   const supportsCaptureAnimation = supportsCapture && typeof wasm.capture_animation_configure_peer === 'function';
   const supportsInfantryRoster = typeof wasm.infantry_roster_configure_peer === 'function';
   const supportsProductionRoster = typeof wasm.production_roster_configure_peer === 'function';
   const supportsTrade = tradeAvailable&&typeof wasm.trade_route_configure_peer === 'function';
   const supportsAir = airMissionAvailable&&typeof wasm.air_mission_configure_peer === 'function';
+  const supportsRunway = supportsAir&&typeof wasm.air_runway_configure_peer === 'function';
   return {
     open(c) {
       ch = c;
@@ -1735,6 +1767,7 @@ function channel(local) {
         ...(supportsProductionRoster?{productionRoster:1}:{}),
         ...(supportsTrade?{tradeRoute:1}:{}),
         ...(supportsAir?{airMission:1}:{}),
+        ...(supportsRunway?{airRunway:1}:{}),
         ...(climates.length>1?{climates}:{})}));
       mpStatus('Verbunden – Spielversion wird geprüft …');
     },
@@ -1755,6 +1788,7 @@ function channel(local) {
           remoteProductionRoster=m.productionRoster===1;
           remoteTradeRoute=m.tradeRoute===1;
           remoteAirMission=m.airMission===1;
+          remoteAirRunway=remoteAirMission&&m.airRunway===1;
           if (local === 0 && !net) {
             try{
               const ai=+$('mpai').value,players=2+ai,choices=civilizationSetup.choices();
@@ -1769,6 +1803,7 @@ function channel(local) {
                 ...(supportsProductionRoster&&remoteProductionRoster?{productionRoster:1}:{}),
                 ...(supportsTrade&&remoteTradeRoute?{tradeRoute:1}:{}),
                 ...(supportsAir&&remoteAirMission?{airMission:1}:{}),
+                ...(supportsRunway&&remoteAirRunway?{airRunway:1}:{}),
                 ...resolved,popLimit:choices?+$('pop-limit').value:null,supplies:choices?+$('supplies').value:null};
               checkStart(cfg);ch.send(JSON.stringify(cfg));launch(cfg);
             }catch{return reject('Die Scharmützeleinstellungen konnten nicht übernommen werden.');}
@@ -1793,6 +1828,7 @@ function channel(local) {
     if(cfg.productionRoster!==undefined&&(cfg.productionRoster!==1||!supportsProductionRoster||!remoteProductionRoster))throw Error('Unsupported production roster');
     if(cfg.tradeRoute!==undefined&&(cfg.tradeRoute!==1||!supportsTrade||!remoteTradeRoute))throw Error('Unsupported trade route');
     if(cfg.airMission!==undefined&&(cfg.airMission!==1||!supportsAir||!remoteAirMission))throw Error('Unsupported air mission');
+    if(cfg.airRunway!==undefined&&(cfg.airRunway!==1||cfg.airMission!==1||!supportsRunway||!remoteAirRunway))throw Error('Unsupported air runway');
     if(civilizationSetup.enabled){
       checkedCivilizations(cfg.civilizations,2+cfg.ai);
       if(![250,500,1000].includes(cfg.popLimit)||![0,1,2].includes(cfg.supplies))throw Error('Invalid skirmish setup');
@@ -1810,6 +1846,7 @@ function channel(local) {
     if(cfg.productionRoster===1&&!wasm.production_roster_configure_peer(1))throw Error('Production roster setup failed');
     if(cfg.tradeRoute===1&&!wasm.trade_route_configure_peer(1))throw Error('Trade route setup failed');
     if(cfg.airMission===1&&!wasm.air_mission_configure_peer(1))throw Error('Air mission setup failed');
+    if(cfg.airRunway===1&&!wasm.air_runway_configure_peer(1))throw Error('Air runway setup failed');
     seasonSession.configure(peerSeasonSettings(cfg.seasons),cfg.climate);setSeasonControls(seasonSession.settings);climateControl.value=seasonSession.climate;
     net = { ch, pc, ls: null };
     net.ls = new Lockstep(wasm, local, buf => { if (ch.readyState === 'open') ch.send(buf); });
