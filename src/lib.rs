@@ -5,6 +5,8 @@
 //! networking and talks to it through the plain C ABI below.
 
 mod ai;
+#[cfg(feature = "ee2-native13")]
+mod battle_signals;
 #[cfg(feature = "ee2-ai9-planner-probe")]
 pub mod ai9_count;
 #[cfg(feature = "ee2-ai9-game-bridge")]

@@ -152,6 +152,8 @@ pub struct Proj {
     pub attacker_profile:u16,
     #[cfg(feature="ee2-up15")]
     pub friendly_ratio:f32,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) attack_source: u32,
     /// Distance at launch, so the renderer can draw an arc.
     pub d0: f32,
 }
@@ -197,6 +199,8 @@ pub struct Game {
     pub high: usize,
     pub grid: Grid,
     pub projs: Vec<Proj>,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) battle_signals: Option<crate::battle_signals::BattleSignals>,
     pub fx: Vec<Fx>,
     pub players: [Player; 4],
     // Kept outside Player so existing repr(C) saves retain their layout.
@@ -300,6 +304,8 @@ impl Game {
             high: 0,
             grid: Grid { start: vec![0; GC * GC + 1], items: Vec::with_capacity(MAXE), cursor: vec![0; GC * GC] },
             projs: Vec::with_capacity(4096),
+            #[cfg(feature = "ee2-native13")]
+            battle_signals: None,
             fx: Vec::with_capacity(1024),
             players: [Player::default(); 4],
             extra_resources: [[0.0;6];4],
@@ -1033,6 +1039,8 @@ impl Game {
         // citizens run. Resetting inside a building update lets later IDs bypass it.
         for e in &mut self.ents[..self.high]{if e.alive&&e.def==FARM{e.carry=0.0;}}
         self.tick += 1;
+        #[cfg(feature = "ee2-native13")]
+        if let Some(signals) = &mut self.battle_signals { signals.update_groups(DT, &self.ents); }
         if self.bench==0{self.update_diplomacy();}
         self.map.budget = 4;
         self.build_grid();
@@ -1096,6 +1104,8 @@ impl Game {
                 }
             }
         }
+        #[cfg(feature = "ee2-native13")]
+        if let Some(signals) = &mut self.battle_signals { signals.update_markers(DT); }
     }
 
     #[cfg(feature = "ee2-native13")]
@@ -1304,10 +1314,10 @@ impl Game {
             if c.handle!=handle{*c=crate::native_attack_clock::Clock{handle,next:0.0,flags:0};}
             let event=crate::native_attack_clock::step(now,reload,a.apply_time,&mut c.next,&mut c.flags);
             let remaining=(c.next-now).max(0.0);e.cd=remaining;
-            if event==crate::native_attack_clock::Event::Fire{self.fire(e,w,tj);e.cd=remaining;}
+            if event==crate::native_attack_clock::Event::Fire{self.fire(index,e,w,tj);e.cd=remaining;}
             return;
         }
-        let _=index;self.fire(e,w,tj);
+        self.fire(index,e,w,tj);
     }
     pub(crate) fn native_stop_attack(&mut self,index:usize){
         #[cfg(feature="ee2-up15")]crate::native_attack_clock::stop(&mut self.attack_clock[index].flags);
@@ -1317,7 +1327,7 @@ impl Game {
         #[cfg(feature="ee2-up15")]{let c=self.attack_clock[index];return c.handle==((e.gen as u32)<<16|index as u32)&&c.flags&(crate::native_attack_clock::STARTED|crate::native_attack_clock::IN_ATTACK)==(crate::native_attack_clock::STARTED|crate::native_attack_clock::IN_ATTACK);}
         #[cfg(not(feature="ee2-up15"))]{let _=(index,e);false}
     }
-    fn fire(&mut self, e: &mut Ent, w: &Wpn, tj: usize) {
+    fn fire(&mut self, _source_index: usize, e: &mut Ent, w: &Wpn, tj: usize) {
         if !self.hostile(e.team,self.ents[tj].team)||!self.can_see(e.team,tj)||!self.rps_allows(e,&self.ents[tj]){e.tgt=NONE;return;}
         #[cfg(feature="ee2-reference")]
         let attacker_profile=crate::ee2_combat::profile(e.def,self.players[e.team as usize].epoch);
@@ -1358,7 +1368,9 @@ impl Game {
         };
         if direct || self.projs.len() >= 4000 {
             #[cfg(feature="ee2-up15")]
-            self.native_attack_impact(e.team,self.h(tj),self.ents[tj].x,self.ents[tj].y,dmg,w.kind,w.targets,w.splash,attack.map_or(0.0,|a|a.friendly),attacker_profile);
+            self.native_attack_impact(e.team,self.h(tj),self.ents[tj].x,self.ents[tj].y,dmg,w.kind,w.targets,w.splash,attack.map_or(0.0,|a|a.friendly),attacker_profile,
+                #[cfg(feature = "ee2-native13")]
+                Some(crate::battle_signals::Actor::new(_source_index, e)));
             #[cfg(all(feature="ee2-reference",not(feature="ee2-up15")))]
             self.damage_from(tj,dmg,w.kind,attacker_profile);
             #[cfg(not(feature="ee2-reference"))]
@@ -1376,6 +1388,8 @@ impl Game {
             attacker_profile,
             #[cfg(feature="ee2-up15")]
             friendly_ratio:attack.map_or(0.0,|a|a.friendly),
+            #[cfg(feature = "ee2-native13")]
+            attack_source: self.h(_source_index),
             d0 });
     }
 
@@ -1402,17 +1416,39 @@ impl Game {
         let m=native.unwrap_or(MULT[kind as usize][td.armor as usize])*self.players[team as usize].dfn[class_of(td)];
         let protected = self.god_mode_for(team);
         let t=&mut self.ents[j];if !protected {t.hp-=dmg*m;}t.flash=0.12;
-        if team==self.local&&m>0.0&&self.tick%8==0 {let(x,y)=(t.x,t.y);self.ev(15.0,x,y);}
+        let legacy_warning = {
+            #[cfg(feature = "ee2-native13")]
+            { self.battle_signals.is_none() }
+            #[cfg(not(feature = "ee2-native13"))]
+            { true }
+        };
+        if legacy_warning&&team==self.local&&m>0.0&&self.tick%8==0 {let(x,y)=(t.x,t.y);self.ev(15.0,x,y);}
     }
 
     #[cfg(feature="ee2-up15")]
-    fn native_attack_impact(&mut self,team:u8,primary:u32,x:f32,y:f32,damage:f32,kind:u8,targets:u8,radius:f32,friendly:f32,profile:u16){
-        if radius<=0.0 {if let Some(j)=self.get(primary){if self.hostile(team,self.ents[j].team){self.damage_from(j,damage,kind,profile);}}return;}
+    fn native_attack_impact(&mut self,team:u8,primary:u32,x:f32,y:f32,damage:f32,kind:u8,targets:u8,radius:f32,friendly:f32,profile:u16,
+        #[cfg(feature = "ee2-native13")] origin: Option<crate::battle_signals::Actor>){
+        let hit = |game: &mut Self, j: usize, points: f32| {
+            #[cfg(feature = "ee2-native13")]
+            let can_signal = game.ents[j].hp > 0.0 && game.ents[j].def != FARM;
+            game.damage_from(j, points, kind, profile);
+            #[cfg(feature = "ee2-native13")]
+            if can_signal {
+                if let Some(signals) = &mut game.battle_signals {
+                    let target = &game.ents[j];
+                    let actor = crate::battle_signals::Actor::new(j, target);
+                    if signals.hit(game.local, actor, origin, target.hp <= 0.0) {
+                        game.ev(15.0, target.x, target.y);
+                    }
+                }
+            }
+        };
+        if radius<=0.0 {if let Some(j)=self.get(primary){if self.hostile(team,self.ents[j].team){hit(self,j,damage);}}return;}
         for j in 0..self.high{
             let t=self.ents[j];if !t.alive||targets&DEFS[t.def as usize].dom==0{continue;}
             let ratio=if self.hostile(team,t.team){1.0}else if team==t.team{friendly}else{0.0};if ratio<=0.0{continue;}
             let distance=((t.x-x).powi(2)+(t.y-y).powi(2)).sqrt();
-            if distance<=radius{let falloff=crate::ee2_combat::splash_factor(distance,radius,self.h(j)==primary);self.damage_from(j,damage*falloff*ratio,kind,profile);}
+            if distance<=radius{let falloff=crate::ee2_combat::splash_factor(distance,radius,self.h(j)==primary);hit(self,j,damage*falloff*ratio);}
         }
     }
     fn update_projs(&mut self) {
@@ -1439,7 +1475,10 @@ impl Game {
             }
             self.projs.swap_remove(k);
             #[cfg(feature="ee2-up15")]
-            self.native_attack_impact(p.team,p.tgt,p.tx,p.ty,p.dmg,p.kind,p.targets,p.splash,p.friendly_ratio,p.attacker_profile);
+            self.native_attack_impact(p.team,p.tgt,p.tx,p.ty,p.dmg,p.kind,p.targets,p.splash,p.friendly_ratio,p.attacker_profile,
+                #[cfg(feature = "ee2-native13")]
+                self.get(p.attack_source).filter(|&index| self.ents[index].team == p.team)
+                    .map(|index| crate::battle_signals::Actor::new(index, &self.ents[index])));
             #[cfg(not(feature="ee2-up15"))]
             if p.splash > 0.0 {
                 let m = p.splash + 5.0;
@@ -2300,6 +2339,8 @@ mod diplomacy_combat_tests {
             attacker_profile:crate::ee2_combat::UNKNOWN_PROFILE,
             #[cfg(feature="ee2-up15")]
             friendly_ratio:0.0,
+            #[cfg(feature = "ee2-native13")]
+            attack_source: NONE,
             d0:1.0}
     }
     #[test]
@@ -2323,6 +2364,31 @@ mod diplomacy_combat_tests {
         for _ in 0..20{g.tick();}assert_eq!(g.winner,0);
         for e in &mut g.ents[..g.high]{if e.alive&&e.team==1&&DEFS[e.def as usize].building{e.hp=0.0;}}
         for _ in 0..40{g.tick();}assert_eq!(g.winner,1);
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    #[test]
+    fn native_battle_uses_the_projectile_owner_at_launch_for_identity() {
+        crate::init(7, 0, 0, 2, 0);
+        crate::battle_signals::battle_signals_enable();
+        let g = crate::g();
+        g.team_vis.fill(255);
+        let shooter = g.spawn(10, 1, 100.5, 100.5);
+        let victim = g.spawn(WORKER, 0, 125.5, 100.5);
+        let mut actor = g.ents[shooter];
+        g.fire(shooter, &mut actor, &DEFS[10].w[0], victim);
+        assert_eq!(g.projs.len(), 1);
+        assert_eq!(g.projs[0].attack_source, g.h(shooter));
+        g.ents[shooter].team = 0;
+        for _ in 0..100 {
+            g.update_projs();
+            if g.projs.is_empty() { break; }
+        }
+        assert!(g.projs.is_empty());
+        g.battle_signals.as_mut().unwrap().update_markers(DT);
+        let point = crate::battle_signals::battle_signal_cycle();
+        assert!(!point.is_null());
+        assert_eq!(unsafe { [*point, *point.add(1)] }, [125.5, 100.5]);
     }
 }
 

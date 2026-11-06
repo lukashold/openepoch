@@ -31,7 +31,7 @@ fn native_zero_matchup_blocks_fire_and_damage(){
  let mut g=game(10,10);let fort=g.spawn(FORTRESS,0,106.5,110.5);let target=g.spawn(37,1,110.5,110.5);
  g.ents[target].hp=1000.0;g.build_grid();let mut e=g.ents[fort];
  let mut forced=DEFS[FORTRESS as usize].w[0];forced.targets=LAND|SEA|AIR|SUB;
- g.fire(&mut e,&forced,target);assert!(g.projs.is_empty());
+ g.fire(fort,&mut e,&forced,target);assert!(g.projs.is_empty());
  g.damage_from(target,100.0,W_ARROW,native::profile(FORTRESS,10));close(g.ents[target].hp,1000.0);
 }
 #[test]
@@ -43,12 +43,12 @@ fn zero_rps_blocks_acquisition_and_attack_order_despite_weapon_mask(){
  assert_eq!(native::can_target(17,13,37,13),Some(false));
  assert_eq!(g.acquire(&g.ents[marine],&query_definition,20.0),NONE);
  g.order_attack(&[marine],target);assert_ne!(g.ents[marine].order,O_ATTACK);assert_ne!(g.ents[marine].otgt,g.h(target));
- let mut e=g.ents[marine];g.fire(&mut e,&query_definition.w[0],target);assert!(g.projs.is_empty());assert_eq!(e.cd,0.0);
+ let mut e=g.ents[marine];g.fire(marine,&mut e,&query_definition.w[0],target);assert!(g.projs.is_empty());assert_eq!(e.cd,0.0);
 }
 #[test]
 fn projectile_keeps_attacker_upgrade_at_launch(){
  let mut g=game(10,10);let attacker=g.spawn(26,0,106.5,110.5);let target=g.spawn(10,1,110.5,110.5);
- g.ents[target].hp=1000.0;g.build_grid();let mut e=g.ents[attacker];g.fire(&mut e,&DEFS[26].w[0],target);
+ g.ents[target].hp=1000.0;g.build_grid();let mut e=g.ents[attacker];g.fire(attacker,&mut e,&DEFS[26].w[0],target);
  let shot=*g.projs.last().expect("Real projectile");assert_eq!(shot.attacker_profile,native::profile(26,10));
  g.players[0].epoch=14;
  for _ in 0..100{g.update_projs();if g.projs.is_empty(){break;}}
@@ -58,7 +58,7 @@ fn projectile_keeps_attacker_upgrade_at_launch(){
 #[test]
 fn projectile_uses_defenders_current_epoch_at_impact(){
  let mut g=game(10,10);let attacker=g.spawn(26,0,106.5,110.5);let target=g.spawn(10,1,110.5,110.5);
- g.ents[target].hp=1000.0;g.build_grid();let mut e=g.ents[attacker];g.fire(&mut e,&DEFS[26].w[0],target);
+ g.ents[target].hp=1000.0;g.build_grid();let mut e=g.ents[attacker];g.fire(attacker,&mut e,&DEFS[26].w[0],target);
  let shot=*g.projs.last().expect("Real projectile");g.players[1].epoch=14;
  for _ in 0..100{g.update_projs();if g.projs.is_empty(){break;}}
  close(g.ents[target].hp,1000.0-shot.dmg*native::multiplier_from_profile(shot.attacker_profile,10,14).unwrap());
@@ -68,7 +68,7 @@ fn projectile_uses_defenders_current_epoch_at_impact(){
 fn splash_resolves_each_defenders_class_separately(){
  let mut g=game(10,10);let attacker=g.spawn(26,0,106.5,110.5);let infantry=g.spawn(10,1,110.5,110.5);let building=g.spawn(HOUSE,1,110.5,110.5);
  g.ents[infantry].hp=1000.0;g.ents[building].hp=1000.0;g.build_grid();let mut e=g.ents[attacker];
- let mut shell=DEFS[26].w[0];shell.splash=2.0;g.fire(&mut e,&shell,infantry);
+ let mut shell=DEFS[26].w[0];shell.splash=2.0;g.fire(attacker,&mut e,&shell,infantry);
  #[cfg(feature="ee2-up15")] {g.projs.last_mut().unwrap().splash=2.0;}
  let shot=*g.projs.last().expect("Splash projectile");
  for _ in 0..100{g.update_projs();if g.projs.is_empty(){break;}}
@@ -80,7 +80,7 @@ fn splash_resolves_each_defenders_class_separately(){
 fn secondary_splash_half_radius_takes_quarter_damage(){
  let mut g=game(10,10);let attacker=g.spawn(26,0,106.5,110.5);let primary=g.spawn(10,1,110.5,110.5);let secondary=g.spawn(10,1,112.5,110.5);
  g.ents[primary].hp=1000.0;g.ents[secondary].hp=1000.0;g.build_grid();let mut e=g.ents[attacker];
- let mut shell=DEFS[26].w[0];shell.splash=4.0;g.fire(&mut e,&shell,primary);
+ let mut shell=DEFS[26].w[0];shell.splash=4.0;g.fire(attacker,&mut e,&shell,primary);
  #[cfg(feature="ee2-up15")] {g.projs.last_mut().unwrap().splash=4.0;}
  let shot=*g.projs.last().expect("Splash projectile");
  for _ in 0..100{g.update_projs();if g.projs.is_empty(){break;}}

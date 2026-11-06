@@ -58,11 +58,22 @@ function join(from, to, previousAngle, line) {
   return {start, fan};
 }
 
-export function originalWarplanGeometry(points, line, viewportHeight) {
-  if (points.length < 2) return [];
+export function visitOriginalWarplanGeometry(points, line, viewportHeight, stroke, visit) {
+  if (points.length < 2) return;
   const projected = points.map(([x, y]) => [f32(x), f32(viewportHeight - y)]);
-  const polygons = [];
-  let previousAngle = null, arrow;
+  const toScreen = ([x, y]) => [x, f32(viewportHeight - y)];
+  const emit = vertices => visit(vertices.map(toScreen), false);
+  // 00AAD8B0 returns to screen coordinates before 00AACE20 centers each quad.
+  const edge = (from, to) => {
+    const [x1, y1] = toScreen(from), [x2, y2] = toScreen(to);
+    const dx = x2 - x1, dy = y2 - y1;
+    const length = Math.hypot(dx, dy);
+    if (!length) return;
+    const nx = f32(-dy * stroke / (2 * length)), ny = f32(dx * stroke / (2 * length));
+    visit([[f32(x1 + nx), f32(y1 + ny)], [f32(x2 + nx), f32(y2 + ny)],
+      [f32(x2 - nx), f32(y2 - ny)], [f32(x1 - nx), f32(y1 - ny)]], true);
+  };
+  let previousAngle = null, arrow, lastBase;
   for (let i = 1; i < projected.length; i++) {
     const from = projected[i - 1], to = projected[i];
     const bend = previousAngle === null ? {start: from, fan: []} : join(from, to, previousAngle, line);
@@ -73,8 +84,16 @@ export function originalWarplanGeometry(points, line, viewportHeight) {
     const [x, y] = bend.start;
     const angle = direction(f32(to[0] - x), f32(to[1] - y));
     const [nx, ny] = normal(angle, line / 2);
-    polygons.push([[f32(x + nx), f32(y + ny)], [f32(x - nx), f32(y - ny)],
-      [f32(to[0] - nx), f32(to[1] - ny)], [f32(to[0] + nx), f32(to[1] + ny)]], ...bend.fan);
+    const base = [[f32(x + nx), f32(y + ny)], [f32(x - nx), f32(y - ny)],
+      [f32(to[0] - nx), f32(to[1] - ny)], [f32(to[0] + nx), f32(to[1] + ny)]];
+    // 00AAD980 selects the edge endpoints. 00AAD6A0 draws the body and fan first.
+    emit(base);
+    for (const triangle of bend.fan) emit(triangle);
+    edge(base[1], base[2]);
+    edge(base[0], base[3]);
+    if (!lastBase) edge(base[0], base[1]);
+    for (const [, a, b] of bend.fan) edge(a, b);
+    lastBase = base;
     previousAngle = angle;
     arrow = {to, angle};
   }
@@ -85,7 +104,11 @@ export function originalWarplanGeometry(points, line, viewportHeight) {
     const span = ARROW_SIDE * line, length = span * TRIANGLE_HEIGHT;
     const [nx, ny] = normal(angle, span / 2);
     const tip = [f32(x + f32(Math.cos(angle)) * length), f32(y + f32(Math.sin(angle)) * length)];
-    polygons.push([[f32(x + nx), f32(y + ny)], [f32(x - nx), f32(y - ny)], tip]);
+    const a = [f32(x + nx), f32(y + ny)], b = [f32(x - nx), f32(y - ny)];
+    emit([a, b, tip]);
+    edge(lastBase[2], b);
+    edge(b, tip);
+    edge(tip, a);
+    edge(a, lastBase[3]);
   }
-  return polygons.map(vertices => vertices.map(([x, y]) => [x, f32(viewportHeight - y)]));
 }

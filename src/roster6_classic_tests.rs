@@ -54,7 +54,7 @@ fn air_defense_native_rps_rejects_ground_and_acquires_aircraft() {
     g.build_grid();
     assert_eq!(g.acquire(&g.ents[own],&DEFS[59],12.0),g.h(air));
     g.ents[air].hp=1000.0;
-    let mut e=g.ents[own];g.fire(&mut e,&DEFS[59].w[0],air);
+    let mut e=g.ents[own];g.fire(own,&mut e,&DEFS[59].w[0],air);
     assert!(g.ents[air].hp<1000.0);
 }
 
@@ -66,7 +66,7 @@ fn coastal_defense_uses_real_ballista_ammo_and_native_ship_matchup() {
     assert!(g.rps_allows(&g.ents[own],&g.ents[ship]));
     let attack=crate::ee2_up15_attack::lookup(60,1).unwrap();
     assert!(attack.missile);assert!(attack.projectile_speed.is_some());
-    let mut e=g.ents[own];g.fire(&mut e,&DEFS[60].w[0],ship);
+    let mut e=g.ents[own];g.fire(own,&mut e,&DEFS[60].w[0],ship);
     let p=g.projs.last().unwrap();
     assert_eq!(p.speed,attack.projectile_speed.unwrap());
     assert_eq!(p.attacker_profile,crate::ee2_combat::profile(60,1));
@@ -121,10 +121,10 @@ fn sail_permanent_damage_research_survives_epoch_in_current_arithmetic_adapter()
     g.rebuild_modifiers(0,false);
     assert_eq!(g.effective_weapon_damage(0,58,DEFS[58].w[0].dmg).to_bits(),180.0_f32.to_bits());
     let own=g.spawn(58,0,100.5,100.5);let target=g.spawn(29,1,105.5,100.5);
-    let mut e=g.ents[own];g.fire(&mut e,&DEFS[58].w[0],target);
+    let mut e=g.ents[own];g.fire(own,&mut e,&DEFS[58].w[0],target);
     assert_eq!(g.projs.last().unwrap().dmg.to_bits(),180.0_f32.to_bits());
     g.players[0].epoch=9;g.rebuild_modifiers(0,false);g.projs.clear();
-    g.fire(&mut e,&DEFS[58].w[0],target);
+    g.fire(own,&mut e,&DEFS[58].w[0],target);
     assert_eq!(g.projs.last().unwrap().dmg.to_bits(),204.0_f32.to_bits());
     g.build_grid();g.refresh_display_fog();g.save();let mut loaded=Game::load(&g.savebuf).unwrap();
     assert_eq!(loaded.effective_weapon_damage(0,58,DEFS[58].w[0].dmg).to_bits(),204.0_f32.to_bits());

@@ -11,7 +11,7 @@ fn native_fortress_progression_fires_correct_damage_range_reload_and_missile() {
     for (epoch,damage,range,kind) in [(0,75.0,7.0,W_ARROW),(3,100.0,9.0,W_ARROW),(5,115.0,9.0,W_ARROW),
         (7,145.0,10.0,W_SHELL),(9,170.0,10.0,W_SHELL),(11,200.0,11.0,W_SHELL),(13,225.0,11.0,W_SHELL)] {
         let mut g=game(epoch);let f=g.spawn(FORTRESS,0,120.5,120.5);let target=g.spawn(WORKER,1,124.5,120.5);
-        g.build_grid();let mut e=g.ents[f];g.fire(&mut e,&DEFS[FORTRESS as usize].w[0],target);
+        g.build_grid();let mut e=g.ents[f];g.fire(f,&mut e,&DEFS[FORTRESS as usize].w[0],target);
         let p=g.projs.last().expect("real native fortress shot");
         assert_eq!(p.kind,kind);assert!((p.dmg-damage).abs()<0.001);assert_eq!(p.targets,if cfg!(feature="ee2-up15"){LAND|SEA|AIR|SUB}else{LAND|SEA});assert_eq!(e.cd,3.0);
         assert!((DEFS[FORTRESS as usize].w[0].range+g.modifiers[0][FORTRESS as usize][6]-range).abs()<0.001);

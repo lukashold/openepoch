@@ -7,7 +7,7 @@ import {loadOriginalFullmapArt} from './original-fullmap-art.js';
 import {nativeMetaEpoch} from './original-hud-layout.js';
 import {createFullmapSpriteCache} from './fullmap-sprites.js';
 import {paintFullmapCityLabels,paintFullmapTerritoryLabels,readFullmapCityLabels,readFullmapTerritoryLabels} from './fullmap-territory-names.js?v=native22';
-import {createOriginalWarplanPane} from './original-warplan-pane.js?v=native23';
+import {createOriginalWarplanPane} from './original-warplan-pane.js?v=native24';
 
 const FILTERS = {units:'Einheiten', buildings:'Gebäude und Mauern', resources:'Ressourcen und Bäume', territories:'Territorien'};
 const PREFS = 'openepoch-fullmap-options-v1';
@@ -32,7 +32,7 @@ function rect(node, geometry) {
 }
 
 export function createFullmap({dialog,wasm,metadata,size,teams,originalArt,territoryNameCatalog,cityNameCatalog,bitmapFonts,
-  onAccept,onToggle,onPreview,pip,drawFlares,warplanCue,
+  onAccept,onToggle,onPreview,pip,drawFlares,drawBattleFlares,warplanCue,
   warplanPeer,warplanRecipient,warplanClock}) {
   const canvas = dialog.querySelector('canvas');
   const draw = canvas.getContext('2d', {alpha:false});
@@ -75,6 +75,7 @@ export function createFullmap({dialog,wasm,metadata,size,teams,originalArt,terri
   if (typeof wasm.fullmap_territory_labels_build === 'function' && typeof wasm.fullmap_territory_labels_ptr === 'function') {
     filters.terrNames = 'Territoriennamen';
   }
+  if (drawBattleFlares) filters.battles = 'Schlachten';
   const options = Object.fromEntries(Object.keys(filters).map(key=>[key,saved?.[key] !== false]));
   const pipWidgets = new Map();
   const pipViewport = () => pipCanvas.hidden ? null : pipCanvas.getBoundingClientRect();
@@ -282,6 +283,7 @@ export function createFullmap({dialog,wasm,metadata,size,teams,originalArt,terri
       {names:cityNameCatalog?.names,bitmapFonts});
     warplans.paint(draw,(x,y)=>fullmapScreenPoint(x,y,projection,bounds),dialog.clientWidth,dialog.clientHeight);
     drawFlares?.(draw,project,64,'fullmap');
+    if (options.battles) drawBattleFlares(draw,project,64,'fullmap');
   }
 
   function nativePoint(event, integerInput = false) {

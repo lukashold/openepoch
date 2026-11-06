@@ -21,7 +21,7 @@ fn light_infantry_rank_changes_the_damage_captured_by_a_real_arrow() {
         game.build_grid();
         game.update_fog();
         let weapon = DEFS[attacker.def as usize].w[0];
-        game.fire(&mut attacker, &weapon, target);
+        game.fire(shooter, &mut attacker, &weapon, target);
         let source_damage = ((110 + 10 * index) as f64 * f64::from(0.01_f32) * 7.0) as f32;
         assert_eq!(game.projs.pop().unwrap().dmg.to_bits(), source_damage.to_bits());
         game.kill(target);
@@ -62,7 +62,7 @@ fn source_family_ranks_keep_wounded_health_and_change_real_attacks() {
             game.update_fog();
             let weapon = DEFS[attacker.def as usize].w[0];
             let hp = game.ents[target].hp;
-            game.fire(&mut attacker, &weapon, target);
+            game.fire(index, &mut attacker, &weapon, target);
             if family == 0 {
                 let attacker_profile = crate::ee2_combat::profile(def, 0);
                 let multiplier = crate::ee2_combat::multiplier_from_profile(attacker_profile, WORKER, 0)
@@ -80,7 +80,7 @@ fn volley(splash:bool,recycle:bool)->(Game,usize,usize){
  let mut g=Game::new(7,0,0,2,0);for t in 0..2{g.players[t].epoch=5;g.rebuild_modifiers(t as u8,false);}
  let a=g.spawn(if splash{65}else{12},0,100.5,100.5);let target=g.spawn(WORKER,1,105.5,100.5);let nearby=g.spawn(WORKER,1,105.7,100.5);
  g.build_grid();g.update_fog();
- let mut attacker=g.ents[a];let weapon=DEFS[attacker.def as usize].w[0];for _ in 0..3{g.fire(&mut attacker,&weapon,target);}g.ents[a]=attacker;
+ let mut attacker=g.ents[a];let weapon=DEFS[attacker.def as usize].w[0];for _ in 0..3{g.fire(a,&mut attacker,&weapon,target);}g.ents[a]=attacker;
  assert_eq!(g.projs.len(),3,"real ranged fire must create an in-flight volley");g.kill(a);
  if recycle{let old=g.h(target);g.kill(target);let next=g.spawn(WORKER,1,105.5,100.5);assert_eq!(next,target);assert_ne!(g.h(next),old);assert!(g.projs.iter().all(|p|p.tgt==old));}
  g.tick();(g,target,nearby)

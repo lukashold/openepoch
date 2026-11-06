@@ -56,6 +56,10 @@ anhängen. Neu fertiggestellte Städte erhalten dann Namen aus den
 Original-Zivilisationslisten. &territoryNames=1 aktiviert neue Gebietsnamen.
 Mit &rememberedCities=1 zeigt die Weltkarte zusätzlich die zuletzt gesehenen
 Stadtzentren im Nebel. Diese Option ist für neue UP-Solo-Scharmützel verfügbar.
+Angriffe auf eigene Einheiten und Gebäude erscheinen als Schlachtsignale auf
+der Mini- und Weltkarte. Mit der Leertaste springst du zu den letzten Schlachten.
+Umschalt + Leertaste wechselt die Position im geöffneten Bild-in-Bild-Fenster.
+Auf der Weltkarte kannst du die Schlachtsignale ausblenden.
 Im Reiter „Kriegspläne“ zeichnest du mit Linksklick Wegpunkte und beendest den
 Pfad mit Rechtsklick. Die Karte zeichnet den Pfad mit abgerundeten Kurven und
 einer Pfeilspitze. Zwei Spieler mit diesem Stand können ihre Pfade versenden,

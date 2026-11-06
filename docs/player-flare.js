@@ -6,14 +6,14 @@ const PLAYER_ANIMATION_SECONDS = 0.75;
 const PLAYER_FLARE_SECONDS = 15;
 
 // GWAnimatedSprite advances at most one frame per UI update and discards overshoot.
-function createAnimation() {
-  const slice = Math.fround(PLAYER_ANIMATION_SECONDS/PLAYER_FRAME_COUNT);
+export function createFlareAnimation(frameCount,seconds) {
+  const slice = Math.fround(seconds/frameCount);
   let elapsed=0, frame=0;
   return {
     advance(dt) {
       const total=elapsed+Math.fround(dt);
       if (total>=slice) {
-        frame=(frame+1)%PLAYER_FRAME_COUNT;
+        frame=(frame+1)%frameCount;
         elapsed=0;
       } else elapsed=Math.fround(total);
     },
@@ -25,7 +25,8 @@ function createAnimation() {
 export function createPlayerFlare({mapSize,tickSeconds,originalArt,local,teams,onMode}) {
   let marker, tick = 0, armed = false, art, loading = false;
   let mapOpen = false;
-  const miniAnimation=createAnimation(), mapAnimation=createAnimation();
+  const miniAnimation=createFlareAnimation(PLAYER_FRAME_COUNT,PLAYER_ANIMATION_SECONDS);
+  const mapAnimation=createFlareAnimation(PLAYER_FRAME_COUNT,PLAYER_ANIMATION_SECONDS);
   const {image,colorize} = createFullmapSpriteCache(teams);
 
   function arm() {

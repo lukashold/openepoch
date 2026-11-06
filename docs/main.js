@@ -33,15 +33,16 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=skirmish-climates';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native23';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native24';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=epoch13';
 import {createFullscreenController} from './fullscreen.js?v=building2';
 import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native17';
 import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=fortress1';
 import {updateOriginalCamera,originalCameraRay,originalFractionForZoom,normalizeOriginalHeading,rotateOriginalCameraHeading} from './original-camera.js?v=heading2';
-import {createFullmap} from './fullmap.js?v=native23';
-import {createPlayerFlare} from './player-flare.js';
+import {createFullmap} from './fullmap.js?v=native24';
+import {createPlayerFlare} from './player-flare.js?v=native24';
+import {createBattleFlare} from './battle-flare.js?v=native24';
 import {loadFullmapCityNameCatalog,loadFullmapTerritoryNameCatalog} from './fullmap-territory-names.js?v=native22';
 import {createWarplanPeer,WARPLAN_PEER_VERSION} from './original-warplan-peer.js';
 
@@ -693,6 +694,7 @@ const playerFlare = createPlayerFlare({mapSize:MAP,tickSeconds:TICK,originalArt:
     $('player-flare-button').setAttribute('aria-pressed',String(active));
     canvas.style.cursor=active?'crosshair':'default';
   }});
+const battleFlare = typeof wasm.battle_signals_enable === 'function' ? createBattleFlare({wasm,originalArt:originalEnabled}) : null;
 function armPlayerFlare(){
   if(rulesProfile.ruleset!==2||!running||bench||net||!ui||ui.win||modalOpen())return;
   cancelMapGesture();cancelBuilding();attackMode=false;
@@ -712,8 +714,9 @@ const fullmap = rulesProfile.ruleset===2&&packActorReader ? createFullmap({
   warplanCue:sfx.playWarplanCue,
   pip:fullmapPip,
   onAccept(point){if(!fullmapPip.accept(point)){[cam.x,cam.y]=point;updateCamera();}},
-  onToggle(open){keys.clear();playerFlare.cancel();playerFlare.setMapOpen(open);cancelMapGesture();$('tip').style.display='none';sfx.play(sfx.FULLMAP_CUE);},
+  onToggle(open){keys.clear();playerFlare.cancel();playerFlare.setMapOpen(open);battleFlare?.setMapOpen(open);cancelMapGesture();$('tip').style.display='none';sfx.play(sfx.FULLMAP_CUE);},
   drawFlares:playerFlare.draw,
+  drawBattleFlares:battleFlare?.draw,
 }) : null;
 $('fullmap-button').onclick=()=>{if(running&&!bench&&!modalOpen())fullmap?.open();};
 
@@ -739,6 +742,7 @@ function bindWorldTerrainMaterial() {
 
 function begin() {
   playerFlare.reset(wasm.game_tick()>>>0);
+  battleFlare?.reset(!bench);
   fullmapPip.reset();
   sfx.stopStoneThrowerWheels();
   fullmap?.close();
@@ -984,6 +988,7 @@ function frame(now) {
   if (wasm.terr_dirty()) { const p = wasm.terr_ptr(); bindTexture(3,territoryTexture); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, MAP, MAP, gl.RGBA, gl.UNSIGNED_BYTE, u8(p, MAP * MAP * 4)); fullmap?.invalidateTerritories(); }
   const tickNow = wasm.game_tick()>>>0;
   playerFlare.update(tickNow,dt);
+  battleFlare?.update(dt);
   const seasonPhase=seasonSession.update();
   if(qaMode)canvas.dataset.season=JSON.stringify(seasonPhase);
   if (fogTick !== tickNow || fogTick < 0) {
@@ -1266,6 +1271,7 @@ function drawMini() {
   c.forEach((q, i) => i ? mctx.lineTo(q[0], q[1]) : mctx.moveTo(q[0], q[1]));
   mctx.closePath(); mctx.stroke();
   playerFlare.draw(mctx,(x,y)=>[x,y],48*MAP/Math.max(1,mini.clientWidth));
+  battleFlare?.draw(mctx,(x,y)=>[x,y],48*MAP/Math.max(1,mini.clientWidth));
 }
 function miniWorld(e) { const r = mini.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * MAP, (e.clientY - r.top) / r.height * MAP]; }
 mini.addEventListener('mousedown', e => {
@@ -1370,6 +1376,15 @@ function setSpeed(i) { if (net) return; speed = SPEEDS[Math.min(SPEEDS.length - 
 function togglePause() { if (net) return toast('No pausing in multiplayer'); paused = !paused; if(paused)sfx.stopStoneThrowerWheels(); $('pause').textContent = paused ? 'Fortsetzen' : 'Pause'; }
 document.addEventListener('visibilitychange',()=>{if(document.hidden)sfx.stopStoneThrowerWheels();});
 function jumpToSelection() { const x = wasm.sel_center(0); if (x >= 0) { cam.x = x; cam.y = wasm.sel_center(1); } }
+function focusNextBattle(pip) {
+  if (pip && !fullmapPip.isOpen()) return false;
+  const point = battleFlare?.cycle();
+  if (!point) return false;
+  if (pip) return fullmapPip.focusWorld(point);
+  [cam.x,cam.y] = point;
+  updateCamera();
+  return true;
+}
 function goHome(){const territory=ui?.diplomacy?.territories?.find(area=>area.owner===ui.local);cam.x=territory?.x??wasm.start_x();cam.y=territory?.y??wasm.start_y();}
 function idleWorker() { const i = wasm.select_idle_worker(); if (i !== -1 && i >>> 0 !== 0xffffffff) { cam.x = wasm.ent_x(i); cam.y = wasm.ent_y(i); lastUi = 0; selectedUnitVoice('select'); } }
 function toggleMute() { sfx.setMuted(!sfx.isMuted()); $('mute').textContent = sfx.isMuted() ? 'Ton aus' : 'Ton an'; }
@@ -1410,6 +1425,9 @@ addEventListener('keydown', e => {
   if(e.key==='F11'){e.preventDefault();if(!e.repeat)fullscreen.toggle();return;}
   if(fullmap?.isOpen()){
     if(fullmap.warplans.key(e))return;
+    if(e.key===' '&&!e.ctrlKey&&!e.altKey&&!e.metaKey&&focusNextBattle(e.shiftKey)){
+      e.preventDefault();return;
+    }
     if(e.key==='Escape'||(e.key==='Tab'&&!e.shiftKey&&!e.altKey&&!e.ctrlKey&&!e.metaKey)){
       e.preventDefault();if(!e.repeat)fullmap.close();
     } else fullmap.pipKey(e);
@@ -1454,7 +1472,7 @@ addEventListener('keydown', e => {
     case 'F': idleWorker(); break;
     case 'F4': e.preventDefault();if(!bench)diplomacy.open();break;
     case 'H': goHome(); break;
-    case ' ': jumpToSelection(); e.preventDefault(); break;
+    case ' ': if(!e.altKey&&!focusNextBattle(e.shiftKey)&&!e.shiftKey)jumpToSelection(); e.preventDefault(); break;
     case 'P': togglePause(); break;
     case '+': case '=': setSpeed(SPEEDS.indexOf(speed) + 1); break;
     case '-': setSpeed(SPEEDS.indexOf(speed) - 1); break;
@@ -1476,6 +1494,7 @@ $('save').onclick = () => saveGame();
 $('speed').onclick = () => setSpeed((SPEEDS.indexOf(speed) + 1) % SPEEDS.length);
 function toMenu() {
   playerFlare.reset(0);
+  battleFlare?.reset(false);
   $('player-flare-button').hidden=true;
   fullmap?.close();
   $('fullmap-button').hidden=true;

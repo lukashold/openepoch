@@ -1,7 +1,7 @@
 import {originalWarplanControls,originalWarplanLayout} from './original-warplan-layout.js';
 import {createOriginalWarplanPath,originalWarplanPathWidths,visitOriginalWarplanPaths} from './original-warplan-path.js';
 import {createWarplanPeerControls} from './original-warplan-peer-controls.js';
-import {originalWarplanGeometry} from './original-warplan-geometry.js?v=native23';
+import {visitOriginalWarplanGeometry} from './original-warplan-geometry.js?v=native24';
 
 export function createOriginalWarplanPane({host,options,refresh,playCue,peer,recipient,clock,teams}) {
   const editor = createOriginalWarplanPath({playCue});
@@ -108,20 +108,17 @@ export function createOriginalWarplanPane({host,options,refresh,playCue,peer,rec
     const {line,stroke} = originalWarplanPathWidths(screenWidth);
     draw.save();
     visitOriginalWarplanPaths(exchange.visiblePaths(),project,(points,colorPlayer) => {
-      draw.beginPath();
-      for (const polygon of originalWarplanGeometry(points,line,screenHeight)) {
-        draw.moveTo(...polygon[0]);
-        for (const point of polygon.slice(1)) draw.lineTo(...point);
-        draw.closePath();
-      }
-      // Keep the existing Canvas contrast outline while the original edge
-      // mesh's zero-alpha compositing mode is resolved.
-      draw.lineWidth = stroke;
-      draw.strokeStyle = '#252625';
-      draw.stroke();
       const rgb=teams?.[colorPlayer-1];
-      draw.fillStyle = rgb ? `rgb(${rgb.map(value=>Math.round(value*255)).join(',')})` : '#fff';
-      draw.fill();
+      const color=rgb ? `rgb(${rgb.map(value=>Math.round(value*255)).join(',')})` : '#fff';
+      visitOriginalWarplanGeometry(points,line,screenHeight,stroke,(polygon,edge) => {
+        draw.beginPath();
+        draw.moveTo(...polygon[0]);
+        for (let i=1; i<polygon.length; i++) draw.lineTo(...polygon[i]);
+        draw.closePath();
+        // The original edge uses black RGB with both DX8 alpha operations disabled.
+        draw.fillStyle = edge ? '#000' : color;
+        draw.fill();
+      });
     });
     draw.restore();
   }

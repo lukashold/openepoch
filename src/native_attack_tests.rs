@@ -20,25 +20,25 @@ fn god_mode_protects_only_the_local_player_while_cheats_are_enabled() {
     let mut other = game.ents[enemy_shooter];
     let weapon = &DEFS[16].w[0];
 
-    game.fire(&mut other, weapon, local);
-    game.fire(&mut own, weapon, enemy);
+    game.fire(enemy_shooter, &mut other, weapon, local);
+    game.fire(local_shooter, &mut own, weapon, enemy);
     assert_eq!(game.ents[local].hp, 1000.0);
     assert!(game.ents[enemy].hp < 1000.0);
 
     game.cheats_enabled = false;
-    game.fire(&mut other, weapon, local);
+    game.fire(enemy_shooter, &mut other, weapon, local);
     let hp_after_disable = game.ents[local].hp;
     assert!(hp_after_disable < 1000.0);
     game.cheats_enabled = true;
-    game.fire(&mut other, weapon, local);
+    game.fire(enemy_shooter, &mut other, weapon, local);
     assert_eq!(game.ents[local].hp, hp_after_disable);
 }
 #[test]fn actual_antiaircraft_and_destroyer_acquire_aircraft(){
  for id in [25,32]{let mut g=game(10);let own=g.spawn(id,0,100.5,100.5);let target=g.spawn(37,1,105.5,100.5);g.build_grid();assert!(DEFS[id as usize].weapon_vs(AIR).is_some());assert!(g.rps_allows(&g.ents[own],&g.ents[target]));assert_eq!(g.acquire(&g.ents[own],&DEFS[id as usize],11.0),g.h(target));}
 }
 #[test]fn proven_rps_class_survives_lower_owner_epoch(){let mut g=game(13);g.players[1].epoch=0;let f=g.spawn(FORTRESS,0,100.5,100.5);let sub=g.spawn(34,1,103.5,100.5);g.ents[sub].reveal_t=10.0;g.build_grid();assert!(!g.rps_allows(&g.ents[f],&g.ents[sub]));assert_eq!(g.acquire(&g.ents[f],&DEFS[FORTRESS as usize],11.0),NONE);}
-#[test]fn native_direct_bullet_has_no_synthetic_moving_projectile(){let mut g=game(10);let own=g.spawn(16,0,100.5,100.5);let target=g.spawn(WORKER,1,105.5,100.5);g.ents[target].hp=1000.0;assert!(!a::lookup(16,10).unwrap().missile);let mut e=g.ents[own];g.fire(&mut e,&DEFS[16].w[0],target);assert!(g.projs.is_empty());assert!(g.ents[target].hp<1000.0);}
-#[test]fn named_ammo_uses_its_original_move_speed(){let mut g=game(12);let own=g.spawn(25,0,100.5,100.5);let target=g.spawn(37,1,105.5,100.5);let mut e=g.ents[own];g.fire(&mut e,&DEFS[25].w[0],target);let shot=g.projs.last().unwrap();assert_eq!(shot.speed,11.0);assert_eq!(shot.splash,0.0);assert_eq!(shot.kind,W_MISSILE);}
+#[test]fn native_direct_bullet_has_no_synthetic_moving_projectile(){let mut g=game(10);let own=g.spawn(16,0,100.5,100.5);let target=g.spawn(WORKER,1,105.5,100.5);g.ents[target].hp=1000.0;assert!(!a::lookup(16,10).unwrap().missile);let mut e=g.ents[own];g.fire(own,&mut e,&DEFS[16].w[0],target);assert!(g.projs.is_empty());assert!(g.ents[target].hp<1000.0);}
+#[test]fn named_ammo_uses_its_original_move_speed(){let mut g=game(12);let own=g.spawn(25,0,100.5,100.5);let target=g.spawn(37,1,105.5,100.5);let mut e=g.ents[own];g.fire(own,&mut e,&DEFS[25].w[0],target);let shot=g.projs.last().unwrap();assert_eq!(shot.speed,11.0);assert_eq!(shot.splash,0.0);assert_eq!(shot.kind,W_MISSILE);}
 #[test]fn artillery_minimum_range_rejects_close_targets(){let mut g=game(5);let own=g.spawn(20,0,100.5,100.5);let target=g.spawn(WORKER,1,102.5,100.5);g.build_grid();assert_eq!(g.native_attack_min(&g.ents[own],&g.ents[target]),4.0);assert_eq!(g.acquire(&g.ents[own],&DEFS[20],12.0),NONE);g.ents[target].x=106.5;g.build_grid();assert_eq!(g.acquire(&g.ents[own],&DEFS[20],12.0),g.h(target));}
 #[test]fn native_friendly_fraction_and_bomber_radius_binder(){assert_eq!(a::lookup(20,1).unwrap().splash,1.0);assert_eq!(a::lookup(20,1).unwrap().friendly,0.0);assert_eq!(a::lookup(38,14).unwrap().splash,3.0);assert_eq!(a::min_range(a::lookup(38,14).unwrap(),true),0.0);}
 #[test]fn source_round_waits_for_damage_time(){let mut g=game(0);let own=g.spawn(9,0,100.5,100.5);let target=g.spawn(WORKER,1,101.5,100.5);g.ents[target].hp=1000.0;g.tick=0;round(&mut g,own,target);assert_eq!(g.ents[target].hp,1000.0);for tick in 1..=8{g.tick=tick;round(&mut g,own,target);assert_eq!(g.ents[target].hp,1000.0);}for tick in 9..=13{g.tick=tick;round(&mut g,own,target);}assert!(g.ents[target].hp<1000.0);}
