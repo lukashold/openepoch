@@ -6,6 +6,9 @@ const TRADE = {folder:'trade-presentation',sha:'db08f20a02cbd1fd1f3e559ac15df1b5
   format:'ee2-native-trade-presentation-v1',ids:{TradeCart:81,MerchantShip:82},starts:{TradeCart:[1,5,10,15],MerchantShip:[0,5,10,15]}};
 const FIGHTER_BOMBER = {folder:'fighter-bomber',sha:'b1e5280f590a6b96871b13628be58387fc507c43882c7817d5b871127900cd86',
   format:'ee2-native-fighter-bomber-presentation-v1',ids:{FighterBomber:83},starts:{FighterBomber:[10,11,12,13,14,15]}};
+const CARRIER = {folder:'aircraft-carrier',sha:'714d9458f53419acf3c1dfbcee5d67999450e6645161dab98f66b5e5a8c8d6f8',
+  format:'ee2-native-aircraft-carrier-presentation-v1',family:'AircraftCarrier',ids:{AircraftCarrier:84},starts:{AircraftCarrier:[10,13,15]}};
+const carrierLoop = {url:'local-original/audio/aircraft-carrier/fx_move_boat_4_15-pcm.wav',sha256:'442d1a24b43abe1e05102ad85022ef3eecb32bcdd56393618deaacc118b90be9',bytes:170710};
 const relative = (path, prefix) => typeof path === 'string' && path.startsWith(prefix) && /^[\w./-]+$/.test(path) && !path.split('/').includes('..');
 const hash = value => /^[a-f0-9]{64}$/.test(value || '');
 
@@ -27,12 +30,15 @@ async function loadPresentation(spec,{enabled, fetchFile = globalThis.fetch, bit
   try {
     const catalog = await decode(root+'manifest.json',spec.sha);
     const count=Object.values(spec.starts).reduce((total,epochs)=>total+epochs.length-1,0);
-    if (catalog.format !== spec.format || catalog.profile !== 'up15-csv5' || catalog.rows?.length !== count) throw Error('Unexpected original presentation catalog');
+    const sourceMatches = spec.family ? catalog.family === spec.family : catalog.profile === 'up15-csv5';
+    if (catalog.format !== spec.format || !sourceMatches || catalog.rows?.length !== count) throw Error('Unexpected original presentation catalog');
     const rows = new Map(), seen = new Set();
+    const modelRows = [];
     for (const row of catalog.rows) {
-      const id = spec.ids[row.family], interval = spec.starts[row.family], index = interval?.indexOf(row.epoch);
+      const family = spec.family ?? row.family;
+      const id = spec.ids[family], interval = spec.starts[family], index = interval?.indexOf(row.epoch);
       const icon = row.icons?.packed7;
-      if (!id || index < 0 || interval[index + 1] !== row.until || seen.has(`${id}:${row.epoch}`) || row.model.sourceFamily !== row.family ||
+      if (!id || index < 0 || interval[index + 1] !== row.until || seen.has(`${id}:${row.epoch}`) || row.model.sourceFamily !== family ||
           !relative(row.model.url, root+'models/') || !hash(row.model.sha256) ||
           (row.model.lodFarUrl && (!relative(row.model.lodFarUrl, root+'models/') || !hash(row.model.lodFarSha256))) ||
           !relative(icon?.url, root+'icons/packed7/') || !hash(icon.sha256) || icon.width !== 308 || icon.height !== 240) throw Error('Invalid original presentation row');
@@ -40,8 +46,8 @@ async function loadPresentation(spec,{enabled, fetchFile = globalThis.fetch, bit
       const entries = rows.get(id) || [];
       entries.push(row);
       rows.set(id, entries);
+      modelRows.push({...row.model, id, regionalFallback: true});
     }
-    const modelRows = catalog.rows.map(row => ({...row.model, id: spec.ids[row.family], regionalFallback: true}));
     const lookup = (id, epoch) => rows.get(id)?.find(row => epoch >= row.epoch && epoch < row.until);
     const bitmaps = new Map();
     const [teamManifest, sailManifest, audioManifest] = await Promise.all([
@@ -58,6 +64,8 @@ async function loadPresentation(spec,{enabled, fetchFile = globalThis.fetch, bit
       }),
     ]);
     return Object.freeze({modelRows, teamManifest, sailManifest, audioManifest,
+      movementAudio: spec === CARRIER && audioManifest ? carrierMovementAudio(audioManifest, lookup, base) : null,
+      garrisonFlag: spec === CARRIER ? {url:catalog.garrisonFlag,sha256:catalog.garrisonFlagSha256,carrierAt:epoch=>lookup(84,epoch)} : null,
       icon: (id, epoch) => bitmaps.get(lookup(id, epoch)?.icons.packed7.url),
       name(id, epoch, count) {
         const labels = lookup(id, epoch)?.labels;
@@ -69,8 +77,26 @@ async function loadPresentation(spec,{enabled, fetchFile = globalThis.fetch, bit
   }
 }
 
+function carrierMovementAudio(audio, lookup, base) {
+  const name = 'fx_move_boat_4';
+  const sound = audio.events?.[name];
+  if (!sound || !audio.assets?.[sound.file]) return null;
+  const event = {...carrierLoop, url:new URL(carrierLoop.url, base), gain:sound.volume,
+    pitchVariation:sound.pitchVariation, maxInstances:sound.maxInstances, sampleRate:22050};
+  const row = (id, epoch) => {
+    const source = lookup(id, epoch);
+    if (!source) return undefined;
+    // The cue-only Walk state contains a persistent start. Re-scanning its
+    // zero key has no effect until the next accepted animation change.
+    const keys = source.states.walk.textKeys.filter(key => key.event === name);
+    return {states:{walk:{keys, clipDuration:3.4028234663852886e38}}};
+  };
+  return {events:new Map([[name, event]]), row};
+}
+
 export const loadTradePresentation = options => loadPresentation(TRADE,options);
 export const loadFighterBomberPresentation = options => loadPresentation(FIGHTER_BOMBER,options);
+export const loadCarrierPresentation = options => loadPresentation(CARRIER,options);
 
 export async function loadTradeRouteArt({enabled, fetchFile = globalThis.fetch, base = new URL('./', import.meta.url)} = {}) {
   if (!enabled) return null;

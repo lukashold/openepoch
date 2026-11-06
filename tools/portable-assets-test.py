@@ -276,6 +276,46 @@ class AssetAudit:
         audio=self.check_pinned_media(catalog.get('audioManifest'),catalog.get('audioManifestSha256'),name,'fighter-bomber-audio-manifest')
         if audio:self.check_audio_families(audio)
 
+    def check_aircraft_carrier(self):
+        loader='original-trade-presentation.js'
+        name='local-original/aircraft-carrier/manifest.json'
+        source=self.files[loader].read_text(encoding='utf8')
+        match=re.search(r"folder:'aircraft-carrier',sha:'([0-9a-f]{64})'",source)
+        if not match:
+            self.error('aircraft-carrier-manifest-pin',loader);return
+        def pinned(url,digest,owner,kind):
+            target=self.check_pinned_media(url,digest,owner,kind)
+            return target if target and self.digest(target)==digest else None
+        if not pinned(name,match[1],loader,'aircraft-carrier-catalog'):return
+        catalog=self.read_json(name)
+        rows=catalog.get('rows',[])
+        intervals=[(row.get('epoch'),row.get('until'),row.get('capacity')) for row in rows]
+        if (catalog.get('format')!='ee2-native-aircraft-carrier-presentation-v1' or
+                catalog.get('family')!='AircraftCarrier' or intervals!=[(10,13,4),(13,15,6)]):
+            self.error('aircraft-carrier-catalog-format',name);return
+        checked_models=[]
+        for row in rows:
+            model=row['model']
+            near=pinned(model['url'],model['sha256'],name,'aircraft-carrier-model')
+            far=not model.get('lodFarUrl') or pinned(model['lodFarUrl'],model['lodFarSha256'],name,'aircraft-carrier-model')
+            if near and far:checked_models.append(model)
+            for profile in ('packed5','packed7'):
+                icon=row['icons'][profile]
+                self.check_pinned_media(icon['url'],icon['sha256'],name,'aircraft-carrier-icon',icon['bytes'])
+        self.check_models(name,'aircraft-carrier-',checked_models)
+        team=pinned(catalog.get('teamManifest'),catalog.get('teamManifestSha256'),name,'aircraft-carrier-team-manifest')
+        if team:self.check_teams(team,'aircraft-carrier-')
+        audio=pinned(catalog.get('audioManifest'),catalog.get('audioManifestSha256'),name,'aircraft-carrier-audio-manifest')
+        if audio:self.check_audio_families(audio)
+        loop=re.search(r"const carrierLoop = \{url:'([^']+)',sha256:'([0-9a-f]{64})',bytes:(\d+)\}",source)
+        if loop:self.check_pinned_media(loop[1],loop[2],loader,'aircraft-carrier-portable-loop',int(loop[3]))
+        else:self.error('aircraft-carrier-portable-loop-pin',loader)
+        flag=pinned(catalog.get('garrisonFlag'),catalog.get('garrisonFlagSha256'),name,'aircraft-carrier-garrison-source')
+        if flag:
+            data=self.read_json(flag)
+            for texture in [data['pole']['texture'],*data['textures'].values()]:
+                self.check_pinned_media(texture['url'],texture['sha256'],flag,'aircraft-carrier-garrison-texture',texture.get('bytes'))
+
     def check_air_mission_art(self):
         name='local-original/air-mission-ui/manifest.json'
         self.ref(name,'air-mission-order.js','air-mission-catalog')
@@ -918,6 +958,7 @@ class AssetAudit:
         if 'original-trade-presentation.js' in self.files:self.check_trade()
         if 'air-mission-order.js' in self.files:
             self.check_aircraft();self.check_air_mission_art()
+        if 'local-original/aircraft-carrier/manifest.json' in self.files:self.check_aircraft_carrier()
         if 'air-mission-flag.js' in self.files:self.check_air_mission_flag()
         if 'air-takeoff.js' in self.files:self.check_air_takeoff()
         if 'air-flight-audio.js' in self.files:self.check_air_flight_audio()

@@ -325,6 +325,8 @@ Attack{id:80,epoch:10,until:15,present:true,missile:false,visual_kind:2,min_mobi
 ];
 pub fn lookup(id:DefId,epoch:u8)->Option<&'static Attack>{
  #[cfg(feature="ee2-native13")]
+ if id == crate::carrier36_defs::CARRIER { return crate::carrier36_defs::attack(epoch); }
+ #[cfg(feature="ee2-native13")]
  if id == crate::air31_defs::FIGHTER_BOMBER { return crate::air31_defs::fighter_bomber_attack(epoch); }
  ROWS.iter().find(|r|r.id==id&&epoch>=r.epoch&&epoch<r.until)
 }

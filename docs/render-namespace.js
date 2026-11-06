@@ -29,6 +29,7 @@ export function createFrontendNamespace(wasm,{referenceMode=false,assetMapping=n
   if(referenceMode&&id===81)return 8;
   if(referenceMode&&id===82)return 42;
   if(referenceMode&&id===83)return 38;
+  if(referenceMode&&id===84)return 33;
   const flags=wasm.definition_flags(id)>>>0;
   return flags&1?0:flags&4?8:15;
  }

@@ -459,6 +459,8 @@ pub const fn apply(mut d:[Def;80])->[Def;80]{
 // Unknown angular speeds retain explicit independent input adapter until bound.
 pub fn turn_rate_at(id:DefId,epoch:u8)->f32{
  #[cfg(feature="ee2-native13")]
+ if id == crate::carrier36_defs::CARRIER { return crate::carrier36_defs::TURN_RATE; }
+ #[cfg(feature="ee2-native13")]
  if id == crate::air31_defs::FIGHTER_BOMBER {
   if let Some(row) = crate::air31_defs::flight_for_fighter_bomber(epoch) {
    return row.angle_degrees_per_second * 0.01745329238474369_f32;

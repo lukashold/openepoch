@@ -22,6 +22,8 @@ mod landing34;
 #[cfg(feature = "ee2-native13")]
 mod air_audio35;
 #[cfg(feature = "ee2-native13")]
+mod carrier36_defs;
+#[cfg(feature = "ee2-native13")]
 mod battle_signals;
 #[cfg(feature = "ee2-native13")]
 mod capture_animation26;
@@ -916,6 +918,12 @@ pub extern "C" fn air_landing_configure_peer(enabled: u32) -> u32 {
 
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
+pub extern "C" fn air_carrier_configure_peer(enabled: u32) -> u32 {
+    u32::from(enabled <= 1 && g().configure_peer_air_carrier(enabled != 0))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
 pub extern "C" fn air_landing_status(handle: u32, field: u32) -> u32 {
     let game = g();
     if game.get(handle).is_some_and(|i| game.visible(i)) {
@@ -1119,7 +1127,7 @@ pub extern "C" fn cmd_context(x: f32, y: f32, attack_move: u32) {
     }
     let j = pick(g, x, y, false);
     #[cfg(feature = "ee2-native13")]
-    if j != NOIDX && g.air_missions_enabled && g.ents[j].def == AIRFIELD && g.ents[j].team == g.local &&
+    if j != NOIDX && g.air_missions_enabled && g.air_host_slots(&g.ents[j]) != 0 && g.ents[j].team == g.local &&
         g.ents[j].built >= 1.0 {
         let mut aircraft = Vec::new();
         ids.retain(|&i| {
@@ -1228,7 +1236,7 @@ pub extern "C" fn cmd_unload() {
     let g = g();
     for i in selected(g) {
         #[cfg(feature = "ee2-native13")]
-        if g.air_missions_enabled && g.ents[i].def == AIRFIELD {
+        if g.air_missions_enabled && g.air_host_slots(&g.ents[i]) != 0 {
             g.submit(C_AIR_MISSION, 0.0, 0.0, air31::SCRAMBLE, &[g.h(i)]);
             continue;
         }

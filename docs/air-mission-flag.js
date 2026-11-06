@@ -1,4 +1,4 @@
-import {createNativeCloth,nativeInverseTagRotation,nativeLocalForces} from './source-cloth-kernel.js';
+import {createNativeCloth,nativeInverseTagRotation,nativeLocalForces,nativeRotateForce} from './source-cloth-kernel.js';
 import {nativeClothVertexColors} from './source-cloth-lighting.js';
 import {dynamicSailVertices} from './original-dynamic-sails.js';
 
@@ -173,10 +173,8 @@ function createMesh(gl,indices){
   return {vao,buffer,count:indices?.length??0};
 }
 
-export async function loadAirMissionFlag(gl,{enabled,fetchFile=globalThis.fetch,decode=globalThis.createImageBitmap,
-  base=new URL('./',import.meta.url),objectURL=URL.createObjectURL.bind(URL)}={}){
-  if(!enabled)return null;
-  async function read(path,hash){
+function flagMedia(base,fetchFile,decode){
+  const read=async(path,hash)=>{
     const url=new URL(path,base);url.searchParams.set('v',hash.slice(0,16));
     const response=await fetchFile(url);
     if(!response.ok)throw Error('Air mission flag media unavailable');
@@ -184,13 +182,20 @@ export async function loadAirMissionFlag(gl,{enabled,fetchFile=globalThis.fetch,
     const digest=new Uint8Array(await crypto.subtle.digest('SHA-256',bytes));
     if(Array.from(digest,v=>v.toString(16).padStart(2,'0')).join('')!==hash)throw Error('Air mission flag media checksum differs');
     return bytes;
-  }
+  };
+  const image=({url,sha256})=>read(url,sha256).then(value=>decode(new Blob([value],{type:'image/png'}),{premultiplyAlpha:'none',colorSpaceConversion:'none'}));
+  return {read,image};
+}
+
+export async function loadAirMissionFlag(gl,{enabled,fetchFile=globalThis.fetch,decode=globalThis.createImageBitmap,
+  base=new URL('./',import.meta.url),objectURL=URL.createObjectURL.bind(URL)}={}){
+  if(!enabled)return null;
+  const {read,image}=flagMedia(base,fetchFile,decode);
   try{
     const manifest=JSON.parse(new TextDecoder().decode(await read(directory+'manifest.json',manifestHash)));
     if(manifest.format!=='ee2-air-mission-flag-v1')return null;
     const {invalid,...records}=manifest.textures;
     const bytes=record=>read(record.url,record.sha256);
-    const image=record=>bytes(record).then(value=>decode(new Blob([value],{type:'image/png'}),{premultiplyAlpha:'none',colorSpaceConversion:'none'}));
     const [pole,clothBase,dark,ribbon,cursor]=await Promise.all([
       image(records.pole),image(records.base),image(records.dark),image(records.ribbon),bytes(invalid)
     ]);
@@ -206,6 +211,24 @@ export async function loadAirMissionFlag(gl,{enabled,fetchFile=globalThis.fetch,
   }catch{
     return null;
   }
+}
+
+function drawFlagMeshes(gl,shader,vp,dark,draw){
+  const restore=state(gl), u=shader.u;
+  try{
+    gl.useProgram(shader.handle);gl.uniformMatrix4fv(u.uVP,false,vp);
+    gl.uniform1i(u.uBase,0);gl.uniform1i(u.uDark,7);
+    gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.disable(gl.CULL_FACE);
+    gl.enable(gl.BLEND);gl.blendEquation(gl.FUNC_ADD);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+    gl.activeTexture(gl.TEXTURE0+7);gl.bindTexture(gl.TEXTURE_2D,dark);
+    draw((part,data,texture,origin,flag)=>{
+      gl.uniform1i(u.uFlag,flag?1:0);gl.uniform3fv(u.uOrigin,origin);
+      gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture);
+      gl.bindVertexArray(part.vao);gl.bindBuffer(gl.ARRAY_BUFFER,part.buffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.DYNAMIC_DRAW);
+      if(part.count)gl.drawElementsInstanced(gl.TRIANGLES,part.count,gl.UNSIGNED_SHORT,0,1);
+      else gl.drawArrays(gl.TRIANGLES,0,data.length/9);
+    });
+  }finally{restore();}
 }
 
 function createAirMissionFlagRenderer(gl,manifest,textures,cursor){
@@ -247,20 +270,7 @@ function createAirMissionFlagRenderer(gl,manifest,textures,cursor){
   }
   function draw({vp,routes,groundAt}){
     if(!routes.length)return;
-    const restore=state(gl), u=shader.u;
-    try{
-      gl.useProgram(shader.handle);gl.uniformMatrix4fv(u.uVP,false,vp);
-      gl.uniform1i(u.uBase,0);gl.uniform1i(u.uDark,7);
-      gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.disable(gl.CULL_FACE);
-      gl.enable(gl.BLEND);gl.blendEquation(gl.FUNC_ADD);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
-      gl.activeTexture(gl.TEXTURE0+7);gl.bindTexture(gl.TEXTURE_2D,textures.dark);
-      function mesh(part,data,texture,origin,flag){
-        gl.uniform1i(u.uFlag,flag?1:0);gl.uniform3fv(u.uOrigin,origin);
-        gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture);
-        gl.bindVertexArray(part.vao);gl.bindBuffer(gl.ARRAY_BUFFER,part.buffer);gl.bufferData(gl.ARRAY_BUFFER,data,gl.DYNAMIC_DRAW);
-        if(part.count)gl.drawElementsInstanced(gl.TRIANGLES,part.count,gl.UNSIGNED_SHORT,0,1);
-        else gl.drawArrays(gl.TRIANGLES,0,data.length/9);
-      }
+    drawFlagMeshes(gl,shader,vp,textures.dark,mesh=>{
       gl.depthMask(false);
       for(const route of routes){
         const key=route.path.flat().join(',');
@@ -275,9 +285,99 @@ function createAirMissionFlagRenderer(gl,manifest,textures,cursor){
         mesh(poleMesh,poleData,textures.pole,route.flag,false);
         mesh(clothMesh,owner.data,textures.base,route.flag,true);
       }
-    }finally{restore();}
+    });
   }
   function clear(){clothOwners.clear();lineCache.clear();frame=0;}
   function reset(seed=Math.floor(Date.now()/1000)){clear();defaultWind=nativeNormalFlagWind(seed);}
-  return {prepare,draw,reset,targetTags,invalidCursor:`url("${cursor}") 16 16, not-allowed`};
+  return {prepare,draw,reset,targetTags,normalWind:()=>defaultWind,invalidCursor:`url("${cursor}") 16 16, not-allowed`};
+}
+
+// 007E7B00 copies the socket's raw translation. The GarrisonShip child keeps
+// local scale 1 and inherits the hull basis and scale in 00609403.
+function carrierFlagPose(actor,row){
+  const scale=row.model.nativeScaleBinding.sourceScale, yaw=Math.fround(actor.renderYaw+row.model.yawOffset);
+  const c=Math.cos(yaw),s=Math.sin(yaw);
+  const [x,z,up]=row.bodyEvidence.markers.tag_garrison_pole.point;
+  return {origin:[actor.renderX+(x*c+z*s)*scale,actor.renderAltitude+up*scale,actor.renderY+(x*s-z*c)*scale],scale,c,s};
+}
+
+export async function loadCarrierGarrisonFlag(gl,{source,fetchFile=globalThis.fetch,decode=globalThis.createImageBitmap,
+  base=new URL('./',import.meta.url)}={}){
+  if(!source)return null;
+  const {read,image}=flagMedia(base,fetchFile,decode);
+  try{
+    const data=JSON.parse(new TextDecoder().decode(await read(source.url,source.sha256)));
+    if(data.format!=='ee2-native-garrison-flag-source-v1'||data.name!=='GarrisonShip')return null;
+    const records=[data.pole.texture,data.textures.base,data.textures.dark];
+    const images=await Promise.all(records.map(image)),restore=state(gl);
+    try{
+      const textures=images.map(bitmap=>uploadTexture(gl,bitmap,false));
+      return createCarrierGarrisonRenderer(gl,data,textures,source.carrierAt);
+    }finally{
+      for(const bitmap of images)bitmap.close();
+      restore();
+    }
+  }catch{return null;}
+}
+
+function createCarrierGarrisonRenderer(gl,{pole,cloth:grid,flagTag},[poleTexture,base,dark],carrierAt){
+  const cloth={...grid,tag:flagTag.matrix};
+  const shader=program(gl),poleMesh=createMesh(gl,pole.indices),clothMesh=createMesh(gl,cloth.indices);
+  const owners=new Map(), fallbackWind=nativeNormalFlagWind(Math.floor(Date.now()/1000));
+  let frame=0, session=null, settings;
+  function begin(next){
+    frame++;
+    if(next.session!==session){owners.clear();session=next.session;}
+    settings=next;
+    for(const handle of owners.keys())if(!next.occupied(handle))owners.delete(handle);
+  }
+  function geometry(actor,row,owner){
+    const {scale,c,s}=carrierFlagPose(actor,row), {lighting,runPhysics,deltaSeconds,wind=fallbackWind}=settings;
+    const rotate=(x,y,z)=>[x*c-z*s,y,x*s+z*c];
+    const m=cloth.tag, rotation=[...m[0].slice(0,3).map((v,i)=>Math.fround(c*v+s*m[1][i])),
+      ...m[0].slice(0,3).map((v,i)=>Math.fround(-s*v+c*m[1][i])),...m[2].slice(0,3).map(Math.fround)];
+    const inverse=nativeInverseTagRotation(rotation), direction=lighting.direction??[0,1,0];
+    const low=[Math.fround(wind[0]*200),Math.fround(wind[1]*200),0];
+    const forces=nativeLocalForces({gravity:[0,0,1],windMin:low,windMax:low.map(value=>Math.fround(value*4))},inverse,{rounding:'chop53'});
+    if(runPhysics)owner.cloth.step(deltaSeconds,forces);
+    const light={ambient:lighting.sourceAmbient,diffuse:lighting.sourceDiffuse,
+      sunDirection:nativeRotateForce(inverse,lighting.sourceDirection)};
+    const positions=owner.cloth.positions, colors=nativeClothVertexColors({...cloth,positions},light).colors;
+    const packed=dynamicSailVertices(cloth,{positions,colors},{scale,offset:[0,0,0]});
+    for(let i=0;i<cloth.nx*cloth.ny;i++)
+      owner.flag.set([...rotate(...packed.subarray(i*12,i*12+3)),...packed.subarray(i*12+6,i*12+12)],i*9);
+    for(let i=0;i<pole.positions.length/3;i++){
+      const normal=rotate(...pole.normals.slice(i*3,i*3+3));
+      const dot=Math.max(0,axes.reduce((sum,k)=>sum+normal[k]*direction[k],0));
+      const rgb=axes.map(k=>Math.min(1,light.ambient[k]+dot*light.diffuse[k]));
+      owner.pole.set([...rotate(...pole.positions.slice(i*3,i*3+3).map(value=>value*scale)),...pole.uvs.slice(i*2,i*2+2),...rgb,1],i*9);
+    }
+    owner.frame=frame;
+  }
+  function draw({vp,actors,epochs,local}){
+    if(!settings||local===undefined||!actors?.length)return;
+    const {lighting,occupied}=settings;
+    if(![lighting.sourceAmbient,lighting.sourceDiffuse,lighting.sourceDirection].every(row=>row?.length===3))return;
+    const projected=[];
+    for(const actor of actors){
+      if(actor.def!==84||actor.team!==local||!(actor.hpRatio>0)||!occupied(actor.handle))continue;
+      const row=carrierAt(epochs[actor.team]);
+      if(!row)continue;
+      let owner=owners.get(actor.handle);
+      if(!owner){
+        owner={cloth:createNativeCloth(cloth),pole:new Float32Array(pole.positions.length*3),flag:new Float32Array(cloth.nx*cloth.ny*9)};
+        owners.set(actor.handle,owner);
+      }
+      if(owner.frame!==frame)geometry(actor,row,owner);
+      projected.push({owner,origin:carrierFlagPose(actor,row).origin});
+    }
+    if(projected.length)drawFlagMeshes(gl,shader,vp,dark,mesh=>{
+      gl.depthMask(true);
+      for(const {owner,origin} of projected){
+        mesh(poleMesh,owner.pole,poleTexture,origin,false);
+        mesh(clothMesh,owner.flag,base,origin,true);
+      }
+    });
+  }
+  return {begin,draw};
 }

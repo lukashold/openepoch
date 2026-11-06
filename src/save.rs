@@ -57,6 +57,8 @@ impl Game {
         let options = options | if self.air_takeoff_enabled { crate::takeoff33::SAVE_FLAG } else { 0 };
         #[cfg(feature="ee2-native13")]
         let options = options | if self.air_landing_enabled { crate::landing34::SAVE_FLAG } else { 0 };
+        #[cfg(feature="ee2-native13")]
+        let options = options | if self.air_carrier_enabled { crate::carrier36_defs::SAVE_FLAG } else { 0 };
         for v in [options, self.instant_build as u32, self.tech_points] {
             b.extend_from_slice(&v.to_le_bytes());
         }
@@ -138,7 +140,7 @@ impl Game {
         #[cfg(feature="ee2-native13")]
         let actor_definition_count = if trade.is_some() { crate::trade30_defs::TRADE_DEFINITION_COUNT } else { actor_definition_count };
         #[cfg(feature="ee2-native13")]
-        let actor_definition_count = if air.is_some() { DEFS.len() } else { actor_definition_count };
+        let actor_definition_count = if air.is_some() { crate::carrier36_defs::CARRIER as usize } else { actor_definition_count };
         #[cfg(feature="ee2-native13")]
         let (buf, sole_survivor) = crate::ee2_sole_survivor::split(buf)?;
         #[cfg(feature="ee2-native13")]
@@ -220,6 +222,7 @@ impl Game {
             g.air_runway_enabled = false;
             g.air_takeoff_enabled = false;
             g.air_landing_enabled = false;
+            g.air_carrier_enabled = false;
         }
         if trailer >= 12 {
             let v = |k| u32::from_le_bytes(buf[end+k..end+k+4].try_into().unwrap());
@@ -227,7 +230,7 @@ impl Game {
             #[cfg(feature="ee2-native13")]
             let allowed = allowed | crate::infantry_roster27::SAVE_FLAG | crate::production_roster29::SAVE_FLAG |
                 crate::game::trade30::SAVE_FLAG | crate::air31::SAVE_FLAG | crate::runway32::SAVE_FLAG |
-                crate::takeoff33::SAVE_FLAG | crate::landing34::SAVE_FLAG;
+                crate::takeoff33::SAVE_FLAG | crate::landing34::SAVE_FLAG | crate::carrier36_defs::SAVE_FLAG;
             let flags = v(0);
             if flags & !allowed != 0 || v(4) > 1 { return None; }
             g.cheats_enabled = flags & 1 != 0;
@@ -242,9 +245,11 @@ impl Game {
                 g.air_runway_enabled = flags & crate::runway32::SAVE_FLAG != 0;
                 g.air_takeoff_enabled = flags & crate::takeoff33::SAVE_FLAG != 0;
                 g.air_landing_enabled = flags & crate::landing34::SAVE_FLAG != 0;
+                g.air_carrier_enabled = flags & crate::carrier36_defs::SAVE_FLAG != 0;
                 if g.air_runway_enabled && !g.air_missions_enabled { return None; }
                 if g.air_takeoff_enabled && !g.air_runway_enabled { return None; }
                 if g.air_landing_enabled && !g.air_takeoff_enabled { return None; }
+                if g.air_carrier_enabled && !g.air_landing_enabled { return None; }
             }
             g.instant_build = v(4) == 1 && (cfg!(feature = "ee2-up15") || g.cheats_enabled);
             g.tech_points = v(8);
@@ -301,6 +306,7 @@ impl Game {
         for p in &g.players[..g.nplayers] {if p.epoch>g.match_final_epoch() {return None;}}
         #[cfg(feature="ee2-native13")]
         let valid_definition = |id: DefId| {
+            if id == crate::carrier36_defs::CARRIER { return g.air_carrier_enabled; }
             (id as usize) < actor_definition_count &&
                 (id != crate::ee2_regicide::KING || regicide.is_some()) &&
                 (!crate::trade30_defs::is_trader(id) || trade.is_some()) &&
@@ -311,6 +317,8 @@ impl Game {
         for e in &g.ents[..high] {
             if !e.alive {continue;}
             if !valid_definition(e.def) || e.team as usize>=g.nplayers || e.qn>5 || e.ncargo as usize>CARGO_MAX {return None;}
+            #[cfg(feature="ee2-native13")]
+            if e.order == O_RENDEZVOUS && e.def != crate::carrier36_defs::CARRIER { return None; }
             if !e.x.is_finite()||!e.y.is_finite()||!e.rot.is_finite()||!e.prot.is_finite(){return None;}
             if DEFS[e.def as usize].building{let(tx,ty,side)=Game::building_bounds(e);if tx<0||ty<0||tx+side>N as i32||ty+side>N as i32{return None;}}
             if e.cargo[..e.ncargo as usize].iter().any(|&c| !valid_definition(c)) {return None;}
@@ -319,6 +327,8 @@ impl Game {
                 if trade.is_some() && crate::trade30_defs::is_trader(q as DefId) { return false; }
                 #[cfg(feature="ee2-native13")]
                 if air.is_some() && q as DefId == crate::air31_defs::FIGHTER_BOMBER { return false; }
+                #[cfg(feature="ee2-native13")]
+                if g.air_carrier_enabled && q == crate::carrier36_defs::CARRIER as _ { return e.def != DOCK; }
                 q != RESEARCH && !original_research(q) && q as usize >= SAVE_DEFINITION_COUNT &&
                     (q < TECH0 || (q - TECH0) as usize >= TECHS.len())
             }) { return None; }

@@ -137,15 +137,15 @@ fn airborne_planes_reserve_their_seat_and_rebase_after_home_loss() {
     let backup = game.spawn(AIRFIELD, 0, 118.5, 118.5);
     let home = game.h(airport);
     let backup_handle = game.h(backup);
-    let actors: Vec<_> = (0..CAPACITY).map(|_| {
+    let actors: Vec<_> = (0..AIRPORT_CAPACITY).map(|_| {
         let actor = game.spawn(FIGHTER_BOMBER, 0, 84.5, 118.5);
         assert!(game.air_station_produced(actor, airport));
         actor
     }).collect();
     game.apply(0, C_AIR_MISSION, 0.0, 0.0, SCRAMBLE, &[home]);
     advance_until(&mut game, 20, |g| g.visible(actors[0]));
-    assert_eq!(game.aircraft.airports[&home].registered.len(), CAPACITY);
-    assert_eq!(game.aircraft.airports[&home].stored.len(), CAPACITY - 1);
+    assert_eq!(game.aircraft.airports[&home].registered.len(), AIRPORT_CAPACITY);
+    assert_eq!(game.aircraft.airports[&home].stored.len(), AIRPORT_CAPACITY - 1);
     let extra = game.spawn(FIGHTER_BOMBER, 0, 84.5, 118.5);
     assert!(!game.air_station_produced(extra, airport));
     assert!(game.visible(extra));
@@ -158,6 +158,73 @@ fn airborne_planes_reserve_their_seat_and_rebase_after_home_loss() {
     assert_eq!(game.aircraft.aircraft[&flying].phase, Phase::Returning);
     advance_until(&mut game, 1200, |g| g.air_mission_status(backup_handle, 1) == 1);
     assert_eq!(game.aircraft.airports[&backup_handle].stored, [flying]);
+}
+
+#[test]
+fn carrier_reserves_a_seat_in_flight_rearms_without_repair_and_rebases_on_loss() {
+    for (epoch, seats) in [(10, 4), (13, 6)] {
+        let (mut game, airport) = scenario(epoch, 0);
+        assert!(!game.configure_peer_air_carrier(true));
+        assert!(game.configure_peer_air_runway(true));
+        assert!(game.configure_peer_air_takeoff(true));
+        assert!(game.configure_peer_air_landing(true));
+        assert!(game.configure_peer_air_carrier(true));
+        let carrier = game.spawn(CARRIER, 0, 97.5, 120.5);
+        let host = game.h(carrier);
+        let actors: Vec<_> = (0..seats).map(|_| game.spawn(FIGHTER_BOMBER, 0, 97.5, 120.5)).collect();
+        let mut air = std::mem::take(&mut game.aircraft);
+        for &index in &actors { let handle = game.h(index); assert!(air.station(&mut game, handle, host)); }
+        game.aircraft = air;
+        assert_eq!(game.air_mission_status(host, 2), seats);
+        assert_eq!(game.air_mission_status(host, 1), seats);
+        let handle = game.h(actors[0]);
+        let health = game.ents[actors[0]].hp * 0.5;
+        game.ents[actors[0]].hp = health;
+        game.aircraft.aircraft.get_mut(&handle).unwrap().ordnance = 1;
+        let mut game = restored(&mut game);
+        let pulse = (game.tick + 1..=game.tick + 20).find(|&tick| actor_pulse(tick, phase_key(host, 0), 1.0)).unwrap();
+        advance_until(&mut game, 20, |g| g.air_mission_status(handle, 1) != 1);
+        assert_eq!(game.tick, pulse);
+        assert_eq!(game.ents[actors[0]].hp, health);
+        assert_eq!(game.air_mission_status(handle, 1), capacity(FIGHTER_BOMBER, epoch).unwrap().into());
+        game.air_scramble(carrier);
+        advance_until(&mut game, 20, |g| !g.air_parked(actors[0], &g.ents[actors[0]]));
+        assert_eq!(game.air_mission_status(host, 1), seats - 1);
+        let extra = game.spawn(FIGHTER_BOMBER, 0, 97.5, 120.5);
+        game.air_order_land(&[extra], carrier);
+        assert_eq!(game.aircraft.aircraft[&game.h(extra)].home, NONE);
+        let mut game = restored(&mut game);
+        game.ents[carrier].hp = 0.0;
+        game.tick();
+        assert!(actors[1..].iter().all(|&index| !game.ents[index].alive));
+        assert_eq!(game.aircraft.aircraft[&handle].home, game.h(airport));
+        assert_eq!(game.aircraft.aircraft[&handle].phase, Phase::Returning);
+    }
+}
+
+#[test]
+fn carrier_notified_when_an_appended_return_becomes_active() {
+    let (mut game, _) = scenario(10, 0);
+    assert!(game.configure_peer_air_runway(true));
+    assert!(game.configure_peer_air_takeoff(true));
+    assert!(game.configure_peer_air_landing(true));
+    assert!(game.configure_peer_air_carrier(true));
+    let carrier = game.spawn(CARRIER, 0, 97.5, 120.5);
+    let host = game.h(carrier);
+    let actor = game.spawn(FIGHTER_BOMBER, 0, 107.5, 120.5);
+    let handle = game.h(actor);
+    game.order_move(&[carrier], 112.0, 122.0, false);
+    let mut air = std::mem::take(&mut game.aircraft);
+    air.aircraft.get_mut(&handle).unwrap().waypoints.push_back([107.5, 120.5]);
+    air.return_to(&mut game, handle, host, ReturnPath::AfterCurrent);
+    game.aircraft = air;
+    assert!(game.aircraft.aircraft[&handle].rendezvous_pending);
+    assert_ne!(game.ents[carrier].order, O_RENDEZVOUS);
+    let mut game = restored(&mut game);
+    game.tick();
+    assert!(!game.aircraft.aircraft[&handle].rendezvous_pending);
+    assert_eq!(game.ents[carrier].order, O_RENDEZVOUS);
+    assert_eq!(game.aircraft.aircraft[&handle].waypoints.len(), 1);
 }
 
 #[test]

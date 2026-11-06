@@ -1017,6 +1017,7 @@ const ADJUSTMENTS:[(u32,u16);516]=[
    crate::trade30_defs::TRADE_CART if epoch >= 1 => return index + 1,
    crate::trade30_defs::MERCHANT_SHIP => return index + 2,
    crate::air31_defs::FIGHTER_BOMBER if epoch >= 10 => return index + 3,
+   crate::carrier36_defs::CARRIER if epoch >= 10 => return index + 4,
    _ => {}
   }
  }
@@ -1027,7 +1028,8 @@ const ADJUSTMENTS:[(u32,u16);516]=[
  if let Some(extra) = (index as usize).checked_sub(PROFILES.len()) {
   // Cart uses LandNonCombat and MerchantShip inherits SeaNonCombat.
   // The current roster has no Sniper, the only explicit TradeCart pair override.
-  return [34, 11, 31, 15].get(extra).map(|&rps| CombatProfile { rps, upgrade: 65535 });
+  // The current roster also has no Satellite or Balloon, the carrier pair overrides.
+  return [34, 11, 31, 15, 29].get(extra).map(|&rps| CombatProfile { rps, upgrade: 65535 });
  }
  PROFILES.get(index as usize).copied()
 }

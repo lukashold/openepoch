@@ -4,6 +4,7 @@ use std::collections::BTreeMap;
 
 use crate::air31_defs::{flight_profile, Flight as Profile};
 use crate::aircraft_steering::{self as steering, Controls, Motion};
+use crate::carrier36_defs::CARRIER;
 use crate::game::{Ent, Game, DT, MAXE};
 use crate::landing_geometry::{self as geometry, Aircraft, Approach, Point, Runway};
 use crate::map::N;
@@ -48,6 +49,11 @@ impl Landing {
 
     fn update(&mut self, runway: Runway, actor: Aircraft, profile: &Profile, target: f32,
               current_height: f32) -> (Motion, f32, f32) {
+        self.update_for_deck(runway, actor, profile, target, current_height, 0.0, false)
+    }
+
+    fn update_for_deck(&mut self, runway: Runway, actor: Aircraft, profile: &Profile, target: f32,
+                       current_height: f32, deck_offset: f32, moving_deck: bool) -> (Motion, f32, f32) {
         let raw_turn = f64::from(profile.angle_degrees_per_second) * RADIANS;
         let max_turn = (f64::from(target) / f64::from(profile.speed) * f64::from(raw_turn as f32)) as f32;
         let angular_acceleration = (raw_turn / YAW_ACCEL_TIME) as f32;
@@ -56,9 +62,9 @@ impl Landing {
             angular_acceleration, distance_margin: margin, arrival_angle: 0.0 };
         let motion = Motion { speed: self.speed, angular_rate: self.angular_rate, velocity: actor.velocity };
         if let Phase::Bank { center, .. } = self.phase {
-            if geometry::aligned_for_landing(center, motion.angular_rate, max_turn) {
+            if !moving_deck && geometry::aligned_for_landing(center, motion.angular_rate, max_turn) {
                 let path = geometry::landing_path(runway, actor, target, max_turn)
-                    .expect("fixed Airport has distinct runway markers");
+                    .expect("the source hosts have distinct runway markers");
                 self.phase = Phase::Runway { path, cursor: 1, mode: 4, unreachable: false };
             }
         }
@@ -90,7 +96,7 @@ impl Landing {
                 let [x, y] = path[*cursor];
                 let distance = (f64::from(x) - f64::from(actor.position[0]))
                     .hypot(f64::from(y) - f64::from(actor.position[1]));
-                let (next_mode, clearance) = geometry::landing_height(profile.height, 0.0, path.len() - *cursor, distance)
+                let (next_mode, clearance) = geometry::landing_height(profile.height, deck_offset, path.len() - *cursor, distance)
                     .expect("the landing cursor still has a target");
                 *mode = next_mode;
                 (motion, clearance, 2.0 * profile.elevation_rate)
@@ -154,6 +160,7 @@ impl Game {
         if !self.net || self.bench != 0 || self.tick != 0 || !self.outbox.is_empty() ||
             !self.inbox.is_empty() || (enabled && !self.air_takeoff_enabled) { return false; }
         self.air_landing_enabled = enabled;
+        if !enabled { self.air_carrier_enabled = false; }
         true
     }
 
@@ -172,8 +179,11 @@ impl Game {
             self.landing.clear(handle);
             return false;
         };
-        let airport = self.get(home).expect("returning plane has a live host");
-        let [first, second] = crate::runway32::markers(&self.ents[airport]).map(source_xy);
+        let host = &self.ents[self.get(home).expect("returning plane has a live host")];
+        let [first, second] = self.air_host_markers(host).map(source_xy);
+        let carrier = host.def == CARRIER;
+        let deck_offset = if carrier { self.carrier_deck_offset(host, 1) } else { 0.0 };
+        let moving_deck = carrier && (host.vx != 0.0 || host.vy != 0.0 || host.rot != host.prot);
         let runway = Runway { first, second };
         let pose = Aircraft { position: source_xy([actor.x, actor.y]), velocity: source_xy([actor.vx, actor.vy]),
             heading: (-actor.rot).rem_euclid(std::f32::consts::TAU), turn_rate: 0.0 };
@@ -182,7 +192,10 @@ impl Game {
         if flight.home != home { *flight = Landing::start(home, runway, pose, height); }
         let profile = flight_profile(actor.def, self.players[actor.team as usize].epoch).unwrap();
         let speed = self.modifiers[actor.team as usize][actor.def as usize][2];
-        let (motion, clearance, rate) = flight.update(runway, Aircraft { turn_rate: flight.angular_rate, ..pose }, profile, speed, height);
+        let pose = Aircraft { turn_rate: flight.angular_rate, ..pose };
+        let (motion, clearance, rate) = if carrier {
+            flight.update_for_deck(runway, pose, profile, speed, height, deck_offset, moving_deck)
+        } else { flight.update(runway, pose, profile, speed, height) };
         if matches!(flight.phase, Phase::Complete) { return true; }
         self.follow_air_height(handle, actor, clearance, rate);
         let (position, heading) = steering::integrate(pose.position, pose.heading, motion, DT);

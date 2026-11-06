@@ -3,7 +3,7 @@ const manifestPath='local-original/air-flight-audio/manifest.json';
 const manifestHash='6f7f187a80af5248e912984a1ca20c99c29d62021416b13e9360a05d069b5119';
 const digest=/^[a-f0-9]{64}$/;
 const oneShotMinimum=Math.fround(.01), loopMinimum=Math.fround(.05);
-const stateNames=[null,'walk','attack1','death','takeoff','parked'];
+const stateNames=[null,'walk','attack1','death','takeoff','parked','idle'];
 const stepSeconds=Math.fround(.05);
 
 const audioFamily=definition=>{
@@ -40,6 +40,12 @@ export async function loadAirFlightAudio({enabled,base=new URL('./',import.meta.
     if(rows.size!==15)return null;
     return {events,row:(definition,epoch)=>rows.get(audioFamily(definition)+':'+epoch)};
   }catch{return null;}
+}
+
+export function addCarrierFlightAudio(flight, carrier){
+  if(!flight||!carrier)return flight??carrier;
+  return {events:new Map([...flight.events,...carrier.events]),
+    row:(definition,epoch)=>flight.row(definition,epoch)??carrier.row(definition,epoch)};
 }
 
 export function readAirFlightAudio(wasm,alpha){
@@ -183,7 +189,7 @@ export function createAirFlightPlayback({presentation,context,destination,mix,fe
     const delta=Math.fround(until-pose.time);
     pose.clock=advanceText(pose.clock,delta,pose.period,pose.mode,pose.keys,key=>{
       if(key.type==='STOP_SOUND')stopLoop(pose,key.event);
-      else if(key.type==='START_SOUND'&&pose.alive!==false)startLoop(pose,key.event);
+      else if((key.type==='START_SOUND'||key.type==='START_SOUND_UNTIL_ANIM_CHANGE')&&pose.alive!==false)startLoop(pose,key.event);
       else if(key.type==='PLAY_SOUND'&&!restore&&actor)oneShot(key.event,mix(view,actor,true));
     });
     pose.time=until;
@@ -258,7 +264,7 @@ export function createAirFlightPlayback({presentation,context,destination,mix,fe
   }
   function handlesAttack(definition,epoch,duration){
     if(context.state!=='running')return false;
-    const keys=presentation.row(definition,epoch)?.states.attack1.keys.filter(key=>key.type==='PLAY_SOUND');
+    const keys=presentation.row(definition,epoch)?.states.attack1?.keys.filter(key=>key.type==='PLAY_SOUND');
     return !!keys?.length&&keys.every(key=>key.time<duration&&buffers.has(key.event));
   }
   return {ready,frame,reset,hasEvent:name=>buffers.has(name),handlesAttack};

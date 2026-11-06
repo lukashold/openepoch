@@ -3,6 +3,7 @@
 use std::collections::{BTreeMap, VecDeque};
 
 use crate::air31_defs::mission_aircraft;
+use crate::carrier36_defs::CARRIER;
 use crate::defs::DefId;
 use crate::game::{Ent, Game, DT, MAXE, NONE};
 use crate::map::tile_of;
@@ -13,6 +14,11 @@ const ATTACK: u8 = 2;
 const DEATH: u8 = 3;
 const TAKEOFF: u8 = 4;
 const PARKED: u8 = 5;
+const IDLE: u8 = 6;
+
+fn ship_sound(actor: &Ent) -> u8 {
+    if actor.vx != 0.0 || actor.vy != 0.0 { WALK } else { IDLE }
+}
 
 #[derive(Clone, Copy)]
 struct Cue {
@@ -124,7 +130,27 @@ impl Game {
     }
 
     fn air_audio_visible(&self, index: usize) -> bool {
-        self.ents[index].alive && mission_aircraft(self.ents[index].def) && self.can_see(self.local, index)
+        let actor = &self.ents[index];
+        actor.alive && (mission_aircraft(actor.def) || (self.air_carrier_enabled && actor.def == CARRIER)) &&
+            self.can_see(self.local, index)
+    }
+
+    fn air_audio_active(&self, index: usize) -> bool {
+        let actor = &self.ents[index];
+        (self.air_carrier_enabled && actor.def == CARRIER) || self.aircraft.is_active(self.h(index))
+    }
+
+    pub(crate) fn observe_carrier_motion_audio(&mut self, index: usize, actor: &Ent) {
+        if !self.air_carrier_enabled || actor.def != CARRIER { return; }
+        let handle = self.h(index);
+        if actor.hp <= 0.0 || !self.air_audio_visible(index) {
+            self.air_audio.forget(handle);
+            return;
+        }
+        let kind = ship_sound(actor);
+        let epoch = self.players[actor.team as usize].epoch;
+        if self.air_audio.live.get(&handle).is_some_and(|cue| cue.kind == kind && cue.epoch == epoch) { return; }
+        self.air_audio.queue(self.air_audio_cue(index, actor, kind, self.tick as f32 * DT, 0.0));
     }
 
     pub(crate) fn observe_air_motion_audio(&mut self, index: usize, actor: &Ent) {
@@ -146,7 +172,7 @@ impl Game {
     }
 
     pub(crate) fn observe_air_attack_audio(&mut self, index: usize, actor: &Ent, now: f32, reload: f32) {
-        if !self.air_missions_enabled || !self.air_audio_visible(index) || actor.hp <= 0.0 { return; }
+        if !self.air_missions_enabled || !mission_aircraft(actor.def) || !self.air_audio_visible(index) || actor.hp <= 0.0 { return; }
         let duration = (f64::from(reload) + 3.0 * f64::from(DT)) as f32;
         let cue = self.air_audio_cue(index, actor, ATTACK, now, duration);
         self.air_audio.queue(cue);
@@ -182,19 +208,21 @@ impl Game {
         if self.air_missions_enabled {
             for i in 0..self.high {
                 let actor = &self.ents[i];
-                if actor.hp <= 0.0 || !self.air_audio_visible(i) || !self.aircraft.is_active(self.h(i)) { continue; }
+                if actor.hp <= 0.0 || !self.air_audio_visible(i) || !self.air_audio_active(i) { continue; }
                 let handle = self.h(i);
                 let epoch = self.players[actor.team as usize].epoch;
                 let cue = self.air_audio.live.get(&handle).copied().filter(|cue| cue.epoch == epoch).unwrap_or_else(|| {
                     let start = self.takeoff_start_tick(handle);
-                    let (kind, at) = if start != NONE { (TAKEOFF, start) }
+                    let (kind, at) = if actor.def == CARRIER { (ship_sound(actor), self.tick) }
+                    else if start != NONE { (TAKEOFF, start) }
                     else if self.takeoff.rolling(handle) { (TAKEOFF, self.tick + 1) }
                     else { (WALK, self.tick) };
                     self.air_audio_cue(i, actor, kind, at as f32 * DT, 0.0)
                 });
                 let x = actor.px + (actor.x - actor.px) * alpha;
                 let y = actor.py + (actor.y - actor.py) * alpha;
-                let z = self.aircraft_height(handle, alpha, self.map.height(x, y).max(0.0));
+                let z = if actor.def == CARRIER { 0.0 }
+                    else { self.aircraft_height(handle, alpha, self.map.height(x, y).max(0.0)) };
                 let hp_ratio = (actor.hp / self.max_hp(actor.team, actor.def)).clamp(0.0, 1.0);
                 current.push(Current { handle, definition: actor.def, team: actor.team, epoch,
                     kind: cue.kind, mode: cue.mode(), reserved: 0, revision: cue.revision,
@@ -204,7 +232,7 @@ impl Game {
                 let visible = if cue.terminal() {
                     cue.team == self.local || self.real_fog(self.local, cue.tile) == 255
                 } else {
-                    self.get(cue.handle).is_some_and(|i| self.air_audio_visible(i) && self.aircraft.is_active(cue.handle))
+                    self.get(cue.handle).is_some_and(|i| self.air_audio_visible(i) && self.air_audio_active(i))
                 };
                 if visible {
                     transitions.push(Transition { revision: cue.revision, tick: cue.tick, handle: cue.handle,

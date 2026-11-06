@@ -39,6 +39,8 @@ pub const O_BOARD: u8 = 6;
 pub const O_UNLOAD: u8 = 7;
 #[cfg(feature = "ee2-native13")]
 pub const O_CAPTURE: u8 = 8;
+#[cfg(feature = "ee2-native13")]
+pub(crate) const O_RENDEZVOUS: u8 = 9;
 /// Marker in `Ent::stuck`: the unit walked onto a transport, remove it without an explosion.
 const BOARDED: u8 = 255;
 
@@ -235,6 +237,8 @@ pub struct Game {
     pub(crate) takeoff: crate::takeoff33::State,
     #[cfg(feature = "ee2-native13")]
     pub(crate) air_landing_enabled: bool,
+    #[cfg(feature="ee2-native13")]
+    pub(crate) air_carrier_enabled: bool,
     #[cfg(feature = "ee2-native13")]
     pub(crate) landing: crate::landing34::State,
     #[cfg(feature = "ee2-native13")]
@@ -370,6 +374,8 @@ impl Game {
             takeoff: crate::takeoff33::State::default(),
             #[cfg(feature = "ee2-native13")]
             air_landing_enabled: humans == 1 && bench == 0,
+            #[cfg(feature="ee2-native13")]
+            air_carrier_enabled: humans == 1 && bench == 0,
             #[cfg(feature = "ee2-native13")]
             landing: crate::landing34::State::default(),
             #[cfg(feature = "ee2-native13")]
@@ -880,7 +886,7 @@ impl Game {
     pub fn order_board(&mut self, ids: &[usize], tj: usize) {
         let t = self.ents[tj];
         #[cfg(feature = "ee2-native13")]
-        if t.def == AIRFIELD && self.air_missions_enabled {
+        if self.air_missions_enabled && self.air_host_slots(&t) != 0 {
             self.air_order_land(ids, tj);
             return;
         }
@@ -1072,6 +1078,8 @@ impl Game {
         if self.air_takeoff_enabled { self.takeoff.hash(&mut mix); }
         #[cfg(feature = "ee2-native13")]
         if self.air_landing_enabled { self.landing.hash(&mut mix); }
+        #[cfg(feature="ee2-native13")]
+        if self.air_carrier_enabled { mix(crate::carrier36_defs::HASH_TAG); }
         #[cfg(feature="ee2-civ8")]
         if self.civilizations.iter().any(|&c|c!=crate::civ8_runtime::LEGACY_NEUTRAL){
             mix(0x38564943);for c in self.civilizations{mix(c as u32);}
@@ -2137,6 +2145,12 @@ impl Game {
                 O_GATHER => self.do_gather(i,&mut e, d, &mut want, &mut moving),
                 O_BUILD => self.do_build(&mut e, d, &mut want, &mut moving),
                 #[cfg(feature = "ee2-native13")]
+                O_RENDEZVOUS if (e.x - e.ox).powi(2) + (e.y - e.oy).powi(2) > 0.25 => {
+                    let (x, y) = (e.ox, e.oy);
+                    want = self.steer(&mut e, d, x, y);
+                    moving = true;
+                }
+                #[cfg(feature = "ee2-native13")]
                 O_CAPTURE => {
                     let (direction, movement) = self.do_capture(i, &mut e, d);
                     face = direction;
@@ -2196,10 +2210,20 @@ impl Game {
                 self.try_move(&mut e, d, nx, ny);
             }
             match face {
-                Some(a) if !moving => e.rot += angdiff(a, e.rot) * 0.35,
+                Some(a) if !moving => {
+                    #[cfg(feature="ee2-native13")]
+                    let a = if e.def == crate::carrier36_defs::CARRIER { e.rot } else { a };
+                    e.rot += angdiff(a, e.rot) * 0.35;
+                }
                 _ => {
                     if e.vx * e.vx + e.vy * e.vy > 0.04 {
-                        e.rot += angdiff(e.vy.atan2(e.vx), e.rot) * 0.3;
+                        let turn = angdiff(e.vy.atan2(e.vx), e.rot) * 0.3;
+                        #[cfg(feature="ee2-native13")]
+                        let turn = if e.def == crate::carrier36_defs::CARRIER {
+                            let limit = crate::carrier36_defs::TURN_RATE * DT;
+                            turn.clamp(-limit, limit)
+                        } else { turn };
+                        e.rot += turn;
                     }
                 }
             }
@@ -2215,6 +2239,11 @@ impl Game {
                     e.stuck = 0;
                 }
             }
+        }
+        #[cfg(feature="ee2-native13")]
+        if e.def == crate::carrier36_defs::CARRIER {
+            if !moving && e.x == e.px && e.y == e.py { (e.vx, e.vy) = (0.0, 0.0); }
+            self.observe_carrier_motion_audio(i, &e);
         }
         #[cfg(feature="ee2-pack8")] self.pack_finish_actor(i,&e,engaged||e.order!=O_IDLE,moving);
         self.ents[i] = e;

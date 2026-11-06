@@ -3,12 +3,13 @@
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use crate::air31_defs::{mission_aircraft, FIGHTER_BOMBER};
+use crate::carrier36_defs::{self, CARRIER};
 use crate::defs::{DefId, AIRFIELD, DEFS};
-use crate::game::{Ent, Game, DT, MAXE, NONE, O_ATTACK, O_IDLE};
+use crate::game::{Ent, Game, DT, MAXE, NONE, O_ATTACK, O_IDLE, O_RENDEZVOUS};
 use crate::map::N;
 use crate::native_rng9::NativeRng;
 
-const CAPACITY: usize = 10;
+const AIRPORT_CAPACITY: usize = 10;
 pub(crate) const MAX_WAYPOINTS: usize = 5;
 const ARRIVAL_DISTANCE: f32 = 2.5;
 const TARGET_RANGE: f32 = 5.0;
@@ -44,6 +45,7 @@ struct Aircraft {
     waypoints: VecDeque<[f32; 2]>,
     mission: bool,
     return_pending: bool,
+    rendezvous_pending: bool,
 }
 
 #[derive(Clone, Default, Debug)]
@@ -116,6 +118,13 @@ fn phase_key(handle: u32, team: u8) -> u32 {
 }
 
 impl Game {
+    pub(crate) fn configure_peer_air_carrier(&mut self, enabled: bool) -> bool {
+        if !self.net || self.bench != 0 || self.tick != 0 || !self.outbox.is_empty() ||
+            !self.inbox.is_empty() || (enabled && !self.air_landing_enabled) { return false; }
+        self.air_carrier_enabled = enabled;
+        true
+    }
+
     pub(crate) fn configure_peer_air_missions(&mut self, enabled: bool) -> bool {
         if !self.net || self.bench != 0 || self.tick != 0 || !self.outbox.is_empty() || !self.inbox.is_empty() {
             return false;
@@ -129,7 +138,20 @@ impl Game {
     }
 
     pub(crate) fn air_production_enabled(&self, definition: DefId) -> bool {
-        definition != FIGHTER_BOMBER || self.air_missions_enabled
+        match definition {
+            FIGHTER_BOMBER => self.air_missions_enabled,
+            CARRIER => self.air_carrier_enabled,
+            _ => true,
+        }
+    }
+
+    pub(crate) fn air_host_slots(&self, host: &Ent) -> usize {
+        match host.def {
+            AIRFIELD => AIRPORT_CAPACITY,
+            CARRIER if self.air_carrier_enabled => carrier36_defs::lookup(self.players[host.team as usize].epoch)
+                .and_then(|row| row.garrison_slots).map_or(0, usize::from),
+            _ => 0,
+        }
     }
 
     pub(crate) fn air_mission_status(&self, handle: u32, field: u32) -> u32 {
@@ -142,7 +164,7 @@ impl Game {
             return match field {
                 0 => 1,
                 1 => airport.map_or(0, |a| a.stored.len() as u32),
-                2 => CAPACITY as u32,
+                2 => self.air_host_slots(actor) as u32,
                 3 => u32::from(airport.is_some_and(|a| a.mission.is_some())),
                 4 => u32::from(airport.is_none_or(|a| a.automatic)),
                 6 => u32::from(actor.built >= 1.0),
@@ -235,8 +257,19 @@ impl Game {
         let Some(ordnance) = capacity(actor.def, epoch) else { return; };
         self.aircraft.aircraft.insert(self.h(index), Aircraft {
             home: NONE, ordnance, phase: Phase::Flying, waypoints: VecDeque::new(), mission: false,
-            return_pending: false,
+            return_pending: false, rendezvous_pending: false,
         });
+    }
+
+    fn air_rendezvous(&mut self, host: usize) {
+        if self.ents[host].def != CARRIER || self.ents[host].order == O_RENDEZVOUS { return; }
+        self.order_stop(&[host]);
+        let (x, y) = (self.ents[host].x, self.ents[host].y);
+        let key = self.key_for(crate::defs::SEA, x, y);
+        let carrier = &mut self.ents[host];
+        carrier.order = O_RENDEZVOUS;
+        carrier.fkey = key;
+        carrier.otgt = NONE;
     }
 
     pub(crate) fn air_station_produced(&mut self, index: usize, airport: usize) -> bool {
@@ -254,7 +287,7 @@ impl Game {
     fn air_mission_host(&self, handle: u32, team: u8) -> Option<usize> {
         let index = self.get(handle)?;
         let e = &self.ents[index];
-        (e.hp > 0.0 && e.team == team && e.def == AIRFIELD).then_some(index)
+        (e.hp > 0.0 && e.team == team && self.air_host_slots(e) != 0).then_some(index)
     }
 
     fn air_host(&self, handle: u32, team: u8) -> Option<usize> {
@@ -296,6 +329,7 @@ impl Game {
             self.landing.clear(handle);
             frame.phase = Phase::Flying;
             frame.mission = false;
+            frame.rendezvous_pending = false;
             frame.waypoints.clear();
         }
     }
@@ -320,7 +354,7 @@ impl Game {
     }
 
     pub(crate) fn air_order_land(&mut self, aircraft: &[usize], airport: usize) {
-        if !self.air_missions_enabled || self.ents[airport].def != AIRFIELD { return; }
+        if !self.air_missions_enabled || self.air_host_slots(&self.ents[airport]) == 0 { return; }
         let home = self.h(airport);
         let mut air = std::mem::take(&mut self.aircraft);
         for &index in aircraft {
@@ -376,7 +410,7 @@ impl Game {
         if !self.air_missions_enabled { return; }
         let handle = self.h(index);
         let mut air = std::mem::take(&mut self.aircraft);
-        if self.ents[index].def == AIRFIELD {
+        if self.air_host_slots(&self.ents[index]) != 0 {
             air.recall(self, handle);
         } else if let Some(frame) = air.aircraft.get(&handle) {
             let home = air.available_home(self, self.ents[index], frame.home);
@@ -405,6 +439,7 @@ impl Game {
             }
             if let Some(aircraft) = self.aircraft.aircraft.get_mut(&handle) {
                 aircraft.mission = false;
+                aircraft.rendezvous_pending = false;
                 aircraft.waypoints.clear();
                 if aircraft.phase == Phase::Returning { aircraft.phase = Phase::Flying; }
             }
@@ -489,7 +524,8 @@ impl State {
         add(self.aircraft.len() as u32);
         for (&handle, aircraft) in &self.aircraft {
             let phase = match aircraft.phase { Phase::Flying => 0, Phase::Stationed => 1, Phase::Returning => 2 };
-            let flags = phase | (u32::from(aircraft.mission) << 2) | (u32::from(aircraft.return_pending) << 3);
+            let flags = phase | (u32::from(aircraft.mission) << 2) | (u32::from(aircraft.return_pending) << 3) |
+                (u32::from(aircraft.rendezvous_pending) << 4);
             for word in [handle, aircraft.home, aircraft.ordnance.into(), flags,
                 aircraft.waypoints.len() as u32] { add(word); }
             for point in &aircraft.waypoints {
@@ -532,10 +568,12 @@ impl State {
             let phase = match flags & 3 { 0 => Phase::Flying, 1 => Phase::Stationed, 2 => Phase::Returning, _ => return None };
             let mission = flags & 4 != 0;
             let return_pending = flags & 8 != 0;
+            let rendezvous_pending = flags & 16 != 0;
             let unit = &game.ents[game.get(handle)?];
-            if flags > 15 || ordnance > 32 || !mission_aircraft(unit.def) ||
+            if flags > 31 || ordnance > 32 || !mission_aircraft(unit.def) ||
                 (phase != Phase::Flying && mission) ||
                 (return_pending && (ordnance != 0 || phase != Phase::Flying)) ||
+                (rendezvous_pending && (phase != Phase::Returning || points < 2)) ||
                 (phase == Phase::Stationed && (unit.order != O_IDLE || points != 0)) ||
                 (phase == Phase::Returning && points == 0) ||
                 (home == NONE && (phase != Phase::Flying || mission)) ||
@@ -543,11 +581,11 @@ impl State {
                 return None;
             }
             if home != NONE {
-                let building = &game.ents[game.get(home)?];
-                if building.def != AIRFIELD || building.team != unit.team || building.built < 1.0 { return None; }
+                let host = game.air_host(home, unit.team)?;
+                if rendezvous_pending && game.ents[host].def != CARRIER { return None; }
             }
             let waypoints = read_points(&mut words, points, MAX_WAYPOINTS + 2)?.into();
-            state.aircraft.insert(handle, Aircraft { home, ordnance, phase, waypoints, mission, return_pending });
+            state.aircraft.insert(handle, Aircraft { home, ordnance, phase, waypoints, mission, return_pending, rendezvous_pending });
         }
         let count = words.next()? as usize;
         if count > MAXE { return None; }
@@ -561,8 +599,8 @@ impl State {
             let queue_count = words.next()? as usize;
             let target = words.next()?;
             let points = words.next()? as usize;
-            if auto > 1 || assigned_count > CAPACITY || stored_count > assigned_count || queue_count > stored_count ||
-                game.ents[game.get(handle)?].def != AIRFIELD ||
+            let slots = game.air_host_slots(&game.ents[game.get(handle)?]);
+            if auto > 1 || slots == 0 || assigned_count > slots || stored_count > assigned_count || queue_count > stored_count ||
                 state.airports.last_key_value().is_some_and(|(&last, _)| last >= handle) { return None; }
             let target = (target != NONE).then_some(target);
             if target.is_some_and(|target| (target & 0xffff) as usize >= MAXE) { return None; }
@@ -607,12 +645,13 @@ impl State {
         let Some(index) = game.get(handle) else { return false; };
         let Some(host) = game.air_host(home, game.ents[index].team) else { return false; };
         if self.aircraft.get(&handle).is_none_or(|frame| frame.phase == Phase::Stationed) ||
-            !self.reserve(home, handle) { return false; }
+            !self.reserve(game, host, home, handle) { return false; }
         game.observe_air_parking_audio(index);
         let frame = self.aircraft.get_mut(&handle).unwrap();
         frame.phase = Phase::Stationed;
         frame.mission = false;
         frame.return_pending = false;
+        frame.rendezvous_pending = false;
         frame.waypoints.clear();
         game.takeoff.clear(handle);
         game.landing.clear(handle);
@@ -625,11 +664,11 @@ impl State {
         true
     }
 
-    fn reserve(&mut self, home: u32, handle: u32) -> bool {
+    fn reserve(&mut self, game: &Game, host: usize, home: u32, handle: u32) -> bool {
         let old = self.aircraft[&handle].home;
         let airport = self.airports.entry(home).or_default();
         if airport.registered.contains(&handle) { return true; }
-        if airport.registered.len() >= CAPACITY { return false; }
+        if airport.registered.len() >= game.air_host_slots(&game.ents[host]) { return false; }
         airport.registered.push(handle);
         if let Some(previous) = self.airports.get_mut(&old) {
             previous.registered.retain(|&actor| actor != handle);
@@ -655,6 +694,7 @@ impl State {
             frame.home = NONE;
             frame.phase = Phase::Flying;
             frame.mission = false;
+            frame.rendezvous_pending = false;
             frame.waypoints.clear();
             let replacement = self.nearest_home(game, game.ents[index].team, origin, home);
             self.return_to(game, handle, replacement, ReturnPath::Direct);
@@ -728,7 +768,7 @@ impl State {
             let handle = game.h(index);
             if handle == exclude { return None; }
             let airport = &game.ents[game.air_host(handle, team)?];
-            if self.airports.get(&handle).is_some_and(|a| a.registered.len() >= CAPACITY) { return None; }
+            if self.airports.get(&handle).is_some_and(|a| a.registered.len() >= game.air_host_slots(airport)) { return None; }
             let dx = f64::from(x) - f64::from(airport.x);
             let dy = f64::from(y) - f64::from(airport.y);
             let dz = f64::from(z) - f64::from(game.map.height(airport.x, airport.y));
@@ -741,9 +781,9 @@ impl State {
         let Some(index) = game.get(handle) else { return; };
         let Some(host) = game.air_host(home, game.ents[index].team) else { return; };
         let Some(frame) = self.aircraft.get(&handle).filter(|frame| frame.phase != Phase::Stationed) else { return; };
-        if frame.phase == Phase::Returning && frame.home == home { return; }
+        if frame.phase == Phase::Returning && frame.home == home && !frame.rendezvous_pending { return; }
         let previous = frame.home;
-        if !self.reserve(home, handle) { return; }
+        if !self.reserve(game, host, home, handle) { return; }
         game.landing.clear(handle);
         let frame = self.aircraft.get_mut(&handle).unwrap();
         if !matches!(path, ReturnPath::AfterCurrent) { frame.waypoints.clear(); }
@@ -755,6 +795,10 @@ impl State {
         frame.phase = Phase::Returning;
         frame.mission = false;
         frame.return_pending = false;
+        // Event9 is delivered on replacement, or when an appended return is promoted.
+        frame.rendezvous_pending = game.ents[host].def == CARRIER &&
+            matches!(path, ReturnPath::AfterCurrent) && !frame.waypoints.is_empty();
+        if !frame.rendezvous_pending { game.air_rendezvous(host); }
         let airport = &game.ents[host];
         frame.waypoints.push_back([airport.x, airport.y]);
         let [x, y] = frame.waypoints[0];
@@ -790,6 +834,7 @@ impl State {
                 frame.home = NONE;
                 frame.phase = Phase::Flying;
                 frame.mission = false;
+                frame.rendezvous_pending = false;
                 frame.waypoints.clear();
                 if let Some(airport) = self.airports.get_mut(&previous) {
                     airport.registered.retain(|&actor| actor != handle);
@@ -814,10 +859,27 @@ impl State {
                 continue;
             }
             frame.waypoints.pop_front();
+            if frame.rendezvous_pending && frame.waypoints.len() == 1 {
+                frame.rendezvous_pending = false;
+                if let Some(host) = game.air_host(frame.home, actor.team) { game.air_rendezvous(host); }
+            }
             if let Some(&[x, y]) = frame.waypoints.front() {
                 game.order_move(&[index], x, y, false);
             } else if frame.mission {
                 self.approach_mission_target(game, handle, index);
+            }
+        }
+        if game.air_carrier_enabled {
+            let inbound: BTreeSet<_> = self.aircraft.values().filter_map(|frame| {
+                (frame.phase == Phase::Returning && !frame.rendezvous_pending).then_some(frame.home)
+            }).collect();
+            for &home in self.airports.keys() {
+                let Some(host) = game.get(home) else { continue; };
+                let carrier = &mut game.ents[host];
+                if carrier.order == O_RENDEZVOUS && !inbound.contains(&home) &&
+                    (carrier.x - carrier.ox).powi(2) + (carrier.y - carrier.oy).powi(2) <= 0.25 {
+                    Game::set_idle(carrier);
+                }
             }
         }
     }
@@ -833,6 +895,7 @@ impl State {
             }
             frame.home = NONE;
             frame.mission = false;
+            frame.rendezvous_pending = false;
             frame.waypoints.clear();
             frame.phase = Phase::Flying;
         }
@@ -902,8 +965,10 @@ impl State {
                 if let Some(ordnance) = capacity(definition, epoch) {
                     frame.ordnance = ordnance;
                 }
-                let maximum = game.max_hp(building.team, definition);
-                game.ents[index].hp = (game.ents[index].hp + 20.0).min(maximum);
+                if building.def == AIRFIELD {
+                    let maximum = game.max_hp(building.team, definition);
+                    game.ents[index].hp = (game.ents[index].hp + 20.0).min(maximum);
+                }
             }
             if airport.automatic && airport.mission.is_some() {
                 for &handle in &airport.stored {
@@ -924,12 +989,15 @@ impl State {
             frame.phase = Phase::Flying;
             frame.mission = launch == Launch::Mission && airport.mission.is_some();
             frame.return_pending = false;
+            frame.rendezvous_pending = false;
             frame.waypoints.clear();
             let jitter = launch_jitter(&mut game.source_birth.rng);
             let spawn = |value: f32| value.clamp(1.0, N as f32 - 1.0);
             let point = [spawn(building.x + jitter), spawn(building.y + jitter)];
             if game.air_runway_enabled {
-                let pose = crate::runway32::departure(&building);
+                let pose = if building.def == CARRIER {
+                    crate::runway32::departure_at(game.air_host_markers(&building))
+                } else { crate::runway32::departure(&building) };
                 let aircraft = &mut game.ents[index];
                 (aircraft.x, aircraft.y) = (pose.x, pose.y);
                 (aircraft.px, aircraft.py) = (pose.x, pose.y);
