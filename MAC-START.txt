@@ -49,7 +49,11 @@ Minikarte. Die Rahmen wechseln mit den Epochen zwischen Stein, Pergament und Met
 Mit Tab oder „Karte“ öffnest du die Weltkarte im UP-Regelsatz. Ein Doppelklick
 auf eine Kartenposition zentriert die Hauptkamera. Tab oder Esc schließt die Karte.
 Im Solo-Scharmützel setzt Alt+Y eine Kartenmarkierung. Ein Linksklick setzt sie,
-ein Rechtsklick bricht ab. Der Filter „Territoriennamen“ zeigt entdeckte Gebiete.
+ein Rechtsklick bricht ab. Die Kartenoptionen schalten Gebietsgrenzen,
+Territoriennamen und sichtbare Stadtzentren getrennt ein und aus.
+Für ein neues Solo-Scharmützel kannst du &cityNames=1 an die Spieladresse
+anhängen. Neu fertiggestellte Städte erhalten dann Namen aus den
+Original-Zivilisationslisten. &territoryNames=1 aktiviert neue Gebietsnamen.
 Im Reiter „Kriegspläne“ zeichnest du mit Linksklick Wegpunkte und beendest den
 Pfad mit Rechtsklick. Zwei Spieler mit diesem Stand können ihre Pfade versenden,
 anzeigen, annehmen und ablehnen.
@@ -66,7 +70,7 @@ Unter Klima stehen Gemäßigt, Trocken, Tropisch und Tundra zur Verfügung. Die
 Auswahl ändert Gelände, Gebäudeböden und Beleuchtung. Ältere Spielstände ohne
 Klimaangabe verwenden Gemäßigt.
 Im Mehrspieler bestimmt der Gastgeber die Jahreszeiten. Beide Spieler benötigen
-denselben Regelstand mit Netzwerkprotokoll14.
+denselben Regelsatz mit Netzwerkprotokoll 17.
 
 Regelversion und vorhandene Spielstände
 Standard ist das rekonstruierte Profil der installierten UP-Version. Im
@@ -189,3 +193,4 @@ sea monkeys beschleunigt Bau, Produktion und bezahlte Forschung. Den
 Sofortmodus vor idontcheat ausschalten, wenn er enden soll. epoch up
 wechselt direkt in die nächste Epoche. Laufende bezahlte Forschung wird
 abgebrochen und erstattet. Die gewählte Endepoche bleibt gültig.
+

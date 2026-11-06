@@ -51,14 +51,14 @@ impl TerritoryNames {
 }
 
 impl Game {
-    fn valid_territory_naming_profile(&self) -> bool {
+    pub(crate) fn valid_fullmap_naming_profile(&self) -> bool {
         self.humans == 1 && !self.net
             && self.civilizations[..self.nplayers].iter().all(|&civ| (civ as usize) < POOLS.len())
     }
 
     pub(crate) fn configure_territory_names(&mut self, version: u32) -> bool {
         if version != VERSION || self.tick != 0 || self.territory_names.is_some()
-            || !self.valid_territory_naming_profile() {
+            || !self.valid_fullmap_naming_profile() {
             return false;
         }
         self.territory_names = Some(TerritoryNames::default());
@@ -75,7 +75,7 @@ impl Game {
     }
 
     pub(crate) fn restore_territory_names(&mut self, names: TerritoryNames) -> Option<()> {
-        if !self.valid_territory_naming_profile() || names.ids[self.map.tseeds.len()..].iter().any(|&id| id != 0) {
+        if !self.valid_fullmap_naming_profile() || names.ids[self.map.tseeds.len()..].iter().any(|&id| id != 0) {
             return None;
         }
         self.territory_names = Some(names);

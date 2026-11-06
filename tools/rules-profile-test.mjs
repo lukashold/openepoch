@@ -97,7 +97,7 @@ async function environment(id,seat=0,qa=false,menu={}){
   civilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange,
   sfx:{presentationWord:()=>{const word=menu.words?.[draws];draws++;return word??draws*29;}},
   referenceMode:p.reference,qaMode:false,normalizeOriginalHeading,originalFractionForZoom,innerWidth:1280,innerHeight:720,MAP:256,performance,queueMicrotask,
-  Lockstep,PROTOCOL_VERSION,territoryNamesRequested:false,originalEnabled:false,fullmap:null,
+  Lockstep,PROTOCOL_VERSION,nameSettings:new URLSearchParams(),originalEnabled:false,fullmap:null,
   mpStatus:t=>messages.push(t),toast:t=>messages.push(t),begin:()=>begins.push(w.game_tick()),
  });
  vm.runInContext(`let running=true,bench=0,net=null,ui=null,lastUi=0;const cam=${JSON.stringify(cam)},u8=(p,n)=>new Uint8Array(wasm.memory.buffer,p,n);

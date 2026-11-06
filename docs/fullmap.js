@@ -1,11 +1,12 @@
 import {fullmapActorCatalog,fullmapActorSize,readFullmapActors} from './fullmap-actors.js';
-import {paintFullmapLayers} from './fullmap-layers.js';
+import {paintFullmapLayers} from './fullmap-layers.js?v=native22';
+import {composeFullmapTerritories} from './fullmap-territories.js?v=native22';
 import {fullmapScreenPoint,fullmapWorldPoint} from './fullmap-pointer.js';
 import {composeFullmapTerrain,loadFullmapTerrainArt,sampleFullmapTiles} from './fullmap-terrain.js';
 import {loadOriginalFullmapArt} from './original-fullmap-art.js';
 import {nativeMetaEpoch} from './original-hud-layout.js';
 import {createFullmapSpriteCache} from './fullmap-sprites.js';
-import {paintFullmapTerritoryLabels,readFullmapTerritoryLabels} from './fullmap-territory-names.js';
+import {paintFullmapCityLabels,paintFullmapTerritoryLabels,readFullmapCityLabels,readFullmapTerritoryLabels} from './fullmap-territory-names.js?v=native22';
 import {createOriginalWarplanPane} from './original-warplan-pane.js';
 
 const FILTERS = {units:'Einheiten', buildings:'Gebäude und Mauern', resources:'Ressourcen und Bäume', territories:'Territorien'};
@@ -30,7 +31,7 @@ function rect(node, geometry) {
   Object.assign(node.style,{left:`${x}px`,top:`${y}px`,width:`${width}px`,height:`${height}px`});
 }
 
-export function createFullmap({dialog,wasm,metadata,size,teams,originalArt,territoryNameCatalog,bitmapFonts,
+export function createFullmap({dialog,wasm,metadata,size,teams,originalArt,territoryNameCatalog,cityNameCatalog,bitmapFonts,
   onAccept,onToggle,onPreview,pip,drawFlares,warplanCue,
   warplanPeer,warplanRecipient,warplanClock}) {
   const canvas = dialog.querySelector('canvas');
@@ -50,14 +51,14 @@ export function createFullmap({dialog,wasm,metadata,size,teams,originalArt,terri
   const pipCanvas = dialog.querySelector('.fullmap-pip');
   const pipLogo = dialog.querySelector('.fullmap-pip-logo');
   const pipControls = dialog.querySelector('.fullmap-pip-controls');
-  const terrainDraw = surface(RASTER), layerDraw = surface(size);
+  const terrainDraw = surface(RASTER), territoryDraw = surface(RASTER), layerDraw = surface(size);
   const overlay = layerDraw.createImageData(size,size);
   const bounds = {minX:0,minY:0,maxX:size-1,maxY:size-1};
   const {image,colorize} = createFullmapSpriteCache(teams);
   const switches = new Map();
   let layout, lastShape = '', lastOptions = '', lastDraw = -Infinity;
   let previousPrimaryDown = -Infinity;
-  let art, terrainArt, catalog, started, terrainReady, previewPointer, pipDrag;
+  let art, terrainArt, catalog, started, terrainReady, territoryReady, previewPointer, pipDrag;
   let terrain;
   const warplans = createOriginalWarplanPane({host:dialog,options:pane,playCue:warplanCue,
     peer:warplanPeer,recipient:warplanRecipient,clock:warplanClock,teams,refresh:()=>{
@@ -67,9 +68,13 @@ export function createFullmap({dialog,wasm,metadata,size,teams,originalArt,terri
 
   let saved;
   try { saved = JSON.parse(localStorage.getItem(PREFS)); } catch { /* optional preferences */ }
-  const filters = typeof wasm.fullmap_territory_labels_build === 'function'
-    && typeof wasm.fullmap_territory_labels_ptr === 'function'
-    ? {...FILTERS,terrNames:'Territoriennamen'} : FILTERS;
+  const filters = {...FILTERS};
+  if (typeof wasm.fullmap_city_labels_build === 'function' && typeof wasm.fullmap_city_labels_ptr === 'function') {
+    filters.cityNames = 'Städtenamen';
+  }
+  if (typeof wasm.fullmap_territory_labels_build === 'function' && typeof wasm.fullmap_territory_labels_ptr === 'function') {
+    filters.terrNames = 'Territoriennamen';
+  }
   const options = Object.fromEntries(Object.keys(filters).map(key=>[key,saved?.[key] !== false]));
   const pipWidgets = new Map();
   const pipViewport = () => pipCanvas.hidden ? null : pipCanvas.getBoundingClientRect();
@@ -201,6 +206,14 @@ export function createFullmap({dialog,wasm,metadata,size,teams,originalArt,terri
     terrainReady = true;
   }
 
+  function refreshTerritories() {
+    const tiles=new Uint8Array(wasm.memory.buffer,wasm.terr_ptr(),size*size*4);
+    const heights=new Float32Array(wasm.memory.buffer,wasm.hmap_ptr(),(size+1)**2);
+    const pixels=composeFullmapTerritories(tiles,heights,terrain,size);
+    territoryDraw.putImageData(new ImageData(pixels,RASTER,RASTER),0,0);
+    territoryReady=true;
+  }
+
   function paint(now,ui,corners) {
     if (!dialog.open || !ui || now-lastDraw<120 || !resize(ui.epoch)) return;
     lastDraw = now;
@@ -213,7 +226,11 @@ export function createFullmap({dialog,wasm,metadata,size,teams,originalArt,terri
     draw.setTransform(dpr,0,0,dpr,0,0);
     draw.imageSmoothingEnabled = true;
     draw.drawImage(terrainDraw.canvas,0,0,sourceSide,sourceSide,0,0,width,height);
-    const resources = paintFullmapLayers(wasm,size,terrain,{...options,local:ui.local,teams},overlay.data);
+    if (options.territories) {
+      if (!territoryReady) refreshTerritories();
+      draw.drawImage(territoryDraw.canvas,0,0,width,height);
+    }
+    const resources = paintFullmapLayers(wasm,size,terrain,{resources:options.resources,local:ui.local},overlay.data);
     layerDraw.putImageData(overlay,0,0);
     draw.imageSmoothingEnabled = false;
     draw.drawImage(layerDraw.canvas,0,0,width,height);
@@ -261,6 +278,8 @@ export function createFullmap({dialog,wasm,metadata,size,teams,originalArt,terri
     }
     if (options.terrNames) paintFullmapTerritoryLabels(draw,readFullmapTerritoryLabels(wasm),project,layout,
       {names:territoryNameCatalog?.names,bitmapFonts});
+    if (options.cityNames) paintFullmapCityLabels(draw,readFullmapCityLabels(wasm),project,layout,
+      {names:cityNameCatalog?.names,bitmapFonts});
     warplans.paint(draw,(x,y)=>fullmapScreenPoint(x,y,projection,bounds),dialog.clientWidth);
     drawFlares?.(draw,project,64,'fullmap');
   }
@@ -371,5 +390,6 @@ export function createFullmap({dialog,wasm,metadata,size,teams,originalArt,terri
     return true;
   }
 
-  return {open:openMap,close:closeMap,isOpen:()=>dialog.open,paint,pipKey,warplans,invalidate:()=>terrainReady=false};
+  return {open:openMap,close:closeMap,isOpen:()=>dialog.open,paint,pipKey,warplans,
+    invalidate(){terrainReady=false;territoryReady=false;}, invalidateTerritories(){territoryReady=false;}};
 }

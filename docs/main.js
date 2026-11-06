@@ -33,16 +33,16 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=skirmish-climates';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native21';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native22';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=epoch13';
 import {createFullscreenController} from './fullscreen.js?v=building2';
 import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native17';
 import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=fortress1';
 import {updateOriginalCamera,originalCameraRay,originalFractionForZoom,normalizeOriginalHeading,rotateOriginalCameraHeading} from './original-camera.js?v=heading2';
-import {createFullmap} from './fullmap.js?v=native21';
+import {createFullmap} from './fullmap.js?v=native22';
 import {createPlayerFlare} from './player-flare.js';
-import {loadFullmapTerritoryNameCatalog} from './fullmap-territory-names.js';
+import {loadFullmapCityNameCatalog,loadFullmapTerritoryNameCatalog} from './fullmap-territory-names.js?v=native22';
 import {createWarplanPeer,WARPLAN_PEER_VERSION} from './original-warplan-peer.js';
 
 const $ = id => document.getElementById(id);
@@ -683,8 +683,9 @@ const nativeDiplomacy=await enhanceOriginalDiplomacy(diplomacy,{wasm,enabled:ref
 document.body.dataset.originalDiplomacy=String(nativeDiplomacy.enabled);
 const nativeBitmapFonts=await loadNativeFontUI({enabled:referenceMode&&originalAssets.enabled,hud:nativeHud,diplomacy:nativeDiplomacy});
 document.body.dataset.originalBitmapFonts=String(nativeBitmapFonts.enabled);
-const territoryNameCatalog = rulesProfile.id === 'up15' ? await loadFullmapTerritoryNameCatalog(wasm) : null;
-const territoryNamesRequested = new URLSearchParams(location.search).get('territoryNames') === '1';
+const [territoryNameCatalog,cityNameCatalog] = rulesProfile.id === 'up15'
+  ? await Promise.all([loadFullmapTerritoryNameCatalog(wasm),loadFullmapCityNameCatalog(wasm)]) : [];
+const nameSettings = new URLSearchParams(location.search);
 $('diplomacy-button').onclick=()=>{if(running&&!bench)diplomacy.open();};
 
 const playerFlare = createPlayerFlare({mapSize:MAP,tickSeconds:TICK,originalArt:originalEnabled,local:()=>ui?.local,teams:TEAM,
@@ -706,7 +707,7 @@ function warplanRecipient(){
 }
 const fullmap = rulesProfile.ruleset===2&&packActorReader ? createFullmap({
   dialog:$('fullmap'),wasm,metadata:packActorReader,size:MAP,teams:TEAM,originalArt:originalEnabled,
-  territoryNameCatalog,bitmapFonts:nativeBitmapFonts.bitmapFonts,
+  territoryNameCatalog,cityNameCatalog,bitmapFonts:nativeBitmapFonts.bitmapFonts,
   warplanPeer:()=>net?.warplans,warplanRecipient,warplanClock:()=>wasm.game_tick()*TICK,
   warplanCue:sfx.playWarplanCue,
   pip:fullmapPip,
@@ -788,9 +789,13 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
     if(referenceMode)wasm.skirmish_epoch(+$('start-epoch').value);
   }
   if(!benchUnits)wasm.skirmish_visibility(+$('map-visibility').value);
-  if(!benchUnits && humans===1 && rulesProfile.id==='up15' && territoryNamesRequested
-      && !(territoryNameCatalog && wasm.configure_territory_names?.(territoryNameCatalog.catalog))) {
-    toast('Die originalen Gebietsnamen konnten für dieses Scharmützel nicht geladen werden.');
+  if(!benchUnits && humans===1 && rulesProfile.id==='up15') {
+    if(nameSettings.get('territoryNames') === '1' && !(territoryNameCatalog && wasm.configure_territory_names?.(territoryNameCatalog.catalog))) {
+      toast('Die originalen Gebietsnamen konnten für dieses Scharmützel nicht geladen werden.');
+    }
+    if(nameSettings.get('cityNames') === '1' && !(cityNameCatalog && wasm.configure_city_names?.(cityNameCatalog.catalog))) {
+      toast('Die originalen Städtenamen konnten für dieses Scharmützel nicht geladen werden.');
+    }
   }
   if(!benchUnits&&humans===1&&civilizationSetup.enabled&&wasm.stat(local,0)===0
      && typeof wasm.ai9_game_research_setup_manual==='function' && !wasm.ai9_game_research_setup_manual()){
@@ -973,7 +978,7 @@ function frame(now) {
 
   // textures that change
   if (wasm.map_dirty()) { bindTexture(1,mapTexture); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, MAP, MAP, gl.RGBA, gl.UNSIGNED_BYTE, u8(wasm.map_ptr(), MAP * MAP * 4)); uploadOriginalTerrainClasses(); fullmap?.invalidate(); }
-  if (wasm.terr_dirty()) { const p = wasm.terr_ptr(); bindTexture(3,territoryTexture); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, MAP, MAP, gl.RGBA, gl.UNSIGNED_BYTE, u8(p, MAP * MAP * 4)); }
+  if (wasm.terr_dirty()) { const p = wasm.terr_ptr(); bindTexture(3,territoryTexture); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, MAP, MAP, gl.RGBA, gl.UNSIGNED_BYTE, u8(p, MAP * MAP * 4)); fullmap?.invalidateTerritories(); }
   const tickNow = wasm.game_tick()>>>0;
   playerFlare.update(tickNow,dt);
   const seasonPhase=seasonSession.update();

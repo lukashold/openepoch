@@ -252,6 +252,8 @@ pub struct Game {
     pub(crate) regicide: Option<crate::ee2_regicide::Regicide>,
     #[cfg(feature = "ee2-native13")]
     pub(crate) territory_names: Option<crate::territory_names21::TerritoryNames>,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) city_names: Option<crate::city_names22::CityNames>,
     pub groups: Vec<Vec<u32>>,
     pub push: Vec<(f32, f32)>,
     pub scratch: Vec<usize>,
@@ -270,6 +272,8 @@ pub struct Game {
     pub terr_dirty: bool,
     #[cfg(feature = "ee2-native13")]
     pub(crate) fullmap_territory_labels: [crate::fullmap_labels21::TerritoryLabel; crate::fullmap_labels21::CAPACITY],
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fullmap_city_labels: Vec<crate::fullmap_labels21::CityLabel>,
     /// Sound cues for the page: (kind, x, y) triples.
     pub events: Vec<f32>,
     pub outbox: Vec<u8>,
@@ -340,6 +344,8 @@ impl Game {
             regicide: None,
             #[cfg(feature = "ee2-native13")]
             territory_names: None,
+            #[cfg(feature = "ee2-native13")]
+            city_names: None,
             groups: vec![Vec::new(); 10],
             push: vec![(0.0, 0.0); MAXE],
             scratch: Vec::with_capacity(256),
@@ -354,6 +360,8 @@ impl Game {
             terr_dirty: true,
             #[cfg(feature = "ee2-native13")]
             fullmap_territory_labels: [Default::default(); crate::fullmap_labels21::CAPACITY],
+            #[cfg(feature = "ee2-native13")]
+            fullmap_city_labels: Vec::new(),
             events: Vec::with_capacity(256),
             outbox: Vec::with_capacity(1024),
             inbox: Vec::new(),
@@ -448,6 +456,8 @@ impl Game {
     }
 
     fn kill(&mut self, i: usize) {
+        #[cfg(feature = "ee2-native13")]
+        self.retire_city_name(i);
         #[cfg(feature="ee2-citizen9")]
         let citizen_sound = {
             let cue = self.citizen_death_cue(i);
@@ -918,6 +928,13 @@ impl Game {
             mix(crate::territory_names21::MAGIC);
             mix(crate::territory_name_catalog21::VERSION);
             for id in names.ids { mix(id.into()); }
+        }
+        #[cfg(feature = "ee2-native13")]
+        if let Some(names) = &self.city_names {
+            mix(crate::city_names22::MAGIC);
+            mix(crate::city_name_catalog22::VERSION);
+            mix(names.ids.len() as u32);
+            for (&handle, &id) in &names.ids { mix(handle); mix(id.into()); }
         }
         #[cfg(feature="ee2-civ8")]
         if self.civilizations.iter().any(|&c|c!=crate::civ8_runtime::LEGACY_NEUTRAL){
@@ -1540,7 +1557,12 @@ impl Game {
 
     fn update_building(&mut self, i: usize, e: &mut Ent, d: &Def) {
         let instant = self.instant_build_for(e.team);
-        if e.built < 1.0 && instant { e.built = 1.0; e.hp = self.max_hp(e.team,e.def); }
+        if e.built < 1.0 && instant {
+            e.built = 1.0;
+            e.hp = self.max_hp(e.team,e.def);
+            #[cfg(feature = "ee2-native13")]
+            self.name_completed_city(i, *e);
+        }
         #[cfg(feature="ee2-reference")]
         self.observe_city_ground(i,*e);
         if e.built < 1.0 { return; }
@@ -2086,11 +2108,15 @@ impl Game {
         let t = &mut self.ents[j];
         t.built = (t.built + step).min(1.0);
         t.hp = (t.hp + maxhp * 0.9 * step).min(maxhp);
+        #[cfg(feature = "ee2-native13")]
+        let city_completed = t.def == TC && t.built >= 1.0;
         if t.built >= 1.0 && t.team == self.local {
             self.ev(14.0, b.x, b.y);
         }
         #[cfg(feature="ee2-reference")]
         self.sync_city_ground_entry(j);
+        #[cfg(feature = "ee2-native13")]
+        if city_completed { self.name_completed_city(j, self.ents[j]); }
     }
 
     /// Soft collision: overlapping units in the same layer push each other apart.

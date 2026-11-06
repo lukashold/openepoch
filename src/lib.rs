@@ -66,6 +66,10 @@ mod fullmap_labels21;
 mod territory_name_catalog21;
 #[cfg(feature = "ee2-native13")]
 mod territory_names21;
+#[cfg(feature = "ee2-native13")]
+mod city_name_catalog22;
+#[cfg(feature = "ee2-native13")]
+mod city_names22;
 mod territory;
 mod placement;
 #[cfg(all(feature = "ee2-reference",not(feature="ee2-up15")))]
@@ -393,6 +397,18 @@ pub extern "C" fn territory_names_catalog_version() -> u32 {
 pub extern "C" fn configure_territory_names(version: u32) -> u32 {
     g().configure_territory_names(version) as u32
 }
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn fullmap_city_labels_build() -> u32 { g().project_fullmap_city_labels() }
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn fullmap_city_labels_ptr() -> *const u32 { g().fullmap_city_labels.as_ptr().cast() }
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn city_names_catalog_version() -> u32 { city_name_catalog22::VERSION }
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_city_names(version: u32) -> u32 { g().configure_city_names(version) as u32 }
 #[no_mangle]
 pub extern "C" fn minimap() -> *const u8 {
     g().minimap();

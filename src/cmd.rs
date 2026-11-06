@@ -156,7 +156,12 @@ impl Game {
             }
             C_DELETE => {
                 let mut city=false;
-                for &i in &ids {city|=self.ents[i].def==TC;self.ents[i].hp=0.0;}
+                for &i in &ids {
+                    city |= self.ents[i].def == TC;
+                    #[cfg(feature = "ee2-native13")]
+                    self.retire_city_name(i);
+                    self.ents[i].hp = 0.0;
+                }
                 if city{self.rebuild_territories();self.void_landless_alliances();}
                 self.prune_territory_offers();
             }

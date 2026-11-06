@@ -82,10 +82,14 @@ impl Game {
         { b = crate::ee2_regicide::wrap(b, self); }
         #[cfg(feature="ee2-native13")]
         { b = crate::territory_names21::wrap(b, self.territory_names.as_ref()); }
+        #[cfg(feature="ee2-native13")]
+        { b = crate::city_names22::wrap(b, self.city_names.as_ref()); }
         self.savebuf = b;
     }
 
     pub fn load(buf: &[u8]) -> Option<Game> {
+        #[cfg(feature="ee2-native13")]
+        let (buf, city_names) = crate::city_names22::split(buf)?;
         #[cfg(feature="ee2-native13")]
         let (buf, territory_names) = crate::territory_names21::split(buf)?;
         #[cfg(feature="ee2-native13")]
@@ -325,6 +329,10 @@ impl Game {
         #[cfg(feature="ee2-native13")]
         if let Some(names) = territory_names {
             g.restore_territory_names(names)?;
+        }
+        #[cfg(feature="ee2-native13")]
+        if let Some(names) = city_names {
+            g.restore_city_names(names)?;
         }
         Some(g)
     }

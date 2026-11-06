@@ -16,7 +16,16 @@ pub struct TerritoryLabel {
     pub name: u32,
 }
 
+#[repr(C)]
+pub struct CityLabel {
+    pub handle: u32,
+    pub x: f32,
+    pub y: f32,
+    pub name: u32,
+}
+
 const _: () = assert!(core::mem::size_of::<TerritoryLabel>() == 6 * 4);
+const _: () = assert!(core::mem::size_of::<CityLabel>() == 4 * 4);
 
 impl Game {
     pub(crate) fn project_fullmap_territory_labels(&mut self) -> u32 {
@@ -50,5 +59,18 @@ impl Game {
             count += 1;
         }
         count as u32
+    }
+
+    pub(crate) fn project_fullmap_city_labels(&mut self) -> u32 {
+        self.fullmap_city_labels.clear();
+        let revealed = self.display_visibility() == 2;
+        for (index, city) in self.ents[..self.high].iter().enumerate() {
+            if !self.city_ground_active(city) { continue; }
+            if !self.can_see(self.local, index) && !(revealed && self.detected(self.local, index)) { continue; }
+            let handle = self.h(index);
+            let name = self.city_names.as_ref().and_then(|names| names.ids.get(&handle)).copied().unwrap_or_default();
+            self.fullmap_city_labels.push(CityLabel {handle, x: city.x, y: city.y, name: name.into()});
+        }
+        self.fullmap_city_labels.len() as u32
     }
 }

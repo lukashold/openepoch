@@ -1,9 +1,8 @@
-// Visibility uses the same bytes and territory owners as the main world view.
+// Visibility and resource availability use the same bytes as the main world view.
 export function paintFullmapLayers(wasm, size, terrain, options, rgba) {
   const cells = size*size;
   const view = (ptr,length) => new Uint8Array(wasm.memory.buffer,ptr,length);
   const fog = view(wasm.fog_ptr(),cells);
-  const territory = options.territories ? view(wasm.terr_ptr(),cells*4) : null;
   const resources = [];
   const usable = options.resources ? Array.from({length:9},(_,i)=>!!wasm.resource_active(options.local,i)) : [];
   rgba.fill(0);
@@ -12,18 +11,6 @@ export function paintFullmapLayers(wasm, size, terrain, options, rgba) {
     if (!visibility) {
       rgba[o+3] = 255;
       continue;
-    }
-    if (territory) {
-      const id = territory[o], owner = territory[o+1];
-      const east = tile%size !== size-1 && territory[o+4] !== id;
-      const south = tile+size < cells && territory[o+size*4] !== id;
-      const color = options.teams[owner-1];
-      if (color) {
-        for (let c=0; c<3; c++) rgba[o+c] = color[c]*255;
-        rgba[o+3] = east || south ? 220 : 62;
-      } else if (east || south) {
-        rgba[o] = 211; rgba[o+1] = 197; rgba[o+2] = 155; rgba[o+3] = 137;
-      }
     }
     if (options.resources) {
       if (terrain[tile] === 4) {
