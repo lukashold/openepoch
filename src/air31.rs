@@ -121,7 +121,10 @@ impl Game {
             return false;
         }
         self.air_missions_enabled = enabled;
-        if !enabled { self.air_runway_enabled = false; }
+        if !enabled {
+            self.air_runway_enabled = false;
+            self.set_air_takeoff_enabled(false);
+        }
         true
     }
 
@@ -287,6 +290,7 @@ impl Game {
     pub(crate) fn air_remove(&mut self, index: usize) {
         if !self.air_missions_enabled { return; }
         let handle = self.h(index);
+        self.takeoff.clear(handle);
         self.aircraft.aircraft.remove(&handle);
         for airport in self.aircraft.airports.values_mut() {
             airport.registered.retain(|&actor| actor != handle);
@@ -448,6 +452,10 @@ impl Airport {
 }
 
 impl State {
+    pub(crate) fn is_active(&self, handle: u32) -> bool {
+        self.aircraft.get(&handle).is_some_and(|frame| frame.phase != Phase::Stationed)
+    }
+
     pub(crate) fn is_parked(&self, index: usize, actor: &Ent) -> bool {
         if !mission_aircraft(actor.def) { return false; }
         let handle = (u32::from(actor.gen) << 16) | index as u32;
@@ -587,6 +595,7 @@ impl State {
         frame.mission = false;
         frame.return_pending = false;
         frame.waypoints.clear();
+        game.takeoff.clear(handle);
         self.airports.get_mut(&home).unwrap().stored.push(handle);
         let (x, y) = (game.ents[host].x, game.ents[host].y);
         game.order_stop(&[index]);
@@ -752,6 +761,7 @@ impl State {
             }
             let frame = self.aircraft.get_mut(&handle).unwrap();
             if frame.phase == Phase::Stationed { continue; }
+            if game.takeoff.rolling(handle) { continue; }
             if frame.home != NONE && game.air_host(frame.home, actor.team).is_none() {
                 let previous = frame.home;
                 frame.home = NONE;
@@ -896,6 +906,7 @@ impl State {
                 (aircraft.x, aircraft.y) = (pose.x, pose.y);
                 (aircraft.px, aircraft.py) = (pose.x, pose.y);
                 (aircraft.rot, aircraft.prot) = (pose.heading, pose.heading);
+                game.begin_takeoff(index, &building);
             }
             frame.waypoints.push_back(point);
             if frame.mission {

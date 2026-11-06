@@ -156,6 +156,8 @@ def main(project=None, overlay_paths=None):
         required.update({'docs/air-mission-order.js', 'docs/local-original/air-mission-ui/manifest.json'})
     if 'loadAirMissionFlag' in main_source:
         required.update({'docs/air-mission-flag.js', 'docs/local-original/air-mission-flag/manifest.json'})
+    if 'loadAirTakeoff' in main_source:
+        required.update({'docs/air-takeoff.js', 'docs/local-original/air-takeoff/manifest.json'})
     if 'loadTradeWaitArt' in main_source:
         required.update({'docs/trade-wait-status.js', 'docs/local-original/trade-wait/manifest.json'})
     if 'manifest-stone-thrower-up.json' in main_source:

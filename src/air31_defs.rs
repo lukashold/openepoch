@@ -47,6 +47,24 @@ const FIGHTER_BOMBER_FLIGHT: [Flight; 5] = [
     flight(6.67, 56.0, 16.0),
 ];
 
+// Active UP CSV5 selects these AircraftMove rows through the per-epoch
+// UpgradeAbilities …EpochNAttack declarations, including their move fields.
+const FIGHTER_FLIGHT: [Flight; 5] = [
+    flight(5.75, 57.0, 13.0),
+    flight(6.325, 59.0, 14.0),
+    flight(6.9, 61.0, 15.0),
+    flight(7.475, 62.0, 16.0),
+    flight(8.05, 64.0, 17.0),
+];
+
+const BOMBER_FLIGHT: [Flight; 5] = [
+    flight(5.52, 30.0, 10.0),
+    flight(5.865, 32.0, 11.0),
+    flight(6.21, 34.0, 12.0),
+    flight(6.555, 36.0, 13.0),
+    flight(6.9, 39.0, 14.0),
+];
+
 const BASE: UnitRow = UnitRow {
     id: FIGHTER_BOMBER, epoch: 10, until: 11, source_epoch: 11, source_unit: "FighterBomber",
     source_visual: "FighterBomber_11", source_host: "Airport", identity_verified: true, model_verified: true,
@@ -93,6 +111,16 @@ fn row_index(epoch: u8) -> Option<usize> { epoch.checked_sub(10).map(usize::from
 
 pub(crate) fn flight_for_fighter_bomber(epoch: u8) -> Option<&'static Flight> {
     FIGHTER_BOMBER_FLIGHT.get(row_index(epoch)?)
+}
+
+pub(crate) fn flight_profile(definition: DefId, epoch: u8) -> Option<&'static Flight> {
+    let rows = match definition {
+        37 | 39 | 44 => &FIGHTER_FLIGHT,
+        38 | 40 => &BOMBER_FLIGHT,
+        FIGHTER_BOMBER => &FIGHTER_BOMBER_FLIGHT,
+        _ => return None,
+    };
+    rows.get(row_index(epoch)?)
 }
 
 pub(crate) fn fighter_bomber(epoch: u8) -> Option<&'static UnitRow> {

@@ -151,6 +151,12 @@ impl Game {
                 if cfg!(feature="ee2-up15")||i==FORTRESS as usize {if let Some(v)=row.range {m[i][6]=v-d.w[0].range;}}
             }
             #[cfg(feature="ee2-native13")]
+            if self.air_takeoff_enabled {
+                if let Some(flight) = crate::air31_defs::flight_profile(i as DefId, self.players[team as usize].epoch) {
+                    m[i][2] = flight.speed;
+                }
+            }
+            #[cfg(feature="ee2-native13")]
             if i == crate::ee2_regicide::KING as usize {
                 crate::ee2_regicide::king_modifiers(self.players[team as usize].epoch, &mut m[i]);
             }

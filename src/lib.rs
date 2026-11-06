@@ -12,6 +12,8 @@ mod air31_defs;
 #[cfg(feature = "ee2-native13")]
 mod runway32;
 #[cfg(feature = "ee2-native13")]
+mod takeoff33;
+#[cfg(feature = "ee2-native13")]
 mod battle_signals;
 #[cfg(feature = "ee2-native13")]
 mod capture_animation26;
@@ -577,7 +579,7 @@ fn seen_at(g: &Game, x: f32, y: f32, a: f32) -> (f32, f32) {
 }
 
 /// Apparent ground-plane position of an entity's body.
-fn seen_ent(g: &Game, e: &Ent, d: &Def) -> (f32, f32) {
+fn seen_ent(g: &Game, _index: usize, e: &Ent, d: &Def) -> (f32, f32) {
     let ground = g.map.height(e.x, e.y).max(0.0);
     let a = if d.building {
         if e.def == DOCK { 0.1 } else { ground + 0.2 * d.size }
@@ -585,7 +587,12 @@ fn seen_ent(g: &Game, e: &Ent, d: &Def) -> (f32, f32) {
         match d.dom {
             SEA => 0.1,
             SUB => 0.0,
-            AIR => 3.4 + ground * 0.6,
+            AIR => {
+                #[cfg(feature = "ee2-native13")]
+                { g.aircraft_height(g.h(_index), 1.0, ground) }
+                #[cfg(not(feature = "ee2-native13"))]
+                { 3.4 + ground * 0.6 }
+            }
             _ => ground + 0.3 * d.size,
         }
     };
@@ -607,7 +614,7 @@ fn pick_where(g: &Game, x: f32, y: f32, allowed: impl Fn(usize, &Ent) -> bool) -
             continue;
         }
         let d = &DEFS[e.def as usize];
-        let (ex, ey) = seen_ent(g, e, d);
+        let (ex, ey) = seen_ent(g, i, e, d);
         let (dx, dy) = ((ex - x).abs(), (ey - y).abs());
         let hit = if d.building { dx.max(dy) <= Game::building_half(e) + 0.2 } else { dx * dx + dy * dy <= (d.rad() + 0.45).powi(2) };
         // units win over the building they stand next to; aircraft win over everything
@@ -654,7 +661,7 @@ pub extern "C" fn select_quad(ax: f32, ay: f32, bx: f32, by: f32, cx: f32, cy: f
             #[cfg(feature = "ee2-native13")]
             if g.trade_hidden(i, e) || g.air_parked(i, e) { continue; }
             if e.alive && e.team == me && !d.building && (pass == 1 || !d.has(F_WORKER)) {
-                let (sx, sy) = seen_ent(g, e, d);
+                let (sx, sy) = seen_ent(g, i, e, d);
                 if inside(sx, sy) {
                     g.ents[i].sel = true;
                     any = true;
@@ -822,6 +829,30 @@ pub extern "C" fn air_mission_configure_peer(enabled: u32) -> u32 {
 #[no_mangle]
 pub extern "C" fn air_runway_configure_peer(enabled: u32) -> u32 {
     u32::from(enabled <= 1 && g().configure_peer_air_runway(enabled != 0))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn air_takeoff_configure_peer(enabled: u32) -> u32 {
+    u32::from(enabled <= 1 && g().configure_peer_air_takeoff(enabled != 0))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn air_takeoff_start_tick(handle: u32) -> u32 {
+    let game = g();
+    if game.get(handle).is_some_and(|i| game.ents[i].team == game.local || game.visible(i)) {
+        game.takeoff_start_tick(handle)
+    } else { NONE }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn air_takeoff_height(handle: u32) -> f32 {
+    let game = g();
+    if game.get(handle).is_some_and(|i| game.ents[i].team == game.local || game.visible(i)) {
+        game.takeoff_height(handle, 1.0).unwrap_or(f32::NAN)
+    } else { f32::NAN }
 }
 
 #[cfg(feature = "ee2-native13")]

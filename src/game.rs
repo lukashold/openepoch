@@ -230,6 +230,10 @@ pub struct Game {
     #[cfg(feature = "ee2-native13")]
     pub(crate) air_runway_enabled: bool,
     #[cfg(feature = "ee2-native13")]
+    pub(crate) air_takeoff_enabled: bool,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) takeoff: crate::takeoff33::State,
+    #[cfg(feature = "ee2-native13")]
     pub(crate) aircraft: crate::air31::State,
     pub fx: Vec<Fx>,
     pub players: [Player; 4],
@@ -354,6 +358,10 @@ impl Game {
             air_missions_enabled: humans == 1 && bench == 0,
             #[cfg(feature = "ee2-native13")]
             air_runway_enabled: humans == 1 && bench == 0,
+            #[cfg(feature = "ee2-native13")]
+            air_takeoff_enabled: humans == 1 && bench == 0,
+            #[cfg(feature = "ee2-native13")]
+            takeoff: crate::takeoff33::State::default(),
             #[cfg(feature = "ee2-native13")]
             aircraft: crate::air31::State::default(),
             fx: Vec::with_capacity(1024),
@@ -1048,6 +1056,8 @@ impl Game {
         if self.air_missions_enabled { self.aircraft.hash(&mut mix); }
         #[cfg(feature = "ee2-native13")]
         if self.air_runway_enabled { mix(crate::runway32::HASH_TAG); }
+        #[cfg(feature = "ee2-native13")]
+        if self.air_takeoff_enabled { self.takeoff.hash(&mut mix); }
         #[cfg(feature="ee2-civ8")]
         if self.civilizations.iter().any(|&c|c!=crate::civ8_runtime::LEGACY_NEUTRAL){
             mix(0x38564943);for c in self.civilizations{mix(c as u32);}
@@ -1956,6 +1966,11 @@ impl Game {
             self.ents[i] = e;
             return;
         }
+        #[cfg(feature = "ee2-native13")]
+        if d.has(F_PLANE) && self.advance_takeoff(i, &mut e) {
+            self.ents[i] = e;
+            return;
+        }
         let stagger = (self.tick + i as u32) % 8 == 0;
         if d.has(F_STEALTH) && stagger {
             e.revealed = self.detect_mask(&e);
@@ -2115,6 +2130,11 @@ impl Game {
             };
             #[cfg(not(feature = "ee2-reference"))]
             let angular_speed = 2.4;
+            #[cfg(feature = "ee2-native13")]
+            let angular_speed = if self.air_takeoff_enabled {
+                crate::air31_defs::flight_profile(e.def, self.players[e.team as usize].epoch)
+                    .map_or(angular_speed, |row| row.angle_degrees_per_second.to_radians())
+            } else { angular_speed };
             let rate = angular_speed * DT;
             let (dx, dy) = (goal.0 - e.x, goal.1 - e.y);
             let dist = (dx * dx + dy * dy).sqrt();

@@ -212,7 +212,12 @@ impl Game {
                 let a = match d.dom {
                     SEA => 0.0,
                     SUB => -0.34,
-                    AIR => 3.4 + ground * 0.6,
+                    AIR => {
+                        #[cfg(feature = "ee2-native13")]
+                        { self.aircraft_height(self.h(i), alpha, ground) }
+                        #[cfg(not(feature = "ee2-native13"))]
+                        { 3.4 + ground * 0.6 }
+                    }
                     _ => ground,
                 };
                 if e.sel {

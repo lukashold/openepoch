@@ -324,6 +324,61 @@ class AssetAudit:
                 if len(header)!=24 or header[:8]!=b'\x89PNG\r\n\x1a\n' or header[12:16]!=b'IHDR' or size!=record.get('size'):
                     self.error('air-mission-flag-png-dimensions',file,source)
 
+    def check_air_takeoff(self):
+        loader='air-takeoff.js'
+        base='local-original/air-takeoff/'
+        name=base+'manifest.json'
+        match=re.search(r"const catalogHash='([0-9a-f]{64})'",self.files[loader].read_text(encoding='utf8'))
+        if not match:
+            self.error('air-takeoff-manifest-pin',loader);return
+        if not self.check_pinned_media(name,match[1],loader,'air-takeoff-catalog'):return
+        catalog=self.read_json(name)
+        rows=catalog.get('rows',[]);events=catalog.get('events',{})
+        keys={(row.get('definition'),row.get('epoch')) for row in rows}
+        if catalog.get('format')!='ee2-native-air-takeoff-v1' or catalog.get('gaps')!=[] or len(rows)!=15 or len(keys)!=15:
+            self.error('air-takeoff-catalog-format',name);return
+        for event,record in events.items():
+            self.check_pinned_media(record.get('url'),record.get('sha256'),f'{name}.events.{event}',
+                                    'air-takeoff-sound',record.get('bytes'))
+        fighter_catalog=self.read_json('local-original/fighter-bomber/manifest.json')
+        inherited={row['epoch']:row['model'] for row in fighter_catalog.get('rows',[])}
+        for index,row in enumerate(rows):
+            origin=f'{name}.rows[{index}]'
+            if row.get('event') not in events or not row.get('near'):
+                self.error('air-takeoff-row-binding',origin);continue
+            for lod in ('near','far'):
+                spec=row.get(lod)
+                if not spec:continue
+                binding=f'{origin}.{lod}'
+                if spec.get('reuseClip'):
+                    body=inherited.get(row['epoch'],{})
+                    model_name=self.check_pinned_media(body.get('url'),body.get('sha256'),binding,'air-takeoff-inherited-model')
+                    if not model_name:continue
+                    model=json.loads(self.files[model_name].read_text(encoding='utf8'))
+                    clips=[part.get('animations',{}).get(spec['reuseClip'],{}) for part in model.get('parts',[])]
+                    if not any(clip.get('endpointIncluded') and clip.get('duration')==row['duration'] for clip in clips):
+                        self.error('air-takeoff-inherited-clip',model_name,binding)
+                elif spec.get('bindPose'):
+                    continue
+                else:
+                    model_name=self.check_pinned_media(spec.get('url'),spec.get('sha256'),binding,
+                                                       'air-takeoff-overlay',spec.get('bytes'))
+                    if not model_name:continue
+                    model=self.read_json(model_name)
+                    if model.get('format')!='ee2-native-takeoff-overlay-v1':
+                        self.error('air-takeoff-overlay-format',model_name,binding)
+                payload=model.get('animationPayload',{})
+                if model.get('source',{}).get('sha256')!=spec.get('sourceSha256') or payload.get('sourceSha256')!=spec.get('sourceSha256'):
+                    self.error('air-takeoff-source-binding',model_name,binding)
+                file=self.check_pinned_media(payload.get('url'),payload.get('sha256'),model_name,
+                                             'air-takeoff-animation',payload.get('bytes'))
+                if file:
+                    with self.files[file].open('rb') as stream:header=stream.read(20)
+                    words=[int.from_bytes(header[i:i+4],'little') for i in range(4,20,4)]
+                    if (header[:4]!=b'C9A1' or words!=[1,payload.get('floatCount'),len(model.get('parts',[])),0]
+                            or self.files[file].stat().st_size!=20+4*words[1]):
+                        self.error('air-takeoff-animation-header',file,binding)
+
     def check_textures_and_ground(self):
         name='local-original/textures.json';self.ref(name,'original-assets.js','texture-manifest');data=self.read_json(name)
         for group,mapping in data.items():
@@ -834,6 +889,7 @@ class AssetAudit:
         if 'air-mission-order.js' in self.files:
             self.check_aircraft();self.check_air_mission_art()
         if 'air-mission-flag.js' in self.files:self.check_air_mission_flag()
+        if 'air-takeoff.js' in self.files:self.check_air_takeoff()
         if 'trade-wait-status.js' in self.files:self.check_trade_wait_art()
         if 'local-original/king-regicide/manifest.json' in self.files:
             self.check_models('local-original/king-regicide/manifest.json','king-regicide-')

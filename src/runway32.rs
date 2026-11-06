@@ -45,6 +45,7 @@ impl Game {
             return false;
         }
         self.air_runway_enabled = enabled;
+        if !enabled { self.set_air_takeoff_enabled(false); }
         true
     }
 }

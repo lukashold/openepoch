@@ -11,6 +11,8 @@ export function createOriginalAudio(options={}) {
   const base=options.base || DEFAULT_BASE;
   let ctx=null,master=null,manifest=null,loading=null,muted=false,speech=true,musicEnabled=true,active=false;
   const buffers=new Map(),pending=new Map(),failed=new Set(),live=new Set(),counters=new Map();
+  const takeoffBuffers=new Map(),takeoffLoads=new Map();
+  let takeoffEvents=new Map();
   const wheelLoops=new Map();
   let wheelSession=null;
   let musicSource=null,musicBuffer=null,musicFile=null,musicOffset=0,musicStarted=0,musicIndex=0,musicGeneration=0,musicPendingFile=null;
@@ -97,6 +99,34 @@ export function createOriginalAudio(options={}) {
     for(const {source} of wheelLoops.values())stop(source);
     wheelLoops.clear();
     wheelSession=null;
+  }
+  function loadTakeoff(event){
+    if(!ctx||!event||takeoffLoads.has(event.sha256))return;
+    const url=new URL(event.url);
+    url.searchParams.set('v',event.sha256.slice(0,16));
+    const load=fetchFile(url,{cache:'force-cache'}).then(response=>{
+      if(!response.ok)throw Error('Original takeoff audio unavailable');
+      return response.arrayBuffer();
+    }).then(async bytes=>{
+      const digest=new Uint8Array(await crypto.subtle.digest('SHA-256',bytes));
+      if(Array.from(digest,byte=>byte.toString(16).padStart(2,'0')).join('')!==event.sha256)throw Error('Takeoff audio checksum differs');
+      return ctx.decodeAudioData(bytes);
+    }).then(buffer=>takeoffBuffers.set(event.sha256,buffer)).catch(()=>{});
+    takeoffLoads.set(event.sha256,load);
+  }
+  function bindTakeoffEvents(events){
+    takeoffEvents=events??new Map();
+    for(const event of takeoffEvents.values())loadTakeoff(event);
+  }
+  function stopTakeoff(){
+    for(const source of [...live])if(source.originalGroup.startsWith('takeoff:'))stop(source);
+  }
+  function playTakeoff(name,volume,pan){
+    const event=takeoffEvents.get(name);
+    if(!event||volume<=.01)return false;
+    const group='takeoff:'+event.sha256;
+    if([...live].filter(source=>source.originalGroup===group).length>=event.maximumInstances)return false;
+    return !!start(takeoffBuffers.get(event.sha256),volume*event.volume,pan,group);
   }
   function updateStoneThrowerWheels(session, tracks) {
     const event=manifest?.nativeStoneThrowerEffects?.events?.fx_move_wheeled_04;
@@ -187,6 +217,7 @@ export function createOriginalAudio(options={}) {
   async function prepare(context,destination) {
     if(!enabled||typeof context?.decodeAudioData!=='function')return false;
     ctx=context;master=destination;
+    for(const event of takeoffEvents.values())loadTakeoff(event);
     if(loading)return loading;
     const readManifest=async file=>{
       const response=await fetchFile(new URL(file,base),{cache:'no-cache'});
@@ -268,6 +299,7 @@ export function createOriginalAudio(options={}) {
     musicEnabled = enabledMusic;
     stopAmbient();
     stopStoneThrowerWheels();
+    stopTakeoff();
     if (musicFile) stopMusic(false);
     return regionalPlayback()?.update({mode: 'menu', running: !muted, enabled: musicEnabled}) ?? false;
   }
@@ -286,6 +318,7 @@ export function createOriginalAudio(options={}) {
   }
   return {
     prepare,acknowledge,citizenDeath,effect,music,menuMusic,setDefinitionBindings,updateStoneThrowerWheels,stopStoneThrowerWheels,
+    bindTakeoffEvents,playTakeoff,stopTakeoff,
     role:(id,epoch)=>typed.role(id,epoch),
     resetRegionalMusic(){regionalMusic?.reset();},
     rebindRegionalMusic(){regionalMusic?.rebind();},

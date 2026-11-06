@@ -11,6 +11,7 @@ import {appendInitialSailParts,nativeInitialSailDiffuse} from './original-sail-c
 import {createDynamicSailBinding,createDynamicSailGPU,dynamicSailForces} from './original-dynamic-sails.js?v=clothgpu7';
 import {appendNativePackAnimations,nativePackPose} from './original-pack-states.js?v=pack8';
 import {captureAnimationBindings,captureOverlayMatches,loadCaptureAnimationOverlay,nativeCapturePose,regionalCaptureBindings,loadRegionalCaptureAsset} from './original-capture-animations.js?v=native26';
+import {nativeTakeoffPose} from './air-takeoff.js?v=native33';
 const VS=`#version 300 es
 layout(location=0) in vec3 aPosition;layout(location=1) in vec3 aNormal;layout(location=2) in vec2 aUV;
 layout(location=3) in vec4 iA;layout(location=4) in vec4 iB;layout(location=5) in vec4 iC;
@@ -260,7 +261,7 @@ function gpuPart(gl,part,instanceBuffer,materialTexture,keepPickingGeometry=fals
  let maxY=0;for(let i=1;i<positions.length;i+=3)maxY=Math.max(maxY,positions[i]);
  const frameCache=new Map();
  const pose=clip=>{
-  const animation=part.animations?.[clip]||part.animations?.idle;
+  const animation=part.animations?.[clip]||(clip!=='native-takeoff'&&part.animations?.idle);
   if(!animation?.frames?.length)return null;
   if(!frameCache.has(animation)){
    const width=256,height=Math.ceil(positions.length/3*2/width),frames=animation.frames;
@@ -382,6 +383,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    model={...model,nativeCapture:{clips,contexts:captureBinding.contexts},parts:model.parts.map((part,index)=>({...part,animations:{...part.animations,...animations[index]}}))};
    captureStatus.models++;
   }catch(error){if(!captureStatus.errors.includes(error.message))captureStatus.errors.push(error.message);}}
+  if(options.airTakeoff)model=await options.airTakeoff.augment(model,lod);
   const tradeSails=entry.presentation?.sailManifest;
   const sourceSails=tradeSails||sailManifest;
   const row=sourceSails?.models?.find(r=>r.source?.sha256===model.source?.sha256&&r.epoch===(entry.epoch??0));if(!sailStatus.enabled||!row||(!row.effect&&!options.dynamicSails))return model;
@@ -555,7 +557,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     if(!parts.length)throw new Error('Production model has no renderable parts');
     record.variant={sourceId:entry.id,assetKind:0,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),
      nativeScale:transform.scale,originOffset:transform.originOffset,yOffset:0,farRequested:lod==='far',
-     yawOffset:entry.yawOffset??model.yawOffset??0,rallyTag:rallyTag(model)};
+     yawOffset:entry.yawOffset??model.yawOffset??0,rallyTag:rallyTag(model),nativeTakeoff:model.nativeTakeoff};
     productionStatus[lod]++;
    }).catch(error=>{productionStatus.errors.push(`${url}: ${error.message}`);});
   }
@@ -579,7 +581,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    if(!parts.length)continue;
    const scaleKey=(entry.assetKind===undefined?'':assetKind+':')+id+':'+(entry.epoch??0),sea=assetKind===0&&((id>=29&&id<=36)||id===42||id===45),transform=nativeModelTransform(model,entry.regionalCivilizations?entry.nativeScaleBinding:scales.variants?.[scaleKey]);
    const yOffset=!transform.native&&sea?-(model.normalization?.offset?.[1]||0)*(model.normalization?.scale||1):0;
-   const variant={sourceId:id,assetKind,scaleKey,epoch:entry.epoch??0,until:entry.until,regionalCivilizations:entry.regionalCivilizations,regionalFallback:entry.regionalFallback===true,sourceIdentity:entry.sourceIdentity,region:entry.region,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),nativeAttackClock:entry.nativeAttackClock===true,yOffset,originOffset:transform.originOffset,nativeScale:transform.native?transform.scale:null,yawOffset:entry.yawOffset??model.yawOffset??0,farUrl:entry.lodFarUrl,far:null,farRequested:false,pickBounds:resourceBounds(parts),rallyTag:rallyTag(model)};
+   const variant={sourceId:id,assetKind,scaleKey,epoch:entry.epoch??0,until:entry.until,regionalCivilizations:entry.regionalCivilizations,regionalFallback:entry.regionalFallback===true,sourceIdentity:entry.sourceIdentity,region:entry.region,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),nativeAttackClock:entry.nativeAttackClock===true,yOffset,originOffset:transform.originOffset,nativeScale:transform.native?transform.scale:null,yawOffset:entry.yawOffset??model.yawOffset??0,farUrl:entry.lodFarUrl,far:null,farRequested:false,pickBounds:resourceBounds(parts),rallyTag:rallyTag(model),nativeTakeoff:model.nativeTakeoff};
    variant.nativeCapture=model.nativeCapture;
    if(entry.presentation)variant.presentationEntry=entry;
    if(assetKind===0&&id===22&&entry.verified&&model.databaseVisualBinding?.visualDefinition==='LightArtillery1_01'
@@ -727,7 +729,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     const civ=civilizations?.[team],regionalEntry=regionalCaptureRows?.get(`${sourceId}:${epoch}:${civ}`);
     const productionEntry=variant.assetKind===0&&productionRows.get(sourceId)?.find(row=>row.epoch<=epoch&&epoch<row.until&&
      (row.regionalCivilizations.length===14||row.regionalCivilizations.includes(civ)));
-    const exactActor=(regionalEntry||variant.nativeCapture)&&!previewFlags&&actor?.def===sourceId&&actor.team===team
+    const exactActor=(regionalEntry||variant.nativeCapture||variant.nativeTakeoff||productionEntry)&&!previewFlags&&actor?.def===sourceId&&actor.team===team
      &&actor.index===i&&actor.hpRatio>0&&actor.renderTime===time&&actor.renderX===data[i*12]&&actor.renderY===data[i*12+1]
      &&actor.renderAltitude===data[i*12+2]&&actor.renderYaw===data[i*12+3];
     const regional=exactActor&&regionalEntry&&regionalCaptureVariant(regionalEntry,'near');
@@ -743,7 +745,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
       variant.farRequested=true;const near=variant;
       const presentation=near.presentationEntry;
       const request=presentation?verifiedModelJSON(near.farUrl,presentation.lodFarSha256,'Original Far unit model'):json(near.farUrl);
-      request.then(model=>augmentModel(model,presentation||{id:near.sourceId,assetKind:near.assetKind,epoch:near.epoch},'far')).then(async model=>({model,parts:await loadParts(model,near.assetKind===1,near.farUrl,presentation?.presentation?.teamManifest)})).then(({model,parts})=>{near.far={...near,parts,pickBounds:resourceBounds(parts),sailComposite:model.nativeSailComposite,dynamicSailBinding:null,nativeCapture:model.nativeCapture,rallyTag:rallyTag(model)};}).catch(e=>{result.errors.push(e.message);console.warn('Original-Fernmodell:',e);});
+      request.then(model=>augmentModel(model,presentation||{id:near.sourceId,assetKind:near.assetKind,epoch:near.epoch},'far')).then(async model=>({model,parts:await loadParts(model,near.assetKind===1,near.farUrl,presentation?.presentation?.teamManifest)})).then(({model,parts})=>{near.far={...near,parts,pickBounds:resourceBounds(parts),sailComposite:model.nativeSailComposite,dynamicSailBinding:null,nativeCapture:model.nativeCapture,rallyTag:rallyTag(model),nativeTakeoff:model.nativeTakeoff};}).catch(e=>{result.errors.push(e.message);console.warn('Original-Fernmodell:',e);});
      }
      if(variant.far)variant=variant.far;
     }
@@ -759,7 +761,8 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     const capturePose=!packPose&&nativeCapture&&exactActor
      &&(regional||nativeCapture.contexts.some(context=>epoch>=context.from&&epoch<context.until&&context.ids.includes(actor.def)&&context.civs.includes(civ)))
      ? nativeCapturePose(options.capturePoseForActor(actor),nativeCapture.clips,options.captureAnimationDetail) : null;
-    const dedicatedPose=packPose||capturePose;
+    const takeoff=variant.nativeTakeoff&&exactActor?nativeTakeoffPose(variant.nativeTakeoff,options.takeoffElapsedForActor?.(actor)):null;
+    const dedicatedPose=packPose||capturePose||takeoff;
     const attackElapsed=variant.nativeAttackClock&&requestedClip==='combat'&&actor?.def===variant.sourceId&&actor.team===team
      &&actor.index===i&&actor.renderTime===time&&actor.renderX===data[i*12]&&actor.renderY===data[i*12+1]
      ? options.stoneAttackElapsedForActor?.(actor) : undefined;
