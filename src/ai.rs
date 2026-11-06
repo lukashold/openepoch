@@ -294,7 +294,7 @@ impl Game {
                 for (k, d) in DEFS.iter().enumerate() {
                     let available = d.made_at == bdef && d.epoch <= ep && d.until > ep;
                     #[cfg(feature="ee2-native13")]
-                    let available = if bdef == BARRACKS && self.infantry_roster_enabled {
+                    let available = if self.production_roster_enabled || bdef == BARRACKS && self.infantry_roster_enabled {
                         self.unit_production_available(team, bdef, k as DefId)
                     } else { available };
                     if available && d.armed() {

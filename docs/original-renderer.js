@@ -343,6 +343,18 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    if(manifest.teamManifest)regionalCaptureTeam=await verifiedModelJSON(manifest.teamManifest,manifest.teamManifestSha256,'Regional capture team manifest');
   }catch(error){regionalCaptureStatus.errors.push(error.message);}}
  }
+ const productionStatus={manifestAvailable:false,near:0,far:0,errors:[]};
+ const productionRows=new Map(),productionCache=new WeakMap();let productionTeam=null;
+ result.productionModels=productionStatus;
+ if(options.productionRegionalManifestURL){
+  const source=await json(options.productionRegionalManifestURL).catch(()=>null);
+  if(source){try{
+   const rows=regionalModelEntries(source);
+   if(source.teamManifest)productionTeam=await verifiedModelJSON(source.teamManifest,source.teamManifestSha256,'Production team manifest');
+   for(const row of rows){const variants=productionRows.get(row.id)||[];variants.push(row);productionRows.set(row.id,variants);}
+   productionStatus.manifestAvailable=true;
+  }catch(error){productionStatus.errors.push(error.message);}}
+ }
  const sailStatus={enabled:options.initialSails!==false,manifestAvailable:false,models:0,parts:0,errors:[]},sailErrors=new Set(),sailComposites=new Map();let sailManifest=null,sailShader=null,dynamicSailShader=null;const dynamicBindings=new WeakMap();
  result.initialSails=sailStatus;
  const sailError=message=>{if(!sailErrors.has(message)){sailErrors.add(message);sailStatus.errors.push(message);result.errors.push(message);}};
@@ -518,6 +530,26 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   }
   return regionalCaptureCache.get(key).variant;
  };
+ const productionVariant=(entry,lod)=>{
+  const url=lod==='near'?entry.url:entry.lodFarUrl,digest=lod==='near'?entry.sha256:entry.lodFarSha256;
+  if(!url)return null;
+  let cache=productionCache.get(entry);
+  if(!cache){cache={};productionCache.set(entry,cache);}
+  if(!cache[lod]){
+   const record={variant:null};cache[lod]=record;
+   verifiedModelJSON(url,digest,'Original production model').then(async body=>{
+    const model=await augmentModel(body,entry,lod),transform=nativeModelTransform(model,entry.nativeScaleBinding);
+    if(!transform.native)throw new Error('Production model has no exact source scale');
+    const parts=await loadParts(model,false,url,productionTeam);
+    if(!parts.length)throw new Error('Production model has no renderable parts');
+    record.variant={sourceId:entry.id,assetKind:0,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),
+     nativeScale:transform.scale,originOffset:transform.originOffset,yOffset:0,farRequested:lod==='far',
+     yawOffset:entry.yawOffset??model.yawOffset??0};
+    productionStatus[lod]++;
+   }).catch(error=>{productionStatus.errors.push(`${url}: ${error.message}`);});
+  }
+  return cache[lod].variant;
+ };
  let loaded=0;
  for(const entry of entries){
   onProgress(++loaded,entries.length);
@@ -671,14 +703,19 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     let variant=citizen===undefined?selectRegionalModel(variants.filter(v=>v.sourceIdentity===undefined),epoch,civilizations?.[team]):citizen;if(!variant)continue;
     const sourceId=variant.sourceId,time=data[i*12+10],seed=data[i*12+6],previewFlags=Math.round(data[i*12+7])&24;
     const civ=civilizations?.[team],regionalEntry=regionalCaptureRows?.get(`${sourceId}:${epoch}:${civ}`);
+    const productionEntry=variant.assetKind===0&&productionRows.get(sourceId)?.find(row=>row.epoch<=epoch&&epoch<row.until&&
+     (row.regionalCivilizations.length===14||row.regionalCivilizations.includes(civ)));
     const exactActor=(regionalEntry||variant.nativeCapture)&&!previewFlags&&actor?.def===sourceId&&actor.team===team
      &&actor.index===i&&actor.hpRatio>0&&actor.renderTime===time&&actor.renderX===data[i*12]&&actor.renderY===data[i*12+1]
      &&actor.renderAltitude===data[i*12+2]&&actor.renderYaw===data[i*12+3];
     const regional=exactActor&&regionalEntry&&regionalCaptureVariant(regionalEntry,'near');
+    const production=productionEntry&&productionVariant(productionEntry,'near');
+    if(production)variant=production;
     if(regional)variant=regional;
-    const variantIndex=regional?'capture-regional':variants.indexOf(variant),far=(variant.nativeScale??data[i*12+8])*zoom<55;
+    const variantIndex=regional?'capture-regional':production?'production':variants.indexOf(variant),far=(variant.nativeScale??data[i*12+8])*zoom<55;
     if(houseLodSettings&&variant.selectHouseLod)variant=variant.selectHouseLod(variant,data,i,eye,houseLodSettings);
     else if(far&&regional)variant=regionalCaptureVariant(regionalEntry,'far')||variant;
+    else if(far&&production)variant=productionVariant(productionEntry,'far')||variant;
     else if(far&&variant.farUrl){
      if(!variant.farRequested){
       variant.farRequested=true;const near=variant;

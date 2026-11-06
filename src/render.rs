@@ -533,7 +533,9 @@ impl Game {
                     let show_source_stats = self.source_unit_rank(me, id as DefId) != 0
                         || self.source_light_artillery_production(me, id as DefId);
                     #[cfg(feature="ee2-native13")]
-                    let show_source_stats = show_source_stats || self.source_infantry_offer(me, id as DefId) == Some(true);
+                    let show_source_stats = show_source_stats
+                        || self.source_infantry_offer(me, id as DefId) == Some(true)
+                        || self.source_production_offer(me, id as DefId) == Some(true);
                     #[cfg(feature="ee2-ai9-game-bridge")]
                     let hp = if show_source_stats { self.max_hp(me, id as DefId) } else { hp };
                     let _ = write!(tip, "{} HP", hp as i32);

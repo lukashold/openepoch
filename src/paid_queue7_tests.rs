@@ -24,6 +24,55 @@ fn active_sail_keeps_paid_resource_mix_until_main_obsolete_cancel(){
     g.retire_paid_production(0,9);assert_eq!(g.ents[dock].qn,0);assert_eq!(stock(&g),before);
     assert!(g.queue_prices.is_empty());
 }
+
+#[cfg(feature="ee2-native13")]
+#[test]
+fn source_roster_retires_paid_jobs_only_when_the_source_family_expires() {
+    let (mut g, _, dock) = game(4);
+    g.production_roster_enabled = true;
+    let before = stock(&g);
+    assert!(g.train(dock, 29));
+    assert!(g.train(dock, 29));
+    let _ = g.begin_paid_job(dock);
+    g.ents[dock].qt = 3.0;
+    g.players[0].epoch = 5;
+    g.rebuild_modifiers(0, true);
+    g.apply_paid_main(0, 4);
+    assert_eq!(g.ents[dock].qn, 0);
+    assert_eq!(g.ents[dock].qt, 0.0);
+    assert_eq!(stock(&g), before);
+    assert!(!g.can_train(dock, 29));
+    assert!(g.can_train(dock, 30));
+
+    let (mut g, _, _) = game(2);
+    g.production_roster_enabled = true;
+    let stable = g.spawn(STABLE, 0, 60.5, 60.5);
+    g.ents[stable].built = 1.0;
+    assert!(g.train(stable, 18));
+    let _ = g.begin_paid_job(stable);
+    g.ents[stable].qt = 3.0;
+    let paid = g.queue_payment(stable, 0);
+    let after = stock(&g);
+    g.players[0].epoch = 3;
+    g.rebuild_modifiers(0, true);
+    g.apply_paid_main(0, 2);
+    assert_eq!(g.ents[stable].q[0], 18);
+    assert_eq!(g.ents[stable].qt, 3.0);
+    assert_eq!(g.queue_payment(stable, 0).price, paid.price);
+    assert_eq!(stock(&g), after);
+    assert!(!g.can_train(stable, 18));
+    assert!(g.can_train(stable, 19));
+    assert!(g.train(stable, 19));
+    assert!(g.train(stable, 21));
+    g.players[0].epoch = 10;
+    g.rebuild_modifiers(0, true);
+    g.apply_paid_main(0, 9);
+    assert_eq!(g.ents[stable].qn, 0);
+    assert!(!g.can_train(stable, 19));
+    assert!(!g.can_train(stable, 21));
+    assert!(g.can_train(stable, 23));
+    assert!(g.can_train(stable, 26));
+}
 #[test]
 fn research_discount_does_not_retroactively_reduce_captured_scout_refund(){
     let(mut g,tc,_)=game(0);let before=stock(&g);assert!(g.train(tc,57));

@@ -205,6 +205,11 @@ impl Game {
                     #[cfg(not(feature="ee2-civ8"))]
                     self.retire_paid_production(team,previous_epoch);
                 },
+                #[cfg(feature="ee2-civ8")]
+                crate::paid_queue7_main::Kind::RosterObsolete=>{
+                    #[cfg(feature="ee2-native13")]
+                    if self.production_roster_enabled { self.retire_paid_definition(team,a.def); }
+                },
             }
         }
         self.recount_paid_players();
@@ -213,6 +218,13 @@ impl Game {
     fn retire_paid_definition(&mut self,team:u8,def:DefId){
         for b in 0..self.high{
             if !self.ents[b].alive||self.ents[b].team!=team||!DEFS[self.ents[b].def as usize].building{continue;}
+            #[cfg(feature="ee2-native13")]
+            if self.production_roster_enabled {
+                for position in (0..self.ents[b].qn as usize).rev() {
+                    if self.ents[b].q[position]==def as QueueItem { self.cancel_paid_job(b,position); }
+                }
+                continue;
+            }
             let mut position=0;
             while position<self.ents[b].qn as usize{
                 if self.ents[b].q[position]==def as QueueItem{self.cancel_paid_job(b,position);}

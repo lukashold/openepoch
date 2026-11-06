@@ -1,5 +1,5 @@
 // Generated source-ordered80-family Main actions.
-#[derive(Clone,Copy)] pub enum Kind{Reprice,Obsolete}
+#[derive(Clone,Copy)] pub enum Kind{Reprice,Obsolete,RosterObsolete}
 pub struct Action{pub epoch:u8,pub kind:Kind,pub def:crate::ids::DefId,pub ttciv:u8}
 pub const ACTIONS:&[Action]=&[
 Action{epoch:2,kind:Kind::Reprice,def:10,ttciv:0},
@@ -52,6 +52,7 @@ Action{epoch:5,kind:Kind::Reprice,def:21,ttciv:0},
 Action{epoch:5,kind:Kind::Reprice,def:18,ttciv:0},
 Action{epoch:5,kind:Kind::Reprice,def:19,ttciv:0},
 Action{epoch:5,kind:Kind::Reprice,def:56,ttciv:0},
+Action{epoch:5,kind:Kind::RosterObsolete,def:29,ttciv:0},
 Action{epoch:5,kind:Kind::Obsolete,def:61,ttciv:0},
 Action{epoch:5,kind:Kind::Obsolete,def:67,ttciv:0},
 Action{epoch:5,kind:Kind::Obsolete,def:79,ttciv:0},
@@ -134,7 +135,12 @@ Action{epoch:10,kind:Kind::Reprice,def:12,ttciv:0},
 Action{epoch:10,kind:Kind::Reprice,def:14,ttciv:0},
 Action{epoch:10,kind:Kind::Reprice,def:50,ttciv:0},
 Action{epoch:10,kind:Kind::Reprice,def:49,ttciv:0},
+Action{epoch:10,kind:Kind::RosterObsolete,def:18,ttciv:0},
+Action{epoch:10,kind:Kind::RosterObsolete,def:19,ttciv:0},
+Action{epoch:10,kind:Kind::RosterObsolete,def:21,ttciv:0},
 Action{epoch:10,kind:Kind::Obsolete,def:58,ttciv:0},
+Action{epoch:10,kind:Kind::RosterObsolete,def:31,ttciv:0},
+Action{epoch:10,kind:Kind::RosterObsolete,def:30,ttciv:0},
 Action{epoch:10,kind:Kind::Obsolete,def:73,ttciv:0},
 Action{epoch:10,kind:Kind::Obsolete,def:70,ttciv:0},
 Action{epoch:10,kind:Kind::Obsolete,def:68,ttciv:0},

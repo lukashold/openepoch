@@ -11,6 +11,7 @@ def run():
     production={}
     for b in units['bindings']:
         if b['id']>=57 and b.get('production_node'):production.setdefault(b['production_node']['NAME'],[]).append(b['id'])
+    roster_retirements={'WarGalley','HeavyMounted1','LightMounted1','Frigate','Galleon'}
     rows=[]
     def walk(node,epoch,path=()):
         path+= (node['name'],)
@@ -20,15 +21,17 @@ def run():
             for ident in families.get(node['unit'],[]):rows.append({'epoch':epoch,'kind':'Reprice','def':ident,'ttciv':tt,'path':path,'source':node['source']})
         if node.get('obsoleteNode'):
             for ident in production.get(node['obsoleteNode'],[]):rows.append({'epoch':epoch,'kind':'Obsolete','def':ident,'ttciv':0,'path':path,'source':node['source']})
+            if node['obsoleteNode'] in roster_retirements:
+                for ident in families[node['obsoleteNode']]:rows.append({'epoch':epoch,'kind':'RosterObsolete','def':ident,'ttciv':0,'path':path,'source':node['source']})
     for main in audit['mainNodes']:
         if not main['TTCiv']:walk(main['graph'],main['epoch']-1)
     out=['// Generated source-ordered80-family Main actions.',
-        '#[derive(Clone,Copy)] pub enum Kind{Reprice,Obsolete}',
+        '#[derive(Clone,Copy)] pub enum Kind{Reprice,Obsolete,RosterObsolete}',
         'pub struct Action{pub epoch:u8,pub kind:Kind,pub def:crate::ids::DefId,pub ttciv:u8}',
         'pub const ACTIONS:&[Action]=&[']
     for r in rows:out.append('Action{epoch:%d,kind:Kind::%s,def:%d,ttciv:%d},'%(r['epoch'],r['kind'],r['def'],r['ttciv']))
     out.append('];')
     (ROOT/'src/civ8_main.rs').write_text('\n'.join(out)+'\n',encoding='utf8')
-    (ROOT/'docs/civ8-main-actions.json').write_text(json.dumps({'format':'native-civ8-main-order-v1','actions':rows,'limits':['Only bound additional>=57 definitions gain source obsolete handling. Existing57 production gates remain unchanged.']},indent=2)+'\n',encoding='utf8')
+    (ROOT/'docs/civ8-main-actions.json').write_text(json.dumps({'format':'native-civ8-main-order-v1','actions':rows,'limits':['RosterObsolete actions apply only when the source production roster is active.']},indent=2)+'\n',encoding='utf8')
     print(json.dumps({'actions':len(rows),'obsolete':[(r['epoch'],r['def'])for r in rows if r['kind']=='Obsolete']}))
 if __name__=='__main__':run()

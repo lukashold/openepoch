@@ -691,6 +691,22 @@ class AssetAudit:
             self.check_models('local-original/artillery-native16/regional-models.json','artillery-progression-')
         if 'local-original/regional-stable/regional-models-native17.json' in self.files:
             self.check_models('local-original/regional-stable/regional-models-native17.json','regional-buildings-native17-')
+        production = 'local-original/production-visuals/manifest.json'
+        if production in self.files:
+            self.check_models(production, 'production-')
+            manifest = self.read_json(production)
+            team = self.ref(manifest.get('teamManifest'), production, 'production-team-manifest')
+            if team:
+                if self.digest(team) != manifest.get('teamManifestSha256'):
+                    self.error('production-team-hash-mismatch', team, production)
+                self.check_teams(team, 'production-')
+            for index, row in enumerate(manifest.get('models', [])):
+                for url_key, sha_key in [('url', 'sha256'), ('lodFarUrl', 'lodFarSha256')]:
+                    if not row.get(url_key):
+                        continue
+                    name = self.ref(row[url_key], f'{production}.models[{index}]', 'production-model')
+                    if name and self.digest(name) != row.get(sha_key):
+                        self.error('production-model-hash-mismatch', name, production)
         if 'local-original/king-regicide/manifest.json' in self.files:
             self.check_models('local-original/king-regicide/manifest.json','king-regicide-')
             self.check_teams('local-original/king-regicide/team/manifest.json','king-regicide-')
