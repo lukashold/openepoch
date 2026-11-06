@@ -11,6 +11,8 @@ mod battle_signals;
 mod capture_animation26;
 #[cfg(feature = "ee2-native13")]
 mod capture_math25;
+#[cfg(feature = "ee2-native13")]
+mod infantry_roster27;
 #[cfg(feature = "ee2-ai9-planner-probe")]
 pub mod ai9_count;
 #[cfg(feature = "ee2-ai9-game-bridge")]
@@ -740,6 +742,18 @@ pub extern "C" fn capture_configure_peer(enabled: u32) -> u32 {
 #[no_mangle]
 pub extern "C" fn capture_animation_configure_peer(enabled: u32) -> u32 {
     u32::from(enabled <= 1 && g().configure_peer_capture_animation(enabled != 0))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn infantry_roster_configure_peer(enabled: u32) -> u32 {
+    u32::from(enabled <= 1 && g().configure_peer_infantry_roster(enabled != 0))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn infantry_roster_enabled() -> u32 {
+    u32::from(g().infantry_roster_enabled)
 }
 
 #[cfg(feature = "ee2-native13")]

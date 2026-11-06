@@ -42,8 +42,10 @@ impl Game {
         b.extend_from_slice(&self.map.res);
         b.extend_from_slice(raw(&self.map.amt));
         b.extend_from_slice(&self.vis);
-        let cheat_flags = self.cheats_enabled as u32 | ((self.god_mode as u32) << 1) | ((self.fog_inverted as u32) << 2);
-        for v in [cheat_flags, self.instant_build as u32, self.tech_points] {
+        let options = self.cheats_enabled as u32 | ((self.god_mode as u32) << 1) | ((self.fog_inverted as u32) << 2);
+        #[cfg(feature="ee2-native13")]
+        let options = options | if self.infantry_roster_enabled { crate::infantry_roster27::SAVE_FLAG } else { 0 };
+        for v in [options, self.instant_build as u32, self.tech_points] {
             b.extend_from_slice(&v.to_le_bytes());
         }
         b.extend_from_slice(&0x3153_4552u32.to_le_bytes()); // RES1 research extension
@@ -182,11 +184,15 @@ impl Game {
         if trailer >= 12 {
             let v = |k| u32::from_le_bytes(buf[end+k..end+k+4].try_into().unwrap());
             let allowed = if cfg!(feature = "ee2-up15") { 7 } else { 1 };
+            #[cfg(feature="ee2-native13")]
+            let allowed = allowed | crate::infantry_roster27::SAVE_FLAG;
             let flags = v(0);
             if flags & !allowed != 0 || v(4) > 1 { return None; }
             g.cheats_enabled = flags & 1 != 0;
             g.god_mode = flags & 2 != 0;
             g.fog_inverted = flags & 4 != 0;
+            #[cfg(feature="ee2-native13")]
+            { g.infantry_roster_enabled = flags & crate::infantry_roster27::SAVE_FLAG != 0; }
             g.instant_build = v(4) == 1 && (cfg!(feature = "ee2-up15") || g.cheats_enabled);
             g.tech_points = v(8);
         }

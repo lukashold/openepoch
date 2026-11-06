@@ -1570,8 +1570,10 @@ const mpStatus = t => $('mpstatus').textContent = t;
 let pending = null;
 function channel(local) {
   let ch = null, pc = null, rejected = false, remoteWarplans, remoteCapture = false, remoteCaptureAnimation = false;
+  let remoteInfantryRoster = false;
   const supportsCapture = typeof wasm.capture_configure_peer === 'function';
   const supportsCaptureAnimation = supportsCapture && typeof wasm.capture_animation_configure_peer === 'function';
+  const supportsInfantryRoster = typeof wasm.infantry_roster_configure_peer === 'function';
   return {
     open(c) {
       ch = c;
@@ -1579,6 +1581,7 @@ function channel(local) {
         ...(originalEnabled&&fullmap?{warplans:WARPLAN_PEER_VERSION}:{}),
         ...(supportsCapture?{capture:1}:{}),
         ...(supportsCaptureAnimation?{captureAnimation:1}:{}),
+        ...(supportsInfantryRoster?{infantryRoster:1}:{}),
         ...(climates.length>1?{climates}:{})}));
       mpStatus('Verbunden – Spielversion wird geprüft …');
     },
@@ -1595,6 +1598,7 @@ function channel(local) {
           remoteWarplans=m.warplans;
           remoteCapture=m.capture===1;
           remoteCaptureAnimation=remoteCapture&&m.captureAnimation===1;
+          remoteInfantryRoster=m.infantryRoster===1;
           if (local === 0 && !net) {
             try{
               const ai=+$('mpai').value,players=2+ai,choices=civilizationSetup.choices();
@@ -1605,6 +1609,7 @@ function channel(local) {
               const cfg = {t:'start',protocol:PROTOCOL_VERSION,rules:wasm.ruleset(),seed:(seedOf()>>>0)||1,ai,visibility:+$('map-visibility').value,seasons:menuSeasonSettings(),
                 ...(climate?{climate}:{}),...(supportsCapture&&remoteCapture?{capture:1}:{}),
                 ...(supportsCaptureAnimation&&remoteCaptureAnimation?{captureAnimation:1}:{}),
+                ...(supportsInfantryRoster&&remoteInfantryRoster?{infantryRoster:1}:{}),
                 ...resolved,popLimit:choices?+$('pop-limit').value:null,supplies:choices?+$('supplies').value:null};
               checkStart(cfg);ch.send(JSON.stringify(cfg));launch(cfg);
             }catch{return reject('Die Scharmützeleinstellungen konnten nicht übernommen werden.');}
@@ -1625,6 +1630,7 @@ function channel(local) {
     checkedClimate(cfg.climate,climates);
     if(cfg.capture!==undefined&&(cfg.capture!==1||!supportsCapture||!remoteCapture))throw Error('Unsupported capture command');
     if(cfg.captureAnimation!==undefined&&(cfg.captureAnimation!==1||cfg.capture!==1||!supportsCaptureAnimation||!remoteCaptureAnimation))throw Error('Unsupported capture animation');
+    if(cfg.infantryRoster!==undefined&&(cfg.infantryRoster!==1||!supportsInfantryRoster||!remoteInfantryRoster))throw Error('Unsupported infantry roster');
     if(civilizationSetup.enabled){
       checkedCivilizations(cfg.civilizations,2+cfg.ai);
       if(![250,500,1000].includes(cfg.popLimit)||![0,1,2].includes(cfg.supplies))throw Error('Invalid skirmish setup');
@@ -1638,6 +1644,7 @@ function channel(local) {
     wasm.skirmish_visibility(cfg.visibility);
     if(cfg.capture===1&&!wasm.capture_configure_peer(1))throw Error('Capture setup failed');
     if(cfg.captureAnimation===1&&!wasm.capture_animation_configure_peer(1))throw Error('Capture animation setup failed');
+    if(cfg.infantryRoster===1&&!wasm.infantry_roster_configure_peer(1))throw Error('Infantry roster setup failed');
     seasonSession.configure(peerSeasonSettings(cfg.seasons),cfg.climate);setSeasonControls(seasonSession.settings);climateControl.value=seasonSession.climate;
     net = { ch, pc, ls: null };
     net.ls = new Lockstep(wasm, local, buf => { if (ch.readyState === 'open') ch.send(buf); });

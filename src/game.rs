@@ -214,6 +214,8 @@ pub struct Game {
     pub(crate) capture_enabled: bool,
     #[cfg(feature="ee2-native13")]
     pub(crate) capture_animation_enabled: bool,
+    #[cfg(feature="ee2-native13")]
+    pub(crate) infantry_roster_enabled: bool,
     pub fx: Vec<Fx>,
     pub players: [Player; 4],
     // Kept outside Player so existing repr(C) saves retain their layout.
@@ -325,6 +327,8 @@ impl Game {
             capture_enabled: humans == 1 && bench == 0,
             #[cfg(feature="ee2-native13")]
             capture_animation_enabled: humans == 1 && bench == 0,
+            #[cfg(feature="ee2-native13")]
+            infantry_roster_enabled: humans == 1 && bench == 0,
             fx: Vec::with_capacity(1024),
             players: [Player::default(); 4],
             extra_resources: [[0.0;6];4],
@@ -563,6 +567,10 @@ impl Game {
 
     /// Would `train(b, def)` succeed right now?
     pub(crate) fn unit_production_available(&self, team: u8, host: DefId, unit: DefId) -> bool {
+        #[cfg(feature="ee2-native13")]
+        if let Some(available) = self.source_infantry_offer(team, unit) {
+            return host == BARRACKS && available;
+        }
         let def = &DEFS[unit as usize];
         let epoch = self.players[team as usize].epoch;
         #[cfg(feature = "ee2-ai9-game-bridge")]
@@ -969,6 +977,8 @@ impl Game {
         }
         #[cfg(feature = "ee2-native13")]
         self.capture.hash(self.capture_animation_enabled, &mut mix);
+        #[cfg(feature = "ee2-native13")]
+        if self.infantry_roster_enabled { mix(u32::from_le_bytes(*b"INF1")); }
         #[cfg(feature="ee2-civ8")]
         if self.civilizations.iter().any(|&c|c!=crate::civ8_runtime::LEGACY_NEUTRAL){
             mix(0x38564943);for c in self.civilizations{mix(c as u32);}

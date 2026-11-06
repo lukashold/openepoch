@@ -292,7 +292,12 @@ impl Game {
                 let mut pick = 0 as DefId;
                 let mut seen = 0;
                 for (k, d) in DEFS.iter().enumerate() {
-                    if d.made_at == bdef && d.epoch <= ep && d.until > ep && d.armed() {
+                    let available = d.made_at == bdef && d.epoch <= ep && d.until > ep;
+                    #[cfg(feature="ee2-native13")]
+                    let available = if bdef == BARRACKS && self.infantry_roster_enabled {
+                        self.unit_production_available(team, bdef, k as DefId)
+                    } else { available };
+                    if available && d.armed() {
                         // Own scripted AI: sample only jobs that this producer
                         // can legally buy. Rejected civilization/price/population
                         // choices must not consume its reservoir RNG draw.
@@ -399,6 +404,8 @@ mod civ8_ai_tests {
     fn fourteen_civilizations_sample_only_legal_jobs_before_rng() {
         for civ in 0..14 {for epoch in [0,5,10,14] {for host in [BARRACKS,STABLE,MILL] {
             let (mut g,b)=fixture(civ,epoch,host);
+            #[cfg(feature="ee2-native13")]
+            { g.infantry_roster_enabled = false; }
             let mut expected_rng=Rng(g.rng.0);let mut pick=0 as DefId;let mut seen=0;
             for (k,d) in DEFS.iter().enumerate() {
                 if d.made_at==host&&d.epoch<=epoch&&d.until>epoch&&d.armed()&&g.can_train(b,k as QueueItem) {
@@ -412,6 +419,35 @@ mod civ8_ai_tests {
                 assert!(g.definition_civ_available(1,pick));
             }
         }}}
+    }
+
+    #[test]
+    #[cfg(feature="ee2-native13")]
+    fn source_barracks_ai_samples_the_three_legal_families_in_every_epoch() {
+        let heavy = [9, 9, 13, 13, 13, 13, 15, 15, 15, 15, 16, 16, 17, 17, 17];
+        let light = [10, 10, 12, 12, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14];
+        for epoch in 0..15 {
+            let (mut g, b) = fixture(0, epoch as u8, BARRACKS);
+            // The controlled AI fixture has no City Center and suppresses
+            // construction. Give it population room after spawn recounts.
+            g.players[1].cap = 1000;
+            let offers: Vec<_> = (9..=17).filter(|&id| g.can_train(b, id)).collect();
+            let mut expected = vec![heavy[epoch], light[epoch]];
+            if epoch > 0 { expected.push(11); }
+            expected.sort_unstable();
+            assert_eq!(offers, expected);
+
+            let mut rng = Rng(g.rng.0);
+            let mut pick = 0;
+            for (index, job) in expected.into_iter().enumerate() {
+                if rng.range(index as u32 + 1) == 0 { pick = job; }
+            }
+            g.ai_step(1);
+            assert_eq!(g.rng.0, rng.0);
+            assert_eq!(g.ents[b].qn, 1);
+            assert_eq!(g.ents[b].q[0], pick);
+            assert_eq!(g.queue_payment(b, 0).job, pick);
+        }
     }
 
     #[test]
