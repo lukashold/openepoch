@@ -7,7 +7,7 @@ import {loadOriginalFullmapArt} from './original-fullmap-art.js';
 import {nativeMetaEpoch} from './original-hud-layout.js';
 import {createFullmapSpriteCache} from './fullmap-sprites.js';
 import {paintFullmapCityLabels,paintFullmapTerritoryLabels,readFullmapCityLabels,readFullmapTerritoryLabels} from './fullmap-territory-names.js?v=native22';
-import {createOriginalWarplanPane} from './original-warplan-pane.js';
+import {createOriginalWarplanPane} from './original-warplan-pane.js?v=native23';
 
 const FILTERS = {units:'Einheiten', buildings:'Gebäude und Mauern', resources:'Ressourcen und Bäume', territories:'Territorien'};
 const PREFS = 'openepoch-fullmap-options-v1';
@@ -280,7 +280,7 @@ export function createFullmap({dialog,wasm,metadata,size,teams,originalArt,terri
       {names:territoryNameCatalog?.names,bitmapFonts});
     if (options.cityNames) paintFullmapCityLabels(draw,readFullmapCityLabels(wasm),project,layout,
       {names:cityNameCatalog?.names,bitmapFonts});
-    warplans.paint(draw,(x,y)=>fullmapScreenPoint(x,y,projection,bounds),dialog.clientWidth);
+    warplans.paint(draw,(x,y)=>fullmapScreenPoint(x,y,projection,bounds),dialog.clientWidth,dialog.clientHeight);
     drawFlares?.(draw,project,64,'fullmap');
   }
 

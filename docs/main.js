@@ -33,14 +33,14 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=skirmish-climates';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native22';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native23';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=epoch13';
 import {createFullscreenController} from './fullscreen.js?v=building2';
 import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native17';
 import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=fortress1';
 import {updateOriginalCamera,originalCameraRay,originalFractionForZoom,normalizeOriginalHeading,rotateOriginalCameraHeading} from './original-camera.js?v=heading2';
-import {createFullmap} from './fullmap.js?v=native22';
+import {createFullmap} from './fullmap.js?v=native23';
 import {createPlayerFlare} from './player-flare.js';
 import {loadFullmapCityNameCatalog,loadFullmapTerritoryNameCatalog} from './fullmap-territory-names.js?v=native22';
 import {createWarplanPeer,WARPLAN_PEER_VERSION} from './original-warplan-peer.js';
@@ -795,6 +795,9 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
     }
     if(nameSettings.get('cityNames') === '1' && !(cityNameCatalog && wasm.configure_city_names?.(cityNameCatalog.catalog))) {
       toast('Die originalen Städtenamen konnten für dieses Scharmützel nicht geladen werden.');
+    }
+    if(nameSettings.get('rememberedCities') === '1' && !wasm.configure_city_memory?.()) {
+      toast('Die Städtenamen im Nebel konnten für dieses Scharmützel nicht aktiviert werden.');
     }
   }
   if(!benchUnits&&humans===1&&civilizationSetup.enabled&&wasm.stat(local,0)===0

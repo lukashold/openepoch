@@ -1,6 +1,7 @@
 import {originalWarplanControls,originalWarplanLayout} from './original-warplan-layout.js';
 import {createOriginalWarplanPath,originalWarplanPathWidths,visitOriginalWarplanPaths} from './original-warplan-path.js';
 import {createWarplanPeerControls} from './original-warplan-peer-controls.js';
+import {originalWarplanGeometry} from './original-warplan-geometry.js?v=native23';
 
 export function createOriginalWarplanPane({host,options,refresh,playCue,peer,recipient,clock,teams}) {
   const editor = createOriginalWarplanPath({playCue});
@@ -102,22 +103,25 @@ export function createOriginalWarplanPane({host,options,refresh,playCue,peer,rec
     return true;
   }
 
-  function paint(draw, project, screenWidth) {
+  function paint(draw, project, screenWidth, screenHeight) {
     if (!enabled || !open) return;
     const {line,stroke} = originalWarplanPathWidths(screenWidth);
     draw.save();
-    // Candidate Canvas stroke. The native 00AAEE20 tessellation remains separate.
     visitOriginalWarplanPaths(exchange.visiblePaths(),project,(points,colorPlayer) => {
       draw.beginPath();
-      draw.moveTo(...points[0]);
-      for (const point of points.slice(1)) draw.lineTo(...point);
-      draw.lineWidth = line+stroke;
+      for (const polygon of originalWarplanGeometry(points,line,screenHeight)) {
+        draw.moveTo(...polygon[0]);
+        for (const point of polygon.slice(1)) draw.lineTo(...point);
+        draw.closePath();
+      }
+      // Keep the existing Canvas contrast outline while the original edge
+      // mesh's zero-alpha compositing mode is resolved.
+      draw.lineWidth = stroke;
       draw.strokeStyle = '#252625';
       draw.stroke();
-      draw.lineWidth = line;
       const rgb=teams?.[colorPlayer-1];
-      draw.strokeStyle = rgb ? `rgb(${rgb.map(value=>Math.round(value*255)).join(',')})` : '#fff';
-      draw.stroke();
+      draw.fillStyle = rgb ? `rgb(${rgb.map(value=>Math.round(value*255)).join(',')})` : '#fff';
+      draw.fill();
     });
     draw.restore();
   }

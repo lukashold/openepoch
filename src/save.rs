@@ -84,10 +84,14 @@ impl Game {
         { b = crate::territory_names21::wrap(b, self.territory_names.as_ref()); }
         #[cfg(feature="ee2-native13")]
         { b = crate::city_names22::wrap(b, self.city_names.as_ref()); }
+        #[cfg(feature="ee2-native13")]
+        { b = crate::city_memory23::wrap(b, self.city_memory.as_ref()); }
         self.savebuf = b;
     }
 
     pub fn load(buf: &[u8]) -> Option<Game> {
+        #[cfg(feature="ee2-native13")]
+        let (buf, city_memory) = crate::city_memory23::split(buf)?;
         #[cfg(feature="ee2-native13")]
         let (buf, city_names) = crate::city_names22::split(buf)?;
         #[cfg(feature="ee2-native13")]
@@ -333,6 +337,10 @@ impl Game {
         #[cfg(feature="ee2-native13")]
         if let Some(names) = city_names {
             g.restore_city_names(names)?;
+        }
+        #[cfg(feature="ee2-native13")]
+        if let Some(memory) = city_memory {
+            g.restore_city_memory(memory)?;
         }
         Some(g)
     }

@@ -66,10 +66,22 @@ impl Game {
         let revealed = self.display_visibility() == 2;
         for (index, city) in self.ents[..self.high].iter().enumerate() {
             if !self.city_ground_active(city) { continue; }
-            if !self.can_see(self.local, index) && !(revealed && self.detected(self.local, index)) { continue; }
+            let visible = if self.city_memory.is_some() {
+                self.city_currently_seen(index, city)
+            } else {
+                self.can_see(self.local, index) || (revealed && self.detected(self.local, index))
+            };
+            if !visible { continue; }
             let handle = self.h(index);
-            let name = self.city_names.as_ref().and_then(|names| names.ids.get(&handle)).copied().unwrap_or_default();
+            let name = self.fullmap_city_name_id(handle);
             self.fullmap_city_labels.push(CityLabel {handle, x: city.x, y: city.y, name: name.into()});
+        }
+        if let Some(known) = &self.city_memory {
+            for (&handle, old) in known {
+                if self.snapshot_still_hidden(handle, old) {
+                    self.fullmap_city_labels.push(CityLabel {handle, x:old.x, y:old.y, name:old.name.into()});
+                }
+            }
         }
         self.fullmap_city_labels.len() as u32
     }

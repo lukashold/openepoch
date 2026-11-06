@@ -54,8 +54,11 @@ Territoriennamen und sichtbare Stadtzentren getrennt ein und aus.
 Für ein neues Solo-Scharmützel kannst du &cityNames=1 an die Spieladresse
 anhängen. Neu fertiggestellte Städte erhalten dann Namen aus den
 Original-Zivilisationslisten. &territoryNames=1 aktiviert neue Gebietsnamen.
+Mit &rememberedCities=1 zeigt die Weltkarte zusätzlich die zuletzt gesehenen
+Stadtzentren im Nebel. Diese Option ist für neue UP-Solo-Scharmützel verfügbar.
 Im Reiter „Kriegspläne“ zeichnest du mit Linksklick Wegpunkte und beendest den
-Pfad mit Rechtsklick. Zwei Spieler mit diesem Stand können ihre Pfade versenden,
+Pfad mit Rechtsklick. Die Karte zeichnet den Pfad mit abgerundeten Kurven und
+einer Pfeilspitze. Zwei Spieler mit diesem Stand können ihre Pfade versenden,
 anzeigen, annehmen und ablehnen.
 
 Strg+Pfeil links/rechts: Kamera drehen, mit Umschalt schneller. Die drei

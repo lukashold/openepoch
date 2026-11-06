@@ -70,6 +70,8 @@ mod territory_names21;
 mod city_name_catalog22;
 #[cfg(feature = "ee2-native13")]
 mod city_names22;
+#[cfg(feature = "ee2-native13")]
+mod city_memory23;
 mod territory;
 mod placement;
 #[cfg(all(feature = "ee2-reference",not(feature="ee2-up15")))]
@@ -409,6 +411,9 @@ pub extern "C" fn city_names_catalog_version() -> u32 { city_name_catalog22::VER
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
 pub extern "C" fn configure_city_names(version: u32) -> u32 { g().configure_city_names(version) as u32 }
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_city_memory() -> u32 { g().configure_city_memory() as u32 }
 #[no_mangle]
 pub extern "C" fn minimap() -> *const u8 {
     g().minimap();

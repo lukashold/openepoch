@@ -254,6 +254,8 @@ pub struct Game {
     pub(crate) territory_names: Option<crate::territory_names21::TerritoryNames>,
     #[cfg(feature = "ee2-native13")]
     pub(crate) city_names: Option<crate::city_names22::CityNames>,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) city_memory: Option<crate::city_memory23::CityMemory>,
     pub groups: Vec<Vec<u32>>,
     pub push: Vec<(f32, f32)>,
     pub scratch: Vec<usize>,
@@ -346,6 +348,8 @@ impl Game {
             territory_names: None,
             #[cfg(feature = "ee2-native13")]
             city_names: None,
+            #[cfg(feature = "ee2-native13")]
+            city_memory: None,
             groups: vec![Vec::new(); 10],
             push: vec![(0.0, 0.0); MAXE],
             scratch: Vec::with_capacity(256),
@@ -2224,6 +2228,8 @@ impl Game {
         // live treaty right and disappears when the agreement ends.
         for donor in 0..self.nplayers{for viewer in 0..self.nplayers{if self.shares_to(donor as u8,viewer as u8){for t in 0..NN{if self.team_vis[donor*NN+t]>0{let v=&mut self.team_vis[viewer*NN+t];*v=(*v).max(128);}}}}}
         self.refresh_display_fog();
+        #[cfg(feature = "ee2-native13")]
+        self.refresh_city_memory();
     }
 
     /// Stress test: keep two huge mixed armies topped up and marching at each other.
