@@ -806,6 +806,18 @@ pub extern "C" fn capture_progress(handle: u32) -> f32 {
     game.get(handle).filter(|&index| game.can_see(game.local, index)).and_then(|index| game.capture_progress(index)).unwrap_or(-1.0)
 }
 
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn has_active_capture_glow() -> u32 {
+    u32::from(g().has_active_capture_glow())
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn active_capture_glow(handle: u32) -> u32 {
+    u32::from(g().active_capture_glow(handle))
+}
+
 /// Right click: attack / gather / build / board / unload / move / set rally.
 #[no_mangle]
 pub extern "C" fn cmd_context(x: f32, y: f32, attack_move: u32) {

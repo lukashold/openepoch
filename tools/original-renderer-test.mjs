@@ -198,6 +198,13 @@ try{
   assert.ok(gl.draws.slice(-1)[0].state.get(gl.DEPTH_WRITEMASK)===false,'shadow draw overrides native depth write');
   assert.deepEqual(gl.parameters,initialParameters,'shadow draw restores all caller blend/depth parameters');
   assert.deepEqual(renderer.pickResource([10.5,2,15],[0,0,-1]),[10,10],'shadow pass cannot replace last displayed resource instances');
+  const reused=props([prop(100,10,10)]),pipSpans=new Uint32Array(512);
+  pipSpans[201]=1;
+  reused[0]=30;reused[1]=30;
+  renderer.draw({data:reused,ranges:pipSpans,vp:identity,epochs:[0,0,0,0],capture:true});
+  assert.deepEqual(renderer.pickResource([10.5,2,15],[0,0,-1]),[10,10],'PIP reuses instance memory without replacing main-view picks');
+  renderer.clearResourcePicks();
+  assert.equal(renderer.pickResource([10.5,2,15],[0,0,-1]),null,'empty primary viewport clears stale picks');
   props([prop(100,10,10,{alt:4,rotation:Math.PI/4,size:2})]);
   assert.deepEqual(renderer.pickResource([15,7,11],[-1,0,0]),[10,10],'instance scale, altitude and instance+model yaw all invert correctly');
   assert.deepEqual(renderer.pickResource([15,7,11],[-2,0,0]),[10,10],'direction need not be normalized');

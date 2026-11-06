@@ -118,6 +118,17 @@ impl Game {
         self.capture.targets.get(&self.h(index)).filter(|target| target.count > 0).map(|target| target.progress)
     }
 
+    pub(crate) fn has_active_capture_glow(&self) -> bool {
+        self.capture.targets.values().any(|target| target.count > 0)
+    }
+
+    pub(crate) fn active_capture_glow(&self, handle: u32) -> bool {
+        self.get(handle).is_some_and(|index| {
+            self.capture_progress(index).is_some()
+                && (self.display_visibility() == 2 || self.can_see(self.local, index))
+        })
+    }
+
     pub(crate) fn capture_animation_pose(&self, handle: u32) -> Option<Pose> {
         let actor = self.ents[self.get(handle)?];
         if actor.order != O_CAPTURE || !self.capture_animation_enabled { return None; }
@@ -603,16 +614,22 @@ mod tests {
         let (mut game, soldier, building) = scenario(HOUSE);
         issue(&mut game, soldier, building);
         let victim = game.h(building);
+        assert!(!game.has_active_capture_glow());
+        assert!(!game.active_capture_glow(victim));
         for _ in 0..180 {
             game.tick();
             if game.capture_progress(building).is_some_and(|progress| progress > 0.0) { break; }
         }
         let progress = game.capture_progress(building).unwrap();
         assert!(progress > 0.0);
+        assert!(game.has_active_capture_glow());
+        assert!(game.active_capture_glow(victim));
         game.apply(0, C_STOP, 0.0, 0.0, 0, &[game.h(soldier)]);
         assert_eq!(game.capture_progress(building), None);
         assert_eq!(game.capture.targets[&victim].progress, progress);
         assert_eq!(game.capture.targets[&victim].count, 0);
+        assert!(!game.has_active_capture_glow());
+        assert!(!game.active_capture_glow(victim));
         for _ in 0..20 { game.tick(); }
         assert!(!game.capture.targets.contains_key(&victim));
     }

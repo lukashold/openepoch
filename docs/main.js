@@ -17,7 +17,7 @@ import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regi
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native6';
-import {loadOriginalModels} from './original-renderer.js?v=native26';
+import {loadOriginalModels} from './original-renderer.js?v=native28';
 import {ownMapTerrainOrigin} from './original-citycenter-terrain.js?v=regional10';
 import {loadCityCenterIcons,loadHouseIcons,loadDockIcons,loadBarracksIcons,loadMillIcons,loadTempleIcons,loadLightArtilleryIcons,loadWarehouseIcons,loadStableIcons,loadKingIcons} from './original-citycenter-icons.js?v=native17';
 import {loadSourceSailRuntime} from './source-sail-runtime.js?v=sails7';
@@ -26,7 +26,8 @@ import {createFrontendNamespace} from './render-namespace.js?v=native9';
 import {createRenderActorMetadata} from './render-actor-metadata.js?v=pack8';
 import {createPackRenderMetadata} from './original-pack-states.js?v=pack8';
 import {createFullmapPipBridge} from './original-fullmap-pip-bridge.js';
-import {loadOriginalGround} from './original-ground.js?v=skirmish-climates';
+import {loadOriginalGround} from './original-ground.js?v=native28';
+import {createCaptureGlow} from './capture-glow.js?v=native28';
 import {loadOriginalTerrain} from './original-terrain.js?v=skirmish-climates';
 import {loadOriginalWater} from './original-water.js?v=water-farm3';
 import {createOriginalReflection} from './original-reflection.js?v=visual-seasons2';
@@ -520,7 +521,8 @@ const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,to
 const sourceSails=await loadSourceSailRuntime({wasm,namespace:renderNamespace,models:originalModels,enabled:originalEnabled&&rulesProfile.ruleset===2,decorateMetadata:metadata=>packMetadata?packMetadata.snapshot(metadata):metadata});
 if(sourceSails?.metrics.error)console.warn('Source sails:',sourceSails.metrics.error);
 sfx.configureOriginalDefinitions({wasm,bindings:[...(originalModels.manifest?.models||[]),...(originalModels.additionalRegionalAudio||[])],citizenPresentation,regionalMusic:rulesProfile.ruleset===2,...(rulesProfile.ruleset===2?{familyManifestURL:'native-families-civ8-regicide.json',playbackManifestURL:'manifest-stone-thrower-up.json'}:{})});
-const originalGround=await loadOriginalGround(gl,originalEnabled,{assetMapping,...(rulesProfile.ruleset===2
+const captureGlow = originalEnabled && typeof wasm.active_capture_glow === 'function' ? createCaptureGlow() : null;
+const originalGround=await loadOriginalGround(gl,originalEnabled,{assetMapping,captureGlow:!!captureGlow,...(rulesProfile.ruleset===2
   ?{manifestURL:'./local-original/regional-temple/ground-decals.json'}:{})});
 const originalTerrain=await loadOriginalTerrain(gl,originalEnabled,TEAM,{climateProfiles});
 originalTerrain.setLightingContext?.(originalModels.lighting);
@@ -766,6 +768,7 @@ function bindWorldTerrainMaterial() {
 }
 
 function begin() {
+  originalModels.clearResourcePicks();
   playerFlare.reset(wasm.game_tick()>>>0);
   battleFlare?.reset(!bench);
   fullmapPip.reset();
@@ -934,6 +937,12 @@ setInterval(() => {
 }, 200);
 
 // ---------------------------------------------------------------- frame loop
+function drawCaptureGlow(vp,actorMetadata){
+  if(!captureGlow||!actorMetadata||!wasm.has_active_capture_glow())return;
+  const projected = captureGlow.project(actorMetadata.actors, wasm.active_capture_glow);
+  originalGround.drawCaptureGlow({vp,...projected});
+}
+
 function drawFullmapPipScene(pipView, alpha, renderEpochs, now) {
   const {vp,eye,zoom,width,height} = pipView;
   const corners = [[0,0],[width,0],[width,height],[0,height]].map(([x,y])=>{
@@ -944,10 +953,11 @@ function drawFullmapPipScene(pipView, alpha, renderEpochs, now) {
   const x=corners.map(point=>point[0]),y=corners.map(point=>point[1]);
   const count=(wasm.render_rotated||wasm.render)(alpha,Math.min(...x)-2,Math.min(...y)-2,
     Math.max(...x)+2,Math.max(...y)+6,-1,0,0,0);
+  let actorMetadata=null;
   originalTerrain.drawTerrain({vao:vaoT,vp,px:1/zoom,fogTexture,territoryTexture,capture:true});
   if(count){
     const data=f32(wasm.inst_ptr(),count*STRIDE),ranges=new Uint32Array(wasm.memory.buffer,wasm.ranges_ptr(),renderNamespace.rangeLength);
-    const actorMetadata=packMetadata?packMetadata.snapshot(packActorReader.snapshot({count,instances:data,namespace:renderNamespace})):null;
+    actorMetadata=packMetadata?packMetadata.snapshot(packActorReader.snapshot({count,instances:data,namespace:renderNamespace})):null;
     originalGround.draw({data,ranges,vp,epochs:renderEpochs,isUrbanAt:(x,z)=>!!wasm.ground_urban_at(x,z)});
     gl.bindBuffer(gl.ARRAY_BUFFER,instBuf);
     gl.bufferData(gl.ARRAY_BUFFER,renderNamespace.fallbackInstances(data),gl.STREAM_DRAW);
@@ -960,6 +970,7 @@ function drawFullmapPipScene(pipView, alpha, renderEpochs, now) {
     gl.enable(gl.BLEND);gl.depthMask(false);
     originalTerrain.drawWater({vao:vaoW,vp,time:now/1000,eye,fogTexture});
   }
+  drawCaptureGlow(vp,actorMetadata);
 }
 
 function drawFallbackModels(vp,ranges) {
@@ -1000,6 +1011,7 @@ function frame(now) {
   updateCamera();
 
   advance(dt, now);
+  if(captureGlow&&!paused&&!(net&&net.ls.waiting)&&wasm.has_active_capture_glow())captureGlow.advance(dt*(net?1:speed));
   const alpha = paused || (net && net.ls.waiting) ? 1 : Math.min(1, acc / TICK);
   if (!net && !bench && now - lastAuto > 180000) { lastAuto = now; saveGame(true); }
 
@@ -1030,6 +1042,7 @@ function frame(now) {
   if (ghost) { gid = ghost.id; [gx, gy] = ghostTile(); }
   updatePlacement(now);
   const n = (wasm.render_rotated||wasm.render)(alpha, x0, y0, x1, y1, gid, gx, gy,ghost?.turn||0);
+  if (!n) originalModels.clearResourcePicks();
   const ranges = n ? new Uint32Array(wasm.memory.buffer, wasm.ranges_ptr(), renderNamespace.rangeLength) : null;
   const renderEpochs=[0,1,2,3].map(t=>wasm.stat(t,0));
   const stoneThrowerWheels=originalEnabled&&rulesProfile.ruleset===2&&!paused&&!document.hidden&&!(net&&net.ls.waiting)?[]:null;
@@ -1116,6 +1129,7 @@ function frame(now) {
     gl.uniformMatrix4fv(water.u.uVP, false, view.vp); gl.uniform1f(water.u.uTime, now / 1000);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }
+  drawCaptureGlow(view.vp,actorMetadata);
 
   if (n) {
     gl.useProgram(quads.p); gl.bindVertexArray(vaoQ); gl.bindBuffer(gl.ARRAY_BUFFER, instBuf);

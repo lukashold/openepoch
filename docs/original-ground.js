@@ -74,16 +74,21 @@ void main(){
 }`;
 const FS=`#version 300 es
 precision highp float;
-uniform sampler2D uDiffuse,uDiffuseB,uFog;uniform float uSeasonMix;uniform highp sampler2D uHeight;uniform mat4 uVP;
+uniform sampler2D uDiffuse,uDiffuseB,uFog;uniform float uSeasonMix,uGlowAlpha;uniform highp sampler2D uHeight;uniform mat4 uVP;
 in vec2 vUV;in vec2 vWorld;out vec4 outColor;
 ${HEIGHT}
 void main(){
  if(any(lessThan(vWorld,vec2(0.)))||any(greaterThan(vWorld,vec2(256.))))discard;
- vec4 color=mix(texture(uDiffuse,vUV),texture(uDiffuseB,vUV),uSeasonMix);float fog=texture(uFog,vWorld/256.).r;
- if(color.a<.004||fog<.05)discard;
- float light=.55+.6*dot(normalize(vec3(.42,.82,.39)),vec3(0.,1.,0.));
- color.rgb*=light*smoothstep(.02,.45,fog)*mix(.5,1.,smoothstep(.55,.95,fog));
- outColor=vec4(color.rgb*color.a,color.a);
+ if(uGlowAlpha>=0.){
+  vec4 color=texture(uDiffuse,vUV);
+  outColor=vec4(color.rgb*(color.a*uGlowAlpha),0.);
+ }else{
+  vec4 color=mix(texture(uDiffuse,vUV),texture(uDiffuseB,vUV),uSeasonMix);float fog=texture(uFog,vWorld/256.).r;
+  if(color.a<.004||fog<.05)discard;
+  float light=.55+.6*dot(normalize(vec3(.42,.82,.39)),vec3(0.,1.,0.));
+  color.rgb*=light*smoothstep(.02,.45,fog)*mix(.5,1.,smoothstep(.55,.95,fog));
+  outColor=vec4(color.rgb*color.a,color.a);
+ }
  // Depth-test against the actual terrain triangles, even where the overlay
  // grid crosses a terrain diagonal; never write into the depth buffer.
  vec4 clip=uVP*vec4(vWorld.x,ground(vWorld)+.018,vWorld.y,1.);
@@ -100,7 +105,7 @@ function createProgram(gl){
       gl.attachShader(p,s);gl.deleteShader(s);
     }
     gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(p));
-    const u={};for(const name of['uVP','uDiffuse','uDiffuseB','uSeasonMix','uFog','uHeight'])u[name]=gl.getUniformLocation(p,name);
+    const u={};for(const name of['uVP','uDiffuse','uDiffuseB','uSeasonMix','uGlowAlpha','uFog','uHeight'])u[name]=gl.getUniformLocation(p,name);
     return {p,u};
   }catch(error){gl.deleteProgram(p);throw error;}
 }
@@ -129,13 +134,28 @@ function restore(gl,state){
 export async function loadOriginalGround(gl,enabled,options={}){
   const result={enabled:false,entries:new Map(),errors:[],manifest:null,
     policy:'native-epoch-slots; CityManager callback, explicit rural fallback when absent',metrics:{calls:0,instances:0},
-    seasonClimates:['Temperate'],climateErrors:[],updateTerrain(){},draw(){},setSeasonClimate(){return false;},setSeasonPhase(){return false;}};
+    seasonClimates:['Temperate'],climateErrors:[],updateTerrain(){},draw(){},drawCaptureGlow(){},setSeasonClimate(){return false;},setSeasonPhase(){return false;}};
   if(!enabled)return result;
   let assetMapping;try{assetMapping=normalizeRenderAssetMapping(options.assetMapping);}catch(error){result.errors.push(error.message);return result;}
   result.assetMapping=assetMapping;
   const fetchFile=options.fetch||fetch,decode=options.decode||createImageBitmap;
-  const state=snapshot(gl),textures=new Map();let shader,vao,instances,height;
+  const state=snapshot(gl),textures=new Map();let shader,vao,instances,height,glowTexture;
   const groundProfiles=Object.entries(options.climateProfiles||{}).filter(([name])=>name!=='Temperate');
+  async function loadTexture(url){
+    let texture=textures.get(url);
+    if(texture)return texture;
+    const response=await fetchFile(new URL(url,import.meta.url));
+    if(!response.ok)throw Error(`${url}: ${response.status}`);
+    const image=await decode(await response.blob(),{premultiplyAlpha:'none',colorSpaceConversion:'none'});
+    texture=gl.createTexture();gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);image.close();
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    gl.generateMipmap(gl.TEXTURE_2D);textures.set(url,texture);
+    return texture;
+  }
   try{
     const response=await fetchFile(new URL(options.manifestURL??'./local-original/ground-decals.json',import.meta.url),{cache:'no-store'});
     if(!response.ok)throw Error(`Ground manifest: ${response.status}`);
@@ -158,25 +178,16 @@ export async function loadOriginalGround(gl,enabled,options={}){
         result.errors.push(`${entry.decal}: unsupported sprite transform`);continue;
       }
       try{
-        let texture=textures.get(sprite.url);
-        if(!texture){
-          const imageResponse=await fetchFile(new URL(sprite.url,import.meta.url));
-          if(!imageResponse.ok)throw Error(`${sprite.url}: ${imageResponse.status}`);
-          const image=await decode(await imageResponse.blob(),{premultiplyAlpha:'none',colorSpaceConversion:'none'});
-          texture=gl.createTexture();gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture);
-          gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
-          gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);image.close();
-          gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
-          gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
-          gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-          gl.generateMipmap(gl.TEXTURE_2D);textures.set(sprite.url,texture);
-        }
-        entryTextures.set(sprite.url,texture);
+        entryTextures.set(sprite.url,await loadTexture(sprite.url));
       }catch(error){(sprite.optionalClimate?result.climateErrors:result.errors).push(error.message);}
       }
       if(entryTextures.size)for(const {renderId}of bindings)result.entries.set(renderId,{entry,sourceId:+entry.id,assetKind:0,texture:entryTextures.get(selectGroundSprite(entry)?.url),textures:entryTextures});
     }
     if(!result.entries.size)return result;
+    if(options.captureGlow){
+      try{glowTexture=await loadTexture('./local-original/capture-glow/glow_bad.png');}
+      catch(error){result.captureGlowError=error.message;}
+    }
     shader=createProgram(gl);vao=gl.createVertexArray();gl.bindVertexArray(vao);
     const vertices=new Float32Array((GRID+1)**2*2),indices=new Uint16Array(GRID*GRID*6);
     for(let z=0,k=0;z<=GRID;z++)for(let x=0;x<=GRID;x++){vertices[k++]=x/GRID;vertices[k++]=z/GRID;}
@@ -241,20 +252,29 @@ export async function loadOriginalGround(gl,enabled,options={}){
       }
       for(const group of byTexture.values())groups.push(group);
     }
+    drawGroups(groups,vp,-1);
+  };
+  result.drawCaptureGlow=({vp,list,alpha})=>{
+    if(glowTexture&&list.length)drawGroups([{texture:glowTexture,textureB:glowTexture,blend:0,list}],vp,alpha);
+  };
+  function drawGroups(groups,vp,glowAlpha){
     if(!groups.length)return;
     const state=snapshot(gl);
     try{
-      gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
+      gl.enable(gl.BLEND);gl.depthMask(false);
+      if(glowAlpha>=0)gl.blendFuncSeparate(gl.ONE,gl.ONE,gl.ZERO,gl.ONE);
+      else gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
       gl.useProgram(shader.p);gl.uniformMatrix4fv(shader.u.uVP,false,vp);gl.bindVertexArray(vao);
+      gl.uniform1f(shader.u.uGlowAlpha,glowAlpha);
       gl.activeTexture(gl.TEXTURE6);gl.bindTexture(gl.TEXTURE_2D,height);
       for(const {texture,textureB,blend,list}of groups){
         gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture);
         gl.activeTexture(gl.TEXTURE0+7);gl.bindTexture(gl.TEXTURE_2D,textureB);gl.uniform1f(shader.u.uSeasonMix,blend);
         gl.bindBuffer(gl.ARRAY_BUFFER,instances);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(list),gl.STREAM_DRAW);
         gl.drawElementsInstanced(gl.TRIANGLES,GRID*GRID*6,gl.UNSIGNED_SHORT,0,list.length/5);
-        result.metrics.calls++;result.metrics.instances+=list.length/5;
+        if(glowAlpha<0){result.metrics.calls++;result.metrics.instances+=list.length/5;}
       }
     }finally{restore(gl,state);}
-  };
+  }
   return result;
 }

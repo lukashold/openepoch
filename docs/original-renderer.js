@@ -287,7 +287,7 @@ import {citizenModelEntries,selectCitizenModel} from './original-citizen-models.
 import {loadAnimationPayload,withoutAnimationPayload} from './original-animation-payload.js?v=citizen9';
 import {createCityCenterTerrainBinding} from './original-citycenter-terrain.js?v=origin1';
 export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},options={}){
- const result={available:new Set(),models:new Map(),resourceRenderIds:new Set(),errors:[],seasonClimates:['Temperate'],climateErrors:[],metrics:{colorMs:0,shadowMs:0,calls:0,triangles:0,gpuMs:0},draw(){},updateTerrain(){},setLightingContext(){return false;},setLightingSettings(){return false;},setVisualCivilizations(){return false;},setHouseLodProfile(){return false;},setSeasonPhase(){return false;},setSeasonClimate(){return false;},pickResource(){return null;}};if(!enabled)return result;
+ const result={available:new Set(),models:new Map(),resourceRenderIds:new Set(),errors:[],seasonClimates:['Temperate'],climateErrors:[],metrics:{colorMs:0,shadowMs:0,calls:0,triangles:0,gpuMs:0},draw(){},updateTerrain(){},setLightingContext(){return false;},setLightingSettings(){return false;},setVisualCivilizations(){return false;},setHouseLodProfile(){return false;},setSeasonPhase(){return false;},setSeasonClimate(){return false;},pickResource(){return null;},clearResourcePicks(){}};if(!enabled)return result;
  let visualCivilizations=null;
  result.setVisualCivilizations=values=>{
   if(values===null){visualCivilizations=null;return true;}
@@ -588,44 +588,53 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
  const emptyFrames=gl.createTexture();gl.activeTexture(gl.TEXTURE5);gl.bindTexture(gl.TEXTURE_2D_ARRAY,emptyFrames);
  gl.texStorage3D(gl.TEXTURE_2D_ARRAY,1,gl.RGBA32F,1,1,1);gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MAG_FILTER,gl.NEAREST);gl.activeTexture(gl.TEXTURE0);
  const timer=gl.getExtension('EXT_disjoint_timer_query_webgl2');let gpuQuery=null,nextQuery=0;
- // Keep references to the last displayed instance buffer, never a per-frame copy.
- const resourceView={data:null,ranges:null,epochs:null,zoom:80,choices:new Map()};
+ // Keep only the displayed resource transforms. PIP can overwrite the WASM
+ // instance buffer after the main frame, and grouping keys are draw internals.
+ const pickModels=[];
+ const PICK_STRIDE=6;
+ let pickData=new Float32Array(0);
+ result.clearResourcePicks=()=>{pickModels.length=0;};
+ function rememberResources(data,indices,variant,activity){
+  const needed=(pickModels.length+indices.length)*PICK_STRIDE;
+  if(needed>pickData.length){
+   const grown=new Float32Array(Math.max(needed,pickData.length*2));
+   grown.set(pickData.subarray(0,pickModels.length*PICK_STRIDE));pickData=grown;
+  }
+  for(const i of indices){
+   const source=i*12,at=pickModels.length*PICK_STRIDE;
+   pickData[at]=data[source];pickData[at+1]=data[source+1];pickData[at+2]=data[source+2];
+   pickData[at+3]=data[source+3];pickData[at+4]=data[source+8];pickData[at+5]=activity;
+   pickModels.push(variant);
+  }
+ }
  result.pickResource=(origin,direction,maxDistance=Infinity)=>{
   if(!origin||!direction||origin.length<3||direction.length<3)return null;
   for(let a=0;a<3;a++)if(!Number.isFinite(origin[a])||!Number.isFinite(direction[a]))return null;
   if(direction[0]**2+direction[1]**2+direction[2]**2<1e-20)return null;
-  const {data,ranges,epochs,zoom}=resourceView;if(!data?.length||!ranges?.length)return null;
   if(!(maxDistance>0))return null;
   let closest=maxDistance,hit=null;
-  for(const id of result.resourceRenderIds){
-   const variants=result.models.get(id);if(!variants)continue;
-   const first=ranges[id*2],count=ranges[id*2+1];
-   for(let i=first;i<first+count;i++){
-    const offset=i*12,size=data[offset+8];if(!(size>0))continue;
-    const team=Math.min(3,Math.round(data[offset+5])),epoch=epochs[team]||0;
-    let base=variants[0];for(const v of variants){if(v.epoch<=epoch)base=v;else break;}
-    const activity=Math.round(data[offset+11]),displayScale=base.nativeScale??size,far=displayScale*zoom<55;
-    const key=id+':'+variants.indexOf(base)+':'+team+':'+activity+':'+(far&&base.farRequested?1:0)+':'+(Math.round(data[offset+7])&24);
-    const variant=resourceView.choices.get(key);if(!variant?.pickBounds)continue;
-    const scale=variant.nativeScale??size,yaw=data[offset+3]+variant.yawOffset,c=Math.cos(yaw),s=Math.sin(yaw),o=variant.originOffset;
-    const dx=origin[0]-data[offset],dy=origin[1]-data[offset+2],dz=origin[2]-data[offset+1];
+  for(let i=0;i<pickModels.length;i++){
+    const at=i*PICK_STRIDE,variant=pickModels[i];
+    const scale=variant.nativeScale??pickData[at+4];if(!(scale>0))continue;
+    const yaw=pickData[at+3]+variant.yawOffset,c=Math.cos(yaw),s=Math.sin(yaw),o=variant.originOffset;
+    const dx=origin[0]-pickData[at],dy=origin[1]-pickData[at+2],dz=origin[2]-pickData[at+1];
     const localOrigin=[(dx*c+dz*s)/scale-o[0],dy/scale-variant.yOffset-o[1],(-dx*s+dz*c)/scale-o[2]];
     const localDirection=[(direction[0]*c+direction[2]*s)/scale,direction[1]/scale,(-direction[0]*s+direction[2]*c)/scale];
     if(!intersectsBounds(localOrigin,localDirection,variant.pickBounds,closest))continue;
     let distance=closest;
     for(const part of variant.parts){
-     if(!part.pickGeometry||(part.activities&&!part.activities.includes(activity)))continue;
+     if(!part.pickGeometry||(part.activities&&!part.activities.includes(pickData[at+5])))continue;
      if(intersectsBounds(localOrigin,localDirection,part.pickGeometry.bounds,distance))distance=rayTriangles(localOrigin,localDirection,part.pickGeometry,distance);
     }
-    if(distance<closest){closest=distance;hit=[data[offset],data[offset+1]];}
-   }
+    if(distance<closest){closest=distance;hit=[pickData[at],pickData[at+1]];}
   }
   return hit;
  };
  result.draw=({data,ranges,vp,epochs,zoom=80,shadow=false,eye=[0,200,0],lighting=defaultLighting,clipPlane=null,capture=false,actorMetadata=null,civilizations=visualCivilizations,stoneThrowerWheels=null})=>{
   const started=performance.now();let calls=0,triangles=0,querying=false;
   const previousState=drawState(gl);
-  if(!shadow&&!capture){resourceView.data=data;resourceView.ranges=ranges;resourceView.epochs=epochs;resourceView.zoom=zoom;resourceView.choices.clear();}
+  const rememberPicks=!shadow&&!capture;
+  if(rememberPicks)result.clearResourcePicks();
   if(!shadow&&!capture&&timer){
    if(gpuQuery&&gl.getQueryParameter(gpuQuery,gl.QUERY_RESULT_AVAILABLE)){
     if(!gl.getParameter(timer.GPU_DISJOINT_EXT))result.metrics.gpuMs=gl.getQueryParameter(gpuQuery,gl.QUERY_RESULT)/1e6;
@@ -716,8 +725,8 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     if(variant.nativeScale!==null)group.list[offset+8]=variant.nativeScale;
     groups.set(key,group);
    }
-   for(const [groupKey,{variant,team,list,activity,clip,once,preview,hiddenParts,instanceIndices}] of groups){
-    if(!shadow&&!capture&&variant.assetKind===1)resourceView.choices.set(id+':'+groupKey,variant);
+   for(const {variant,team,list,activity,clip,once,preview,hiddenParts,instanceIndices} of groups.values()){
+    if(rememberPicks&&variant.assetKind===1&&variant.pickBounds)rememberResources(data,instanceIndices,variant,activity);
     selectShader(shader);gl.uniform1f(shader.u.uYOffset,variant.yOffset);
     gl.uniform3fv(shader.u.uOriginOffset,variant.originOffset);
     gl.bindBuffer(gl.ARRAY_BUFFER,instances);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(list),gl.STREAM_DRAW);
