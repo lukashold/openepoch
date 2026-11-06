@@ -1,12 +1,14 @@
 //! Building-capture orders and actor replacement for UP skirmish.
 
 use super::*;
+use crate::capture_animation26::{self as animation, Pose};
 use crate::capture_math25::{self as native, CaptureFactors, CaptureTarget, CaptureTribute};
 use std::collections::BTreeMap;
 
 const NO_OWNER: u8 = u8::MAX;
 const MAGIC: u32 = u32::from_le_bytes(*b"CAP1");
 const VERSION: u32 = 1;
+const VISUAL_VERSION: u32 = 2;
 const NATURAL_ORDER: [usize; 9] = [0, 1, 3, 4, 5, 2, 6, 7, 8];
 
 #[derive(Clone, Copy)]
@@ -15,6 +17,7 @@ struct Order {
     team: u8,
     next: f32,
     flags: u8,
+    pose: Option<Pose>,
 }
 
 #[derive(Clone, Copy)]
@@ -54,10 +57,14 @@ impl State {
 
     fn empty(&self) -> bool { self.orders.is_empty() && self.targets.is_empty() && self.gifts.is_empty() }
 
-    fn fields(&self, mut write: impl FnMut(u32)) {
+    fn fields(&self, with_visual: bool, mut write: impl FnMut(u32)) {
         for value in [self.orders.len(), self.targets.len(), self.gifts.len()] { write(value as u32); }
         for (&handle, order) in &self.orders {
             for value in [handle, order.target, order.team.into(), order.next.to_bits(), order.flags.into()] { write(value); }
+            if with_visual {
+                write(order.pose.map_or(0, Pose::packed));
+                write(order.pose.map_or(0, |pose| pose.tick));
+            }
         }
         for (&handle, target) in &self.targets {
             write(handle);
@@ -68,10 +75,11 @@ impl State {
         }
     }
 
-    pub(crate) fn hash(&self, mut mix: impl FnMut(u32)) {
+    pub(crate) fn hash(&self, with_visual: bool, mut mix: impl FnMut(u32)) {
         if self.empty() { return; }
         mix(MAGIC);
-        self.fields(mix);
+        if with_visual { mix(VISUAL_VERSION); }
+        self.fields(with_visual, mix);
     }
 }
 
@@ -81,6 +89,14 @@ impl Game {
     pub(crate) fn configure_peer_capture(&mut self, enabled: bool) -> bool {
         if !self.net || self.bench != 0 || self.tick != 0 || !self.capture.empty() { return false; }
         self.capture_enabled = enabled;
+        if !enabled { self.capture_animation_enabled = false; }
+        true
+    }
+
+    pub(crate) fn configure_peer_capture_animation(&mut self, enabled: bool) -> bool {
+        if !self.net || self.bench != 0 || self.tick != 0 || !self.capture.empty()
+            || (enabled && !self.capture_enabled) { return false; }
+        self.capture_animation_enabled = enabled;
         true
     }
 
@@ -102,6 +118,14 @@ impl Game {
         self.capture.targets.get(&self.h(index)).filter(|target| target.count > 0).map(|target| target.progress)
     }
 
+    pub(crate) fn capture_animation_pose(&self, handle: u32) -> Option<Pose> {
+        let actor = self.ents[self.get(handle)?];
+        if actor.order != O_CAPTURE || !self.capture_animation_enabled { return None; }
+        let pose = self.capture.orders.get(&handle)?.pose?;
+        let context = animation::context(actor.def, self.players[actor.team as usize].epoch);
+        pose.matches_context(context).then_some(pose)
+    }
+
     pub(crate) fn order_capture(&mut self, indices: &[usize], target: usize) {
         let object = self.ents[target];
         let target_handle = self.h(target);
@@ -114,7 +138,7 @@ impl Game {
                 continue;
             }
             self.capture.remove_order(handle);
-            self.capture.orders.insert(handle, Order { target: target_handle, team: owner, next: 0.0, flags: 0 });
+            self.capture.orders.insert(handle, Order { target: target_handle, team: owner, next: 0.0, flags: 0, pose: None });
             self.pack_interrupt(index);
             self.native_stop_attack(index);
             let actor = &mut self.ents[index];
@@ -215,6 +239,7 @@ impl Game {
         let locked = crate::native_attack_clock::STARTED | crate::native_attack_clock::IN_ATTACK;
         if edge > attack.range + def.rad() && order.flags & locked != locked {
             crate::native_attack_clock::stop(&mut order.flags);
+            order.pose = None;
             return (None, Some(self.steer(actor, def, building.x, building.y)));
         }
         let target_handle = actor.otgt;
@@ -225,6 +250,10 @@ impl Game {
         }
         let round = crate::native_attack_clock::step(self.tick as f32 * DT, attack.reload_seconds,
             attack.impact_seconds, &mut order.next, &mut order.flags);
+        if self.capture_animation_enabled && round == crate::native_attack_clock::Event::Start {
+            let context = animation::context(actor.def, self.players[actor.team as usize].epoch);
+            Pose::apply(&mut order.pose, &mut self.source_birth.rng, context, self.tick);
+        }
         actor.cd = (order.next - self.tick as f32 * DT).max(0.0);
         if round == crate::native_attack_clock::Event::Fire {
             self.capture_impact(index, actor, target, attack);
@@ -357,15 +386,16 @@ impl Game {
     pub(crate) fn wrap_capture_save(&self, core: Vec<u8>) -> Vec<u8> {
         if self.capture.empty() || core.is_empty() { return core; }
         let mut out = Vec::with_capacity(core.len() + 128);
-        for word in [MAGIC, VERSION, core.len() as u32] { out.extend_from_slice(&word.to_le_bytes()); }
-        self.capture.fields(|word| out.extend_from_slice(&word.to_le_bytes()));
+        let version = if self.capture_animation_enabled { VISUAL_VERSION } else { VERSION };
+        for word in [MAGIC, version, core.len() as u32] { out.extend_from_slice(&word.to_le_bytes()); }
+        self.capture.fields(self.capture_animation_enabled, |word| out.extend_from_slice(&word.to_le_bytes()));
         out.extend_from_slice(&core);
         out.extend_from_slice(&crate::pack8_save::checksum(&out).to_le_bytes());
         out
     }
 
-    pub(crate) fn restore_capture_save(&mut self, fields: Option<&[u8]>) -> Option<()> {
-        let Some(fields) = fields else {
+    pub(crate) fn restore_capture_save(&mut self, fields: Option<(&[u8], bool)>) -> Option<()> {
+        let Some((fields, with_visual)) = fields else {
             return self.ents[..self.high].iter().all(|actor| !actor.alive || actor.order != O_CAPTURE).then_some(());
         };
         let mut state = State::default();
@@ -391,7 +421,17 @@ impl Game {
                 || state.orders.last_key_value().is_some_and(|(&old, _)| old >= handle) {
                 return None;
             }
-            state.orders.insert(handle, Order { target, team, next, flags });
+            let mut pose = None;
+            if with_visual {
+                let packed = word(fields, offset)?;
+                let tick = word(fields, offset + 4)?;
+                offset += 8;
+                if packed != 0 || tick != 0 {
+                    if flags == 0 || tick > self.tick { return None; }
+                    pose = Some(Pose::restore(packed, tick, source.def)?);
+                }
+            }
+            state.orders.insert(handle, Order { target, team, next, flags, pose });
         }
         for _ in 0..target_count {
             let handle = word(fields, offset)?;
@@ -427,6 +467,7 @@ impl Game {
             return None;
         }
         self.capture_enabled = true;
+        self.capture_animation_enabled = with_visual;
         self.capture = state;
         Some(())
     }
@@ -436,15 +477,17 @@ fn word(bytes: &[u8], offset: usize) -> Option<u32> {
     Some(u32::from_le_bytes(bytes.get(offset..offset.checked_add(4)?)?.try_into().ok()?))
 }
 
-pub(crate) fn split_capture_save(bytes: &[u8]) -> Option<(&[u8], Option<&[u8]>)> {
+pub(crate) fn split_capture_save(bytes: &[u8]) -> Option<(&[u8], Option<(&[u8], bool)>)> {
     if word(bytes, 0) != Some(MAGIC) { return Some((bytes, None)); }
     let core_len = word(bytes, 8)? as usize;
     let counts = [word(bytes, 12)? as usize, word(bytes, 16)? as usize, word(bytes, 20)? as usize];
-    if word(bytes, 4)? != VERSION || core_len == 0 || counts.iter().any(|&count| count > MAXE) { return None; }
-    let start = 24 + counts[0] * 20 + counts[1] * 8 + counts[2] * 12;
+    let with_visual = match word(bytes, 4)? { VERSION => false, VISUAL_VERSION => true, _ => return None };
+    if core_len == 0 || counts.iter().any(|&count| count > MAXE) { return None; }
+    let order_bytes = if with_visual { 28 } else { 20 };
+    let start = 24 + counts[0] * order_bytes + counts[1] * 8 + counts[2] * 12;
     let end = start.checked_add(core_len)?;
     if end.checked_add(4)? != bytes.len() || crate::pack8_save::checksum(bytes.get(..end)?) != word(bytes, end)? { return None; }
-    Some((bytes.get(start..end)?, Some(bytes.get(12..start)?)))
+    Some((bytes.get(start..end)?, Some((bytes.get(12..start)?, with_visual))))
 }
 
 #[cfg(test)]
@@ -505,6 +548,54 @@ mod tests {
         assert_eq!(game.ents[soldier].order, O_IDLE);
         assert!(game.ents.iter().any(|unit| unit.alive && unit.team == 0 && unit.def == HOUSE));
         assert!(game.capture.empty());
+    }
+
+    #[test]
+    fn negotiated_capture_poses_use_shared_round_draws_and_save_the_accepted_stamp() {
+        let (mut game, soldier, building) = scenario(HOUSE);
+        assert!(game.configure_peer_capture_animation(true));
+        let handle = game.h(soldier);
+        game.source_birth.rng = crate::native_rng9::NativeRng::from_state(12345);
+        issue(&mut game, soldier, building);
+        assert!(!game.configure_peer_capture_animation(false));
+        assert_eq!(game.capture_animation_pose(handle), None);
+        for _ in 0..160 {
+            game.tick();
+            if game.capture_animation_pose(handle).is_some() { break; }
+            assert_eq!(game.source_birth.rng.state(), 12345);
+        }
+        let first = game.capture_animation_pose(handle).unwrap();
+        assert_eq!(first.tick, game.tick);
+        assert_eq!(first.request(), 1084 << 2 | 1);
+        assert_eq!(game.source_birth.rng.state(), 71072467);
+        assert_eq!(game.capture_progress(building), Some(0.0));
+        game.save();
+        let saved = game.savebuf.clone();
+        assert_eq!(word(&saved, 4), Some(VISUAL_VERSION));
+        let mut restored = Game::load(&saved).unwrap();
+        assert_eq!(restored.capture_animation_pose(handle), Some(first));
+        restored.save();
+        assert_eq!(restored.savebuf, saved);
+        let mut future = saved.clone();
+        future[48..52].copy_from_slice(&(game.tick + 1).to_le_bytes());
+        let end = future.len() - 4;
+        let checksum = crate::pack8_save::checksum(&future[..end]);
+        future[end..].copy_from_slice(&checksum.to_le_bytes());
+        assert!(Game::load(&future).is_none());
+
+        let mut oracle = game.source_birth.rng;
+        oracle.next_word15();
+        oracle.next_word15();
+        for _ in 0..95 {
+            game.tick();
+            restored.tick();
+            assert_eq!(restored.state_hash(), game.state_hash());
+            assert_eq!(game.capture_animation_pose(handle), Some(first));
+            if game.source_birth.rng.state() != 71072467 { break; }
+        }
+        assert_eq!(game.source_birth.rng, oracle);
+        game.apply(0, C_STOP, 0.0, 0.0, 0, &[handle]);
+        assert_eq!(game.capture_animation_pose(handle), None);
     }
 
     #[test]

@@ -212,6 +212,8 @@ pub struct Game {
     pub(crate) capture: capture25::State,
     #[cfg(feature = "ee2-native13")]
     pub(crate) capture_enabled: bool,
+    #[cfg(feature="ee2-native13")]
+    pub(crate) capture_animation_enabled: bool,
     pub fx: Vec<Fx>,
     pub players: [Player; 4],
     // Kept outside Player so existing repr(C) saves retain their layout.
@@ -321,6 +323,8 @@ impl Game {
             capture: capture25::State::default(),
             #[cfg(feature = "ee2-native13")]
             capture_enabled: humans == 1 && bench == 0,
+            #[cfg(feature="ee2-native13")]
+            capture_animation_enabled: humans == 1 && bench == 0,
             fx: Vec::with_capacity(1024),
             players: [Player::default(); 4],
             extra_resources: [[0.0;6];4],
@@ -964,7 +968,7 @@ impl Game {
             for (&handle, &id) in &names.ids { mix(handle); mix(id.into()); }
         }
         #[cfg(feature = "ee2-native13")]
-        self.capture.hash(&mut mix);
+        self.capture.hash(self.capture_animation_enabled, &mut mix);
         #[cfg(feature="ee2-civ8")]
         if self.civilizations.iter().any(|&c|c!=crate::civ8_runtime::LEGACY_NEUTRAL){
             mix(0x38564943);for c in self.civilizations{mix(c as u32);}

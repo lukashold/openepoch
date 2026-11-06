@@ -64,6 +64,8 @@ Mit Z und einem Linksklick können geeignete Infanteristen ein feindliches
 Gebäude erobern. Der rote Balken zeigt dessen verbleibenden Widerstand.
 Rechtsklick oder Esc bricht die Zielauswahl ab. Im Mehrspieler steht der
 Befehl zur Verfügung, wenn beide Spieler diese Spielversion unterstützen.
+Bei passenden Originalmodellen werden die Einnahmeanimationen abgespielt.
+Für diese Animationen im Mehrspieler brauchen beide die aktuelle Spielversion.
 Im Reiter „Kriegspläne“ zeichnest du mit Linksklick Wegpunkte und beendest den
 Pfad mit Rechtsklick. Die Karte zeichnet den Pfad mit abgerundeten Kurven und
 einer Pfeilspitze. Zwei Spieler mit diesem Stand können ihre Pfade versenden,

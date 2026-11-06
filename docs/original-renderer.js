@@ -10,6 +10,7 @@ import {createNativeLightingContext,nativeModelPipeline} from './original-lighti
 import {appendInitialSailParts,nativeInitialSailDiffuse} from './original-sail-composite.js?v=initialsail7';
 import {createDynamicSailBinding,createDynamicSailGPU,dynamicSailForces} from './original-dynamic-sails.js?v=clothgpu7';
 import {appendNativePackAnimations,nativePackPose} from './original-pack-states.js?v=pack8';
+import {captureAnimationBindings,captureOverlayMatches,loadCaptureAnimationOverlay,nativeCapturePose,regionalCaptureBindings,loadRegionalCaptureAsset} from './original-capture-animations.js?v=native26';
 const VS=`#version 300 es
 layout(location=0) in vec3 aPosition;layout(location=1) in vec3 aNormal;layout(location=2) in vec2 aUV;
 layout(location=3) in vec4 iA;layout(location=4) in vec4 iB;layout(location=5) in vec4 iC;
@@ -178,11 +179,11 @@ function program(gl,fragment=FS,extraUniforms=[]){
 }
 const absolute=url=>new URL(url,import.meta.url);
 async function json(url){const r=await fetch(absolute(url),{cache:'no-store'});if(!r.ok)throw new Error(`${url}: ${r.status}`);return r.json();}
-async function verifiedSailJSON(url,digest){
- if(!/^[a-f0-9]{64}$/.test(digest||''))throw new Error('Missing original sail composite hash');
- const r=await fetch(absolute(url),{cache:'no-store'});if(!r.ok)throw new Error(`Original sail ${url}: ${r.status}`);
+async function verifiedModelJSON(url,digest,kind='Original sail composite'){
+ if(!/^[a-f0-9]{64}$/.test(digest||''))throw new Error('Missing '+kind.toLowerCase()+' hash');
+ const r=await fetch(absolute(url),{cache:'no-store'});if(!r.ok)throw new Error(`${kind} ${url}: ${r.status}`);
  const bytes=await r.arrayBuffer(),hash=new Uint8Array(await crypto.subtle.digest('SHA-256',bytes));
- if(Array.from(hash,value=>value.toString(16).padStart(2,'0')).join('')!==digest)throw new Error('Original sail composite hash differs');
+ if(Array.from(hash,value=>value.toString(16).padStart(2,'0')).join('')!==digest)throw new Error(kind+' hash differs');
  return JSON.parse(new TextDecoder().decode(bytes));
 }
 async function texture(gl,url,cache,sail=false){
@@ -324,6 +325,24 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   packManifest=await json(options.packManifestURL||'./local-original/pack-animations/manifest.json');
   if(packManifest.format!=='ee2-native-pack-animation-manifest-v1'||!Array.isArray(packManifest.models))throw new Error('Unsupported native pack animation manifest');
  }catch(e){packStatus.errors.push(e.message);result.errors.push('Pack animation overlay: '+e.message);}}
+ const captureStatus={enabled:typeof options.capturePoseForActor==='function',manifestAvailable:false,models:0,errors:[]};
+ const captureCache=new Map();let captureBindings=null;
+ result.captureAnimations=captureStatus;
+ if(captureStatus.enabled){
+  const manifest=await json(options.captureAnimationManifestURL||'./local-original/capture-animations/manifest.json').catch(()=>null);
+  if(manifest){try{captureBindings=captureAnimationBindings(manifest);captureStatus.manifestAvailable=true;}
+   catch(error){captureStatus.errors.push(error.message);}}
+ }
+ const regionalCaptureStatus={manifestAvailable:false,near:0,far:0,errors:[]};
+ const regionalCaptureCache=new Map();let regionalCaptureRows=null,regionalCaptureTeam=null;
+ result.captureRegionalModels=regionalCaptureStatus;
+ if(captureStatus.enabled&&options.captureRegionalManifestURL!==false){
+  const manifest=await json(options.captureRegionalManifestURL||'./local-original/capture-animations/regional/manifest.json').catch(()=>null);
+  if(manifest){try{
+   regionalCaptureRows=regionalCaptureBindings(manifest);regionalCaptureStatus.manifestAvailable=true;
+   if(manifest.teamManifest)regionalCaptureTeam=await verifiedModelJSON(manifest.teamManifest,manifest.teamManifestSha256,'Regional capture team manifest');
+  }catch(error){regionalCaptureStatus.errors.push(error.message);}}
+ }
  const sailStatus={enabled:options.initialSails!==false,manifestAvailable:false,models:0,parts:0,errors:[]},sailErrors=new Set(),sailComposites=new Map();let sailManifest=null,sailShader=null,dynamicSailShader=null;const dynamicBindings=new WeakMap();
  result.initialSails=sailStatus;
  const sailError=message=>{if(!sailErrors.has(message)){sailErrors.add(message);sailStatus.errors.push(message);result.errors.push(message);}};
@@ -332,16 +351,26 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   if(sailManifest.format!=='ee2-native-sail-initial-composites-v1'||!Array.isArray(sailManifest.models))throw new Error('Unsupported native initial sail manifest');
   sailStatus.manifestAvailable=true;result.sailManifest=sailManifest;
  }catch{/* Old portable folders and all existing models remain usable. */}}
- const augmentModel=async(model,entry)=>{
+ const augmentModel=async(model,entry,lod='near')=>{
   if(model.animationPayload){try{model=await loadAnimationPayload(model,{base:import.meta.url});}catch(e){result.citizenModels.errors.push(e.message);result.errors.push('Citizen motion sidecar: '+e.message);model=withoutAnimationPayload(model);}}
   const packRow=packManifest?.models.find(r=>r.id===entry.id&&r.epoch===(entry.epoch??0)&&r.modelURL===(entry.url||entry.file)&&r.sourceSha256===model.source?.sha256);
   if(packRow){try{
-   if(!packCache.has(packRow.url))packCache.set(packRow.url,Promise.all([verifiedSailJSON(packRow.modelURL,packRow.parentSha256),verifiedSailJSON(packRow.url,packRow.sha256)]));
+   if(!packCache.has(packRow.url))packCache.set(packRow.url,Promise.all([verifiedModelJSON(packRow.modelURL,packRow.parentSha256),verifiedModelJSON(packRow.url,packRow.sha256)]));
    const [exactParent,overlay]=await packCache.get(packRow.url);model=appendNativePackAnimations(exactParent,overlay);packStatus.models++;
   }catch(e){packStatus.errors.push(e.message);result.errors.push('Pack animation overlay: '+e.message);}}
+  const captureBinding=captureBindings?.get(model.source?.sha256),captureAsset=captureBinding?.[lod];
+  if(captureAsset){try{
+   const key=captureAsset.sha256+':'+captureAsset.url;
+   if(!captureCache.has(key))captureCache.set(key,verifiedModelJSON(captureAsset.url,captureAsset.sha256,'Capture animation overlay')
+    .then(async overlay=>({overlay,...await loadCaptureAnimationOverlay(model,overlay,captureBinding.states,import.meta.url)})));
+   const {overlay,animations,clips}=await captureCache.get(key);
+   if(!captureOverlayMatches(model,overlay))throw new Error('Capture animation source or topology differs');
+   model={...model,nativeCapture:{clips,contexts:captureBinding.contexts},parts:model.parts.map((part,index)=>({...part,animations:{...part.animations,...animations[index]}}))};
+   captureStatus.models++;
+  }catch(error){if(!captureStatus.errors.includes(error.message))captureStatus.errors.push(error.message);}}
   const row=sailManifest?.models?.find(r=>r.source?.sha256===model.source?.sha256&&r.epoch===(entry.epoch??0));if(!row||(!row.effect&&!options.dynamicSails))return model;
   try{
-   if(!sailComposites.has(row.url))sailComposites.set(row.url,verifiedSailJSON(row.url,row.sha256));
+   if(!sailComposites.has(row.url))sailComposites.set(row.url,verifiedModelJSON(row.url,row.sha256));
    const composite=await sailComposites.get(row.url);
    if(composite.assetKind!==manifestAssetKind(entry)||composite.id!==entry.id||composite.epoch!==(entry.epoch??0))return model;
    const augmented=appendInitialSailParts(model,composite);
@@ -406,7 +435,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   if(options.houseLodProfile!==undefined)result.setHouseLodProfile(options.houseLodProfile);
  }catch(error){houseLodModels.clear();houseLodError(error);}}
  const entries=[...(Array.isArray(manifest.models)?manifest.models:Object.entries(manifest.models||manifest.mapping||{}).map(([id,value])=>typeof value==='string'?{id:+id,url:value}:{id:+id,...value})),...regionalEntries,...citizenEntries];
- const loadParts=async (model,keepPickingGeometry=false,modelUrl=null)=>{
+ const loadParts=async (model,keepPickingGeometry=false,modelUrl=null,teamOverride=null)=>{
    const parts=[],selectedSeasonManifest=regionalSeasonManifest.models?.[modelUrl]?regionalSeasonManifest:seasonManifest;
    let sourceSailIndex=0;for(const part of model.parts){
     const sailIndex=part.nativeSail?sourceSailIndex++:null;
@@ -441,7 +470,8 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     }
     const forSourceTeam=(source,team)=>{
       const suffix=['A','B','C','G'][team],key=source?.split('/').pop().replace(/\.png$/i,'').toLowerCase();
-      const patchManifest=citizenTeamManifest.texture_bindings?.[source]?citizenTeamManifest
+      const patchManifest=teamOverride?.texture_bindings?.[source]?teamOverride
+       :citizenTeamManifest.texture_bindings?.[source]?citizenTeamManifest
        :additionalRegionalTeam.texture_bindings?.[source]?additionalRegionalTeam
        :regionalTeamManifest.texture_bindings?.[source]?regionalTeamManifest
        :seasonTeamManifest.texture_bindings?.[source]?seasonTeamManifest:teamManifest;
@@ -469,6 +499,25 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    }
    return parts;
  };
+ const regionalCaptureVariant=(entry,lod)=>{
+  const url=lod==='near'?entry.url:entry.lodFarUrl,digest=lod==='near'?entry.sha256:entry.lodFarSha256;
+  if(!url)return null;
+  const key=digest+':'+url;
+  if(!regionalCaptureCache.has(key)){
+   const record={variant:null};regionalCaptureCache.set(key,record);
+   verifiedModelJSON(url,digest,'Regional capture model').then(async model=>{
+    const {parts,clips}=await loadRegionalCaptureAsset(model,entry,import.meta.url);
+    const transform=nativeModelTransform(model,entry.nativeScaleBinding);
+    if(!transform.native)throw new Error('Regional capture model has no exact source scale');
+    const gpu=await loadParts({...model,parts},false,url,regionalCaptureTeam);
+    record.variant={assetKind:0,parts:gpu,hasClipVisibility:gpu.some(part=>part.clipVisibility),
+     nativeCapture:{clips},nativeScale:transform.scale,originOffset:transform.originOffset,yOffset:0,
+     yawOffset:entry.yawOffset??model.yawOffset??0};
+    regionalCaptureStatus[lod]++;
+   }).catch(error=>{regionalCaptureStatus.errors.push(`${url}: ${error.message}`);});
+  }
+  return regionalCaptureCache.get(key).variant;
+ };
  let loaded=0;
  for(const entry of entries){
   onProgress(++loaded,entries.length);
@@ -488,6 +537,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    const scaleKey=(entry.assetKind===undefined?'':assetKind+':')+id+':'+(entry.epoch??0),sea=assetKind===0&&((id>=29&&id<=36)||id===42||id===45),transform=nativeModelTransform(model,entry.regionalCivilizations?entry.nativeScaleBinding:scales.variants?.[scaleKey]);
    const yOffset=!transform.native&&sea?-(model.normalization?.offset?.[1]||0)*(model.normalization?.scale||1):0;
    const variant={sourceId:id,assetKind,scaleKey,epoch:entry.epoch??0,until:entry.until,regionalCivilizations:entry.regionalCivilizations,regionalFallback:entry.regionalFallback===true,sourceIdentity:entry.sourceIdentity,region:entry.region,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),nativeAttackClock:entry.nativeAttackClock===true,yOffset,originOffset:transform.originOffset,nativeScale:transform.native?transform.scale:null,yawOffset:entry.yawOffset??model.yawOffset??0,farUrl:entry.lodFarUrl,far:null,farRequested:false,pickBounds:resourceBounds(parts)};
+   variant.nativeCapture=model.nativeCapture;
    if(assetKind===0&&id===22&&entry.verified&&model.databaseVisualBinding?.visualDefinition==='LightArtillery1_01'
       &&entry.epoch===0&&entry.until===2&&entry.source?.sha256===model.source?.sha256){
     // Only clips with the original moving-state KF can start its text-key sound.
@@ -610,28 +660,40 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     if(options.citizenManifestURL&&variants[0].assetKind===0&&variants[0].sourceId===8&&actor&&options.sourceIdentityForActor){try{const sourceIdentity=options.sourceIdentityForActor(actor);identity=sourceIdentity===0||sourceIdentity===1?sourceIdentity:null;}catch(e){identity=null;result.citizenModels.errors.push(e.message);}}
     const citizen=selectCitizenModel(variants,epoch,civilizations?.[team],identity,{neutralFallback:options.citizenNeutralFallback??null});
     let variant=citizen===undefined?selectRegionalModel(variants.filter(v=>v.sourceIdentity===undefined),epoch,civilizations?.[team]):citizen;if(!variant)continue;
-    const variantIndex=variants.indexOf(variant),far=(variant.nativeScale??data[i*12+8])*zoom<55;
+    const sourceId=variant.sourceId,time=data[i*12+10],seed=data[i*12+6],previewFlags=Math.round(data[i*12+7])&24;
+    const civ=civilizations?.[team],regionalEntry=regionalCaptureRows?.get(`${sourceId}:${epoch}:${civ}`);
+    const exactActor=(regionalEntry||variant.nativeCapture)&&!previewFlags&&actor?.def===sourceId&&actor.team===team
+     &&actor.index===i&&actor.hpRatio>0&&actor.renderTime===time&&actor.renderX===data[i*12]&&actor.renderY===data[i*12+1]
+     &&actor.renderAltitude===data[i*12+2]&&actor.renderYaw===data[i*12+3];
+    const regional=exactActor&&regionalEntry&&regionalCaptureVariant(regionalEntry,'near');
+    if(regional)variant=regional;
+    const variantIndex=regional?'capture-regional':variants.indexOf(variant),far=(variant.nativeScale??data[i*12+8])*zoom<55;
     if(houseLodSettings&&variant.selectHouseLod)variant=variant.selectHouseLod(variant,data,i,eye,houseLodSettings);
+    else if(far&&regional)variant=regionalCaptureVariant(regionalEntry,'far')||variant;
     else if(far&&variant.farUrl){
      if(!variant.farRequested){
       variant.farRequested=true;const near=variant;
-      json(near.farUrl).then(model=>augmentModel(model,{id:near.sourceId,assetKind:near.assetKind,epoch:near.epoch})).then(async model=>({model,parts:await loadParts(model,near.assetKind===1,near.farUrl)})).then(({model,parts})=>{near.far={...near,parts,pickBounds:resourceBounds(parts),sailComposite:model.nativeSailComposite,dynamicSailBinding:null};}).catch(e=>{result.errors.push(e.message);console.warn('Original-Fernmodell:',e);});
+      json(near.farUrl).then(model=>augmentModel(model,{id:near.sourceId,assetKind:near.assetKind,epoch:near.epoch},'far')).then(async model=>({model,parts:await loadParts(model,near.assetKind===1,near.farUrl)})).then(({model,parts})=>{near.far={...near,parts,pickBounds:resourceBounds(parts),sailComposite:model.nativeSailComposite,dynamicSailBinding:null,nativeCapture:model.nativeCapture};}).catch(e=>{result.errors.push(e.message);console.warn('Original-Fernmodell:',e);});
      }
      if(variant.far)variant=variant.far;
     }
     const activity=Math.round(data[i*12+11]),requestedClip=['idle','walk','wood','mine','food','build','combat'][activity]||'idle';
-    const packPose=nativePackPose(actor,{sourceId:variant.sourceId,team,data,index:i,parts:variant.parts});
-    const time=data[i*12+10],seed=data[i*12+6];
+    const packPose=nativePackPose(actor,{sourceId,team,data,index:i,parts:variant.parts});
+    const nativeCapture=variant.nativeCapture;
+    const capturePose=!packPose&&nativeCapture&&exactActor
+     &&(regional||nativeCapture.contexts.some(context=>epoch>=context.from&&epoch<context.until&&context.ids.includes(actor.def)&&context.civs.includes(civ)))
+     ? nativeCapturePose(options.capturePoseForActor(actor),nativeCapture.clips,options.captureAnimationDetail) : null;
+    const dedicatedPose=packPose||capturePose;
     const attackElapsed=variant.nativeAttackClock&&requestedClip==='combat'&&actor?.def===variant.sourceId&&actor.team===team
      &&actor.index===i&&actor.renderTime===time&&actor.renderX===data[i*12]&&actor.renderY===data[i*12+1]
      ? options.stoneAttackElapsedForActor?.(actor) : undefined;
     const timedAttack=Number.isFinite(attackElapsed);
     const defaultClip=variant.parts.some(p=>p.animations?.[requestedClip])?requestedClip:'idle';
-    const clip=packPose?.clip||(timedAttack?(attackElapsed>=0?'combat':'idle'):defaultClip);
-    const once=packPose?.once??(timedAttack&&attackElapsed>=0);
+    const clip=dedicatedPose?.clip||(timedAttack?(attackElapsed>=0?'combat':'idle'):defaultClip);
+    const once=dedicatedPose?.once??(timedAttack&&attackElapsed>=0);
     const animation=variant.parts.find(p=>p.animations?.[clip])?.animations?.[clip];
     const duration=animation?.duration||1;
-    const phase=packPose?.phase??(timedAttack&&attackElapsed>=0?Math.min(1,attackElapsed/duration):((time/duration+seed)%1+1)%1);
+    const phase=dedicatedPose?.phase??(timedAttack&&attackElapsed>=0?Math.min(1,attackElapsed/duration):((time/duration+seed)%1+1)%1);
     // Parts with authored visibility events batch only with actors in the same visible state.
     const hiddenParts=variant.hasClipVisibility?variant.parts.filter(part=>{
      if(!part.clipVisibility)return false;
@@ -643,7 +705,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
      return !visible;
     }):null;
     const visibilityKey=hiddenParts?.length?':hidden:'+hiddenParts.map(part=>variant.parts.indexOf(part)).join(','):'';
-    const preview=!!(Math.round(data[i*12+7])&24),key=variantIndex+':'+team+':'+activity+':'+(far&&variant.farRequested?1:0)+':'+(Math.round(data[i*12+7])&24)+':'+clip+':'+once+(variant.houseLodKey===undefined?'':':house:'+variant.houseLodKey)+visibilityKey;
+    const preview=!!previewFlags,key=variantIndex+':'+team+':'+activity+':'+(far&&variant.farRequested?1:0)+':'+previewFlags+':'+clip+':'+once+(variant.houseLodKey===undefined?'':':house:'+variant.houseLodKey)+visibilityKey;
     if(collectStoneThrowerWheels&&!preview&&actor?.def===22&&epoch<2&&variant.stoneThrowerWheelClips?.has(clip)){
      stoneThrowerWheels.push({handle:actor.handle,clip,x:actor.renderX,y:actor.renderY});
     }

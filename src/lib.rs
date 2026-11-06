@@ -8,6 +8,8 @@ mod ai;
 #[cfg(feature = "ee2-native13")]
 mod battle_signals;
 #[cfg(feature = "ee2-native13")]
+mod capture_animation26;
+#[cfg(feature = "ee2-native13")]
 mod capture_math25;
 #[cfg(feature = "ee2-ai9-planner-probe")]
 pub mod ai9_count;
@@ -732,6 +734,26 @@ pub extern "C" fn sel_center(axis: u32) -> f32 {
 #[no_mangle]
 pub extern "C" fn capture_configure_peer(enabled: u32) -> u32 {
     u32::from(enabled <= 1 && g().configure_peer_capture(enabled != 0))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn capture_animation_configure_peer(enabled: u32) -> u32 {
+    u32::from(enabled <= 1 && g().configure_peer_capture_animation(enabled != 0))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn capture_animation_request(handle: u32) -> u32 {
+    g().capture_animation_pose(handle).map_or(0, |pose| pose.request())
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn capture_animation_elapsed(handle: u32, render_time: f32) -> f32 {
+    let game = g();
+    if !((game.tick as f32 * DT)..=((game.tick as f32 + 1.0) * DT)).contains(&render_time) { return -1.0; }
+    game.capture_animation_pose(handle).map_or(-1.0, |pose| (render_time - pose.tick as f32 * DT).max(0.0))
 }
 
 #[cfg(feature = "ee2-native13")]
