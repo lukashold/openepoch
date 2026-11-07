@@ -31,15 +31,15 @@ import {mountOriginalGameSettings} from './original-game-settings.js?v=native38a
 import {createRenderActorMetadata} from './render-actor-metadata.js?v=pack8';
 import {createPackRenderMetadata} from './original-pack-states.js?v=pack8';
 import {createFullmapPipBridge} from './original-fullmap-pip-bridge.js';
-import {loadOriginalGround,sampleGroundHeight} from './original-ground.js?v=native-spy';
-import {createCaptureGlow} from './capture-glow.js?v=native28';
+import {loadOriginalGround,sampleGroundHeight} from './original-ground.js?v=native-spy-powers';
+import {createCaptureGlow} from './capture-glow.js?v=native-spy-powers';
 import {loadOriginalTerrain} from './original-terrain.js?v=skirmish-climates';
 import {loadOriginalWater} from './original-water.js?v=water-farm3';
 import {createOriginalReflection} from './original-reflection.js?v=visual-seasons2';
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=clock38';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native51';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native-spy-powers';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native44';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION} from './source-network-round.js?v=native51';
@@ -56,14 +56,14 @@ import {createBattleFlare} from './battle-flare.js?v=native25';
 import {createCaptureOrder,captureOrderText,decorateCommandButton} from './capture-order.js?v=native-spy';
 import {nativeMetaEpoch} from './original-hud-layout.js';
 import {loadPriestCommandArt} from './original-priest-command-art.js?v=native45';
-import {loadSpyCommandArt} from './original-spy-command-art.js?v=native-spy';
+import {loadSpyCommandArt,loadSpyAdvancedCommandArt} from './original-spy-command-art.js?v=native-spy-powers';
 import {createSpyShimmerFrames} from './original-spy-shimmer.js?v=native-spy';
 import {createSpyExtractionTimer} from './spy-extraction-renderer.js?v=native-spy';
 import {loadPriestEffects} from './original-priest-fx.js?v=native45';
 import {loadOriginalPriestParticles} from './original-priest-particles.js?v=native47';
 import {loadBlessGroundGlow} from './priest-ground-glow.js?v=native45';
 import {createTradeRoute,supportsTradeRoute,tradeRouteText} from './trade-route.js?v=native30';
-import {loadCarrierPresentation,loadFighterBomberPresentation,loadPriestPresentation,loadSpyPresentation,loadTradePresentation,loadTradeRouteArt} from './original-trade-presentation.js?v=native-spy';
+import {loadCarrierPresentation,loadFighterBomberPresentation,loadPriestPresentation,loadSpyPresentation,loadTradePresentation,loadTradeRouteArt} from './original-trade-presentation.js?v=native-spy-powers';
 import {createTradeWaitStatus,loadTradeWaitArt,selectedTradeWait} from './trade-wait-status.js?v=native31';
 import {airActions,airMissionActions,airMissionSelection,airMissionTrainingKey,createAirMissionOrder,decorateAirMissionButton,loadAirMissionArt,supportsAirMission} from './air-mission-order.js?v=native32';
 import {loadAirMissionFlag,loadCarrierGarrisonFlag,projectAirMissionFlags,readAirMissionVisualRoutes} from './air-mission-flag.js?v=native36';
@@ -581,14 +581,19 @@ const blessGround=await loadBlessGroundGlow({enabled:originalEnabled&&typeof was
 let previousPriestViews=[],currentPriestViews=[],priestFrameEffects=null;
 const priestAttachments=new Map();
 let blessPreview=null;
-const spyArt=await loadSpyCommandArt({enabled:originalEnabled&&rulesProfile.ruleset===2&&typeof wasm.cmd_spy_intel_at==='function'});
+const spyArtEnabled=originalEnabled&&rulesProfile.ruleset===2&&typeof wasm.cmd_spy_intel_at==='function';
+const [spyArt,spyAdvancedArt]=await Promise.all([
+  loadSpyCommandArt({enabled:spyArtEnabled}),
+  loadSpyAdvancedCommandArt({enabled:spyArtEnabled&&typeof wasm.cmd_spy_operation_at==='function'}),
+]);
 const spyTimer=rulesProfile.ruleset===2&&typeof wasm.spy_extraction_count==='function'?createSpyExtractionTimer(gl):null;
 const spyShimmer=spyPresentation&&typeof wasm.spy_disguised==='function'?createSpyShimmerFrames():null;
 let spyRenderFrame=0;
 const spyPoseForActor=spyPresentation&&typeof wasm.spy_visual_state==='function'&&
   typeof wasm.spy_visual_elapsed==='function'?actor=>{
-    if(wasm.spy_visual_state(actor.handle)!==1)return null;
-    return {state:1,elapsed:wasm.spy_visual_elapsed(actor.handle,actor.renderTime),once:true,duration:5};
+    const state=wasm.spy_visual_state(actor.handle);
+    if(!state)return null;
+    return {state,elapsed:wasm.spy_visual_elapsed(actor.handle,actor.renderTime),once:true,duration:5};
   }:null;
 const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,total)=>{
   $('play').textContent=`Originalgrafiken laden · ${Math.round(loaded/total*100)} %`;
@@ -610,7 +615,7 @@ const unitPresentations=[tradePresentation,fighterBomberPresentation,carrierPres
 sfx.configureOriginalDefinitions({wasm,bindings:[...(originalModels.manifest?.models||[]),...(originalModels.additionalRegionalAudio||[]),...unitPresentations.flatMap(source=>source.audioModelRows)],additionalFamilyManifest:unitPresentations.map(source=>source.audioManifest),citizenPresentation,regionalMusic:rulesProfile.ruleset===2,...(rulesProfile.ruleset===2?{familyManifestURL:'native-families-civ8-regicide.json',playbackManifestURL:'manifest-stone-thrower-up.json'}:{})});
 const captureGlow = originalEnabled && typeof wasm.active_capture_glow === 'function' ? createCaptureGlow() : null;
 const originalGround=await loadOriginalGround(gl,originalEnabled,{assetMapping,captureGlow:!!captureGlow,blessGlow:!!blessGround,
-  extractionDecal:spyArt?.extractionVisuals.decal.url,...(rulesProfile.ruleset===2
+  extractionDecal:spyArt?.extractionVisuals.decal.url,mixedGlow:spyAdvancedArt?.mixedGlow,...(rulesProfile.ruleset===2
   ?{manifestURL:'./local-original/regional-temple/ground-decals.json'}:{})});
 const originalTerrain=await loadOriginalTerrain(gl,originalEnabled,TEAM,{climateProfiles});
 originalTerrain.setLightingContext?.(originalModels.lighting);
@@ -871,6 +876,21 @@ const spyOrders=spyEnabled?[targetedPower(86,{action:'gatherIntel',key:'N',fallb
   description:'Deckt für kurze Zeit gleichartige Gebäude beim Zielspieler auf.',
   count:wasm.spy_selection_count,pick:wasm.spy_intel_target_at,issue:wasm.cmd_spy_intel_at,
 },spyArt,'spy-action')]:[];
+if(spyEnabled&&typeof wasm.spy_operation_unlocked==='function'){
+  for(const [operation,action,key,fallback,label,description] of [
+    [1,'sabotage','I','✖','Sabotage','Legt das gewählte gegnerische Gebäude vorübergehend still.'],
+    [2,'restore','R','✚','Wiederherstellen','Behebt die Sabotage an einem eigenen oder verbündeten Gebäude.'],
+    [3,'contaminate','J','☣','Kontaminieren','Vergiftet ein gegnerisches Stadtzentrum oder Lagerhaus.'],
+    [4,'cleanup','P','✚','Dekontaminieren','Reinigt ein eigenes oder verbündetes Stadtzentrum oder Lagerhaus.'],
+  ]){
+    spyOrders.push(targetedPower(86,{action,key,fallback,label,description,
+      available:()=>wasm.spy_operation_unlocked(operation)>0,
+      count:()=>wasm.spy_operation_selection_count(operation),
+      pick:(x,y)=>wasm.spy_operation_target_at(operation,x,y),
+      issue:(x,y)=>wasm.cmd_spy_operation_at(operation,x,y),
+    },spyAdvancedArt,'spy-action'));
+  }
+}
 const powerOrders=[...priestOrders,...spyOrders];
 const extractionAvailable=spyEnabled&&typeof wasm.cmd_spy_extraction==='function';
 const selectedPowerType=(selection,definition)=>selection?.def===definition||selection?.types?.some(type=>type[0]===definition);
@@ -1261,9 +1281,20 @@ setInterval(() => {
 
 // ---------------------------------------------------------------- frame loop
 function drawCaptureGlow(vp,actorMetadata){
-  if(!captureGlow||!actorMetadata||!wasm.has_active_capture_glow())return;
-  const projected = captureGlow.project(actorMetadata.actors, wasm.active_capture_glow);
+  if(!captureGlow||!actorMetadata)return;
+  const capture=wasm.has_active_capture_glow(),spy=wasm.spy_adverse_glow_present?.();
+  if(!capture&&!spy)return;
+  const bad=handle=>(capture&&wasm.active_capture_glow(handle))||(spy&&spyAdverseGlow(handle));
+  const isMixed=handle=>spyAdvancedArt?.mixedGlow&&bad(handle)&&wasm.bless_glow_active?.(handle);
+  const projected = captureGlow.project(actorMetadata.actors, handle=>bad(handle)&&!isMixed(handle));
   originalGround.drawCaptureGlow({vp,...projected});
+  if(spyAdvancedArt?.mixedGlow){
+    originalGround.drawMixedGlow({vp,...captureGlow.project(actorMetadata.actors,isMixed)});
+  }
+}
+
+function spyAdverseGlow(handle) {
+  return !!(wasm.building_sabotaged?.(handle)||wasm.spy_toxic_status?.(handle));
 }
 
 function drawBlessGround(vp,actorMetadata,previewFrame=null){
@@ -1279,7 +1310,8 @@ function drawBlessGround(vp,actorMetadata,previewFrame=null){
     }
   }
   const layer=blessGround.project({actors:actorMetadata.actors,local:ui?.local??0,
-    visualForActor:originalModels.sourceVisualForActor,isBlessed:wasm.bless_glow_active,
+    visualForActor:originalModels.sourceVisualForActor,isBlessed:handle=>wasm.bless_glow_active(handle)
+      && !(spyAdvancedArt?.mixedGlow&&spyAdverseGlow(handle)),
     hasPreview:handle=>!!previewFrame&&!!blessPreview?.handles.has(handle)});
   originalGround.drawBlessGlow({vp,...layer});
   if(qaMode&&previewFrame)canvas.dataset.blessGround=`${layer.good.length/5}:${layer.neutral.length/5}`;
@@ -1711,6 +1743,19 @@ function updateUi(drawn, now) {
     info.innerHTML = h;
     if (s.n === 1) {
       const context = selectedCitizenContext(wasm, ui);
+      const selected=(wasm.selected_actor_handle?.()??0xffffffff)>>>0;
+      const toxic=wasm.spy_toxic_status?.(selected)??0;
+      const effects=[];
+      if(wasm.building_sabotaged?.(selected))effects.push(['sabotage','Sabotiert']);
+      if(toxic&1)effects.push(['contamination','Kontaminiert']);
+      if(toxic&2)effects.push(['contamination','Toxische Krankheit']);
+      for(const [key,label] of effects){
+        const tag=document.createElement('span');tag.className='activity';tag.title=label;
+        const source=spyAdvancedArt?.status(key);
+        if(source){const img=document.createElement('img');img.src=source;img.alt=label;img.width=22;img.height=22;tag.append(img);}
+        else tag.textContent=label;
+        info.querySelector('h3')?.append(tag);
+      }
       if ((context && citizenPresentation.enabled) || regionalPortraits.has(s.def) || unitPresentation(s.def)?.icon(s.def,ui.epoch)) {
         const portrait = icon(s.def, 40, context);
         portrait.style.cssText = 'vertical-align:middle;margin-right:6px';
@@ -1723,7 +1768,7 @@ function updateUi(drawn, now) {
 
   const canCapture=!!captureOrder&&!bench&&!ui.win&&militaryCaptureCount()>0;
   const canTrade=!!tradeRoute&&!bench&&!ui.win&&wasm.trade_selected_count()>0;
-  const powerActions=bench||ui.win?[]:powerOrders.filter(command=>selectedPowerType(s,command.definition))
+  const powerActions=bench||ui.win?[]:powerOrders.filter(command=>selectedPowerType(s,command.definition)&&command.available?.()!==false)
     .map(command=>({command,ready:command.count()>0}));
   const spyExtraction=extractionAvailable&&!bench&&!ui.win&&selectedPowerType(s,86);
   const canExtract=spyExtraction&&wasm.spy_extraction_selection_count()>0;
@@ -2198,7 +2243,7 @@ addEventListener('keydown', e => {
     if(e.code==='KeyX'&&extractionAvailable&&selectedPowerType(ui?.sel,86)){
       e.preventDefault();if(!e.repeat)orderSpyExtraction();return;
     }
-    const command=powerOrders.find(row=>e.code===`Key${row.key}`&&selectedPowerType(ui?.sel,row.definition));
+    const command=powerOrders.find(row=>e.code===`Key${row.key}`&&selectedPowerType(ui?.sel,row.definition)&&row.available?.()!==false);
     if(command){
       e.preventDefault();if(!e.repeat)armPowerOrder(command);return;
     }

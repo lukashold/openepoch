@@ -2,7 +2,7 @@
 const TURN = Math.fround(2 * Math.PI);
 const MIN_RADIUS = Math.fround(0.95);
 const MAX_RADIUS = Math.fround(1.15);
-const RADIUS = Object.freeze({0:5,1:3,3:3,4:3,5:3,6:5,7:1,47:5,48:3,49:3,
+const RADIUS = Object.freeze({0:5,1:3,3:3,4:3,5:3,6:5,7:1,8:.5,47:5,48:3,49:3,
   50:3,51:3,52:3,53:3,54:3,55:3,56:5,59:1,60:1});
 
 export function createCaptureGlow() {

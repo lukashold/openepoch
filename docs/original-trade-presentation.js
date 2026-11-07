@@ -62,6 +62,7 @@ async function loadPresentation(spec,{enabled, fetchFile = globalThis.fetch, bit
       rows.set(id, entries);
       for (const model of variants) modelRows.push({
         ...model, id, regionalFallback: !regional || model.regionalCivilizations.includes(0),
+        ...(spec===SPY?{spyClips:{...model.spyClips,2:'sabotage',3:'gatherintel',4:'gatherintel',5:'sabotage'}}:{}),
       });
     }
     const lookup = (id, epoch) => rows.get(id)?.find(row => epoch >= row.epoch && epoch < row.until);

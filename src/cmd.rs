@@ -245,9 +245,11 @@ impl Game {
             }
             #[cfg(feature = "ee2-native13")]
             C_GATHER_INTEL => {
-                if !self.net && a == 0.0 && b == 0.0 {
-                    if let Some(target) = target.filter(|&target| self.spy_intel_target(team, target)) {
-                        self.order_spy_intel(&ids, target);
+                if !self.net && a >= 0.0 && a.fract() == 0.0 && b == 0.0 {
+                    if let Some(operation) = spy_intel46::SpyOperation::read(a as u32) {
+                        if let Some(target) = target.filter(|&target| self.spy_operation_target(team, target, operation)) {
+                            self.order_spy_operation(&ids, target, operation);
+                        }
                     }
                 }
             }

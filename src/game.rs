@@ -24,6 +24,12 @@ mod spy_disguise46;
 #[path = "spy_extraction46.rs"]
 pub(crate) mod spy_extraction46;
 #[cfg(feature = "ee2-native13")]
+#[path = "spy_sabotage50.rs"]
+pub(crate) mod spy_sabotage50;
+#[cfg(feature = "ee2-native13")]
+#[path = "spy_toxic50.rs"]
+pub(crate) mod spy_toxic50;
+#[cfg(feature = "ee2-native13")]
 #[path = "trade30.rs"]
 pub(crate) mod trade30;
 #[cfg(all(test,feature="ee2-reference"))]
@@ -345,6 +351,10 @@ pub struct Game {
     spy_disguise: spy_disguise46::SpyDisguise,
     #[cfg(feature = "ee2-native13")]
     pub(crate) spy_extraction: spy_extraction46::Extraction,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) spy_sabotage: spy_sabotage50::Sabotage,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) spy_toxic: spy_toxic50::ToxicState,
     // ---- not part of the deterministic simulation state ----
     /// Which player this client controls and sees through.
     pub local: u8,
@@ -521,6 +531,10 @@ impl Game {
             #[cfg(feature = "ee2-native13")]
             spy_extraction: spy_extraction46::Extraction::default(),
             #[cfg(feature = "ee2-native13")]
+            spy_sabotage: spy_sabotage50::Sabotage::default(),
+            #[cfg(feature = "ee2-native13")]
+            spy_toxic: spy_toxic50::ToxicState::default(),
+            #[cfg(feature = "ee2-native13")]
             priest_effects: Vec::new(),
             net,
             seed0: seed,
@@ -642,6 +656,8 @@ impl Game {
             }
             self.spy_disguise.retire(handle);
             self.spy_extraction.retire(handle);
+            self.spy_sabotage.retire(handle);
+            self.spy_toxic.retire(handle);
             self.powers.as_mut().unwrap().retire(handle);
         }
         #[cfg(feature = "ee2-native13")]
@@ -764,6 +780,8 @@ impl Game {
     }
 
     pub fn can_train(&self, b: usize, def:QueueItem) -> bool {
+        #[cfg(feature="ee2-native13")]
+        if self.sabotaged(b) { return false; }
         #[cfg(feature="ee2-ai9-game-bridge")]
         if crate::ai9_rank::index(def).is_some() {
             let host = &self.ents[b];
@@ -1226,6 +1244,10 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         self.spy_extraction.hash(&mut mix);
         #[cfg(feature = "ee2-native13")]
+        self.spy_sabotage.hash(&mut mix);
+        #[cfg(feature = "ee2-native13")]
+        self.spy_toxic.hash(&mut mix);
+        #[cfg(feature = "ee2-native13")]
         if self.infantry_roster_enabled { mix(u32::from_le_bytes(*b"INF1")); }
         #[cfg(feature = "ee2-native13")]
         if self.production_roster_enabled { mix(u32::from_le_bytes(*b"PRD1")); }
@@ -1440,6 +1462,8 @@ impl Game {
         self.build_grid();
         #[cfg(feature = "ee2-native13")]
         self.tick_spy_disguise();
+        #[cfg(feature = "ee2-native13")]
+        self.tick_spy_sabotage();
         if self.bench==0{self.update_territory_diplomacy();}
         for i in 0..self.high {
             if self.ents[i].alive {
@@ -1454,6 +1478,8 @@ impl Game {
         self.tick_garrisoned_reserves();
         self.separate();
         self.update_projs();
+        #[cfg(feature = "ee2-native13")]
+        self.tick_spy_toxic();
         let mut k = 0;
         while k < self.fx.len() {
             self.fx[k].age += DT;
@@ -2286,7 +2312,17 @@ impl Game {
             e.flash -= DT;
         }
         if d.building {
-            self.update_building(i, &mut e, d);
+            #[cfg(feature = "ee2-native13")]
+            let disabled = self.sabotaged(i);
+            #[cfg(not(feature = "ee2-native13"))]
+            let disabled = false;
+            if disabled {
+                e.tgt = NONE;
+                #[cfg(feature = "ee2-native13")]
+                self.native_stop_attack(i);
+            } else {
+                self.update_building(i, &mut e, d);
+            }
             self.ents[i] = e;
             return;
         }

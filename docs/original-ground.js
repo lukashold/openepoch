@@ -137,12 +137,12 @@ function restore(gl,state){
 export async function loadOriginalGround(gl,enabled,options={}){
   const result={enabled:false,entries:new Map(),errors:[],manifest:null,
     policy:'native-epoch-slots; CityManager callback, explicit rural fallback when absent',metrics:{calls:0,instances:0},
-    seasonClimates:['Temperate'],climateErrors:[],updateTerrain(){},draw(){},drawCaptureGlow(){},drawBlessGlow(){},drawExtraction(){},setSeasonClimate(){return false;},setSeasonPhase(){return false;}};
+    seasonClimates:['Temperate'],climateErrors:[],updateTerrain(){},draw(){},drawCaptureGlow(){},drawMixedGlow(){},drawBlessGlow(){},drawExtraction(){},setSeasonClimate(){return false;},setSeasonPhase(){return false;}};
   if(!enabled)return result;
   let assetMapping;try{assetMapping=normalizeRenderAssetMapping(options.assetMapping);}catch(error){result.errors.push(error.message);return result;}
   result.assetMapping=assetMapping;
   const fetchFile=options.fetch||fetch,decode=options.decode||createImageBitmap;
-  const state=snapshot(gl),textures=new Map(),blessTextures=new Map();let shader,vao,instances,height,glowTexture,extractionTexture;
+  const state=snapshot(gl),textures=new Map(),blessTextures=new Map();let shader,vao,instances,height,glowTexture,extractionTexture,mixedGlow;
   const groundProfiles=Object.entries(options.climateProfiles||{}).filter(([name])=>name!=='Temperate');
   async function loadTexture(url){
     let texture=textures.get(url);
@@ -200,6 +200,10 @@ export async function loadOriginalGround(gl,enabled,options={}){
     if(options.extractionDecal){
       try{extractionTexture=await loadTexture(options.extractionDecal);}
       catch(error){result.extractionError=error.message;}
+    }
+    if(options.mixedGlow){
+      try{mixedGlow=await loadTexture(options.mixedGlow);}
+      catch(error){result.mixedGlowError=error.message;}
     }
     shader=createProgram(gl);vao=gl.createVertexArray();gl.bindVertexArray(vao);
     const vertices=new Float32Array((GRID+1)**2*2),indices=new Uint16Array(GRID*GRID*6);
@@ -269,6 +273,9 @@ export async function loadOriginalGround(gl,enabled,options={}){
   };
   result.drawCaptureGlow=({vp,list,alpha})=>{
     if(glowTexture&&list.length)drawGroups([{texture:glowTexture,textureB:glowTexture,blend:0,list}],vp,alpha);
+  };
+  result.drawMixedGlow=({vp,list,alpha})=>{
+    if(mixedGlow&&list.length)drawGroups([{texture:mixedGlow,textureB:mixedGlow,blend:0,list}],vp,alpha);
   };
   result.drawBlessGlow=({vp,good,neutral,alpha})=>{
     const groups=[];

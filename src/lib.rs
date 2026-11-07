@@ -1809,8 +1809,69 @@ pub extern "C" fn cmd_spy_intel_at(x: f32, y: f32) -> u32 {
 #[no_mangle]
 pub extern "C" fn spy_visual_state(handle: u32) -> u32 {
     let game = g();
-    u32::from(game.get(handle).is_some_and(|index| game.visible(index))
-        && game.spy_intel_elapsed(handle, game.sim_elapsed()).is_some())
+    if game.get(handle).is_some_and(|index| game.visible(index)) { game.spy_pose_state(handle) } else { 0 }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn spy_operation_selection_count(operation: u32) -> u32 {
+    let game = g();
+    let Some(operation) = game::spy_intel46::SpyOperation::read(operation) else { return 0; };
+    if game.net || !operation.available(game, game.local)
+        || operation.blocked_by_ceasefire() && game.initial_ceasefire_active() { return 0; }
+    selected(game).iter().filter(|&&index| game.spy_ready(index)).count() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn spy_operation_unlocked(operation: u32) -> u32 {
+    let game = g();
+    u32::from(!game.net && game.powers.is_some()
+        && game::spy_intel46::SpyOperation::read(operation).is_some_and(|operation| operation.available(game, game.local)))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn spy_operation_target_at(operation: u32, x: f32, y: f32) -> u32 {
+    if !x.is_finite() || !y.is_finite() || spy_operation_selection_count(operation) == 0 { return 0; }
+    let Some(operation) = game::spy_intel46::SpyOperation::read(operation) else { return 0; };
+    let game = g();
+    let target = pick(game, x, y, false);
+    u32::from(target != NOIDX && game.spy_operation_target(game.local, target, operation))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn cmd_spy_operation_at(operation: u32, x: f32, y: f32) -> u32 {
+    if spy_operation_target_at(operation, x, y) == 0 { return 0; }
+    let game = g();
+    let target = game.h(pick(game, x, y, false));
+    let ids: Vec<_> = selected(game).into_iter().filter(|&index| game.spy_ready(index)).collect();
+    let hs = handles(game, &ids);
+    game.submit(C_GATHER_INTEL, operation as f32, 0.0, target as i32, &hs);
+    hs.len() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn building_sabotaged(handle: u32) -> u32 {
+    let game = g();
+    u32::from(game.get(handle).is_some_and(|index| game.visible(index) && game.sabotaged(index)))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn spy_toxic_status(handle: u32) -> u32 {
+    let game = g();
+    let Some(index) = game.get(handle).filter(|&index| game.visible(index)) else { return 0; };
+    u32::from(game.contaminated(index)) | (u32::from(game.toxic_sick(index)) << 1)
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn spy_adverse_glow_present() -> u32 {
+    let game = g();
+    u32::from(game.spy_sabotage.active() || !game.spy_toxic.empty())
 }
 
 #[cfg(feature = "ee2-native13")]
