@@ -422,6 +422,8 @@ pub struct Game {
     #[cfg(feature = "ee2-native13")]
     pub(crate) crowns: Option<crowns54::Crowns>,
     #[cfg(feature = "ee2-native13")]
+    pub(crate) crown_victory: Option<crate::crown_victory65::Rule>,
+    #[cfg(feature = "ee2-native13")]
     pub(crate) crown_leaders: bool,
     #[cfg(feature = "ee2-native13")]
     pub(crate) military_leader_powers: Option<military_leader59::State>,
@@ -459,6 +461,8 @@ pub struct Game {
     pub(crate) fullmap_city_labels: Vec<crate::fullmap_labels21::CityLabel>,
     /// Sound cues for the page: (kind, x, y) triples.
     pub events: Vec<f32>,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) guided_herc_impacts: Vec<[f32; 4]>,
     pub outbox: Vec<u8>,
     pub inbox: Vec<u8>,
     pub savebuf: Vec<u8>,
@@ -646,6 +650,8 @@ impl Game {
             #[cfg(feature = "ee2-native13")]
             crowns: None,
             #[cfg(feature = "ee2-native13")]
+            crown_victory: None,
+            #[cfg(feature = "ee2-native13")]
             crown_leaders: false,
             #[cfg(feature = "ee2-native13")]
             military_leader_powers: None,
@@ -675,6 +681,8 @@ impl Game {
             #[cfg(feature = "ee2-native13")]
             fullmap_city_labels: Vec::new(),
             events: Vec::with_capacity(256),
+            #[cfg(feature = "ee2-native13")]
+            guided_herc_impacts: Vec::new(),
             outbox: Vec::with_capacity(1024),
             inbox: Vec::new(),
             savebuf: Vec::new(),
@@ -1457,6 +1465,8 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         if let Some(crowns) = &self.crowns { crowns.hash(&mut mix); }
         #[cfg(feature = "ee2-native13")]
+        if let Some(rule) = self.crown_victory { rule.hash(self.rule_save_outcome(), &mut mix); }
+        #[cfg(feature = "ee2-native13")]
         if self.crown_leaders { mix(crown_leaders58::HASH_TAG); }
         #[cfg(feature = "ee2-native13")]
         if let Some(powers) = &self.military_leader_powers { powers.hash(&mut mix); }
@@ -1778,8 +1788,8 @@ impl Game {
             }
             let poll_result = self.source_clock.is_some() || self.tick % 20 == 0;
             #[cfg(feature = "ee2-native13")]
-            let poll_result = poll_result
-                || ((self.sole_survivor.is_some() || self.regicide.is_some() || self.koth.is_some()) && self.winner == 0);
+            let poll_result = poll_result || (self.winner == 0 && (self.sole_survivor.is_some()
+                || self.regicide.is_some() || self.koth.is_some() || self.crown_victory.is_some()));
             if poll_result && (self.winner == 0 || cfg!(all(feature="ee2-pack8",feature="ee2-civ8"))) {
                 self.refresh_match_alive();
                 if self.winner == 0 {
@@ -1846,6 +1856,11 @@ impl Game {
     fn poll_match_outcome(&mut self) {
         #[cfg(feature="ee2-native13")]
         if self.net_resignation.is_some() { return; }
+        #[cfg(feature="ee2-native13")]
+        if let Some(rule) = self.crown_victory {
+            self.poll_crown_victory(rule);
+            return;
+        }
         #[cfg(feature="ee2-native13")]
         if let Some(rule) = self.koth {
             self.poll_koth_outcome(rule);
@@ -2253,10 +2268,15 @@ impl Game {
             p.py = p.y;
             #[cfg(feature = "ee2-native13")]
             if let Some(flight) = p.guided {
-                if self.advance_guided_herc_rocket(&mut p, flight, dt) {
-                    self.projs[k] = p;
-                    k += 1;
-                    continue;
+                use crate::rocket_herc::GuidedStep;
+                match self.advance_guided_herc_rocket(&mut p, flight, dt) {
+                    GuidedStep::Continue => {
+                        self.projs[k] = p;
+                        k += 1;
+                        continue;
+                    }
+                    GuidedStep::Impact(z) => self.emit_guided_herc_impact(p.x, p.y, z),
+                    GuidedStep::Discard => {}
                 }
                 self.projs.swap_remove(k);
                 let origin = self.get(p.attack_source).filter(|&index| self.ents[index].team == p.team)

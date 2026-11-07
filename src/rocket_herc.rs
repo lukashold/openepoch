@@ -345,7 +345,24 @@ const MINOTAURUS_MOUNT: (Point, Point, f32) = (
     [13.398475, 2.0783606, 18.36661], [0.999978, -0.0000009536178, -0.0066319164], 0.05656854,
 );
 
+pub(crate) enum GuidedStep { Continue, Impact(f32), Discard }
+
 impl Game {
+    pub(crate) fn emit_guided_herc_impact(&mut self, x: f32, y: f32, z: f32) {
+        let visible = self.real_fog(self.local, crate::map::tile_of(x, y)) == 255;
+        if visible && self.guided_herc_impacts.len() < 64 {
+            self.guided_herc_impacts.push([x, y, z, self.sim_elapsed()]);
+        }
+    }
+
+    pub(crate) fn prepare_guided_herc_impacts(&mut self) -> u32 {
+        let mut impacts = core::mem::take(&mut self.guided_herc_impacts);
+        impacts.retain(|&[x, y, _, _]| self.real_fog(self.local, crate::map::tile_of(x, y)) == 255);
+        let count = impacts.len() as u32;
+        self.guided_herc_impacts = impacts;
+        count
+    }
+
     pub(crate) fn guided_herc_ordinary_map(&self) -> bool {
         #[cfg(feature = "ee2-authored-valley37")]
         if self.map.source_world.is_some() { return false; }
@@ -414,7 +431,7 @@ impl Game {
         Some(Launch { position: [x, y], aim, flight })
     }
 
-    pub(crate) fn advance_guided_herc_rocket(&self, p: &mut Proj, mut flight: Flight, dt: f32) -> bool {
+    pub(crate) fn advance_guided_herc_rocket(&self, p: &mut Proj, mut flight: Flight, dt: f32) -> GuidedStep {
         let target_index = self.get(p.tgt).filter(|&index| {
             let target = &self.ents[index];
             self.combat_hostile(p.team, target.team) && self.can_see(p.team, index)
@@ -457,13 +474,18 @@ impl Game {
             if stationary_hit {
                 p.x = store_toward_zero(f64::from(p.x) + f64::from(p.tx)) * 0.5;
                 p.y = store_toward_zero(f64::from(p.y) + f64::from(p.ty)) * 0.5;
+                return GuidedStep::Impact(store_toward_zero(f64::from(flight.z) + f64::from(flight.target_z)) * 0.5);
             }
-            return false;
+            return GuidedStep::Impact(flight.z);
         }
-        if (target_index.is_none() && passed)
-            || hit_terrain(position, flight.velocity, terrain_height(&self.map.hm, p.x, p.y)) {
+        if target_index.is_none() && passed {
             p.tgt = NONE;
-            return false;
+            return GuidedStep::Impact(flight.z);
+        }
+        let ground = terrain_height(&self.map.hm, p.x, p.y);
+        if hit_terrain(position, flight.velocity, ground) {
+            p.tgt = NONE;
+            return GuidedStep::Impact(store_toward_zero(ground));
         }
 
         let point = steering_point(position, flight.velocity, flight.speed, target,
@@ -472,20 +494,46 @@ impl Game {
         let next = integrate(position, velocity, dt);
         if !(0.0..N as f32).contains(&next[0]) || !(0.0..N as f32).contains(&next[1]) {
             p.tgt = NONE;
-            return false;
+            return GuidedStep::Discard;
         }
         p.x = next[0];
         p.y = next[1];
         p.guided = Some(Flight {
             z: next[2], previous_z: flight.z, velocity, speed, ..flight
         });
-        true
+        GuidedStep::Continue
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn guided_impact_outbox_respects_combat_fog_and_stays_out_of_archives() {
+        let mut game = Game::new(7, 1, 0, 1, 0);
+        assert!(game.configure_guided_herc_rocket());
+        let (x, y) = (100.0, 100.0);
+        let tile = crate::map::tile_of(x, y);
+        game.diplomacy.visibility = 2;
+        game.team_vis[tile] = 128;
+        game.emit_guided_herc_impact(x, y, 1.5);
+        assert_eq!(game.prepare_guided_herc_impacts(), 0);
+        game.team_vis[tile] = 255;
+        game.save();
+        let hash = game.state_hash();
+        let baseline = game.savebuf.clone();
+        for _ in 0..66 { game.emit_guided_herc_impact(x, y, 1.5); }
+        assert_eq!(game.prepare_guided_herc_impacts(), 64);
+        assert_eq!(game.guided_herc_impacts[0], [x, y, 1.5, 0.0]);
+        assert_eq!(game.state_hash(), hash);
+        game.save();
+        assert_eq!(game.savebuf, baseline);
+        let mut restored = Game::load(&baseline).expect("guided archive");
+        assert_eq!(restored.prepare_guided_herc_impacts(), 0);
+        game.team_vis[tile] = 128;
+        assert_eq!(game.prepare_guided_herc_impacts(), 0);
+    }
 
     #[test]
     fn mobile_capsule_compares_both_radii_and_skips_next_endpoint() {

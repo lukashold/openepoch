@@ -224,6 +224,8 @@ impl Game {
             b = crate::wonders61::wrap_save(b);
         }
         #[cfg(feature="ee2-native13")]
+        if let Some(rule) = self.crown_victory { b = rule.wrap(b, self.rule_save_outcome()); }
+        #[cfg(feature="ee2-native13")]
         if let Some(rule) = self.koth { b = rule.wrap(b, self.rule_save_outcome()); }
         #[cfg(feature="ee2-native13")]
         { b = self.factory_clocks.wrap(b); }
@@ -301,6 +303,8 @@ impl Game {
         let (buf, factory_clocks) = crate::game::wonder_automation62::FactoryClocks::split(buf)?;
         #[cfg(feature="ee2-native13")]
         let (buf, koth) = crate::koth64::split(buf)?;
+        #[cfg(feature="ee2-native13")]
+        let (buf, crown_victory) = crate::crown_victory65::split(buf)?;
         #[cfg(feature="ee2-native13")]
         let (buf, wonders) = crate::wonders61::split_save(buf)?;
         #[cfg(feature="ee2-native13")]
@@ -849,6 +853,11 @@ impl Game {
             for owner in 0..g.nplayers {
                 if g.crown_powers_active_for(owner as u8) { g.rebuild_modifiers(owner as u8, false); }
             }
+        }
+        #[cfg(feature="ee2-native13")]
+        if let Some((rule, outcome)) = crown_victory {
+            if koth.is_some() || territory_victory.is_some() || sole_survivor.is_some() || regicide.is_some() { return None; }
+            g.restore_crown_victory(rule, outcome)?;
         }
         #[cfg(feature="ee2-native13")]
         if let Some(payload) = military_leader_powers {

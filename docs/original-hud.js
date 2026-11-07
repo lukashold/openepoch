@@ -55,6 +55,8 @@ export async function loadNativeHud(assets,enabled,options={}){
  #native-koth-status>header,#native-koth-status #koth-victory-status{display:flex;align-items:center;min-height:calc(var(--native-sy)*35px)}
  #native-koth-status>header{gap:calc(var(--native-sx)*10px)}
  #native-koth-status[hidden],#native-koth-status #koth-victory-status[hidden],#native-koth-status.is-minimized #koth-victory-status{display:none}
+ #native-koth-status.is-minimized #crown-victory-rows{display:none}
+ #native-koth-status #crown-victory-rows{--crown-status-icon:calc(var(--native-sy)*32px);max-width:100%}
  #native-koth-status.is-minimized{min-width:min(100vw,calc(var(--native-sx)*270px))}
  #native-koth-status-toggle{width:calc(var(--native-sx)*30px);height:calc(var(--native-sy)*30px);min-width:18px;min-height:18px;margin:0 0 0 auto;padding:0;flex:none;border:0;background:transparent center/100% 100% no-repeat;color:inherit;cursor:pointer}
  #native-koth-status-toggle.has-art{font-size:0;background-image:var(--koth-status-idle)}
@@ -87,11 +89,13 @@ export async function loadNativeHud(assets,enabled,options={}){
  const controls=top.querySelector('.ee2-economy-controls');
  if(controls)while(controls.firstChild)content.append(controls.firstChild);
  const hillStatus=content.querySelector('#koth-victory-status')||get('koth-victory-status');
- let hillPanel=null,updateKothStatus;
+ const crownRows=get('crown-victory-rows');
+ let hillPanel=null,updateVictoryStatus;
  if(hillStatus&&manifest.widgets.game_bottom_bkg_1_cont){
   hillPanel=doc.createElement('section');hillPanel.id='native-koth-status';hillPanel.hidden=true;
   hillPanel.style.backgroundImage=`url("${new URL('../fullmap-native/packed7/spr_dropdown_menu_bkg.png',base).href}")`;
-  const caption=doc.createElement('span');caption.textContent="Herr des Hügels'-Status";
+  const caption=doc.createElement('span');
+  const hillCaption="Herr des Hügels'-Status";
   const heading=doc.createElement('header');
   const toggle=doc.createElement('button');toggle.id='native-koth-status-toggle';toggle.type='button';
   toggle.setAttribute('aria-controls',hillStatus.id);
@@ -101,17 +105,30 @@ export async function loadNativeHud(assets,enabled,options={}){
   for(const state of ['idle','rollover','pressed']){
    toggle.style.setProperty(`--koth-status-${state}`,`url("${buttonArt(state)}")`);
   }
-  let minimized=false;
+  let minimized=false,crownCaption=null;
   const syncToggle=()=>{
    hillPanel.classList.toggle('is-minimized',minimized);
    toggle.textContent=minimized?'▴':'▾';
-   toggle.title=minimized?'Hügelstatus ausklappen':'Hügelstatus einklappen';
+   const label=crownCaption?'Kronenstatus':'Hügelstatus';
+   toggle.title=label+(minimized?' ausklappen':' einklappen');
+   toggle.setAttribute('aria-controls',crownCaption?crownRows.id:hillStatus.id);
    toggle.setAttribute('aria-label',toggle.title);
    toggle.setAttribute('aria-expanded',String(!minimized));
   };
-  updateKothStatus=active=>{if(active&&!idleArt.src)idleArt.src=buttonArt('idle');hillPanel.hidden=!active;};
+  updateVictoryStatus=(hill,crowns=null)=>{
+   if(crownCaption!==crowns){
+    crownCaption=crowns;
+    syncToggle();
+   }
+   const title=crowns??hillCaption;
+   if(caption.textContent!==title)caption.textContent=title;
+   if((hill||crowns)&&!idleArt.src)idleArt.src=buttonArt('idle');
+   hillPanel.hidden=!hill&&!crowns;
+  };
   toggle.onclick=()=>{minimized=!minimized;syncToggle();};
-  heading.append(caption,toggle);hillPanel.append(heading,hillStatus);bottom.append(hillPanel);syncToggle();
+  heading.append(caption,toggle);hillPanel.append(heading,hillStatus);
+  if(crownRows){crownRows.hidden=true;hillPanel.append(crownRows);}
+  bottom.append(hillPanel);syncToggle();
  }
  const resourceList=doc.createElement('div');resourceList.id='native-hud-resources';bottom.append(resourceList);
  const rows=[];
@@ -176,7 +193,7 @@ export async function loadNativeHud(assets,enabled,options={}){
   place(resourceList,layout.get('game_resources'));place(name,layout.get('game_playerinfo_name'));place(mode,layout.get('game_playerinfo_civ'));place(epoch,layout.get('game_playerinfo_epoch'));
   place(clock,layout.get('game_top_clock'));place(calendar,layout.get('game_calendar'));
  }
- const api={enabled:true,resize,updateKothStatus,fontBindings(){
+ const api={enabled:true,resize,updateVictoryStatus,fontBindings(){
   const labels=[{element:name,widget:'game_playerinfo_name'},{element:mode,widget:'game_playerinfo_civ'},{element:epoch,widget:'game_playerinfo_epoch'},{element:clock,widget:'game_top_clock'},
    {element:calendar,widget:'game_top_clock',role:'calendar-label-adapter'}];
   const resources=['pop','science',...Array.from({length:9},(_,slot)=>'r'+slot)].map(id=>{const element=get(id),row=element?.closest('.native-resource-row');return row?.parentElement===resourceList?{element,row}:null;}).filter(Boolean);

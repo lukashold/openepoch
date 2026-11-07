@@ -97,7 +97,7 @@ function advanceText(clock,delta,period,mode,keys,emit){
   return next;
 }
 
-function playbackRate(word,event){
+export function playbackRate(word,event){
   const variance=Math.fround(event.pitchVariation);
   const exact=22050*(1-variance)+word*(2*variance)*Math.fround(22050/32767);
   const base=Math.floor(exact), fraction=exact-base;

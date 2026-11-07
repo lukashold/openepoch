@@ -511,7 +511,10 @@ impl Game {
         if self.crowns.is_none() { return; }
         let (now, step) = (self.sim_elapsed(), self.sim_step());
         self.tick_crown_immigration(now, step);
-        if !Scoreboard::<PLAYERS>::due(self.tick, step) { return; }
+        if !Scoreboard::<PLAYERS>::due(self.tick, step) {
+            self.credit_crown_victory(step);
+            return;
+        }
         let crowns = self.crowns.as_ref().unwrap();
         let mut players = std::array::from_fn(|owner| {
             let player = self.players[owner];
@@ -574,6 +577,7 @@ impl Game {
                 self.award_crown_leader(kind, owner);
             }
         }
+        self.credit_crown_victory(step);
     }
 }
 

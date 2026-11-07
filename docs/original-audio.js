@@ -2,6 +2,7 @@ import {createTypedAudioBindings} from './original-audio-bindings.js?v=native8';
 import {createRegionalMusicPlayback} from './original-regional-music.js?v=regional12';
 import {originalOneShotAudible} from './original-spatial-audio.js?v=native39audio';
 import {createOriginalAmbientPlayback} from './original-ambient.js?v=ambient39';
+import {playbackRate} from './air-flight-audio.js?v=native65-herc';
 // Playback of original assets extracted from the user's local EE2 installation.
 // Metadata and byte-for-byte source hashes live beside those assets. This module
 // contains no recordings and remains usable when local-original is absent.
@@ -21,6 +22,7 @@ export function createOriginalAudio(options={}) {
   const takeoffBuffers=new Map(),takeoffLoads=new Map();
   let takeoffEvents=new Map();
   let priestCues=false;
+  let guidedImpact=null,guidedPitchSeed=12345;
   const wheelLoops=new Map();
   let wheelSession=null;
   let musicSource=null,musicBuffer=null,musicFile=null,musicOffset=0,musicStarted=0,musicIndex=0,musicGeneration=0,musicPendingFile=null;
@@ -91,10 +93,11 @@ export function createOriginalAudio(options={}) {
     source.originalCleanup?.();
     live.delete(source);
   }
-  function start(buffer,volume=1,pan=0,group='effect',loop=false,offset=0) {
+  function start(buffer,volume=1,pan=0,group='effect',loop=false,offset=0,rate=1) {
     if(!buffer||muted||!ctx||ctx.state!=='running')return null;
     if(group==='effect'&&live.size>32)return null;
     const source=ctx.createBufferSource();source.buffer=buffer;source.loop=loop;
+    if(rate!==1)source.playbackRate.value=rate;
     const gain=ctx.createGain();gain.gain.value=Math.max(0,Math.min(1,volume));
     const panner=ctx.createStereoPanner?.();
     const output=panner??gain;
@@ -142,6 +145,26 @@ export function createOriginalAudio(options={}) {
   function bindPriestCues(active){
     priestCues=active;
     preloadPriestCues();
+  }
+  function bindGuidedImpact(event){
+    guidedImpact=event;
+    if(enabled)loadVerifiedEffect(event);
+  }
+  function resetGuidedImpact(){
+    for(const source of [...live])if(source.originalGroup==='guided-impact')stop(source);
+  }
+  function playGuidedImpact(volume,pan){
+    if(!enabled||!guidedImpact||muted||ctx?.state!=='running')return false;
+    const buffer=takeoffBuffers.get(guidedImpact.sha256);
+    if(!buffer)return false;
+    const same=[...live].filter(source=>source.originalGroup==='guided-impact');
+    if(same.length>=guidedImpact.maxInstances)stop(same[0]);
+    if(!originalOneShotAudible(volume))return true;
+    guidedPitchSeed=(Math.imul(guidedPitchSeed,1664525)+1013904223)>>>0;
+    const rate=playbackRate((guidedPitchSeed>>>16)&0x7fff,guidedImpact);
+    if(!start(buffer,volume*guidedImpact.gain,pan,'guided-impact',false,0,rate))return false;
+    stats.effectPlays++;
+    return true;
   }
   function playPriestCue(kind,volume,pan){
     const cue=priestCues&&PRIEST_CUES[kind];
@@ -278,6 +301,7 @@ export function createOriginalAudio(options={}) {
     if(!enabled||typeof context?.decodeAudioData!=='function')return false;
     ctx=context;soundBus=destination;musicBus=musicDestination;
     preloadPriestCues();
+    loadVerifiedEffect(guidedImpact);
     for(const event of takeoffEvents.values())loadVerifiedEffect(event);
     if(loading)return loading;
     const readManifest=async file=>{
@@ -392,7 +416,7 @@ export function createOriginalAudio(options={}) {
   }
   return {
     prepare,acknowledge,citizenDeath,effect,stoneThrowerLaunch,music,menuMusic,setDefinitionBindings,updateStoneThrowerWheels,stopStoneThrowerWheels,
-    bindPriestCues,playPriestCue,
+    bindPriestCues,playPriestCue,bindGuidedImpact,playGuidedImpact,resetGuidedImpact,
     bindTakeoffEvents,playTakeoff,stopTakeoff,playInterfaceCue,frameAmbient,resetWorldAmbience,
     setAmbientPresentation(presentation){resetWorldAmbience();nativeAmbient=null;ambientPresentation=presentation;},
     role:(id,epoch)=>typed.role(id,epoch),

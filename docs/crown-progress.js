@@ -185,3 +185,45 @@ export function mountCrownProgress({button, panel, ledger, timers, chooser, wasm
   button.addEventListener('click', toggle);
   return {toggle, update, close};
 }
+
+export function mountCrownVictoryRows(rows, art) {
+  const categories = ['mil', 'eco', 'imp'];
+  const frames = categories.map(kind => Array.from({length: 16}, (_, frame) =>
+    background(art, `spr_crown_${kind}_anim_${frame}`)));
+  let signature = '', icons = [], previousFrame = -1;
+  return {
+    update(model) {
+      rows.hidden = !model;
+      const values = model?.rows ?? [];
+      const next = JSON.stringify(values);
+      if (next === signature) return;
+      signature = next;
+      icons = [];
+      previousFrame = -1;
+      rows.replaceChildren(...values.map(player => {
+        const row = item('div', 'crown-victory-row');
+        row.dataset.seat = String(player.seat);
+        row.toggleAttribute('data-local', player.local);
+        row.append(item('span', 'crown-victory-name', player.name),
+          item('span', 'crown-victory-progress', player.status));
+        for (let kind = 0; kind < categories.length; kind++) {
+          if (!(player.crownMask & (1 << kind))) continue;
+          const icon = item('span', 'crown-victory-icon', '♛');
+          icon.setAttribute('role', 'img');
+          icon.setAttribute('aria-label', kinds[kind]);
+          if (frames[kind][0]) icon.classList.add('has-art');
+          icons.push({icon, kind});
+          row.append(icon);
+        }
+        return row;
+      }));
+    },
+    animate(now) {
+      if (rows.hidden || !icons.length || rows.parentElement.classList.contains('is-minimized')) return;
+      const frame = Math.floor(now % 1500 * 16 / 1500);
+      if (frame === previousFrame) return;
+      previousFrame = frame;
+      for (const {icon, kind} of icons) icon.style.backgroundImage = frames[kind][frame];
+    },
+  };
+}

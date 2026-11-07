@@ -42,6 +42,8 @@ mod heavy_mounted3_61;
 #[cfg(feature = "ee2-native13")]
 mod koth64;
 #[cfg(feature = "ee2-native13")]
+mod crown_victory65;
+#[cfg(feature = "ee2-native13")]
 mod rocket_herc;
 #[cfg(feature = "ee2-native13")]
 mod wonder_open_sides61;
@@ -631,10 +633,29 @@ pub extern "C" fn events_ptr() -> *const f32 {
 pub extern "C" fn events_len() -> u32 {
     g().events.len() as u32
 }
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn guided_herc_impact_prepare() -> u32 { g().prepare_guided_herc_impacts() }
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn guided_herc_impact_ptr() -> *const f32 { g().guided_herc_impacts.as_ptr().cast() }
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn guided_herc_impact_visible(x: f32, y: f32) -> u32 {
+    if !x.is_finite() || !y.is_finite() { return 0; }
+    let game = g();
+    (game.real_fog(game.local, crate::map::tile_of(x, y)) == 255) as u32
+}
+
 #[no_mangle]
 pub extern "C" fn events_clear() {
     let game = g();
     game.events.clear();
+    #[cfg(feature = "ee2-native13")]
+    game.guided_herc_impacts.clear();
     #[cfg(feature = "ee2-native13")]
     game.air_audio.clear_shots();
 }
@@ -2783,6 +2804,22 @@ pub extern "C" fn koth_definition() -> u32 { u32::from(crate::koth64::HILL) }
 #[no_mangle]
 pub extern "C" fn koth_status(field: u32) -> i32 {
     unsafe { (&*addr_of_mut!(GAME)).as_ref().map_or(if field == 0 { 0 } else { -1 }, |game| game.koth_status(field)) }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_match_crown_victory(
+    packed_civs: u32, pop: u32, supplies: u32, start: u32, end: u32, mode: u32, target: u32,
+) -> u32 {
+    unsafe { (&mut *addr_of_mut!(GAME)).as_mut().map_or(0, |game|
+        game.configure_match_crown_victory(packed_civs, pop, supplies, start, end, mode, target) as u32) }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn crown_victory_status(field: u32, seat: u32) -> i32 {
+    unsafe { (&*addr_of_mut!(GAME)).as_ref().map_or(if field == 0 { 0 } else { -1 }, |game|
+        game.crown_victory_status(field, seat as usize)) }
 }
 
 #[cfg(feature = "ee2-native13")]

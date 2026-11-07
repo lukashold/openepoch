@@ -67,7 +67,11 @@ export function applyMatchSettings(wasm,settings,nplayers){
  if(typeof wasm.configure_match_settings!=='function')throw Error('Die Spieldatei unterstützt diese Scharmützeleinstellungen noch nicht.');
  const packed=values.reduce((n,v,i)=>n|(v<<(i*4)),0);
  let result;
- if (settings.kothMinutes !== undefined) {
+ if (settings.crownVictory !== undefined) {
+  if(typeof wasm.configure_match_crown_victory!=='function')throw Error('Die Spieldatei unterstützt keine Kronen-Siegbedingungen.');
+  const {mode,target}=settings.crownVictory;
+  result=wasm.configure_match_crown_victory(packed,settings.popLimit,settings.supplies,settings.epoch,end,mode,target);
+ } else if (settings.kothMinutes !== undefined) {
   if(typeof wasm.configure_match_koth!=='function')throw Error('Die Spieldatei unterstützt Herr des Hügels noch nicht.');
   result=wasm.configure_match_koth(packed,settings.popLimit,settings.supplies,settings.epoch,end,settings.kothMinutes);
  } else if (settings.territoryPercent !== undefined) {

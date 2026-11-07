@@ -1,13 +1,18 @@
 // The EE2 profile uses locally extracted original recordings when available.
 // Procedural sounds and local speech remain the fallback for the standalone game.
-import { createOriginalAudio } from './original-audio.js?v=native64-koth';
+import { createOriginalAudio } from './original-audio.js?v=native65-herc';
 import {ORIGINAL_AUDIO_DEFAULTS,originalAudioLevel,originalAudioGain} from './original-audio-levels.js?v=native38audio';
 import {originalOneShotAudible,originalLoopAudible,originalSpatialMix} from './original-spatial-audio.js?v=native39audio';
 import {createPresentationRandom} from './source-music-controller.js?v=regional11';
-import {createAirFlightPlayback} from './air-flight-audio.js?v=native40clock';
+import {createAirFlightPlayback} from './air-flight-audio.js?v=native65-herc';
 import {takeoffSpatialMix} from './air-takeoff.js?v=native40clock';
 const presentationRandom = createPresentationRandom(1);
 const originals=createOriginalAudio({presentationRandom});
+const GUIDED_HERC_IMPACT=Object.freeze({
+  url:new URL('./local-original/audio/fx_exp_01.mp3',import.meta.url),
+  sha256:'5a7a74a82cfefee46ff2b3a85ef6734f1e934ffa9c343789b50d09cd7597d4ff',
+  gain:1,maxInstances:4,pitchVariation:.2,sampleRate:44100,
+});
 export const presentationWord = () => presentationRandom.word15();
 
 let ctx = null, master = null, musicBus = null, soundBus = null, noise = null;
@@ -52,6 +57,14 @@ export function airFlightAttackHandled(definition,epoch,duration) {
   return airFlightPlayback?.handlesAttack(definition,epoch,duration)??false;
 }
 export function resetAirFlightAudio() { airFlightPlayback?.reset(); }
+export function configureGuidedImpact(enabled){ originals.bindGuidedImpact(enabled?GUIDED_HERC_IMPACT:null); }
+export function resetGuidedImpact(){ originals.resetGuidedImpact(); }
+export function playGuidedImpact(x,y,z,view){
+  if(muted)return;
+  const {volume,pan}=originalSpatialMix(view,x,y,z);
+  if(!ctx&&originalOneShotAudible(volume))ensure();
+  if(!originals.playGuidedImpact(volume,pan))play(10,volume,pan);
+}
 export function setMuted(m) {
   muted = m;
   originals.setMuted(m);

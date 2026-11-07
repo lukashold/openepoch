@@ -4,14 +4,14 @@ import { buildAtlas, tintAtlas, CELL } from './atlas.js?v=fortress1';
 import { buildModels } from './models.js?v=fortress1';
 import { parseCheat } from './cheats.js?v=native45';
 import { researchPanel } from './research.js?v=rank-families';
-import {loadCrownArt,mountCrownProgress} from './crown-progress.js?v=native58';
+import {loadCrownArt,mountCrownProgress,mountCrownVictoryRows} from './crown-progress.js?v=native65';
 import {loadCrownStatusArt,readCrownActorVisuals,crownStatusSlots} from './crown-visuals.js?v=native58';
 import { originalResearchActions, researchCost, researchState } from './original-research-actions.js?v=rank-families';
 import { diplomacyPanel } from './diplomacy.js?v=native17';
 import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native6';
 import {loadNativeFontUI} from './original-font-ui.js?v=native21names';
 import {territoryClaimMessage} from './territory-help.js?v=native64-koth';
-import * as sfx from './audio.js?v=native64-koth';
+import * as sfx from './audio.js?v=native65-herc';
 import {generatedAmbientCoverage,loadOriginalAmbient,originalAmbientPriorities} from './original-ambient.js?v=ambient39';
 import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=citizen9';
 import {mountOriginalShellVideo} from './original-shell-video.js?v=native12';
@@ -19,7 +19,7 @@ import {mountSkirmishMenu} from './skirmish-menu.js?v=native13';
 import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regional10';
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
-import {loadNativeHud} from './original-hud.js?v=native64-koth-status';
+import {loadNativeHud} from './original-hud.js?v=native65';
 import {loadOriginalModels} from './original-renderer.js?v=native64';
 import {loadKingOfTheHillPresentation} from './original-koth.js?v=native64-koth';
 import {loadWonderPresentation} from './original-wonders.js?v=native63';
@@ -53,7 +53,7 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=clock38';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native64';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native65';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
@@ -61,7 +61,8 @@ import {createSourceRoundCarrier, selectedRoundTripMilliseconds} from './source-
 import {mountSourceRosterLobby} from './source-network-lobby.js?v=native58';
 import {applyNetworkCheckpoint} from './source-network-resume.js?v=native58';
 import {createFullscreenController} from './fullscreen.js?v=building2';
-import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native64-koth';
+import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native65';
+import {bindCrownVictoryMenu,readCrownVictoryHud,CROWN_VICTORY_COUNT} from './crown-victory-ui.js?v=native65';
 import {bindKothMenu,formatKothStatus} from './koth-menu.js?v=native64-koth';
 import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=native61';
 import {updateOriginalCamera,originalCameraRay,originalFractionForZoom,normalizeOriginalHeading,rotateOriginalCameraHeading} from './original-camera.js?v=heading2';
@@ -76,6 +77,7 @@ import {loadSpyCommandArt,loadSpyAdvancedCommandArt} from './original-spy-comman
 import {createSpyShimmerFrames} from './original-spy-shimmer.js?v=native-spy';
 import {createSpyExtractionTimer} from './spy-extraction-renderer.js?v=native-spy';
 import {loadPriestEffects} from './original-priest-fx.js?v=native45';
+import {loadGuidedImpactEffects} from './guided-herc-impact.js?v=native65';
 import {loadOriginalPriestParticles} from './original-priest-particles.js?v=native47';
 import {loadBlessGroundGlow} from './priest-ground-glow.js?v=native58';
 import {loadAirCrownGlow} from './crown-air-glow.js?v=native58';
@@ -152,7 +154,7 @@ const valleyRequested=rulesProfile.id==='up15'&&(!!valleyManifest||['1','archive
 try{
   if(valleyRequested){
     const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley75_commit','valley71_force_attack_at','valley71_neutral_opening']:rulesProfile.requiredExports;
-    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native64-valley'};
+    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native65-valley'};
     try{wasm=await loadRulesWasm(previewRules,import.meta.url);}catch{/* The ordinary ruleset remains available. */}
   }
   wasm??=await loadRulesWasm(rulesProfile,import.meta.url);
@@ -558,10 +560,13 @@ const victoryCondition=$('sk-victory-condition');
 const kothDefinition=rulesProfile.id==='up15'?wasm.koth_definition?.():undefined;
 const kothMenu=bindKothMenu({victoryCondition,durationRow:$('sk-koth-victory'),duration:$('sk-koth-duration'),
   enabled:kothDefinition!==undefined&&typeof wasm.configure_match_koth==='function'&&typeof wasm.init_hill_world==='function'});
+const crownVictoryMenu=bindCrownVictoryMenu({victoryCondition,countRow:$('sk-crown-count-victory'),
+  count:$('sk-crown-count'),durationRow:$('sk-crown-time-victory'),duration:$('sk-crown-time'),
+  enabled:rulesProfile.id==='up15'&&typeof wasm.configure_match_crown_victory==='function'&&typeof wasm.crown_victory_status==='function'});
 function updateVictoryOptions(){
-  const koth=kothMenu.update();
+  const koth=kothMenu.update(), crowns=crownVictoryMenu.update({locked:victoryCondition.disabled});
   $('sk-territory-victory').hidden=victoryOptions.hidden||victoryCondition.value!=='territory';
-  $('sk-sole-victory').hidden=victoryOptions.hidden||victoryCondition.value==='territory'||koth;
+  $('sk-sole-victory').hidden=victoryOptions.hidden||victoryCondition.value==='territory'||koth||crowns;
 }
 victoryCondition.addEventListener('change',updateVictoryOptions);
 updateVictoryOptions();
@@ -601,6 +606,11 @@ const takeoffAudio=airTakeoff?createTakeoffAudioClock({presentation:airTakeoff,s
   startSeconds:takeoffStartSeconds,play:sfx.playTakeoff,stop:sfx.stopTakeoff}):null;
 sfx.bindTakeoffEvents(airTakeoff?.events);
 sfx.configureAirFlightAudio(airFlightAudio);
+const hasGuidedImpacts=typeof wasm.guided_herc_impact_prepare==='function'&&typeof wasm.guided_herc_impact_ptr==='function';
+sfx.configureGuidedImpact(originalEnabled&&hasGuidedImpacts);
+const guidedImpactFX=await loadGuidedImpactEffects(gl,originalEnabled&&hasGuidedImpacts&&
+  typeof wasm.guided_herc_impact_visible==='function');
+const guidedImpactVisible=(x,y)=>wasm.guided_herc_impact_visible(x,y)===1;
 const tradeWaitStatus=createTradeWaitStatus($('trade-wait-status'),tradeWaitArt);
 const regionalIconOptions={enabled:originalEnabled&&rulesProfile.ruleset===2,profile:'packed7',neutralFallback:'west'};
 const [cityCenterIcons,houseIcons,dockIcons,barracksIcons,millIcons,templeIcons,lightArtilleryIcons,warehouseIcons,stableIcons,kingIcons]=await Promise.all([
@@ -737,7 +747,7 @@ if(valleyNormal&&valleyPreview?.authoredAvailable){
   $('valley-archive-qa-note').textContent += ' Wähle im Test mit Umschalt+A den Angriff. Klicke mit Alt+Linksklick auf den sichtbaren gegnerischen Bürger.';
 }
 const valleyFixedControls=new Map();
-let valleyPreviousKothDuration=null;
+let valleyPreviousKothDuration=null,valleyPreviousCrown;
 const valleyPresetValues={nai:'1','pop-limit':'250',supplies:'0','start-epoch':'0','end-epoch':String(wasm.epoch_count()-1),
   'map-climate':'0','season-start':'6','season-length':'5','initial-ceasefire':'0','sk-victory-condition':'conquest',
   'civilization-0':'4','civilization-1':'8'};
@@ -748,6 +758,7 @@ valleyMapChoice.onchange=()=>{
   $('valley-archive-qa-note').hidden=valleyMapChoice.value!=='valley-archive-qa';
   if(selected&&!valleyFixedControls.size){
     valleyPreviousKothDuration=kothMenu.readMinutes();
+    valleyPreviousCrown=crownVictoryMenu.read();
     const ids=['seed','nai','pop-limit','supplies','start-epoch','end-epoch','map-climate','season-cycle','season-start',
       'season-length','sk-victory-condition','sk-sole-survivor','sk-territory-percent',
       'disable-crowns','initial-ceasefire','source-solo-clock','source-adaptive-clock','mpopen'];
@@ -773,6 +784,11 @@ valleyMapChoice.onchange=()=>{
   if(!selected&&valleyPreviousKothDuration!==null){
     $('sk-koth-duration').value=String(valleyPreviousKothDuration);
     valleyPreviousKothDuration=null;
+  }
+  if(!selected&&valleyPreviousCrown){
+    const field=valleyPreviousCrown.mode===CROWN_VICTORY_COUNT?'sk-crown-count':'sk-crown-time';
+    $(field).value=String(valleyPreviousCrown.target);
+    valleyPreviousCrown=undefined;
   }
   if(valleyNormal&&window.openepoch)void refreshContinue();
 };
@@ -1006,6 +1022,7 @@ const priestEnabled=rulesProfile.ruleset===2&&typeof wasm.configure_priest_skirm
 const crownSupported=rulesProfile.ruleset===2&&typeof wasm.configure_crowns==='function';
 const supportsPeerCrowns=crownSupported&&typeof wasm.configure_crowns_peer==='function';
 const crownArt=await loadCrownArt(crownSupported&&originalEnabled);
+const crownVictoryRows=mountCrownVictoryRows($('crown-victory-rows'),crownArt);
 const crownStatusArt=await loadCrownStatusArt({enabled:crownSupported&&originalEnabled});
 const crownProgress=crownSupported?mountCrownProgress({button:$('crown-progress-toggle'),panel:$('crown-progress'),
   ledger:$('crown-ledger'),timers:$('crown-timers'),chooser:$('crown-choice'),wasm,art:crownArt}):null;
@@ -1257,6 +1274,8 @@ function begin(tempo = null, useSourceClock = wasm.sim_clock_active?.() === 1, a
   originalModels.clearResourcePicks();
   takeoffAudio?.reset();
   sfx.resetAirFlightAudio();
+  sfx.resetGuidedImpact();
+  guidedImpactFX?.reset(wasm.sim_elapsed_seconds());
   sfx.resetWorldAmbience();
   ambientCoverage=ambientPresentation&&!bench&&wasm.terrain_types_len?.()===MAP*MAP
     ? generatedAmbientCoverage(u8(wasm.terrain_types_ptr(),MAP*MAP),MAP,MAP,wasm.resource_kind) : null;
@@ -1323,6 +1342,8 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
   const victoryMode=victoryCondition.value;
   const kothMinutes=originalSkirmish&&victoryMode==='koth'?kothMenu.readMinutes():undefined;
   if(kothMinutes===null){toast('Wähle 2, 5 oder 10 Minuten für Herr des Hügels.');return;}
+  const crownVictory=originalSkirmish?crownVictoryMenu.read():undefined;
+  if(crownVictory===null){toast('Wähle ein gültiges Ziel für den Kronensieg.');return;}
   restartPoint=null;
   bench = benchUnits;
   seasonSession.configure(menuSeasonSettings(),benchUnits?0:menuClimate());
@@ -1343,7 +1364,7 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
     const regicide=originalSkirmish&&victoryMode==='regicide';
     const soleSurvivor=originalSkirmish&&(victoryMode==='conquest'||regicide)&&$('sk-sole-survivor').checked;
     applyMatchSettings(wasm,{...resolvedSkirmishChoices(civilizationSetup.choices(),players),
-      popLimit:+$('pop-limit').value,supplies:+$('supplies').value,territoryPercent,regicide,soleSurvivor,kothMinutes},players);
+      popLimit:+$('pop-limit').value,supplies:+$('supplies').value,territoryPercent,regicide,soleSurvivor,kothMinutes,crownVictory},players);
   }else if(!benchUnits&&humans===1){
     wasm.skirmish_setup(+$('pop-limit').value, +$('supplies').value);
     if(referenceMode)wasm.skirmish_epoch(+$('start-epoch').value);
@@ -1590,6 +1611,7 @@ function advance(dt, now) {
   }
   // sound cues the simulation queued up
   const n = wasm.events_len();
+  const impacts=hasGuidedImpacts?wasm.guided_herc_impact_prepare():0;
   if (n) {
     const ev = f32(wasm.events_ptr(), n);
     for (let i = 0; i < n; i += 3) {
@@ -1628,8 +1650,16 @@ function advance(dt, now) {
         }
       }
     }
-    wasm.events_clear();
   }
+  if(impacts){
+    const rows=f32(wasm.guided_herc_impact_ptr(),impacts*4);
+    for(let i=0;i<rows.length;i+=4){
+      const x=rows[i],y=rows[i+1],z=rows[i+2];
+      sfx.playGuidedImpact(x,y,z,view);
+      guidedImpactFX?.spawn(x,y,z);
+    }
+  }
+  if(n||impacts)wasm.events_clear();
   return visualSeconds;
 }
 // A hidden tab gets no animation frames, but a multiplayer peer must keep simulating.
@@ -1819,6 +1849,8 @@ function drawFullmapPipScene(pipView, alpha, renderEpochs, now, mission) {
   }
   drawCaptureGlow(vp,actorMetadata);
   drawBlessGround(vp,actorMetadata);
+  const impactDraws=guidedImpactFX?.draw(pipView,guidedImpactVisible);
+  if(qaMode)canvas.dataset.guidedImpactPip=impactDraws?.join(':')??'unavailable';
   const crownAir=drawAirCrownStatus(vp,actorMetadata);
   if(qaMode)canvas.dataset.crownAirPip=String(crownAir);
   const extraction=drawSpyExtraction(pipView,wasm.sim_render_seconds?.(alpha));
@@ -1879,6 +1911,7 @@ function frame(now) {
   updateCamera();
 
   const visualSeconds = advance(dt, now);
+  guidedImpactFX?.advance(wasm.sim_elapsed_seconds(),airMissionFlag?.normalWind());
   updateInitialCeasefire();
   if(ambientCoverage){
     const audible=!paused&&!gameSettings.active()&&!document.hidden;
@@ -2037,6 +2070,8 @@ function frame(now) {
   }
   drawCaptureGlow(view.vp,actorMetadata);
   drawBlessGround(view.vp,actorMetadata,{visualSeconds});
+  const impactDraws=guidedImpactFX?.draw(view,guidedImpactVisible);
+  if(qaMode)canvas.dataset.guidedImpactMain=impactDraws?.join(':')??'unavailable';
   const crownAir=drawAirCrownStatus(view.vp,actorMetadata);
   if(qaMode)canvas.dataset.crownAir=String(crownAir);
   const extraction=drawSpyExtraction(view,wasm.sim_render_seconds?.(alpha));
@@ -2065,6 +2100,7 @@ function frame(now) {
   }
 
   if (now - lastUi > 100) { lastUi = now; updateUi(n, now); }
+  crownVictoryRows.animate(now);
   if (now - lastMini > 250) { lastMini = now; drawMini(); }
   fullmap?.paint(now,ui,corners);
   if(fullmapPip.isOpen())fullmapPip.draw(dt,pipView=>drawFullmapPipScene(pipView,alpha,renderEpochs,now,mission));
@@ -2136,7 +2172,11 @@ function updateUi(drawn, now) {
   kothStatus.hidden=!(hillHolder>=0&&hillHolder<4)||!!ui.win;
   kothStatus.textContent=kothStatus.hidden?'':formatKothStatus(hillPlayerName(hillHolder),wasm.koth_status(3),
     kothPresentation?.label('tx_ig_koth_status')??undefined);
-  nativeHud.updateKothStatus?.(wasm.koth_status?.(0)===1&&!ui.win&&!fullmap?.isOpen());
+  const showVictoryStatus=!ui.win&&!fullmap?.isOpen();
+  const crowns=showVictoryStatus?readCrownVictoryHud(wasm,ui.diplomacy?.players,ui.local):null;
+  crownVictoryRows.update(crowns);
+  $('crown-victory-hud').hidden=!crowns||typeof nativeHud.updateVictoryStatus==='function';
+  nativeHud.updateVictoryStatus?.(wasm.koth_status?.(0)===1&&showVictoryStatus,crowns?.caption??null);
   $('idle').textContent = `Freie Bürger: ${ui.idle}`;
   $('idle').style.visibility = ui.idle && !bench ? 'visible' : 'hidden';
   let status = `${Math.round(1000 / frameMs)} fps · worst ${worstMs.toFixed(0)} ms · sim ${simMs.toFixed(2)} ms/tick · ${ui.n} entities · ${drawn} drawn`;
@@ -2865,9 +2905,12 @@ function toMenu() {
   gameOptions?.close();
   takeoffAudio?.reset();
   sfx.resetAirFlightAudio();
+  sfx.resetGuidedImpact();
   airMissionFlag?.reset();
   tradeWaitStatus.update(false);
-  nativeHud.updateKothStatus?.(false);
+  nativeHud.updateVictoryStatus?.(false);
+  crownVictoryRows.update(null);
+  $('crown-victory-hud').hidden=true;
   playerFlare.reset(0);
   battleFlare?.reset(false);
   $('player-flare-button').hidden=true;
