@@ -266,6 +266,10 @@ fn source_mobile_capsule_radius(definition: u16, epoch: u8) -> Option<f32> {
     (row.raw_size == Some([radius, radius])).then_some(radius)
 }
 
+pub(crate) fn source_mobile_capsule_offset(definition: u16, epoch: u8) -> Option<f32> {
+    source_mobile_capsule_radius(definition, epoch).map(|_| CAPSULE_HALF_HEIGHT as f32)
+}
+
 fn upright_medial_segment(center_z: f32, radius: f32) -> (f64, f64) {
     let inset = CAPSULE_HALF_HEIGHT - f64::from(radius);
     let lower = f64::from(store_toward_zero(f64::from(center_z) - inset));

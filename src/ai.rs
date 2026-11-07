@@ -275,6 +275,10 @@ impl Game {
         // ---- construction (one project at a time)
         if unfinished.is_empty() && !workers.is_empty() {
             let crew: Vec<usize> = workers.iter().copied().filter(|&w| !matches!(self.ents[w].order,O_BUILD|O_BOARD)).take(3).collect();
+            #[cfg(feature = "ee2-native13")]
+            let supporting_hotspot = self.ai_support_hotspot(team, &crew);
+            #[cfg(not(feature = "ee2-native13"))]
+            let supporting_hotspot = false;
             let c = |d: DefId| count[d as usize];
             let farm_slots = farms.iter().filter(|f| f.1 < if cfg!(feature="ee2-reference"){1}else{4}).count();
             let pending_fort=if cfg!(feature="ee2-reference") {finished.iter().copied().find(|&b| {
@@ -327,7 +331,7 @@ impl Game {
             } else {
                 None
             };
-            if let Some(def) = choice {
+            if let Some(def) = choice.filter(|_| !supporting_hotspot) {
                 // a new town center goes into the nearest unclaimed territory
                 let mut at = (bxi, byi);
                 if def==FORTRESS {if let Some(b)=pending_fort {at=(self.ents[b].x as i32,self.ents[b].y as i32);}}

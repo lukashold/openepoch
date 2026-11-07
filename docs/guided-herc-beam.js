@@ -107,17 +107,26 @@ function binding(gl,model,texture,minotaurus,children){
   }
  }
  function reset(seconds){active.clear();pending.clear();last=seconds;delta=0;lastChildDraws=null;}
- function advance(seconds){
+ function advance(seconds,wasm,alpha){
   if(last===null||seconds<last)reset(seconds);
   delta=f(seconds-last);last=seconds;
-  if(!(delta>0))return;
-  for(const [source,beam] of active){
-   beam.previousAge=beam.age;beam.age=f(beam.age+delta);beam.step=delta;beam.stepped=false;
-   if(beam.age>=(children?splashEnd:middleEnd))active.delete(source);
+  if(delta>0){
+   for(const [source,beam] of active){
+    beam.previousAge=beam.age;beam.age=f(beam.age+delta);beam.step=delta;beam.stepped=false;
+    if(beam.age>=(children?splashEnd:middleEnd))active.delete(source);
+   }
+   for(const [source,row] of pending)active.set(source,{...row,age:delta,previousAge:0,step:delta,reached:0,stepped:false,
+    children:children?.create(Math.imul(source,16777619)^row.target^Math.round(seconds*65536))});
+   pending.clear();
   }
-  for(const [source,row] of pending)active.set(source,{...row,age:delta,previousAge:0,step:delta,reached:0,stepped:false,
-   children:children?.create(Math.imul(source,16777619)^row.target^Math.round(seconds*65536))});
-  pending.clear();
+  if(typeof wasm?.guided_herc_beam_target_point!=='function')return;
+  // Both scene passes use the same interpolated, combat-visible target root.
+  // A lost handle or lost sight leaves the last known endpoint in place.
+  for(const beam of active.values()){
+   const ptr=wasm.guided_herc_beam_target_point(beam.target,alpha)>>>0;
+   const bytes=wasm.memory.buffer;
+   if(ptr&&ptr%4===0&&ptr+12<=bytes.byteLength)beam.point=Array.from(new Float32Array(bytes,ptr,3));
+  }
  }
  function capture(muzzles,actor,clip,phase){
   if(actor.def!==minotaurus||!active.has(actor.handle))return;
@@ -126,15 +135,17 @@ function binding(gl,model,texture,minotaurus,children){
   const socket=socketFor(actor,phase,samples,model.sourceScale);
   if(socket)muzzles.set(actor.handle,socket);
  }
- function draw(vp,muzzles,metadata,view){
+ function draw(vp,muzzles,metadata,view,wasm){
   lastChildDraws=children?{muzzle:0,splash:0,particles:0}:null;
   if(!muzzles?.size)return 0;
   const meshes=[],effects=[];
   for(const [source,muzzle] of muzzles){
    const beam=active.get(source);
    if(!beam)continue;
-   const current=metadata?.forHandle(beam.target);
-   if(current?.hpRatio>0)beam.point=[current.renderX,current.renderY,f(current.renderAltitude+beam.targetOffsetZ)];
+   if(typeof wasm?.guided_herc_beam_target_point!=='function'){
+    const current=metadata?.forHandle(beam.target);
+    if(current?.hpRatio>0)beam.point=[current.renderX,current.renderY,f(current.renderAltitude+beam.targetOffsetZ)];
+   }
    const endpoint=beam.point;
    const distance=f(Math.hypot(...endpoint.map((value,i)=>value-muzzle.point[i])));
    const frame=advanceMiddle({age:beam.stepped?beam.age:beam.previousAge,reached:beam.reached},beam.stepped?0:beam.step,distance);

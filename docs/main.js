@@ -54,7 +54,7 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=clock38';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native68';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native69';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
@@ -81,7 +81,7 @@ import {createSpyShimmerFrames} from './original-spy-shimmer.js?v=native-spy';
 import {createSpyExtractionTimer} from './spy-extraction-renderer.js?v=native-spy';
 import {loadPriestEffects} from './original-priest-fx.js?v=native45';
 import {guidedImpactInside,loadGuidedImpactEffects} from './guided-herc-impact.js?v=native66';
-import {loadGuidedHercBeam} from './guided-herc-beam.js?v=native68';
+import {loadGuidedHercBeam} from './guided-herc-beam.js?v=native69';
 import {loadOriginalPriestParticles} from './original-priest-particles.js?v=native47';
 import {loadBlessGroundGlow} from './priest-ground-glow.js?v=native58';
 import {loadAirCrownGlow} from './crown-air-glow.js?v=native58';
@@ -158,7 +158,7 @@ const valleyRequested=rulesProfile.id==='up15'&&(!!valleyManifest||['1','archive
 try{
   if(valleyRequested){
     const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley75_commit','valley71_force_attack_at','valley71_neutral_opening']:rulesProfile.requiredExports;
-    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native68-valley'};
+    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native69-valley'};
     try{wasm=await loadRulesWasm(previewRules,import.meta.url);}catch{/* The ordinary ruleset remains available. */}
   }
   wasm??=await loadRulesWasm(rulesProfile,import.meta.url);
@@ -1905,7 +1905,7 @@ function drawFullmapPipScene(pipView, alpha, renderEpochs, now, mission) {
   drawCaptureGlow(vp,actorMetadata);
   drawBlessGround(vp,actorMetadata);
   const impactDraws=guidedImpactFX?.draw(pipView,guidedImpactVisible);
-  const beamDraws=hercBeam?.draw(vp,hercBeamMuzzles,actorMetadata,pipView);
+  const beamDraws=hercBeam?.draw(vp,hercBeamMuzzles,actorMetadata,pipView,wasm);
   if(qaMode){canvas.dataset.guidedHercBeamPip=String(beamDraws??'unavailable');
     canvas.dataset.guidedHercBeamChildrenPip=JSON.stringify(hercBeam?.childDraws??null);}
   if(qaMode)canvas.dataset.guidedImpactPip=impactDraws?.join(':')??'unavailable';
@@ -1970,7 +1970,6 @@ function frame(now) {
 
   const visualSeconds = advance(dt, now);
   guidedImpactFX?.advance(wasm.sim_elapsed_seconds(),airMissionFlag?.normalWind());
-  hercBeam?.advance(wasm.sim_elapsed_seconds());
   const hercBeamMuzzles=hercBeam?new Map():null;
   updateInitialCeasefire();
   if(ambientCoverage){
@@ -1984,6 +1983,7 @@ function frame(now) {
     : adaptiveSoloClock ? adaptiveSoloClock.remainder / sourceWallInterval(adaptiveSoloClock.rate)
     : acc / (sourceSoloClock ? SOURCE_SOLO_INTERVAL : TICK);
   const alpha = paused || (net && net.ls.waiting) ? 1 : Math.min(1, interpolation);
+  hercBeam?.advance(wasm.sim_elapsed_seconds(),wasm,alpha);
   if (!net && !bench && now - lastAuto > 180000) { lastAuto = now; saveGame(true); }
 
   const dpr = Math.min(+($('quality').value), devicePixelRatio || 1);
@@ -2004,8 +2004,9 @@ function frame(now) {
     bindTexture(2,fogTexture); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, MAP, MAP, gl.RED, gl.UNSIGNED_BYTE, u8(wasm.fog_ptr(), MAP * MAP));
   }
 
+  gl.depthMask(true);
   gl.clearColor(0.012, 0.03, 0.05, 1); gl.clearStencil(0); gl.stencilMask(255); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
-  gl.enable(gl.DEPTH_TEST); gl.depthMask(true); gl.disable(gl.BLEND);
+  gl.enable(gl.DEPTH_TEST); gl.disable(gl.BLEND);
   const px = 1 / cam.zoom;
 
   const [x0, y0, x1, y1] = viewRect();
@@ -2132,7 +2133,7 @@ function frame(now) {
   drawCaptureGlow(view.vp,actorMetadata);
   drawBlessGround(view.vp,actorMetadata,{visualSeconds});
   const impactDraws=guidedImpactFX?.draw(view,guidedImpactVisible);
-  const beamDraws=hercBeam?.draw(view.vp,hercBeamMuzzles,actorMetadata,view);
+  const beamDraws=hercBeam?.draw(view.vp,hercBeamMuzzles,actorMetadata,view,wasm);
   if(qaMode){canvas.dataset.guidedHercBeamMain=String(beamDraws??'unavailable');
     canvas.dataset.guidedHercBeamChildrenMain=JSON.stringify(hercBeam?.childDraws??null);}
   if(qaMode)canvas.dataset.guidedImpactMain=impactDraws?.join(':')??'unavailable';

@@ -56,6 +56,7 @@ pub(crate) struct State {
     shots: BTreeMap<usize, u32>,
     pub(crate) beams: Vec<BeamStart>,
     pub(crate) rows: Vec<Row>,
+    beam_target_sample: [f32; 3],
 }
 
 impl State {
@@ -177,19 +178,35 @@ impl Game {
         self.herc_attack.shots.insert(previous_len / 3, value);
     }
 
-    pub(crate) fn queue_herc_beam(&mut self, index: usize, source: &Ent, target: usize) {
-        let end = &self.ents[target];
-        if source.def != MINOTAURUS || end.built < 1.0 ||
-            self.herc_attack.beams.len() >= 64 || !self.can_see(self.local, index) ||
-            !self.can_see(self.local, target) { return; }
+    fn herc_beam_target_offset(&self, target: usize) -> Option<f32> {
+        let actor = &self.ents[target];
+        if actor.hp <= 0.0 || actor.built < 1.0 || !self.can_see(self.local, target) { return None; }
         // 00871F30 stores half the cached source UnitHeight in Unit+7C.
-        let target_offset_z = match end.def {
-            crate::defs::TC => 0.5,
-            crate::defs::TOWER => 2.0,
-            _ => return,
-        };
+        match actor.def {
+            crate::defs::TC => Some(0.5),
+            crate::defs::TOWER => Some(2.0),
+            def => crate::rocket_herc::source_mobile_capsule_offset(def, self.players[actor.team as usize].epoch),
+        }
+    }
+
+    pub(crate) fn queue_herc_beam(&mut self, index: usize, source: &Ent, target: usize) {
+        if source.def != MINOTAURUS || self.herc_attack.beams.len() >= 64 || !self.can_see(self.local, index) { return; }
+        let Some(target_offset_z) = self.herc_beam_target_offset(target) else { return; };
+        let end = &self.ents[target];
         let point = [end.x, end.y, self.map.height(end.x, end.y).max(0.0) + target_offset_z];
         self.herc_attack.beams.push(BeamStart { source: self.h(index), target: self.h(target), point, target_offset_z });
+    }
+
+    pub(crate) fn sample_herc_beam_target(&mut self, handle: u32, alpha: f32) -> *const f32 {
+        if !self.guided_herc_rocket || !(0.0..=1.0).contains(&alpha) { return core::ptr::null(); }
+        let Some(index) = self.get(handle) else { return core::ptr::null(); };
+        let Some(offset) = self.herc_beam_target_offset(index) else { return core::ptr::null(); };
+        let actor = &self.ents[index];
+        // Same interpolation and grounded root as the admitted model draw.
+        let x = actor.px + (actor.x - actor.px) * alpha;
+        let y = actor.py + (actor.y - actor.py) * alpha;
+        self.herc_attack.beam_target_sample = [x, y, self.map.height(x, y).max(0.0) + offset];
+        self.herc_attack.beam_target_sample.as_ptr()
     }
 
     pub(crate) fn prepare_herc_attack(&mut self) {

@@ -686,6 +686,12 @@ pub extern "C" fn guided_herc_beam_count() -> u32 { g().herc_attack.beams.len() 
 #[no_mangle]
 pub extern "C" fn guided_herc_beam_ptr() -> *const u8 { g().herc_attack.beams.as_ptr().cast() }
 
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn guided_herc_beam_target_point(handle: u32, alpha: f32) -> *const f32 {
+    g().sample_herc_beam_target(handle, alpha)
+}
+
 #[no_mangle]
 pub extern "C" fn events_clear() {
     let game = g();

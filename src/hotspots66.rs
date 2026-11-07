@@ -11,8 +11,10 @@ use crate::map::{N, NN, T_ROCK, T_SAND, tile_of};
 
 const TAG: u32 = u32::from_le_bytes(*b"HSP1");
 const MULTI_TAG: u32 = u32::from_le_bytes(*b"HSP2");
+const SUPPORT_TAG: u32 = u32::from_le_bytes(*b"HSD1");
 const HEADER: usize = 56;
 const MULTI_HEADER: usize = 36;
+const SUPPORT_HEADER: usize = 24;
 const BODY: f32 = f32::from_bits(0x4087_c3b6);
 const BODY_RADIUS: f32 = f32::from_bits(0x403f_ffff);
 const RESERVED: f32 = f32::from_bits(0x40cb_a591);
@@ -23,6 +25,7 @@ pub(crate) struct Match {
     rule: Hotspots,
     flattened: Vec<f32>,
     score: [u32; 4],
+    support_demand: [u8; 16],
 }
 
 fn terrain_type() -> BuildingTerrainType {
@@ -65,6 +68,10 @@ impl Match {
         if points.len() > 1 {
             self.durable_words(outcome, &mut mix);
             for point in points { mix(owner_word(point.owner)); mix(point.changes); }
+            if self.support_demand.iter().any(|&value| value != 0) {
+                mix(SUPPORT_TAG);
+                for row in self.support_demand.chunks_exact(4) { mix(u32::from_le_bytes(row.try_into().unwrap())); }
+            }
             return;
         }
         let point = &points[0];
@@ -84,7 +91,14 @@ impl Match {
         else { self.durable_words(outcome, &mut push); }
         bytes.extend_from_slice(&core);
         bytes.extend_from_slice(&crate::save::checksum(&bytes).to_le_bytes());
-        bytes
+        if self.support_demand.iter().all(|&value| value == 0) { return bytes; }
+        let mut wrapped = Vec::with_capacity(SUPPORT_HEADER + bytes.len() + 4);
+        wrapped.extend_from_slice(&SUPPORT_TAG.to_le_bytes());
+        wrapped.extend_from_slice(&1_u32.to_le_bytes());
+        wrapped.extend_from_slice(&self.support_demand);
+        wrapped.extend_from_slice(&bytes);
+        wrapped.extend_from_slice(&crate::save::checksum(&wrapped).to_le_bytes());
+        wrapped
     }
 
     fn durable_words(&self, outcome: u8, mut mix: impl FnMut(u32)) {
@@ -99,7 +113,8 @@ impl Match {
 }
 
 pub(crate) fn split(bytes: &[u8]) -> Option<(&[u8], Option<(Match, u8)>)> {
-    if bytes.starts_with(&MULTI_TAG.to_le_bytes()) { return split_multiple(bytes); }
+    let (bytes, support_demand) = split_support_demand(bytes)?;
+    if bytes.starts_with(&MULTI_TAG.to_le_bytes()) { return split_multiple(bytes, support_demand); }
     if !bytes.starts_with(&TAG.to_le_bytes()) { return Some((bytes, None)); }
     let word = |at| Some(u32::from_le_bytes(bytes.get(at..at + 4)?.try_into().ok()?));
     let end = bytes.len().checked_sub(4)?;
@@ -122,13 +137,26 @@ pub(crate) fn split(bytes: &[u8]) -> Option<(&[u8], Option<(Match, u8)>)> {
         || score.iter().sum::<u32>() != current as u32 * hotspot_rule66::FIRST_CLAIM_SCORE
         || (changes == 0 && (owner != Owner::Unclaimed || current != 0)) { return None; }
     let rule = Hotspots::restore(vec![Point { position, owner, changes }], current)?;
-    Some((&bytes[HEADER..end], Some((Match { rule, flattened: vec![flattened], score }, outcome as u8))))
+    Some((&bytes[HEADER..end], Some((Match { rule, flattened: vec![flattened], score, support_demand }, outcome as u8))))
 }
 
-fn split_multiple(bytes: &[u8]) -> Option<(&[u8], Option<(Match, u8)>)> {
+fn split_support_demand(bytes: &[u8]) -> Option<(&[u8], [u8; 16])> {
+    if !bytes.starts_with(&SUPPORT_TAG.to_le_bytes()) { return Some((bytes, [0; 16])); }
+    if bytes.get(4..8)? != 1_u32.to_le_bytes() { return None; }
+    let end = bytes.len().checked_sub(4)?;
+    let expected = u32::from_le_bytes(bytes.get(end..)?.try_into().ok()?);
+    let support_demand: [u8; 16] = bytes.get(8..SUPPORT_HEADER)?.try_into().ok()?;
+    if support_demand.iter().any(|&value| value > 2) || support_demand.iter().all(|&value| value == 0) { return None; }
+    let inner = bytes.get(SUPPORT_HEADER..end)?;
+    if !inner.starts_with(&MULTI_TAG.to_le_bytes()) || crate::save::checksum(&bytes[..end]) != expected { return None; }
+    Some((inner, support_demand))
+}
+
+fn split_multiple(bytes: &[u8], support_demand: [u8; 16]) -> Option<(&[u8], Option<(Match, u8)>)> {
     let word = |at| Some(u32::from_le_bytes(bytes.get(at..at + 4)?.try_into().ok()?));
     let count = word(8)? as usize;
     if word(4)? != 2 || !(2..=4).contains(&count) { return None; }
+    if support_demand[count * 4..].iter().any(|&value| value != 0) { return None; }
     let header = MULTI_HEADER + count * 16;
     let end = bytes.len().checked_sub(4)?;
     if end <= header || crate::save::checksum(&bytes[..end]) != word(end)? { return None; }
@@ -151,7 +179,7 @@ fn split_multiple(bytes: &[u8]) -> Option<(&[u8], Option<(Match, u8)>)> {
     // Native save writes positions and cursor. New HotPoint allocations reset
     // observed owners/change counts before the next committed victory phase.
     let rule = Hotspots::from_native_archive(&positions, current)?;
-    Some((&bytes[header..end], Some((Match { rule, flattened, score }, outcome as u8))))
+    Some((&bytes[header..end], Some((Match { rule, flattened, score, support_demand }, outcome as u8))))
 }
 
 impl Game {
@@ -271,7 +299,7 @@ impl Game {
         self.map.hm = heights;
         self.map.dirty = true;
         self.discover_hotspot([positions[0][0], positions[0][1]]);
-        self.hotspots = Some(Match { rule, flattened, score: [0; 4] });
+        self.hotspots = Some(Match { rule, flattened, score: [0; 4], support_demand: [0; 16] });
         true
     }
 
@@ -320,6 +348,10 @@ impl Game {
         let (points, _) = mode.rule.snapshot();
         if self.net || self.bench != 0 || self.humans != 1 || self.local != 0
             || mode.score[self.nplayers..].iter().any(|&score| score != 0)
+            || mode.support_demand.iter().enumerate().any(|(slot, &value)| {
+                let team = slot % 4;
+                value != 0 && (team >= self.nplayers || !self.players[team].ai)
+            })
             || points.iter().any(|point| matches!(point.owner, Owner::Player(seat) if usize::from(seat.id()) > self.nplayers)) { return None; }
         for (point, &height) in points.iter().zip(&mode.flattened) {
             let [x, y, _] = point.position;
@@ -356,5 +388,14 @@ impl Game {
     pub(crate) fn ai_hotspot_points(&self) -> Option<(&[Point], usize)> {
         let state = &self.hotspots.as_ref()?.rule;
         Some((state.visible_points(), state.snapshot().0.len()))
+    }
+
+    pub(crate) fn hotspot_support_demand(&mut self, index: usize, team: u8) -> u8 {
+        let slot = index * 4 + usize::from(team);
+        let value = &mut self.hotspots.as_mut().expect("active HotSpots plan").support_demand[slot];
+        if *value == 0 {
+            *value = 1 + (self.source_birth.rng.next_word15() % 2) as u8;
+        }
+        *value
     }
 }

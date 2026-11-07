@@ -27,6 +27,28 @@ fn store_chop(value: f64) -> f32 {
 }
 
 impl Game {
+    pub(super) fn ai_support_hotspot(&mut self, team: u8, crew: &[usize]) -> bool {
+        let Some((visible, _)) = self.ai_hotspot_points() else { return false; };
+        if self.net || self.winner != 0 || crew.is_empty() || !self.construction_available(team, TOWER) { return false; }
+
+        // The first ordinary Outpost row draws its demand from 1 through 2.
+        // The portable held-site adapter uses the ordinary construction
+        // spiral and counts live pending or completed local Outposts.
+        let sites: Vec<_> = visible.iter().enumerate().filter_map(|(index, point)| {
+            let [x, y, _] = point.position;
+            if !matches!(point.owner, Owner::Player(seat) if seat.id() == team + 1) { return None; }
+            let existing = self.ents[..self.high].iter().filter(|actor| {
+                actor.alive && actor.hp > 0.0 && actor.team == team && actor.def == TOWER
+                    && (actor.x - x).abs().max((actor.y - y).abs()) <= 27.0
+            }).count();
+            Some((index, [x, y], existing))
+        }).collect();
+        sites.into_iter().any(|(index, [x, y], existing)| {
+            let demand = usize::from(self.hotspot_support_demand(index, team));
+            existing < demand && self.ai_build(team, TOWER, x as i32, y as i32, crew)
+        })
+    }
+
     pub(super) fn ai_contest_hotspots(&mut self, team: u8, army: &[usize], workers: &[usize], home: [f32; 2]) -> bool {
         let Some((visible, total)) = self.ai_hotspot_points() else { return false; };
         if self.net || !self.players[team as usize].ai || !self.construction_available(team, FORTRESS)
