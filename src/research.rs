@@ -87,7 +87,13 @@ impl Game {
     }
     pub fn fortress_heal_rate(&self,team:u8)->f32 {
         #[cfg(feature="ee2-reference")]
-        {crate::ee2_units::lookup_class(FORTRESS,self.players[team as usize].epoch).and_then(|r|r.garrison_heal).unwrap_or(0.0)}
+        {
+            let rate = crate::ee2_units::lookup_class(FORTRESS,self.players[team as usize].epoch)
+                .and_then(|r|r.garrison_heal).unwrap_or(0.0);
+            #[cfg(feature="ee2-native13")]
+            let rate = rate * self.crown_healing_building_scale(team, FORTRESS);
+            rate
+        }
         #[cfg(not(feature="ee2-reference"))]
         {let _=team;0.0}
     }
@@ -179,6 +185,8 @@ impl Game {
         }
         #[cfg(feature="ee2-civ8")]
         crate::civ8_runtime::apply_modifiers(self.civilizations[team as usize],&baseline,&mut m);
+        #[cfg(feature="ee2-native13")]
+        self.apply_crown_modifiers(team, &mut m);
         for row in &mut m {
             for f in [0,1,2,3,4,5,7,8,9,10,12,13,14,15,16,17] { row[f]=row[f].max(if f==2||f==1||(cfg!(feature="ee2-up15")&&f==5) {0.0} else {0.05}); }
         }

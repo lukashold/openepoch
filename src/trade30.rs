@@ -102,6 +102,12 @@ fn connected(pass: &[bool], goal: usize) -> Vec<bool> {
 }
 
 impl Game {
+    pub(crate) fn crown_trade_routes(&self, owner: u8) -> i32 {
+        self.trade.routes.keys().filter(|&&handle| {
+            self.get(handle).is_some_and(|index| self.ents[index].team == owner)
+        }).count() as i32
+    }
+
     pub(crate) fn configure_peer_trade_route(&mut self, enabled: bool) -> bool {
         if !self.net || self.bench != 0 || self.tick != 0 || !self.outbox.is_empty() || !self.inbox.is_empty() {
             return false;
@@ -282,10 +288,16 @@ impl Game {
     fn trade_delivery(&mut self, team: u8, foreign: u8, paid_at_destination: bool, quote: Quote) {
         let mut owner = self.trade_account(team);
         let mut partner = self.trade_account(foreign);
+        let owner_gold = owner.gold;
+        let partner_gold = partner.gold;
         let foreign_account = (team != foreign).then_some((&mut partner, paid_at_destination));
         credit::deliver(&mut owner, foreign_account, Account { gold: quote.gold, technology: quote.tech });
         self.write_trade_account(team, owner);
-        if team != foreign { self.write_trade_account(foreign, partner); }
+        self.crown_trade_gold(team, owner.gold - owner_gold);
+        if team != foreign {
+            self.write_trade_account(foreign, partner);
+            self.crown_trade_gold(foreign, partner.gold - partner_gold);
+        }
     }
 
     fn trade_replacement(&self, unit: Ent, destination: u32) -> Option<u32> {

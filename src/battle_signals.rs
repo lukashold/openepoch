@@ -19,6 +19,7 @@ pub(crate) struct Actor {
     handle: u32,
     seat: usize,
     point: Point,
+    pub(crate) definition: crate::defs::DefId,
 }
 
 impl Actor {
@@ -27,6 +28,7 @@ impl Actor {
             handle: (u32::from(entity.gen) << 16) | index as u32,
             seat: usize::from(entity.team),
             point: [entity.x, entity.y],
+            definition: entity.def,
         }
     }
 }
@@ -230,7 +232,7 @@ mod tests {
     use super::*;
 
     fn actor(handle: u32, seat: usize, point: Point) -> Actor {
-        Actor { handle, seat, point }
+        Actor { handle, seat, point, definition: 0 }
     }
 
     #[test]

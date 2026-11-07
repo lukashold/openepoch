@@ -9,11 +9,13 @@ const MAGIC: u32 = u32::from_le_bytes(*b"SAB1");
 struct Disabled {
     since: f32,
     improved: bool,
+    crowned: bool,
 }
 
 impl Disabled {
     fn active(self, now: f32) -> bool {
-        let duration = if self.improved { 144.0 } else { 120.0 };
+        let base = if self.improved { 144.0 } else { 120.0 };
+        let duration = if self.crowned { base * 1.25 } else { base };
         now <= crate::power42_math::store_toward_zero(f64::from(self.since) + duration)
     }
 }
@@ -31,7 +33,7 @@ impl Sabotage {
         for (&handle, disabled) in &self.targets {
             write(handle);
             write(disabled.since.to_bits());
-            write(u32::from(disabled.improved));
+            write(u32::from(disabled.improved) | (u32::from(disabled.crowned) << 1));
         }
     }
 
@@ -61,7 +63,8 @@ impl Game {
 
     pub(super) fn sabotage_building(&mut self, owner: u8, target: usize, since: f32) {
         let improved = self.has_research(owner, 160); // Military Epoch 14, slot 1.
-        self.spy_sabotage.targets.insert(self.h(target), Disabled { since, improved });
+        let crowned = self.crown_super_spies(owner);
+        self.spy_sabotage.targets.insert(self.h(target), Disabled { since, improved, crowned });
     }
 
     pub(super) fn restore_building(&mut self, target: usize) {
@@ -86,8 +89,9 @@ impl Game {
             let handle = read()?;
             let target = self.ents[self.get(handle)?];
             let since = f32::from_bits(read()?);
-            let improved = match read()? { 0 => false, 1 => true, _ => return None };
-            let effect = Disabled { since, improved };
+            let flags = read()?;
+            if flags > 3 || flags & 2 != 0 && self.crowns.is_none() { return None; }
+            let effect = Disabled { since, improved: flags & 1 != 0, crowned: flags & 2 != 0 };
             if target.hp <= 0.0 || target.built < 1.0 || !DEFS[target.def as usize].building
                 || !(0.0..=now).contains(&since) || !effect.active(now)
                 || state.targets.insert(handle, effect).is_some() {

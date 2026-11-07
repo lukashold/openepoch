@@ -35,6 +35,7 @@ pub const C_PLACE_ROTATED:u8=16;
 #[cfg(feature="ee2-native13")]pub(crate) const C_BLESS:u8=23;
 #[cfg(feature="ee2-native13")]pub(crate) const C_GATHER_INTEL:u8=24;
 #[cfg(feature="ee2-native13")]pub(crate) const C_EXTRACTION:u8=25;
+#[cfg(feature="ee2-native13")]pub(crate) const C_MARKET:u8=26;
 #[cfg(feature="ee2-native13")]pub(crate) const SOLO_RESIGN_SAVE_FLAG:u32=1<<11;
 
 const HEAD: usize = 14; // kind, count, a, b, c
@@ -135,6 +136,15 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         if kind == C_AIR_MISSION {
             self.air_command(team, a, b, c, hs);
+            return;
+        }
+        #[cfg(feature="ee2-native13")]
+        if kind == C_MARKET {
+            if let &[host] = hs {
+                if b == 0.0 && (0.0..=8.0).contains(&a) && a.fract() == 0.0 {
+                    self.market_trade(team, host, a as u8, c);
+                }
+            }
             return;
         }
         #[cfg(feature="ee2-civ8")]

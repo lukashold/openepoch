@@ -1961,6 +1961,106 @@ pub extern "C" fn spy_crown_intel_active(owner: u32) -> u32 {
 
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
+pub extern "C" fn configure_crowns(disabled: u32) -> u32 {
+    u32::from(disabled <= 1 && g().configure_crowns(disabled != 0))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn crown_rating(owner: u32, kind: u32, field: u32) -> f32 {
+    let Some(rating) = g().crown_rating(owner as usize, kind as usize) else { return f32::NAN; };
+    match field { 0 => rating.score, 1 => rating.threshold as f32, 2 => f32::from(rating.eligible_rank), _ => f32::NAN }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn crown_technology(owner: u32, kind: u32, slot: u32) -> u32 {
+    let game = g();
+    if slot >= 4 || game.crown_rating(owner as usize, kind as usize).is_none() { return 0; }
+    let epoch = u32::from(game.players[owner as usize].epoch);
+    let id = (epoch * 12 + kind * 4 + slot) as usize;
+    u32::from(game.has_research(owner as u8, id))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn crown_holder(kind: u32, field: u32) -> f32 {
+    let game = g();
+    let Some(holder) = game.crown_holder(kind as usize) else { return 0.0; };
+    match field {
+        0 => f32::from(holder.owner) + 1.0,
+        1 => (holder.expires - game.sim_elapsed()).max(0.0),
+        2 => f32::from(holder.epoch),
+        _ => f32::NAN,
+    }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn crown_choose_power(kind: u32, power: u32) -> u32 {
+    u32::from(u8::try_from(power).is_ok_and(|id| g().choose_crown_power(kind as usize, id)))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn crown_can_choose_power(kind: u32, power: u32) -> u32 {
+    u32::from(u8::try_from(power).is_ok_and(|id| g().can_choose_crown_power(kind as usize, id)))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn crown_chosen_power(kind: u32) -> i32 {
+    g().crown_power(kind as usize).map_or(-1, i32::from)
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn crown_visuals_present() -> u32 {
+    u32::from(g().crown_visuals_present())
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn crown_actor_visual(handle: u32, kind: u32, field: u32) -> u32 {
+    g().crown_actor_visual(handle, kind as usize, field)
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn crown_actor_glow(handle: u32) -> u32 {
+    g().crown_actor_glow(handle)
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn market_commodity(position: u32) -> u32 {
+    let game = g();
+    if game.net || game.bench != 0 { return u32::MAX; }
+    let epoch = game.players[game.local as usize].epoch;
+    crate::game::market57::commodities(epoch).get(position as usize).copied()
+        .filter(|&id| id != u8::MAX).map_or(u32::MAX, u32::from)
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn market_quote(host: u32, resource: u32, lots: i32) -> u32 {
+    let game = g();
+    u8::try_from(resource).ok().and_then(|id| game.market_quote(game.local, host, id, lots))
+        .map_or(0, |(gold, available)| u32::from(gold) | (u32::from(available) << 16))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn cmd_market_trade(host: u32, resource: u32, lots: i32) -> u32 {
+    let game = g();
+    let Ok(id) = u8::try_from(resource) else { return 0; };
+    if !game.market_quote(game.local, host, id, lots).is_some_and(|(_, available)| available) { return 0; }
+    game.submit(cmd::C_MARKET, f32::from(id), 0.0, lots, &[host]);
+    1
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
 pub extern "C" fn spy_extraction_selection_count() -> u32 {
     let game = g();
     if game.net { return 0; }

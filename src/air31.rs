@@ -958,6 +958,7 @@ impl State {
             }
             if !actor_pulse(game.tick, phase_key(home, building.team), 1.0, game.sim_step()) { continue; }
             let epoch = game.players[building.team as usize].epoch;
+            let repair = 20.0 * game.crown_healing_building_scale(building.team, building.def);
             for &handle in &airport.stored {
                 let index = game.get(handle).unwrap();
                 let frame = self.aircraft.get_mut(&handle).unwrap();
@@ -967,7 +968,7 @@ impl State {
                 }
                 if building.def == AIRFIELD {
                     let maximum = game.max_hp(building.team, definition);
-                    game.ents[index].hp = (game.ents[index].hp + 20.0).min(maximum);
+                    game.ents[index].hp = (game.ents[index].hp + repair).min(maximum);
                 }
             }
             if airport.automatic && airport.mission.is_some() {

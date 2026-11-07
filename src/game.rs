@@ -30,6 +30,12 @@ pub(crate) mod spy_sabotage50;
 #[path = "spy_toxic50.rs"]
 pub(crate) mod spy_toxic50;
 #[cfg(feature = "ee2-native13")]
+#[path = "crowns54.rs"]
+pub(crate) mod crowns54;
+#[cfg(feature = "ee2-native13")]
+#[path = "market57.rs"]
+pub(crate) mod market57;
+#[cfg(feature = "ee2-native13")]
 #[path = "trade30.rs"]
 pub(crate) mod trade30;
 #[cfg(all(test,feature="ee2-reference"))]
@@ -357,6 +363,10 @@ pub struct Game {
     pub(crate) spy_sabotage: spy_sabotage50::Sabotage,
     #[cfg(feature = "ee2-native13")]
     pub(crate) spy_toxic: spy_toxic50::ToxicState,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) crowns: Option<crowns54::Crowns>,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) market: market57::Market,
     // ---- not part of the deterministic simulation state ----
     /// Which player this client controls and sees through.
     pub local: u8,
@@ -538,6 +548,10 @@ impl Game {
             spy_sabotage: spy_sabotage50::Sabotage::default(),
             #[cfg(feature = "ee2-native13")]
             spy_toxic: spy_toxic50::ToxicState::default(),
+            #[cfg(feature = "ee2-native13")]
+            crowns: None,
+            #[cfg(feature = "ee2-native13")]
+            market: market57::Market::default(),
             #[cfg(feature = "ee2-native13")]
             priest_effects: Vec::new(),
             net,
@@ -1252,6 +1266,10 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         self.spy_toxic.hash(&mut mix);
         #[cfg(feature = "ee2-native13")]
+        if let Some(crowns) = &self.crowns { crowns.hash(&mut mix); }
+        #[cfg(feature = "ee2-native13")]
+        self.market.hash(&mut mix);
+        #[cfg(feature = "ee2-native13")]
         if self.infantry_roster_enabled { mix(u32::from_le_bytes(*b"INF1")); }
         #[cfg(feature = "ee2-native13")]
         if self.production_roster_enabled { mix(u32::from_le_bytes(*b"PRD1")); }
@@ -1552,6 +1570,8 @@ impl Game {
                 }
             }
         }
+        #[cfg(feature = "ee2-native13")]
+        self.tick_crowns();
         #[cfg(feature = "ee2-native13")]
         if let Some(signals) = &mut self.battle_signals { signals.update_markers(DT); }
         #[cfg(feature = "ee2-native13")]
@@ -1925,7 +1945,19 @@ impl Game {
         let hit = |game: &mut Self, j: usize, points: f32| {
             #[cfg(feature = "ee2-native13")]
             let can_signal = game.ents[j].hp > 0.0 && game.ents[j].def != FARM;
+            #[cfg(feature = "ee2-native13")]
+            let can_credit = game.ents[j].hp > 0.0 && game.ents[j].team != team;
+            #[cfg(feature = "ee2-native13")]
+            let points = if game.crown_city_protected(&game.ents[j]) { points * 0.7 } else { points };
             game.damage_from(j, points, kind, profile);
+            #[cfg(feature = "ee2-native13")]
+            if can_credit && game.ents[j].hp <= 0.0 {
+                let victim = game.ents[j];
+                game.crown_kill(team, victim.def);
+                if let Some(attacker) = origin {
+                    game.crown_piracy_payment(team, attacker.definition, victim.team, victim.def);
+                }
+            }
             #[cfg(feature = "ee2-native13")]
             if can_signal {
                 if let Some(signals) = &mut game.battle_signals {
@@ -2133,7 +2165,13 @@ impl Game {
             // Keep every crew member; inactive deposits do not accumulate work.
             if self.resource_unlocked(e.team,kind){
                 e.carry+=(if cfg!(feature="ee2-up15"){self.native_generation(e.def,e.team,kind-1)}else{0.75})*(e.ncargo as usize).min(self.cargo_capacity(e.team,e.def)) as f32*dt*self.modifiers[e.team as usize][e.def as usize][crate::economy::gather_modifier(kind)];
-                let whole=e.carry.floor();if whole>=1.0{self.add_resource(e.team,kind as usize-1,whole);e.carry-=whole;}
+                let whole=e.carry.floor();
+                if whole>=1.0 {
+                    self.add_resource(e.team,kind as usize-1,whole);
+                    #[cfg(feature = "ee2-native13")]
+                    self.crown_gathered(e.team, kind as usize - 1, whole);
+                    e.carry-=whole;
+                }
             }else{e.carry=0.0;}
         }
         #[cfg(feature="ee2-paidqueue7")] let paid_ready=self.purchase_front_job(i);
@@ -2637,6 +2675,11 @@ impl Game {
         #[cfg(feature="ee2-up15")]
         let rate=crate::ee2_units::lookup_class(e.def,p.epoch).map(|r|if farm!=NOIDX{r.farm_rate.unwrap_or(0.0)}else{r.gather.and_then(|v|v.get(kind as usize-1).copied()).unwrap_or(0.0)}).unwrap_or(0.0);
         let amount = rate * p.gather * resource_mod * self.sim_step();
+        #[cfg(feature = "ee2-native13")]
+        let amount = {
+            let forage = farm == NOIDX && self.map.ter[e.otile as usize] >= T_SAND;
+            amount * self.crown_gather_scale(e.team, e.def, kind, farm != NOIDX, forage)
+        };
         if cfg!(feature="ee2-reference"){
             if farm==NOIDX {
                 let limit=if kind==R_WOOD{3}else{6};

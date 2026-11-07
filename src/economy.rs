@@ -23,7 +23,12 @@ pub fn population_capacity(def:DefId,epoch:u8)->u32{
 }
 impl Game {
     pub fn native_generation(&self,def:DefId,team:u8,resource:u8)->f32{
-        #[cfg(feature="ee2-up15")] {crate::ee2_up15_economy::generation(def,self.players[team as usize].epoch,resource)}
+        #[cfg(feature="ee2-up15")] {
+            let rate=crate::ee2_up15_economy::generation(def,self.players[team as usize].epoch,resource);
+            #[cfg(feature="ee2-native13")]
+            let rate=rate*self.crown_generation_scale(team,def,resource);
+            rate
+        }
         #[cfg(not(feature="ee2-up15"))] {let _=(def,team,resource);0.0}
     }
     pub fn resource(&self,team:u8,slot:usize)->f32 {
@@ -32,6 +37,9 @@ impl Game {
     pub fn add_resource(&mut self,team:u8,slot:usize,amount:f32){
         let value=self.resource(team,slot)+amount;
         let value=if cfg!(feature="ee2-reference"){value.clamp(0.0,999999.0)}else{value};
+        self.set_resource(team,slot,value);
+    }
+    pub(crate) fn set_resource(&mut self,team:u8,slot:usize,value:f32){
         if slot<3 {self.players[team as usize].res[slot]=value;}else{self.extra_resources[team as usize][slot-3]=value;}
     }
     pub fn resource_unlocked(&self,team:u8,kind:u8)->bool {kind>0&&unlocked(kind as usize-1,self.players[team as usize].epoch)}
@@ -54,7 +62,11 @@ impl Game {
             #[cfg(not(feature="ee2-up15"))] {0.02}
         };
         let bonus=if DEFS[b.def as usize].has(F_DROPOFF){1.0+per_slot*(b.ncargo as usize).min(self.cargo_capacity(b.team,b.def)) as f32}else{1.0};
-        self.add_resource(e.team,kind as usize-1,e.carry*bonus);e.carry=0.0;e.q[1]=0;e.q[2]=0;
+        let delivered = e.carry * bonus;
+        self.add_resource(e.team, kind as usize - 1, delivered);
+        #[cfg(feature = "ee2-native13")]
+        self.crown_gathered(e.team, kind as usize - 1, delivered);
+        e.carry=0.0;e.q[1]=0;e.q[2]=0;
         let (x,y)=if let Some(f)=self.get(e.otgt){(self.ents[f].x,self.ents[f].y)}else{((e.otile as usize%N) as f32+0.5,(e.otile as usize/N) as f32+0.5)};
         e.fkey=self.key_for(LAND,x,y);
     }

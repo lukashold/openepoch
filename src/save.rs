@@ -199,6 +199,10 @@ impl Game {
         #[cfg(feature="ee2-native13")]
         { b = self.spy_toxic.wrap(b); }
         #[cfg(feature="ee2-native13")]
+        if let Some(crowns) = &self.crowns { b = crowns.wrap(b); }
+        #[cfg(feature="ee2-native13")]
+        { b = self.market.wrap(b); }
+        #[cfg(feature="ee2-native13")]
         if let Some(powers) = &self.powers { b = powers.wrap(b); }
         if self.source_clock.is_some() { b = self.diplomacy.clock.wrap(b); }
         self.savebuf = crate::source_clock38::wrap(b, self.source_clock);
@@ -251,6 +255,10 @@ impl Game {
         if diplomacy_clock.is_some() && source_clock.is_none() { return None; }
         #[cfg(feature="ee2-native13")]
         let (buf, powers) = crate::power42::split(buf)?;
+        #[cfg(feature="ee2-native13")]
+        let (buf, market) = crate::game::market57::split(buf)?;
+        #[cfg(feature="ee2-native13")]
+        let (buf, crowns) = crate::game::crowns54::split(buf)?;
         #[cfg(feature="ee2-native13")]
         let (buf, toxic) = crate::game::spy_toxic50::split(buf)?;
         #[cfg(feature="ee2-native13")]
@@ -628,6 +636,19 @@ impl Game {
         g.restore_priest_power(powers)?;
         #[cfg(feature="ee2-native13")]
         g.restore_blessings(blessings)?;
+        #[cfg(feature="ee2-native13")]
+        {
+            if !market.valid_players(if g.net || g.bench != 0 { 0 } else { g.nplayers }) { return None; }
+            g.market = market;
+        }
+        #[cfg(feature="ee2-native13")]
+        if let Some(payload) = crowns {
+            if g.net || g.bench != 0 { return None; }
+            g.crowns = Some(crate::game::crowns54::Crowns::read(payload, g.nplayers, g.sim_elapsed())?);
+            for owner in 0..g.nplayers {
+                if g.crown_powers_active_for(owner as u8) { g.rebuild_modifiers(owner as u8, false); }
+            }
+        }
         #[cfg(feature="ee2-native13")]
         g.restore_spy_sabotage(sabotage)?;
         #[cfg(feature="ee2-native13")]

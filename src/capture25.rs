@@ -149,7 +149,9 @@ impl Game {
     pub(crate) fn capture_compatible(&self, index: usize, target: usize) -> bool {
         let source = self.ents[index];
         let victim = self.ents[target];
-        if source.def == crate::priest42_defs::PRIEST { native::conversion_target(victim.def).is_some() }
+        if source.def == crate::priest42_defs::PRIEST {
+            native::conversion_target(victim.def).is_some() && !self.crown_prevents_conversion(victim.team)
+        }
         else { native::capture_target(victim.def).is_some() }
     }
 
@@ -319,12 +321,15 @@ impl Game {
             (dx.abs() - radius).max(0.0).hypot((dy.abs() - radius).max(0.0))
         } else { (dx.hypot(dy) - DEFS[building.def as usize].rad()).max(0.0) };
         let now = self.sim_elapsed();
+        let range = if actor.def == crate::priest42_defs::PRIEST {
+            self.crown_conversion_range(actor.team, attack.range)
+        } else { attack.range };
         let Some(order) = self.capture.orders.get_mut(&handle) else {
             Self::set_idle(actor);
             return (None, None);
         };
         let locked = crate::native_attack_clock::STARTED | crate::native_attack_clock::IN_ATTACK;
-        if edge > attack.range + def.rad() && order.flags & locked != locked {
+        if edge > range + def.rad() && order.flags & locked != locked {
             crate::native_attack_clock::stop(&mut order.flags);
             order.pose = None;
             order.pose_at = 0.0;
@@ -393,6 +398,7 @@ impl Game {
         }
         if killed { return; }
         let target_effect = if self.capture_owner_city(&building) { native::CITY_CAPTURE_RESISTANCE } else { 1.0 };
+        let target_effect = if self.crown_city_protected(&building) { target_effect * 1.3 } else { target_effect };
         let target = self.capture.targets.get_mut(&actor.otgt).expect("Admitted capture round");
         let factors = CaptureFactors {
             epoch_gap: i32::from(self.players[actor.team as usize].epoch) - i32::from(self.players[building.team as usize].epoch),
@@ -446,7 +452,7 @@ impl Game {
         Some(((f64::from(render_time) + 2.0 - f64::from(order.next)) as f32).clamp(0.0, 2.0))
     }
 
-    fn capture_owner_city(&self, building: &Ent) -> bool {
+    pub(super) fn capture_owner_city(&self, building: &Ent) -> bool {
         self.ents[..self.high].iter().enumerate().any(|(index, city)| {
             if city.team != building.team { return false; }
             let radius = self.city_ground_radius(index);
@@ -479,6 +485,7 @@ impl Game {
             } else {
                 self.add_resource(building.team, slot, -amount);
                 self.add_resource(recipient, slot, amount);
+                self.crown_stolen(recipient, slot, amount);
             }
         }
     }
@@ -514,7 +521,10 @@ impl Game {
             self.ents[index] = evacuated;
         }
         let old_handle = self.h(index);
-        if old.team != owner { self.capture_tribute(old_handle, &old, owner, tribute); }
+        if old.team != owner {
+            self.capture_tribute(old_handle, &old, owner, tribute);
+            self.crown_conversion(owner, old.def);
+        }
         let health = (old.hp / self.max_hp(old.team, old.def)).clamp(0.0, 1.0);
         let city = self.city_ground[index];
         let citizen = if old.def == WORKER { self.source_identity(old_handle) } else { None };

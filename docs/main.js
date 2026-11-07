@@ -4,6 +4,8 @@ import { buildAtlas, tintAtlas, CELL } from './atlas.js?v=fortress1';
 import { buildModels } from './models.js?v=fortress1';
 import { parseCheat } from './cheats.js?v=native45';
 import { researchPanel } from './research.js?v=rank-families';
+import {loadCrownArt,mountCrownProgress} from './crown-progress.js?v=native57';
+import {loadCrownStatusArt,readCrownActorVisuals,crownStatusSlots} from './crown-visuals.js?v=native57';
 import { originalResearchActions, researchCost, researchState } from './original-research-actions.js?v=rank-families';
 import { diplomacyPanel } from './diplomacy.js?v=native17';
 import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native6';
@@ -39,7 +41,7 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=clock38';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native54';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native57';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
@@ -61,8 +63,10 @@ import {createSpyShimmerFrames} from './original-spy-shimmer.js?v=native-spy';
 import {createSpyExtractionTimer} from './spy-extraction-renderer.js?v=native-spy';
 import {loadPriestEffects} from './original-priest-fx.js?v=native45';
 import {loadOriginalPriestParticles} from './original-priest-particles.js?v=native47';
-import {loadBlessGroundGlow} from './priest-ground-glow.js?v=native45';
+import {loadBlessGroundGlow} from './priest-ground-glow.js?v=native57';
+import {loadAirCrownGlow} from './crown-air-glow.js?v=native57';
 import {createTradeRoute,supportsTradeRoute,tradeRouteText} from './trade-route.js?v=native30';
+import {loadMarketArt,marketOrders,marketOrderButton,marketOrderHotkey} from './market-orders.js?v=native57';
 import {loadCarrierPresentation,loadFighterBomberPresentation,loadPriestPresentation,loadSpyPresentation,loadTradePresentation,loadTradeRouteArt} from './original-trade-presentation.js?v=native-spy-powers';
 import {createTradeWaitStatus,loadTradeWaitArt,selectedTradeWait} from './trade-wait-status.js?v=native31';
 import {airActions,airMissionActions,airMissionSelection,airMissionTrainingKey,createAirMissionOrder,decorateAirMissionButton,loadAirMissionArt,supportsAirMission} from './air-mission-order.js?v=native32';
@@ -94,6 +98,8 @@ let rulesProfile;
 try{rulesProfile=resolveRulesProfile(location.href);}catch(error){rulesLoadFailure(error);throw error;}
 profileSelect.value=rulesProfile.id;
 const referenceMode=rulesProfile.reference,qaMode=rulesProfile.qa;
+const immigrationCue={url:new URL('local-original/audio/fx_feedback_citizen_created.mp3',import.meta.url),
+  sha256:'e123f7873b3ac1481a62519ff0d6c2f138212c4ce61c83dca9183797ebaf821d',gain:1};
 try { const preference=localStorage.getItem('openepoch-map-visibility');if(['0','1','2'].includes(preference))$('map-visibility').value=preference; } catch { /* preferences are optional */ }
 $('map-visibility').onchange=()=>{try{localStorage.setItem('openepoch-map-visibility',$('map-visibility').value);}catch{/* private storage */}};
 function menuSeasonSettings(){
@@ -508,6 +514,7 @@ for (const pr of [terrain, water, models, quads]) {
   if (pr.u.uTeam) gl.uniform3fv(pr.u.uTeam, teamFlat);
 }
 const originalEnabled=referenceMode&&new URLSearchParams(location.search).get('assets')!=='procedural';
+const marketArt=await loadMarketArt(originalEnabled&&typeof wasm.market_quote==='function');
 const ambientPresentation=await loadOriginalAmbient({enabled:originalEnabled&&rulesProfile.id==='up15'});
 sfx.configureOriginalAmbience(ambientPresentation);
 let ambientCoverage=null;
@@ -577,7 +584,9 @@ const priestEffectOptions={enabled:originalEnabled&&!!priestPresentation&&typeof
 const [priestEffects,priestParticles]=await Promise.all([
   loadPriestEffects(gl,priestEffectOptions),loadOriginalPriestParticles(gl,priestEffectOptions)
 ]);
-const blessGround=await loadBlessGroundGlow({enabled:originalEnabled&&typeof wasm.bless_glow_active==='function'});
+const blessGround=await loadBlessGroundGlow({enabled:originalEnabled&&typeof wasm.bless_glow_active==='function',
+  crowns:typeof wasm.crown_actor_glow==='function'});
+const airCrownGlow=await loadAirCrownGlow(gl,{enabled:originalEnabled&&!!blessGround&&typeof wasm.crown_actor_glow==='function'});
 let previousPriestViews=[],currentPriestViews=[],priestFrameEffects=null;
 const priestAttachments=new Map();
 let blessPreview=null;
@@ -857,6 +866,12 @@ const captureOrder = typeof wasm.cmd_capture_at === 'function' ? createCaptureOr
   canOrder:()=>canTargetOrder()&&militaryCaptureCount()>0,
   pickTarget:(x,y)=>wasm.capture_target_at_for?.(x,y,1)??wasm.capture_target_at(x,y),issue:wasm.cmd_capture_at}) : null;
 const priestEnabled=rulesProfile.ruleset===2&&typeof wasm.configure_priest_skirmish==='function';
+const crownSupported=rulesProfile.ruleset===2&&typeof wasm.configure_crowns==='function';
+const crownArt=await loadCrownArt(crownSupported&&originalEnabled);
+const crownStatusArt=await loadCrownStatusArt({enabled:crownSupported&&originalEnabled});
+const crownProgress=crownSupported?mountCrownProgress({button:$('crown-progress-toggle'),panel:$('crown-progress'),
+  ledger:$('crown-ledger'),timers:$('crown-timers'),chooser:$('crown-choice'),wasm,art:crownArt}):null;
+$('disable-crowns-option').hidden=!crownSupported;
 const spyEnabled=priestEnabled&&typeof wasm.cmd_spy_intel_at==='function';
 sfx.configurePriestCues(originalEnabled&&priestEnabled);
 const priestArt=await loadPriestCommandArt({enabled:originalEnabled&&priestEnabled});
@@ -1029,6 +1044,7 @@ function begin(tempo = null, useSourceClock = wasm.sim_clock_active?.() === 1, a
   fullmap?.invalidate();
   saveSession=Date.now();
   ghost = null; attackMode = false; paused = false; acc = 0; fogTick = -1; actSig = '@refresh'; worstMs = 0; ui = null;
+  crownProgress?.close();
   pauseReasons.clear();
   originalTempo = tempo;
   speed = tempo?.requested ?? 1;
@@ -1106,6 +1122,10 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
   }
   if(!benchUnits&&humans===1&&priestEnabled&&!wasm.configure_priest_skirmish()){
     toast('Priester konnten für dieses Scharmützel nicht eingerichtet werden.');
+    return;
+  }
+  if(!benchUnits&&humans===1&&crownSupported&&!wasm.configure_crowns(Number($('disable-crowns').checked))){
+    toast('Die Kronenwertung konnte für dieses Scharmützel nicht eingerichtet werden.');
     return;
   }
   cam.x = benchUnits ? MAP / 2 : wasm.start_x(); cam.y = benchUnits ? MAP / 2 : wasm.start_y(); cam.zoom = benchUnits ? 11 : 28;
@@ -1252,6 +1272,11 @@ function advance(dt, now) {
       const shot=airFlightAudio||referenceMode ? wasm.air_audio_shot_at?.(i/3)>>>0 : 0;
       if(airFlightAudio&&shot&&sfx.airFlightAttackHandled(shot&0xffff,shot>>>16,wasm.air_audio_shot_duration(i/3)))continue;
       const kind = ev[i], x = ev[i + 1], y = ev[i + 2];
+      if(kind===34){
+        toast('Drei Einwanderer sind am Stadtzentrum angekommen.');
+        if(originalEnabled)void sfx.playInterfaceCue(immigrationCue);
+        continue;
+      }
       const citizen = decodeCitizenDeathCue(kind);
       if (kind >= 12 && !citizen && kind !== sfx.STONE_THROWER_LAUNCH_CUE && kind !== sfx.CAPTURE_COMPLETE_CUE &&
           kind !== sfx.CONVERT_CUE && kind !== sfx.PRIEST_CONVERT_COMPLETE_CUE && kind !== sfx.PRIEST_CONVERT_CAST_CUE) {
@@ -1284,17 +1309,34 @@ function drawCaptureGlow(vp,actorMetadata){
   if(!captureGlow||!actorMetadata)return;
   const capture=wasm.has_active_capture_glow(),spy=wasm.spy_adverse_glow_present?.();
   if(!capture&&!spy)return;
+  const crown=wasm.crown_visuals_present?.();
   const bad=handle=>(capture&&wasm.active_capture_glow(handle))||(spy&&spyAdverseGlow(handle));
-  const isMixed=handle=>spyAdvancedArt?.mixedGlow&&bad(handle)&&wasm.bless_glow_active?.(handle);
+  const isMixed=handle=>spyAdvancedArt?.mixedGlow&&bad(handle)
+    && (wasm.bless_glow_active?.(handle)||(crown&&(wasm.crown_actor_glow(handle)&1)));
   const projected = captureGlow.project(actorMetadata.actors, handle=>bad(handle)&&!isMixed(handle));
   originalGround.drawCaptureGlow({vp,...projected});
   if(spyAdvancedArt?.mixedGlow){
-    originalGround.drawMixedGlow({vp,...captureGlow.project(actorMetadata.actors,isMixed)});
+    const fallback=actorMetadata.actors.filter(actor=>!blessGround?.isGround(originalModels.sourceVisualForActor?.(actor)));
+    originalGround.drawMixedGlow({vp,...captureGlow.project(fallback,isMixed)});
   }
 }
 
 function spyAdverseGlow(handle) {
   return !!(wasm.building_sabotaged?.(handle)||wasm.spy_toxic_status?.(handle));
+}
+
+function drawAirCrownStatus(vp,actorMetadata){
+  if(!airCrownGlow||!actorMetadata||!wasm.crown_visuals_present?.())return 0;
+  const rows=[];
+  for(const actor of actorMetadata.actors){
+    if(!blessGround.isAir(originalModels.sourceVisualForActor?.(actor)))continue;
+    const flags=wasm.crown_actor_glow(actor.handle);
+    if(!flags)continue;
+    const good=(flags&1)||wasm.bless_glow_active(actor.handle);
+    const bad=(flags&2)||wasm.active_capture_glow(actor.handle)||spyAdverseGlow(actor.handle);
+    rows.push({kind:good?(bad?'mixed':'good'):'bad',origin:[actor.renderX,actor.renderAltitude,actor.renderY],yaw:actor.renderYaw});
+  }
+  return airCrownGlow.draw({vp,rows,phase:blessGround.phase});
 }
 
 function drawBlessGround(vp,actorMetadata,previewFrame=null){
@@ -1309,12 +1351,21 @@ function drawBlessGround(vp,actorMetadata,previewFrame=null){
       blessPreview={remaining:.2,handles};
     }
   }
+  const crown=wasm.crown_visuals_present?.(),capture=wasm.has_active_capture_glow?.();
+  let crownGround=0;
   const layer=blessGround.project({actors:actorMetadata.actors,local:ui?.local??0,
-    visualForActor:originalModels.sourceVisualForActor,isBlessed:handle=>wasm.bless_glow_active(handle)
-      && !(spyAdvancedArt?.mixedGlow&&spyAdverseGlow(handle)),
+    visualForActor:originalModels.sourceVisualForActor,isBlessed:handle=>{
+      const crownGood=crown&&(wasm.crown_actor_glow(handle)&1);
+      const good=wasm.bless_glow_active(handle)||crownGood;
+      if(crownGood)crownGround++;
+      return good;
+    },
+    isMixed:handle=>spyAdvancedArt?.mixedGlow&&((capture&&wasm.active_capture_glow(handle))||spyAdverseGlow(handle)),
     hasPreview:handle=>!!previewFrame&&!!blessPreview?.handles.has(handle)});
   originalGround.drawBlessGlow({vp,...layer});
+  originalGround.drawMixedGlow({vp,list:layer.mixed,alpha:layer.alpha});
   if(qaMode&&previewFrame)canvas.dataset.blessGround=`${layer.good.length/5}:${layer.neutral.length/5}`;
+  if(qaMode&&previewFrame)canvas.dataset.crownGround=String(crownGround);
 }
 
 function preparePriestEffectsFrame(renderTime){
@@ -1422,6 +1473,8 @@ function drawFullmapPipScene(pipView, alpha, renderEpochs, now, mission) {
   }
   drawCaptureGlow(vp,actorMetadata);
   drawBlessGround(vp,actorMetadata);
+  const crownAir=drawAirCrownStatus(vp,actorMetadata);
+  if(qaMode)canvas.dataset.crownAirPip=String(crownAir);
   const extraction=drawSpyExtraction(pipView,wasm.sim_render_seconds?.(alpha));
   if(qaMode&&extraction!==null)canvas.dataset.spyPipExtraction=extraction;
   const priestDraws=drawPriestEffects(pipView,actorMetadata,wasm.sim_render_seconds?.(alpha));
@@ -1615,6 +1668,8 @@ function frame(now) {
   }
   drawCaptureGlow(view.vp,actorMetadata);
   drawBlessGround(view.vp,actorMetadata,{visualSeconds});
+  const crownAir=drawAirCrownStatus(view.vp,actorMetadata);
+  if(qaMode)canvas.dataset.crownAir=String(crownAir);
   const extraction=drawSpyExtraction(view,wasm.sim_render_seconds?.(alpha));
   if(qaMode&&extraction!==null)canvas.dataset.spyMainExtraction=extraction;
   const priestDraws=drawPriestEffects(view,actorMetadata,wasm.sim_render_seconds?.(alpha));
@@ -1674,6 +1729,7 @@ function costText(c) {return c.flatMap((value,slot)=>value?[`${value} ${!referen
 function updateUi(drawn, now) {
   const p = wasm.ui();
   ui = JSON.parse(dec.decode(u8(p, wasm.ui_len())));
+  crownProgress?.update(ui.local);
   $('observer-status').hidden=!ui.observer;
   if(ui.observer&&ghost)cancelBuilding();
   tradeRoute?.validate();
@@ -1744,6 +1800,21 @@ function updateUi(drawn, now) {
     if (s.n === 1) {
       const context = selectedCitizenContext(wasm, ui);
       const selected=(wasm.selected_actor_handle?.()??0xffffffff)>>>0;
+      if(crownStatusArt&&wasm.crown_visuals_present?.()){
+        const viewer=ui.local;
+        const status=readCrownActorVisuals(wasm,crownStatusArt.rows,{handle:selected,owner:viewer,viewer});
+        if(status.activeRows.length){
+          const tray=document.createElement('div');tray.className='crown-effect-tray';
+          for(const [slot,row] of crownStatusSlots(crownStatusArt.rows,status.activeRows,viewer,viewer).entries()){
+            const source=crownStatusArt.badge(row);
+            if(!source)continue;
+            const badge=document.createElement('img');badge.src=source;badge.width=32;badge.height=32;
+            badge.alt=row.title?.text??row.power;badge.title=row.description?.text??badge.alt;
+            badge.dataset.crownRow=row.id;badge.style.gridColumn=String(slot+1);tray.append(badge);
+          }
+          info.querySelector('h3')?.after(tray);
+        }
+      }
       const toxic=wasm.spy_toxic_status?.(selected)??0;
       const effects=[];
       if(wasm.building_sabotaged?.(selected))effects.push(['sabotage','Sabotiert']);
@@ -1773,10 +1844,14 @@ function updateUi(drawn, now) {
   const spyExtraction=extractionAvailable&&!bench&&!ui.win&&selectedPowerType(s,86);
   const canExtract=spyExtraction&&wasm.spy_extraction_selection_count()>0;
   const flightActions=airMissionActions(airStatus), airArmed=!!airMission?.active();
+  const market=referenceMode&&!bench&&!ui.win&&s.n===1&&s.def===50
+    ?marketOrders(wasm,wasm.selected_actor_handle()>>>0):[];
   const sig = ui.epoch+':'+ui.act.map(a => a.k + a.id + label(a.name,actionUnitId(a))).join(',')+':'+canCapture+':'+canTrade+
     ':'+airStatus?.kind+':'+flightActions.map(action=>action.role+action.ready).join(',')+':'+airStatus?.auto+':'+airArmed+
-    ':'+powerActions.map(({command,ready})=>command.action+ready).join(',')+':'+spyExtraction+':'+canExtract;
+    ':'+powerActions.map(({command,ready})=>command.action+ready).join(',')+':'+spyExtraction+':'+canExtract+
+    ':'+market.map(order=>`${order.host}/${order.resource}/${order.side}/${order.normal}/${order.shift}`).join(',');
   const acts = $('acts');
+  acts.classList.toggle('has-market',market.length>0);
   if (sig !== actSig) {
     actSig = sig; acts.innerHTML = '';
     ui.act.forEach((a, i) => {
@@ -1849,6 +1924,12 @@ function updateUi(drawn, now) {
       if(action.rightCommand)b.oncontextmenu=e=>{e.preventDefault();doAirMission(action.rightCommand);};
       acts.append(b);
     }
+    if(market.length){
+      const grid=document.createElement('div');grid.className='market-grid';
+      grid.setAttribute('role','group');grid.setAttribute('aria-label','Marktaufträge');
+      grid.append(...market.map(order=>marketOrderButton(order,submitMarketOrder,marketArt,nativeMetaEpoch(ui.epoch))));
+      acts.append(grid);
+    }
   }
   ui.act.forEach((action,i)=>acts.children[i]?.classList.toggle('no',!action.ok));
   sciencePanel.refresh(ui);
@@ -1869,6 +1950,11 @@ function updateUi(drawn, now) {
     sfx.play(ui.win === 1 ? 13 : 11);
   }
   nativeBitmapFonts.update();
+}
+
+function submitMarketOrder(host,resource,lots){
+  if(wasm.cmd_market_trade(host,resource,lots)){sfx.play(20);lastUi=0;}
+  else sfx.play(21);
 }
 
 function doAct(i, count=1) {
@@ -2161,6 +2247,7 @@ $('cheat-form').addEventListener('submit', e => {
   $('cheat-input').value = ''; $('cheat-input').focus(); lastUi = 0;
 });
 addEventListener('keydown', e => {
+  $('acts').classList.toggle('market-shift',e.shiftKey);
   if(e.key==='F11'){e.preventDefault();if(!e.repeat)fullscreen.toggle();return;}
   if(gameSettings.active())return;
   if(gameOptions?.active()){
@@ -2182,7 +2269,11 @@ addEventListener('keydown', e => {
     } else fullmap.pipKey(e);
     return;
   }
-  if ($('cheat-dialog').open || $('research-dialog').open || diplomacy.isOpen()) return;
+  if ($('cheat-dialog').open || $('research-dialog').open || $('crown-choice').open || diplomacy.isOpen()) return;
+  if(crownProgress&&running&&e.code==='KeyC'&&e.altKey&&e.shiftKey&&!e.ctrlKey&&!e.metaKey){
+    if(!e.repeat&&crownProgress.toggle())e.preventDefault();
+    return;
+  }
   if(fullmap&&running&&!bench&&!ui?.win&&e.key==='Tab'&&!e.ctrlKey&&!e.altKey&&!e.metaKey&&!e.shiftKey){
     e.preventDefault();if(!e.repeat)fullmap.open();return;
   }
@@ -2211,6 +2302,15 @@ addEventListener('keydown', e => {
     if (e.ctrlKey) { wasm.group_set(n); toast(`Group ${n} set`); }
     else if (wasm.group_get(n)) { activeTargetOrder()?.cancel();tradeRoute?.cancel();airMission?.cancel();const now = performance.now(); if (lastGroup.n === n && now - lastGroup.t < 400) jumpToSelection(); lastGroup = { n, t: now }; lastUi = 0; }
     e.preventDefault(); return;
+  }
+  if(!ghost&&!bench&&!ui?.win&&ui?.sel?.n===1&&ui.sel.def===50){
+    const order=marketOrderHotkey(wasm,wasm.selected_actor_handle()>>>0,e);
+    if(order){
+      e.preventDefault();
+      keys.delete(e.key);
+      if(!e.repeat)submitMarketOrder(order.host,order.resource,order.side*(e.shiftKey?5:1));
+      return;
+    }
   }
   if(k==='S'&&spyEnabled&&!e.altKey&&!e.metaKey&&ui?.sel?.def===47){
     const index=ui.act.findIndex(action=>action.k==='t'&&action.id===86);
@@ -2275,8 +2375,8 @@ addEventListener('keydown', e => {
     case 'F9': if (!net) { wasm.grant(1000); toast('+1000 resources (sandbox cheat)'); } break;
   }
 });
-addEventListener('keyup', e => keys.delete(e.key));
-addEventListener('blur', () => { keys.clear(); cancelMapGesture();taskSwitch(); });
+addEventListener('keyup', e => {keys.delete(e.key);$('acts').classList.toggle('market-shift',e.shiftKey);});
+addEventListener('blur', () => { keys.clear();$('acts').classList.remove('market-shift');cancelMapGesture();taskSwitch(); });
 addEventListener('focus',taskSwitch);
 
 $('idle').onclick = idleWorker;
