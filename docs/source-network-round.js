@@ -90,12 +90,14 @@ const framedLength = record => 5+(record.type==='commands'?record.bytes.length+1
 
 /** An original-style host scheduler over one authenticated link per remote seat. */
 export class SourceRoundPeer {
-  constructor(wasm, seat, send, {renderFps, linkMs, nowSeconds, onRequested, requested = 1, locked = true, humanSeats = 2, resume = null, onCheckpoint = null}) {
+  constructor(wasm, seat, send, {renderFps, linkMs, nowSeconds, onRequested, requested = 1, locked = true, humanSeats = 2, resume = null, onCheckpoint = null, sharedOwner = false}) {
     const tick = wasm.game_tick();
     const validStart = resume === null ? tick === 0 :
       integerIn(resume.tick, 1, 0xfffffffe) && resume.tick === tick && integerIn(resume.rate, 5, BOOTSTRAP_RATE) &&
       wasm.network_resume_pending?.() === 1;
     if (!integerIn(humanSeats, 2, 4) || !integerIn(seat, 0, humanSeats - 1) ||
+        sharedOwner !== (wasm.network_shared_owner?.() === 1) ||
+        (sharedOwner && (humanSeats !== 2 || resume !== null || onCheckpoint !== null)) ||
         (humanSeats > 2 && (typeof wasm.init_network_roster !== 'function' ||
           typeof wasm.network_roster_peer_disconnected !== 'function')) ||
         !validSpeed(requested) || typeof locked !== 'boolean' ||
@@ -105,6 +107,7 @@ export class SourceRoundPeer {
     this.wasm = wasm;
     this.local = seat;
     this.humanSeats = humanSeats;
+    this.sharedOwner = sharedOwner;
     this.send = send;
     this.renderFps = renderFps;
     this.linkMs = linkMs;
@@ -298,7 +301,7 @@ export class SourceRoundPeer {
       } else {
         const pointer = w.inbox_alloc(record.bytes.length);
         new Uint8Array(w.memory.buffer, pointer, record.bytes.length).set(record.bytes);
-        w.net_apply(record.seat);
+        w.net_apply(this.sharedOwner ? 0 : record.seat);
       }
     }
   }
@@ -314,8 +317,15 @@ export class SourceRoundPeer {
     return true;
   }
 
+  detachSharedController(seat) {
+    if (!this.sharedOwner || this.local !== 0 || !this.links.delete(seat)) return false;
+    // Removing a controller leaves the shared world's player and admitted orders intact.
+    if (this.round < 0 && !this.terminal && !this.desync) this.activate();
+    return true;
+  }
+
   dropPeer() {
-    if (this.humanSeats !== 2 || this.alone || this.terminal || this.desync) return false;
+    if (this.sharedOwner || this.humanSeats !== 2 || this.alone || this.terminal || this.desync) return false;
     this.alone = true;
     this.waiting = false;
     this.remainder = 0;

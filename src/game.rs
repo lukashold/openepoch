@@ -379,7 +379,8 @@ pub struct Game {
 
 impl Game {
     pub fn new(seed: u32, n_ai: u32, bench: u32, humans: u32, local: u32) -> Game {
-        Self::new_with_humans(seed, n_ai, bench, humans.clamp(1, 2), local)
+        let humans = humans.clamp(1, 2);
+        Self::new_with_humans(seed, n_ai, bench, humans, local, humans > 1)
     }
 
     #[cfg(feature = "ee2-native13")]
@@ -387,10 +388,17 @@ impl Game {
         if !(3..=4).contains(&humans) || local >= humans || n_ai > 4 - humans {
             return None;
         }
-        Some(Self::new_with_humans(seed, n_ai, 0, humans, local))
+        Some(Self::new_with_humans(seed, n_ai, 0, humans, local, true))
     }
 
-    fn new_with_humans(seed: u32, n_ai: u32, bench: u32, humans: u32, local: u32) -> Game {
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn new_shared_owner_network(seed: u32) -> Self {
+        let mut game = Self::new_with_humans(seed, 1, 0, 1, 0, true);
+        game.configure_shared_owner_termination();
+        game
+    }
+
+    fn new_with_humans(seed: u32, n_ai: u32, bench: u32, humans: u32, local: u32, net: bool) -> Game {
         let nplayers = ((humans + n_ai) as usize).clamp(2, 4);
         let map = Map::new(seed.max(1), nplayers);
         let mut g = Game {
@@ -405,29 +413,29 @@ impl Game {
             #[cfg(feature = "ee2-native13")]
             capture: capture25::State::default(),
             #[cfg(feature = "ee2-native13")]
-            capture_enabled: humans == 1 && bench == 0,
+            capture_enabled: !net && bench == 0,
             #[cfg(feature="ee2-native13")]
-            capture_animation_enabled: humans == 1 && bench == 0,
+            capture_animation_enabled: !net && bench == 0,
             #[cfg(feature="ee2-native13")]
-            infantry_roster_enabled: humans == 1 && bench == 0,
+            infantry_roster_enabled: !net && bench == 0,
             #[cfg(feature="ee2-native13")]
-            production_roster_enabled: humans == 1 && bench == 0,
+            production_roster_enabled: !net && bench == 0,
             #[cfg(feature="ee2-native13")]
-            trade_enabled: humans == 1 && bench == 0,
+            trade_enabled: !net && bench == 0,
             #[cfg(feature = "ee2-native13")]
             trade: trade30::State::default(),
             #[cfg(feature = "ee2-native13")]
-            air_missions_enabled: humans == 1 && bench == 0,
+            air_missions_enabled: !net && bench == 0,
             #[cfg(feature = "ee2-native13")]
-            air_runway_enabled: humans == 1 && bench == 0,
+            air_runway_enabled: !net && bench == 0,
             #[cfg(feature = "ee2-native13")]
-            air_takeoff_enabled: humans == 1 && bench == 0,
+            air_takeoff_enabled: !net && bench == 0,
             #[cfg(feature = "ee2-native13")]
             takeoff: crate::takeoff33::State::default(),
             #[cfg(feature = "ee2-native13")]
-            air_landing_enabled: humans == 1 && bench == 0,
+            air_landing_enabled: !net && bench == 0,
             #[cfg(feature="ee2-native13")]
-            air_carrier_enabled: humans == 1 && bench == 0,
+            air_carrier_enabled: !net && bench == 0,
             #[cfg(feature="ee2-native13")]
             solo_command_queue: false,
             #[cfg(feature="ee2-native13")]
@@ -514,7 +522,7 @@ impl Game {
             spy_extraction: spy_extraction46::Extraction::default(),
             #[cfg(feature = "ee2-native13")]
             priest_effects: Vec::new(),
-            net: humans > 1,
+            net,
             seed0: seed,
             n_ai,
             humans,

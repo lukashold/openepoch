@@ -33,7 +33,7 @@ fn fill<T: Copy>(dst: &mut [T], src: &[u8]) {
 impl Game {
     pub fn save(&mut self) {
         // A larger roster has no resumable multiplayer archive format yet.
-        if self.humans > 2 {
+        if self.humans > 2 || (self.net && self.humans == 1) {
             self.savebuf.clear();
             return;
         }

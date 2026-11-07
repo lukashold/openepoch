@@ -1,5 +1,5 @@
-// A host and independent authenticated RTC links for the optional 3/4-seat mode.
-import {createSourceRosterCarrier,createSourceCheckpointCarrier} from './source-network-wire.js?v=native48';
+// A host and independent authenticated RTC links for roster and shared-owner rooms.
+import {createSourceRosterCarrier,createSourceCheckpointCarrier,createSourceSharedOwnerCarrier} from './source-network-wire.js?v=native50';
 import {captureBrowserCheckpoint,readBrowserCheckpoint,sendCheckpointWindow,receiveCheckpointChunk,
   validCheckpointDigest,validCheckpointSize,CHECKPOINT_WINDOW} from './source-network-checkpoint.js?v=native48';
 
@@ -23,7 +23,7 @@ function unpackCode(code,kind) {
 }
 
 export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHello,makeSettings,checkSettings,
-  launch,onOpen,onDeparture,onHostLoss,validateArchive,onCheckpointState}) {
+  launch,onOpen,onDeparture,onHostLoss,validateArchive,onCheckpointState,sharedOwnerAvailable}) {
   const get=id=>root.querySelector('#mp-roster-'+id);
   const status=get('status'),hostRoom=get('host-room'),guestRoom=get('guest-room');
   const startButton=get('start'),countSelect=get('count'),aiSelect=get('ai');
@@ -69,9 +69,12 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
   function updateHost(room) {
     const ready=connected(room);
     if(room.phase==='lobby'){
-      startButton.disabled=ready!==room.seats;
+      const incompatible=room.sharedOwner&&[...room.links.values()].some(link=>link.hello&&!link.hello.sharedOwner);
+      startButton.disabled=ready!==room.seats||incompatible;
       const count=`${ready}/${room.seats} Plätze`;
-      setStatus(room.archive?`Spielstand bei Schritt ${room.archive.decoded.meta.tick} · ${count} verbunden.`:`${count} bereit.`);
+      if(incompatible)setStatus('Der Mitspieler benötigt eine Spielversion mit gemeinsamer Zivilisation.');
+      else if(room.sharedOwner)setStatus(`Gemeinsame Zivilisation gegen die KI · ${count} bereit.`);
+      else setStatus(room.archive?`Spielstand bei Schritt ${room.archive.decoded.meta.tick} · ${count} verbunden.`:`${count} bereit.`);
     }
     for(const link of room.links.values())if(link.hello&&link.channel?.readyState==='open')
       control(link,room,'presence',{count:ready});
@@ -87,14 +90,18 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
       return;
     }
     if(room.local!==0){
-      if(room.phase==='playing')onHostLoss(room.session);
+      if(room.phase==='playing'){
+        if(room.settings.sharedOwner)room.session.connected(1);
+        onHostLoss(room.session);
+      }
       else reset('Die Verbindung zum Host wurde getrennt.');
       return;
     }
     room.links.delete(link.seat);
     if(room.phase==='playing'){
       if(room.save)failCheckpoint(room,'Spielstand konnte nicht von allen bestätigt werden.');
-      if(room.seats>2)room.session.peer.detachPeer(link.seat);
+      if(room.settings.sharedOwner)room.session.peer.detachSharedController(link.seat);
+      else if(room.seats>2)room.session.peer.detachPeer(link.seat);
       else{
         room.session.peer.rosterUnavailable=true;
         room.session.peer.setTransportAvailable(false);
@@ -121,7 +128,8 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
     room.session=launch(room.settings,room.local,send,()=>[...room.links.values()],{archive:room.archive,onCheckpoint});
     room.phase='playing';
     room.archive=null;
-    const makeCarrier=room.checkpoints?createSourceCheckpointCarrier:createSourceRosterCarrier;
+    const makeCarrier=room.settings.sharedOwner?createSourceSharedOwnerCarrier:
+      room.checkpoints?createSourceCheckpointCarrier:createSourceRosterCarrier;
     for(const link of room.links.values()){
       link.carrier=makeCarrier(bytes=>{
         if(link.channel.readyState==='open')link.channel.send(bytes);
@@ -264,6 +272,8 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
         room.settings=checkSettings(message.settings,room.seats);
         room.checkpoints=message.checkpoints===true&&!!validateArchive;
         if(message.checkpoints===true&&!room.checkpoints)throw Error('Diese Spielversion kann gemeinsame Spielstände nicht öffnen.');
+        if(room.settings.sharedOwner&&(!link.hello.sharedOwner||room.checkpoints))
+          throw Error('Ungültige Einstellungen für die gemeinsame Zivilisation.');
         room.phase='preparing';
         armPreparation(room);
         confirmPrepared(room,link);
@@ -388,9 +398,9 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
     aiSelect.options[1].disabled=four;
     if(four)aiSelect.value='0';
   };
-  function finishHostRoom(room,seats,ai,archive=null) {
-    Object.assign(room,{seats,ai,archive,phase:'lobby'});
-    startButton.textContent=archive?'Spielstand fortsetzen':'Partie starten';
+  function finishHostRoom(room,seats,ai,archive=null,sharedOwner=false) {
+    Object.assign(room,{seats,ai,archive,sharedOwner,phase:'lobby'});
+    startButton.textContent=archive?'Spielstand fortsetzen':sharedOwner?'Koop-Partie starten':'Partie starten';
     for(let seat=1;seat<room.seats;seat++)addHostRow(room,seat);
     updateHost(room);
   }
@@ -406,6 +416,14 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
     const seats=Number(countSelect.value),ai=Number(aiSelect.value);
     if(!integer(seats,validateArchive?2:3,4)||!integer(ai,0,Math.min(1,4-seats)))return;
     finishHostRoom(openHostRoom(),seats,ai);
+  };
+  get('coop').hidden=!sharedOwnerAvailable;
+  get('coop').onclick=()=>{
+    if(!sharedOwnerAvailable)return;
+    countSelect.value='2';
+    countSelect.onchange();
+    aiSelect.value='1';
+    finishHostRoom(openHostRoom(),2,1,null,true);
   };
   get('resume-file').onchange=async()=>{
     const file=get('resume-file').files[0];
@@ -453,11 +471,12 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
     if(!room||room.local!==0||room.phase!=='lobby'||connected(room)!==room.seats)return;
     try{
       const guests=[...room.links].sort(([left],[right])=>left-right).map(([,link])=>link.hello);
-      room.checkpoints=!!validateArchive&&guests.every(guest=>guest.checkpoints);
+      if(room.sharedOwner&&!guests.every(guest=>guest.sharedOwner))throw Error('Der Mitspieler benötigt eine Spielversion mit gemeinsamer Zivilisation.');
+      room.checkpoints=!room.sharedOwner&&!!validateArchive&&guests.every(guest=>guest.checkpoints);
       if(room.archive&&(!room.checkpoints||!guests.every(guest=>guest.climates.includes(room.archive.settings.climate)&&
           room.archive.settings.features.every(key=>guest.features.includes(key)))))
         throw Error('Einem Mitspieler fehlen Regeln oder Grafiken für diesen Spielstand.');
-      const settings=room.archive?.settings??makeSettings(room.seats,room.ai,guests);
+      const settings=room.archive?.settings??makeSettings(room.seats,room.ai,guests,room.sharedOwner);
       room.settings=checkSettings(settings,room.seats);
       room.phase='preparing';
       startButton.disabled=true;

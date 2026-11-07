@@ -36,6 +36,10 @@ impl Resignation {
 }
 
 impl Game {
+    pub(crate) fn configure_shared_owner_termination(&mut self) {
+        self.net_resignation = Some(Resignation { policy: 1, departed: 0, defeated: 0, finished: false });
+    }
+
     pub(crate) fn network_resume_eligible(&self) -> bool {
         self.net && self.bench == 0 && (1..u32::MAX).contains(&self.tick) && self.winner == 0
             && self.network_resume_tempo.is_none() && self.source_clock.is_some_and(|clock| clock.network)
@@ -59,7 +63,7 @@ impl Game {
     }
 
     pub(crate) fn network_departure_allowed(&self, team: u8) -> bool {
-        team < self.humans as u8 && self.players[team as usize].alive && !self.players[team as usize].ai &&
+        self.humans > 1 && team < self.humans as u8 && self.players[team as usize].alive && !self.players[team as usize].ai &&
             self.net_resignation.is_some_and(|state| !state.finished && !state.observer(team))
     }
 

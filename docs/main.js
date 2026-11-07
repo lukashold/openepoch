@@ -39,12 +39,12 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=clock38';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native-spy';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native50';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native44';
-import {SourceRoundPeer, SOURCE_ROUND_VERSION} from './source-network-round.js?v=native48';
-import {createSourceRoundCarrier, selectedRoundTripMilliseconds} from './source-network-wire.js?v=native48';
-import {mountSourceRosterLobby} from './source-network-lobby.js?v=native48';
+import {SourceRoundPeer, SOURCE_ROUND_VERSION} from './source-network-round.js?v=native50';
+import {createSourceRoundCarrier, selectedRoundTripMilliseconds} from './source-network-wire.js?v=native50';
+import {mountSourceRosterLobby} from './source-network-lobby.js?v=native50';
 import {applyNetworkCheckpoint} from './source-network-resume.js?v=native48';
 import {createFullscreenController} from './fullscreen.js?v=building2';
 import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native17';
@@ -2318,7 +2318,9 @@ function sourceRoundStatus(peer) {
   if(peer.rosterUnavailable)return 'Mitspieler getrennt · Partie angehalten';
   if(peer.rosterConnected!==undefined&&!peer.transportAvailable)return 'Verbindung zum Host unterbrochen · warte';
   const label=peer.alone?'Nach Verbindungsabbruch lokal':peer.waiting?'Warte auf Mitspieler':'Originaler Rundentakt';
-  const roster=peer.rosterConnected===undefined?'':` · ${peer.rosterConnected}/${peer.humanSeats} Plätze verbunden`;
+  const roster=peer.rosterConnected===undefined?'':peer.sharedOwner
+    ?` · Gemeinsame Zivilisation · ${peer.rosterConnected}/${peer.humanSeats} Controller verbunden`
+    :` · ${peer.rosterConnected}/${peer.humanSeats} Plätze verbunden`;
   return peer.round<0?label+roster:`${label}${roster} · Runde ${peer.round+1} · ${peer.rate} Hz · ${peer.length} Schritte/Runde`;
 }
 
@@ -2572,6 +2574,9 @@ function checkRosterSettings(cfg,humanSeats) {
     ![250,500,1000].includes(cfg.popLimit)||![0,1,2].includes(cfg.supplies)||!Number.isInteger(cfg.resignationPolicy)||
     cfg.resignationPolicy<0||cfg.resignationPolicy>7||!Number.isInteger(cfg.ceasefire)||cfg.ceasefire<0||cfg.ceasefire>10||
     (cfg.ceasefire>0&&!hasInitialCeasefire))throw Error('Ungültige Scharmützeleinstellungen für diesen Raum.');
+  const sharedOwner=cfg.sharedOwner===true;
+  if(cfg.sharedOwner!==undefined&&(!sharedOwner||!supportsSharedOwner||humanSeats!==2||cfg.ai!==1))
+    throw Error('Ungültige Einstellungen für die gemeinsame Zivilisation.');
   const features=cfg.features;
   if(!Array.isArray(features)||new Set(features).size!==features.length||features.some(key=>!Object.hasOwn(rosterFeatures,key)))
     throw Error('Der Raum verwendet nicht verfügbare Spielbefehle.');
@@ -2581,19 +2586,23 @@ function checkRosterSettings(cfg,humanSeats) {
   checkedEpochRange(cfg.epoch,cfg.finalEpoch,wasm.epoch_count());
   return {humanSeats,ai:cfg.ai,seed:cfg.seed,visibility:cfg.visibility,popLimit:cfg.popLimit,supplies:cfg.supplies,
     resignationPolicy:cfg.resignationPolicy,ceasefire:cfg.ceasefire,epoch:cfg.epoch,finalEpoch:cfg.finalEpoch,
-    civilizations:checkedCivilizations(cfg.civilizations,humanSeats+cfg.ai),
+    civilizations:checkedCivilizations(cfg.civilizations,sharedOwner?2:humanSeats+cfg.ai),
     climate:checkedClimate(cfg.climate,climates),seasons:peerSeasonSettings(cfg.seasons),
-    gameTempo:checkOriginalTempo(cfg.gameTempo),features:supportedRosterFeatures.filter(key=>features.includes(key))};
+    gameTempo:checkOriginalTempo(cfg.gameTempo),features:supportedRosterFeatures.filter(key=>features.includes(key)),
+    ...(sharedOwner?{sharedOwner:true}:{})};
 }
 
 function startRosterGame(cfg,seat,send,links,{archive,onCheckpoint}) {
+  const sharedOwner=cfg.sharedOwner===true;
   if(archive)applyNetworkCheckpoint(wasm,archive.decoded,seat,cfg.humanSeats);
   else{
-    if(cfg.humanSeats===2)wasm.init(cfg.seed,cfg.ai,0,2,seat);
+    if(sharedOwner){
+      if(wasm.init_network_shared_owner(cfg.seed,seat)!==1)throw Error('Der Koop-Controller konnte nicht gestartet werden.');
+    }else if(cfg.humanSeats===2)wasm.init(cfg.seed,cfg.ai,0,2,seat);
     else if(wasm.init_network_roster(cfg.seed,cfg.ai,cfg.humanSeats,seat)!==1)throw Error('Dieser Spielerplatz konnte nicht gestartet werden.');
-    applyMatchSettings(wasm,cfg,cfg.humanSeats+cfg.ai);
+    applyMatchSettings(wasm,cfg,sharedOwner?2:cfg.humanSeats+cfg.ai);
     wasm.skirmish_visibility(cfg.visibility);
-    if(!wasm.configure_network_resignation(cfg.resignationPolicy)||
+    if((!sharedOwner&&!wasm.configure_network_resignation(cfg.resignationPolicy))||
       (cfg.ceasefire&&!wasm.configure_initial_ceasefire(cfg.ceasefire)))throw Error('Die Regeln für diesen Raum konnten nicht aktiviert werden.');
     for(const name of cfg.features)if(wasm[rosterFeatures[name]](1)!==1)throw Error('Ein Spielbefehl konnte nicht aktiviert werden.');
   }
@@ -2604,10 +2613,10 @@ function startRosterGame(cfg,seat,send,links,{archive,onCheckpoint}) {
   const requested=resume?.requested??originalStartingSpeed(cfg.gameTempo);
   const locked=resume?.locked??cfg.gameTempo.locked;
   const peer=new SourceRoundPeer(wasm,seat,send,{humanSeats:cfg.humanSeats,
-    requested,locked,resume,onCheckpoint,
+    requested,locked,resume,onCheckpoint,sharedOwner,
     renderFps:()=>adaptiveRenderSample.fps,linkMs:other=>roundTrip.get(other)??0,
     nowSeconds:()=>performance.now()/1000,onRequested:applyRequestedSpeed});
-  const session={roster:true,sourceRounds:true,ls:peer,resignation:true,checkpointHost:seat===0&&!!onCheckpoint};
+  const session={roster:true,sourceRounds:true,ls:peer,resignation:!sharedOwner,checkpointHost:seat===0&&!!onCheckpoint};
   if(seat===0)session.refreshLink=now=>{
     if(peer.terminal||peer.desync||now<nextStats)return;
     nextStats=now+1000;
@@ -2621,7 +2630,7 @@ function startRosterGame(cfg,seat,send,links,{archive,onCheckpoint}) {
   if(referenceMode)cam.nativeFraction=.2;
   peer.rosterConnected=cfg.humanSeats;
   begin({...startingTempo(cfg.gameTempo),requested,locked});
-  toast(archive?`Spielstand fortgesetzt · Platz ${seat+1}`:`Mehrspieler · Platz ${seat+1}`);
+  toast(archive?`Spielstand fortgesetzt · Platz ${seat+1}`:sharedOwner?'Koop · Gemeinsame Zivilisation gegen die KI':`Mehrspieler · Platz ${seat+1}`);
   return {peer,connected:count=>{peer.rosterConnected=count;}};
 }
 
@@ -2629,6 +2638,7 @@ const supportsSourceRoster=supportsSourceNetworkClock&&civilizationSetup.enabled
   typeof wasm.init_network_roster==='function'&&typeof wasm.network_roster_peer_disconnected==='function';
 const supportsNetworkCheckpoint=supportsSourceRoster&&!!globalThis.crypto?.subtle&&
   ['save_network_resume','load_network_resume','validate_network_resume','network_resume_pending'].every(name=>typeof wasm[name]==='function');
+const supportsSharedOwner=supportsSourceRoster&&typeof wasm.init_network_shared_owner==='function'&&typeof wasm.network_shared_owner==='function';
 // The ordinary roster hello keeps its Native46 simulation compatibility key.
 const rosterProfile='openepoch-ee2-up15.wasm?v=native46';
 let checkpointDownload=null;
@@ -2645,25 +2655,31 @@ $('mp-roster-count').querySelector('[value="2"]').hidden=!supportsNetworkCheckpo
 const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
   rtcHost,rtcJoin,
   localHello:()=>({protocol:PROTOCOL_VERSION,profile:rosterProfile,rules:wasm.ruleset(),
-    civilization:civilizationSetup.choice(0),climates,features:supportedRosterFeatures,checkpoints:supportsNetworkCheckpoint}),
+    civilization:civilizationSetup.choice(0),climates,features:supportedRosterFeatures,
+    checkpoints:supportsNetworkCheckpoint,sharedOwner:supportsSharedOwner}),
   checkHello(hello){
     if(hello?.protocol!==PROTOCOL_VERSION||hello.profile!==rosterProfile||hello.rules!==wasm.ruleset()||
       !Array.isArray(hello.features)||hello.features.length>11||hello.features.some(key=>typeof key!=='string'))
       throw Error('Alle Teilnehmer brauchen dieselbe UP-Spielversion.');
-    return {civilization:civilizationChoice(hello.civilization),climates:peerClimates(hello.climates),features:hello.features,checkpoints:hello.checkpoints===true};
+    return {civilization:civilizationChoice(hello.civilization),climates:peerClimates(hello.climates),features:hello.features,
+      checkpoints:hello.checkpoints===true,sharedOwner:hello.sharedOwner===true};
   },
-  makeSettings(humanSeats,ai,guests){
+  makeSettings(humanSeats,ai,guests,sharedOwner){
     const choices=civilizationSetup.choices(),climate=menuClimate();
     if(!guests.every(guest=>guest.climates.includes(climate)))throw Error('Einem Mitspieler fehlen die Grafiken für dieses Klima.');
-    for(const [index,guest] of guests.entries())choices[index+1]=guest.civilization;
+    if(!sharedOwner)for(const [index,guest] of guests.entries())choices[index+1]=guest.civilization;
     return {humanSeats,ai,seed:(seedOf()>>>0)||1,visibility:+$('map-visibility').value,
       popLimit:+$('pop-limit').value,supplies:+$('supplies').value,resignationPolicy:+$('mp-resign-policy').value,
       ceasefire:+$('initial-ceasefire').value,climate,seasons:menuSeasonSettings(),gameTempo:menuTempo(),
       features:supportedRosterFeatures.filter(key=>guests.every(guest=>guest.features.includes(key))),
-      ...resolvedSkirmishChoices(choices,humanSeats+ai)};
+      ...resolvedSkirmishChoices(choices,sharedOwner?2:humanSeats+ai),...(sharedOwner?{sharedOwner:true}:{})};
   },
   checkSettings:checkRosterSettings,
-  validateArchive:supportsNetworkCheckpoint?(archive,seat,seats)=>applyNetworkCheckpoint(wasm,archive.decoded,seat,seats,true):null,
+  validateArchive:supportsNetworkCheckpoint?(archive,seat,seats)=>{
+    if(archive.settings.sharedOwner!==undefined)throw Error('Dieser Spielstand enthält eine unbekannte Spielerzuordnung.');
+    applyNetworkCheckpoint(wasm,archive.decoded,seat,seats,true);
+  }:null,
+  sharedOwnerAvailable:supportsSharedOwner,
   onCheckpointState(message,archive){
     toast(message);
     if(archive){

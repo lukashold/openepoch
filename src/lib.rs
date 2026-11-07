@@ -256,6 +256,22 @@ pub extern "C" fn init_network_roster(seed: u32, n_ai: u32, humans: u32, local: 
     1
 }
 
+/// Two controllers share the single human world player against one computer.
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn init_network_shared_owner(seed: u32, controller: u32) -> u32 {
+    if controller > 1 { return 0; }
+    install_game(Game::new_shared_owner_network(seed));
+    1
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn network_shared_owner() -> u32 {
+    let game = g();
+    u32::from(game.net && game.humans == 1)
+}
+
 fn install_game(game: Game) {
     unsafe {
         *addr_of_mut!(GAME) = Some(Box::new(game));
@@ -726,7 +742,7 @@ pub extern "C" fn inbox_alloc(len: u32) -> *mut u8 {
 #[no_mangle]
 pub extern "C" fn net_apply(team: u32) {
     let game = g();
-    let limit = if game.humans > 2 { game.humans } else { game.nplayers as u32 };
+    let limit = if game.net && game.humans != 2 { game.humans } else { game.nplayers as u32 };
     if team < limit { game.net_apply(team as u8); }
 }
 #[no_mangle]
