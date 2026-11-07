@@ -2,14 +2,14 @@
 // The simulation lives in openepoch.wasm (Rust); this file never touches game rules.
 import { buildAtlas, tintAtlas, CELL } from './atlas.js?v=fortress1';
 import { buildModels } from './models.js?v=fortress1';
-import { parseCheat } from './cheats.js?v=native19';
+import { parseCheat } from './cheats.js?v=native41';
 import { researchPanel } from './research.js?v=rank-families';
 import { originalResearchActions, researchCost, researchState } from './original-research-actions.js?v=rank-families';
 import { diplomacyPanel } from './diplomacy.js?v=native17';
 import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native6';
 import {loadNativeFontUI} from './original-font-ui.js?v=native21names';
 import {territoryClaimMessage} from './territory-help.js?v=fortress1';
-import * as sfx from './audio.js?v=native40clock';
+import * as sfx from './audio.js?v=native41';
 import {generatedAmbientCoverage,loadOriginalAmbient,originalAmbientPriorities} from './original-ambient.js?v=ambient39';
 import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=citizen9';
 import {mountOriginalShellVideo} from './original-shell-video.js?v=native12';
@@ -25,7 +25,7 @@ import {loadSourceSailRuntime} from './source-sail-runtime.js?v=sails7';
 import {createRenderAssetMapping} from './original-render-namespace.js?v=native6';
 import {createFrontendNamespace} from './render-namespace.js?v=native36';
 import {ORIGINAL_SPEEDS, changeOriginalSpeed, checkOriginalTempo, loadOriginalTempo, originalStartingSpeed} from './original-game-tempo.js?v=native37';
-import {advanceSourceSoloFrame, SOURCE_SOLO_INTERVAL, sourceRenderSeconds, sourceStepDelta} from './source-solo-clock.js?v=native40clock';
+import {advanceAdaptiveSourceFrame, advanceSourceSoloFrame, createAdaptiveSourceClock, sampleSourceRenderFps, SOURCE_SOLO_INTERVAL, sourceRenderSeconds, sourceStepDelta, sourceWallInterval} from './source-solo-clock.js?v=native41';
 import {mountOriginalGameOptions} from './original-game-options.js?v=native37';
 import {mountOriginalGameSettings} from './original-game-settings.js?v=native38audio';
 import {createRenderActorMetadata} from './render-actor-metadata.js?v=pack8';
@@ -39,7 +39,7 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=clock38';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native40clock';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native41';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native37';
 import {createFullscreenController} from './fullscreen.js?v=building2';
@@ -633,7 +633,10 @@ let restartPoint = null;
 const hasOriginalTempo = rulesProfile.id==='up15';
 if(hasOriginalTempo)sfx.initializeOriginalAudioSettings();
 const supportsSourceSoloClock = hasOriginalTempo && typeof wasm.tick_with_source_delta === 'function';
+const supportsAdaptiveSoloClock = supportsSourceSoloClock && typeof wasm.tick_with_adaptive_source_slot === 'function';
 let sourceSoloClock = false;
+let adaptiveSoloClock = null;
+const adaptiveRenderSample = {remainder:0,count:0,fps:0};
 $('original-tempo-options').hidden = !hasOriginalTempo;
 const hasNetworkResignation=hasOriginalTempo&&typeof wasm.configure_network_resignation==='function';
 $('mp-resignation-options').hidden=!hasNetworkResignation;
@@ -652,6 +655,8 @@ function updateInitialCeasefire() {
   if(ceasefireStatus.textContent!==text)ceasefireStatus.textContent=text;
 }
 $('source-solo-clock-option').hidden = !supportsSourceSoloClock;
+$('source-adaptive-clock-option').hidden = !supportsAdaptiveSoloClock;
+$('source-solo-clock').onchange = () => { $('source-adaptive-clock').disabled = !$('source-solo-clock').checked; };
 function menuTempo() {
   return checkOriginalTempo({preset: +$('game-speed-preset').value, locked: $('game-speed-locked').checked});
 }
@@ -890,9 +895,14 @@ function bindWorldTerrainMaterial() {
   });
 }
 
-function begin(tempo = null, useSourceClock = wasm.sim_clock_active?.() === 1) {
+function begin(tempo = null, useSourceClock = wasm.sim_clock_active?.() === 1, adaptiveStartRate = 0) {
   if(tempo&&!net&&!wasm.configure_solo_command_queue(1))throw Error('Befehlswarteschlange konnte nicht aktiviert werden');
   sourceSoloClock = supportsSourceSoloClock && !net && !bench && useSourceClock;
+  const storedRate = wasm.sim_adaptive_rate?.() ?? 0;
+  const adaptiveRate = storedRate || adaptiveStartRate;
+  adaptiveSoloClock = sourceSoloClock && supportsAdaptiveSoloClock && adaptiveRate
+    ? createAdaptiveSourceClock(wasm.game_tick(), adaptiveRate, storedRate ? wasm.sim_adaptive_scale() : tempo?.requested ?? 1)
+    : null;
   originalModels.clearResourcePicks();
   takeoffAudio?.reset();
   sfx.resetAirFlightAudio();
@@ -988,10 +998,13 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
   cam.heading=0;
   if(referenceMode)cam.nativeFraction=benchUnits?originalFractionForZoom(11,innerWidth,innerHeight):.2;
   const soloOriginal = hasOriginalTempo && !benchUnits && humans === 1;
-  begin(soloOriginal ? startingTempo(menuTempo()) : null, soloOriginal && $('source-solo-clock').checked);
+  const source = soloOriginal && $('source-solo-clock').checked;
+  const adaptive = source && supportsAdaptiveSoloClock && $('source-adaptive-clock').checked;
+  begin(soloOriginal ? startingTempo(menuTempo()) : null, source, adaptive ? 30 : 0);
   if(originalTempo){
     const bytes=worldSaveBytes();
-    if(bytes)restartPoint={bytes,cam:{...cam},...(sourceSoloClock ? {sourceSoloClock:true} : {})};
+    if(bytes)restartPoint={bytes,cam:{...cam},...(sourceSoloClock ? {sourceSoloClock:true} : {}),
+      ...(adaptiveSoloClock ? {adaptiveSourceClock:true} : {})};
   }
 }
 
@@ -1019,6 +1032,7 @@ async function saveGame(silent) {
     const record={bytes,cam:{...cam},when:Date.now(),epoch:ui?ui.ename:'',session:saveSession,seasons:seasonSession.settings,
       ...(originalTempo?{gameTempo:{...originalTempo,requested:speed}}:{}),
       ...(sourceSoloClock?{sourceSoloClock:true}:{}),
+      ...(adaptiveSoloClock&&wasm.game_tick()===0?{adaptiveStartRate:adaptiveSoloClock.rate}:{}),
       ...(restartPoint?{restart:restartPoint}:{}),
       ...(seasonSession.climate?{climate:seasonSession.climate}:{}),rules:rulesProfile.ruleset,profile:rulesProfile.id};
     const d=await db();
@@ -1046,7 +1060,10 @@ async function loadGame(slot='slot1') {
   cam.heading=normalizeOriginalHeading(s.cam?.heading??0);
   seasonSession.configure(seasons,climate);setSeasonControls(seasons);climateControl.value=climate;
   if(referenceMode)cam.nativeFraction=Number.isFinite(s.cam?.nativeFraction)?s.cam.nativeFraction:originalFractionForZoom(s.cam?.zoom??28,innerWidth,innerHeight);
-  begin(tempo, wasm.sim_clock_active?.() === 1 || (s.sourceSoloClock === true && wasm.game_tick() === 0));
+  const unstarted = s.sourceSoloClock === true && wasm.game_tick() === 0;
+  const adaptiveStartRate = unstarted && Number.isInteger(s.adaptiveStartRate) && s.adaptiveStartRate >= 5 && s.adaptiveStartRate <= 30
+    ? s.adaptiveStartRate : 0;
+  begin(tempo, wasm.sim_clock_active?.() === 1 || unstarted, adaptiveStartRate);
   toast('Spielstand geladen');
 }
 async function refreshContinue() {
@@ -1068,6 +1085,17 @@ function advance(dt, now) {
     let steps = 0; const t0 = performance.now();
     while (acc >= TICK && steps < 8 && net.ls.step()) { acc -= TICK; steps++; }
     if (steps) { simMs += ((performance.now() - t0) / steps - simMs) * 0.1; waitSince = now; }
+  } else if (adaptiveSoloClock) {
+    const result = advanceAdaptiveSourceFrame(adaptiveSoloClock, dt, paused, adaptiveRenderSample.fps, {
+      requested: () => speed,
+      beforeAdmit: () => {
+        if (pendingTempo) { applyRequestedSpeed(pendingTempo); pendingTempo = 0; }
+      },
+      nowSeconds: () => performance.now() / 1000,
+      admit: (oldRate, rate, scale) => wasm.tick_with_adaptive_source_slot(oldRate, rate, scale) === 1,
+    });
+    visualSeconds = result.gameSeconds;
+    if (result.steps) simMs = adaptiveSoloClock.cpuSeconds * 1000;
   } else if (sourceSoloClock) {
     const t0 = performance.now();
     const result = advanceSourceSoloFrame(acc, dt, paused, () => {
@@ -1096,7 +1124,7 @@ function advance(dt, now) {
       if(airFlightAudio&&shot&&sfx.airFlightAttackHandled(shot&0xffff,shot>>>16,wasm.air_audio_shot_duration(i/3)))continue;
       const kind = ev[i], x = ev[i + 1], y = ev[i + 2];
       const citizen = decodeCitizenDeathCue(kind);
-      if (kind >= 12 && !citizen && kind !== sfx.STONE_THROWER_LAUNCH_CUE && kind !== sfx.CAPTURE_COMPLETE_CUE) {
+      if (kind >= 12 && !citizen && kind !== sfx.STONE_THROWER_LAUNCH_CUE && kind !== sfx.CAPTURE_COMPLETE_CUE && kind !== sfx.CONVERT_CUE) {
         sfx.play(kind, 1, 0);
       } else if (referenceMode && !shot && kind !== sfx.CAPTURE_COMPLETE_CUE) {
         sfx.playWorld(kind,x,y,groundAt(x,y),view,citizen);
@@ -1189,7 +1217,8 @@ function drawFallbackModels(vp,ranges) {
 }
 
 function frame(now) {
-  const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  const wallSeconds = (now - last) / 1000;
+  const dt = Math.min(0.1, wallSeconds); last = now;
   if (!running) { sfx.menuMusic(); return; }
   if (worldMaterialPending) return;
   if(gameSettings.active())sfx.menuMusic();
@@ -1221,7 +1250,9 @@ function frame(now) {
       weather:'Normal',running:audible,priorities:audible?originalAmbientPriorities(ambientCoverage,view,u8(wasm.fog_ptr(),MAP*MAP)):null});
   }
   if(captureGlow&&!paused&&!(net&&net.ls.waiting)&&wasm.has_active_capture_glow())captureGlow.advance(visualSeconds);
-  const alpha = paused || (net && net.ls.waiting) ? 1 : Math.min(1, acc / (sourceSoloClock ? SOURCE_SOLO_INTERVAL : TICK));
+  const interpolation = adaptiveSoloClock ? adaptiveSoloClock.remainder / sourceWallInterval(adaptiveSoloClock.rate)
+    : acc / (sourceSoloClock ? SOURCE_SOLO_INTERVAL : TICK);
+  const alpha = paused || (net && net.ls.waiting) ? 1 : Math.min(1, interpolation);
   if (!net && !bench && now - lastAuto > 180000) { lastAuto = now; saveGame(true); }
 
   const dpr = Math.min(+($('quality').value), devicePixelRatio || 1);
@@ -1374,6 +1405,7 @@ function frame(now) {
   if (now - lastMini > 250) { lastMini = now; drawMini(); }
   fullmap?.paint(now,ui,corners);
   if(fullmapPip.isOpen())fullmapPip.draw(dt,pipView=>drawFullmapPipScene(pipView,alpha,renderEpochs,now,mission));
+  if(supportsAdaptiveSoloClock)sampleSourceRenderFps(adaptiveRenderSample,wallSeconds);
 }
 
 // ---------------------------------------------------------------- HUD
@@ -1837,6 +1869,7 @@ $('cheat-form').addEventListener('submit', e => {
   if (code === null) { $('cheat-result').textContent = 'Unbekannter Cheat. Verfügbare Befehle stehen oben.'; return; }
   const result = wasm.cheat(code);
   const messages = ['Cheats aktiviert.', rulesProfile.ruleset===2?'Cheat-Eingabe deaktiviert.':'Cheats deaktiviert. Sofortbau ist aus.', referenceMode?'Bis zu 10.000 Einheiten je Rohstoff erhalten.':'+10.000 Nahrung, Holz und Metall.', result === 2 ? 'Sofortbau aus.' : 'Sofortbau an.', 'Forschungskonto aktualisiert.', 'Bis zu 100 Einheiten je Rohstoff abgezogen.', 'Strafbefehl für die Auswahl ausgeführt.', result===2?'Schadensschutz aus.':'Schadensschutz an.', result===2?'Kriegsnebel aus.':'Kriegsnebel an.', result===4?'Die Endepoche ist erreicht.':'In die nächste Epoche gewechselt.'];
+  if (code === 10) messages[code] = result === 5 ? 'Klicke zuerst eine übernehmbare Einheit oder ein Gebäude an.' : 'Übernommen.';
   $('cheat-result').textContent = result === 3 ? 'Nur im Einzelspieler verfügbar.' : result === 0 ? 'Zuerst icheat eingeben.' : messages[code] + ` Guthaben: ${wasm.cheat_status(2)} Technologiepunkte.`;
   $('cheat-input').value = ''; $('cheat-input').focus(); lastUi = 0;
 });
@@ -1964,9 +1997,10 @@ function handleGameOption(action) {
   }
   else if(action==='restart'){
     if(net||!restartPoint||!window.confirm('Möchtest du das Spiel neu starten?'))return;
+    const adaptiveRate=restartPoint.adaptiveSourceClock ? adaptiveSoloClock?.rate ?? 30 : 0;
     if(!applyWorldSave(restartPoint.bytes)){toast('Dieses Scharmützel konnte nicht neu gestartet werden.');return;}
     Object.assign(cam,restartPoint.cam);
-    gameOptions.close();begin({...originalTempo,requested:speed},restartPoint.sourceSoloClock===true);
+    gameOptions.close();begin({...originalTempo,requested:speed},restartPoint.sourceSoloClock===true,adaptiveRate);
   }
   else if(action==='exit'||action==='desktop'){
     if(!window.confirm('Möchtest du das laufende Spiel beenden?'))return;
@@ -2202,7 +2236,9 @@ if (qs.has('bench')) start(1, +qs.get('seed') || 7, +qs.get('bench') || 2000);
 else if (qs.has('seed')) start(+qs.get('ai') || 1, +qs.get('seed') || 1, 0);
 // ?warm=600 fast-forwards that many ticks; ?zoom= ?x= ?y= place the camera
 for (let i = +qs.get('warm') || 0; i > 0 && running; i--) {
-  if (sourceSoloClock) {
+  if (adaptiveSoloClock) {
+    if (!advance(sourceWallInterval(adaptiveSoloClock.rate) + 0.0000001, performance.now())) break;
+  } else if (sourceSoloClock) {
     if (!wasm.tick_with_source_delta(sourceStepDelta(speed))) break;
   } else wasm.tick();
 }

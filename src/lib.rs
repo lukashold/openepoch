@@ -257,6 +257,30 @@ pub extern "C" fn tick_with_source_delta(seconds: f64) -> u32 {
     }
 }
 
+/// An admitted adaptive solo slot. The old wall rate is independent of the
+/// newly applied rate and effective scale at a source rate-selection boundary.
+#[no_mangle]
+pub extern "C" fn tick_with_adaptive_source_slot(wall_rate: u32, rate: u32, scale: f32) -> u32 {
+    unsafe {
+        (*addr_of_mut!(GAME)).as_mut()
+            .is_some_and(|game| game.tick_with_adaptive_source_slot(wall_rate, rate, scale)) as u32
+    }
+}
+
+fn adaptive_tempo() -> Option<source_clock38::AdaptiveTempo> {
+    unsafe { (&*addr_of_mut!(GAME)).as_ref()?.source_clock?.adaptive }
+}
+
+#[no_mangle]
+pub extern "C" fn sim_adaptive_rate() -> u32 {
+    adaptive_tempo().map_or(0, |tempo| tempo.rate)
+}
+
+#[no_mangle]
+pub extern "C" fn sim_adaptive_scale() -> f32 {
+    adaptive_tempo().map_or(0.0, |tempo| tempo.scale)
+}
+
 #[no_mangle]
 pub extern "C" fn sim_clock_active() -> u32 {
     unsafe { (&*addr_of_mut!(GAME)).as_ref().is_some_and(|game| game.source_clock.is_some()) as u32 }
@@ -776,6 +800,11 @@ pub extern "C" fn select_quad(ax: f32, ay: f32, bx: f32, by: f32, cx: f32, cy: f
 #[no_mangle]
 pub extern "C" fn select_point(x: f32, y: f32, add: u32, same: u32, vx0: f32, vy0: f32, vx1: f32, vy1: f32) {
     let g = g();
+    #[cfg(feature = "ee2-native13")]
+    if !g.net {
+        let clicked = pick(g, x, y, false);
+        g.conversion_click = if clicked == NOIDX { NONE } else { g.h(clicked) };
+    }
     let i = pick(g, x, y, true);
     if add == 0 {
         clear_sel(g);
@@ -800,7 +829,10 @@ pub extern "C" fn select_point(x: f32, y: f32, add: u32, same: u32, vx0: f32, vy
 
 #[no_mangle]
 pub extern "C" fn select_none() {
-    clear_sel(g());
+    let game = g();
+    #[cfg(feature = "ee2-native13")]
+    { game.conversion_click = NONE; }
+    clear_sel(game);
 }
 
 #[no_mangle]
@@ -1415,8 +1447,9 @@ pub extern "C" fn cmd_delete() {
 }
 
 /// Cheat ids: 0 enable, 1 disable, 2 loot, 3 instant build, 4 technology points,
-/// 5 taxes (UP), 6 punish (UP), 7 play god (UP), 8 toggle fog (UP), 9 epoch up (UP).
-/// Results: 0 disabled/invalid, 1 applied, 2 toggle off, 3 multiplayer denied, 4 at final epoch.
+/// 5 taxes (UP), 6 punish (UP), 7 play god (UP), 8 toggle fog (UP), 9 epoch up (UP), 10 convert (UP).
+/// Results: 0 disabled/invalid, 1 applied, 2 toggle off, 3 multiplayer denied,
+/// 4 at final epoch, 5 no convertible actor.
 #[no_mangle]
 pub extern "C" fn cheat(code: u32) -> u32 {
     let game = g();
@@ -1475,6 +1508,8 @@ pub extern "C" fn cheat(code: u32) -> u32 {
         },
         #[cfg(feature = "ee2-native13")]
         9 => if game.force_epoch_advance() { 1 } else { 4 },
+        #[cfg(feature = "ee2-native13")]
+        10 => if game.convert_last_clicked() { 1 } else { 5 },
         _ => 0,
     }
 }

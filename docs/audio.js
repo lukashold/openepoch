@@ -224,6 +224,7 @@ const SOUNDS = {
 export const STONE_THROWER_LAUNCH_CUE = 26;
 export const FULLMAP_CUE = 27;
 export const CAPTURE_COMPLETE_CUE = 30;
+export const CONVERT_CUE = 31;
 const WARPLAN_CUES = Object.freeze({ui_warplans_path_addPoint:28,ui_warplans_path_finish:29});
 
 export function playWorld(kind,x,y,altitude,view,citizen) {
@@ -233,9 +234,10 @@ export function playWorld(kind,x,y,altitude,view,citizen) {
   if (!ctx && audible) ensure();
   if (ctx?.state==='running') {
     if (kind===STONE_THROWER_LAUNCH_CUE && originals.stoneThrowerLaunch(volume,pan)) return;
+    if (kind===CONVERT_CUE && audible && originals.effect(12,volume,pan)) return;
     if (audible && citizen && originals.citizenDeath(citizen,volume,pan)) return;
   }
-  play(citizen ? 10 : kind,volume,pan);
+  play(citizen ? 10 : kind===CONVERT_CUE ? 12 : kind,volume,pan);
 }
 export function playWarplanCue(name) {
   if (!Object.hasOwn(WARPLAN_CUES,name) || muted || !ensure() || ctx.state!=='running') return;

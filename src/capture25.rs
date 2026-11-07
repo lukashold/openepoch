@@ -399,6 +399,27 @@ impl Game {
 
     fn complete_capture(&mut self, index: usize, owner: u8, profile: CaptureTarget) -> bool {
         let old = self.ents[index];
+        if !self.replace_converted_actor(index, owner, profile.tribute) { return false; }
+        if old.team == self.local || owner == self.local { self.ev(30.0, old.x, old.y); }
+        true
+    }
+
+    pub(crate) fn convert_last_clicked(&mut self) -> bool {
+        let Some(index) = self.get(self.conversion_click) else { return false; };
+        let old = self.ents[index];
+        if old.hp <= 0.0 || old.stuck == BOARDED { return false; }
+        let tribute = match native::capture_target(old.def) {
+            Some(profile) => profile.tribute,
+            None if matches!(old.def, 8..=28 | 46 | 57 | 61..=79 | crate::trade30_defs::TRADE_CART) => CaptureTribute::None,
+            None => return false,
+        };
+        if !self.replace_converted_actor(index, self.local, tribute) { return false; }
+        self.ev(31.0, old.x, old.y);
+        true
+    }
+
+    fn replace_converted_actor(&mut self, index: usize, owner: u8, tribute: CaptureTribute) -> bool {
+        let old = self.ents[index];
         if self.free.len() <= usize::from(old.ncargo) { return false; }
         if old.ncargo > 0 {
             let mut evacuated = old;
@@ -407,14 +428,21 @@ impl Game {
             self.ents[index] = evacuated;
         }
         let old_handle = self.h(index);
-        self.capture_tribute(old_handle, &old, owner, profile.tribute);
+        if old.team != owner { self.capture_tribute(old_handle, &old, owner, tribute); }
         let health = (old.hp / self.max_hp(old.team, old.def)).clamp(0.0, 1.0);
         let city = self.city_ground[index];
+        let citizen = if old.def == WORKER { self.source_identity(old_handle) } else { None };
         let new = self.spawn_oriented(old.def, owner, old.x, old.y, old.rot);
         let new_handle = self.h(new);
         self.ents[new].hp *= health;
+        self.ents[new].built = old.built;
+        if let Some(identity) = citizen {
+            use crate::native_rng9::CitizenIdentity::{Female, Male};
+            self.set_citizen_identity(new, if identity == 1 { Female } else { Male });
+        }
         if old.def == TC {
             if city.handle == old_handle { self.city_ground[new] = crate::city_ground::CityBand { handle: new_handle, ..city }; }
+            if old.built < 1.0 { self.city_ground[new] = crate::city_ground::EMPTY; }
             for claim in &mut self.territory.claims {
                 if *claim == old_handle { *claim = new_handle; }
             }
@@ -426,14 +454,13 @@ impl Game {
         self.kill(index);
         self.fx.truncate(fx_len);
         self.events.truncate(event_len);
-        self.block(new, true);
+        if DEFS[old.def as usize].building { self.block(new, true); }
         self.rebuild_territories();
         self.void_landless_alliances();
         self.prune_territory_offers();
         self.refresh_match_alive();
         self.build_grid();
         self.update_fog();
-        if old.team == self.local || owner == self.local { self.ev(30.0, old.x, old.y); }
         true
     }
 
@@ -591,6 +618,60 @@ mod tests {
     fn issue(game: &mut Game, attacker: usize, building: usize) {
         game.apply(0, C_CAPTURE, 0.0, 0.0, game.h(building) as i32, &[game.h(attacker)]);
         assert_eq!(game.ents[attacker].order, O_CAPTURE);
+    }
+
+    #[test]
+    fn convert_replaces_a_wounded_citizen_without_retaining_orders_or_click() {
+        let (mut game, _, house) = scenario_with_seats(HOUSE, 1);
+        for (team, identity) in [(1, crate::native_rng9::CitizenIdentity::Female), (0, crate::native_rng9::CitizenIdentity::Male)] {
+            let (x, y) = (game.ents[house].x + 6.0, game.ents[house].y + 2.0);
+            let old = game.spawn_oriented(WORKER, team, x, y, 1.25);
+            let handle = game.h(old);
+            game.set_citizen_identity(old, identity);
+            game.ents[old].hp = game.max_hp(team, WORKER) * 0.375;
+            game.ents[old].carry = 8.0;
+            game.ents[old].order = O_MOVE;
+            game.conversion_click = handle;
+            let fx = game.fx.len();
+            game.events.clear();
+            assert!(game.convert_last_clicked());
+            assert_eq!(game.get(handle), None);
+            let index = game.ents[..game.high].iter().enumerate().rev()
+                .find(|(_, actor)| actor.alive && actor.def == WORKER && actor.x == x && actor.y == y)
+                .unwrap().0;
+            let new = game.ents[index];
+            assert_eq!((new.team, new.hp, new.rot, new.carry, new.order),
+                (0, game.max_hp(0, WORKER) * 0.375, 1.25, 0.0, O_IDLE));
+            assert_eq!(game.source_identity(game.h(index)), Some(identity as u32));
+            assert_eq!(game.fx.len(), fx);
+            assert_eq!(game.events, [31.0, x, y]);
+            assert!(!game.convert_last_clicked());
+            game.kill(index);
+        }
+    }
+
+    #[test]
+    fn convert_keeps_rotated_foundation_blocked_and_rejects_missing_slots() {
+        let (mut game, _, _) = scenario_with_seats(HOUSE, 1);
+        let foundation = game.spawn_oriented(HOUSE, 1, 226.0, 214.0, core::f32::consts::FRAC_PI_4);
+        game.ents[foundation].built = 0.4;
+        let handle = game.h(foundation);
+        game.conversion_click = handle;
+        assert!(game.convert_last_clicked());
+        assert_eq!(game.get(handle), None);
+        let new = game.ents[..game.high].iter().find(|actor| actor.alive && actor.def == HOUSE && actor.x == 226.0).unwrap();
+        assert_eq!((new.team, new.built, new.rot), (0, 0.4, core::f32::consts::FRAC_PI_4));
+        let (x, y, side) = Game::building_bounds(new);
+        for j in y..y + side {
+            for i in x..x + side { assert!(game.map.blocked[j as usize * N + i as usize]); }
+        }
+        for definition in [FARM, 29, crate::trade30_defs::MERCHANT_SHIP, crate::air31_defs::FIGHTER_BOMBER] {
+            let index = game.spawn(definition, 1, 228.0, 216.0);
+            game.conversion_click = game.h(index);
+            let hash = game.state_hash();
+            assert!(!game.convert_last_clicked());
+            assert_eq!(game.state_hash(), hash);
+        }
     }
 
     #[test]

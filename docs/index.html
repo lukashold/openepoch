@@ -290,7 +290,7 @@
     <h2 style="margin-top:0">Cheats · Scharmützel</h2>
     <p>Mit <b>icheat</b> aktivieren, mit <b>idontcheat</b> deaktivieren.</p>
     <p><b>loot</b> · +10.000 je Rohstoff<br><b>sea monkeys</b> · Sofortbau und Einheitenproduktion an/aus<br><b>give tech</b> · +50 Technologiepunkte</p>
-    <p id="cheat-up-commands" hidden><b>taxes</b> · bis zu 100 je Rohstoff abziehen<br><b>punish</b> · ausgewählte Einheiten verwunden<br><b>play god</b> · Schadensschutz an/aus<br><b>toggle fog</b> · Kriegsnebel an/aus<br><b>epoch up</b> · direkt in die nächste Epoche wechseln</p>
+    <p id="cheat-up-commands" hidden><b>taxes</b> · bis zu 100 je Rohstoff abziehen<br><b>punish</b> · ausgewählte Einheiten verwunden<br><b>play god</b> · Schadensschutz an/aus<br><b>toggle fog</b> · Kriegsnebel an/aus<br><b>epoch up</b> · direkt in die nächste Epoche wechseln<br><b>convert</b> · die zuletzt angeklickte Einheit oder das Gebäude übernehmen</p>
     <p id="cheat-up-research" hidden><b>sea monkeys</b> beschleunigt auch bezahlte Forschung und bleibt nach <b>idontcheat</b> aktiv.</p>
     <p id="cheat-rule" style="font-size:13px;color:#bac5d1">OpenEpoch-Regel: Ein Technologiepunkt überspringt eine Sekunde Technologieforschung. Rohstoffkosten und Epochenforschung bleiben unverändert.</p>
     <label for="cheat-input">Cheat eingeben</label><br>
@@ -350,6 +350,7 @@
           <div class="row"><label for="game-speed-preset">Spielgeschwindigkeit</label><select id="game-speed-preset"><option value="0">Langsam</option><option value="1" selected>Normal</option><option value="2">Schnell</option><option value="3">Sehr schnell</option></select></div>
           <div class="row"><label for="game-speed-locked">Geschwindigkeit sperren</label><input id="game-speed-locked" type="checkbox" checked></div>
           <div class="row" id="source-solo-clock-option" hidden><label for="source-solo-clock">Variabler Originaltakt (Testmodus)</label><input id="source-solo-clock" type="checkbox"></div>
+          <div class="row" id="source-adaptive-clock-option" hidden><label for="source-adaptive-clock">Adaptive Schrittfrequenz (Testmodus)</label><input id="source-adaptive-clock" type="checkbox" disabled></div>
         </div>
         <div class="row"><label for="rules-profile">Regelversion</label><select id="rules-profile"><option value="up15">EE2 · installierte UP-Regeln</option><option value="base">EE2 · Basisdaten</option><option value="own">OpenEpoch-Regeln</option></select></div>
         <p class="dim" style="font-size:12px;margin:0 0 10px">Jede Regelversion hat eigene Spielstände. Für Multiplayer wählen beide dieselbe Version.</p>
@@ -423,6 +424,6 @@
 </aside>
 <div id="trade-route-caption" hidden role="status"></div>
 <div id="air-mission-caption" hidden role="status"></div>
-<script type="module" src="main.js?v=native40clock"></script>
+<script type="module" src="main.js?v=native41"></script>
 </body>
 </html>

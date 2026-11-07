@@ -320,6 +320,8 @@ pub struct Game {
     // ---- not part of the deterministic simulation state ----
     /// Which player this client controls and sees through.
     pub local: u8,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) conversion_click: u32,
     /// Lockstep multiplayer: commands go to `outbox` instead of being applied at once.
     pub net: bool,
     pub seed0: u32,
@@ -455,6 +457,8 @@ impl Game {
             scratch: Vec::with_capacity(256),
             sim_units: 0,
             local: (local as usize).min(nplayers - 1) as u8,
+            #[cfg(feature = "ee2-native13")]
+            conversion_click: NONE,
             net: humans > 1,
             seed0: seed,
             n_ai,
@@ -1043,10 +1047,15 @@ impl Game {
         mix(self.tick);
         mix(self.rng.0);
         if let Some(clock) = self.source_clock {
-            mix(crate::source_clock38::MAGIC);
+            mix(if clock.adaptive.is_some() { crate::source_clock38::ADAPTIVE_MAGIC } else { crate::source_clock38::MAGIC });
             mix(clock.elapsed.to_bits());
             mix(clock.last_step.to_bits());
             mix(clock.previous.to_bits());
+            if let Some(tempo) = clock.adaptive {
+                mix(tempo.wall_rate);
+                mix(tempo.rate);
+                mix(tempo.scale.to_bits());
+            }
             self.diplomacy.clock.hash(&mut mix);
         }
         #[cfg(feature = "ee2-epoch-range13")]
@@ -1224,15 +1233,24 @@ impl Game {
     /// Start only from tick zero, so an existing match is never assigned an
     /// invented elapsed time. All later ticks use this explicit entry point.
     pub(crate) fn tick_with_source_delta(&mut self, seconds: f64) -> bool {
+        let Some(advanced) = self.source_clock_for_step().and_then(|clock| clock.advance(seconds)) else { return false; };
+        self.commit_source_step(advanced)
+    }
+
+    pub(crate) fn tick_with_adaptive_source_slot(&mut self, wall_rate: u32, rate: u32, scale: f32) -> bool {
+        let Some(advanced) = self.source_clock_for_step()
+            .and_then(|clock| clock.advance_adaptive(self.tick, wall_rate, rate, scale)) else { return false; };
+        self.commit_source_step(advanced)
+    }
+
+    fn source_clock_for_step(&self) -> Option<crate::source_clock38::SourceClock> {
         if self.net || self.bench != 0 || self.tick == u32::MAX {
-            return false;
+            return None;
         }
-        let clock = match self.source_clock {
-            Some(clock) => clock,
-            None if self.tick == 0 => crate::source_clock38::SourceClock::default(),
-            None => return false,
-        };
-        let Some(advanced) = clock.advance(seconds) else { return false; };
+        self.source_clock.or_else(|| (self.tick == 0).then(crate::source_clock38::SourceClock::default))
+    }
+
+    fn commit_source_step(&mut self, advanced: crate::source_clock38::SourceClock) -> bool {
         if !self.admit_solo_commands() { return false; }
         self.source_clock = Some(advanced);
         self.step_simulation();

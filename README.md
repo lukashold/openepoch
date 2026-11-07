@@ -579,6 +579,7 @@ Im Einzelspieler öffnet Enter den Cheatdialog. Zuerst `icheat` aktivieren:
 - `loot`: +10.000 je Rohstoffkonto, begrenzt durch die Vorratsobergrenze.
 - `sea monkeys`: Sofortbau und Einheitenproduktion an/aus.
 - `give tech`: +50 reguläre Technologiepunkte im EE2-Profil.
+- `convert` (UP): Die zuletzt angeklickte übernehmbare Einheit oder das Gebäude wechselt den Besitzer.
 - `idontcheat`: Cheats deaktivieren.
 
 ## Originalgrafik und Originalton

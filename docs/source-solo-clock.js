@@ -1,5 +1,7 @@
 const f32 = Math.fround;
 const bits = new DataView(new ArrayBuffer(8));
+const MIN_RATE = 5, MAX_RATE = 30;
+const CPU_FRACTION = 0.75, PREVIOUS_CPU_WEIGHT = f32(0.9);
 
 function precedingF64(value) {
   bits.setFloat64(0, value);
@@ -47,6 +49,68 @@ export const SOURCE_SOLO_INTERVAL = sourceWallInterval(30);
 
 export function sourceStepDelta(scale, interval = SOURCE_SOLO_INTERVAL) {
   return addF64(...productParts(interval, f32(scale)));
+}
+
+export function selectAdaptiveTempo(currentRate, cpuSeconds, renderFps, requested) {
+  let rate = cpuSeconds === 0 ? MIN_RATE : Math.max(MIN_RATE, Math.min(MAX_RATE, Math.trunc(CPU_FRACTION / cpuSeconds)));
+  if (rate > MIN_RATE) {
+    // For an integer rate in range, truncation of the x87 quotient is the
+    // mathematical floor. Correct an IEEE-nearest division at an integer edge.
+    const [high, low] = productParts(cpuSeconds, rate);
+    const product = high + low;
+    if ((product - CPU_FRACTION) + sumError(high, low, product) > 0) rate--;
+  }
+  if (cpuSeconds < sourceStepDelta(CPU_FRACTION, sourceWallInterval(currentRate))) {
+    rate = Math.max(currentRate, Math.min(rate, Math.ceil(renderFps)));
+  }
+  return {rate, scale: Math.min(f32(requested), storeF32(rate * f32(0.1)))};
+}
+
+export function sampleSourceRenderFps(state, seconds) {
+  if (!Number.isFinite(seconds) || seconds < 0) return;
+  state.count = storeF32(addF64(state.count, 1));
+  const retained = addF64(state.remainder, storeF32(seconds));
+  state.remainder = storeF32(retained);
+  if (retained < 1) return;
+  state.remainder = storeF32(addF64(state.remainder, -1));
+  state.fps = state.count;
+  state.count = 0;
+}
+
+export function createAdaptiveSourceClock(tick, rate, scale) {
+  return {tick, rate, scale, cpuSeconds:0, remainder:0};
+}
+
+export function advanceAdaptiveSourceFrame(state, wallSeconds, paused, renderFps, callbacks) {
+  if (!Number.isFinite(wallSeconds) || wallSeconds < 0) wallSeconds = 0;
+  state.remainder = storeF32(addF64(state.remainder, storeF32(wallSeconds)));
+  let steps = 0, gameSeconds = 0;
+  for (;;) {
+    const oldRate = state.rate;
+    const interval = sourceWallInterval(oldRate);
+    if (state.remainder <= interval) break;
+    state.remainder = storeF32(addF64(state.remainder, -interval));
+    if (paused) continue;
+    const {rate, scale} = state.tick % MAX_RATE === 0
+      ? selectAdaptiveTempo(oldRate, state.cpuSeconds, renderFps, callbacks.requested()) : state;
+    callbacks.beforeAdmit();
+    const before = callbacks.nowSeconds();
+    if (!callbacks.admit(oldRate, rate, scale)) {
+      state.remainder = 0;
+      break;
+    }
+    const after = callbacks.nowSeconds();
+    const sample = after >= before ? addF64(after, -before) : 0;
+    const oldPart = sourceStepDelta(PREVIOUS_CPU_WEIGHT, state.cpuSeconds);
+    const newPart = sourceStepDelta(1 - PREVIOUS_CPU_WEIGHT, sample);
+    state.cpuSeconds = addF64(oldPart, newPart);
+    state.tick++;
+    state.rate = rate;
+    state.scale = scale;
+    steps++;
+    gameSeconds = storeF32(addF64(gameSeconds, sourceStepDelta(scale, interval)));
+  }
+  return {steps, gameSeconds};
 }
 
 export function advanceSourceSoloFrame(remainder, wallSeconds, paused, speedForStep, tick) {
