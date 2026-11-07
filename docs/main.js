@@ -54,7 +54,7 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=clock38';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native67';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native68';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
@@ -81,7 +81,7 @@ import {createSpyShimmerFrames} from './original-spy-shimmer.js?v=native-spy';
 import {createSpyExtractionTimer} from './spy-extraction-renderer.js?v=native-spy';
 import {loadPriestEffects} from './original-priest-fx.js?v=native45';
 import {guidedImpactInside,loadGuidedImpactEffects} from './guided-herc-impact.js?v=native66';
-import {loadGuidedHercBeam} from './guided-herc-beam.js?v=native67';
+import {loadGuidedHercBeam} from './guided-herc-beam.js?v=native68';
 import {loadOriginalPriestParticles} from './original-priest-particles.js?v=native47';
 import {loadBlessGroundGlow} from './priest-ground-glow.js?v=native58';
 import {loadAirCrownGlow} from './crown-air-glow.js?v=native58';
@@ -158,7 +158,7 @@ const valleyRequested=rulesProfile.id==='up15'&&(!!valleyManifest||['1','archive
 try{
   if(valleyRequested){
     const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley75_commit','valley71_force_attack_at','valley71_neutral_opening']:rulesProfile.requiredExports;
-    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native67-valley'};
+    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native68-valley'};
     try{wasm=await loadRulesWasm(previewRules,import.meta.url);}catch{/* The ordinary ruleset remains available. */}
   }
   wasm??=await loadRulesWasm(rulesProfile,import.meta.url);
@@ -1905,8 +1905,9 @@ function drawFullmapPipScene(pipView, alpha, renderEpochs, now, mission) {
   drawCaptureGlow(vp,actorMetadata);
   drawBlessGround(vp,actorMetadata);
   const impactDraws=guidedImpactFX?.draw(pipView,guidedImpactVisible);
-  const beamDraws=hercBeam?.draw(vp,hercBeamMuzzles,actorMetadata);
-  if(qaMode)canvas.dataset.guidedHercBeamPip=String(beamDraws??'unavailable');
+  const beamDraws=hercBeam?.draw(vp,hercBeamMuzzles,actorMetadata,pipView);
+  if(qaMode){canvas.dataset.guidedHercBeamPip=String(beamDraws??'unavailable');
+    canvas.dataset.guidedHercBeamChildrenPip=JSON.stringify(hercBeam?.childDraws??null);}
   if(qaMode)canvas.dataset.guidedImpactPip=impactDraws?.join(':')??'unavailable';
   const crownAir=drawAirCrownStatus(vp,actorMetadata);
   if(qaMode)canvas.dataset.crownAirPip=String(crownAir);
@@ -2131,8 +2132,9 @@ function frame(now) {
   drawCaptureGlow(view.vp,actorMetadata);
   drawBlessGround(view.vp,actorMetadata,{visualSeconds});
   const impactDraws=guidedImpactFX?.draw(view,guidedImpactVisible);
-  const beamDraws=hercBeam?.draw(view.vp,hercBeamMuzzles,actorMetadata);
-  if(qaMode)canvas.dataset.guidedHercBeamMain=String(beamDraws??'unavailable');
+  const beamDraws=hercBeam?.draw(view.vp,hercBeamMuzzles,actorMetadata,view);
+  if(qaMode){canvas.dataset.guidedHercBeamMain=String(beamDraws??'unavailable');
+    canvas.dataset.guidedHercBeamChildrenMain=JSON.stringify(hercBeam?.childDraws??null);}
   if(qaMode)canvas.dataset.guidedImpactMain=impactDraws?.join(':')??'unavailable';
   const crownAir=drawAirCrownStatus(view.vp,actorMetadata);
   if(qaMode)canvas.dataset.crownAir=String(crownAir);

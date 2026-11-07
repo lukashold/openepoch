@@ -1,16 +1,19 @@
 import {advanceMiddle,authoredMiddleVertices,middleBasis,middleEnd,MIDDLE_VERTEX,MIDDLE_FRAGMENT} from './guided-herc-beam-math.js?v=herc-beam1';
+import {createBeamChildLayer,splashEnd} from './guided-herc-beam-children.js?v=herc-beam-children1';
 
 const f=Math.fround;
 const modelDigest='59492da424e81b9d683f20000fcf8c35736629f95490dcb22e6d76c0582b51a3';
 const beamDigest='711413a774cb9e90fbef0348d18e3fb55a8c91d75fb1043eee8e6f8707f8a236';
 const manifestDigest='7c2947b843193a0fed1c8d6b279fc2832f6d2974f7f406007818e0aff5fc7b00';
 const manifestURL=new URL('./local-original/herc-beam/manifest.json',import.meta.url);
+const childURL=new URL('./local-original/herc-beam-children/manifest.json',import.meta.url);
+const childDigest='60e8e3ca7213d3d8f8400847f08ba1482ae3ccacf85a9c01e5e6eb22ed010a03';
 
-function program(gl){
+function program(gl,vertex=MIDDLE_VERTEX,fragment=MIDDLE_FRAGMENT){
  const compiled=[];
  const result=gl.createProgram();
  try{
-  for(const [type,source] of [[gl.VERTEX_SHADER,MIDDLE_VERTEX],[gl.FRAGMENT_SHADER,MIDDLE_FRAGMENT]]){
+  for(const [type,source] of [[gl.VERTEX_SHADER,vertex],[gl.FRAGMENT_SHADER,fragment]]){
    const shader=gl.createShader(type);compiled.push(shader);
    gl.shaderSource(shader,source);gl.compileShader(shader);
    if(!gl.getShaderParameter(shader,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(shader));
@@ -61,7 +64,26 @@ function socketFor(actor,phase,samples,worldScale){
   axes:columns.map(column=>column.map(value=>value/tagScale)),scale:worldScale*tagScale};
 }
 
-function binding(gl,model,texture,minotaurus){
+async function loadChildren(gl,model,detail){
+ if(!detail)return null;
+ const textures=new Map();
+ try{
+  const raw=await fetchBytes(childURL);
+  if(await sha(raw)!==childDigest)throw Error('HERC beam children manifest mismatch');
+  const data=JSON.parse(new TextDecoder().decode(raw));
+  if(data.format!=='openepoch-local-beam-children-v1'||
+     ['muzzle','splash'].some(key=>data.children[key]?.source.sha256!==model.otherChildren[key]?.source.sha256))throw Error('HERC beam children source mismatch');
+  const bytes=await fetchBytes(new URL(data.pixels.url,childURL));
+  if(bytes.length!==data.pixels.bytes||await sha(bytes)!==data.pixels.sha256)throw Error('HERC beam children texture mismatch');
+  for(const [name,texture] of Object.entries(data.textures))textures.set(name,setupTexture(gl,texture,bytes));
+  return createBeamChildLayer(gl,data.children,textures,program,detail);
+ }catch{
+  for(const texture of textures.values())gl.deleteTexture(texture);
+  return null;
+ }
+}
+
+function binding(gl,model,texture,minotaurus,children){
  const p=program(gl),uVP=gl.getUniformLocation(p,'uVP'),vao=gl.createVertexArray();
  const vbo=gl.createBuffer(),indices=gl.createBuffer(),indexCount=model.mesh.indices.length;
  const previousVAO=gl.getParameter(gl.VERTEX_ARRAY_BINDING),previousBuffer=gl.getParameter(gl.ARRAY_BUFFER_BINDING);
@@ -72,7 +94,7 @@ function binding(gl,model,texture,minotaurus){
  }
  gl.bindVertexArray(previousVAO);gl.bindBuffer(gl.ARRAY_BUFFER,previousBuffer);
  const pending=new Map(),active=new Map();
- let last=null,delta=0;
+ let last=null,delta=0,lastChildDraws=null;
  function enqueue(wasm,count){
   const buffer=wasm.memory.buffer,ptr=wasm.guided_herc_beam_ptr()>>>0;
   if(count>64||ptr+count*24>buffer.byteLength)return;
@@ -84,16 +106,17 @@ function binding(gl,model,texture,minotaurus){
    if(point.every(Number.isFinite)&&Number.isFinite(targetOffsetZ))pending.set(source,{target,point,targetOffsetZ});
   }
  }
- function reset(seconds){active.clear();pending.clear();last=seconds;delta=0;}
+ function reset(seconds){active.clear();pending.clear();last=seconds;delta=0;lastChildDraws=null;}
  function advance(seconds){
   if(last===null||seconds<last)reset(seconds);
   delta=f(seconds-last);last=seconds;
   if(!(delta>0))return;
   for(const [source,beam] of active){
    beam.previousAge=beam.age;beam.age=f(beam.age+delta);beam.step=delta;beam.stepped=false;
-   if(beam.age>=middleEnd)active.delete(source);
+   if(beam.age>=(children?splashEnd:middleEnd))active.delete(source);
   }
-  for(const [source,row] of pending)active.set(source,{...row,age:delta,previousAge:0,step:delta,reached:0,stepped:false});
+  for(const [source,row] of pending)active.set(source,{...row,age:delta,previousAge:0,step:delta,reached:0,stepped:false,
+   children:children?.create(Math.imul(source,16777619)^row.target^Math.round(seconds*65536))});
   pending.clear();
  }
  function capture(muzzles,actor,clip,phase){
@@ -103,9 +126,10 @@ function binding(gl,model,texture,minotaurus){
   const socket=socketFor(actor,phase,samples,model.sourceScale);
   if(socket)muzzles.set(actor.handle,socket);
  }
- function draw(vp,muzzles,metadata){
+ function draw(vp,muzzles,metadata,view){
+  lastChildDraws=children?{muzzle:0,splash:0,particles:0}:null;
   if(!muzzles?.size)return 0;
-  const meshes=[];
+  const meshes=[],effects=[];
   for(const [source,muzzle] of muzzles){
    const beam=active.get(source);
    if(!beam)continue;
@@ -115,9 +139,14 @@ function binding(gl,model,texture,minotaurus){
    const distance=f(Math.hypot(...endpoint.map((value,i)=>value-muzzle.point[i])));
    const frame=advanceMiddle({age:beam.stepped?beam.age:beam.previousAge,reached:beam.reached},beam.stepped?0:beam.step,distance);
    if(!beam.stepped){beam.stepped=true;beam.reached=frame.reached;}
+   if(beam.children&&view){
+    children.update(beam.children,beam.age,distance>0&&frame.reached>=distance);
+    effects.push({state:beam.children,muzzle,point:endpoint});
+   }
    const axes=frame.draw?middleBasis(muzzle.axes,muzzle.point,endpoint):null;
    if(axes)meshes.push(authoredMiddleVertices(model.mesh,frame,muzzle.point,axes,muzzle.scale));
   }
+  if(effects.length)lastChildDraws=children.draw(view,effects);
   if(!meshes.length)return 0;
   const previous={program:gl.getParameter(gl.CURRENT_PROGRAM),vao:gl.getParameter(gl.VERTEX_ARRAY_BINDING),
    buffer:gl.getParameter(gl.ARRAY_BUFFER_BINDING),active:gl.getParameter(gl.ACTIVE_TEXTURE),
@@ -147,10 +176,10 @@ function binding(gl,model,texture,minotaurus){
   }
   return meshes.length;
  }
- return {enqueue,reset,advance,capture,draw};
+ return {enqueue,reset,advance,capture,draw,get childDraws(){return lastChildDraws;}};
 }
 
-export async function loadGuidedHercBeam(gl,enabled,minotaurus){
+export async function loadGuidedHercBeam(gl,enabled,minotaurus,particleDetail=2){
  if(!enabled)return null;
  try{
   const raw=await fetchBytes(manifestURL);
@@ -162,6 +191,7 @@ export async function loadGuidedHercBeam(gl,enabled,minotaurus){
   const mips=model.texture.mips;
   const bytes=await fetchBytes(new URL('laser-linear-mips.rgba',manifestURL));
   if(await sha(bytes)!==mips.sha256||bytes.length!==mips.bytes||mips.levels.length!==8)throw Error('HERC beam texture mismatch');
-  return binding(gl,model,setupTexture(gl,mips,bytes),minotaurus);
+  const children=await loadChildren(gl,model,particleDetail);
+  return binding(gl,model,setupTexture(gl,mips,bytes),minotaurus,children);
  }catch{return null;}
 }
