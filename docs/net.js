@@ -111,6 +111,7 @@ export class Lockstep {
 // ---------------------------------------------------------------- WebRTC with hand-carried signalling
 
 const ICE = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+const LOCAL_ICE = { iceServers: [] };
 const encode = d => btoa(JSON.stringify(d)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const decode = s => JSON.parse(atob(s.trim().replace(/-/g, '+').replace(/_/g, '/')));
 
@@ -137,20 +138,30 @@ function wire(pc, ch, on) {
 }
 
 /** Host: returns { code, accept(replyCode) }. */
-export async function host(on) {
-  const pc = new RTCPeerConnection(ICE);
-  wire(pc, pc.createDataChannel('game', { ordered: true }), on);
-  await pc.setLocalDescription(await pc.createOffer());
-  await gathered(pc);
-  return { pc, code: encode(pc.localDescription), accept: reply => pc.setRemoteDescription(decode(reply)) };
+export async function host(on, local = false) {
+  const pc = new RTCPeerConnection(local ? LOCAL_ICE : ICE);
+  try {
+    wire(pc, pc.createDataChannel('game', { ordered: true }), on);
+    await pc.setLocalDescription(await pc.createOffer());
+    await gathered(pc);
+    return { pc, code: encode(pc.localDescription), accept: reply => pc.setRemoteDescription(decode(reply)) };
+  } catch (error) {
+    pc.close();
+    throw error;
+  }
 }
 
 /** Guest: takes the host's invite code, returns the reply code to send back. */
-export async function join(invite, on) {
-  const pc = new RTCPeerConnection(ICE);
-  pc.ondatachannel = e => wire(pc, e.channel, on);
-  await pc.setRemoteDescription(decode(invite));
-  await pc.setLocalDescription(await pc.createAnswer());
-  await gathered(pc);
-  return { pc, code: encode(pc.localDescription) };
+export async function join(invite, on, local = false) {
+  const pc = new RTCPeerConnection(local ? LOCAL_ICE : ICE);
+  try {
+    pc.ondatachannel = e => wire(pc, e.channel, on);
+    await pc.setRemoteDescription(decode(invite));
+    await pc.setLocalDescription(await pc.createAnswer());
+    await gathered(pc);
+    return { pc, code: encode(pc.localDescription) };
+  } catch (error) {
+    pc.close();
+    throw error;
+  }
 }

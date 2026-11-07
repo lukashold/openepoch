@@ -41,10 +41,10 @@ import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './seas
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
 import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native54';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
-import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native44';
+import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
 import {createSourceRoundCarrier, selectedRoundTripMilliseconds} from './source-network-wire.js?v=native54';
-import {mountSourceRosterLobby} from './source-network-lobby.js?v=native54';
+import {mountSourceRosterLobby} from './source-network-lobby.js?v=native55';
 import {applyNetworkCheckpoint} from './source-network-resume.js?v=native54';
 import {createFullscreenController} from './fullscreen.js?v=building2';
 import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native17';

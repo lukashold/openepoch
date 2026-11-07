@@ -209,3 +209,20 @@ Sofortmodus vor idontcheat ausschalten, wenn er enden soll. epoch up
 wechselt direkt in die nächste Epoche. Laufende bezahlte Forschung wird
 abgebrochen und erstattet. Die gewählte Endepoche bleibt gültig.
 
+Direkter Mehrspieler im lokalen Netz
+
+Alle Teilnehmer starten ihre eigene Kopie von OpenEpoch. Der Host öffnet das
+Terminal im Spielordner und startet den Launcher mit seiner privaten IPv4-Adresse
+aus den macOS-Netzwerkeinstellungen. Beispiel:
+
+    ./Start-OpenEpoch.command --lan 192.168.1.20
+
+Unter Windows funktioniert derselbe Aufruf mit Start-OpenEpoch.cmd. Beide Rechner
+müssen sich in einem vertrauten lokalen Netz gegenseitig erreichen können. Das
+Einladungssignal läuft über TCP 8126 auf der gewählten Adresse. Anschließend
+verbinden sich die Browser direkt per WebRTC.
+
+Der Host öffnet im Spiel den Mehrspielerraum und wählt bei jedem Gast
+»LAN-Einladung«. Der Gast fügt diesen Code unter »Raum beitreten« ein und wählt
+»Über LAN beitreten«. Der Host startet, sobald alle Plätze bereit sind. Dieselbe
+Einladung funktioniert für einen Raum mit geladenem Mehrspieler-Spielstand.

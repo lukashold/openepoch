@@ -397,6 +397,7 @@
       <details id="mp-roster" hidden>
         <summary>Mehrspielerraum für 2 bis 4 Personen</summary>
         <p class="dim">Jeder Gast erhält einen eigenen Einladungscode. Der Host startet, sobald alle Plätze bereit sind.</p>
+        <p id="mp-roster-lan-help" class="dim" hidden></p>
         <div class="row">
           <label for="mp-roster-count">Menschliche Spieler</label>
           <select id="mp-roster-count"><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option></select>
@@ -426,19 +427,24 @@
           <label for="mp-roster-invite">Einladung vom Host</label>
           <textarea id="mp-roster-invite" rows="2" spellcheck="false"></textarea>
           <button id="mp-roster-reply" type="button" class="alt">Antwort erzeugen</button>
-          <label for="mp-roster-answer">Antwort an den Host</label>
-          <textarea id="mp-roster-answer" rows="2" readonly spellcheck="false"></textarea>
+          <div id="mp-roster-manual-answer">
+            <label for="mp-roster-answer">Antwort an den Host</label>
+            <textarea id="mp-roster-answer" rows="2" readonly spellcheck="false"></textarea>
+          </div>
         </div>
         <template id="mp-roster-player-template">
           <fieldset>
             <legend></legend>
             <div class="row">
-              <button type="button" class="alt" data-roster-invite>Einladung erzeugen</button>
+              <button type="button" class="alt" data-roster-lan hidden>LAN-Einladung</button>
+              <button type="button" class="alt" data-roster-invite>Manuelle Einladung</button>
               <span data-roster-state class="dim"></span>
             </div>
             <label>Einladung an den Gast<textarea rows="2" data-roster-offer readonly spellcheck="false"></textarea></label>
-            <label>Antwort des Gasts<textarea rows="2" data-roster-answer spellcheck="false"></textarea></label>
-            <button type="button" class="alt" data-roster-connect disabled>Verbinden</button>
+            <div data-roster-manual>
+              <label>Antwort des Gasts<textarea rows="2" data-roster-answer spellcheck="false"></textarea></label>
+              <button type="button" class="alt" data-roster-connect disabled>Verbinden</button>
+            </div>
           </fieldset>
         </template>
       </details>
@@ -478,6 +484,6 @@
 </aside>
 <div id="trade-route-caption" hidden role="status"></div>
 <div id="air-mission-caption" hidden role="status"></div>
-<script type="module" src="main.js?v=native54"></script>
+<script type="module" src="main.js?v=native55"></script>
 </body>
 </html>

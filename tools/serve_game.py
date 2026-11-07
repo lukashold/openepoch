@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Serve the portable game on loopback using only Python's standard library."""
+"""Serve the portable game on loopback with optional direct LAN signaling."""
 from __future__ import annotations
 
 import argparse
@@ -21,9 +21,11 @@ from urllib.parse import urlsplit
 from urllib.request import urlopen
 import webbrowser
 
+from lan_signaling import LAN_PATH, LAN_PORT, LanServer, SignalingError, Tickets, local_request, private_ipv4
+
 HOST = "127.0.0.1"
 STATUS_PATH = "/__openepoch__/status"
-SERVER_VERSION = 3
+SERVER_VERSION = 4
 WASM_FILES = ("openepoch.wasm", "openepoch-ee2.wasm", "openepoch-ee2-up15.wasm")
 
 
@@ -54,11 +56,17 @@ class GameHandler(SimpleHTTPRequestHandler):
     }
 
     def end_headers(self):
-        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Cache-Control", "no-store" if self.path == LAN_PATH else "no-cache")
         self.send_header("X-Content-Type-Options", "nosniff")
         if getattr(self, "video_response", False):
             self.send_header("Accept-Ranges", "bytes")
         super().end_headers()
+
+    def do_POST(self):
+        if self.path == LAN_PATH:
+            local_request(self)
+        else:
+            self.send_error(404)
 
     def send_head(self):
         self.video_response = False
@@ -148,7 +156,7 @@ class GameHandler(SimpleHTTPRequestHandler):
             super().log_message(fmt, *args)
 
 
-def game_identity(root):
+def game_identity(root, lan_address=None):
     hashes = {name: hashlib.sha256((root / name).read_bytes()).hexdigest() for name in WASM_FILES}
     return {
         "application": "openepoch",
@@ -158,6 +166,7 @@ def game_identity(root):
         "wasmSha256": hashes["openepoch-ee2.wasm"],
         "wasmSha256ByFile": hashes,
         "originalAssets": (root / "local-original/models/manifest.json").is_file(),
+        "lanAddress": lan_address,
     }
 
 
@@ -165,19 +174,20 @@ def same_server(port, identity):
     try:
         with urlopen(f"http://{HOST}:{port}{STATUS_PATH}", timeout=0.35) as response:
             data = json.loads(response.read(8192))
-        return all(data.get(key) == identity[key] for key in ("application", "serverVersion", "rootToken", "wasmSha256", "wasmSha256ByFile"))
+        return all(data.get(key) == identity[key] for key in ("application", "serverVersion", "rootToken", "wasmSha256", "wasmSha256ByFile", "lanAddress"))
     except (OSError, URLError, ValueError, AttributeError):
         return False
 
 
-def bind_server(root, port, strict, verbose):
-    identity = game_identity(root)
+def bind_server(root, port, strict, verbose, lan_address=None):
+    identity = game_identity(root, lan_address)
     candidates = [port] if strict or port == 0 else list(range(port, min(65536, port + 11))) + [0]
     for candidate in candidates:
         try:
             handler = functools.partial(GameHandler, directory=str(root))
             server = GameServer((HOST, candidate), handler)
             server.game_root, server.game_status, server.verbose = root, identity, verbose
+            server.lan_address, server.lan_tickets = None, None
             return server, server.server_address[1], False
         except OSError as error:
             if error.errno not in (errno.EADDRINUSE, errno.EACCES) and getattr(error, "winerror", None) not in (10048, 10013):
@@ -202,26 +212,42 @@ def main(argv=None):
     if sys.version_info < (3, 8):
         print("OpenEpoch benoetigt Python3.8 oder neuer.", file=sys.stderr)
         return 2
-    parser = argparse.ArgumentParser(description="OpenEpoch lokal starten (nur127.0.0.1).")
+    parser = argparse.ArgumentParser(description="OpenEpoch lokal starten (127.0.0.1).")
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[1] / "docs")
     parser.add_argument("--port", type=int, default=8125)
     parser.add_argument("--strict-port", action="store_true", help="Bei belegtem Port keinen anderen waehlen")
     parser.add_argument("--no-browser", action="store_true")
     parser.add_argument("--verbose", action="store_true")
+    parser.add_argument("--lan", metavar="PRIVATE-IPV4", help="LAN-Einladungen auf dieser privaten IPv4-Adresse zulassen")
     args = parser.parse_args(argv)
     if not 0 <= args.port <= 65535:
         parser.error("Port muss zwischen0 und65535 liegen")
+    if args.lan:
+        try:
+            private_ipv4(args.lan)
+        except SignalingError:
+            parser.error("--lan braucht die private IPv4-Adresse dieses Rechners")
     root = args.root.expanduser().resolve()
     for name in ("index.html", *WASM_FILES):
         if not (root / name).is_file():
             print("Spielpaket unvollstaendig: " + str(root / name), file=sys.stderr)
             return 2
     try:
-        server, port, reused = bind_server(root, args.port, args.strict_port, args.verbose)
+        server, port, reused = bind_server(root, args.port, args.strict_port, args.verbose, args.lan)
     except OSError as error:
         print("Lokaler Spielserver konnte nicht starten: " + str(error), file=sys.stderr)
         return 2
-    url = f"http://{HOST}:{port}/?rules=ee2&build=native16"
+    lan = None
+    if args.lan and not reused:
+        try:
+            server.lan_tickets = Tickets()
+            lan = LanServer(args.lan, server.lan_tickets)
+            server.lan_address = args.lan
+        except OSError as error:
+            server.server_close()
+            print(f"LAN-Einladungen auf {args.lan}:{LAN_PORT} konnten nicht starten: {error}", file=sys.stderr)
+            return 2
+    url = f"http://{HOST}:{port}/?rules=ee2&build=native55"
     print("READY " + json.dumps({"url": url, "host": HOST, "port": port, "reused": reused}), flush=True)
     if port != args.port and args.port:
         print(f"Port{args.port} war belegt. Dieses Mal wird Port{port} verwendet; gespeicherte Spiele im Browser sind an den Port gebunden.", flush=True)
@@ -231,6 +257,9 @@ def main(argv=None):
             open_game(url)
         return 0
     print("Spiel: " + url, flush=True)
+    if lan:
+        print(f"LAN-Einladungen im vertrauten lokalen Netz: {args.lan}:{LAN_PORT}", flush=True)
+        threading.Thread(target=lan.serve_forever, kwargs={"poll_interval": 0.2}, daemon=True).start()
     print("Dieses Fenster geoeffnet lassen. Ctrl+C beendet den Server.", flush=True)
     if not server.game_status["originalAssets"]:
         print("Hinweis: Originalmedien fehlen. Das Vollpaket enthaelt docs/local-original.", flush=True)
@@ -255,6 +284,9 @@ def main(argv=None):
     finally:
         if timer:
             timer.cancel()
+        if lan:
+            lan.shutdown()
+            lan.server_close()
     return 0
 
 

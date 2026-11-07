@@ -19,6 +19,7 @@ def file_hash(path):
 
 def main(project=None, overlay_paths=None):
     project = project or Path(__file__).resolve().parents[1]
+    overlay_paths = overlay_paths or {}
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=project.parent / "OpenEpoch-Mac-Komplett.zip")
     args = parser.parse_args()
@@ -31,15 +32,16 @@ def main(project=None, overlay_paths=None):
         if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc":
             files.append((path, path.relative_to(project).as_posix()))
     for name in ("Start-OpenEpoch.command", "Start-OpenEpoch.cmd", "MAC-START.txt", "LICENSE",
-                 "tools/serve_game.py", "tools/portable-assets-test.py", "tools/portable-server-test.py"):
-        path = project / name
+                 "tools/serve_game.py", "tools/lan_signaling.py", "tools/portable-assets-test.py",
+                 "tools/portable-server-test.py"):
+        path = overlay_paths.get(name, project / name)
         if not path.is_file():
             raise ValueError("Required package file missing: " + name)
         files.append((path, name))
     by_name = {name: path for path, name in files}
     if len(by_name) != len(files):
         raise ValueError("Duplicate game paths")
-    for name, path in (overlay_paths or {}).items():
+    for name, path in overlay_paths.items():
         relative = PurePosixPath(name)
         if (not relative.parts or relative.is_absolute() or '..' in relative.parts or
                 ':' in name or '\\' in name or relative.as_posix() != name or

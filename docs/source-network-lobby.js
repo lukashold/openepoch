@@ -3,6 +3,7 @@ import {createSourceRosterCarrier,createSourceCheckpointCarrier,createSourceShar
   createSourceGroupedCoopCarrier} from './source-network-wire.js?v=native54';
 import {captureBrowserCheckpoint,readBrowserCheckpoint,sendCheckpointWindow,receiveCheckpointChunk,
   validCheckpointDigest,validCheckpointSize,CHECKPOINT_WINDOW} from './source-network-checkpoint.js?v=native54';
+import {isLanInvite,lanStatus,publishLanInvite,claimLanInvite} from './lan-signaling.js?v=native55';
 
 const PREFIX='OE-R2.';
 const VERSION=2;
@@ -29,19 +30,32 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
   const get=id=>root.querySelector('#mp-roster-'+id);
   const status=get('status'),hostRoom=get('host-room'),guestRoom=get('guest-room');
   const startButton=get('start'),countSelect=get('count'),aiSelect=get('ai');
-  let current=null;
+  let current=null,guestRequest=null,lanHost=null,lanAvailable=false;
   const active=(room,link)=>current===room&&room.phase!=='closed'&&(!link||room.links.get(link.seat)===link);
   const connected=room=>[...room.links.values()].filter(link=>link.hello&&link.reachable&&link.channel?.readyState==='open').length+1;
   const setStatus=message=>{status.textContent=message;};
+  void lanStatus().then(lan=>{
+    lanAvailable=lan.available===true;
+    lanHost=typeof lan.host==='string'?lan.host:null;
+    get('lan-help').hidden=!lanAvailable;
+    get('lan-help').textContent=lanHost?`Direktes LAN aktiv · ${lanHost}`:
+      'LAN-Beitritt verfügbar. Zum Hosten den Spielstarter mit --lan und deiner privaten IPv4-Adresse starten.';
+    for(const row of current?.rows?.values()??[])row.lan.hidden=!lanHost;
+  });
 
   function reset(message='2 bis 4 Personen mit installiertem UP-Regelprofil.') {
     const old=current;
     current=null;
+    guestRequest=null;
     if(old){
       old.phase='closed';
       clearTimeout(old.prepareTimer);
       clearTimeout(old.save?.timer);
-      for(const link of old.links.values())link.pc?.close();
+      for(const link of old.links.values()){
+        clearTimeout(link.lanTimer);
+        link.lanTicket?.close();
+        link.pc?.close();
+      }
     }
     hostRoom.hidden=true;
     guestRoom.hidden=true;
@@ -49,10 +63,12 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
     get('players').replaceChildren();
     get('invite').value='';
     get('answer').value='';
+    get('manual-answer').hidden=false;
     get('resume-file').value='';
     startButton.textContent='Partie starten';
     startButton.disabled=true;
     get('reply').disabled=false;
+    get('reply').textContent='Antwort erzeugen';
     setStatus(message);
   }
 
@@ -95,6 +111,8 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
   function closeLink(room,link) {
     if(!active(room,link)||link.closed)return;
     link.closed=true;
+    clearTimeout(link.lanTimer);
+    link.lanTicket?.close();
     link.pc?.close();
     if(room.phase==='preparing'){
       reset('Beim gemeinsamen Spielstart ging eine Verbindung verloren.');
@@ -122,9 +140,11 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
       const row=room.rows.get(link.seat);
       row.state.textContent='Getrennt · neue Einladung möglich';
       row.invite.disabled=false;
+      row.lan.disabled=false;
       row.connect.disabled=true;
       row.offer.value='';
       row.answer.value='';
+      row.manual.hidden=false;
     }
     updateHost(room);
   }
@@ -359,6 +379,7 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
         if(!active(room,link)||link.closed){channel.close();return;}
         link.channel=channel;
         link.reachable=true;
+        clearTimeout(link.lanTimer);
         if(!channel.ordered||channel.maxRetransmits!==null||channel.maxPacketLifeTime!==null){
           closeLink(room,link);
           return;
@@ -387,27 +408,53 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
     field.querySelector('legend').textContent=room.groupedOwners
       ?`Controller ${seat+1} · Zivilisation ${room.groupedOwners[seat]+1}`:`Spieler ${seat+1}`;
     const part=name=>field.querySelector(`[data-roster-${name}]`);
-    const row={invite:part('invite'),connect:part('connect'),state:part('state'),offer:part('offer'),answer:part('answer')};
+    const row={invite:part('invite'),lan:part('lan'),connect:part('connect'),state:part('state'),offer:part('offer'),
+      answer:part('answer'),manual:part('manual')};
     room.rows.set(seat,row);
+    row.lan.hidden=!lanHost;
     row.state.textContent='Einladung fehlt';
     row.answer.oninput=()=>{row.connect.disabled=!row.answer.value.trim()||!room.links.get(seat)?.invitation;};
-    row.invite.onclick=async()=>{
+    async function beginInvitation(local){
       row.invite.disabled=true;
+      row.lan.disabled=true;
       row.state.textContent='Einladung wird erstellt …';
       const {link,handlers}=wire(room,seat);
       try{
-        const invitation=await rtcHost(handlers);
+        const invitation=await rtcHost(handlers,local);
         if(!active(room,link)){invitation.pc.close();return;}
-        link.invitation=invitation;
         link.pc=invitation.pc;
-        row.offer.value=packCode('invite',room,seat,invitation.code);
-        row.state.textContent='Warte auf Antwort';
-        row.answer.oninput();
-      }catch{
-        closeLink(room,link);
-        if(active(room))row.state.textContent='Einladung fehlgeschlagen';
+        if(local){
+          const ticket=await publishLanInvite(lanHost,{room:room.id,seat,seats:room.seats},invitation.code);
+          if(!active(room,link)){ticket.close();return;}
+          link.lanTicket=ticket;
+          row.manual.hidden=true;
+          row.offer.value=ticket.code;
+          row.state.textContent='LAN · Warte auf Beitritt';
+          const answer=await ticket.answer();
+          if(!answer||!active(room,link))return;
+          row.state.textContent='LAN · Verbindung wird aufgebaut …';
+          link.lanTimer=setTimeout(()=>{
+            if(!active(room,link)||link.channel?.readyState==='open')return;
+            closeLink(room,link);
+            if(active(room))row.state.textContent='LAN-Verbindung konnte nicht aufgebaut werden.';
+          },30000);
+          await invitation.accept(answer);
+          ticket.close();
+        }else{
+          link.invitation=invitation;
+          row.offer.value=packCode('invite',room,seat,invitation.code);
+          row.state.textContent='Warte auf Antwort';
+          row.answer.oninput();
+        }
+      }catch(error){
+        if(active(room,link)){
+          closeLink(room,link);
+          if(active(room))row.state.textContent=local?error.message:'Einladung fehlgeschlagen';
+        }
       }
-    };
+    }
+    row.invite.onclick=()=>beginInvitation(false);
+    row.lan.onclick=()=>beginInvitation(true);
     row.connect.onclick=async()=>{
       try{
         const answer=unpackCode(row.answer.value,'reply');
@@ -485,28 +532,57 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
   };
   get('join').onclick=()=>{
     showRoom('guest');
-    setStatus('Einladungscode für deinen Platz einfügen.');
+    setStatus(lanAvailable?'LAN- oder manuellen Einladungscode für deinen Platz einfügen.':'Einladungscode für deinen Platz einfügen.');
+  };
+  get('invite').oninput=()=>{
+    get('reply').textContent=isLanInvite(get('invite').value)?'Über LAN beitreten':'Antwort erzeugen';
   };
   get('reply').onclick=async()=>{
-    let room;
+    let room,claim,attempt;
     try{
-      const code=unpackCode(get('invite').value,'invite');
-      if(code.seats===2&&!validateArchive)throw Error('Dieser Raum benötigt eine neuere Spielversion.');
       if(current)throw Error('Schließe zuerst die bisherige Verbindung.');
+      attempt={};
+      guestRequest=attempt;
+      const invitation=get('invite').value;
+      const local=isLanInvite(invitation);
+      get('reply').disabled=true;
+      if(local){
+        get('manual-answer').hidden=true;
+        setStatus('LAN-Host wird kontaktiert …');
+        claim=await claimLanInvite(invitation);
+        if(guestRequest!==attempt){claim.release();return;}
+      }
+      const code=claim??unpackCode(invitation,'invite');
+      if(code.seats===2&&!validateArchive)throw Error('Dieser Raum benötigt eine neuere Spielversion.');
       room={id:code.room,seats:code.seats,local:code.seat,phase:'lobby',links:new Map()};
       current=room;
-      get('reply').disabled=true;
-      const {link,handlers}=wire(room,0),answer=await rtcJoin(code.sdp,handlers);
-      if(!active(room,link)){answer.pc.close();return;}
+      const {link,handlers}=wire(room,0),answer=await rtcJoin(code.sdp,handlers,local);
+      if(!active(room,link)){answer.pc.close();claim?.release();return;}
       link.pc=answer.pc;
-      get('answer').value=packCode('reply',room,room.local,answer.code);
-      setStatus(`Antwort für Platz ${room.local+1} an den Host senden.`);
+      if(local){
+        setStatus(`LAN · Platz ${room.local+1} wird verbunden …`);
+        link.lanTimer=setTimeout(()=>{
+          if(!active(room,link)||link.channel?.readyState==='open')return;
+          reset('LAN-Verbindung konnte nicht aufgebaut werden. Lass dir eine neue Einladung geben.');
+          guestRoom.hidden=false;
+          get('close').hidden=false;
+        },30000);
+        await claim.answer(answer.code);
+      }else{
+        get('answer').value=packCode('reply',room,room.local,answer.code);
+        setStatus(`Antwort für Platz ${room.local+1} an den Host senden.`);
+      }
     }catch(error){
+      claim?.release();
+      if(attempt&&guestRequest!==attempt)return;
       if(room&&active(room)){
         reset(error.message);
         guestRoom.hidden=false;
         get('close').hidden=false;
-      }else setStatus(error.message);
+      }else{
+        get('reply').disabled=false;
+        setStatus(error.message);
+      }
     }
   };
   startButton.onclick=()=>{

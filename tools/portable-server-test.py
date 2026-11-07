@@ -157,7 +157,8 @@ class PortableServerTest(unittest.TestCase):
         self.assertEqual(headers.get_content_type(), 'application/json')
         value = json.loads(body)
         self.assertEqual(value['application'], 'openepoch')
-        self.assertEqual(value['serverVersion'], 3)
+        self.assertEqual(value['serverVersion'], 4)
+        self.assertIsNone(value['lanAddress'])
         self.assertRegex(value['rootToken'], r'^[0-9a-f]{16}$')
         self.assertEqual(set(value['wasmSha256ByFile']), {'openepoch.wasm','openepoch-ee2.wasm','openepoch-ee2-up15.wasm'})
         self.assertEqual(value['wasmSha256'], value['wasmSha256ByFile']['openepoch-ee2.wasm'])
@@ -172,7 +173,7 @@ class PortableServerTest(unittest.TestCase):
         self.assertEqual(status['wasmSha256'], hashlib.sha256((self.root/'openepoch-ee2.wasm').read_bytes()).hexdigest())
         for name,digest in status['wasmSha256ByFile'].items():
             self.assertEqual(digest, hashlib.sha256((self.root/name).read_bytes()).hexdigest())
-        self.assertEqual(urllib.parse.parse_qs(urllib.parse.urlsplit(server.ready['url']).query), {'rules':['ee2'],'build':['native16']})
+        self.assertEqual(urllib.parse.parse_qs(urllib.parse.urlsplit(server.ready['url']).query), {'rules':['ee2'],'build':['native55']})
         # This is another local loopback address, never an external connection.
         # A wildcard 0.0.0.0 listener would prevent the exclusive second bind.
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as check:
@@ -397,21 +398,25 @@ class PortableServerTest(unittest.TestCase):
             socket.create_connection(('127.0.0.1', port), timeout=.4)
 
 
-if __name__ == '__main__':
+def main():
     print('Portable server checks on '+sys.platform+'; no browser or macOS execution claim.', flush=True)
     parser=argparse.ArgumentParser(add_help=False)
     parser.add_argument('--report',type=Path)
     args,remaining=parser.parse_known_args()
-    program=unittest.main(argv=[sys.argv[0],*remaining],verbosity=2,exit=False)
+    program=unittest.main(module=__name__,argv=[sys.argv[0],*remaining],verbosity=2,exit=False)
     result=program.result
     if args.report:
         digest=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
-        report={'format':'openepoch-portable-server-tests-v3','passed':result.wasSuccessful(),
-            'platform':sys.platform,'pythonVersion':sys.version.split()[0],'serverVersion':3,
+        report={'format':'openepoch-portable-server-tests-v4','passed':result.wasSuccessful(),
+            'platform':sys.platform,'pythonVersion':sys.version.split()[0],'serverVersion':4,
             'testsRun':result.testsRun,'failures':len(result.failures),'errors':len(result.errors),'skipped':len(result.skipped),
             'sourceHashes':{'tools/serve_game.py':digest(SERVER),'tools/portable-server-test.py':digest(Path(__file__).resolve())},
             'wasmSha256ByFile':{name:digest(DOCS/name) for name in ('openepoch.wasm','openepoch-ee2.wasm','openepoch-ee2-up15.wasm')},
             'scope':'Real loopback HTTP subprocess tests, fixture roots and production media. No browser, original game executable or macOS device launch. Checks current/old/changed-UP listener reuse, missing-UP startup rejection, all three WASM HTTP/HEAD bytes and media MIME, local bind, traversal/Host restrictions and shutdown.'}
         args.report.parent.mkdir(parents=True,exist_ok=True)
         args.report.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
-    raise SystemExit(0 if result.wasSuccessful() else 1)
+    return 0 if result.wasSuccessful() else 1
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
