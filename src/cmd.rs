@@ -31,6 +31,7 @@ pub const C_PLACE_ROTATED:u8=16;
 #[cfg(feature="ee2-native13")]pub const C_TRADE_ROUTE:u8=19;
 #[cfg(feature="ee2-native13")]pub const C_AIR_MISSION:u8=20;
 #[cfg(feature="ee2-native13")]pub(crate) const C_SOLO_RESIGN:u8=21;
+#[cfg(feature="ee2-native13")]pub(crate) const C_NET_RESIGN:u8=22;
 #[cfg(feature="ee2-native13")]pub(crate) const SOLO_RESIGN_SAVE_FLAG:u32=1<<11;
 
 const HEAD: usize = 14; // kind, count, a, b, c
@@ -39,7 +40,7 @@ impl Game {
     /// Issue a command as the local player. `hs` are entity handles.
     pub fn submit(&mut self, kind: u8, a: f32, b: f32, c: i32, hs: &[u32]) {
         #[cfg(feature="ee2-native13")]
-        if self.solo_resigned { return; }
+        if self.solo_resigned || self.network_match_finished() || self.network_observer(self.local) { return; }
         #[cfg(feature="ee2-civ8")]
         if a.is_finite()&&b.is_finite()&&(1..=if cfg!(feature="ee2-pack8"){17}else{16}).contains(&kind){self.civ_setup_open=false;}
         let enqueue = self.net;
@@ -112,7 +113,12 @@ impl Game {
             return;
         }
         #[cfg(feature="ee2-native13")]
-        if self.solo_resigned { return; }
+        if self.solo_resigned || self.network_match_finished() || self.network_observer(team) { return; }
+        #[cfg(feature="ee2-native13")]
+        if kind == C_NET_RESIGN {
+            if a == 0.0 && b == 0.0 && c == 0 && hs.is_empty() { self.apply_network_departure(team); }
+            return;
+        }
         #[cfg(feature="ee2-native13")]
         if kind == C_SOLO_RESIGN {
             if !self.net && self.bench == 0 && self.solo_command_queue && self.winner == 0 &&

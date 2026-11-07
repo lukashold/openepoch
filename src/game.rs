@@ -243,6 +243,8 @@ pub struct Game {
     pub(crate) solo_command_queue: bool,
     #[cfg(feature="ee2-native13")]
     pub(crate) solo_resigned: bool,
+    #[cfg(feature="ee2-native13")]
+    pub(crate) net_resignation: Option<crate::net_resign38::Resignation>,
     #[cfg(feature = "ee2-native13")]
     pub(crate) landing: crate::landing34::State,
     #[cfg(feature = "ee2-native13")]
@@ -384,6 +386,8 @@ impl Game {
             solo_command_queue: false,
             #[cfg(feature="ee2-native13")]
             solo_resigned: false,
+            #[cfg(feature="ee2-native13")]
+            net_resignation: None,
             #[cfg(feature = "ee2-native13")]
             landing: crate::landing34::State::default(),
             #[cfg(feature = "ee2-native13")]
@@ -618,6 +622,8 @@ impl Game {
     pub fn visible(&self,j:usize)->bool {
         #[cfg(feature = "ee2-native13")]
         if self.trade_hidden(j, &self.ents[j]) || self.air_parked(j, &self.ents[j]) { return false; }
+        #[cfg(feature="ee2-native13")]
+        if self.network_observer(self.local) { return true; }
         let t=&self.ents[j];if t.team==self.local{return true;}
         let need=if DEFS[t.def as usize].building{128}else{255};
         (if self.display_visibility()<2{self.real_fog(self.local,tile_of(t.x,t.y))}else{255})>=need&&self.detected(self.local,j)
@@ -1090,6 +1096,8 @@ impl Game {
         if self.air_carrier_enabled { mix(crate::carrier36_defs::HASH_TAG); }
         #[cfg(feature="ee2-native13")]
         if self.solo_resigned { mix(u32::from_le_bytes(*b"RSG1")); }
+        #[cfg(feature="ee2-native13")]
+        if let Some(state) = self.net_resignation { state.hash(&mut mix); }
         #[cfg(feature="ee2-civ8")]
         if self.civilizations.iter().any(|&c|c!=crate::civ8_runtime::LEGACY_NEUTRAL){
             mix(0x38564943);for c in self.civilizations{mix(c as u32);}
@@ -1184,7 +1192,7 @@ impl Game {
         #[cfg(feature="ee2-native13")]
         self.apply_solo_commands();
         #[cfg(feature="ee2-native13")]
-        if self.solo_resigned { return; }
+        if self.solo_resigned || self.finish_network_match() { return; }
         // Reset resource work slots once, before either old or newly trained
         // citizens run. Resetting inside a building update lets later IDs bypass it.
         for e in &mut self.ents[..self.high]{if e.alive&&e.def==FARM{e.carry=0.0;}}
@@ -1281,10 +1289,11 @@ impl Game {
 
     pub(crate) fn refresh_match_alive(&mut self) {
         #[cfg(feature = "ee2-native13")]
-        if !self.net && self.bench == 0 {
+        if (!self.net && self.bench == 0) || self.net_resignation.is_some() {
             let mut living = crate::ee2_conquest::living_seats(self);
             for (seat, alive) in living.iter_mut().enumerate() {
-                *alive &= !self.eliminated_by_victory(seat) && !(self.solo_resigned && seat == self.local as usize);
+                *alive &= !self.eliminated_by_victory(seat) && !(self.solo_resigned && seat == self.local as usize) &&
+                    !self.net_resignation.is_some_and(|state| state.defeated(seat));
             }
             for (player, alive) in self.players[..self.nplayers].iter_mut().zip(living) {
                 player.alive = alive;
@@ -1310,6 +1319,8 @@ impl Game {
     }
 
     fn poll_match_outcome(&mut self) {
+        #[cfg(feature="ee2-native13")]
+        if self.net_resignation.is_some() { return; }
         #[cfg(feature = "ee2-native13")]
         if let Some(rule) = self.regicide {
             self.poll_regicide_outcome(rule);

@@ -393,6 +393,10 @@ impl Game {
         let mut s = std::mem::take(&mut self.ui);
         s.clear();
         let me = self.local;
+        #[cfg(feature="ee2-native13")]
+        let observer = self.network_observer(me);
+        #[cfg(not(feature="ee2-native13"))]
+        let observer = false;
         let p = self.players[me as usize];
         let ep = p.epoch;
         s.push_str("{\"res\":[");
@@ -405,6 +409,7 @@ impl Game {
             "\"pop\":{},\"cap\":{},\"epoch\":{},\"ename\":\"{}\",\"win\":{},\"n\":{},\"tick\":{},\"terr\":{},\"local\":{},\"net\":{},",
             p.pop, p.cap, ep, EPOCH_NAMES[ep as usize], self.winner, self.sim_units, self.tick, p.terr, me, self.net
         );
+        if observer { s.push_str("\"observer\":true,"); }
         #[cfg(feature = "ee2-native13")]
         if let Some(rule) = self.territory_victory {
             let standing = self.territory_standing(rule.percent);
@@ -503,7 +508,7 @@ impl Game {
             k += 1;
         };
         let mut tip = String::new();
-        if has_worker {
+        if !observer && has_worker {
             for (id, d) in DEFS.iter().enumerate() {
                 if d.building && d.epoch <= ep {
                     tip.clear();
@@ -525,7 +530,7 @@ impl Game {
                     act(&mut s, "b", id as QueueItem, d.name, &cost, self.afford(me, &cost), d.size, &tip);
                 }
             }
-        } else if first != NOIDX && DEFS[self.ents[first].def as usize].building && self.ents[first].built >= 1.0 {
+        } else if !observer && first != NOIDX && DEFS[self.ents[first].def as usize].building && self.ents[first].built >= 1.0 {
             let bdef = self.ents[first].def;
             for (id, d) in DEFS.iter().enumerate() {
                 if self.unit_production_available(me, bdef, id as DefId) && {

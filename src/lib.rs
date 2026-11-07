@@ -22,6 +22,8 @@ mod landing34;
 #[cfg(feature = "ee2-native13")]
 mod air_audio35;
 #[cfg(feature = "ee2-native13")]
+mod net_resign38;
+#[cfg(feature = "ee2-native13")]
 mod carrier36_defs;
 #[cfg(feature = "ee2-native13")]
 mod battle_signals;
@@ -938,6 +940,28 @@ pub extern "C" fn cmd_resign_solo() -> u32 {
     if game.net || game.bench != 0 || !game.solo_command_queue || game.winner != 0 { return 0; }
     game.submit(C_SOLO_RESIGN, 0.0, 0.0, 0, &[]);
     1
+}
+
+#[cfg(feature="ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_network_resignation(policy: u32) -> u32 {
+    u32::from(g().configure_network_resignation(policy))
+}
+
+#[cfg(feature="ee2-native13")]
+#[no_mangle]
+pub extern "C" fn cmd_resign_network() -> u32 {
+    let game = g();
+    if !game.network_departure_allowed(game.local) { return 0; }
+    game.submit(C_NET_RESIGN, 0.0, 0.0, 0, &[]);
+    1
+}
+
+#[cfg(feature="ee2-native13")]
+#[no_mangle]
+pub extern "C" fn network_peer_disconnected() {
+    let game = g();
+    if let Some(peer) = 1u8.checked_sub(game.local) { game.apply_network_departure(peer); }
 }
 
 #[cfg(feature = "ee2-native13")]

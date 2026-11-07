@@ -1,6 +1,7 @@
 // The EE2 profile uses locally extracted original recordings when available.
 // Procedural sounds and local speech remain the fallback for the standalone game.
-import { createOriginalAudio } from './original-audio.js?v=native37';
+import { createOriginalAudio } from './original-audio.js?v=native38audio';
+import {ORIGINAL_AUDIO_DEFAULTS,originalAudioLevel,originalAudioGain} from './original-audio-levels.js?v=native38audio';
 import {createPresentationRandom} from './source-music-controller.js?v=regional11';
 import {createAirFlightPlayback} from './air-flight-audio.js?v=native36';
 import {takeoffSpatialMix} from './air-takeoff.js?v=native33';
@@ -8,10 +9,12 @@ const presentationRandom = createPresentationRandom(1);
 const originals=createOriginalAudio({presentationRandom});
 export const presentationWord = () => presentationRandom.word15();
 
-let ctx = null, master = null, noise = null;
+let ctx = null, master = null, musicBus = null, soundBus = null, noise = null;
 let airFlightPresentation = null, airFlightPlayback = null;
 let muted = false, voices = 0;
 let musicEnabled = true, speechEnabled = true, nextMusic = 0, musicStep = 0, lastSpeech = -999;
+let musicVolume=1,soundVolume=1,ambience=true;
+const AUDIO_SETTINGS_KEY='openepoch-native-audio-levels-v1';
 let speechIndex = 0;
 const lastPlayed = new Map();
 
@@ -20,13 +23,15 @@ function ensure() {
   const AC = window.AudioContext || window.webkitAudioContext;
   if (!AC) return false;
   ctx = new AC();
-  master = ctx.createGain(); master.gain.value = 0.5;
+  master = ctx.createGain(); master.gain.value = muted?0:.5;
+  musicBus=ctx.createGain();musicBus.gain.value=originalAudioGain(musicVolume);musicBus.connect(master);
+  soundBus=ctx.createGain();soundBus.gain.value=originalAudioGain(soundVolume);soundBus.connect(master);
   const comp = ctx.createDynamicsCompressor();   // keeps a 500-gun broadside from clipping
   master.connect(comp); comp.connect(ctx.destination);
   noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
   const d = noise.getChannelData(0);
   for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-  originals.prepare(ctx,master);
+  originals.prepare(ctx,soundBus,musicBus);
   return true;
 }
 /** Browsers only allow audio after a user gesture; call this from one. */
@@ -39,7 +44,7 @@ export function configureAirFlightAudio(presentation) {
 export function frameAirFlightAudio(frame) {
   if(!ctx||!airFlightPresentation)return;
   airFlightPlayback??=createAirFlightPlayback({presentation:airFlightPresentation,
-    context:ctx,destination:master,mix:takeoffSpatialMix});
+    context:ctx,destination:soundBus,mix:takeoffSpatialMix});
   airFlightPlayback.frame(frame);
 }
 export function airFlightAttackHandled(definition,epoch,duration) {
@@ -57,6 +62,38 @@ export function setSpeechEnabled(value) { speechEnabled = value; originals.setSp
 export const isMusicEnabled = () => musicEnabled;
 export const isSpeechEnabled = () => speechEnabled;
 
+export const originalAudioSettings=()=>({music:musicEnabled,ambience,musicVolume,soundVolume});
+
+export function setOriginalAudioSettings(settings){
+  if(!settings||typeof settings!=='object')return;
+  const nextMusic=originalAudioLevel(settings.musicVolume,musicVolume),nextSound=originalAudioLevel(settings.soundVolume,soundVolume);
+  if(musicVolume!==nextMusic){
+    musicVolume=nextMusic;
+    musicBus?.gain.setTargetAtTime(originalAudioGain(musicVolume),ctx.currentTime,.015);
+  }
+  if(soundVolume!==nextSound){
+    soundVolume=nextSound;
+    soundBus?.gain.setTargetAtTime(originalAudioGain(soundVolume),ctx.currentTime,.015);
+    if(!soundVolume)globalThis.window?.speechSynthesis?.cancel();
+  }
+  if(typeof settings.ambience==='boolean'&&ambience!==settings.ambience){
+    ambience=settings.ambience;originals.setAmbienceEnabled(ambience);
+  }
+  if(typeof settings.music==='boolean'&&musicEnabled!==settings.music)setMusicEnabled(settings.music);
+}
+
+export function initializeOriginalAudioSettings(){
+  let saved;
+  try{saved=JSON.parse(globalThis.localStorage?.getItem(AUDIO_SETTINGS_KEY)??'null');}catch{/* Optional device settings. */}
+  setOriginalAudioSettings(ORIGINAL_AUDIO_DEFAULTS);
+  setOriginalAudioSettings(saved);
+}
+
+export function commitOriginalAudioSettings(settings){
+  setOriginalAudioSettings(settings);
+  try{globalThis.localStorage?.setItem(AUDIO_SETTINGS_KEY,JSON.stringify(originalAudioSettings()));}catch{/* Keep this session's levels. */}
+}
+
 // Original short procedural score. Scheduling is driven by the animation loop;
 // it does not change simulation state and resumes cleanly after leaving the game.
 export function music(active, epoch = 0, civilization = 0) {
@@ -67,8 +104,8 @@ export function music(active, epoch = 0, civilization = 0) {
   const notes = [0,7,12,7,3,10,15,10,5,12,17,12,3,10,14,10];
   while (nextMusic < now + .25) {
     const f = 110 * 2 ** (notes[musicStep % notes.length] / 12);
-    tone(nextMusic, .025, -.2, {wave:'triangle',f0:f,attack:.16,decay:1.7});
-    if (musicStep % 4 === 0) tone(nextMusic,.022,.22,{wave:'sine',f0:f/2,attack:.35,decay:3.3});
+    tone(nextMusic, .025, -.2, {wave:'triangle',f0:f,attack:.16,decay:1.7,destination:musicBus});
+    if (musicStep % 4 === 0) tone(nextMusic,.022,.22,{wave:'sine',f0:f/2,attack:.35,decay:3.3,destination:musicBus});
     nextMusic += .8; musicStep++;
   }
 }
@@ -87,12 +124,12 @@ export function acknowledge(def, action, epoch=0,context=undefined) {
   if(!speechEnabled)return false;
   const now = performance.now(); if (now - lastSpeech < 900) return false;
   if(originals.acknowledge(def,action,epoch,context)){window.speechSynthesis?.cancel();lastSpeech=now;return true;}
-  if(!window.speechSynthesis||!window.SpeechSynthesisUtterance)return false;
+  if(!soundVolume||!window.speechSynthesis||!window.SpeechSynthesisUtterance)return false;
   const voice = window.speechSynthesis.getVoices().find(v => /^de[-_]/i.test(v.lang) && v.localService);
   if (!voice) return false;
   const options = RESPONSE[role.worker ? 'worker' : 'soldier'][action] || RESPONSE.soldier.order;
   const utterance = new SpeechSynthesisUtterance(options[speechIndex++ % options.length]);
-  utterance.lang = 'de-DE'; utterance.voice = voice; utterance.rate = 1.08; utterance.pitch = role.worker ? 1 : .85; utterance.volume = .8;
+  utterance.lang = 'de-DE'; utterance.voice = voice; utterance.rate = 1.08; utterance.pitch = role.worker ? 1 : .85; utterance.volume = .8*originalAudioGain(soundVolume);
   window.speechSynthesis.cancel(); window.speechSynthesis.speak(utterance); lastSpeech = now; return true;
 }
 export const isMuted = () => muted;
@@ -129,11 +166,11 @@ function env(g, t, peak, attack, decay) {
   g.gain.exponentialRampToValueAtTime(Math.max(peak, 0.0002), t + attack);
   g.gain.exponentialRampToValueAtTime(0.0001, t + attack + decay);
 }
-function out(vol, pan) {
+function out(pan,destination=soundBus) {
   const g = ctx.createGain();
   let node = g;
   if (ctx.createStereoPanner) { const p = ctx.createStereoPanner(); p.pan.value = pan; g.connect(p); node = p; }
-  node.connect(master);
+  node.connect(destination);
   return g;
 }
 function burst(t, vol, pan, { type = 'lowpass', f0 = 800, f1 = f0, q = 1, attack = 0.004, decay = 0.1 }) {
@@ -141,15 +178,15 @@ function burst(t, vol, pan, { type = 'lowpass', f0 = 800, f1 = f0, q = 1, attack
   src.loopStart = Math.random() * 0.5;
   const flt = ctx.createBiquadFilter(); flt.type = type; flt.Q.value = q;
   flt.frequency.setValueAtTime(f0, t); flt.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + attack + decay);
-  const g = out(vol, pan); env(g, t, vol, attack, decay);
+  const g = out(pan); env(g, t, vol, attack, decay);
   src.connect(flt); flt.connect(g);
   src.start(t, src.loopStart); src.stop(t + attack + decay + 0.03);
   voices++; src.onended = () => voices--;
 }
-function tone(t, vol, pan, { wave = 'sine', f0 = 440, f1 = f0, attack = 0.004, decay = 0.12 }) {
+function tone(t, vol, pan, { wave = 'sine', f0 = 440, f1 = f0, attack = 0.004, decay = 0.12, destination=soundBus }) {
   const o = ctx.createOscillator(); o.type = wave;
   o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + attack + decay);
-  const g = out(vol, pan); env(g, t, vol, attack, decay);
+  const g = out(pan,destination); env(g, t, vol, attack, decay);
   o.connect(g); o.start(t); o.stop(t + attack + decay + 0.03);
   voices++; o.onended = () => voices--;
 }

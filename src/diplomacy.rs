@@ -116,6 +116,8 @@ impl Game {
     }
 
     pub(crate) fn display_visibility(&self) -> u8 {
+        #[cfg(feature="ee2-native13")]
+        if self.network_observer(self.local) { return 2; }
         match (self.diplomacy.visibility, self.fog_inverted) {
             (2, true) => 1,
             (_, true) => 2,

@@ -114,10 +114,14 @@ impl Game {
         { b = self.wrap_takeoff_save(b); }
         #[cfg(feature="ee2-native13")]
         { b = self.wrap_landing_save(b); }
+        #[cfg(feature="ee2-native13")]
+        { b = self.wrap_network_resignation(b); }
         self.savebuf = b;
     }
 
     pub fn load(buf: &[u8]) -> Option<Game> {
+        #[cfg(feature="ee2-native13")]
+        let (buf, net_resignation) = crate::net_resign38::split(buf)?;
         #[cfg(feature="ee2-native13")]
         let (buf, landing) = crate::landing34::split_save(buf)?;
         #[cfg(feature="ee2-native13")]
@@ -450,6 +454,8 @@ impl Game {
             if g.net || g.winner != 0 || g.players[g.local as usize].alive { return None; }
             g.winner = 2;
         }
+        #[cfg(feature="ee2-native13")]
+        g.restore_network_resignation(net_resignation)?;
         Some(g)
     }
 }

@@ -60,5 +60,24 @@
 #native-game-settings.native-settings-source button[data-settings-widget][aria-selected='true'] { background-image: var(--native-settings-pressed) !important; }
 #native-game-settings.native-settings-source input[type='checkbox'][data-settings-widget] { appearance: none; background-image: var(--native-settings-check-off); }
 #native-game-settings.native-settings-source input[type='checkbox'][data-settings-widget]:checked { background-image: var(--native-settings-check-on); }
+#native-game-settings.native-settings-source .native-settings-volume {
+  appearance: none;
+  background: var(--native-settings-volume-track) center / 100% var(--native-settings-volume-track-height) no-repeat;
+  cursor: pointer;
+}
+#native-game-settings.native-settings-source .native-settings-volume::-webkit-slider-thumb {
+  appearance: none;
+  width: var(--native-settings-volume-thumb-width);
+  height: 100%;
+  background: var(--native-settings-volume-thumb) center / 100% 100% no-repeat;
+}
+#native-game-settings.native-settings-source .native-settings-volume::-webkit-slider-runnable-track { height: 100%; }
+#native-game-settings.native-settings-source .native-settings-volume::-moz-range-track { height: 100%; background: transparent; }
+#native-game-settings.native-settings-source .native-settings-volume::-moz-range-thumb {
+  width: var(--native-settings-volume-thumb-width);
+  height: 100%;
+  border: 0;
+  background: var(--native-settings-volume-thumb) center / 100% 100% no-repeat;
+}
 #native-game-settings.native-settings-source .native-settings-keys { max-height: none; }
 #native-game-settings.native-settings-source h3, #native-game-settings.native-settings-source label { align-content: center; }

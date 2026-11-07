@@ -7,7 +7,7 @@
 <meta name="description" content="OpenEpoch: lokales Echtzeit-Strategiespiel mit Scharmützeln, Forschung und Epochen von der Steinzeit bis in die Zukunft.">
 <link rel="stylesheet" href="skirmish-menu.css?v=native13">
 <link rel="stylesheet" href="original-game-options.css?v=native37">
-<link rel="stylesheet" href="original-game-settings.css?v=native37">
+<link rel="stylesheet" href="original-game-settings.css?v=native38audio">
 <link rel="stylesheet" href="fullmap.css?v=native20">
 <style>
   :root { --bg:#10151b; --panel:#1a222bee; --line:#33414f; --text:#e6edf3; --dim:#93a1b0; --acc:#4aa3ff; }
@@ -151,6 +151,7 @@
   <span class="r" title="Deine Gebiete. Baue ein Stadtzentrum in einem freien Gebiet.">Gebiete <b id="terr">1</b></span>
   <span class="r" id="territory-victory-status" hidden></span>
   <span class="r" id="sole-survivor-status" hidden></span>
+  <span class="r" id="observer-status" hidden>Beobachter</span>
   <button id="idle" title="Select next idle worker (F)">Idle workers: 0</button>
   <span class="sp"></span>
   <span id="perf"></span>
@@ -239,10 +240,10 @@
     </nav>
     <section id="native-settings-audio" role="tabpanel" aria-labelledby="native-settings-tab-audio" data-settings-pane="audio">
       <div class="native-settings-row"><input id="native-settings-music" type="checkbox" data-setting="music" data-settings-widget="options_audio_music_on"><label for="native-settings-music" data-settings-widget="options_audio_music_on_label" data-source-label>Musik Ein</label></div>
-      <div class="native-settings-row"><input id="native-settings-ambient" type="checkbox" disabled data-settings-widget="options_audio_amb_on"><label for="native-settings-ambient" data-settings-widget="options_audio_amb_on_label" data-source-label>Geräusche Ein</label></div>
+      <div class="native-settings-row"><input id="native-settings-ambient" type="checkbox" data-setting="ambience" data-settings-widget="options_audio_amb_on"><label for="native-settings-ambient" data-settings-widget="options_audio_amb_on_label" data-source-label>Geräusche Ein</label></div>
       <h3 data-settings-widget="options_audio_volume_label" data-source-label>Lautstärke:</h3>
-      <div class="native-settings-row"><label for="native-settings-music-volume" data-settings-widget="options_audio_musvol_label" data-source-label>Musik:</label><input id="native-settings-music-volume" type="range" disabled data-settings-widget="options_audio_musvol"></div>
-      <div class="native-settings-row"><label for="native-settings-sound-volume" data-settings-widget="options_audio_sndvol_label" data-source-label>Sound:</label><input id="native-settings-sound-volume" type="range" disabled data-settings-widget="options_audio_sndvol"></div>
+      <div class="native-settings-row"><label for="native-settings-music-volume" data-settings-widget="options_audio_musvol_label" data-source-label>Musik:</label><input id="native-settings-music-volume" class="native-settings-volume" type="range" min="0" max="1" step=".01" data-setting="musicVolume" data-settings-widget="options_audio_musvol"></div>
+      <div class="native-settings-row"><label for="native-settings-sound-volume" data-settings-widget="options_audio_sndvol_label" data-source-label>Sound:</label><input id="native-settings-sound-volume" class="native-settings-volume" type="range" min="0" max="1" step=".01" data-setting="soundVolume" data-settings-widget="options_audio_sndvol"></div>
       <div class="native-settings-test-sounds" data-settings-widget="options_audio_test_choice" aria-hidden="true"></div>
       <button type="button" disabled data-settings-widget="options_audio_test_sound" data-source-label>Lautstärke testen</button>
       <label class="native-settings-extra" data-settings-extra="options_audio_pane" data-offset-x="790" data-offset-y="76"><input type="checkbox" data-setting="muted"> Ton stummschalten</label>
@@ -362,6 +363,7 @@
     <div id="mp">
       <div class="row"><button id="mphost" class="alt">Host a game</button><button id="mpjoin" class="alt">Join a game</button>
         <label style="width:auto;margin-left:10px">AI opponents</label><select id="mpai"><option>0</option><option>1</option><option>2</option></select></div>
+      <div class="row" id="mp-resignation-options" hidden><label for="mp-resign-policy">Bei Verlassen</label><select id="mp-resign-policy"><option value="0">Entfernen</option><option value="1">Defensiv</option><option value="5" selected>KI erstellen</option></select></div>
       <div id="mpstatus">1 vs 1, directly between two browsers — no server. The host creates an invite code, the guest answers with a reply code (send them by chat or mail).</div>
       <textarea id="mpin" rows="3" placeholder="Choose Host or Join first" spellcheck="false"></textarea>
       <div class="row"><button id="mpgo" class="alt">Connect</button></div>
@@ -403,6 +405,6 @@
 </aside>
 <div id="trade-route-caption" hidden role="status"></div>
 <div id="air-mission-caption" hidden role="status"></div>
-<script type="module" src="main.js?v=native37"></script>
+<script type="module" src="main.js?v=native38"></script>
 </body>
 </html>

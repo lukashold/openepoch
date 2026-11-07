@@ -9,7 +9,7 @@ import { diplomacyPanel } from './diplomacy.js?v=native17';
 import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native6';
 import {loadNativeFontUI} from './original-font-ui.js?v=native21names';
 import {territoryClaimMessage} from './territory-help.js?v=fortress1';
-import * as sfx from './audio.js?v=native37';
+import * as sfx from './audio.js?v=native38audio';
 import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=citizen9';
 import {mountOriginalShellVideo} from './original-shell-video.js?v=native12';
 import {mountSkirmishMenu} from './skirmish-menu.js?v=native13';
@@ -25,7 +25,7 @@ import {createRenderAssetMapping} from './original-render-namespace.js?v=native6
 import {createFrontendNamespace} from './render-namespace.js?v=native36';
 import {ORIGINAL_SPEEDS, changeOriginalSpeed, checkOriginalTempo, loadOriginalTempo, originalStartingSpeed} from './original-game-tempo.js?v=native37';
 import {mountOriginalGameOptions} from './original-game-options.js?v=native37';
-import {mountOriginalGameSettings} from './original-game-settings.js?v=native37';
+import {mountOriginalGameSettings} from './original-game-settings.js?v=native38audio';
 import {createRenderActorMetadata} from './render-actor-metadata.js?v=pack8';
 import {createPackRenderMetadata} from './original-pack-states.js?v=pack8';
 import {createFullmapPipBridge} from './original-fullmap-pip-bridge.js';
@@ -37,7 +37,7 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=skirmish-climates';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native37';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native38';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native37';
 import {createFullscreenController} from './fullscreen.js?v=building2';
@@ -621,7 +621,10 @@ let originalTempo = null;
 let pendingTempo = 0;
 let restartPoint = null;
 const hasOriginalTempo = rulesProfile.id==='up15';
+if(hasOriginalTempo)sfx.initializeOriginalAudioSettings();
 $('original-tempo-options').hidden = !hasOriginalTempo;
+const hasNetworkResignation=hasOriginalTempo&&typeof wasm.configure_network_resignation==='function';
+$('mp-resignation-options').hidden=!hasNetworkResignation;
 function menuTempo() {
   return checkOriginalTempo({preset: +$('game-speed-preset').value, locked: $('game-speed-locked').checked});
 }
@@ -823,7 +826,7 @@ function armPlayerFlare(){
 $('player-flare-button').onclick=armPlayerFlare;
 
 function warplanRecipient(){
-  if(!net||net.ls?.alone||!ui)return null;
+  if(!net||net.ls?.alone||!ui||ui.observer)return null;
   const player=ui.diplomacy?.players?.find(row=>row.team===1-ui.local&&row.alive&&!row.ai);
   return player?{relation:player.relation,name:`Spieler ${player.team+1}`}:null;
 }
@@ -887,6 +890,7 @@ function begin(tempo = null) {
   $('game-options-button').hidden=!hasOriginalTempo||!!bench;
   for (const id of ['pause', 'save']) $(id).style.display = net ? 'none' : '';
   $('speed').style.display = net&&!tempo ? 'none' : '';
+  $('observer-status').hidden=true;
   $('menu').style.display = 'none'; $('end').style.display = 'none';
   shellMovie(false);
   $('camera-tools').hidden=!referenceMode;
@@ -1138,7 +1142,8 @@ function frame(now) {
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
   if (!running) { sfx.menuMusic(); return; }
   if (worldMaterialPending) return;
-  sfx.music(!paused, ui?.epoch ?? initialMusicEpoch, musicCivilization);
+  if(gameSettings.active())sfx.menuMusic();
+  else sfx.music(!paused, ui?.epoch ?? initialMusicEpoch, musicCivilization);
   frameMs += (dt * 1000 - frameMs) * 0.05;
   worstMs = Math.max(worstMs * 0.995, dt * 1000);
 
@@ -1342,6 +1347,8 @@ function costText(c) {return c.flatMap((value,slot)=>value?[`${value} ${!referen
 function updateUi(drawn, now) {
   const p = wasm.ui();
   ui = JSON.parse(dec.decode(u8(p, wasm.ui_len())));
+  $('observer-status').hidden=!ui.observer;
+  if(ui.observer&&ghost)cancelBuilding();
   tradeRoute?.validate();
   airMission?.validate();
   if(typeof wasm.pack_selected_count==='function'&&wasm.pack_selected_count()>0){
@@ -1476,13 +1483,14 @@ function updateUi(drawn, now) {
   ui.act.forEach((action,i)=>acts.children[i]?.classList.toggle('no',!action.ok));
   sciencePanel.refresh(ui);
   diplomacy.refresh(ui);
-  $('diplomacy-button').disabled=!!bench;
+  $('diplomacy-button').disabled=!!bench||!!ui.observer;
   nativeHud.update(ui,seasonSession.settings);
 
   if (ui.win && !bench && $('end').style.display !== 'flex') {
     fullmap?.close();
     diplomacy.close();
-    if (rulesProfile.id === 'up15' && !net) {
+    if(ui.observer)$('endtext').textContent='Partie beendet';
+    else if (rulesProfile.id === 'up15' && !net) {
       $('endtext').textContent = ui.win === 1 ? 'Sie haben gewonnen.' : 'Sie haben verloren';
     } else {
       $('endtext').textContent = ui.win === 1 ? 'Victory!' : 'Defeat';
@@ -1522,6 +1530,7 @@ function drawMini() {
 function miniWorld(e) { const r = mini.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * MAP, (e.clientY - r.top) / r.height * MAP]; }
 mini.addEventListener('mousedown', e => {
   if(modalOpen()||playerFlare.isArmed())return;
+  if(ui?.observer&&e.button===2)return;
   if(airMission?.active()&&e.button===2)return;
   if(e.button===2&&(tradeRoute?.cancel()||captureOrder?.cancel()))return;
   const [x, y] = miniWorld(e);
@@ -1536,7 +1545,8 @@ const box = $('box');
 const modalOpen=()=>$('cheat-dialog').open||$('research-dialog').open||diplomacy.isOpen()||fullmap?.isOpen()||gameOptions?.active();
 gameOptions=await mountOriginalGameOptions({
   enabled:hasOriginalTempo,originalArt:originalEnabled,
-  view:()=>({epoch:ui?.epoch??initialMusicEpoch,disabled:[...(!restartPoint||net?['restart']:[]),...(net?['save','load','resign']:[])]}),
+  view:()=>({epoch:ui?.epoch??initialMusicEpoch,disabled:[...(!restartPoint||net?['restart']:[]),...(net?['save','load']:[]),
+    ...(net&&(!net.resignation||ui?.observer)?['resign']:[])]}),
   onOpen(){
     if(!running||bench||ui?.win||$('cheat-dialog').open||$('research-dialog').open||diplomacy.isOpen())return false;
     setPauseHold('options',true);keys.clear();cancelMapGesture();mouse.inside=false;
@@ -1550,9 +1560,10 @@ const fullscreen=createFullscreenController({buttons:[$('fullscreen'),$('menu-fu
   onChange(){keys.clear();cancelMapGesture();updateCamera();}});
 const gameSettings=await mountOriginalGameSettings({
   enabled:hasOriginalTempo,originalArt:originalEnabled,
-  read:()=>({muted:sfx.isMuted(),music:sfx.isMusicEnabled(),voices:sfx.isSpeechEnabled(),resolution:$('quality').value,fullscreen:fullscreen.active}),
+  read:()=>({...sfx.originalAudioSettings(),muted:sfx.isMuted(),voices:sfx.isSpeechEnabled(),resolution:$('quality').value,fullscreen:fullscreen.active}),
+  previewAudio(settings){sfx.setOriginalAudioSettings(settings);updateAudioButtons();},
   apply(settings){
-    sfx.setMuted(settings.muted);sfx.setMusicEnabled(settings.music);sfx.setSpeechEnabled(settings.voices);
+    sfx.setMuted(settings.muted);sfx.commitOriginalAudioSettings(settings);sfx.setSpeechEnabled(settings.voices);
     updateAudioButtons();$('quality').value=settings.resolution;
     if(fullscreen.active!==settings.fullscreen)void fullscreen.toggle();
   },
@@ -1574,6 +1585,7 @@ canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('mousedown', e => {
   mouse.x = e.clientX; mouse.y = e.clientY;
   if (!running||modalOpen()||playerFlare.isArmed()) return;
+  if(ui?.observer&&e.button===2)return;
   if (airMission?.active()) {
     airPress=e.button===0?[e.clientX,e.clientY]:null;
     if(e.button===2)airMissionFeedback(airMission.finish());
@@ -1890,7 +1902,8 @@ function handleGameOption(action) {
   else if(action==='load'){gameOptions.close();void loadGame();}
   else if(action==='settings')gameSettings.open();
   else if(action==='resign'){
-    if(net||!window.confirm('Möchtest du aufgeben?')||!wasm.cmd_resign_solo())return;
+    if(!window.confirm(net?'Möchtest du aufgeben und als Beobachter weiterspielen?':'Möchtest du aufgeben?'))return;
+    if(!(net?net.resignation&&wasm.cmd_resign_network():wasm.cmd_resign_solo()))return;
     gameOptions.close();setPauseHold('manual',false);
   }
   else if(action==='restart'){
@@ -1943,6 +1956,7 @@ function channel(local) {
   let remoteInfantryRoster = false, remoteProductionRoster = false, remoteTradeRoute = false, remoteAirMission = false, remoteAirRunway = false, remoteAirTakeoff = false, remoteAirLanding = false;
   let remoteAirCarrier = false;
   let remoteOriginalTempo = false;
+  let remoteResignation = false;
   const supportsCapture = typeof wasm.capture_configure_peer === 'function';
   const supportsCaptureAnimation = supportsCapture && typeof wasm.capture_animation_configure_peer === 'function';
   const supportsInfantryRoster = typeof wasm.infantry_roster_configure_peer === 'function';
@@ -1969,6 +1983,7 @@ function channel(local) {
         ...(supportsLanding?{airLanding:1}:{}),
         ...(supportsCarrier?{airCarrier:1}:{}),
         ...(hasOriginalTempo?{originalTempo:1}:{}),
+        ...(hasNetworkResignation?{networkResignation:1}:{}),
         ...(climates.length>1?{climates}:{})}));
       mpStatus('Verbunden – Spielversion wird geprüft …');
     },
@@ -1994,6 +2009,7 @@ function channel(local) {
           remoteAirLanding=remoteAirTakeoff&&m.airLanding===1;
           remoteAirCarrier=remoteAirLanding&&m.airCarrier===1;
           remoteOriginalTempo=m.originalTempo===1;
+          remoteResignation=m.networkResignation===1;
           if (local === 0 && !net) {
             try{
               const ai=+$('mpai').value,players=2+ai,choices=civilizationSetup.choices();
@@ -2013,6 +2029,7 @@ function channel(local) {
                 ...(supportsLanding&&remoteAirLanding?{airLanding:1}:{}),
                 ...(supportsCarrier&&remoteAirCarrier?{airCarrier:1}:{}),
                 ...(hasOriginalTempo&&remoteOriginalTempo?{gameTempo:menuTempo()}:{}),
+                ...(hasNetworkResignation&&remoteResignation?{resignationPolicy:+$('mp-resign-policy').value}:{}),
                 ...resolved,popLimit:choices?+$('pop-limit').value:null,supplies:choices?+$('supplies').value:null};
               checkStart(cfg);ch.send(JSON.stringify(cfg));launch(cfg);
             }catch{return reject('Die Scharmützeleinstellungen konnten nicht übernommen werden.');}
@@ -2023,7 +2040,13 @@ function channel(local) {
       }
       else if (net) net.ls.receive(d);
     },
-    close() { if (net?.ch===ch && !net.ls.alone) { net.ls.dropPeer(); net.warplans?.cancelPending(); toast('The other player disconnected'); } else if (!net && !rejected) mpStatus('Connection closed.'); },
+    close() {
+      if(net?.ch===ch&&!net.ls.alone){
+        net.ls.dropPeer();net.warplans?.cancelPending();
+        if(net.resignation)wasm.network_peer_disconnected();
+        toast('Die Verbindung zum Mitspieler wurde getrennt.');
+      }else if(!net&&!rejected)mpStatus('Verbindung geschlossen.');
+    },
     setPc(p) { pc = p; },
   };
   function reject(message){rejected=true;mpStatus(message);ch.close();}
@@ -2045,6 +2068,8 @@ function channel(local) {
       if(!hasOriginalTempo||!remoteOriginalTempo)throw Error('Unsupported game speed settings');
       checkOriginalTempo(cfg.gameTempo);
     }
+    if(cfg.resignationPolicy!==undefined&&(!hasNetworkResignation||!remoteResignation||
+      !Number.isInteger(cfg.resignationPolicy)||cfg.resignationPolicy<0||cfg.resignationPolicy>7))throw Error('Unsupported resignation policy');
     if(civilizationSetup.enabled){
       checkedCivilizations(cfg.civilizations,2+cfg.ai);
       if(![250,500,1000].includes(cfg.popLimit)||![0,1,2].includes(cfg.supplies))throw Error('Invalid skirmish setup');
@@ -2066,8 +2091,9 @@ function channel(local) {
     if(cfg.airTakeoff===1&&!wasm.air_takeoff_configure_peer(1))throw Error('Air takeoff setup failed');
     if(cfg.airLanding===1&&!wasm.air_landing_configure_peer(1))throw Error('Air landing setup failed');
     if(cfg.airCarrier===1&&!wasm.air_carrier_configure_peer(1))throw Error('Aircraft carrier setup failed');
+    if(cfg.resignationPolicy!==undefined&&!wasm.configure_network_resignation(cfg.resignationPolicy))throw Error('Resignation setup failed');
     seasonSession.configure(peerSeasonSettings(cfg.seasons),cfg.climate);setSeasonControls(seasonSession.settings);climateControl.value=seasonSession.climate;
-    net = { ch, pc, ls: null };
+    net = {ch,pc,ls:null,resignation:cfg.resignationPolicy!==undefined};
     const tempo = cfg.gameTempo ? {locked:cfg.gameTempo.locked,apply:applyRequestedSpeed} : null;
     net.ls = new Lockstep(wasm, local, buf => { if (ch.readyState === 'open') ch.send(buf); }, tempo);
     if(originalEnabled&&fullmap&&remoteWarplans===WARPLAN_PEER_VERSION)net.warplans=createWarplanPeer({

@@ -1,15 +1,16 @@
 import {calculateHudLayout,nativeHudFrame} from './original-hud-layout.js';
 import {controlMediaURL,loadOriginalControlCatalog} from './original-game-options.js?v=native37';
+import {ORIGINAL_AUDIO_DEFAULTS} from './original-audio-levels.js?v=native38audio';
 
 const path='local-original/game-controls/settings-manifest.json';
 const digest='6ff33963fbcf7709e0469a0d3dae3b940b73056f82fe4fa43da872aa2f3bbbb8';
 const tabs=['audio','video','general','hotkeys'];
 const pieces=['ul','ll','lr','ur','top','left','bottom','right'];
-const fallback={music:true,muted:false,voices:true,resolution:'2',fullscreen:false};
+const fallback={...ORIGINAL_AUDIO_DEFAULTS,muted:false,voices:true,resolution:'2',fullscreen:false};
 const cssImage=url=>url?`url("${url}")`:'none';
 const position=(node,{x,y,width,height})=>Object.assign(node.style,{left:`${x}px`,top:`${y}px`,width:`${width}px`,height:`${height}px`});
 
-export async function mountOriginalGameSettings({enabled=true,originalArt=false,read=()=>fallback,apply,defaults=fallback,
+export async function mountOriginalGameSettings({enabled=true,originalArt=false,read=()=>fallback,apply,previewAudio,defaults=fallback,
   hotkeys=()=>[],movie,onClose,dialog=globalThis.document?.getElementById('native-game-settings'),window:win=globalThis.window,
   fetchFile=globalThis.fetch,base=new URL('./',import.meta.url),profile='packed7'}={}){
   const none=()=>false;
@@ -24,7 +25,8 @@ export async function mountOriginalGameSettings({enabled=true,originalArt=false,
   const extras=[...form.querySelectorAll('[data-settings-extra]')];
   const frames=[...form.querySelectorAll('[data-settings-frame]')];
   const video=dialog.querySelector('video'),keyList=form.querySelector('.native-settings-keys');
-  let activeTab='audio',movieState,opened=false;
+  const standard=form.querySelector('[data-settings-command="defaults"]');
+  let activeTab='audio',movieState,opened=false,originalAudio=null,previewed=false;
   for(const frame of frames){
     for(const part of pieces){const node=doc.createElement('span');node.dataset.settingsPiece=part;frame.append(node);}
   }
@@ -38,6 +40,7 @@ export async function mountOriginalGameSettings({enabled=true,originalArt=false,
       button.tabIndex=selected?0:-1;
       button.setAttribute('aria-selected',String(selected));
     }
+    standard.disabled=tab==='hotkeys';
     if(focus)tabNodes.get(tab).focus();
   }
   function set(values){
@@ -48,7 +51,14 @@ export async function mountOriginalGameSettings({enabled=true,originalArt=false,
     }
   }
   function current(){
-    return Object.fromEntries([...controls].map(([name,node])=>[name,node.type==='checkbox'?node.checked:node.value]));
+    return Object.fromEntries([...controls].map(([name,node])=>[name,node.type==='checkbox'?node.checked:
+      node.type==='range'?Number(node.value):node.value]));
+  }
+  function audition(){
+    if(!previewAudio)return;
+    previewed=true;
+    const {music,ambience,musicVolume,soundVolume}=current();
+    previewAudio({music,ambience,musicVolume,soundVolume});
   }
   function updateKeys(){
     const fragment=doc.createDocumentFragment();
@@ -116,10 +126,17 @@ export async function mountOriginalGameSettings({enabled=true,originalArt=false,
     }
     dialog.style.setProperty('--native-settings-check-off',image('spr_fe_checkbox'));
     dialog.style.setProperty('--native-settings-check-on',image('spr_fe_checkbox','on'));
+    dialog.style.setProperty('--native-settings-volume-track',image('spr_fe_slider_horiz_bkg'));
+    dialog.style.setProperty('--native-settings-volume-thumb',image('spr_fe_slider_horiz_thumb'));
+    dialog.style.setProperty('--native-settings-volume-track-height',`${12*height/1200}px`);
+    dialog.style.setProperty('--native-settings-volume-thumb-width',`${20*width/1600}px`);
   }
   function open(){
     if(dialog.open)return false;
     set(read());
+    const {music,ambience,musicVolume,soundVolume}=current();
+    originalAudio={music,ambience,musicVolume,soundVolume};
+    previewed=false;
     updateKeys();
     select(activeTab);
     draw();
@@ -131,6 +148,7 @@ export async function mountOriginalGameSettings({enabled=true,originalArt=false,
   function finish(){
     if(!opened)return;
     opened=false;
+    if(previewed){previewAudio(originalAudio);previewed=false;}
     movieState?.(false);
     onClose?.();
   }
@@ -148,9 +166,25 @@ export async function mountOriginalGameSettings({enabled=true,originalArt=false,
       if(next){event.preventDefault();select(next,true);}
     });
   }
-  form.addEventListener('submit',event=>{event.preventDefault();if(apply?.(current())!==false)close();});
+  for(const name of ['music','ambience','musicVolume','soundVolume']){
+    controls.get(name)?.addEventListener('input',()=>{
+      if(!dialog.open)return;
+      if(name==='musicVolume')controls.get('music').checked=Number(controls.get(name).value)>0;
+      audition();
+    });
+  }
+  form.addEventListener('submit',event=>{
+    event.preventDefault();
+    if(dialog.open&&apply?.(current())!==false){previewed=false;close();}
+  });
   form.querySelector('[data-settings-command="cancel"]').addEventListener('click',close);
-  form.querySelector('[data-settings-command="defaults"]').addEventListener('click',()=>set(typeof defaults==='function'?defaults():defaults));
+  standard.addEventListener('click',()=>{
+    if(!dialog.open||standard.disabled)return;
+    const previous=current(), defaults_=typeof defaults==='function'?defaults():defaults;
+    if(activeTab==='audio'){set({...previous,...ORIGINAL_AUDIO_DEFAULTS});audition();}
+    else if(activeTab==='video')set({...previous,resolution:defaults_.resolution});
+    else if(activeTab==='general')set({...previous,fullscreen:defaults_.fullscreen});
+  });
   dialog.addEventListener('close',()=>{if(!dialog.open)finish();});
   dialog.addEventListener('cancel',event=>{event.preventDefault();close();});
   win.addEventListener('resize',()=>{if(dialog.open)draw();});

@@ -9,7 +9,7 @@ export function createOriginalAudio(options={}) {
   const enabled=options.enabled ?? (typeof window!=='undefined' && new URLSearchParams(window.location?.search||'').get('rules')==='ee2');
   const fetchFile=options.fetch || ((...args)=>fetch(...args));
   const base=options.base || DEFAULT_BASE;
-  let ctx=null,master=null,manifest=null,loading=null,muted=false,speech=true,musicEnabled=true,active=false;
+  let ctx=null,soundBus=null,musicBus=null,manifest=null,loading=null,muted=false,speech=true,musicEnabled=true,ambienceEnabled=true,active=false;
   const buffers=new Map(),pending=new Map(),failed=new Set(),live=new Set(),counters=new Map();
   const takeoffBuffers=new Map(),takeoffLoads=new Map();
   let takeoffEvents=new Map();
@@ -84,7 +84,7 @@ export function createOriginalAudio(options={}) {
     const panner=ctx.createStereoPanner?.();
     const output=panner??gain;
     if(panner){panner.pan.value=Math.max(-1,Math.min(1,pan));gain.connect(panner);}
-    source.connect(gain);output.connect(master);source.originalGroup=group;
+    source.connect(gain);output.connect(group==='music'?musicBus:soundBus);source.originalGroup=group;
     if(group==='wheel'){
       source.updateSpatialMix=(volume,pan)=>{
         gain.gain.value=Math.max(0,Math.min(1,volume));
@@ -203,7 +203,7 @@ export function createOriginalAudio(options={}) {
     }
   }
   function advanceAmbient() {
-    if(!canRun()||!manifest)return;
+    if(!ambienceEnabled||!canRun()||!manifest)return;
     const file=manifest.ambient?.loop;
     if(!ambientSource&&file){
       const buffer=buffers.get(file);
@@ -223,9 +223,9 @@ export function createOriginalAudio(options={}) {
     bindFamilies();
     for(const file of [...typed.usedFiles(),...(citizenPresentation?.usedFiles()||[])])load(file);
   }
-  async function prepare(context,destination) {
+  async function prepare(context,destination,musicDestination=destination) {
     if(!enabled||typeof context?.decodeAudioData!=='function')return false;
-    ctx=context;master=destination;
+    ctx=context;soundBus=destination;musicBus=musicDestination;
     for(const event of takeoffEvents.values())loadVerifiedEffect(event);
     if(loading)return loading;
     const readManifest=async file=>{
@@ -295,9 +295,9 @@ export function createOriginalAudio(options={}) {
     stats.effectPlays++;return true;
   }
   function regionalPlayback() {
-    if (!regionalMusicEnabled || !ctx || !master) return null;
+    if (!regionalMusicEnabled || !ctx || !musicBus) return null;
     if (!regionalMusic) {
-      regionalMusic = createRegionalMusicPlayback(ctx, master, {
+      regionalMusic = createRegionalMusicPlayback(ctx, musicBus, {
         fetchFile, random: options.presentationRandom, onStart: () => stats.musicStarts++,
       });
     }
@@ -334,6 +334,7 @@ export function createOriginalAudio(options={}) {
     setMuted(value){muted=value;if(value){regionalMusic?.suspend();stopMusic();stopAmbient();stopStoneThrowerWheels();for(const source of [...live])stop(source);}},
     setSpeechEnabled(value){speech=value;if(!value)stopVoices();},
     setMusicEnabled(value){musicEnabled=value;if(!value){regionalMusic?.suspend();stopMusic();}},
+    setAmbienceEnabled(value){ambienceEnabled=value;if(!value){stopAmbient();for(const source of [...live])if(source.originalGroup==='ambient')stop(source);}},
     status(){const regional=regionalMusic?.status()??null;return {typedAudio:typed.status(),citizens:citizenPresentation?.status()||null,enabled,ready:!!manifest,buffers:buffers.size,failed:[...failed],activeVoices:[...live].filter(x=>x.originalGroup==='voice').length,music:!!musicSource||!!regional?.active,regionalMusic:regional,ambient:!!ambientSource,...stats};}
   };
 }
