@@ -797,7 +797,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   }
   return hit;
  };
- result.draw=({data,ranges,vp,epochs,zoom=80,shadow=false,eye=[0,200,0],lighting=defaultLighting,clipPlane=null,capture=false,actorMetadata=null,civilizations=visualCivilizations,stoneThrowerWheels=null})=>{
+ result.draw=({data,ranges,vp,epochs,zoom=80,shadow=false,eye=[0,200,0],lighting=defaultLighting,clipPlane=null,capture=false,actorMetadata=null,civilizations=visualCivilizations,stoneThrowerWheels=null,hercBeamMuzzles=null})=>{
   const started=performance.now();let calls=0,triangles=0,querying=false;
   const scaffoldDraws=[];
   const fenceDraws=[];
@@ -926,6 +926,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     const animation=variant.parts.find(p=>p.animations?.[clip])?.animations?.[clip];
     const duration=animation?.duration||1;
     const phase=dedicatedPose?.phase??(timedAttack&&attackElapsed>=0?Math.min(1,attackElapsed/duration):((time/duration+seed)%1+1)%1);
+    if(hercBeamMuzzles&&matchingActor&&variant.hercAttack)options.hercBeam?.capture(hercBeamMuzzles,actor,clip,phase);
     // Parts with authored visibility events batch only with actors in the same visible state.
     const hiddenParts=variant.hasClipVisibility?variant.parts.filter(part=>{
      if(!part.clipVisibility)return false;

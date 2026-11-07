@@ -297,10 +297,10 @@ export async function loadOriginalGround(gl,enabled,options={}){
     drawGroups([{texture:extractionTexture,textureB:extractionTexture,blend:0,list}],vp,-2,tint);
     return list.length/5;
   };
-  result.drawHotspot=({vp,xy})=>{
-    if(!hotspotTexture||!xy)return 0;
-    drawGroups([{texture:hotspotTexture,textureB:hotspotTexture,blend:0,list:[...xy,0,2,2]}],vp,-2,[1,1,1]);
-    return 1;
+  result.drawHotspot=({vp,points})=>{
+    if(!hotspotTexture||!points.length)return 0;
+    drawGroups([{texture:hotspotTexture,textureB:hotspotTexture,blend:0,list:points.flatMap(xy=>[...xy,0,2,2])}],vp,-2,[1,1,1]);
+    return points.length;
   };
   function drawGroups(groups,vp,glowAlpha,tint){
     if(!groups.length)return;

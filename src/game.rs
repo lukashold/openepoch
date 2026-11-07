@@ -2186,6 +2186,8 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         let guided = self.launch_guided_herc_rocket(e, &t, w.kind);
         #[cfg(feature = "ee2-native13")]
+        if guided.is_some() { self.queue_herc_beam(_source_index, e, tj); }
+        #[cfg(feature = "ee2-native13")]
         let [x, y] = guided.as_ref().map_or([e.x, e.y], |launch| launch.position);
         #[cfg(feature = "ee2-native13")]
         let [tx, ty, _] = guided.as_ref().map_or([t.x, t.y, 0.0], |launch| launch.aim);

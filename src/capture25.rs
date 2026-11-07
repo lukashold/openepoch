@@ -538,11 +538,15 @@ impl Game {
         }
     }
 
-    fn complete_capture(&mut self, index: usize, owner: u8, profile: CaptureTarget) -> bool {
+    fn complete_capture(&mut self, index: usize, capturer: u8, profile: CaptureTarget) -> bool {
         let old = self.ents[index];
-        let owner = self.capitol_capture_owner(self.h(index), owner);
+        let handle = self.h(index);
+        let capitol = self.capitol_capture(handle, old.team, capturer);
+        let owner = self.capitol_capture_owner(handle, capturer);
         if !self.replace_converted_actor(index, owner, profile.tribute) { return false; }
-        if old.def == crate::koth64::HILL && old.team != owner {
+        if let Some(capture) = capitol {
+            self.finish_capitol_capture(capture, owner);
+        } else if old.def == crate::koth64::HILL && old.team != owner {
             if self.events.len() < 3 * 64 {
                 let event = 128 + 4 * old.team + owner;
                 self.events.extend_from_slice(&[f32::from(event), old.x, old.y]);
@@ -1099,14 +1103,23 @@ mod tests {
         game.tick();
         assert_eq!(game.capitol_status(3, 1), 2);
         assert!(game.capitol_status(2, 1) >= 119);
+        assert_eq!(game.capitol_status(5, 2), 100);
+        game.save();
+        let restored = Game::load(&game.savebuf).expect("Scored Capitol archive");
+        assert_eq!(restored.capitol_status(5, 2), 100);
+        assert_eq!(restored.state_hash(), game.state_hash());
         assert!(game.apply_diplomacy(0, 1, 0, 0, 0.0));
         assert!(game.apply_diplomacy(1, 0, 3, 0, 0.0));
         for _ in 0..100 { game.tick(); }
         assert!(game.apply_diplomacy(0, 1, 1, 1, 0.0));
         assert!(game.apply_diplomacy(1, 0, 3, 0, 0.0));
+        game.events.resize(3 * 64, 0.0);
         assert!(game.complete_capture(game.get(occupied).unwrap(), 0, profile));
         assert!(game.get(occupied).is_none());
         assert_eq!(game.towner[area], 1);
+        assert!(game.events.ends_with(&[150.0, 9.0, 2.0]));
+        assert_eq!(game.events.len(), 3 * 65);
+        assert_eq!(game.capitol_status(5, 1), 0);
         game.tick();
         assert_eq!(game.capitol_status(3, 1), 1);
         assert_eq!(game.capitol_status(2, 1), -1);

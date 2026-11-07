@@ -1,4 +1,52 @@
 //! Existing source placement kernels, moved from the isolated World8 proof.
+use crate::hotspot_rule66::{add_chop, mul_chop};
+
+/// Raw positions from 00706BAF and 00707070 in the default inline PC53/chop
+/// context. The scalar rounding follows the original stores. Portable libm
+/// evaluates the final trigonometric pair before the directed XY stores.
+pub(crate) fn generated_origins(width: usize, height: usize, seed: u32, count: u32) -> Option<Vec<[f32; 2]>> {
+    if !(1..=4).contains(&count) || !(8..=32767).contains(&width) || !(8..=32767).contains(&height) {
+        return None;
+    }
+    let dimensions = [width as f64, height as f64];
+    let center = dimensions.map(|size| size * 0.5);
+    let mut points = Vec::with_capacity(count as usize);
+    points.push(center.map(|v| v as f32));
+    if count == 1 { return Some(points); }
+    let radius = dimensions.map(|size| {
+        let half = mul_chop(size, 0.666).trunc() * 0.5;
+        add_chop(half, -mul_chop(half, f64::from(0.2f32)).max(12.0)).max(3.0)
+    });
+    let mut random = seed;
+    let mut draw = || {
+        random = random.wrapping_mul(1664525).wrapping_add(1013904223);
+        f64::from((random >> 16) & 0x7fff)
+    };
+    let scale = f64::from(f32::from_bits(0x3949_116d));
+    let phase = f64::from(store_chop(mul_chop(draw(), scale)));
+    let step = f64::from(f32::from_bits(0x40c9_0fdb));
+    let extra = count - 1;
+    for index in 0..extra {
+        let offset = mul_chop(draw() * 0.5, scale);
+        let numerator = add_chop(add_chop(mul_chop(f64::from(index), step), offset), phase);
+        let divisor = f64::from(extra);
+        let quotient = numerator / divisor;
+        let angle = if quotient.mul_add(divisor, -numerator) > 0.0 {
+            f64::from_bits(quotient.to_bits() - 1)
+        } else { quotient };
+        let (sin, cos) = angle.sin_cos();
+        points.push(std::array::from_fn(|axis| {
+            let direction = [cos, sin][axis];
+            store_chop(add_chop(mul_chop(direction, radius[axis]), center[axis]))
+        }));
+    }
+    Some(points)
+}
+
+fn store_chop(value: f64) -> f32 {
+    let nearest = value as f32;
+    if f64::from(nearest).abs() > value.abs() { f32::from_bits(nearest.to_bits() - 1) } else { nearest }
+}
 /// Original00870160's 4x4 fractional-cell table at00C6BB30. The source
 /// multiplies fractions by-4, truncates, then subtracts the negative index
 /// from the base address. These are footprint-corner offsets, not own tiles.

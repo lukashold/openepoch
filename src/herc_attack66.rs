@@ -39,11 +39,22 @@ pub(crate) struct Row {
 
 const _: [(); 32] = [(); core::mem::size_of::<Row>()];
 
+#[repr(C)]
+pub(crate) struct BeamStart {
+    source: u32,
+    target: u32,
+    point: [f32; 3],
+    target_offset_z: f32,
+}
+
+const _: [(); 24] = [(); core::mem::size_of::<BeamStart>()];
+
 #[derive(Default)]
 pub(crate) struct State {
     live: BTreeMap<u32, Request>,
     revision: u32,
     shots: BTreeMap<usize, u32>,
+    pub(crate) beams: Vec<BeamStart>,
     pub(crate) rows: Vec<Row>,
 }
 
@@ -66,7 +77,10 @@ impl State {
         self.shots.get(&index).copied().unwrap_or(0)
     }
 
-    pub(crate) fn clear_shots(&mut self) { self.shots.clear(); }
+    pub(crate) fn clear_shots(&mut self) {
+        self.shots.clear();
+        self.beams.clear();
+    }
 }
 
 fn word(bytes: &[u8], at: usize) -> Option<u32> {
@@ -161,6 +175,21 @@ impl Game {
         // not disclose a unit definition, handle or location.
         let value = if self.can_see(self.local, index) { u32::from(request.definition) } else { u32::MAX };
         self.herc_attack.shots.insert(previous_len / 3, value);
+    }
+
+    pub(crate) fn queue_herc_beam(&mut self, index: usize, source: &Ent, target: usize) {
+        let end = &self.ents[target];
+        if source.def != MINOTAURUS || end.built < 1.0 ||
+            self.herc_attack.beams.len() >= 64 || !self.can_see(self.local, index) ||
+            !self.can_see(self.local, target) { return; }
+        // 00871F30 stores half the cached source UnitHeight in Unit+7C.
+        let target_offset_z = match end.def {
+            crate::defs::TC => 0.5,
+            crate::defs::TOWER => 2.0,
+            _ => return,
+        };
+        let point = [end.x, end.y, self.map.height(end.x, end.y).max(0.0) + target_offset_z];
+        self.herc_attack.beams.push(BeamStart { source: self.h(index), target: self.h(target), point, target_offset_z });
     }
 
     pub(crate) fn prepare_herc_attack(&mut self) {

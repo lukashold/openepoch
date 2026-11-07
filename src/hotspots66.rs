@@ -1,16 +1,18 @@
-//! VCHotSpots. Normal solo starts presently admit one generated point.
+//! VCHotSpots. Normal solo starts admit the generated no-profile route.
 //! The portable map feeds source search and terrain kernels through its own
 //! corner heights, land classes and placement grid. It has no native index.
 
 use crate::defs::{DEFS, DefId, FORTRESS, F_WORKER};
-use crate::game::Game;
+use crate::game::{Ent, Game};
 use crate::hotspot_rule66::{self, FortressHit, Hotspots, Owner, Point, Roster, Seat, StandingBox};
 use crate::hotspot_start66::RingCandidates;
 use crate::hotspot_terrain66::{BuildingTerrainType, SourceTerrain};
 use crate::map::{N, NN, T_ROCK, T_SAND, tile_of};
 
 const TAG: u32 = u32::from_le_bytes(*b"HSP1");
+const MULTI_TAG: u32 = u32::from_le_bytes(*b"HSP2");
 const HEADER: usize = 56;
+const MULTI_HEADER: usize = 36;
 const BODY: f32 = f32::from_bits(0x4087_c3b6);
 const BODY_RADIUS: f32 = f32::from_bits(0x403f_ffff);
 const RESERVED: f32 = f32::from_bits(0x40cb_a591);
@@ -19,7 +21,7 @@ const YAW: f32 = f32::from_bits(0xbf49_0fdb);
 #[derive(Clone)]
 pub(crate) struct Match {
     rule: Hotspots,
-    flattened: f32,
+    flattened: Vec<f32>,
     score: [u32; 4],
 }
 
@@ -44,11 +46,29 @@ fn owner_word(owner: Owner) -> u32 {
     match owner { Owner::Unclaimed => u32::MAX, Owner::Nature => 0, Owner::Player(seat) => u32::from(seat.id()) }
 }
 
+pub(crate) fn portable_plot(xy: [f32; 2]) -> ([i32; 2], [i32; 2]) {
+    let (width, height) = Game::footprint_axes(FORTRESS, 0);
+    let size = [width, height];
+    let corner = std::array::from_fn(|axis| (xy[axis] - size[axis] as f32 * 0.5).round() as i32);
+    (corner, size)
+}
+
+pub(crate) fn fortress_body(actor: &Ent) -> StandingBox {
+    let extent = BODY * 0.5 - 0.01f32;
+    let [cos, sin] = basis(actor.rot);
+    StandingBox { center: [actor.x, actor.y], axes: [[cos, sin], [-sin, cos]], half_extents: [extent; 2] }
+}
+
 impl Match {
     pub(crate) fn hash(&self, outcome: u8, mut mix: impl FnMut(u32)) {
         let (points, current) = self.rule.snapshot();
+        if points.len() > 1 {
+            self.durable_words(outcome, &mut mix);
+            for point in points { mix(owner_word(point.owner)); mix(point.changes); }
+            return;
+        }
         let point = &points[0];
-        for word in [TAG, 1, current as u32, u32::from(outcome), self.flattened.to_bits(),
+        for word in [TAG, 1, current as u32, u32::from(outcome), self.flattened[0].to_bits(),
             point.position[0].to_bits(), point.position[1].to_bits(), point.position[2].to_bits(),
             owner_word(point.owner), point.changes, self.score[0], self.score[1], self.score[2], self.score[3]] {
             mix(word);
@@ -56,15 +76,30 @@ impl Match {
     }
 
     pub(crate) fn wrap(&self, core: Vec<u8>, outcome: u8) -> Vec<u8> {
-        let mut bytes = Vec::with_capacity(HEADER + core.len() + 4);
-        self.hash(outcome, |word| bytes.extend_from_slice(&word.to_le_bytes()));
+        let count = self.rule.snapshot().0.len();
+        let header = if count == 1 { HEADER } else { MULTI_HEADER + count * 16 };
+        let mut bytes = Vec::with_capacity(header + core.len() + 4);
+        let mut push = |word: u32| bytes.extend_from_slice(&word.to_le_bytes());
+        if count == 1 { self.hash(outcome, &mut push); }
+        else { self.durable_words(outcome, &mut push); }
         bytes.extend_from_slice(&core);
         bytes.extend_from_slice(&crate::save::checksum(&bytes).to_le_bytes());
         bytes
     }
+
+    fn durable_words(&self, outcome: u8, mut mix: impl FnMut(u32)) {
+        let (points, current) = self.rule.snapshot();
+        for word in [MULTI_TAG, 2, points.len() as u32, current as u32, u32::from(outcome)] { mix(word); }
+        for score in self.score { mix(score); }
+        for (point, height) in points.iter().zip(&self.flattened) {
+            for value in point.position { mix(value.to_bits()); }
+            mix(height.to_bits());
+        }
+    }
 }
 
 pub(crate) fn split(bytes: &[u8]) -> Option<(&[u8], Option<(Match, u8)>)> {
+    if bytes.starts_with(&MULTI_TAG.to_le_bytes()) { return split_multiple(bytes); }
     if !bytes.starts_with(&TAG.to_le_bytes()) { return Some((bytes, None)); }
     let word = |at| Some(u32::from_le_bytes(bytes.get(at..at + 4)?.try_into().ok()?));
     let end = bytes.len().checked_sub(4)?;
@@ -87,7 +122,36 @@ pub(crate) fn split(bytes: &[u8]) -> Option<(&[u8], Option<(Match, u8)>)> {
         || score.iter().sum::<u32>() != current as u32 * hotspot_rule66::FIRST_CLAIM_SCORE
         || (changes == 0 && (owner != Owner::Unclaimed || current != 0)) { return None; }
     let rule = Hotspots::restore(vec![Point { position, owner, changes }], current)?;
-    Some((&bytes[HEADER..end], Some((Match { rule, flattened, score }, outcome as u8))))
+    Some((&bytes[HEADER..end], Some((Match { rule, flattened: vec![flattened], score }, outcome as u8))))
+}
+
+fn split_multiple(bytes: &[u8]) -> Option<(&[u8], Option<(Match, u8)>)> {
+    let word = |at| Some(u32::from_le_bytes(bytes.get(at..at + 4)?.try_into().ok()?));
+    let count = word(8)? as usize;
+    if word(4)? != 2 || !(2..=4).contains(&count) { return None; }
+    let header = MULTI_HEADER + count * 16;
+    let end = bytes.len().checked_sub(4)?;
+    if end <= header || crate::save::checksum(&bytes[..end]) != word(end)? { return None; }
+    let current = word(12)? as usize;
+    let outcome = word(16)?;
+    let score = [word(20)?, word(24)?, word(28)?, word(32)?];
+    let award = hotspot_rule66::FIRST_CLAIM_SCORE;
+    if current > count || outcome > 2 || score.iter().any(|&value| value > award * count as u32 || value % award != 0)
+        || score.iter().sum::<u32>() > current as u32 * award { return None; }
+    let mut positions = Vec::with_capacity(count);
+    let mut flattened = Vec::with_capacity(count);
+    for index in 0..count {
+        let at = MULTI_HEADER + index * 16;
+        let values = [word(at)?, word(at + 4)?, word(at + 8)?, word(at + 12)?].map(f32::from_bits);
+        if values[..2].iter().any(|x| !(4.0..=(N - 4) as f32).contains(x))
+            || values[2..].iter().any(|x| !(0.0..=128.0).contains(x)) { return None; }
+        positions.push([values[0], values[1], values[2]]);
+        flattened.push(values[3]);
+    }
+    // Native save writes positions and cursor. New HotPoint allocations reset
+    // observed owners/change counts before the next committed victory phase.
+    let rule = Hotspots::from_native_archive(&positions, current)?;
+    Some((&bytes[header..end], Some((Match { rule, flattened, score }, outcome as u8))))
 }
 
 impl Game {
@@ -117,23 +181,16 @@ impl Game {
         reached
     }
 
-    fn find_hotspot(&self) -> Option<([f32; 3], f32)> {
+    fn find_hotspot(&self, origin: [f32; 2], heights: &[f32], materials: &[u16], reachable: &[bool]) -> Option<([f32; 3], f32)> {
         let [width, height] = self.map.world_dimensions();
-        if [width, height] != [N, N] { return None; }
-        // 00706B55 -> 00706BAF, first mode-8 row, no-island/no-profile branch.
-        let origin = [width as f32 * 0.5, height as f32 * 0.5];
         let mut rings = RingCandidates::new(origin, 4.5, width as u32, height as u32)?;
-        let materials = portable_materials(&self.map);
-        let terrain = SourceTerrain::new(width as u32, height as u32, &self.map.hm, &materials, &[0, 1])?;
+        let terrain = SourceTerrain::new(width as u32, height as u32, heights, materials, &[0, 1])?;
         let yaw = basis(YAW);
-        let (fw, fh) = Self::footprint_axes(FORTRESS, 0);
-        let reachable = self.hotspot_worker_component();
         while let Some(candidate) = rings.next_with(basis) {
             let Some(xy) = crate::hotspot_start66::snap_from_basis(candidate, [BODY; 2], yaw) else { continue; };
             let [x, y] = xy;
             if !(4.0..=(width - 4) as f32).contains(&x) || !(4.0..=(height - 4) as f32).contains(&y) { continue; }
-            let tx = (x - fw as f32 * 0.5).round() as i32;
-            let ty = (y - fh as f32 * 0.5).round() as i32;
+            let ([tx, ty], [fw, fh]) = portable_plot(xy);
             if self.placement_geometry_error(self.local, FORTRESS, tx, ty, 0) != 0 { continue; }
             // The portable generator can put the nearest clear site on an
             // island. Use the actual player's work-access component.
@@ -149,19 +206,18 @@ impl Game {
             if probe.rejection.is_some() { continue; }
             let (raster, flattened) = terrain.flatten_writes(xy, [BODY; 2], yaw, 0.0)?;
             if raster.contains_outside_corner || raster.corners.is_empty() { continue; }
-            let z = self.map.hm[y as usize * (N + 1) + x as usize];
+            let z = heights[y as usize * (N + 1) + x as usize];
             return Some(([x, y, z], flattened));
         }
         None
     }
 
-    fn apply_hotspot_ground(&mut self, xy: [f32; 2], height: f32) -> Option<()> {
+    fn apply_hotspot_ground(heights: &mut [f32], xy: [f32; 2], height: f32) -> Option<()> {
         let size = [BODY + f32::from_bits(0x3fb5_04f3) + f32::from_bits(0x3a83_126f); 2];
         let quad = crate::hotspot_start66::quad_from_basis(xy, size, basis(YAW))?;
         let raster = crate::hotspot_start66::raster_quad(quad, N as u32, N as u32, true)?;
         if raster.contains_outside_corner || raster.corners.is_empty() { return None; }
-        for [x, y] in raster.corners { self.map.hm[y as usize * (N + 1) + x as usize] = height; }
-        self.map.dirty = true;
+        for [x, y] in raster.corners { heights[y as usize * (N + 1) + x as usize] = height; }
         Some(())
     }
 
@@ -185,12 +241,36 @@ impl Game {
         #[cfg(feature = "ee2-authored-valley37")]
         if self.valley_fixture.is_some() { return false; }
         if self.tick != 0 || self.net || self.bench != 0 || self.humans != 1 || self.local != 0
-            || count != 1 || self.hotspots.is_some() { return false; }
-        let Some((xyz, flattened)) = self.find_hotspot() else { return false; };
-        let Some(rule) = Hotspots::new(&[xyz]) else { return false; };
+            || self.hotspots.is_some() || self.map.world_dimensions() != [N, N] { return false; }
+        let Some(origins) = crate::hotspot_start66::generated_origins(N, N, self.seed0, count) else { return false; };
+        let mut heights = self.map.hm.clone();
+        let materials = portable_materials(&self.map);
+        let reachable = self.hotspot_worker_component();
+        let mut positions: Vec<[f32; 3]> = Vec::with_capacity(origins.len());
+        let mut flattened = Vec::with_capacity(origins.len());
+        for origin in origins {
+            let Some((xyz, flat)) = self.find_hotspot(origin, &heights, &materials, &reachable) else { return false; };
+            // Portable sites must admit distinct ordinary Fortress plots.
+            // Reject ambiguous placement instead of moving a source point.
+            let (corner, size) = portable_plot([xyz[0], xyz[1]]);
+            if positions.iter().any(|&[x, y, _]| {
+                let (other, _) = portable_plot([x, y]);
+                (0..2).all(|axis| (corner[axis] - other[axis]).abs() < size[axis])
+            }) { return false; }
+            if Self::apply_hotspot_ground(&mut heights, [xyz[0], xyz[1]], flat).is_none() { return false; }
+            positions.push(xyz);
+            flattened.push(flat);
+        }
+        let Some(rule) = Hotspots::new(&positions) else { return false; };
+        if positions.iter().any(|&[x, y, _]| {
+            let (corner, size) = portable_plot([x, y]);
+            let center = std::array::from_fn(|axis| corner[axis] as f32 + size[axis] as f32 * 0.5);
+            !rule.allows_placement(center, true, BODY_RADIUS, true)
+        }) { return false; }
         if !self.configure_match_epoch_range(civs, pop, supplies, start, end) { return false; }
-        self.apply_hotspot_ground([xyz[0], xyz[1]], flattened).expect("search validated the same raster");
-        self.discover_hotspot([xyz[0], xyz[1]]);
+        self.map.hm = heights;
+        self.map.dirty = true;
+        self.discover_hotspot([positions[0][0], positions[0][1]]);
         self.hotspots = Some(Match { rule, flattened, score: [0; 4] });
         true
     }
@@ -206,22 +286,29 @@ impl Game {
 
     pub(crate) fn poll_hotspots(&mut self) {
         let Some(mut mode) = self.hotspots.take() else { return; };
-        let mut hits = Vec::new();
-        let [x, y, _] = mode.rule.snapshot().0[0].position;
-        let extent = (BODY * 0.5) - 0.01f32;
+        let mut hits: [Vec<FortressHit>; 4] = std::array::from_fn(|_| Vec::new());
+        let (points, _) = mode.rule.snapshot();
+        let count = points.len();
         for actor in &self.ents[..self.high] {
             if !actor.alive || actor.def != FORTRESS || actor.built < 1.0 { continue; }
             let Some(seat) = actor.team.checked_add(1).and_then(Seat::new) else { continue; };
-            let [cos, sin] = basis(actor.rot);
-            let body = StandingBox { center: [actor.x, actor.y], axes: [[cos, sin], [-sin, cos]], half_extents: [extent; 2] };
-            if hotspot_rule66::standing_box_intersects([x, y], body) == Some(true) {
-                hits.push(FortressHit { owner: Owner::Player(seat), hp: actor.hp });
+            let body = fortress_body(actor);
+            for (point, matches) in points.iter().zip(&mut hits) {
+                let [x, y, _] = point.position;
+                if hotspot_rule66::standing_box_intersects([x, y], body) == Some(true) {
+                    matches.push(FortressHit { owner: Owner::Player(seat), hp: actor.hp });
+                }
             }
         }
         let roster = Roster::new(std::array::from_fn(|seat| seat > 0 && seat <= self.nplayers && self.players[seat - 1].alive),
             std::array::from_fn(|seat| seat as u8)).expect("unique fixed teams fit");
-        if let Some(result) = mode.rule.poll(&[hotspot_rule66::fortress_owner(&hits)], &roster) {
+        let observed = hits.map(|row| hotspot_rule66::fortress_owner(&row));
+        if let Some(result) = mode.rule.poll(&observed[..count], &roster) {
             if let Some(seat) = result.award { mode.score[usize::from(seat.id() - 1)] += hotspot_rule66::FIRST_CLAIM_SCORE; }
+            if let Some(next) = result.reveal {
+                let [x, y, _] = mode.rule.snapshot().0[next].position;
+                self.discover_hotspot([x, y]);
+            }
             if let Some(winner) = result.winning_team { self.winner = if winner == self.local + 1 { 1 } else { 2 }; }
         }
         self.hotspots = Some(mode);
@@ -230,11 +317,21 @@ impl Game {
     pub(crate) fn restore_hotspots(&mut self, mode: Match, outcome: u8) -> Option<()> {
         #[cfg(feature = "ee2-authored-valley37")]
         if self.valley_fixture.is_some() { return None; }
-        let point = mode.rule.snapshot().0[0];
+        let (points, _) = mode.rule.snapshot();
         if self.net || self.bench != 0 || self.humans != 1 || self.local != 0
             || mode.score[self.nplayers..].iter().any(|&score| score != 0)
-            || matches!(point.owner, Owner::Player(seat) if usize::from(seat.id()) > self.nplayers) { return None; }
-        self.apply_hotspot_ground([point.position[0], point.position[1]], mode.flattened)?;
+            || points.iter().any(|point| matches!(point.owner, Owner::Player(seat) if usize::from(seat.id()) > self.nplayers)) { return None; }
+        for (point, &height) in points.iter().zip(&mode.flattened) {
+            let [x, y, _] = point.position;
+            Self::apply_hotspot_ground(&mut self.map.hm, [x, y], height)?;
+        }
+        self.map.dirty = true;
+        if points.len() > 1 {
+            for point in mode.rule.visible_points() {
+                let [x, y, _] = point.position;
+                self.discover_hotspot([x, y]);
+            }
+        }
         self.hotspots = Some(mode);
         self.winner = outcome;
         Some(())
@@ -243,7 +340,7 @@ impl Game {
     pub(crate) fn hotspot_status(&self, field: u32, seat: usize) -> i32 {
         let Some(mode) = &self.hotspots else { return if field == 0 { 0 } else { -1 }; };
         match field {
-            0 => 1,
+            0 => mode.rule.snapshot().0.len() as i32,
             1 => mode.rule.revealed() as i32,
             2 if seat < self.nplayers => mode.rule.personal_count(Seat::new(seat as u8 + 1).unwrap()) as i32,
             3 if seat < self.nplayers => mode.score[seat] as i32,
@@ -254,5 +351,10 @@ impl Game {
     pub(crate) fn hotspot_point(&self, index: usize, axis: usize) -> f32 {
         self.hotspots.as_ref().and_then(|mode| mode.rule.visible_points().get(index))
             .and_then(|point| point.position.get(axis)).copied().unwrap_or(f32::NAN)
+    }
+
+    pub(crate) fn ai_hotspot_points(&self) -> Option<(&[Point], usize)> {
+        let state = &self.hotspots.as_ref()?.rule;
+        Some((state.visible_points(), state.snapshot().0.len()))
     }
 }

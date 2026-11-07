@@ -221,14 +221,14 @@ impl Hotspots {
     }
 }
 
-fn add_chop(left: f64, right: f64) -> f64 {
+pub(crate) fn add_chop(left: f64, right: f64) -> f64 {
     let nearest = left + right;
     let virtual_right = nearest - left;
     let residual = (left - (nearest - virtual_right)) + (right - virtual_right);
     chop_residual(nearest, residual)
 }
 
-fn mul_chop(left: f64, right: f64) -> f64 {
+pub(crate) fn mul_chop(left: f64, right: f64) -> f64 {
     let nearest = left * right;
     chop_residual(nearest, left.mul_add(right, -nearest))
 }

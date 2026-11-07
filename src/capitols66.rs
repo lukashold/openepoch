@@ -12,6 +12,28 @@ use crate::{
 const TAG: u32 = u32::from_le_bytes(*b"CPT1");
 const HEADER: usize = 64;
 const IDLE: f32 = -1.0;
+const CAPTURE_SCORE: u32 = 100;
+
+pub(crate) struct CapitolCapture {
+    original: u8,
+    previous: u8,
+    capturer: u8,
+    allied: bool,
+}
+
+impl CapitolCapture {
+    fn notice(&self, local: u8) -> Option<u8> {
+        let taking = local == self.capturer;
+        let losing = local == self.previous;
+        if self.original == self.capturer {
+            if taking { Some(0) } else { losing.then_some(1) }
+        } else if self.allied {
+            if taking { Some(2) }
+            else if losing { Some(3) }
+            else { (local == self.original).then_some(4) }
+        } else if taking { Some(5) } else { losing.then_some(6) }
+    }
+}
 
 #[derive(Clone, Copy)]
 pub(crate) struct Capitols {
@@ -21,6 +43,7 @@ pub(crate) struct Capitols {
     pub(crate) state: SoleSurvivor,
     city: [u32; 4],
     deadline: [f32; 4],
+    score: [u32; 4],
 }
 
 impl Capitols {
@@ -65,14 +88,16 @@ impl Capitols {
     }
 
     pub(crate) fn hash(self, outcome: u8, mut mix: impl FnMut(u32)) {
-        for word in [TAG, 1, self.mode.into(), self.minutes.into(), u32::from(self.sole),
+        let scored = self.score != [0; 4];
+        for word in [TAG, 1 + u32::from(scored), self.mode.into(), self.minutes.into(), u32::from(self.sole),
             self.state.eliminated.into(), self.state.deadline.to_bits(), outcome.into()] { mix(word); }
         for handle in self.city { mix(handle); }
         for deadline in self.deadline { mix(deadline.to_bits()); }
+        if scored { for score in self.score { mix(score); } }
     }
 
     pub(crate) fn wrap(self, payload: Vec<u8>, outcome: u8) -> Vec<u8> {
-        let mut bytes = Vec::with_capacity(HEADER + payload.len() + 4);
+        let mut bytes = Vec::with_capacity(HEADER + 16 + payload.len() + 4);
         self.hash(outcome, |word| bytes.extend_from_slice(&word.to_le_bytes()));
         bytes.extend(payload);
         bytes.extend_from_slice(&checksum(&bytes).to_le_bytes());
@@ -89,7 +114,8 @@ pub(crate) fn split(bytes: &[u8]) -> Option<(&[u8], Option<(Capitols, u8)>)> {
     if !bytes.starts_with(&TAG.to_le_bytes()) { return Some((bytes, None)); }
     let word = |at: usize| Some(u32::from_le_bytes(bytes.get(at..at + 4)?.try_into().ok()?));
     let end = bytes.len().checked_sub(4)?;
-    if end <= HEADER || word(4)? != 1 || checksum(&bytes[..end]) != word(end)? { return None; }
+    let header = match word(4)? { 1 => HEADER, 2 => HEADER + 16, _ => return None };
+    if end <= header || checksum(&bytes[..end]) != word(end)? { return None; }
     let (mode, minutes, sole) = (word(8)?, word(12)?, word(16)?);
     let (eliminated, outcome) = (u8::try_from(word(20)?).ok()?, u8::try_from(word(28)?).ok()?);
     if !Capitols::valid_settings(mode, minutes, sole) || eliminated > 15 || outcome > 2 { return None; }
@@ -100,13 +126,17 @@ pub(crate) fn split(bytes: &[u8]) -> Option<(&[u8], Option<(Capitols, u8)>)> {
     let mut rule = Capitols {
         mode: mode as u8, minutes: minutes as u8, sole: sole == 1,
         state: SoleSurvivor { eliminated, deadline: clock(24)? },
-        city: [NONE; 4], deadline: [IDLE; 4],
+        city: [NONE; 4], deadline: [IDLE; 4], score: [0; 4],
     };
     for seat in 0..4 {
         rule.city[seat] = word(32 + 4 * seat)?;
         rule.deadline[seat] = clock(48 + 4 * seat)?;
     }
-    Some((&bytes[HEADER..end], Some((rule, outcome))))
+    if header > HEADER {
+        for seat in 0..4 { rule.score[seat] = word(HEADER + 4 * seat)?; }
+        if rule.score == [0; 4] || rule.score.iter().any(|value| value % CAPTURE_SCORE != 0) { return None; }
+    }
+    Some((&bytes[header..end], Some((rule, outcome))))
 }
 
 impl Game {
@@ -130,7 +160,7 @@ impl Game {
         }
         if !self.configure_match_epoch_range(civs, pop, supplies, start, end) { return false; }
         self.capitols = Some(Capitols { mode: mode as u8, minutes: minutes as u8, sole: sole == 1,
-            state: SoleSurvivor { eliminated: 0, deadline: IDLE }, city, deadline: [IDLE; 4] });
+            state: SoleSurvivor { eliminated: 0, deadline: IDLE }, city, deadline: [IDLE; 4], score: [0; 4] });
         true
     }
 
@@ -144,6 +174,26 @@ impl Game {
     pub(crate) fn rebind_capitol(&mut self, old: u32, new: u32) {
         if let Some(rule) = &mut self.capitols {
             if let Some(seat) = rule.claimed_seat(old) { rule.city[seat] = new; }
+        }
+    }
+
+    pub(crate) fn capitol_capture(&self, handle: u32, previous: u8, capturer: u8) -> Option<CapitolCapture> {
+        let original = self.capitols?.claimed_seat(handle)? as u8;
+        Some(CapitolCapture { original, previous, capturer, allied: self.allied(original, capturer) })
+    }
+
+    pub(crate) fn finish_capitol_capture(&mut self, capture: CapitolCapture, recipient: u8) {
+        let rule = self.capitols.as_mut().expect("Registered Capitol");
+        if capture.previous == capture.original {
+            // 00871D29 checks the current owner's Capitol registry entry before transfer.
+            let score = &mut rule.score[usize::from(recipient)];
+            *score = score.checked_add(CAPTURE_SCORE).unwrap_or(*score);
+        }
+        let minutes = f32::from(rule.minutes);
+        if let Some(notice) = capture.notice(self.local) {
+            let seats = (capture.capturer << 4) | (capture.previous << 2) | capture.original;
+            // The local interface notice survives fog and a full world sound queue.
+            self.events.extend_from_slice(&[148.0 + f32::from(notice), f32::from(seats), minutes]);
         }
     }
 
@@ -197,6 +247,7 @@ impl Game {
                 Precision53::TowardZero.add(f64::from(rule.deadline[seat]), -f64::from(self.sim_elapsed())) as i32,
             3 if seat < self.nplayers => self.capitol_owner(rule.city[seat]).map_or(-1, i32::from),
             4 if seat < self.nplayers => rule.city[seat] as i32,
+            5 if seat < self.nplayers => rule.score[seat] as i32,
             _ => -1,
         }
     }
@@ -209,7 +260,7 @@ impl Game {
         if self.net || self.humans != 1 || self.nplayers < 2 || self.bench != 0
             || state.eliminated & !seats != 0
             || state.deadline != IDLE && (!rule.sole || !(10.0..=now + 10.0).contains(&state.deadline))
-            || self.tick == 0 && (outcome != 0 || state.eliminated != 0 || state.deadline != IDLE)
+            || self.tick == 0 && (outcome != 0 || state.eliminated != 0 || state.deadline != IDLE || rule.score != [0; 4])
             || state.eliminated(0) != (outcome == 2)
             || outcome == 1 && rule.sole && state.active(self.nplayers) != 1
         { return None; }
@@ -217,7 +268,7 @@ impl Game {
             let handle = rule.city[seat];
             let deadline = rule.deadline[seat];
             if seat >= self.nplayers {
-                if handle != NONE || deadline != IDLE { return None; }
+                if handle != NONE || deadline != IDLE || rule.score[seat] != 0 { return None; }
                 continue;
             }
             if deadline != IDLE && (deadline > max_deadline || self.tick == 0) { return None; }
@@ -314,6 +365,17 @@ mod tests {
         assert_eq!(rule.deadline[1], chopped);
         assert!(rule.deadline_result(1, Some(0), chopped));
         assert!(!rule.deadline_result(1, Some(0), nearest));
+    }
+
+    #[test]
+    fn capitol_notice_audience_matches_the_three_original_dispatch_paths() {
+        let routes = |capture: CapitolCapture| [0, 1, 2, 3].map(|local| capture.notice(local));
+        assert_eq!(routes(CapitolCapture { original: 0, previous: 2, capturer: 0, allied: false }),
+            [Some(0), None, Some(1), None]);
+        assert_eq!(routes(CapitolCapture { original: 1, previous: 2, capturer: 0, allied: true }),
+            [Some(2), Some(4), Some(3), None]);
+        assert_eq!(routes(CapitolCapture { original: 1, previous: 1, capturer: 0, allied: false }),
+            [Some(5), Some(6), None, None]);
     }
 
     #[test]

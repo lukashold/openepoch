@@ -678,6 +678,14 @@ pub extern "C" fn guided_herc_attack_ptr() -> *const u8 { g().herc_attack.rows.a
 #[no_mangle]
 pub extern "C" fn guided_herc_attack_shot_at(index: u32) -> u32 { g().herc_attack.shot(index as usize) }
 
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn guided_herc_beam_count() -> u32 { g().herc_attack.beams.len() as u32 }
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn guided_herc_beam_ptr() -> *const u8 { g().herc_attack.beams.as_ptr().cast() }
+
 #[no_mangle]
 pub extern "C" fn events_clear() {
     let game = g();

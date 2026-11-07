@@ -20,7 +20,7 @@ import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regi
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native66';
-import {loadOriginalModels} from './original-renderer.js?v=native66';
+import {loadOriginalModels} from './original-renderer.js?v=native67';
 import {loadKingOfTheHillPresentation} from './original-koth.js?v=native64-koth';
 import {loadWonderPresentation} from './original-wonders.js?v=native63';
 import {loadWonderScaffold} from './original-wonder-scaffold.js?v=native63';
@@ -46,7 +46,7 @@ import {mountOriginalGameSettings} from './original-game-settings.js?v=native38a
 import {createRenderActorMetadata} from './render-actor-metadata.js?v=pack8';
 import {createPackRenderMetadata} from './original-pack-states.js?v=pack8';
 import {createFullmapPipBridge} from './original-fullmap-pip-bridge.js?v=native66';
-import {loadOriginalGround,sampleGroundHeight} from './original-ground.js?v=native66';
+import {loadOriginalGround,sampleGroundHeight} from './original-ground.js?v=native67';
 import {createCaptureGlow} from './capture-glow.js?v=native64-koth';
 import {loadOriginalTerrain} from './original-terrain.js?v=skirmish-climates';
 import {loadOriginalWater} from './original-water.js?v=water-farm3';
@@ -54,7 +54,7 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=clock38';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native66';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native67';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
@@ -62,9 +62,10 @@ import {createSourceRoundCarrier, selectedRoundTripMilliseconds} from './source-
 import {mountSourceRosterLobby} from './source-network-lobby.js?v=native58';
 import {applyNetworkCheckpoint} from './source-network-resume.js?v=native58';
 import {createFullscreenController} from './fullscreen.js?v=building2';
-import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native66';
+import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native67';
 import {bindCrownVictoryMenu,readCrownVictoryHud,CROWN_VICTORY_COUNT} from './crown-victory-ui.js?v=native65';
 import {bindCapitolsMenu,readCapitolHud} from './capitols-menu.js?v=native66';
+import {capitolFeedback,loadCapitolFeedback} from './capitol-feedback.js?v=native67';
 import {bindKothMenu,formatKothStatus} from './koth-menu.js?v=native64-koth';
 import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=native66';
 import {updateOriginalCamera,originalCameraRay,originalFractionForZoom,normalizeOriginalHeading,rotateOriginalCameraHeading} from './original-camera.js?v=heading2';
@@ -80,6 +81,7 @@ import {createSpyShimmerFrames} from './original-spy-shimmer.js?v=native-spy';
 import {createSpyExtractionTimer} from './spy-extraction-renderer.js?v=native-spy';
 import {loadPriestEffects} from './original-priest-fx.js?v=native45';
 import {guidedImpactInside,loadGuidedImpactEffects} from './guided-herc-impact.js?v=native66';
+import {loadGuidedHercBeam} from './guided-herc-beam.js?v=native67';
 import {loadOriginalPriestParticles} from './original-priest-particles.js?v=native47';
 import {loadBlessGroundGlow} from './priest-ground-glow.js?v=native58';
 import {loadAirCrownGlow} from './crown-air-glow.js?v=native58';
@@ -156,7 +158,7 @@ const valleyRequested=rulesProfile.id==='up15'&&(!!valleyManifest||['1','archive
 try{
   if(valleyRequested){
     const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley75_commit','valley71_force_attack_at','valley71_neutral_opening']:rulesProfile.requiredExports;
-    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native66-valley'};
+    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native67-valley'};
     try{wasm=await loadRulesWasm(previewRules,import.meta.url);}catch{/* The ordinary ruleset remains available. */}
   }
   wasm??=await loadRulesWasm(rulesProfile,import.meta.url);
@@ -562,7 +564,10 @@ const victoryCondition=$('sk-victory-condition');
 const hotspotAvailable=rulesProfile.id==='up15'&&typeof wasm.configure_match_hotspots==='function'&&typeof wasm.hotspot_point==='function';
 const hotspotOption=victoryCondition.querySelector('option[value="hotspots"]');
 hotspotOption.hidden=hotspotOption.disabled=!hotspotAvailable;
-const hotspotXY=()=>wasm.hotspot_status?.(0,0)===1?[wasm.hotspot_point(0,0),wasm.hotspot_point(0,1)]:null;
+const hotspotTotal=()=>wasm.hotspot_status?.(0,0)??0;
+const hotspotRevealed=()=>hotspotTotal()>0?wasm.hotspot_status(1,0):0;
+const hotspotPoints=()=>Array.from({length:hotspotRevealed()},(_,index)=>[wasm.hotspot_point(index,0),wasm.hotspot_point(index,1)]);
+let knownHotspotCount=0;
 const kothDefinition=rulesProfile.id==='up15'?wasm.koth_definition?.():undefined;
 const kothMenu=bindKothMenu({victoryCondition,durationRow:$('sk-koth-victory'),duration:$('sk-koth-duration'),
   enabled:kothDefinition!==undefined&&typeof wasm.configure_match_koth==='function'&&typeof wasm.init_hill_world==='function'});
@@ -572,11 +577,14 @@ const crownVictoryMenu=bindCrownVictoryMenu({victoryCondition,countRow:$('sk-cro
 const capitolsMenu=bindCapitolsMenu({victory:victoryCondition,durationRow:$('sk-capitols-victory'),
   duration:$('sk-capitols-duration'),enabled:rulesProfile.id==='up15'&&typeof wasm.configure_match_capitols==='function'
     &&typeof wasm.capitol_status==='function'});
+const capitolArt=await loadCapitolFeedback(originalEnabled&&typeof wasm.capitol_status==='function');
 function updateVictoryOptions(){
   const koth=kothMenu.update(), crowns=crownVictoryMenu.update({locked:victoryCondition.disabled});
   const hotspots=hotspotAvailable&&!victoryCondition.disabled&&victoryCondition.value==='hotspots';
   $('sk-territory-victory').hidden=victoryOptions.hidden||victoryCondition.value!=='territory';
-  $('sk-hotspot-victory').hidden=!hotspots;
+  const hotspotRow=$('sk-hotspot-victory');
+  if(hotspots&&hotspotRow.hidden)$('sk-hotspot-count').value='1';
+  hotspotRow.hidden=!hotspots;
   const capitols=capitolsMenu.update({locked:victoryCondition.disabled});
   $('sk-sole-victory').hidden=victoryOptions.hidden||victoryCondition.value==='territory'||koth||crowns||hotspots||capitols===6;
 }
@@ -627,6 +635,8 @@ const hasGuidedImpacts=typeof wasm.guided_herc_impact_prepare==='function'&&type
 sfx.configureGuidedImpact(originalEnabled&&hasGuidedImpacts);
 const guidedImpactFX=await loadGuidedImpactEffects(gl,originalEnabled&&hasGuidedImpacts&&
   typeof wasm.guided_herc_impact_visible==='function');
+const hercBeam=await loadGuidedHercBeam(gl,originalEnabled&&Number.isInteger(heavyMounted3Id)&&
+  typeof wasm.guided_herc_beam_count==='function'&&typeof wasm.guided_herc_beam_ptr==='function',heavyMounted3Id);
 const guidedImpactVisible=(x,y)=>wasm.guided_herc_impact_visible(x,y)===1;
 const tradeWaitStatus=createTradeWaitStatus($('trade-wait-status'),tradeWaitArt);
 const regionalIconOptions={enabled:originalEnabled&&rulesProfile.ruleset===2,profile:'packed7',neutralFallback:'west'};
@@ -690,7 +700,7 @@ const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,to
   spyShimmerForActor:spyShimmer?actor=>spyShimmer.sample(actor,wasm.spy_disguised(actor.handle)===1):null,
   diversionShimmerForActor:diversionShimmer?(actor,visual)=>diversionShimmer.sample(actor,visual,wasm.leader_diversion_visual(actor.handle)===1):null,
   sourceVisualForModel:blessGround?.modelVisual,priestParticleScales:!!priestParticles,rallyTargetTags:airMissionFlag?.targetTags,
-  hercAttack,
+  hercAttack,hercBeam,
   airTakeoff,takeoffElapsedForActor:airTakeoff?actor=>{
     if(takeoffSample.now===null)return takeoffElapsed(takeoffSample.tick,takeoffSample.alpha,takeoffStartTick(actor.handle));
     const start=takeoffStartSeconds(actor.handle);
@@ -1300,6 +1310,7 @@ function begin(tempo = null, useSourceClock = wasm.sim_clock_active?.() === 1, a
   sfx.resetGuidedImpact();
   hercAttack?.reset(wasm.sim_elapsed_seconds());
   guidedImpactFX?.reset(wasm.sim_elapsed_seconds());
+  hercBeam?.reset(wasm.sim_elapsed_seconds());
   sfx.resetWorldAmbience();
   ambientCoverage=ambientPresentation&&!bench&&wasm.terrain_types_len?.()===MAP*MAP
     ? generatedAmbientCoverage(u8(wasm.terrain_types_ptr(),MAP*MAP),MAP,MAP,wasm.resource_kind) : null;
@@ -1316,6 +1327,7 @@ function begin(tempo = null, useSourceClock = wasm.sim_clock_active?.() === 1, a
   blessPreview=null;
   blessGround?.reset();
   playerFlare.reset(wasm.game_tick()>>>0);
+  knownHotspotCount=hotspotRevealed();
   battleFlare?.reset(!bench);
   fullmapPip.reset();
   sfx.stopStoneThrowerWheels();
@@ -1462,7 +1474,7 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
   const source = soloOriginal && $('source-solo-clock').checked;
   const adaptive = source && supportsAdaptiveSoloClock && $('source-adaptive-clock').checked;
   begin(soloOriginal ? startingTempo(menuTempo()) : null, source, adaptive ? 30 : 0);
-  if(hotspots===1)toast('Ein Krisenherd wurde entdeckt!');
+  if(hotspots>0)toast('Ein Krisenherd wurde entdeckt!');
   if(originalTempo){
     const bytes=worldSaveBytes();
     if(bytes)restartPoint={bytes,cam:{...cam},...(sourceSoloClock ? {sourceSoloClock:true} : {}),
@@ -1642,6 +1654,8 @@ function advance(dt, now) {
   // sound cues the simulation queued up
   const n = wasm.events_len();
   const impacts=hasGuidedImpacts?wasm.guided_herc_impact_prepare():0;
+  const beamStarts=wasm.guided_herc_beam_count?.()??0;
+  if(beamStarts)hercBeam?.enqueue(wasm,beamStarts);
   if (n) {
     const ev = f32(wasm.events_ptr(), n);
     for (let i = 0; i < n; i += 3) {
@@ -1665,6 +1679,13 @@ function advance(dt, now) {
         continue;
       }
       if(kind>=128&&kind<148){playHillCapture(kind,x,y);continue;}
+      if(kind>=148&&kind<155){
+        const cue=capitolFeedback(kind,x,y,hillPlayerName,capitolArt);
+        toast(cue.message);
+        if(cue.sound)void sfx.playInterfaceCue(cue.sound).then(played=>{if(!played)sfx.play(cue.lost?15:sfx.CAPTURE_COMPLETE_CUE);});
+        else sfx.play(cue.lost?15:sfx.CAPTURE_COMPLETE_CUE);
+        continue;
+      }
       const citizen = decodeCitizenDeathCue(kind);
       if (kind >= 12 && !citizen && kind !== sfx.STONE_THROWER_LAUNCH_CUE && kind !== sfx.CAPTURE_COMPLETE_CUE &&
           kind !== sfx.CONVERT_CUE && kind !== sfx.PRIEST_CONVERT_COMPLETE_CUE && kind !== sfx.PRIEST_CONVERT_CAST_CUE) {
@@ -1692,7 +1713,7 @@ function advance(dt, now) {
         guidedImpactFX.spawn(x,y,z);
     }
   }
-  if(n||impacts)wasm.events_clear();
+  if(n||impacts||beamStarts)wasm.events_clear();
   return visualSeconds;
 }
 // A hidden tab gets no animation frames, but a multiplayer peer must keep simulating.
@@ -1864,6 +1885,7 @@ function drawFullmapPipScene(pipView, alpha, renderEpochs, now, mission) {
   const count=(wasm.render_rotated||wasm.render)(alpha,Math.min(...x)-2,Math.min(...y)-2,
     Math.max(...x)+2,Math.max(...y)+6,-1,0,0,0);
   let actorMetadata=null;
+  const hercBeamMuzzles=hercBeam?new Map():null;
   originalTerrain.drawTerrain({vao:vaoT,vp,px:1/zoom,fogTexture,territoryTexture,capture:true});
   if(count){
     const data=f32(wasm.inst_ptr(),count*STRIDE),ranges=new Uint32Array(wasm.memory.buffer,wasm.ranges_ptr(),renderNamespace.rangeLength);
@@ -1872,7 +1894,7 @@ function drawFullmapPipScene(pipView, alpha, renderEpochs, now, mission) {
     gl.bindBuffer(gl.ARRAY_BUFFER,instBuf);
     gl.bufferData(gl.ARRAY_BUFFER,fallbackModelInstances(data,ranges),gl.STREAM_DRAW);
     drawFallbackModels(vp,ranges);
-    originalModels.draw({data,ranges,vp,eye,zoom,epochs:renderEpochs,actorMetadata,capture:true});
+    originalModels.draw({data,ranges,vp,eye,zoom,epochs:renderEpochs,actorMetadata,capture:true,hercBeamMuzzles});
   }
   if(originalWater.enabled){
     originalWater.drawWater({vp,time:now/1000,fogTexture});
@@ -1883,6 +1905,8 @@ function drawFullmapPipScene(pipView, alpha, renderEpochs, now, mission) {
   drawCaptureGlow(vp,actorMetadata);
   drawBlessGround(vp,actorMetadata);
   const impactDraws=guidedImpactFX?.draw(pipView,guidedImpactVisible);
+  const beamDraws=hercBeam?.draw(vp,hercBeamMuzzles,actorMetadata);
+  if(qaMode)canvas.dataset.guidedHercBeamPip=String(beamDraws??'unavailable');
   if(qaMode)canvas.dataset.guidedImpactPip=impactDraws?.join(':')??'unavailable';
   const crownAir=drawAirCrownStatus(vp,actorMetadata);
   if(qaMode)canvas.dataset.crownAirPip=String(crownAir);
@@ -1945,6 +1969,8 @@ function frame(now) {
 
   const visualSeconds = advance(dt, now);
   guidedImpactFX?.advance(wasm.sim_elapsed_seconds(),airMissionFlag?.normalWind());
+  hercBeam?.advance(wasm.sim_elapsed_seconds());
+  const hercBeamMuzzles=hercBeam?new Map():null;
   updateInitialCeasefire();
   if(ambientCoverage){
     const audible=!paused&&!gameSettings.active()&&!document.hidden;
@@ -2080,7 +2106,7 @@ function frame(now) {
     }
     // one instanced draw per model type
     drawFallbackModels(view.vp,ranges);
-    originalModels.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,vp:view.vp,epochs:renderEpochs,zoom:cam.zoom,eye:view.eye,actorMetadata,stoneThrowerWheels});
+    originalModels.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,vp:view.vp,epochs:renderEpochs,zoom:cam.zoom,eye:view.eye,actorMetadata,stoneThrowerWheels,hercBeamMuzzles});
     if(qaMode){
       canvas.dataset.wonderScaffolds=JSON.stringify(originalModels.metrics.wonderScaffolds??[]);
       canvas.dataset.wonderFences=JSON.stringify(originalModels.metrics.wonderFences??[]);
@@ -2105,6 +2131,8 @@ function frame(now) {
   drawCaptureGlow(view.vp,actorMetadata);
   drawBlessGround(view.vp,actorMetadata,{visualSeconds});
   const impactDraws=guidedImpactFX?.draw(view,guidedImpactVisible);
+  const beamDraws=hercBeam?.draw(view.vp,hercBeamMuzzles,actorMetadata);
+  if(qaMode)canvas.dataset.guidedHercBeamMain=String(beamDraws??'unavailable');
   if(qaMode)canvas.dataset.guidedImpactMain=impactDraws?.join(':')??'unavailable';
   const crownAir=drawAirCrownStatus(view.vp,actorMetadata);
   if(qaMode)canvas.dataset.crownAir=String(crownAir);
@@ -2117,7 +2145,7 @@ function frame(now) {
     canvas.dataset.rallyHeal=String(priestDraws.rallyDraws);
   }
   drawAirMissionFlags(view.vp,actorMetadata,mission);
-  const hotspotDraws=originalGround.drawHotspot({vp:view.vp,xy:hotspotXY()});
+  const hotspotDraws=originalGround.drawHotspot({vp:view.vp,points:hotspotPoints()});
   if(qaMode)canvas.dataset.hotspotDraws=String(hotspotDraws);
   carrierGarrisonFlag?.draw({vp:view.vp,actors:actorMetadata?.actors,epochs:renderEpochs,local:ui?.local});
 
@@ -2219,14 +2247,16 @@ function updateUi(drawn, now) {
     objectiveFallback.firstElementChild.textContent=objective.caption;
     objectiveFallback.setAttribute('aria-label',objective.caption);
   }
-  const hotspotRows=$('hotspot-status-rows'), hotspotStatus=showVictoryStatus&&!!hotspotXY();
+  const hotspotRows=$('hotspot-status-rows'), hotspotStatus=showVictoryStatus&&hotspotTotal()>0;
   hotspotRows.hidden=!hotspotStatus;
   $('hotspot-status-hud').hidden=!hotspotStatus||typeof nativeHud.updateVictoryStatus==='function';
   if(hotspotStatus){
-    const text=[`Entdeckte Krisenherde: ${wasm.hotspot_status(1,0)}/1`,...(ui.diplomacy?.players??[])
+    const text=[`Entdeckte Krisenherde: ${hotspotRevealed()}/${hotspotTotal()}`,...(ui.diplomacy?.players??[])
       .map((player,seat)=>`${hillPlayerName(seat)}: ${wasm.hotspot_status(2,seat)}`)].join('\n');
     if(hotspotRows.textContent!==text)hotspotRows.textContent=text;
   }
+  if(hotspotRevealed()>knownHotspotCount)toast('Ein Krisenherd wurde entdeckt!');
+  knownHotspotCount=hotspotRevealed();
   nativeHud.updateVictoryStatus?.(wasm.koth_status?.(0)===1&&showVictoryStatus,objective?.caption??null,hotspotStatus);
   $('idle').textContent = `Freie Bürger: ${ui.idle}`;
   $('idle').style.visibility = ui.idle && !bench ? 'visible' : 'hidden';
@@ -2470,8 +2500,7 @@ function drawMini() {
   if(mini.width!==width||mini.height!==height){mini.width=width;mini.height=height;mini.style.objectFit=valleyWorld?'contain':'';}
   const pixels=valleyWorld?valleyMinimapSnapshot(wasm,valleyWorld):new Uint8ClampedArray(wasm.memory.buffer,wasm.minimap(),MAP*MAP*4);
   mctx.putImageData(new ImageData(pixels,width,height),0,0);
-  const hotspot=hotspotXY();
-  if(hotspot){
+  for(const hotspot of hotspotPoints()){
     mctx.strokeStyle='#ffe389';mctx.lineWidth=2;mctx.beginPath();mctx.arc(hotspot[0],hotspot[1],4,0,2*Math.PI);mctx.stroke();
   }
   const c = corners();

@@ -72,9 +72,9 @@ export function applyMatchSettings(wasm,settings,nplayers){
   const {mode,minutes}=settings.capitols;
   result=wasm.configure_match_capitols(packed,settings.popLimit,settings.supplies,settings.epoch,end,mode,minutes,Number(settings.soleSurvivor===true));
  } else if (settings.hotspots !== undefined) {
-  if(settings.hotspots!==1||typeof wasm.configure_match_hotspots!=='function')throw Error('Die Karte unterstützt diese Krisenherd-Einstellung nicht.');
+  if(![1,2,3,4].includes(settings.hotspots)||typeof wasm.configure_match_hotspots!=='function')throw Error('Die Karte unterstützt diese Krisenherd-Einstellung nicht.');
   result=wasm.configure_match_hotspots(packed,settings.popLimit,settings.supplies,settings.epoch,end,settings.hotspots);
-  if(result!==1)throw Error('Für diesen Kartensamen wurde kein Bauplatz für den Krisenherd gefunden.');
+  if(result!==1)throw Error('Für diesen Kartensamen konnten die Krisenherde nicht platziert werden.');
  } else if (settings.crownVictory !== undefined) {
   if(typeof wasm.configure_match_crown_victory!=='function')throw Error('Die Spieldatei unterstützt keine Kronen-Siegbedingungen.');
   const {mode,target}=settings.crownVictory;

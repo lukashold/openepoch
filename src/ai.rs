@@ -4,6 +4,10 @@ use crate::defs::*;
 use crate::game::*;
 use crate::map::*;
 
+#[cfg(feature = "ee2-native13")]
+#[path = "hotspot_ai68.rs"]
+mod hotspot_ai68;
+
 impl Game {
     #[cfg(feature = "ee2-native13")]
     fn hill_combat_strength(&self, team: u8, def: DefId, hp: f32) -> f32 {
@@ -423,6 +427,8 @@ impl Game {
         // ---- attack waves
         #[cfg(feature = "ee2-native13")]
         if self.ai_contest_hill(team, &army) { return; }
+        #[cfg(feature = "ee2-native13")]
+        if self.ai_contest_hotspots(team, &army, &workers, [bx, by]) { return; }
         if army.len() >= wave && self.tick >= self.players[ti].ai_next_attack {
             let mut best = NOIDX;
             let mut bd = f32::MAX;
