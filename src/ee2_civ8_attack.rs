@@ -322,8 +322,14 @@ Attack{id:80,epoch:0,until:5,present:true,missile:false,visual_kind:0,min_mobile
 Attack{id:80,epoch:5,until:10,present:true,missile:false,visual_kind:0,min_mobile:0.0,min_immobile:0.0,angle:0.52,apply_time:1.2,pack_time:1.0,unpack_time:1.0,splash:0.0,friendly:0.0,latent:false,auto_target:true,attack_on_move:false,ordnance:0,air:false,mobile:true,projectile_speed:None},
 #[cfg(feature="ee2-native13")]
 Attack{id:80,epoch:10,until:15,present:true,missile:false,visual_kind:2,min_mobile:0.0,min_immobile:0.0,angle:0.52,apply_time:0.6,pack_time:1.0,unpack_time:1.0,splash:0.0,friendly:0.0,latent:false,auto_target:true,attack_on_move:false,ordnance:0,air:false,mobile:true,projectile_speed:None},
+#[cfg(feature="ee2-native13")]
+crate::heavy_mounted3_61::ATTACK,
 ];
 pub fn lookup(id:DefId,epoch:u8)->Option<&'static Attack>{
+ #[cfg(feature="ee2-native13")]
+ if id == crate::heavy_mounted3_61::ID { return (epoch < crate::heavy_mounted3_61::END).then_some(&crate::heavy_mounted3_61::ATTACK); }
+ #[cfg(feature="ee2-native13")]
+ if let Some(row) = crate::diversion61_defs::attack(id) { return Some(row); }
  #[cfg(feature="ee2-native13")]
  if id == crate::carrier36_defs::CARRIER { return crate::carrier36_defs::attack(epoch); }
  #[cfg(feature="ee2-native13")]

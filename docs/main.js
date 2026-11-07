@@ -11,7 +11,7 @@ import { diplomacyPanel } from './diplomacy.js?v=native17';
 import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native6';
 import {loadNativeFontUI} from './original-font-ui.js?v=native21names';
 import {territoryClaimMessage} from './territory-help.js?v=fortress1';
-import * as sfx from './audio.js?v=native45';
+import * as sfx from './audio.js?v=native62';
 import {generatedAmbientCoverage,loadOriginalAmbient,originalAmbientPriorities} from './original-ambient.js?v=ambient39';
 import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=citizen9';
 import {mountOriginalShellVideo} from './original-shell-video.js?v=native12';
@@ -20,8 +20,12 @@ import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regi
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native6';
-import {loadOriginalModels} from './original-renderer.js?v=native61';
+import {loadOriginalModels} from './original-renderer.js?v=native62';
 import {loadWonderPresentation} from './original-wonders.js?v=native61';
+import {loadDiversionPresentation} from './original-diversion-presentation.js?v=native62';
+import {createDiversionShimmerFrames} from './original-diversion-shimmer.js?v=native62';
+import {loadHeavyMounted3Presentation} from './original-heavy-mounted3.js?v=native62';
+import {loadArtemisPresentation} from './original-artemis.js?v=native62';
 import {loadCrownLeaderPresentation} from './original-crown-leaders.js?v=native60';
 import {loadUngarrisonArt,ungarrisonIcon} from './original-ungarrison.js?v=native60';
 import {loadLeaderCursors} from './original-leader-cursors.js?v=native60';
@@ -46,7 +50,7 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=clock38';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native61';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native62';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
@@ -540,10 +544,12 @@ const citizenPresentation=await loadCitizenPresentation({enabled:originalEnabled
 const tradeAvailable=rulesProfile.ruleset===2&&supportsTradeRoute(wasm);
 const airMissionAvailable=rulesProfile.ruleset===2&&supportsAirMission(wasm);
 const hasTakeoffState=typeof wasm.air_takeoff_start_tick==='function';
+const diversionSupported=rulesProfile.ruleset===2&&typeof wasm.configure_leader_diversion==='function';
+const heavyMounted3Id=rulesProfile.ruleset===2?wasm.heavy_mounted3_definition?.():undefined;
 const leaderPresentation=await loadCrownLeaderPresentation({
   enabled:originalEnabled&&rulesProfile.ruleset===2&&typeof wasm.configure_crown_leaders==='function',
 });
-const [tradePresentation,tradeRouteArt,tradeWaitArt,fighterBomberPresentation,carrierPresentation,priestPresentation,spyPresentation,airMissionArt,airMissionFlag,airTakeoff,aircraftFlightAudio,wonderPresentation]=await Promise.all([
+const [tradePresentation,tradeRouteArt,tradeWaitArt,fighterBomberPresentation,carrierPresentation,priestPresentation,spyPresentation,airMissionArt,airMissionFlag,airTakeoff,aircraftFlightAudio,wonderPresentation,diversionPresentation,heavyMounted3Presentation,artemisPresentation]=await Promise.all([
   loadTradePresentation({enabled:originalEnabled&&rulesProfile.ruleset===2&&renderNamespace.definitionCount>82}),
   loadTradeRouteArt({enabled:originalEnabled&&tradeAvailable}),
   loadTradeWaitArt({enabled:originalEnabled&&tradeAvailable&&typeof wasm.trade_wait_active==='function'}),
@@ -556,6 +562,9 @@ const [tradePresentation,tradeRouteArt,tradeWaitArt,fighterBomberPresentation,ca
   loadAirTakeoff({enabled:originalEnabled&&airMissionAvailable&&hasTakeoffState}),
   loadAirFlightAudio({enabled:originalEnabled&&airMissionAvailable&&wasm.air_audio_version?.()===1}),
   loadWonderPresentation({enabled:originalEnabled&&rulesProfile.ruleset===2&&renderNamespace.definitionCount>=102}),
+  loadDiversionPresentation({enabled:originalEnabled&&diversionSupported,firstDefinition:102}),
+  loadHeavyMounted3Presentation({enabled:originalEnabled,definition:heavyMounted3Id}),
+  loadArtemisPresentation({enabled:originalEnabled&&rulesProfile.ruleset===2}),
 ]);
 const airFlightAudio=addCarrierFlightAudio(aircraftFlightAudio,wasm.air_audio_version?.()===1?carrierPresentation?.movementAudio:null);
 const takeoffSample={tick:0,alpha:0,now:null};
@@ -609,7 +618,8 @@ const [spyArt,spyAdvancedArt]=await Promise.all([
 ]);
 const spyTimer=rulesProfile.ruleset===2&&typeof wasm.spy_extraction_count==='function'?createSpyExtractionTimer(gl):null;
 const spyShimmer=spyPresentation&&typeof wasm.spy_disguised==='function'?createSpyShimmerFrames():null;
-let spyRenderFrame=0;
+const diversionShimmer=diversionPresentation?createDiversionShimmerFrames():null;
+let worldRenderFrame=0;
 const spyPoseForActor=spyPresentation&&typeof wasm.spy_visual_state==='function'&&
   typeof wasm.spy_visual_elapsed==='function'?actor=>{
     const state=wasm.spy_visual_state(actor.handle);
@@ -618,8 +628,9 @@ const spyPoseForActor=spyPresentation&&typeof wasm.spy_visual_state==='function'
   }:null;
 const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,total)=>{
   $('play').textContent=`Originalgrafiken laden · ${Math.round(loaded/total*100)} %`;
-},{assetMapping,climateProfiles,capturePoseForActor,tradePresentation,fighterBomberPresentation,carrierPresentation,priestPresentation,priestPoseForActor,spyPresentation,spyPoseForActor,leaderPresentation,wonderPresentation,
+},{assetMapping,climateProfiles,capturePoseForActor,tradePresentation,fighterBomberPresentation,carrierPresentation,priestPresentation,priestPoseForActor,spyPresentation,spyPoseForActor,leaderPresentation,wonderPresentation,diversionPresentation,heavyMounted3Presentation,
   spyShimmerForActor:spyShimmer?actor=>spyShimmer.sample(actor,wasm.spy_disguised(actor.handle)===1):null,
+  diversionShimmerForActor:diversionShimmer?(actor,visual)=>diversionShimmer.sample(actor,visual,wasm.leader_diversion_visual(actor.handle)===1):null,
   sourceVisualForModel:blessGround?.modelVisual,priestParticleScales:!!priestParticles,rallyTargetTags:airMissionFlag?.targetTags,
   airTakeoff,takeoffElapsedForActor:airTakeoff?actor=>{
     if(takeoffSample.now===null)return takeoffElapsed(takeoffSample.tick,takeoffSample.alpha,takeoffStartTick(actor.handle));
@@ -632,7 +643,7 @@ const carrierGarrisonFlag=airMissionAvailable&&originalModels.available.has(rend
 const carrierOccupied=handle=>wasm.air_mission_status(handle,1)>0;
 const sourceSails=await loadSourceSailRuntime({wasm,namespace:renderNamespace,models:originalModels,enabled:originalEnabled&&rulesProfile.ruleset===2,decorateMetadata:metadata=>packMetadata?packMetadata.snapshot(metadata):metadata});
 if(sourceSails?.metrics.error)console.warn('Source sails:',sourceSails.metrics.error);
-const unitPresentations=[tradePresentation,fighterBomberPresentation,carrierPresentation,priestPresentation,spyPresentation,leaderPresentation].filter(Boolean);
+const unitPresentations=[tradePresentation,fighterBomberPresentation,carrierPresentation,priestPresentation,spyPresentation,leaderPresentation,diversionPresentation,heavyMounted3Presentation].filter(Boolean);
 sfx.configureOriginalDefinitions({wasm,bindings:[...(originalModels.manifest?.models||[]),...(originalModels.additionalRegionalAudio||[]),...unitPresentations.flatMap(source=>source.audioModelRows)],additionalFamilyManifest:unitPresentations.map(source=>source.audioManifest),citizenPresentation,regionalMusic:rulesProfile.ruleset===2,...(rulesProfile.ruleset===2?{familyManifestURL:'native-families-civ8-regicide.json',playbackManifestURL:'manifest-stone-thrower-up.json'}:{})});
 const captureGlow = originalEnabled && typeof wasm.active_capture_glow === 'function' ? createCaptureGlow() : null;
 const originalGround=await loadOriginalGround(gl,originalEnabled,{assetMapping,captureGlow:!!captureGlow,blessGlow:!!blessGround,wonderPresentation,
@@ -960,7 +971,15 @@ const mobilizationOrder=mobilizationSupported?targetedPower(88,{
   available:()=>ui?.epoch<5&&wasm.leader_power_reserve(wasm.selected_actor_handle()>>>0)>=0,
   count:wasm.leader_mobilization_selection_count,pick:wasm.leader_mobilization_target_at,issue:wasm.cmd_leader_mobilization_at,
 },mobilizationArt,'economic-action'):null;
-const leaderTargetOrders=[imperialOrder,mobilizationOrder].filter(Boolean);
+const diversionArt=await diversionPresentation?.loadCommandArt();
+const diversionOrder=diversionSupported?targetedPower(87,{
+  action:'diversion',shortcut:';',fallback:'◈',label:'Ablenkungsmanöver',
+  description:'Erzeugt am gewählten Standort eine steuerbare Phantomformation.',
+  available:()=>ui?.epoch>=10&&wasm.leader_diversion_enabled()>0&&wasm.military_leader_reserve(wasm.selected_actor_handle()>>>0)>=0,
+  count:()=>wasm.leader_diversion_ready(wasm.selected_actor_handle()>>>0),
+  pick:(x,y)=>wasm.leader_diversion_target_at(x,y),issue:wasm.cmd_leader_diversion_at,
+},diversionArt,'military-action'):null;
+const leaderTargetOrders=[imperialOrder,mobilizationOrder,diversionOrder].filter(Boolean);
 const powerOrders=[...priestOrders,...spyOrders,...leaderTargetOrders];
 const extractionAvailable=spyEnabled&&typeof wasm.cmd_spy_extraction==='function';
 const selectedPowerType=(selection,definition)=>selection?.def===definition||selection?.types?.some(type=>type[0]===definition);
@@ -1107,6 +1126,7 @@ function begin(tempo = null, useSourceClock = wasm.sim_clock_active?.() === 1, a
   previousPriestViews=[];currentPriestViews=[];priestFrameEffects=null;priestAttachments.clear();
   rallyHealGate?.reset();
   spyShimmer?.reset();
+  diversionShimmer?.reset();
   priestParticles?.reset();
   blessPreview=null;
   blessGround?.reset();
@@ -1161,6 +1181,10 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
   bench = benchUnits;
   seasonSession.configure(menuSeasonSettings(),benchUnits?0:menuClimate());
   wasm.init(seed >>> 0, nAi, benchUnits, humans, local);
+  if(!benchUnits&&humans===1&&heavyMounted3Id!==undefined&&!wasm.configure_heavy_mounted3()){
+    toast('Der Minotaurus-HERC konnte nicht für dieses Scharmützel eingerichtet werden.');
+    return;
+  }
   if(!benchUnits&&civilizationSetup.enabled){
     const players=Math.max(2,Math.min(4,nAi+humans));
     const originalSkirmish=humans===1&&rulesProfile.id==='up15';
@@ -1221,6 +1245,10 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
   if(!benchUnits&&humans===1&&crownSupported&&priestEnabled&&typeof wasm.configure_military_leader_powers==='function'
     &&!wasm.configure_military_leader_powers()){
     toast('Die Fähigkeiten des Militärführers konnten nicht aktiviert werden.');
+    return;
+  }
+  if(!benchUnits&&humans===1&&diversionSupported&&!wasm.configure_leader_diversion()){
+    toast('Das Ablenkungsmanöver konnte nicht aktiviert werden.');
     return;
   }
   if(!benchUnits&&humans===1&&crownSupported&&priestEnabled&&typeof wasm.configure_economic_leader_effects==='function'
@@ -1691,7 +1719,11 @@ function frame(now) {
   if (!n) originalModels.clearResourcePicks();
   const ranges = n ? new Uint32Array(wasm.memory.buffer, wasm.ranges_ptr(), renderNamespace.rangeLength) : null;
   const renderEpochs=[0,1,2,3].map(t=>wasm.stat(t,0));
-  spyShimmer?.begin(++spyRenderFrame,ui?.local??0,wasm.sim_elapsed_seconds());
+  if(spyShimmer||diversionShimmer){
+    const frame=++worldRenderFrame,seat=ui?.local??0,seconds=wasm.sim_elapsed_seconds();
+    spyShimmer?.begin(frame,seat,seconds);
+    diversionShimmer?.begin(frame,seat,seconds);
+  }
   if(airTakeoff){takeoffSample.tick=wasm.game_tick()>>>0;takeoffSample.alpha=alpha;takeoffSample.now=sourceRenderSeconds(wasm,alpha);}
   const stoneThrowerWheels=originalEnabled&&rulesProfile.ruleset===2&&!paused&&!document.hidden&&!(net&&net.ls.waiting)?[]:null;
   if(rulesProfile.ruleset===2)originalModels.setVisualCivilizations?.([0,1,2,3].map(team=>wasm.player_civilization(team)));
@@ -1829,7 +1861,7 @@ function frame(now) {
 
 // ---------------------------------------------------------------- HUD
 const HOT = ['Q', 'W', 'E', 'R', 'T', 'Z', 'X', 'C', 'V', 'B'];
-const unitPresentation=id=>id>=87&&id<=89?leaderPresentation:id===86?spyPresentation:id===85?priestPresentation:id===84?carrierPresentation:id===83?fighterBomberPresentation:tradePresentation;
+const unitPresentation=id=>id===43?artemisPresentation:id===heavyMounted3Id?heavyMounted3Presentation:id>=102&&id<=105?diversionPresentation:id>=87&&id<=89?leaderPresentation:id===86?spyPresentation:id===85?priestPresentation:id===84?carrierPresentation:id===83?fighterBomberPresentation:tradePresentation;
 function icon(id, px,context=undefined) {
   const wonderUrl=wonderPresentation.iconFor(id);
   if(wonderUrl){
@@ -1838,7 +1870,7 @@ function icon(id, px,context=undefined) {
   const c = document.createElement('canvas'); c.width = c.height = px;
   const regional = ui && rulesProfile.ruleset === 2
     ? regionalIcons.get(id)?.icon(ui.epoch, wasm.player_civilization(ui.local) >>> 0) : undefined;
-  const original=regional??unitPresentation(id)?.icon(id,ui?.epoch??0,ui?wasm.player_civilization(ui.local)>>>0:0)??originalIcon(originalAssets,id,ui?.epoch||0,context);
+  const original=regional??unitPresentation(id)?.icon?.(id,ui?.epoch??0,ui?wasm.player_civilization(ui.local)>>>0:0)??originalIcon(originalAssets,id,ui?.epoch||0,context);
   if(original){
     const scale=Math.min(px/original.width,px/original.height),w=original.width*scale,h=original.height*scale;
     c.getContext('2d').drawImage(original,(px-w)/2,(px-h)/2,w,h);return c;
@@ -1958,7 +1990,7 @@ function updateUi(drawn, now) {
         else tag.textContent=label;
         info.querySelector('h3')?.append(tag);
       }
-      if ((context && citizenPresentation.enabled) || regionalPortraits.has(s.def) || wonderPresentation.iconFor(s.def) || unitPresentation(s.def)?.icon(s.def,ui.epoch)) {
+      if ((context && citizenPresentation.enabled) || regionalPortraits.has(s.def) || wonderPresentation.iconFor(s.def) || unitPresentation(s.def)?.icon?.(s.def,ui.epoch)) {
         const portrait = icon(s.def, 40, context);
         portrait.style.cssText = 'vertical-align:middle;margin-right:6px';
         info.querySelector('h3')?.prepend(portrait);
@@ -2024,10 +2056,10 @@ function updateUi(drawn, now) {
     }
     for (const {command,ready} of powerActions) {
       const b=document.createElement('button');b.className=`act ${command.cssClass}`;b.dataset.action=command.action;
-      b.title=command.art?.description(command.action)??command.description;
+      b.title=command.art?.description?.(command.action)??command.description;
       b.disabled=!ready;b.classList.toggle('no',!ready);
       command.order.decorateButton(b,ui.epoch);
-      const caption=document.createElement('small');caption.textContent=command.art?.label(command.action)??command.label;b.append(caption);
+      const caption=document.createElement('small');caption.textContent=command.art?.label?.(command.action)??command.label;b.append(caption);
       const key=document.createElement('kbd');key.textContent=command.shortcut??`Alt+${command.key}`;b.append(key);
       b.onclick=()=>armPowerOrder(command);acts.append(b);
     }
@@ -2363,6 +2395,7 @@ function updateAudioButtons() {
 function toggleMute() { sfx.setMuted(!sfx.isMuted());updateAudioButtons(); }
 function selectedUnitVoice(action) {
   const ptr = wasm.ui(); const state = JSON.parse(dec.decode(u8(ptr, wasm.ui_len()))),selected=state.sel;
+  if (selected.n&&diversionPresentation?.hasVoices(selected.def,state.epoch)===false) return true;
   if (selected.n) return sfx.acknowledge(selected.def, action,state.epoch,selectedCitizenContext(wasm,state));
   return false;
 }

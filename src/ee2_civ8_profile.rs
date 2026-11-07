@@ -459,6 +459,8 @@ pub const fn apply(mut d:[Def;80])->[Def;80]{
 // Unknown angular speeds retain explicit independent input adapter until bound.
 pub fn turn_rate_at(id:DefId,epoch:u8)->f32{
  #[cfg(feature="ee2-native13")]
+ if crate::diversion61_defs::slot(id).is_some() { return 180.0 * 0.01745329238474369_f32; }
+ #[cfg(feature="ee2-native13")]
  if id == crate::carrier36_defs::CARRIER { return crate::carrier36_defs::TURN_RATE; }
  #[cfg(feature="ee2-native13")]
  if id == crate::air31_defs::FIGHTER_BOMBER {

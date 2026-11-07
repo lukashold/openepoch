@@ -77,6 +77,7 @@ uniform float uGlossiness;uniform bool uSpecularEnabled;uniform int uVertexMode;
 uniform vec3 uAmbientLight;uniform vec3 uSunColor;uniform vec3 uSunDirection;uniform vec3 uEye;
 uniform vec3 uSpecularLight;uniform highp int uNativeShader;uniform float uTextureScale;uniform bool uNativeLighting;
 uniform bool uClipEnabled;uniform vec4 uClipPlane;
+uniform vec2 uWonderConstructionPlane;
 in vec4 vNativeLighting;in vec3 vNormal;in vec2 vUV;in vec2 vWorld;in vec3 vPosition;in vec4 vColor;in float vY;flat in vec4 vInfo;out vec4 outColor;
 bool alphaPass(float alpha){
  if(uAlphaFunction==0)return true;if(uAlphaFunction==1)return alpha<uCutoff;if(uAlphaFunction==2)return alpha==uCutoff;
@@ -89,7 +90,11 @@ void main(){
  if((uHasAlpha&1)!=0 && !alphaPass(coverage))discard;
  int flags=int(vInfo.w+.5);float fog=texture(uFog,vWorld/256.).r;
  if((flags&32)==0 && fog<.05)discard;
- if((flags&64)!=0 && vInfo.z<1. && vY>max(.02,uModelHeight*vInfo.z))discard;
+ if((flags&64)!=0 && vInfo.z<1.){
+  if(uWonderConstructionPlane.y>0.){
+   if((flags&24)==0 && vY>uWonderConstructionPlane.x+uWonderConstructionPlane.y*vInfo.z)discard;
+  }else if(vY>max(.02,uModelHeight*vInfo.z))discard;
+ }
  if(uShadow==1){if((flags&24)!=0||fog<.15||((uHasAlpha&2)!=0&&coverage<.05))discard;outColor=vec4(.018,.025,.014,.2);return;}
  vec3 n=normalize(vNormal),sun=normalize(uSunDirection);float diffuseLight=max(dot(n,sun),0.);
  vec3 ambient=uVertexMode==2?vColor.rgb:uAmbientMaterial,diffuse=uVertexMode==2?vColor.rgb:uColor.rgb;
@@ -176,6 +181,7 @@ function program(gl,fragment=FS,extraUniforms=[]){
  gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));
  const u={};for(const name of ['uVP','uShadow','uAnimated','uAnimationOnce','uYOffset','uOriginOffset','uDiffuse','uDiffuseNext','uModelSeasonBlend','uFog','uColor','uHasAlpha','uCutoff','uModelHeight','uTeam','uFrames','uFrameWidth','uFrameCount','uTerrain','uTerrainSize','uTerrainEnabled','uSunDirection','uAmbientMaterial','uSpecularMaterial','uEmissiveMaterial','uGlossiness','uSpecularEnabled','uVertexMode','uLightingMode','uAmbientLight','uSunColor','uSpecularLight','uNativeShader','uTextureScale','uNativeLighting','uEye','uAlphaFunction','uClipEnabled','uClipPlane','uFarmPlotConform','uFarmPlotCenter'])u[name]=gl.getUniformLocation(p,name);
  u.uSpyEmissive=gl.getUniformLocation(p,'uSpyEmissive');
+ u.uWonderConstructionPlane=gl.getUniformLocation(p,'uWonderConstructionPlane');
  for(const name of extraUniforms)u[name]=gl.getUniformLocation(p,name);
  return {p,u};
 }
@@ -357,7 +363,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    productionStatus.manifestAvailable=true;
   }catch(error){productionStatus.errors.push(error.message);}}
  }
- const presentationEntries=[options.tradePresentation,options.fighterBomberPresentation,options.carrierPresentation,options.priestPresentation,options.spyPresentation,options.leaderPresentation,options.wonderPresentation].filter(Boolean)
+ const presentationEntries=[options.tradePresentation,options.fighterBomberPresentation,options.carrierPresentation,options.priestPresentation,options.spyPresentation,options.leaderPresentation,options.wonderPresentation,options.diversionPresentation,options.heavyMounted3Presentation].filter(Boolean)
   .flatMap(presentation=>presentation.modelRows.map(row=>({...row,presentation})));
  const sailStatus={enabled:options.initialSails!==false,manifestAvailable:false,models:0,parts:0,errors:[]},sailErrors=new Set(),sailComposites=new Map();let sailManifest=null,sailShader=null,dynamicSailShader=null;const dynamicBindings=new WeakMap();
  result.initialSails=sailStatus;
@@ -595,9 +601,19 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    variant.nativeCapture=model.nativeCapture;
    variant.sourceVisual=sourceVisual(model,modelUrl);
    variant.sourceScale=transform.native?scaleBinding.sourceScale:null;
+   if(entry.wonderFamily&&transform.native){
+    const minimum=model.sourceBounds?.min?.[1], maximum=model.sourceBounds?.max?.[1];
+    const {offset,scale}=model.normalization;
+    // 0063E12A uses the main model's shared minimum and vertical extent.
+    // The imported Y axis is native Z. Every material part uses one plane.
+    if(Number.isFinite(minimum)&&Number.isFinite(maximum)&&maximum>minimum){
+     variant.wonderConstructionPlane=[(minimum+offset[1])*scale,(maximum-minimum)*scale];
+    }
+   }
    if(entry.presentation)variant.presentationEntry=entry;
    if(entry.priestClips)variant.priestClips=entry.priestClips;
    if(entry.spyClips)variant.spyClips=entry.spyClips;
+   if(entry.diversionVisual)variant.diversionVisual=entry.diversionVisual;
    if(assetKind===0&&id===22&&entry.verified&&model.databaseVisualBinding?.visualDefinition==='LightArtillery1_01'
       &&entry.epoch===0&&entry.until===2&&entry.source?.sha256===model.source?.sha256){
     // Only clips with the original moving-state KF can start its text-key sound.
@@ -772,7 +788,8 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
      }
      if(variant.far)variant=variant.far;
     }
-    const shimmer=variant.spyClips&&matchingActorPose&&actor.team===rowTeam?options.spyShimmerForActor?.(actor):null;
+    const shimmer=variant.spyClips&&matchingActorPose&&actor.team===rowTeam?options.spyShimmerForActor?.(actor):
+     variant.diversionVisual&&matchingActor&&actor.team===rowTeam?options.diversionShimmerForActor?.(actor,variant.diversionVisual):null;
     if(shimmer?.opacity===0)continue;
     if(collectActorPresentation&&matchingActor){
      if(variant.sourceVisual)actorVisuals?.set(actor,variant.sourceVisual);
@@ -838,6 +855,8 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     if(rememberPicks&&variant.assetKind===1&&variant.pickBounds)rememberResources(data,instanceIndices,variant,activity);
     selectShader(shader);gl.uniform1f(shader.u.uYOffset,variant.yOffset);
     gl.uniform3fv(shader.u.uOriginOffset,variant.originOffset);
+    const constructionPlane=variant.wonderConstructionPlane;
+    gl.uniform2f(shader.u.uWonderConstructionPlane,constructionPlane?.[0]??0,constructionPlane?.[1]??0);
     gl.bindBuffer(gl.ARRAY_BUFFER,instances);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(list),gl.STREAM_DRAW);
     const dynamicOwners=dynamicGPU&&!preview&&!shadow&&variant.dynamicSailBinding?instanceIndices.map((index,j)=>{
      const actor=actorMetadata?.forInstance?.(index),at=j*12;

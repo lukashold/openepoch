@@ -43,6 +43,7 @@ const INTERVALS: &[(u16, u8, u8, u32)] = &[
     (76, 5, 15, 30), // UniqueUnitKorean2
     (77, 5, 15, 30), // UniqueUnitMayan2
     (78, 10, 15, 30), // UniqueUnitMayan3
+    (crate::heavy_mounted3_61::ID, 13, 15, 31), // HeavyMounted3
 ];
 
 pub(crate) fn descriptor(def: u16, epoch: u8) -> u32 {

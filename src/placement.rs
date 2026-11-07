@@ -90,6 +90,11 @@ impl Game {
         true
     }
     pub fn entity_radius(&self, e: &Ent) -> f32 {
+        #[cfg(feature = "ee2-native13")]
+        if self.heavy_mounted3 && e.def == crate::defs::LIGHT_MOUNTED3 {
+            // The native ellipse branch at 0053AE90 stores SizeX/SizeY unscaled.
+            return 0.75;
+        }
         if DEFS[e.def as usize].building {
             Self::building_half(e)
         } else {

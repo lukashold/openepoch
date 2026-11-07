@@ -42,8 +42,14 @@ export function createOriginalAudio(options={}) {
         const combined={...addition};
         for(const key of ['families','events','assets']){
           const inherited=selectedFamilyManifest?.[key]||{},added=addition[key]||{};
-          if(Object.keys(added).some(name=>Object.hasOwn(inherited,name)))throw Error('Overlapping native sound family');
-          combined[key]={...inherited,...added};
+          for(const [name,record] of Object.entries(added)){
+            if(!Object.hasOwn(inherited,name))continue;
+            // A different source family can reference the same original recording.
+            const sha=record?.sha256;
+            if(key!=='assets'||!/^[a-f0-9]{64}$/.test(sha)||sha!==inherited[name]?.sha256)
+              throw Error('Overlapping native sound family');
+          }
+          combined[key]={...added,...inherited};
         }
         typed=createTypedAudioBindings({...definitionSettings,familyManifest:combined});
         selectedFamilyManifest=combined;

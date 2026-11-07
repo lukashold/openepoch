@@ -143,6 +143,8 @@ pub const TEMPLE:DefId = 51;
 pub const WAREHOUSE:DefId = 52;
 pub const OIL_RIG:DefId = 53;
 pub const URANIUM_MINE:DefId = 54;
+#[cfg(feature = "ee2-native13")]
+pub(crate) const LIGHT_MOUNTED3: DefId = 43;
 pub const HERC_FACILITY:DefId=55;
 pub const FORTRESS:DefId=56;
 pub const BUILT_BY_WORKER:DefId = crate::ids::DEF_NONE;
@@ -181,11 +183,11 @@ pub const DEFS:&[Def]=&crate::roster6_defs::production(crate::ee2_profile::apply
 #[cfg(all(feature="ee2-civ8",not(feature="ee2-native13")))]
 pub const DEFS:&[Def]=&crate::civ8_defs::production(crate::ee2_profile::apply(crate::civ8_defs::initial(BASE_DEFS)));
 #[cfg(feature="ee2-native13")]
-pub const DEFS: &[Def] = &crate::wonders61::append(crate::leader58_defs::append(crate::spy46_defs::append(crate::priest42_defs::append(crate::carrier36_defs::append_carrier(crate::air31_defs::append_fighter_bomber(
+pub const DEFS: &[Def] = &crate::heavy_mounted3_61::append(crate::diversion61_defs::append(crate::wonders61::append(crate::leader58_defs::append(crate::spy46_defs::append(crate::priest42_defs::append(crate::carrier36_defs::append_carrier(crate::air31_defs::append_fighter_bomber(
     crate::trade30_defs::append_traders(crate::ee2_regicide::append_king(
         crate::civ8_defs::production(crate::ee2_profile::apply(crate::civ8_defs::initial(BASE_DEFS))),
     )),
-))))));
+))))))));
 // The match envelope extends the existing registry without changing legacy
 // embedded headers. A King is accepted only with the Regicide envelope.
 pub(crate) const SAVE_DEFINITION_COUNT: usize = if cfg!(feature="ee2-native13") { 80 } else { DEFS.len() };

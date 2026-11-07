@@ -215,6 +215,10 @@ impl Game {
             b = crate::wonders61::wrap_save(b);
         }
         #[cfg(feature="ee2-native13")]
+        { b = self.factory_clocks.wrap(b); }
+        #[cfg(feature="ee2-native13")]
+        if self.heavy_mounted3 { b = crate::heavy_mounted3_61::wrap(b); }
+        #[cfg(feature="ee2-native13")]
         { b = self.market.wrap(b); }
         #[cfg(feature="ee2-native13")]
         if let Some(powers) = &self.powers { b = powers.wrap(b); }
@@ -271,6 +275,12 @@ impl Game {
         let (buf, powers) = crate::power42::split(buf)?;
         #[cfg(feature="ee2-native13")]
         let (buf, market) = crate::game::market57::split(buf)?;
+        #[cfg(feature="ee2-native13")]
+        let (buf, heavy_mounted3) = crate::heavy_mounted3_61::split(buf)?;
+        #[cfg(feature="ee2-native13")]
+        if heavy_mounted3 && roster.is_some() { return None; }
+        #[cfg(feature="ee2-native13")]
+        let (buf, factory_clocks) = crate::game::wonder_automation62::FactoryClocks::split(buf)?;
         #[cfg(feature="ee2-native13")]
         let (buf, wonders) = crate::wonders61::split_save(buf)?;
         #[cfg(feature="ee2-native13")]
@@ -332,10 +342,12 @@ impl Game {
         #[cfg(feature="ee2-native13")]
         let actor_definition_count = if crown_leaders {
             if powers.is_none() || crowns.is_none() || roster.is_some() { return None; }
-            crate::leader58_defs::END as usize
+            if military_leader_powers.is_some() { crate::diversion61_defs::END as usize } else { crate::leader58_defs::END as usize }
         } else { actor_definition_count };
         #[cfg(feature="ee2-native13")]
-        let actor_definition_count = if wonders { crate::wonders61::END as usize } else { actor_definition_count };
+        let actor_definition_count = if wonders { actor_definition_count.max(crate::wonders61::END as usize) } else { actor_definition_count };
+        #[cfg(feature="ee2-native13")]
+        let actor_definition_count = if heavy_mounted3 { crate::heavy_mounted3_61::ID as usize + 1 } else { actor_definition_count };
         #[cfg(feature="ee2-native13")]
         let (buf, sole_survivor) = crate::ee2_sole_survivor::split(buf)?;
         #[cfg(feature="ee2-native13")]
@@ -407,6 +419,11 @@ impl Game {
         let mut g = Game::new(u(4), u(5), 0, humans, local);
         #[cfg(feature="ee2-native13")]
         if wonders && g.net { return None; }
+        #[cfg(feature="ee2-native13")]
+        {
+            if heavy_mounted3 && g.net { return None; }
+            g.heavy_mounted3 = heavy_mounted3;
+        }
         g.tick = u(6);
         if source_clock.is_some_and(|clock| !clock.valid_at(g.tick, g.net)) {
             return None;
@@ -535,9 +552,11 @@ impl Game {
         for p in &g.players[..g.nplayers] {if p.epoch>g.match_final_epoch() {return None;}}
         #[cfg(feature="ee2-native13")]
         let valid_definition = |id: DefId| {
+            if id == crate::heavy_mounted3_61::ID { return heavy_mounted3; }
             if id == crate::carrier36_defs::CARRIER { return g.air_carrier_enabled; }
             if crate::leader58_defs::branch(id).is_some() { return crown_leaders; }
             if crate::wonders61::is_wonder(id) { return wonders; }
+            if crate::diversion61_defs::slot(id).is_some() { return crown_leaders && military_leader_powers.is_some(); }
             (id as usize) < actor_definition_count &&
                 (id != crate::ee2_regicide::KING || regicide.is_some()) &&
                 (!crate::trade30_defs::is_trader(id) || trade.is_some()) &&
@@ -547,6 +566,17 @@ impl Game {
         let valid_definition = |id: DefId| (id as usize) < actor_definition_count;
         #[cfg(feature="ee2-native13")]
         if wonders == g.wonder_sites.is_empty() { return None; }
+        #[cfg(feature="ee2-native13")]
+        {
+            if !factory_clocks.valid(g.sim_elapsed(), |handle, owner, late| {
+                let Some(index) = g.get(handle) else { return false; };
+                let actor = &g.ents[index];
+                actor.def == crate::wonders61::ROBOTICS_FACTORY && actor.hp > 0.0 && actor.built >= 1.0
+                    && owner == actor.team && usize::from(owner) < g.nplayers
+                    && g.players[usize::from(owner)].epoch >= if late { 14 } else { 10 }
+            }) { return None; }
+            g.factory_clocks = factory_clocks;
+        }
         for e in &g.ents[..high] {
             if !e.alive {continue;}
             if !valid_definition(e.def) || e.team as usize>=g.nplayers || e.qn>5 || e.ncargo as usize>CARGO_MAX {return None;}
@@ -555,6 +585,17 @@ impl Game {
             #[cfg(feature="ee2-native13")]
             if matches!(e.order, O_LEADER_RALLY | O_LEADER_FIRE_MANEUVER) && (military_leader_powers.is_none() || e.def != crate::leader58_defs::FIRST
                 || e.tgt != NONE || e.otgt != NONE) { return None; }
+            #[cfg(feature="ee2-native13")]
+            if e.order == O_LEADER_DIVERSION && (military_leader_powers.is_none() || e.def != crate::leader58_defs::FIRST
+                || e.tgt != NONE || e.otgt != NONE || !crate::game::leader_diversion61::location(e.ox, e.oy)) { return None; }
+            #[cfg(feature="ee2-native13")]
+            if e.order == O_FACTORY_EGRESS && (g.net || powers.is_none() || e.tgt != NONE || e.otgt == NONE
+                || (e.otgt & 0xffff) as usize >= MAXE || (e.ox - e.x).hypot(e.oy - e.y) > 5.0
+                || !crate::game::wonder_automation62::factory_unit(e.def)
+                || !crate::game::leader_diversion61::location(e.ox, e.oy)
+                || !((e.rx == -1.0 && e.ry == -1.0) || crate::game::leader_diversion61::location(e.rx, e.ry))
+                || g.get(e.otgt).is_some_and(|host| g.ents[host].def != crate::wonders61::ROBOTICS_FACTORY
+                    || g.ents[host].team != e.team)) { return None; }
             #[cfg(feature="ee2-native13")]
             if e.order == O_LEADER_MOBILIZATION && (economic_leader_effects.is_none()
                 || e.def != crate::game::economic_leader60::ECONOMIC_LEADER || e.tgt != NONE || e.otgt == NONE) { return None; }
@@ -570,7 +611,14 @@ impl Game {
             if e.cargo[..e.ncargo as usize].iter().any(|&c| !valid_definition(c)) {return None;}
             #[cfg(feature="ee2-native13")]
             if e.cargo[..e.ncargo as usize].iter().copied().any(crate::wonders61::is_wonder) { return None; }
+            #[cfg(feature="ee2-native13")]
+            if e.cargo[..e.ncargo as usize].contains(&crate::heavy_mounted3_61::ID)
+                && !crate::heavy_mounted3_61::can_garrison(e.def) { return None; }
+            #[cfg(feature="ee2-native13")]
+            if e.cargo[..e.ncargo as usize].iter().copied().any(|id| crate::diversion61_defs::slot(id).is_some()) { return None; }
             if DEFS[e.def as usize].building && e.q[..e.qn as usize].iter().any(|&q| {
+                #[cfg(feature="ee2-native13")]
+                if q < crate::diversion61_defs::END as QueueItem && crate::diversion61_defs::slot(q as DefId).is_some() { return true; }
                 #[cfg(feature="ee2-native13")]
                 if trade.is_some() && crate::trade30_defs::is_trader(q as DefId) { return false; }
                 #[cfg(feature="ee2-native13")]
@@ -581,6 +629,10 @@ impl Game {
                 if powers.is_some() && q == crate::priest42_defs::PRIEST as _ { return e.def != TEMPLE; }
                 #[cfg(feature="ee2-native13")]
                 if powers.is_some() && q == crate::spy46_defs::SPY as _ { return e.def != UNIVERSITY; }
+                #[cfg(feature="ee2-native13")]
+                if q == u32::from(crate::heavy_mounted3_61::ID) {
+                    return e.built < 1.0 || !g.heavy_mounted3_offer(e.team, e.def);
+                }
                 q != RESEARCH && !original_research(q) && q as usize >= SAVE_DEFINITION_COUNT &&
                     (q < TECH0 || (q - TECH0) as usize >= TECHS.len())
             }) { return None; }

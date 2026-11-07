@@ -49,6 +49,9 @@ impl Game{
    let allowed=profile==crate::ee2_combat::UNKNOWN_PROFILE as u32||(profile as usize)<crate::ee2_combat::PROFILES.len();
    #[cfg(feature="ee2-native13")]
    let allowed=allowed||(self.air_missions_enabled&&profile==u32::from(crate::ee2_combat::profile(crate::air31_defs::FIGHTER_BOMBER,10)));
+   #[cfg(feature="ee2-native13")]
+   let allowed = allowed || (self.heavy_mounted3 && w[9] == u32::from(W_MISSILE)
+    && profile == u32::from(crate::ee2_combat::profile(crate::heavy_mounted3_61::ID, crate::heavy_mounted3_61::START)));
    if (w[6]!=NONE&&(w[6]&65535)as usize>=MAXE)||w[9]>W_BOMB as u32||w[10]as usize>=self.nplayers||w[12]&!15!=0||!allowed{return None;}
    #[cfg(feature="ee2-native13")]
    let attack_source=if version==2{u(r,RECORD)?}else{NONE};

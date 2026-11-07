@@ -3,6 +3,7 @@
 use super::*;
 use crate::leader58_defs::FIRST as MILITARY;
 use crate::power42_math::store_toward_zero;
+use super::leader_diversion61::{Diversions, TAG as DIVERSION_TAG};
 use std::collections::{BTreeMap, BTreeSet};
 
 const MAGIC: u32 = u32::from_le_bytes(*b"LMP1");
@@ -53,6 +54,7 @@ impl Maneuver {
 pub(crate) struct State {
     auras: BTreeMap<u32, Aura>,
     maneuvers: Vec<Maneuver>,
+    pub(super) diversions: Option<Diversions>,
 }
 
 fn land_rps(def: DefId, epoch: u8) -> bool {
@@ -307,13 +309,15 @@ impl State {
             for value in [source, aura.kind as u32, aura.recipients.len() as u32] { word(value); }
             for &target in &aura.recipients { word(target); }
         }
-        if self.maneuvers.is_empty() { return; }
-        word(MANEUVER_TAG);
-        word(self.maneuvers.len() as u32);
-        for group in &self.maneuvers {
-            for value in [group.source, group.started.to_bits(), group.allies.len() as u32, group.enemies.len() as u32] { word(value); }
-            for &handle in group.allies.iter().chain(&group.enemies) { word(handle); }
+        if !self.maneuvers.is_empty() {
+            word(MANEUVER_TAG);
+            word(self.maneuvers.len() as u32);
+            for group in &self.maneuvers {
+                for value in [group.source, group.started.to_bits(), group.allies.len() as u32, group.enemies.len() as u32] { word(value); }
+                for &handle in group.allies.iter().chain(&group.enemies) { word(handle); }
+            }
         }
+        if let Some(diversions) = &self.diversions { diversions.fields(&mut word); }
     }
 
     pub(crate) fn hash(&self, mut word: impl FnMut(u32)) {
@@ -361,9 +365,10 @@ impl State {
             }
             result.auras.insert(handle, Aura { kind, recipients });
         }
-        if let Some(tag) = next() {
+        let mut tag = next();
+        if tag == Some(MANEUVER_TAG) {
             let count = next()? as usize;
-            if tag != MANEUVER_TAG || !(1..=MAXE).contains(&count) { return None; }
+            if !(1..=MAXE).contains(&count) { return None; }
             for _ in 0..count {
                 let source = next()?;
                 let actor = &game.ents[game.get(source)?];
@@ -385,6 +390,17 @@ impl State {
                 }
                 result.maneuvers.push(group);
             }
+            tag = next();
+        }
+        if let Some(tag) = tag {
+            if tag != DIVERSION_TAG { return None; }
+            result.diversions = Some(Diversions::read(game, next()?, &mut next)?);
+        }
+        for (index, actor) in game.ents[..game.high].iter().enumerate() {
+            if !actor.alive { continue; }
+            if actor.order == O_LEADER_DIVERSION && result.diversions.is_none() { return None; }
+            if crate::diversion61_defs::slot(actor.def).is_some()
+                && !result.diversions.as_ref().is_some_and(|groups| groups.contains_actor(actor.team, game.h(index))) { return None; }
         }
         (words.len() == 0).then_some(result)
     }

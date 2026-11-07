@@ -40,6 +40,7 @@ pub const C_PLACE_ROTATED:u8=16;
 #[cfg(feature="ee2-native13")]pub(crate) const C_LEADER_RALLY:u8=28;
 #[cfg(feature="ee2-native13")]pub(crate) const C_LEADER_MOBILIZATION:u8=29;
 #[cfg(feature="ee2-native13")]pub(crate) const C_LEADER_CONSTRUCTION:u8=30;
+#[cfg(feature="ee2-native13")]pub(crate) const C_LEADER_DIVERSION:u8=31;
 #[cfg(feature="ee2-native13")]pub(crate) const SOLO_RESIGN_SAVE_FLAG:u32=1<<11;
 
 const HEAD: usize = 14; // kind, count, a, b, c
@@ -252,6 +253,8 @@ impl Game {
             C_DELETE => {
                 let mut city=false;
                 for &i in &ids {
+                    #[cfg(feature = "ee2-native13")]
+                    if crate::diversion61_defs::slot(self.ents[i].def).is_some() { continue; }
                     city |= self.ents[i].def == TC;
                     #[cfg(feature = "ee2-native13")]
                     if self.ents[i].def == DOCK { self.retire_dock_garrison(i); }
@@ -274,6 +277,12 @@ impl Game {
             C_LEADER_RALLY => {
                 if a == 0.0 && b == 0.0 && matches!(c, 0 | 1) {
                     for &index in &ids { self.order_leader_power(index, c == 1); }
+                }
+            }
+            #[cfg(feature = "ee2-native13")]
+            C_LEADER_DIVERSION => {
+                if c == 0 {
+                    for &index in &ids { self.order_leader_diversion(index, a, b); }
                 }
             }
             #[cfg(feature = "ee2-native13")]

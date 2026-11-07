@@ -42,6 +42,12 @@ mod imperial_construction60;
 #[path = "military_leader59.rs"]
 pub(crate) mod military_leader59;
 #[cfg(feature = "ee2-native13")]
+#[path = "leader_diversion61.rs"]
+pub(crate) mod leader_diversion61;
+#[cfg(feature = "ee2-native13")]
+#[path = "wonder_automation62.rs"]
+pub(crate) mod wonder_automation62;
+#[cfg(feature = "ee2-native13")]
 #[path = "economic_leader60.rs"]
 pub(crate) mod economic_leader60;
 #[cfg(feature = "ee2-native13")]
@@ -95,6 +101,10 @@ pub(crate) const O_LEADER_MOBILIZATION: u8 = 13;
 pub(crate) const O_LEADER_CONSTRUCTION: u8 = 14;
 #[cfg(feature = "ee2-native13")]
 pub(crate) const O_LEADER_FIRE_MANEUVER: u8 = 15;
+#[cfg(feature = "ee2-native13")]
+pub(crate) const O_LEADER_DIVERSION: u8 = 16;
+#[cfg(feature = "ee2-native13")]
+pub(crate) const O_FACTORY_EGRESS: u8 = 17;
 /// Marker in `Ent::stuck`: the unit walked onto a transport, remove it without an explosion.
 const BOARDED: u8 = 255;
 
@@ -278,6 +288,8 @@ pub struct Game {
     #[cfg(feature="ee2-native13")]
     pub(crate) production_roster_enabled: bool,
     #[cfg(feature="ee2-native13")]
+    pub(crate) heavy_mounted3: bool,
+    #[cfg(feature="ee2-native13")]
     pub(crate) trade_enabled: bool,
     #[cfg(feature = "ee2-native13")]
     pub(crate) trade: trade30::State,
@@ -330,6 +342,8 @@ pub struct Game {
     pub territory: crate::territory::TerritoryDiplomacy,
     #[cfg(feature = "ee2-native13")]
     pub(crate) wonder_sites: std::collections::BTreeSet<usize>,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) factory_clocks: wonder_automation62::FactoryClocks,
     #[cfg(feature="ee2-reference")]
     pub city_ground: Vec<crate::city_ground::CityBand>,
     #[cfg(feature="ee2-up15")]
@@ -481,6 +495,8 @@ impl Game {
             #[cfg(feature="ee2-native13")]
             production_roster_enabled: !net && bench == 0,
             #[cfg(feature="ee2-native13")]
+            heavy_mounted3: false,
+            #[cfg(feature="ee2-native13")]
             trade_enabled: !net && bench == 0,
             #[cfg(feature = "ee2-native13")]
             trade: trade30::State::default(),
@@ -530,6 +546,8 @@ impl Game {
             territory: crate::territory::TerritoryDiplomacy::default(),
             #[cfg(feature = "ee2-native13")]
             wonder_sites: std::collections::BTreeSet::new(),
+            #[cfg(feature = "ee2-native13")]
+            factory_clocks: wonder_automation62::FactoryClocks::default(),
             #[cfg(feature="ee2-reference")]
             city_ground: vec![crate::city_ground::EMPTY; MAXE],
             #[cfg(feature="ee2-up15")]
@@ -725,6 +743,7 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         if self.powers.is_some() {
             let handle = self.h(i);
+            self.retire_diversion_actor(self.ents[i].team, handle);
             self.retire_military_leader_effect_actor(handle);
             if let Some(actor) = self.powers.as_ref().and_then(|powers| powers.actor(handle)) {
                 self.retire_bless_actor(handle, actor.serial);
@@ -753,6 +772,8 @@ impl Game {
         #[cfg(feature="ee2-paidqueue7")] self.clear_queue_payments(i);
         let e = self.ents[i];
         let d = &DEFS[e.def as usize];
+        #[cfg(feature = "ee2-native13")]
+        if e.def == crate::wonders61::ROBOTICS_FACTORY { self.factory_clocks.remove(self.h(i)); }
         #[cfg(feature = "ee2-native13")]
         if e.built >= 1.0 { self.wonder_notice(crate::wonders61::Notice::Destroyed, e.def, e.team); }
         if d.building {
@@ -842,6 +863,8 @@ impl Game {
 
     /// Would `train(b, def)` succeed right now?
     pub(crate) fn unit_production_available(&self, team: u8, host: DefId, unit: DefId) -> bool {
+        #[cfg(feature="ee2-native13")]
+        if unit == crate::heavy_mounted3_61::ID { return self.heavy_mounted3_offer(team, host); }
         #[cfg(feature="ee2-native13")]
         if unit == crate::priest42_defs::PRIEST { return self.powers.is_some() && host == TEMPLE; }
         #[cfg(feature="ee2-native13")]
@@ -1147,6 +1170,10 @@ impl Game {
 
     pub(crate) fn can_garrison(&self, unit: DefId, host: DefId) -> bool {
         #[cfg(feature = "ee2-native13")]
+        if unit == crate::heavy_mounted3_61::ID { return crate::heavy_mounted3_61::can_garrison(host); }
+        #[cfg(feature = "ee2-native13")]
+        if crate::diversion61_defs::slot(unit).is_some() { return false; }
+        #[cfg(feature = "ee2-native13")]
         if host == DOCK && self.dock_garrison.is_some() { return self.can_dock_naval(unit); }
         let unit_type = &DEFS[unit as usize];
         if unit_type.building || unit_type.dom != LAND { return false; }
@@ -1364,6 +1391,10 @@ impl Game {
         if self.infantry_roster_enabled { mix(u32::from_le_bytes(*b"INF1")); }
         #[cfg(feature = "ee2-native13")]
         if self.production_roster_enabled { mix(u32::from_le_bytes(*b"PRD1")); }
+        #[cfg(feature = "ee2-native13")]
+        if self.heavy_mounted3 { mix(crate::heavy_mounted3_61::HASH_TAG); }
+        #[cfg(feature = "ee2-native13")]
+        self.factory_clocks.hash(&mut mix);
         #[cfg(feature = "ee2-native13")]
         if self.trade_enabled { self.trade.hash(&mut mix); }
         #[cfg(feature = "ee2-native13")]
@@ -1617,6 +1648,8 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         self.tick_military_leader_auras();
         #[cfg(feature = "ee2-native13")]
+        self.tick_diversions();
+        #[cfg(feature = "ee2-native13")]
         self.prune_priest_effects();
         #[cfg(feature = "ee2-native13")]
         self.tick_trade();
@@ -1671,6 +1704,8 @@ impl Game {
         }
         #[cfg(feature = "ee2-native13")]
         self.tick_crowns();
+        #[cfg(feature = "ee2-native13")]
+        self.tick_factory_automation();
         #[cfg(feature = "ee2-native13")]
         self.tick_city_heal_growth();
         #[cfg(feature = "ee2-native13")]
@@ -1973,6 +2008,8 @@ impl Game {
         let dmg = self.scaled_weapon_damage(e.team,e.def,w.dmg,self.players[e.team as usize].atk[class_of(d)]) * (1.0+self.fortress_attack_bonus(e));
         #[cfg(feature = "ee2-native13")]
         let dmg = crate::power42_math::store_toward_zero(f64::from(dmg) * f64::from(self.leader_attack_scale(_source_index)));
+        #[cfg(feature = "ee2-native13")]
+        let dmg = if crate::diversion61_defs::slot(e.def).is_some() { 0.0 } else { dmg };
         let sound = if w.kind == W_MELEE { 7.0 } else { w.kind as f32 };
         #[cfg(feature="ee2-up15")]
         let sound = match attack {
@@ -2051,6 +2088,8 @@ impl Game {
     #[cfg(feature="ee2-up15")]
     fn native_attack_impact(&mut self,team:u8,primary:u32,x:f32,y:f32,damage:f32,kind:u8,targets:u8,radius:f32,friendly:f32,profile:u16,
         #[cfg(feature = "ee2-native13")] origin: Option<crate::battle_signals::Actor>){
+        #[cfg(feature = "ee2-native13")]
+        if crate::ee2_combat::is_diversion_profile(profile) { return; }
         let hit = |game: &mut Self, j: usize, points: f32| {
             #[cfg(feature = "ee2-native13")]
             if game.dock_parked(j, &game.ents[j]) { return; }
@@ -2487,6 +2526,11 @@ impl Game {
         if e.flash > 0.0 {
             e.flash -= DT;
         }
+        #[cfg(feature = "ee2-native13")]
+        if e.order == O_FACTORY_EGRESS {
+            self.advance_factory_egress(i, e, dt);
+            return;
+        }
         if d.building {
             #[cfg(feature = "ee2-native13")]
             let disabled = self.sabotaged(i);
@@ -2551,6 +2595,8 @@ impl Game {
                 _ => {self.native_stop_attack(i);e.tgt = NONE;},
             }
         }
+        #[cfg(feature = "ee2-native13")]
+        let may_engage = may_engage && crate::diversion61_defs::slot(e.def).is_none();
         if may_engage && tj == NOIDX && stagger && d.armed() && e.order <= O_AMOVE {
             let range=d.max_range()+self.modifiers[e.team as usize][e.def as usize][6];
             let r = if e.order == O_MOVE { range } else { self.modifiers[e.team as usize][e.def as usize][5].max(range + 1.0) };
@@ -2680,6 +2726,8 @@ impl Game {
                 O_LEADER_CONSTRUCTION => self.do_leader_construction(i, &mut e),
                 #[cfg(feature = "ee2-native13")]
                 O_LEADER_FIRE_MANEUVER => self.do_fire_maneuver(i, &mut e),
+                #[cfg(feature = "ee2-native13")]
+                O_LEADER_DIVERSION => self.do_leader_diversion(i, &mut e),
                 _ => {}
             }
         }
@@ -2947,7 +2995,7 @@ impl Game {
             if d.building || d.has(F_PLANE) {
                 continue;
             }
-            let r = d.rad();
+            let r = self.entity_radius(e);
             let layer = if d.dom == AIR { AIR } else { !AIR };
             let m = r + 1.3;
             let (cx0, cy0) = (((e.x - m) / CELL).max(0.0) as usize, ((e.y - m) / CELL).max(0.0) as usize);
@@ -2968,7 +3016,7 @@ impl Game {
                         }
                         // grid positions are from the start of the tick, which is fine for a soft push
                         let (dx, dy) = (e.x - o.x, e.y - o.y);
-                        let min = r + od.rad();
+                        let min = r + self.entity_radius(o);
                         let d2 = dx * dx + dy * dy;
                         if d2 < min * min {
                             if d2 > 1e-6 {
@@ -3238,6 +3286,35 @@ mod territory_resource_epoch_tests{
 #[cfg(all(test,feature="ee2-up15"))]
 #[path="native_attack_tests.rs"]
 mod native_attack_tests;
+#[cfg(all(test,feature="ee2-native13"))]
+mod artemis_collision_tests {
+    use super::*;
+
+    #[test]
+    fn original_artemis_ellipse_drives_guarded_mobile_separation() {
+        for enabled in [false, true] {
+            let mut game = Game::new(7, 0, 0, 1, 0);
+            if enabled { assert!(game.configure_heavy_mounted3()); }
+            assert!(game.configure_match_epoch_range(0xee01, 500, 2, 13, 14));
+            let left = game.spawn(LIGHT_MOUNTED3, 0, 130.5, 130.5);
+            let right = game.spawn(LIGHT_MOUNTED3, 0, 131.9, 130.5);
+            assert_eq!(game.entity_radius(&game.ents[left]), if enabled { 0.75 } else { DEFS[LIGHT_MOUNTED3 as usize].rad() });
+            game.build_grid();
+            game.separate();
+            if enabled {
+                assert!(game.push[left].0 < -0.045);
+                assert!(game.push[right].0 > 0.045);
+                assert_eq!(game.push[left].0, -game.push[right].0);
+            } else {
+                assert_eq!(game.push[left], (0.0, 0.0));
+                assert_eq!(game.push[right], (0.0, 0.0));
+            }
+            game.save();
+            let loaded = Game::load(&game.savebuf).unwrap();
+            assert_eq!(loaded.entity_radius(&loaded.ents[left]), game.entity_radius(&game.ents[left]));
+        }
+    }
+}
 #[cfg(all(test,feature="ee2-roster6"))]
 #[path="roster6_classic_tests.rs"]
 mod roster6_classic_tests;

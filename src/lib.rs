@@ -38,7 +38,11 @@ mod leader58_defs;
 #[cfg(feature = "ee2-native13")]
 mod wonders61;
 #[cfg(feature = "ee2-native13")]
+mod heavy_mounted3_61;
+#[cfg(feature = "ee2-native13")]
 mod wonder_open_sides61;
+#[cfg(feature = "ee2-native13")]
+mod diversion61_defs;
 #[cfg(feature = "ee2-native13")]
 mod power42;
 #[cfg(feature = "ee2-native13")]
@@ -1788,6 +1792,18 @@ pub extern "C" fn configure_priest_skirmish() -> u32 {
 
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
+pub extern "C" fn configure_heavy_mounted3() -> u32 {
+    u32::from(g().configure_heavy_mounted3())
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn heavy_mounted3_definition() -> u32 {
+    u32::from(heavy_mounted3_61::ID)
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
 pub extern "C" fn priest_power(handle: u32) -> f32 {
     let game = g();
     let Some(index) = game.get(handle) else { return -1.0; };
@@ -2129,6 +2145,53 @@ pub extern "C" fn cmd_leader_fire_maneuver() -> u32 {
     let hs = handles(game, &ids);
     game.submit(C_LEADER_RALLY, 0.0, 0.0, 1, &hs);
     hs.len() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_leader_diversion() -> u32 {
+    let Some(game) = (unsafe { (&mut *addr_of_mut!(GAME)).as_mut() }) else { return 0; };
+    u32::from(game.configure_leader_diversion())
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn leader_diversion_enabled() -> u32 {
+    u32::from(g().leader_diversion_enabled())
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn leader_diversion_ready(handle: u32) -> u32 {
+    let game = g();
+    u32::from(game.get(handle).is_some_and(|index| game.ents[index].team == game.local && game.leader_diversion_ready(index)))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn leader_diversion_target_at(x: f32, y: f32) -> u32 {
+    let game = g();
+    u32::from(game::leader_diversion61::location(x, y)
+        && selected(game).into_iter().any(|index| game.leader_diversion_ready(index)))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn cmd_leader_diversion_at(x: f32, y: f32) -> u32 {
+    if !game::leader_diversion61::location(x, y) { return 0; }
+    let game = g();
+    let ids: Vec<_> = selected(game).into_iter().filter(|&index| game.leader_diversion_ready(index)).collect();
+    if ids.is_empty() { return 0; }
+    let hs = handles(game, &ids);
+    game.submit(C_LEADER_DIVERSION, x, y, 0, &hs);
+    hs.len() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn leader_diversion_visual(handle: u32) -> u32 {
+    let game = g();
+    game.get(handle).map_or(0, |index| game.diversion_visual(index))
 }
 
 #[cfg(feature = "ee2-native13")]

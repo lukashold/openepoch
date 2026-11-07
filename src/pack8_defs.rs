@@ -316,5 +316,11 @@ Spec{id:76,from:5,until:15,capable:true,pack:1.0_f32,unpack:1.0_f32,unpacked_idl
 Spec{id:77,from:5,until:15,capable:false,pack:1.0_f32,unpack:1.0_f32,unpacked_idle:false,visual:"UniqueUnitMayan2"},
 Spec{id:78,from:10,until:15,capable:true,pack:1.0_f32,unpack:1.0_f32,unpacked_idle:true,visual:"UniqueUnitMayan3"},
 Spec{id:79,from:0,until:15,capable:false,pack:1.0_f32,unpack:1.0_f32,unpacked_idle:false,visual:"UniqueUnitTurkish1"},
+#[cfg(feature="ee2-native13")]
+crate::heavy_mounted3_61::PACK,
 ];
-pub fn lookup(id:u16,epoch:u8)->Option<Spec>{ROWS.iter().copied().filter(|r|r.id==id&&r.from<=epoch&&epoch<r.until).max_by_key(|r|r.from)}
+pub fn lookup(id:u16,epoch:u8)->Option<Spec>{
+ #[cfg(feature="ee2-native13")]
+ if id == crate::heavy_mounted3_61::ID { return (epoch < crate::heavy_mounted3_61::END).then_some(crate::heavy_mounted3_61::PACK); }
+ ROWS.iter().copied().filter(|r|r.id==id&&r.from<=epoch&&epoch<r.until).max_by_key(|r|r.from)
+}

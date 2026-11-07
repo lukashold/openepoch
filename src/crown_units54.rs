@@ -25,5 +25,7 @@ pub(super) const MASKS: [u16; 90] = [
 
 pub(super) fn mask(definition: crate::ids::DefId) -> u16 {
     if crate::wonders61::is_wonder(definition) { return BUILDING | WONDER; }
+    if crate::diversion61_defs::slot(definition).is_some() { return MOBILE | NON_BUILDING; }
+    if definition == crate::heavy_mounted3_61::ID { return MOBILE | MILITARY | NON_BUILDING; }
     MASKS[definition as usize]
 }

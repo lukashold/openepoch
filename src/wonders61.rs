@@ -10,6 +10,7 @@ const ARCHIVE_TAG: &[u8; 8] = b"WDR1\x01\x00\x00\x00";
 pub(crate) const SPHINX: DefId = FIRST + 3;
 pub(crate) const PARTHENON: DefId = FIRST;
 pub(crate) const TOWER_OF_MOON_AND_STARS: DefId = FIRST + 6;
+pub(crate) const ROBOTICS_FACTORY: DefId = FIRST + 8;
 pub(crate) const DESALINATION_PLANT: DefId = FIRST + 5;
 pub(crate) const SOLAR_POWER_STATION: DefId = FIRST + 11;
 const PENTAGON: DefId = FIRST + 2;
