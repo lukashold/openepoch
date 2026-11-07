@@ -54,7 +54,7 @@ impl Game {
             && self.net_resignation.is_some_and(Resignation::active_shared_owner)
     }
 
-    fn network_resume_world_active(&self) -> bool {
+    pub(crate) fn network_resume_world_active(&self) -> bool {
         self.net && self.bench == 0 && (1..u32::MAX).contains(&self.tick) && self.winner == 0
             && self.network_resume_tempo.is_none() && self.source_clock.is_some_and(|clock| clock.network)
     }
@@ -161,10 +161,14 @@ impl Game {
 }
 
 pub(crate) fn split(bytes: &[u8]) -> Option<(&[u8], Option<Resignation>)> {
+    split_for_owners(bytes, TEAM_BITS)
+}
+
+pub(crate) fn split_for_owners(bytes: &[u8], team_bits: u8) -> Option<(&[u8], Option<Resignation>)> {
     let word = |offset: usize| Some(u32::from_le_bytes(bytes.get(offset..offset + 4)?.try_into().ok()?));
     if word(0) != Some(MAGIC) { return Some((bytes, None)); }
     let policy = u8::try_from(word(4)?).ok().filter(|&value| value < 8)?;
-    let departed = u8::try_from(word(8)?).ok().filter(|&value| value & !TEAM_BITS == 0)?;
+    let departed = u8::try_from(word(8)?).ok().filter(|&value| value & !team_bits == 0)?;
     let defeated = u8::try_from(word(12)?).ok().filter(|&value| value & !departed == 0)?;
     let finished = match word(16)? { 0 => false, 1 => true, _ => return None };
     let end = HEADER.checked_add(word(20)? as usize)?;

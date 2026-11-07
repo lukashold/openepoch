@@ -1,5 +1,5 @@
 // Portable browser checkpoint and bounded WebRTC file fragments.
-import {captureNetworkCheckpoint,readNetworkCheckpoint} from './source-network-resume.js?v=native51';
+import {captureNetworkCheckpoint,readNetworkCheckpoint} from './source-network-resume.js?v=native54';
 
 const FILE_MAGIC=0x31434f45; // EOC1
 const CHUNK_MAGIC=0x31415345; // ESA1
@@ -20,6 +20,10 @@ export async function captureBrowserCheckpoint(peer,settings) {
   // captureNetworkCheckpoint copies the admitted world synchronously before hashing.
   const tick=peer.wasm.game_tick();
   const inner=await captureNetworkCheckpoint(peer);
+  if(peer.groupedOwners){
+    const {meta}=await readNetworkCheckpoint(inner);
+    settings={...settings,humanSeats:meta.humanSeats,groupedOwners:meta.groupedOwners,groupedWorldHumans:meta.groupedWorldHumans};
+  }
   const config=encoder.encode(JSON.stringify(settings));
   if(config.length>SETTINGS_BYTES)throw Error('Die Spieleinstellungen sind zu groß.');
   const bytes=new Uint8Array(HEADER+config.length+inner.length+HASH_BYTES);
@@ -47,6 +51,9 @@ export async function readBrowserCheckpoint(bytes,advertised=null) {
   const decoded=await readNetworkCheckpoint(bytes.subarray(HEADER+configLength,end));
   if(settings?.humanSeats!==decoded.meta.humanSeats||(settings.sharedOwner===true)!==(decoded.meta.sharedOwner===true))
     throw Error('Spielstand und Spielerplätze passen nicht zusammen.');
+  if(settings.groupedWorldHumans!==decoded.meta.groupedWorldHumans ||
+      JSON.stringify(settings.groupedOwners)!==JSON.stringify(decoded.meta.groupedOwners))
+    throw Error('Spielstand und Koop-Gruppen passen nicht zusammen.');
   return {bytes,digest:sha,settings,decoded};
 }
 

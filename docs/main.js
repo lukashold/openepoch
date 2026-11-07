@@ -39,13 +39,13 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=clock38';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native53';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native54';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native44';
-import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native53';
-import {createSourceRoundCarrier, selectedRoundTripMilliseconds} from './source-network-wire.js?v=native53';
-import {mountSourceRosterLobby} from './source-network-lobby.js?v=native53';
-import {applyNetworkCheckpoint} from './source-network-resume.js?v=native51';
+import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
+import {createSourceRoundCarrier, selectedRoundTripMilliseconds} from './source-network-wire.js?v=native54';
+import {mountSourceRosterLobby} from './source-network-lobby.js?v=native54';
+import {applyNetworkCheckpoint} from './source-network-resume.js?v=native54';
 import {createFullscreenController} from './fullscreen.js?v=building2';
 import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native17';
 import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=native39ceasefire';
@@ -2613,7 +2613,7 @@ const rosterFeatures=Object.freeze(Object.fromEntries([
 ].filter(([,name])=>typeof wasm[name]==='function')));
 const supportedRosterFeatures=Object.keys(rosterFeatures);
 
-function checkRosterSettings(cfg,humanSeats) {
+function checkRosterSettings(cfg,humanSeats,resuming=false) {
   if(!cfg||cfg.humanSeats!==humanSeats||![2,3,4].includes(humanSeats)||!Number.isInteger(cfg.ai)||cfg.ai<0||
     !Number.isInteger(cfg.seed)||cfg.seed<1||cfg.seed>0xffffffff||![0,1,2].includes(cfg.visibility)||
     ![250,500,1000].includes(cfg.popLimit)||![0,1,2].includes(cfg.supplies)||!Number.isInteger(cfg.resignationPolicy)||
@@ -2622,9 +2622,12 @@ function checkRosterSettings(cfg,humanSeats) {
   const sharedOwner=cfg.sharedOwner===true;
   if(cfg.sharedOwner!==undefined&&(!sharedOwner||!supportsSharedOwner||humanSeats!==2||cfg.ai!==1))
     throw Error('Ungültige Einstellungen für die gemeinsame Zivilisation.');
-  if(cfg.groupedOwners!==undefined&&(!supportsGroupedCoop||sharedOwner||!groupedOwnerLayout(cfg.groupedOwners,humanSeats)))
+  const archivedWorldHumans=resuming&&cfg.groupedOwners!==undefined?cfg.groupedWorldHumans:null;
+  if((cfg.groupedWorldHumans!==undefined&&archivedWorldHumans===null)||
+      (cfg.groupedOwners!==undefined&&(!supportsGroupedCoop||sharedOwner||
+        (resuming&&!Number.isInteger(archivedWorldHumans))||!groupedOwnerLayout(cfg.groupedOwners,humanSeats,archivedWorldHumans))))
     throw Error('Ungültige Aufteilung der Koop-Gruppen.');
-  const worldHumans=sharedOwner?1:cfg.groupedOwners?Math.max(...cfg.groupedOwners)+1:humanSeats;
+  const worldHumans=archivedWorldHumans??(sharedOwner?1:cfg.groupedOwners?Math.max(...cfg.groupedOwners)+1:humanSeats);
   if(cfg.ai>4-worldHumans)throw Error('Zu viele Zivilisationen für dieses Scharmützel.');
   const features=cfg.features;
   if(!Array.isArray(features)||new Set(features).size!==features.length||features.some(key=>!Object.hasOwn(rosterFeatures,key)))
@@ -2638,7 +2641,8 @@ function checkRosterSettings(cfg,humanSeats) {
     civilizations:checkedCivilizations(cfg.civilizations,worldHumans+cfg.ai),
     climate:checkedClimate(cfg.climate,climates),seasons:peerSeasonSettings(cfg.seasons),
     gameTempo:checkOriginalTempo(cfg.gameTempo),features:supportedRosterFeatures.filter(key=>features.includes(key)),
-    ...(sharedOwner?{sharedOwner:true}:cfg.groupedOwners?{groupedOwners:cfg.groupedOwners.slice()}:{})};
+    ...(sharedOwner?{sharedOwner:true}:cfg.groupedOwners?{groupedOwners:cfg.groupedOwners.slice(),
+      ...(resuming?{groupedWorldHumans:worldHumans}:{})}:{})};
 }
 
 function startRosterGame(cfg,seat,send,links,{archive,onCheckpoint}) {
@@ -2689,8 +2693,8 @@ function startRosterGame(cfg,seat,send,links,{archive,onCheckpoint}) {
     groupedOwners?`Gruppen-Koop · Zivilisation ${groupedOwners[seat]+1}`:`Mehrspieler · Platz ${seat+1}`);
   return {peer,connected:count=>{
     peer.rosterConnected=count;
-    if(sharedOwner&&seat===0&&onCheckpoint){
-      session.checkpointHost=count===cfg.humanSeats;
+    if((sharedOwner||groupedOwners)&&seat===0&&onCheckpoint){
+      session.checkpointHost=sharedOwner?count===cfg.humanSeats:count>=2;
       $('save').style.display=session.checkpointHost?'':'none';
     }
   }};
@@ -2705,6 +2709,8 @@ const supportsSharedCheckpoint=supportsSharedOwner&&supportsNetworkCheckpoint&&
   ['save_shared_owner_resume','load_shared_owner_resume','validate_shared_owner_resume'].every(name=>typeof wasm[name]==='function');
 const supportsGroupedCoop=supportsSourceRoster&&['init_network_grouped_coop','network_grouped_coop_layout',
   'net_apply_grouped_controller','network_grouped_controller_disconnected'].every(name=>typeof wasm[name]==='function');
+const supportsGroupedCheckpoint=supportsGroupedCoop&&supportsNetworkCheckpoint&&
+  ['grouped_resume_layout','save_grouped_resume','load_grouped_resume','validate_grouped_resume'].every(name=>typeof wasm[name]==='function');
 // The ordinary roster hello keeps its Native46 simulation compatibility key.
 const rosterProfile='openepoch-ee2-up15.wasm?v=native46';
 let checkpointDownload=null;
@@ -2723,14 +2729,15 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
   localHello:()=>({protocol:PROTOCOL_VERSION,profile:rosterProfile,rules:wasm.ruleset(),
     civilization:civilizationSetup.choice(0),climates,features:supportedRosterFeatures,
     checkpoints:supportsNetworkCheckpoint,sharedOwner:supportsSharedOwner,sharedOwnerCheckpoint:supportsSharedCheckpoint,
-    groupedCoop:supportsGroupedCoop}),
+    groupedCoop:supportsGroupedCoop,groupedCheckpoint:supportsGroupedCheckpoint}),
   checkHello(hello){
     if(hello?.protocol!==PROTOCOL_VERSION||hello.profile!==rosterProfile||hello.rules!==wasm.ruleset()||
       !Array.isArray(hello.features)||hello.features.length>11||hello.features.some(key=>typeof key!=='string'))
       throw Error('Alle Teilnehmer brauchen dieselbe UP-Spielversion.');
     return {civilization:civilizationChoice(hello.civilization),climates:peerClimates(hello.climates),features:hello.features,
       checkpoints:hello.checkpoints===true,sharedOwner:hello.sharedOwner===true,
-      sharedOwnerCheckpoint:hello.sharedOwner===true&&hello.sharedOwnerCheckpoint===true,groupedCoop:hello.groupedCoop===true};
+      sharedOwnerCheckpoint:hello.sharedOwner===true&&hello.sharedOwnerCheckpoint===true,groupedCoop:hello.groupedCoop===true,
+      groupedCheckpoint:hello.groupedCoop===true&&hello.groupedCheckpoint===true};
   },
   makeSettings(humanSeats,ai,guests,sharedOwner,groupedOwners){
     const choices=civilizationSetup.choices(),climate=menuClimate();
@@ -2748,13 +2755,14 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
   },
   checkSettings:checkRosterSettings,
   validateArchive:supportsNetworkCheckpoint?(archive,seat,seats)=>{
-    if(archive.settings.groupedOwners!==undefined)throw Error('Dieser Spielstand enthält eine unbekannte Spielerzuordnung.');
+    if(archive.decoded.meta.groupedOwners&&!supportsGroupedCheckpoint)throw Error('Dieser Spielstand benötigt Unterstützung für Gruppen-Koop-Spielstände.');
     if(archive.decoded.meta.sharedOwner&&!supportsSharedCheckpoint)throw Error('Dieser Spielstand benötigt Koop-Spielstandunterstützung.');
     applyNetworkCheckpoint(wasm,archive.decoded,seat,seats,true);
   }:null,
   sharedOwnerAvailable:supportsSharedOwner,
   sharedCheckpointAvailable:supportsSharedCheckpoint,
   groupedCoopAvailable:supportsGroupedCoop,
+  groupedCheckpointAvailable:supportsGroupedCheckpoint,
   onCheckpointState(message,archive){
     toast(message);
     if(archive){

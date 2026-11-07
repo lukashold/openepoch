@@ -15,12 +15,17 @@ const MAGIC: u32 = if cfg!(feature="ee2-paidqueue7"){0x3755_454f}else if cfg!(fe
 
 #[cfg(feature = "ee2-native13")]
 const SHARED_OWNER_HEADER: &[u8; 8] = b"CSW1\x02\x01\x00\x00"; // two controllers, one human owner, owner map [0, 0]
+#[cfg(feature = "ee2-native13")]
+const GROUPED_OWNER_TAG: &[u8; 4] = b"CGW1";
 
+#[derive(Clone, Copy)]
 enum ArchiveRoster {
     #[cfg(feature = "ee2-native13")]
     Distinct { humans: u32, local: u32 },
     #[cfg(feature = "ee2-native13")]
     SharedOwner,
+    #[cfg(feature = "ee2-native13")]
+    Grouped { humans: u32, grouping: crate::grouped_coop52::GroupedCoop, controller: u32 },
 }
 
 pub(crate) fn checksum(bytes: &[u8]) -> u32 {
@@ -70,9 +75,23 @@ impl Game {
             self.savebuf.clear();
             return;
         }
+        self.write_group_archive(SHARED_OWNER_HEADER);
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn save_grouped_resume(&mut self) {
+        let Some(layout) = self.grouped_resume_layout() else { self.savebuf.clear(); return; };
+        let mut header = [0; 8];
+        header[..4].copy_from_slice(GROUPED_OWNER_TAG);
+        header[4..].copy_from_slice(&layout.to_le_bytes());
+        self.write_group_archive(&header);
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    fn write_group_archive(&mut self, header: &[u8; 8]) {
         self.write_archive(true);
         if self.savebuf.is_empty() { return; }
-        self.savebuf.splice(..0, SHARED_OWNER_HEADER.iter().copied());
+        self.savebuf.splice(..0, header.iter().copied());
         self.savebuf.extend_from_slice(&checksum(&self.savebuf).to_le_bytes());
     }
 
@@ -211,6 +230,21 @@ impl Game {
         Some(game)
     }
 
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn load_grouped_resume(buf: &[u8], layout: u32, controller: u32, tick: u32, rate: u32, scale: f32) -> Option<Game> {
+        let humans = layout >> 16;
+        let grouping = crate::grouped_coop52::GroupedCoop::from_archive_layout(humans, layout & 0xffff)?;
+        grouping.active_owner(controller)?;
+        let tempo = crate::source_clock38::AdaptiveTempo::network_resume(rate, scale)?;
+        let (world, stored) = buf.split_at_checked(buf.len().checked_sub(4)?)?;
+        let payload = world.strip_prefix(GROUPED_OWNER_TAG.as_slice())?.strip_prefix(layout.to_le_bytes().as_slice())?;
+        if checksum(world) != u32::from_le_bytes(stored.try_into().ok()?) { return None; }
+        let mut game = Self::read_archive(payload, Some(ArchiveRoster::Grouped { humans, grouping, controller }))?;
+        if game.tick != tick || game.grouped_resume_layout() != Some(layout) { return None; }
+        game.network_resume_tempo = Some(tempo);
+        Some(game)
+    }
+
     fn read_archive(buf: &[u8], roster: Option<ArchiveRoster>) -> Option<Game> {
         let (buf, source_clock) = crate::source_clock38::split(buf)?;
         let (buf, diplomacy_clock) = crate::diplomacy::DiplomacyClock::split(buf)?;
@@ -228,7 +262,10 @@ impl Game {
         #[cfg(feature="ee2-native13")]
         let (buf, blessings) = crate::game::bless42::split(buf)?;
         #[cfg(feature="ee2-native13")]
-        let (buf, net_resignation) = crate::net_resign38::split(buf)?;
+        let (buf, net_resignation) = match roster {
+            Some(ArchiveRoster::Grouped { humans, .. }) => crate::net_resign38::split_for_owners(buf, (1 << humans) - 1),
+            _ => crate::net_resign38::split(buf),
+        }?;
         #[cfg(feature="ee2-native13")]
         let (buf, landing) = crate::landing34::split_save(buf)?;
         #[cfg(feature="ee2-native13")]
@@ -310,12 +347,16 @@ impl Game {
             Some(ArchiveRoster::Distinct { humans: expected, local }) if expected == humans && u(5) <= 4 - humans => local,
             #[cfg(feature="ee2-native13")]
             Some(ArchiveRoster::SharedOwner) if humans == 1 && u(5) == 1 => 0,
+            #[cfg(feature="ee2-native13")]
+            Some(ArchiveRoster::Grouped { humans: expected, grouping, controller }) if expected == humans && u(5) <= 4 - humans =>
+                u32::from(grouping.active_owner(controller)?),
             None if (1..=2).contains(&humans) => 0,
             _ => return None,
         };
         #[cfg(feature="ee2-native13")]
         let mut g = match roster {
             Some(ArchiveRoster::SharedOwner) => Game::new_shared_owner_network(u(4)),
+            Some(ArchiveRoster::Grouped { grouping, .. }) => Game::new_grouped_world(u(4), u(5), humans, grouping, local)?,
             _ if humans > 2 => Game::new_network_roster(u(4), u(5), humans, local)?,
             _ => Game::new(u(4), u(5), 0, humans, local),
         };

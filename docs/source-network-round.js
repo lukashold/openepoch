@@ -31,15 +31,17 @@ function integerIn(value, min, max) {
   return Number.isInteger(value) && value >= min && value <= max;
 }
 
-export function groupedOwnerLayout(owners, controllers) {
-  if (!integerIn(controllers, 3, 4) || !Array.isArray(owners) || owners.length !== controllers) return 0;
+export function groupedOwnerLayout(owners, controllers, worldHumans = null) {
+  const restored=worldHumans!==null;
+  if (!integerIn(controllers, restored?2:3, 4) || !Array.isArray(owners) || owners.length !== controllers ||
+      (restored&&(!integerIn(worldHumans,2,3)||owners[0]!==0))) return 0;
   let nextOwner = 0, packed = 0;
   for (const [controller, owner] of owners.entries()) {
-    if (!integerIn(owner, 0, nextOwner)) return 0;
+    if (!integerIn(owner, 0, restored?worldHumans-1:nextOwner)) return 0;
     if (owner === nextOwner) nextOwner++;
     packed |= owner << (controller * 2);
   }
-  return nextOwner >= 2 && nextOwner < controllers ? (controllers << 8) | packed : 0;
+  return restored || (nextOwner >= 2 && nextOwner < controllers) ? (controllers << 8) | packed : 0;
 }
 
 function validSpeed(value, cap = MAX_SPEED) {
@@ -76,12 +78,12 @@ function validCommands(bytes) {
   return at === bytes.length;
 }
 
-function validRecord(record, humanSeats, checkpoints) {
+function validRecord(record, humanSeats, checkpoints, grouped) {
   if (!record) return false;
   if (record.type === 'requested') return validSpeed(record.value);
   if (record.type === 'simRate') return validSimRate(record.rate, record.scale);
   if (record.type === 'roundLength') return integerIn(record.length, 1, MAX_LENGTH);
-  if (record.type === 'departure') return humanSeats > 2 && integerIn(record.seat, 1, humanSeats - 1);
+  if (record.type === 'departure') return (grouped || humanSeats > 2) && integerIn(record.seat, 1, humanSeats - 1);
   if (record.type === 'checkpoint') return checkpoints && integerIn(record.id, 1, 0xffffffff);
   return record.type === 'commands' && integerIn(record.seat, 0, humanSeats - 1) && validCommands(record.bytes);
 }
@@ -103,15 +105,16 @@ const framedLength = record => 5+(record.type==='commands'?record.bytes.length+1
 export class SourceRoundPeer {
   constructor(wasm, seat, send, {renderFps, linkMs, nowSeconds, onRequested, requested = 1, locked = true, humanSeats = 2, resume = null, onCheckpoint = null, sharedOwner = false, groupedOwners = null}) {
     const tick = wasm.game_tick();
-    const groupedLayout = groupedOwners === null ? 0 : groupedOwnerLayout(groupedOwners, humanSeats);
+    const groupedLayout = groupedOwners === null ? 0 : groupedOwnerLayout(groupedOwners, humanSeats, resume?.groupedWorldHumans??null);
     const validStart = resume === null ? tick === 0 :
       integerIn(resume.tick, 1, 0xfffffffe) && resume.tick === tick && integerIn(resume.rate, 5, BOOTSTRAP_RATE) &&
-      (resume.sharedOwner===true) === sharedOwner && wasm.network_resume_pending?.() === 1;
+      (resume.sharedOwner===true) === sharedOwner && !!resume.groupedOwners===!!groupedOwners && wasm.network_resume_pending?.() === 1;
     if (!integerIn(humanSeats, 2, 4) || !integerIn(seat, 0, humanSeats - 1) ||
         sharedOwner !== (wasm.network_shared_owner?.() === 1) ||
         (sharedOwner && (humanSeats !== 2 || (onCheckpoint !== null && typeof wasm.save_shared_owner_resume !== 'function'))) ||
         (wasm.network_grouped_coop_layout?.() ?? 0) !== groupedLayout ||
-        (groupedOwners !== null && (!groupedLayout || sharedOwner || resume !== null || onCheckpoint !== null)) ||
+        (groupedOwners !== null && (!groupedLayout || sharedOwner ||
+          (onCheckpoint !== null && typeof wasm.save_grouped_resume !== 'function'))) ||
         (humanSeats > 2 && (typeof wasm.init_network_roster !== 'function' ||
           typeof wasm.network_roster_peer_disconnected !== 'function')) ||
         !validSpeed(requested) || typeof locked !== 'boolean' ||
@@ -211,7 +214,7 @@ export class SourceRoundPeer {
 
   stage({round, records}) {
     if (!integerIn(round, this.round + 1, this.round + 2) || !Array.isArray(records) ||
-        records.length > MAX_RECORDS || !records.every(record=>validRecord(record,this.humanSeats,!!this.onCheckpoint))) return false;
+        records.length > MAX_RECORDS || !records.every(record=>validRecord(record,this.humanSeats,!!this.onCheckpoint,!!this.groupedOwners))) return false;
     const slot = round % 3;
     if (this.ring[slot]?.round === round) return false;
     this.ring[slot] = {round, records: records.map(copyRecord)};
@@ -265,7 +268,8 @@ export class SourceRoundPeer {
 
   requestCheckpoint(id) {
     if (this.local !== 0 || !this.onCheckpoint || this.alone || this.terminal || this.desync || this.round < 0 ||
-        (this.sharedOwner && this.links.size!==1) || !integerIn(id, 1, 0xffffffff) || this.pending.length > MAX_RECORDS-2) return false;
+        (this.sharedOwner && this.links.size!==1) || (this.groupedOwners && (!this.links.size||!this.wasm.grouped_resume_layout())) ||
+        !integerIn(id, 1, 0xffffffff) || this.pending.length > MAX_RECORDS-2) return false;
     this.collectHostCommands();
     this.pending.push({type:'checkpoint',id});
     return true;
@@ -325,7 +329,7 @@ export class SourceRoundPeer {
   }
 
   detachPeer(seat) {
-    if (this.humanSeats <= 2 || this.local !== 0 || this.terminal || this.desync || !this.links.has(seat)) return false;
+    if ((!this.groupedOwners&&this.humanSeats<=2) || this.local !== 0 || this.terminal || this.desync || !this.links.has(seat)) return false;
     if (!this.appendOpen([{type:'departure',seat}])) {
       this.abort('Netzwerk-Runde konnte den Verbindungsabbruch nicht aufnehmen.');
       return false;
