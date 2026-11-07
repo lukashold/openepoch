@@ -230,14 +230,18 @@ impl Game {
     }
 
     pub(crate) fn blessed_attack(&self, handle: u32) -> f32 {
-        let Some(actor) = self.powers.as_ref().and_then(|state| state.actor(handle)) else { return 1.0; };
+        crate::power42_math::store_toward_zero(1.0 + f64::from(self.bless_attack_bonus(handle)))
+    }
+
+    pub(super) fn bless_attack_bonus(&self, handle: u32) -> f32 {
+        let Some(actor) = self.powers.as_ref().and_then(|state| state.actor(handle)) else { return 0.0; };
         let count = self.bless.groups.iter().filter_map(|group| group.children.get(&actor.serial))
             .fold(0_u32, |total, child| total.saturating_add(child.active).min(5));
         let mut modifier = 0.0_f32;
         for _ in 0..count {
             modifier = crate::power42_math::store_toward_zero(f64::from(modifier) + (f64::from(1.2_f32) - 1.0));
         }
-        crate::power42_math::store_toward_zero(1.0 + f64::from(modifier.min(1.0)))
+        modifier.min(1.0)
     }
 
     pub(crate) fn restore_blessings(&mut self, fields: Option<&[u8]>) -> Option<()> {

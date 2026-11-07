@@ -142,6 +142,12 @@
 #acts.has-market .market-action[data-original-market] {background:var(--market-idle) center/100% 100% no-repeat;border:0;}
 #acts.has-market .market-action[data-original-market]:hover {background-image:var(--market-hover);}
 #acts.has-market .market-action[data-original-market]:active {background-image:var(--market-pressed);}
+.act .ungarrison-icon {display:block;width:44px;height:44px;margin:0 auto;background:var(--ungarrison-idle) center/contain no-repeat;}
+.act:hover .ungarrison-icon {background-image:var(--ungarrison-hover);}
+.act:active .ungarrison-icon {background-image:var(--ungarrison-pressed);}
+.act .leader-power-icon {display:block;width:44px;height:44px;margin:0 auto;background:var(--leader-power-idle) center/contain no-repeat;}
+.act:hover .leader-power-icon {background-image:var(--leader-power-hover,var(--leader-power-idle));}
+.act:active .leader-power-icon {background-image:var(--leader-power-pressed,var(--leader-power-idle));}
 .market-action[data-original-market] img {position:absolute;left:1.3%;top:13.3%;width:39%;height:50%;object-fit:contain;}
 .market-action[data-original-market] b {position:absolute;right:8%;top:13.3%;color:#fff;font-size:13px;text-shadow:1px 1px #111,-1px -1px #111,1px -1px #111,-1px 1px #111;}
 .market-action[data-original-market] small {position:absolute;width:1px;height:1px;clip-path:inset(50%);overflow:hidden;}
@@ -550,6 +556,6 @@
 </aside>
 <div id="trade-route-caption" hidden role="status"></div>
 <div id="air-mission-caption" hidden role="status"></div>
-<script type="module" src="main.js?v=native58"></script>
+<script type="module" src="main.js?v=native60"></script>
 </body>
 </html>

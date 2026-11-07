@@ -287,7 +287,12 @@ impl Game {
     fn air_mission_host(&self, handle: u32, team: u8) -> Option<usize> {
         let index = self.get(handle)?;
         let e = &self.ents[index];
-        (e.hp > 0.0 && e.team == team && self.air_host_slots(e) != 0).then_some(index)
+        (e.hp > 0.0 && e.team == team && self.air_host_slots(e) != 0 && !self.dock_parked(index, e)).then_some(index)
+    }
+
+    pub(crate) fn air_cargo_for_dock(&self, handle: u32) -> Option<u32> {
+        let Some(home) = self.aircraft.airports.get(&handle) else { return Some(0); };
+        (home.registered.len() == home.stored.len()).then_some(home.stored.len() as u32)
     }
 
     fn air_host(&self, handle: u32, team: u8) -> Option<usize> {
@@ -887,7 +892,12 @@ impl State {
     fn reconcile_owners(&mut self, game: &Game) {
         for (&handle, frame) in &mut self.aircraft {
             let Some(index) = game.get(handle) else { continue; };
-            if frame.home == NONE || game.air_host(frame.home, game.ents[index].team).is_some() { continue; }
+            let owner = game.ents[index].team;
+            let nested = frame.phase == Phase::Stationed && game.get(frame.home).is_some_and(|host| {
+                let carrier = &game.ents[host];
+                carrier.hp > 0.0 && carrier.team == owner && game.dock_parked(host, carrier)
+            });
+            if frame.home == NONE || nested || game.air_host(frame.home, owner).is_some() { continue; }
             if let Some(airport) = self.airports.get_mut(&frame.home) {
                 airport.registered.retain(|&actor| actor != handle);
                 airport.stored.retain(|&actor| actor != handle);
@@ -936,6 +946,7 @@ impl State {
         for (&home, airport) in &mut self.airports {
             let Some(host) = game.get(home) else { continue; };
             let building = game.ents[host];
+            if game.dock_parked(host, &building) { continue; }
             airport.stored.retain(|&handle| {
                 let Some(frame) = self.aircraft.get_mut(&handle).filter(|frame| frame.phase == Phase::Stationed) else {
                     return false;

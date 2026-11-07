@@ -11,8 +11,13 @@ const SERIAL_MASK: u32 = 0x07ff_ffff;
 const MAGIC: u32 = u32::from_le_bytes(*b"PWR1");
 const HEADER: usize = 24;
 
-fn recharge_seconds(def: DefId) -> Option<f32> {
-    match def { PRIEST => Some(90.0), SPY => Some(60.0), _ => None }
+fn recharge_seconds(def: DefId, leaders: bool) -> Option<f32> {
+    match def {
+        PRIEST => Some(90.0),
+        SPY => Some(60.0),
+        def if leaders && crate::leader58_defs::branch(def).is_some() => Some(60.0),
+        _ => None,
+    }
 }
 
 #[repr(C)]
@@ -25,6 +30,7 @@ pub(crate) struct PriestEffect {
 pub(crate) const FX_CONVERT: u32 = 1;
 pub(crate) const FX_BLESS: u32 = 2;
 pub(crate) const FX_CONVERTED: u32 = 3;
+pub(crate) const FX_RALLY_HEALED: u32 = 4;
 
 #[derive(Clone, Copy)]
 pub(crate) struct PowerActor {
@@ -126,7 +132,8 @@ impl Game {
         let actors = &self.ents;
         self.priest_effects.retain(|effect| {
             let actor = actors[(effect.handle & 0xffff) as usize];
-            actor.alive && u32::from(actor.gen) == effect.handle >> 16 && now - effect.started < 2.0
+            let lifetime = if effect.kind == FX_RALLY_HEALED { 1.0 } else { 2.0 };
+            actor.alive && u32::from(actor.gen) == effect.handle >> 16 && now - effect.started < lifetime
         });
     }
 
@@ -147,7 +154,7 @@ impl Game {
 
     pub(crate) fn tick_unit_reserve(&mut self, index: usize) {
         let actor = self.ents[index];
-        let Some(seconds) = recharge_seconds(actor.def) else { return; };
+        let Some(seconds) = recharge_seconds(actor.def, self.military_leader_powers.is_some()) else { return; };
         if actor.hp <= 0.0 { return; }
         let handle = self.h(index);
         let Some(record) = self.powers.as_ref().and_then(|state| state.actor(handle)) else { return; };
@@ -172,10 +179,11 @@ impl Game {
         if self.powers.as_ref().is_none_or(|state| state.cargo.is_empty()) { return; }
         let factors: [f32; 4] = core::array::from_fn(|seat| self.reserve_recharge_factor(seat as u8));
         let step = self.sim_step();
+        let military = self.military_leader_powers.is_some();
         let Some(state) = &mut self.powers else { return; };
         for (&(host, slot), reserve) in &mut state.cargo {
             let actor = self.ents[(host & 0xffff) as usize];
-            let Some(seconds) = recharge_seconds(actor.cargo[slot as usize]) else { continue; };
+            let Some(seconds) = recharge_seconds(actor.cargo[slot as usize], military) else { continue; };
             if !actor.alive || actor.hp <= 0.0 { continue; }
             let id = (u32::from(actor.team) + 1) << 27 | reserve.serial;
             if crate::capture_math25::capture_event_due(self.tick, id, step) {
@@ -194,7 +202,7 @@ impl Game {
     pub(crate) fn recharge_selected_reserves(&mut self) -> bool {
         if self.powers.is_none() { return false; }
         for (index, actor) in self.ents[..self.high].iter().enumerate() {
-            if actor.alive && actor.sel && actor.team == self.local && recharge_seconds(actor.def).is_some() {
+            if actor.alive && actor.sel && actor.team == self.local && recharge_seconds(actor.def, self.military_leader_powers.is_some()).is_some() {
                 let handle = self.h(index);
                 self.powers.as_mut().unwrap().recharge_selected(handle);
             }
@@ -202,7 +210,7 @@ impl Game {
         true
     }
 
-    pub(crate) fn restore_priest_power(&mut self, fields: Option<&[u8]>) -> Option<()> {
+    pub(crate) fn restore_priest_power(&mut self, fields: Option<&[u8]>, military: bool) -> Option<()> {
         let Some(data) = fields else { return Some(()); };
         if self.net { return None; }
         let (cursor, live, cargo) = (word(data, 0)?, word(data, 4)?, word(data, 8)?);
@@ -215,7 +223,7 @@ impl Game {
         for _ in 0..live {
             let handle = word(data, pos)?;
             let def = self.ents[self.get(handle)?].def;
-            let record = read_actor(data, pos + 4, def)?;
+            let record = read_actor(data, pos + 4, def, military)?;
             if state.occupied.insert(record.serial, Some(handle)).is_some() || state.live.insert(handle, record).is_some() { return None; }
             pos += 12;
         }
@@ -223,7 +231,7 @@ impl Game {
             let (host, slot) = (word(data, pos)?, word(data, pos + 4)?);
             let actor = self.ents[self.get(host)?];
             if slot >= u32::from(actor.ncargo) { return None; }
-            let record = read_actor(data, pos + 8, actor.cargo[slot as usize])?;
+            let record = read_actor(data, pos + 8, actor.cargo[slot as usize], military)?;
             if state.occupied.insert(record.serial, None).is_some() || state.cargo.insert((host, slot), record).is_some() { return None; }
             pos += 16;
         }
@@ -237,11 +245,11 @@ fn word(data: &[u8], at: usize) -> Option<u32> {
     Some(u32::from_le_bytes(data.get(at..at + 4)?.try_into().ok()?))
 }
 
-fn read_actor(data: &[u8], at: usize, def: DefId) -> Option<PowerActor> {
+fn read_actor(data: &[u8], at: usize, def: DefId, military: bool) -> Option<PowerActor> {
     let serial = word(data, at)?;
     let charge = f32::from_bits(word(data, at + 4)?);
     if serial > SERIAL_MASK || !(0.0..=1.0).contains(&charge) || charge.is_sign_negative() ||
-        (recharge_seconds(def).is_none() && charge != 0.0) { return None; }
+        (recharge_seconds(def, military).is_none() && charge != 0.0) { return None; }
     Some(PowerActor { serial, charge })
 }
 

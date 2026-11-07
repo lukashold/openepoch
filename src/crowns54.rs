@@ -347,6 +347,21 @@ impl Game {
             .fold(0, |flags, row| flags | row.glow)
     }
 
+    pub(super) fn live_crown_production_factor(&self, owner: u8, host: DefId, unit: DefId) -> f32 {
+        let Some(power) = self.owner_crown_power(owner, ECONOMIC).and_then(|index| stat_powers::get(ECONOMIC, index)) else {
+            return 1.0;
+        };
+        let mut factor = 1.0;
+        if !DEFS[unit as usize].building {
+            for modifier in power.modifiers {
+                if matches!(modifier.stat, Stat::ProductionTime) && modifier.units.contains(&host) {
+                    add_effect_scale(&mut factor, modifier.scale);
+                }
+            }
+        }
+        factor
+    }
+
     pub(crate) fn apply_crown_modifiers(&self, owner: u8, modifiers: &mut crate::research::Modifiers) {
         if !self.crown_powers_active_for(owner) { return; }
         let crowns = self.crowns.as_ref().unwrap();
@@ -364,6 +379,7 @@ impl Game {
                 }
             }
             for modifier in power.modifiers {
+                if self.economic_leader_effects.is_some() && matches!(modifier.stat, Stat::ProductionTime) { continue; }
                 let slot = match modifier.stat {
                     Stat::Hp => 0, Stat::Attack => 1, Stat::Speed => 2,
                     Stat::Range => 3, Stat::Sight => 4, Stat::Capacity => 5, Stat::Population => 6,
@@ -509,11 +525,15 @@ impl Game {
         let crowns = self.crowns.as_mut().unwrap();
         let awards = crowns.score.update(self.tick, now, step, crowns.disabled, &players);
         let mut retired = [false; PLAYERS];
+        let mut assigned = [None; KINDS];
         for (kind, award) in awards.into_iter().enumerate() {
             let previous = match award {
                 Award::Unchanged => continue,
                 Award::Revoked(holder) => Some(holder),
-                Award::Assigned { previous, .. } => previous,
+                Award::Assigned { previous, current } => {
+                    assigned[kind] = Some(current.owner);
+                    previous
+                }
             };
             if let (Some(owner), Some(_)) = (previous.map(|value| value.owner), crowns.choices[kind].take()) {
                 retired[owner as usize] = true;
@@ -522,6 +542,19 @@ impl Game {
         }
         for (owner, rebuild) in retired.into_iter().enumerate() {
             if rebuild { self.rebuild_modifiers(owner as u8, true); }
+        }
+        if self.crown_leaders {
+            for (kind, owner) in assigned.into_iter().enumerate() {
+                let Some(owner) = owner else { continue; };
+                if self.players[owner as usize].ai {
+                    let options: Vec<_> = (0..11).filter(|&index| self.can_choose_crown_power_for(owner, kind, index)).collect();
+                    if !options.is_empty() {
+                        let choice = options[self.source_birth.rng.next_word15() as usize % options.len()];
+                        self.choose_crown_power_for(owner, kind, choice);
+                    }
+                }
+                self.award_crown_leader(kind, owner);
+            }
         }
     }
 }

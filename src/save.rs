@@ -201,7 +201,15 @@ impl Game {
         #[cfg(feature="ee2-native13")]
         if let Some(crowns) = &self.crowns { b = crowns.wrap(b); }
         #[cfg(feature="ee2-native13")]
+        if self.crown_leaders { b = crate::game::crown_leaders58::wrap(b); }
+        #[cfg(feature="ee2-native13")]
+        if let Some(powers) = &self.military_leader_powers { b = powers.wrap(b); }
+        #[cfg(feature="ee2-native13")]
+        if let Some(economic_leader_effects) = &self.economic_leader_effects { b = economic_leader_effects.wrap(b); }
+        #[cfg(feature="ee2-native13")]
         if let Some(city_heal) = &self.city_heal { b = city_heal.wrap(b); }
+        #[cfg(feature="ee2-native13")]
+        if let Some(dock_garrison) = &self.dock_garrison { b = dock_garrison.wrap(b); }
         #[cfg(feature="ee2-native13")]
         { b = self.market.wrap(b); }
         #[cfg(feature="ee2-native13")]
@@ -260,7 +268,15 @@ impl Game {
         #[cfg(feature="ee2-native13")]
         let (buf, market) = crate::game::market57::split(buf)?;
         #[cfg(feature="ee2-native13")]
+        let (buf, dock_garrison) = crate::game::dock_garrison59::split(buf)?;
+        #[cfg(feature="ee2-native13")]
         let (buf, city_heal) = crate::game::city_heal58::split(buf)?;
+        #[cfg(feature="ee2-native13")]
+        let (buf, economic_leader_effects) = crate::game::economic_leader60::split(buf)?;
+        #[cfg(feature="ee2-native13")]
+        let (buf, military_leader_powers) = crate::game::military_leader59::split(buf)?;
+        #[cfg(feature="ee2-native13")]
+        let (buf, crown_leaders) = crate::game::crown_leaders58::split(buf)?;
         #[cfg(feature="ee2-native13")]
         let (buf, crowns) = crate::game::crowns54::split(buf)?;
         #[cfg(feature="ee2-native13")]
@@ -305,6 +321,11 @@ impl Game {
         let actor_definition_count = if air.is_some() { crate::carrier36_defs::CARRIER as usize } else { actor_definition_count };
         #[cfg(feature="ee2-native13")]
         let actor_definition_count = if powers.is_some() { crate::spy46_defs::SPY as usize + 1 } else { actor_definition_count };
+        #[cfg(feature="ee2-native13")]
+        let actor_definition_count = if crown_leaders {
+            if powers.is_none() || crowns.is_none() || roster.is_some() { return None; }
+            crate::leader58_defs::END as usize
+        } else { actor_definition_count };
         #[cfg(feature="ee2-native13")]
         let (buf, sole_survivor) = crate::ee2_sole_survivor::split(buf)?;
         #[cfg(feature="ee2-native13")]
@@ -512,6 +533,15 @@ impl Game {
             if !valid_definition(e.def) || e.team as usize>=g.nplayers || e.qn>5 || e.ncargo as usize>CARGO_MAX {return None;}
             #[cfg(feature="ee2-native13")]
             if e.order == O_RENDEZVOUS && e.def != crate::carrier36_defs::CARRIER { return None; }
+            #[cfg(feature="ee2-native13")]
+            if matches!(e.order, O_LEADER_RALLY | O_LEADER_FIRE_MANEUVER) && (military_leader_powers.is_none() || e.def != crate::leader58_defs::FIRST
+                || e.tgt != NONE || e.otgt != NONE) { return None; }
+            #[cfg(feature="ee2-native13")]
+            if e.order == O_LEADER_MOBILIZATION && (economic_leader_effects.is_none()
+                || e.def != crate::game::economic_leader60::ECONOMIC_LEADER || e.tgt != NONE || e.otgt == NONE) { return None; }
+            #[cfg(feature="ee2-native13")]
+            if e.order == O_LEADER_CONSTRUCTION && (military_leader_powers.is_none() || e.def != crate::leader58_defs::END - 1
+                || e.tgt != NONE || e.otgt == NONE) { return None; }
             if !e.x.is_finite()||!e.y.is_finite()||!e.rot.is_finite()||!e.prot.is_finite(){return None;}
             if DEFS[e.def as usize].building{let(tx,ty,side)=Game::building_bounds(e);if tx<0||ty<0||tx+side>N as i32||ty+side>N as i32{return None;}}
             if e.cargo[..e.ncargo as usize].iter().any(|&c| !valid_definition(c)) {return None;}
@@ -599,6 +629,11 @@ impl Game {
         g.restore_takeoff_save(takeoff)?;
         #[cfg(feature="ee2-native13")]
         g.restore_landing_save(landing)?;
+        #[cfg(feature="ee2-native13")]
+        if let Some(payload) = dock_garrison {
+            if powers.is_none() { return None; }
+            g.dock_garrison = Some(crate::game::dock_garrison59::State::read(&g, payload)?);
+        }
         g.build_grid();
         if has_territory&&!g.validate_territory_state(){return None;}
         if !has_diplomacy {
@@ -637,9 +672,16 @@ impl Game {
             g.restore_city_memory(memory)?;
         }
         #[cfg(feature="ee2-native13")]
-        g.restore_priest_power(powers)?;
+        g.restore_priest_power(powers, military_leader_powers.is_some())?;
         #[cfg(feature="ee2-native13")]
         g.restore_blessings(blessings)?;
+        #[cfg(feature="ee2-native13")]
+        {
+            if crown_leaders && (g.net || g.bench != 0) { return None; }
+            g.crown_leaders = crown_leaders;
+            if economic_leader_effects.is_some() && (!crown_leaders || military_leader_powers.is_none()) { return None; }
+            g.economic_leader_effects = economic_leader_effects;
+        }
         #[cfg(feature="ee2-native13")]
         if let Some(payload) = crowns {
             if g.bench != 0 { return None; }
@@ -647,6 +689,10 @@ impl Game {
             for owner in 0..g.nplayers {
                 if g.crown_powers_active_for(owner as u8) { g.rebuild_modifiers(owner as u8, false); }
             }
+        }
+        #[cfg(feature="ee2-native13")]
+        if let Some(payload) = military_leader_powers {
+            g.military_leader_powers = Some(crate::game::military_leader59::State::read(&g, payload)?);
         }
         #[cfg(feature="ee2-native13")]
         {

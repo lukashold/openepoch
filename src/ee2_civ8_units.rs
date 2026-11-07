@@ -521,6 +521,8 @@ pub fn lookup(id:DefId,epoch:u8)->Option<&'static UnitRow>{
 }
 /// Complete declared progression of the bound source class, not a claim of visual equivalence.
 pub fn lookup_class(id:DefId,epoch:u8)->Option<&'static UnitRow>{
+ #[cfg(feature = "ee2-native13")]
+ if let Some(row) = crate::leader58_defs::lookup(id, epoch) { return Some(row); }
  #[cfg(feature="ee2-native13")]
  if id == crate::priest42_defs::PRIEST { return crate::priest42_defs::lookup(epoch); }
  #[cfg(feature = "ee2-native13")]

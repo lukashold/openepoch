@@ -461,6 +461,12 @@ impl Game {
                 cargo += self.cargo_slots_used(e) as u32;
                 cargo_units += e.ncargo as u32;
             }
+            #[cfg(feature = "ee2-native13")]
+            if e.def == DOCK && self.dock_garrison.is_some() {
+                cargo_max += crate::game::dock_garrison59::SLOTS as usize;
+                cargo += self.dock_garrison_used(i);
+                cargo_units += self.dock_garrison_count(i) as u32;
+            }
             match types.iter_mut().find(|t| t.0 == e.def) {
                 Some(t) => t.1 += 1,
                 None => types.push((e.def, 1)),
@@ -606,6 +612,10 @@ impl Game {
                 act(&mut s, "e", RESEARCH, "Next Epoch", c, self.can_advance(me), 0.0, &tip);
             }
             if DEFS[bdef as usize].has(F_RESEARCH|F_EXTRACT|F_DROPOFF|F_GARRISON) && cargo > 0 { act(&mut s,"u",0,"Besatzung ausquartieren",&[0,0,0],true,0.0,"Die einquartierten Einheiten verlassen das Gebäude"); }
+            #[cfg(feature = "ee2-native13")]
+            if bdef == DOCK && self.dock_garrison_count(first) > 0 {
+                act(&mut s, "u", 0, "Einheiten abziehen", &[0,0,0], !self.sabotaged(first), 0.0, "Zieht alle stationierten Einheiten aus dem Inneren des Gebäudes ab.");
+            }
         } else if cargo > 0 {
             act(&mut s, "u", 0, "Unload", &[0, 0, 0], true, 0.0, "Put everyone ashore at the nearest beach");
         }

@@ -256,3 +256,50 @@ fn nearest_home_and_waiting_queue_survive_removal_and_explicit_orders() {
     assert!(!game.trade.hosts.contains_key(&destination_handle));
     assert!(!game.trade.routes.contains_key(&third_handle));
 }
+
+#[test]
+fn customs_applies_to_the_actual_paid_trader_load_host_and_both_foreign_shares() {
+    for unit in [TRADE_CART, MERCHANT_SHIP] {
+        let (mut game, home, destination, fixture_trader) = terrain_game_with_seats(unit, 0, 1);
+        assert!(game.configure_crowns(false));
+        assert!(game.configure_priest_skirmish());
+        assert!(game.configure_crown_leaders());
+        assert!(game.configure_military_leader_powers());
+        assert!(game.configure_economic_leader_effects());
+        game.players[1].ai = false;
+        game.ents[destination].team = 1;
+        game.diplomacy.relation[1] = NEUTRAL;
+        game.diplomacy.relation[4] = NEUTRAL;
+        game.researched[0][FOREIGN_RESEARCH / 32] |= 1 << (FOREIGN_RESEARCH % 32);
+        let leader = game.spawn(88, 1, 84.5, 119.5);
+        assert_ne!(leader,crate::game::NOIDX);
+        assert_eq!(game.economic_trade_gold(destination,5.0),5.0);
+        assert!(game.train(home, unit as QueueItem));
+        advance_until(&mut game, 660, |g| g.ents[home].qn == 0);
+        assert_eq!(game.economic_trade_gold(destination,5.0),10.0);
+        assert_eq!(game.economic_trade_gold(home,5.0),5.0);
+        let trader = game.ents[..game.high].iter().enumerate().find(|&(i, actor)| i != fixture_trader
+            && actor.alive && actor.def == unit && actor.team == 0).unwrap().0;
+        game.team_vis[tile_of(83.5, 118.5)] = 128;
+        let before = [game.resource(0, GOLD), game.resource(1, GOLD)];
+        command(&mut game, home, destination, &[trader]);
+        let handle = game.h(trader);
+        let cargo = game.trade.routes[&handle].quote;
+        advance_until(&mut game, 560, |g| g.trade_hidden(trader, &g.ents[trader]));
+        let mut restored = reload(&mut game);
+        for state in [&mut game, &mut restored] {
+            advance_until(state, 115, |g| !g.trade_hidden(trader, &g.ents[trader]));
+            let doubled = cargo.gold * 2.0;
+            assert_eq!(state.resource(0, GOLD), (before[0] + doubled) + 0.2 * doubled);
+            assert_eq!(state.resource(1, GOLD), before[1] + 0.2 * doubled);
+            let returning = state.trade.routes[&handle];
+            assert!(returning.returning);
+            let after = [state.resource(0, GOLD), state.resource(1, GOLD)];
+            advance_until(state, 760, |g| !g.trade.routes[&handle].returning);
+            assert_eq!(state.resource(0, GOLD), (after[0] + returning.quote.gold) + 0.2 * returning.quote.gold);
+            assert_eq!(state.resource(1, GOLD), after[1]);
+        }
+        assert_eq!(game.state_hash(), restored.state_hash());
+    }
+}
+

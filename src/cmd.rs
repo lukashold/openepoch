@@ -37,6 +37,9 @@ pub const C_PLACE_ROTATED:u8=16;
 #[cfg(feature="ee2-native13")]pub(crate) const C_EXTRACTION:u8=25;
 #[cfg(feature="ee2-native13")]pub(crate) const C_MARKET:u8=26;
 #[cfg(feature="ee2-native13")]pub(crate) const C_CROWN_CHOOSE:u8=27;
+#[cfg(feature="ee2-native13")]pub(crate) const C_LEADER_RALLY:u8=28;
+#[cfg(feature="ee2-native13")]pub(crate) const C_LEADER_MOBILIZATION:u8=29;
+#[cfg(feature="ee2-native13")]pub(crate) const C_LEADER_CONSTRUCTION:u8=30;
 #[cfg(feature="ee2-native13")]pub(crate) const SOLO_RESIGN_SAVE_FLAG:u32=1<<11;
 
 const HEAD: usize = 14; // kind, count, a, b, c
@@ -168,6 +171,8 @@ impl Game {
         }
         // never trust the wire: only our own living entities take orders
         let ids: Vec<usize> = hs.iter().filter_map(|&h| self.get(h)).filter(|&i| self.ents[i].team == team).collect();
+        #[cfg(feature = "ee2-native13")]
+        let ids: Vec<_> = ids.into_iter().filter(|&i| !self.dock_parked(i, &self.ents[i])).collect();
         let target = self.get(c as u32);
         match kind {
             #[cfg(feature="ee2-pack8")]
@@ -249,6 +254,8 @@ impl Game {
                 for &i in &ids {
                     city |= self.ents[i].def == TC;
                     #[cfg(feature = "ee2-native13")]
+                    if self.ents[i].def == DOCK { self.retire_dock_garrison(i); }
+                    #[cfg(feature = "ee2-native13")]
                     if self.ents[i].def == TC { self.retire_city_heal(i); }
                     #[cfg(feature = "ee2-native13")]
                     { self.retire_city_name(i); self.forget_capture_actor(i); }
@@ -261,6 +268,26 @@ impl Game {
             C_BLESS => {
                 if self.powers.is_some() && !self.net {
                     if let Some(target) = self.get(c as u32) { self.order_bless(&ids, target); }
+                }
+            }
+            #[cfg(feature = "ee2-native13")]
+            C_LEADER_RALLY => {
+                if a == 0.0 && b == 0.0 && matches!(c, 0 | 1) {
+                    for &index in &ids { self.order_leader_power(index, c == 1); }
+                }
+            }
+            #[cfg(feature = "ee2-native13")]
+            C_LEADER_CONSTRUCTION => {
+                if a == 0.0 && b == 0.0 {
+                    if let Some(target) = target {
+                        for &index in &ids { self.order_leader_construction(index, target); }
+                    }
+                }
+            }
+            #[cfg(feature = "ee2-native13")]
+            C_LEADER_MOBILIZATION => {
+                if a == 0.0 && b == 0.0 {
+                    for &index in &ids { self.order_leader_mobilization(index, c as u32); }
                 }
             }
             #[cfg(feature = "ee2-native13")]

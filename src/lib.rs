@@ -34,6 +34,8 @@ mod priest42_defs;
 #[cfg(feature = "ee2-native13")]
 mod spy46_defs;
 #[cfg(feature = "ee2-native13")]
+mod leader58_defs;
+#[cfg(feature = "ee2-native13")]
 mod power42;
 #[cfg(feature = "ee2-native13")]
 mod power42_math;
@@ -1608,6 +1610,12 @@ pub extern "C" fn cmd_unload() {
     let g = g();
     for i in selected(g) {
         #[cfg(feature = "ee2-native13")]
+        if g.ents[i].def == DOCK && g.dock_garrison_count(i) > 0 {
+            let (x, y, handle) = (g.ents[i].x, g.ents[i].y, g.h(i));
+            g.submit(C_UNLOAD, x, y, 0, &[handle]);
+            continue;
+        }
+        #[cfg(feature = "ee2-native13")]
         if g.air_missions_enabled && g.air_host_slots(&g.ents[i]) != 0 {
             g.submit(C_AIR_MISSION, 0.0, 0.0, air31::SCRAMBLE, &[g.h(i)]);
             continue;
@@ -1988,8 +1996,154 @@ pub extern "C" fn crown_rules() -> u32 { g().crown_rules() }
 
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
+pub extern "C" fn configure_crown_leaders() -> u32 { u32::from(g().configure_crown_leaders()) }
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_military_leader_powers() -> u32 { u32::from(g().configure_military_leader_powers()) }
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_economic_leader_effects() -> u32 { u32::from(g().configure_economic_leader_effects()) }
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn leader_mobilization_selection_count() -> u32 {
+    let game = g();
+    selected(game).iter().filter(|&&index| game.mobilization_ready(index)).count() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn leader_mobilization_target_at(x: f32, y: f32) -> u32 {
+    if !x.is_finite() || !y.is_finite() || leader_mobilization_selection_count() == 0 { return 0; }
+    let game = g();
+    let target = pick(game,x,y,false);
+    u32::from(target != NOIDX && game.mobilization_target(target))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn cmd_leader_mobilization_at(x: f32, y: f32) -> u32 {
+    if leader_mobilization_target_at(x,y) == 0 { return 0; }
+    let game = g();
+    let target = game.h(pick(game,x,y,false));
+    let ids: Vec<_> = selected(game).into_iter().filter(|&index| game.mobilization_ready(index)).collect();
+    let hs = handles(game,&ids);
+    game.submit(C_LEADER_MOBILIZATION,0.0,0.0,target as i32,&hs);
+    hs.len() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn leader_rally_ready(handle: u32) -> u32 {
+    let game = g();
+    u32::from(game.get(handle).is_some_and(|index| game.ents[index].team == game.local && game.rally_ready(index)))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn military_leader_reserve(handle: u32) -> f32 {
+    let game = g();
+    game.get(handle).filter(|&index| game.ents[index].team == game.local)
+        .map_or(-1.0, |index| game.military_leader_reserve(index))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn leader_power_reserve(handle: u32) -> f32 {
+    let game = g();
+    game.get(handle).filter(|&index| game.ents[index].team == game.local)
+        .map_or(-1.0, |index| game.leader_power_reserve(index))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn imperial_construction_selection_count() -> u32 {
+    let game = g();
+    selected(game).into_iter().filter(|&index| game.imperial_construction_ready(index)).count() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+fn imperial_construction_pick(game: &Game, x: f32, y: f32) -> usize {
+    if !x.is_finite() || !y.is_finite() { return NOIDX; }
+    pick_where(game, x, y, |index, _| game.imperial_construction_target(game.local, index))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn imperial_construction_target_at(x: f32, y: f32) -> u32 {
+    if imperial_construction_selection_count() == 0 { return 0; }
+    let game = g();
+    u32::from(imperial_construction_pick(game, x, y) != NOIDX)
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn cmd_imperial_construction_at(x: f32, y: f32) -> u32 {
+    let game = g();
+    let target = imperial_construction_pick(game, x, y);
+    if target == NOIDX { return 0; }
+    let ids: Vec<_> = selected(game).into_iter().filter(|&index| game.imperial_construction_ready(index)).collect();
+    if ids.is_empty() { return 0; }
+    let hs = handles(game, &ids);
+    game.submit(C_LEADER_CONSTRUCTION, 0.0, 0.0, game.h(target) as i32, &hs);
+    hs.len() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn cmd_leader_rally() -> u32 {
+    let game = g();
+    let ids: Vec<_> = selected(game).into_iter().filter(|&index| game.rally_ready(index)).collect();
+    if ids.is_empty() { return 0; }
+    let hs = handles(game, &ids);
+    game.submit(C_LEADER_RALLY, 0.0, 0.0, 0, &hs);
+    hs.len() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn leader_fire_maneuver_ready(handle: u32) -> u32 {
+    let game = g();
+    u32::from(game.get(handle).is_some_and(|index| game.ents[index].team == game.local && game.fire_maneuver_ready(index)))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn cmd_leader_fire_maneuver() -> u32 {
+    let game = g();
+    let ids: Vec<_> = selected(game).into_iter().filter(|&index| game.fire_maneuver_ready(index)).collect();
+    if ids.is_empty() { return 0; }
+    let hs = handles(game, &ids);
+    game.submit(C_LEADER_RALLY, 0.0, 0.0, 1, &hs);
+    hs.len() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn leader_maneuver_status(handle: u32) -> u32 {
+    let game = g();
+    game.get(handle).map_or(0, |index| game.leader_maneuver_status(index))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn military_leader_status(handle: u32) -> u32 {
+    let game = g();
+    game.get(handle).map_or(0, |index| game.military_leader_status(index))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
 pub extern "C" fn configure_city_heal() -> u32 {
     u32::from(g().configure_city_heal())
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_dock_garrison() -> u32 {
+    u32::from(g().configure_dock_garrison())
 }
 
 #[cfg(feature = "ee2-native13")]

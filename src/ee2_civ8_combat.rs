@@ -1020,6 +1020,7 @@ const ADJUSTMENTS:[(u32,u16);516]=[
    crate::carrier36_defs::CARRIER if epoch >= 10 => return index + 4,
    crate::priest42_defs::PRIEST => return index + 5,
    crate::spy46_defs::SPY => return index + 6,
+   id if crate::leader58_defs::branch(id).is_some() => return index + 7,
    _ => {}
   }
  }
@@ -1032,7 +1033,8 @@ const ADJUSTMENTS:[(u32,u16);516]=[
   // The current roster has no Sniper, the only explicit TradeCart pair override.
   // The current roster also has no Satellite or Balloon, the carrier pair overrides.
   // No currently bound combat actor has the Priest-specific Sniper adjustment.
-  return [34, 11, 31, 15, 29, 9, 34].get(extra).map(|&rps| CombatProfile { rps, upgrade: 65535 });
+  // The Crown leaders inherit SpecialForces and have no CSV5 pair overrides.
+  return [34, 11, 31, 15, 29, 9, 34, 34].get(extra).map(|&rps| CombatProfile { rps, upgrade: 65535 });
  }
  PROFILES.get(index as usize).copied()
 }

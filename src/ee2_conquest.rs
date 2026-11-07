@@ -5,11 +5,11 @@ use crate::game::Game;
 
 include!("ee2_conquest_rows.rs");
 const _: [(); SAVE_DEFINITION_COUNT] = [(); CONQUEST_CAPABLE.len()];
-const _: [(); DEFS.len()] = [(); CONQUEST_CAPABLE.len() + 7];
+const _: [(); DEFS.len()] = [(); CONQUEST_CAPABLE.len() + 10];
 
 fn capable(def: crate::ids::DefId) -> bool {
     matches!(def, crate::ee2_regicide::KING | crate::air31_defs::FIGHTER_BOMBER | crate::carrier36_defs::CARRIER |
-        crate::priest42_defs::PRIEST) ||
+        crate::priest42_defs::PRIEST) || crate::leader58_defs::branch(def).is_some() ||
         CONQUEST_CAPABLE.get(def as usize).copied().unwrap_or(false)
 }
 

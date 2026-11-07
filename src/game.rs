@@ -33,8 +33,23 @@ pub(crate) mod spy_toxic50;
 #[path = "crowns54.rs"]
 pub(crate) mod crowns54;
 #[cfg(feature = "ee2-native13")]
+#[path = "crown_leaders58.rs"]
+pub(crate) mod crown_leaders58;
+#[cfg(feature = "ee2-native13")]
+#[path = "imperial_construction60.rs"]
+mod imperial_construction60;
+#[cfg(feature = "ee2-native13")]
+#[path = "military_leader59.rs"]
+pub(crate) mod military_leader59;
+#[cfg(feature = "ee2-native13")]
+#[path = "economic_leader60.rs"]
+pub(crate) mod economic_leader60;
+#[cfg(feature = "ee2-native13")]
 #[path = "city_heal58.rs"]
 pub(crate) mod city_heal58;
+#[cfg(feature = "ee2-native13")]
+#[path = "dock_garrison59.rs"]
+pub(crate) mod dock_garrison59;
 #[cfg(feature = "ee2-native13")]
 #[path = "market57.rs"]
 pub(crate) mod market57;
@@ -72,6 +87,14 @@ pub(crate) const O_RENDEZVOUS: u8 = 9;
 pub(crate) const O_BLESS: u8 = 10;
 #[cfg(feature = "ee2-native13")]
 pub(crate) const O_GATHER_INTEL: u8 = 11;
+#[cfg(feature = "ee2-native13")]
+pub(crate) const O_LEADER_RALLY: u8 = 12;
+#[cfg(feature = "ee2-native13")]
+pub(crate) const O_LEADER_MOBILIZATION: u8 = 13;
+#[cfg(feature = "ee2-native13")]
+pub(crate) const O_LEADER_CONSTRUCTION: u8 = 14;
+#[cfg(feature = "ee2-native13")]
+pub(crate) const O_LEADER_FIRE_MANEUVER: u8 = 15;
 /// Marker in `Ent::stuck`: the unit walked onto a transport, remove it without an explosion.
 const BOARDED: u8 = 255;
 
@@ -369,7 +392,15 @@ pub struct Game {
     #[cfg(feature = "ee2-native13")]
     pub(crate) crowns: Option<crowns54::Crowns>,
     #[cfg(feature = "ee2-native13")]
+    pub(crate) crown_leaders: bool,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) military_leader_powers: Option<military_leader59::State>,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) economic_leader_effects: Option<economic_leader60::EconomicLeaderEffects>,
+    #[cfg(feature = "ee2-native13")]
     pub(crate) city_heal: Option<city_heal58::State>,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) dock_garrison: Option<dock_garrison59::State>,
     #[cfg(feature = "ee2-native13")]
     pub(crate) market: market57::Market,
     // ---- not part of the deterministic simulation state ----
@@ -556,7 +587,15 @@ impl Game {
             #[cfg(feature = "ee2-native13")]
             crowns: None,
             #[cfg(feature = "ee2-native13")]
+            crown_leaders: false,
+            #[cfg(feature = "ee2-native13")]
+            military_leader_powers: None,
+            #[cfg(feature = "ee2-native13")]
+            economic_leader_effects: None,
+            #[cfg(feature = "ee2-native13")]
             city_heal: None,
+            #[cfg(feature = "ee2-native13")]
+            dock_garrison: None,
             #[cfg(feature = "ee2-native13")]
             market: market57::Market::default(),
             #[cfg(feature = "ee2-native13")]
@@ -674,10 +713,13 @@ impl Game {
 
     pub(crate) fn kill(&mut self, i: usize) {
         #[cfg(feature = "ee2-native13")]
+        self.retire_dock_garrison(i);
+        #[cfg(feature = "ee2-native13")]
         if self.ents[i].def == TC { self.retire_city_heal(i); }
         #[cfg(feature = "ee2-native13")]
         if self.powers.is_some() {
             let handle = self.h(i);
+            self.retire_military_leader_effect_actor(handle);
             if let Some(actor) = self.powers.as_ref().and_then(|powers| powers.actor(handle)) {
                 self.retire_bless_actor(handle, actor.serial);
             }
@@ -937,7 +979,7 @@ impl Game {
         let mut k = 0.0f32;
         for &i in ids {
             #[cfg(feature = "ee2-native13")]
-            if self.air_parked(i, &self.ents[i]) { continue; }
+            if self.air_parked(i, &self.ents[i]) || self.leader_immobilized(i) { continue; }
             #[cfg(feature = "ee2-native13")]
             { self.trade_interrupt(i); self.air_interrupt(i); }
             let e = &mut self.ents[i];
@@ -1043,6 +1085,11 @@ impl Game {
     pub fn order_board(&mut self, ids: &[usize], tj: usize) {
         let t = self.ents[tj];
         #[cfg(feature = "ee2-native13")]
+        if t.def == DOCK && self.dock_garrison.is_some() {
+            self.order_dock_board(ids, tj);
+            return;
+        }
+        #[cfg(feature = "ee2-native13")]
         if self.air_missions_enabled && self.air_host_slots(&t) != 0 {
             self.air_order_land(ids, tj);
             return;
@@ -1080,6 +1127,8 @@ impl Game {
     }
 
     pub(crate) fn can_garrison(&self, unit: DefId, host: DefId) -> bool {
+        #[cfg(feature = "ee2-native13")]
+        if host == DOCK && self.dock_garrison.is_some() { return self.can_dock_naval(unit); }
         let unit_type = &DEFS[unit as usize];
         if unit_type.building || unit_type.dom != LAND { return false; }
         #[cfg(feature = "ee2-native13")]
@@ -1097,6 +1146,8 @@ impl Game {
         let t = (key & 0xffff) as usize;
         for &i in ids {
             let def = self.ents[i].def;
+            #[cfg(feature = "ee2-native13")]
+            if def == DOCK && self.dock_garrison.is_some() { self.unload_dock(i, false); continue; }
             let interior = DEFS[def as usize].has(F_RESEARCH|F_EXTRACT|F_DROPOFF|F_GARRISON);
             #[cfg(feature = "ee2-native13")]
             let interior = interior || self.powers.is_some() && def == TEMPLE;
@@ -1165,6 +1216,8 @@ impl Game {
             }
         };
         let t = self.ents[j];
+        #[cfg(feature = "ee2-native13")]
+        if t.def == DOCK && self.dock_garrison.is_some() { self.do_dock_board(i, e, d, j, want, moving); return; }
         let td=&DEFS[t.def as usize];
         if t.built < 1.0 || !self.can_garrison(e.def, t.def) { Self::set_idle(e); return; }
         let slots=if t.def==FORTRESS {match self.fortress_slot_cost(t.team,e.def){Some(v)=>v,None=>{Self::set_idle(e);return;}}}else{1};
@@ -1277,7 +1330,15 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         if let Some(crowns) = &self.crowns { crowns.hash(&mut mix); }
         #[cfg(feature = "ee2-native13")]
+        if self.crown_leaders { mix(crown_leaders58::HASH_TAG); }
+        #[cfg(feature = "ee2-native13")]
+        if let Some(powers) = &self.military_leader_powers { powers.hash(&mut mix); }
+        #[cfg(feature = "ee2-native13")]
+        if let Some(effects) = &self.economic_leader_effects { effects.hash(&mut mix); }
+        #[cfg(feature = "ee2-native13")]
         if let Some(city_heal) = &self.city_heal { city_heal.hash(&mut mix); }
+        #[cfg(feature = "ee2-native13")]
+        if let Some(dock_garrison) = &self.dock_garrison { dock_garrison.hash(&mut mix); }
         #[cfg(feature = "ee2-native13")]
         self.market.hash(&mut mix);
         #[cfg(feature = "ee2-native13")]
@@ -1535,11 +1596,17 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         self.tick_blessings();
         #[cfg(feature = "ee2-native13")]
+        self.tick_military_leader_auras();
+        #[cfg(feature = "ee2-native13")]
         self.prune_priest_effects();
         #[cfg(feature = "ee2-native13")]
         self.tick_trade();
         #[cfg(feature = "ee2-native13")]
+        self.tick_economic_leader_effects();
+        #[cfg(feature = "ee2-native13")]
         self.tick_aircraft();
+        #[cfg(feature = "ee2-native13")]
+        self.tick_dock_garrison();
         #[cfg(feature = "ee2-native13")]
         self.tick_city_heal();
         if city_death{self.rebuild_territories();self.void_landless_alliances();}
@@ -1682,7 +1749,8 @@ impl Game {
             }
             alive += 1;
             #[cfg(feature = "ee2-native13")]
-            let spatial = !self.trade.is_hidden(index, e) && !self.aircraft.is_parked(index, e);
+            let spatial = !self.trade.is_hidden(index, e) && !self.aircraft.is_parked(index, e)
+                && !self.dock_garrison.as_ref().is_some_and(|state| state.parked(index, e));
             #[cfg(not(feature = "ee2-native13"))]
             let spatial = { let _ = index; true };
             if spatial {
@@ -1717,7 +1785,8 @@ impl Game {
         for (i, e) in self.ents[..self.high].iter().enumerate() {
             if e.alive {
                 #[cfg(feature = "ee2-native13")]
-                if self.trade.is_hidden(i, e) || self.aircraft.is_parked(i, e) { continue; }
+                if self.trade.is_hidden(i, e) || self.aircraft.is_parked(i, e)
+                    || self.dock_garrison.as_ref().is_some_and(|state| state.parked(i, e)) { continue; }
                 let c = cell_of(e.x, e.y);
                 g.items[g.cursor[c] as usize] = i as u16;
                 g.cursor[c] += 1;
@@ -1822,12 +1891,16 @@ impl Game {
         }
         #[cfg(feature="ee2-pack8")] if self.pack_wait_for_attack(index,e){return;}
         #[cfg(feature="ee2-up15")]
-        if let Some(a)=crate::ee2_up15_attack::lookup(e.def,self.players[e.team as usize].epoch){
+        let apply_time = crate::ee2_up15_attack::lookup(e.def,self.players[e.team as usize].epoch).map(|row| row.apply_time);
+        #[cfg(feature="ee2-native13")]
+        let apply_time = apply_time.or_else(|| crate::leader58_defs::hit_delay(e.def, self.players[e.team as usize].epoch));
+        #[cfg(feature="ee2-up15")]
+        if let Some(apply_time)=apply_time{
             let now=self.sim_elapsed();
             let reload=crate::ee2_units::lookup_class(e.def,self.players[e.team as usize].epoch).and_then(|r|r.reload).unwrap_or(w.cd);
             let handle=((e.gen as u32)<<16)|index as u32;let c=&mut self.attack_clock[index];
             if c.handle!=handle{*c=crate::native_attack_clock::Clock{handle,next:0.0,flags:0};}
-            let event=crate::native_attack_clock::step(now,reload,a.apply_time,&mut c.next,&mut c.flags);
+            let event=crate::native_attack_clock::step(now,reload,apply_time,&mut c.next,&mut c.flags);
             let remaining=(c.next-now).max(0.0);e.cd=remaining;
             #[cfg(feature = "ee2-native13")]
             if event == crate::native_attack_clock::Event::Start {
@@ -1878,7 +1951,7 @@ impl Game {
         }
         let dmg = self.scaled_weapon_damage(e.team,e.def,w.dmg,self.players[e.team as usize].atk[class_of(d)]) * (1.0+self.fortress_attack_bonus(e));
         #[cfg(feature = "ee2-native13")]
-        let dmg = crate::power42_math::store_toward_zero(f64::from(dmg) * f64::from(self.blessed_attack(self.h(_source_index))));
+        let dmg = crate::power42_math::store_toward_zero(f64::from(dmg) * f64::from(self.leader_attack_scale(_source_index)));
         let sound = if w.kind == W_MELEE { 7.0 } else { w.kind as f32 };
         #[cfg(feature="ee2-up15")]
         let sound = match attack {
@@ -1959,11 +2032,15 @@ impl Game {
         #[cfg(feature = "ee2-native13")] origin: Option<crate::battle_signals::Actor>){
         let hit = |game: &mut Self, j: usize, points: f32| {
             #[cfg(feature = "ee2-native13")]
+            if game.dock_parked(j, &game.ents[j]) { return; }
+            #[cfg(feature = "ee2-native13")]
             let can_signal = game.ents[j].hp > 0.0 && game.ents[j].def != FARM;
             #[cfg(feature = "ee2-native13")]
             let can_credit = game.ents[j].hp > 0.0 && game.ents[j].team != team;
             #[cfg(feature = "ee2-native13")]
             let points = if game.crown_city_protected(&game.ents[j]) { points * 0.7 } else { points };
+            #[cfg(feature = "ee2-native13")]
+            let points = crate::power42_math::store_toward_zero(f64::from(points) * f64::from(game.leader_damage_scale(j, radius > 0.0)));
             game.damage_from(j, points, kind, profile);
             #[cfg(feature = "ee2-native13")]
             if can_credit && game.ents[j].hp <= 0.0 {
@@ -2252,7 +2329,19 @@ impl Game {
                 #[cfg(not(feature="ee2-paidqueue7"))] let time=self.production_time(e.team,item as DefId);
                 if instant { e.qt = time; }
                 if e.qt < time {
-                    #[cfg(feature="ee2-paidqueue7")] {e.qt=(e.qt+if job_start{0.009999999776482582_f32}else{dt}).min(time);}
+                    #[cfg(feature="ee2-paidqueue7")] {
+                        let advance = if job_start { 0.009999999776482582_f32 } else { dt };
+                        #[cfg(feature="ee2-native13")]
+                        let factor = if job_start { 1.0 } else { self.economic_production_factor(i, item as DefId) };
+                        #[cfg(feature="ee2-native13")]
+                        if factor != 1.0 {
+                            e.qt = economic_leader60::advance_production(e.qt, advance, factor).min(time);
+                        } else {
+                            e.qt = (e.qt + advance).min(time);
+                        }
+                        #[cfg(not(feature="ee2-native13"))]
+                        { e.qt = (e.qt + advance).min(time); }
+                    }
                     #[cfg(not(feature="ee2-paidqueue7"))] {e.qt+=dt;}
                 }
                 // population was already reserved when queued; cap can still drop if houses die
@@ -2555,6 +2644,14 @@ impl Game {
                     face = direction;
                     if let Some(velocity) = movement { want = velocity; moving = true; }
                 }
+                #[cfg(feature = "ee2-native13")]
+                O_LEADER_RALLY => self.do_leader_rally(i, &mut e),
+                #[cfg(feature = "ee2-native13")]
+                O_LEADER_MOBILIZATION => self.do_leader_mobilization(i, &mut e),
+                #[cfg(feature = "ee2-native13")]
+                O_LEADER_CONSTRUCTION => self.do_leader_construction(i, &mut e),
+                #[cfg(feature = "ee2-native13")]
+                O_LEADER_FIRE_MANEUVER => self.do_fire_maneuver(i, &mut e),
                 _ => {}
             }
         }
@@ -2562,6 +2659,15 @@ impl Game {
         #[cfg(feature="ee2-pack8")]
         if moving&&self.pack_wait_for_move(i,&e,want.0,want.1){moving=false;want=(0.0,0.0);}
         let speed=self.modifiers[e.team as usize][e.def as usize][2];
+        #[cfg(feature = "ee2-native13")]
+        let speed = crate::power42_math::store_toward_zero(f64::from(speed) * f64::from(self.leader_movement_scale(i)));
+        #[cfg(feature = "ee2-native13")]
+        if self.leader_immobilized(i) {
+            e.vx = 0.0;
+            e.vy = 0.0;
+            moving = false;
+            if matches!(e.order, O_MOVE | O_AMOVE) { Self::set_idle(&mut e); }
+        }
         // ---- integrate
         if plane {
             #[cfg(feature = "ee2-reference")]

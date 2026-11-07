@@ -361,6 +361,8 @@ impl Game {
         }
         #[cfg(feature="ee2-native13")]
         self.air_transferred_assets(&objects);
+        #[cfg(feature="ee2-native13")]
+        self.reconcile_dock_owners();
         // Citizens already walking to a donated farm, ship, city or construction
         // site keep their ownership and stop their now-invalid old-owner job.
         for i in 0..self.high {

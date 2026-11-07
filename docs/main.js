@@ -20,7 +20,11 @@ import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regi
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native6';
-import {loadOriginalModels} from './original-renderer.js?v=native-spy';
+import {loadOriginalModels} from './original-renderer.js?v=native60';
+import {loadCrownLeaderPresentation} from './original-crown-leaders.js?v=native60';
+import {loadUngarrisonArt,ungarrisonIcon} from './original-ungarrison.js?v=native60';
+import {loadLeaderCursors} from './original-leader-cursors.js?v=native60';
+import {createRallyHealGate,loadOriginalRallyHeal} from './original-rally-heal.js?v=native60';
 import {ownMapTerrainOrigin} from './original-citycenter-terrain.js?v=regional10';
 import {loadCityCenterIcons,loadHouseIcons,loadDockIcons,loadBarracksIcons,loadMillIcons,loadTempleIcons,loadLightArtilleryIcons,loadWarehouseIcons,loadStableIcons,loadKingIcons} from './original-citycenter-icons.js?v=native17';
 import {loadSourceSailRuntime} from './source-sail-runtime.js?v=sails7';
@@ -41,7 +45,7 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=clock38';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native58';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native60';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
@@ -515,6 +519,7 @@ for (const pr of [terrain, water, models, quads]) {
 }
 const originalEnabled=referenceMode&&new URLSearchParams(location.search).get('assets')!=='procedural';
 const marketArt=await loadMarketArt(originalEnabled&&typeof wasm.market_quote==='function');
+const dockArt=await loadUngarrisonArt(originalEnabled&&typeof wasm.configure_dock_garrison==='function');
 const ambientPresentation=await loadOriginalAmbient({enabled:originalEnabled&&rulesProfile.id==='up15'});
 sfx.configureOriginalAmbience(ambientPresentation);
 let ambientCoverage=null;
@@ -534,6 +539,9 @@ const citizenPresentation=await loadCitizenPresentation({enabled:originalEnabled
 const tradeAvailable=rulesProfile.ruleset===2&&supportsTradeRoute(wasm);
 const airMissionAvailable=rulesProfile.ruleset===2&&supportsAirMission(wasm);
 const hasTakeoffState=typeof wasm.air_takeoff_start_tick==='function';
+const leaderPresentation=await loadCrownLeaderPresentation({
+  enabled:originalEnabled&&rulesProfile.ruleset===2&&typeof wasm.configure_crown_leaders==='function',
+});
 const [tradePresentation,tradeRouteArt,tradeWaitArt,fighterBomberPresentation,carrierPresentation,priestPresentation,spyPresentation,airMissionArt,airMissionFlag,airTakeoff,aircraftFlightAudio]=await Promise.all([
   loadTradePresentation({enabled:originalEnabled&&rulesProfile.ruleset===2&&renderNamespace.definitionCount>82}),
   loadTradeRouteArt({enabled:originalEnabled&&tradeAvailable}),
@@ -581,9 +589,11 @@ const priestPoseForActor=priestPresentation&&typeof wasm.priest_visual_state==='
     return {state,elapsed:wasm.priest_visual_elapsed(actor.handle,actor.renderTime),once:state===2,duration:state===2?4:0};
   }:null;
 const priestEffectOptions={enabled:originalEnabled&&!!priestPresentation&&typeof wasm.priest_effect_count==='function'};
-const [priestEffects,priestParticles]=await Promise.all([
-  loadPriestEffects(gl,priestEffectOptions),loadOriginalPriestParticles(gl,priestEffectOptions)
+const [priestEffects,priestParticles,rallyHeal]=await Promise.all([
+  loadPriestEffects(gl,priestEffectOptions),loadOriginalPriestParticles(gl,priestEffectOptions),
+  loadOriginalRallyHeal(gl,{enabled:originalEnabled&&typeof wasm.cmd_leader_rally==='function'}),
 ]);
+const rallyHealGate=rallyHeal?createRallyHealGate():null;
 const blessGround=await loadBlessGroundGlow({enabled:originalEnabled&&typeof wasm.bless_glow_active==='function',
   crowns:typeof wasm.crown_actor_glow==='function'});
 const airCrownGlow=await loadAirCrownGlow(gl,{enabled:originalEnabled&&!!blessGround&&typeof wasm.crown_actor_glow==='function'});
@@ -606,7 +616,7 @@ const spyPoseForActor=spyPresentation&&typeof wasm.spy_visual_state==='function'
   }:null;
 const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,total)=>{
   $('play').textContent=`Originalgrafiken laden · ${Math.round(loaded/total*100)} %`;
-},{assetMapping,climateProfiles,capturePoseForActor,tradePresentation,fighterBomberPresentation,carrierPresentation,priestPresentation,priestPoseForActor,spyPresentation,spyPoseForActor,
+},{assetMapping,climateProfiles,capturePoseForActor,tradePresentation,fighterBomberPresentation,carrierPresentation,priestPresentation,priestPoseForActor,spyPresentation,spyPoseForActor,leaderPresentation,
   spyShimmerForActor:spyShimmer?actor=>spyShimmer.sample(actor,wasm.spy_disguised(actor.handle)===1):null,
   sourceVisualForModel:blessGround?.modelVisual,priestParticleScales:!!priestParticles,rallyTargetTags:airMissionFlag?.targetTags,
   airTakeoff,takeoffElapsedForActor:airTakeoff?actor=>{
@@ -620,7 +630,7 @@ const carrierGarrisonFlag=airMissionAvailable&&originalModels.available.has(rend
 const carrierOccupied=handle=>wasm.air_mission_status(handle,1)>0;
 const sourceSails=await loadSourceSailRuntime({wasm,namespace:renderNamespace,models:originalModels,enabled:originalEnabled&&rulesProfile.ruleset===2,decorateMetadata:metadata=>packMetadata?packMetadata.snapshot(metadata):metadata});
 if(sourceSails?.metrics.error)console.warn('Source sails:',sourceSails.metrics.error);
-const unitPresentations=[tradePresentation,fighterBomberPresentation,carrierPresentation,priestPresentation,spyPresentation].filter(Boolean);
+const unitPresentations=[tradePresentation,fighterBomberPresentation,carrierPresentation,priestPresentation,spyPresentation,leaderPresentation].filter(Boolean);
 sfx.configureOriginalDefinitions({wasm,bindings:[...(originalModels.manifest?.models||[]),...(originalModels.additionalRegionalAudio||[]),...unitPresentations.flatMap(source=>source.audioModelRows)],additionalFamilyManifest:unitPresentations.map(source=>source.audioManifest),citizenPresentation,regionalMusic:rulesProfile.ruleset===2,...(rulesProfile.ruleset===2?{familyManifestURL:'native-families-civ8-regicide.json',playbackManifestURL:'manifest-stone-thrower-up.json'}:{})});
 const captureGlow = originalEnabled && typeof wasm.active_capture_glow === 'function' ? createCaptureGlow() : null;
 const originalGround=await loadOriginalGround(gl,originalEnabled,{assetMapping,captureGlow:!!captureGlow,blessGlow:!!blessGround,
@@ -878,7 +888,7 @@ sfx.configurePriestCues(originalEnabled&&priestEnabled);
 const priestArt=await loadPriestCommandArt({enabled:originalEnabled&&priestEnabled});
 function targetedPower(definition, command, art, cssClass) {
   return {...command,definition,art,cssClass,order:createCaptureOrder({canvas,originalArt:false,fallback:command.fallback,
-    shortcut:`Alt+${command.key}`,canOrder:()=>canTargetOrder()&&command.count()>0,pickTarget:command.pick,issue:command.issue,
+    shortcut:command.shortcut??`Alt+${command.key}`,canOrder:()=>canTargetOrder()&&command.count()>0,pickTarget:command.pick,issue:command.issue,
     appearance:art?{button:(theme,state)=>art.button(command.action,theme,state),cursor:valid=>art.cursor(command.action,valid)}:null,
   })};
 }
@@ -907,9 +917,62 @@ if(spyEnabled&&typeof wasm.spy_operation_unlocked==='function'){
     },spyAdvancedArt,'spy-action'));
   }
 }
-const powerOrders=[...priestOrders,...spyOrders];
+const imperialSupported=typeof wasm.cmd_imperial_construction_at==='function';
+const mobilizationSupported=typeof wasm.cmd_leader_mobilization_at==='function';
+const [imperialCursors,mobilizationCursors]=await Promise.all([
+  loadLeaderCursors(originalEnabled&&imperialSupported,'imperial-construction'),
+  loadLeaderCursors(originalEnabled&&mobilizationSupported,'mobilization'),
+]);
+const imperialSourceAction=theme=>leaderPresentation?.power(89,ui?.epoch??0,theme);
+const imperialActionName=()=>ui?.epoch<5?'Endeavor':'FastTracking';
+const imperialArt={
+  label:()=>imperialSourceAction(1)?.label??(imperialActionName()==='Endeavor'?'Bestrebungen':'Schnelles Aufspüren'),
+  description:()=>imperialSourceAction(1)?.help??(imperialActionName()==='Endeavor'
+    ?'Verringert die Bauzeit für das Fundament jedes angewählten Stadtzentrums oder Wunders.'
+    :'Diese Fertigkeit vollendet sofort den Bau aller Gebäude mit Ausnahme von Wundern und Stadtzentren.'),
+  button:(_action,theme,state)=>imperialSourceAction(theme)?.art?.[state],
+  cursor:(_action,valid)=>imperialCursors?.(imperialActionName(),valid),
+};
+const imperialOrder=imperialSupported?targetedPower(89,{
+  action:'imperial-construction',shortcut:';',fallback:'⌂',
+  available:()=>ui?.epoch<10&&wasm.leader_power_reserve(wasm.selected_actor_handle()>>>0)>=0,
+  count:wasm.imperial_construction_selection_count,pick:wasm.imperial_construction_target_at,issue:wasm.cmd_imperial_construction_at,
+},imperialArt,'imperial-action'):null;
+const mobilizationSource=theme=>leaderPresentation?.power(88,ui?.epoch??0,theme);
+const mobilizationArt={
+  label:()=>mobilizationSource(1)?.label??'Mobilisierung',
+  description:()=>mobilizationSource(1)?.help??'Beschleunigt die Ausbildung in einem eigenen Produktionsgebäude.',
+  button:(_action,theme,state)=>mobilizationSource(theme)?.art?.[state],
+  cursor:(_action,valid)=>mobilizationCursors?.('Mobilization',valid),
+};
+const mobilizationOrder=mobilizationSupported?targetedPower(88,{
+  action:'mobilization',shortcut:';',fallback:'⚙',
+  available:()=>ui?.epoch<5&&wasm.leader_power_reserve(wasm.selected_actor_handle()>>>0)>=0,
+  count:wasm.leader_mobilization_selection_count,pick:wasm.leader_mobilization_target_at,issue:wasm.cmd_leader_mobilization_at,
+},mobilizationArt,'economic-action'):null;
+const leaderTargetOrders=[imperialOrder,mobilizationOrder].filter(Boolean);
+const powerOrders=[...priestOrders,...spyOrders,...leaderTargetOrders];
 const extractionAvailable=spyEnabled&&typeof wasm.cmd_spy_extraction==='function';
 const selectedPowerType=(selection,definition)=>selection?.def===definition||selection?.types?.some(type=>type[0]===definition);
+function militaryLeaderControl(selection,epoch){
+  if(!canTargetOrder()||selection?.n!==1||selection.def!==87||typeof wasm.military_leader_reserve!=='function')return null;
+  const handle=wasm.selected_actor_handle()>>>0,reserve=wasm.military_leader_reserve(handle);
+  if(reserve<0)return null;
+  if(epoch<5)return {mode:'rally',ready:!!wasm.leader_rally_ready(handle),
+    action:leaderPresentation?.power(87,epoch,nativeMetaEpoch(epoch)),label:'Kundgebung',
+    help:'Heilt eigene Landeinheiten im Umkreis.',issue:wasm.cmd_leader_rally};
+  if(epoch<10&&typeof wasm.leader_fire_maneuver_ready==='function')
+    return {mode:'fire-maneuver',ready:!!wasm.leader_fire_maneuver_ready(handle),
+      action:leaderPresentation?.power(87,epoch,nativeMetaEpoch(epoch)),label:'Feuer und Manöver',
+      help:'Beschleunigt eigene Landeinheiten und hält feindliche Landeinheiten im Umkreis auf.',issue:wasm.cmd_leader_fire_maneuver};
+  return null;
+}
+function orderMilitaryLeaderPower(){
+  const leader=militaryLeaderControl(ui?.sel,ui?.epoch);
+  if(!leader?.ready||modalOpen())return;
+  cancelMapGesture();cancelBuilding();attackMode=false;
+  if(leader.issue())lastUi=0;
+}
 const activePowerOrder=()=>powerOrders.find(command=>command.order.active());
 const activeTargetOrder=()=>activePowerOrder()?.order??(captureOrder?.active()?captureOrder:null);
 const tradeRoute=tradeAvailable?createTradeRoute({canvas,caption:$('trade-route-caption'),art:tradeRouteArt,
@@ -1032,6 +1095,7 @@ function begin(tempo = null, useSourceClock = wasm.sim_clock_active?.() === 1, a
   airMission?.cancel();airPress=null;
   activeTargetOrder()?.cancel();
   previousPriestViews=[];currentPriestViews=[];priestFrameEffects=null;priestAttachments.clear();
+  rallyHealGate?.reset();
   spyShimmer?.reset();
   priestParticles?.reset();
   blessPreview=null;
@@ -1125,6 +1189,11 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
     toast('Priester konnten für dieses Scharmützel nicht eingerichtet werden.');
     return;
   }
+  if(!benchUnits&&humans===1&&priestEnabled&&typeof wasm.configure_dock_garrison==='function'
+    &&!wasm.configure_dock_garrison()){
+    toast('Die Schiffsgarnison konnte für dieses Scharmützel nicht aktiviert werden.');
+    return;
+  }
   if(!benchUnits&&humans===1&&crownSupported&&!wasm.configure_crowns(Number($('disable-crowns').checked))){
     toast('Die Kronenwertung konnte für dieses Scharmützel nicht eingerichtet werden.');
     return;
@@ -1132,6 +1201,21 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
   if(!benchUnits&&humans===1&&crownSupported&&priestEnabled&&typeof wasm.configure_city_heal==='function'
     &&!wasm.configure_city_heal()){
     toast('Die Heilung im Stadtgebiet konnte für dieses Scharmützel nicht aktiviert werden.');
+    return;
+  }
+  if(!benchUnits&&humans===1&&crownSupported&&priestEnabled&&typeof wasm.configure_crown_leaders==='function'
+    &&!wasm.configure_crown_leaders()){
+    toast('Die Kronenführer konnten für dieses Scharmützel nicht aktiviert werden.');
+    return;
+  }
+  if(!benchUnits&&humans===1&&crownSupported&&priestEnabled&&typeof wasm.configure_military_leader_powers==='function'
+    &&!wasm.configure_military_leader_powers()){
+    toast('Die Fähigkeiten des Militärführers konnten nicht aktiviert werden.');
+    return;
+  }
+  if(!benchUnits&&humans===1&&crownSupported&&priestEnabled&&typeof wasm.configure_economic_leader_effects==='function'
+    &&!wasm.configure_economic_leader_effects()){
+    toast('Die Fähigkeiten des Wirtschaftsführers konnten nicht aktiviert werden.');
     return;
   }
   cam.x = benchUnits ? MAP / 2 : wasm.start_x(); cam.y = benchUnits ? MAP / 2 : wasm.start_y(); cam.zoom = benchUnits ? 11 : 28;
@@ -1283,6 +1367,10 @@ function advance(dt, now) {
         if(originalEnabled)void sfx.playInterfaceCue(immigrationCue);
         continue;
       }
+      if(kind===35){
+        toast('Sie haben einen Anführer gewonnen.');
+        continue;
+      }
       const citizen = decodeCitizenDeathCue(kind);
       if (kind >= 12 && !citizen && kind !== sfx.STONE_THROWER_LAUNCH_CUE && kind !== sfx.CAPTURE_COMPLETE_CUE &&
           kind !== sfx.CONVERT_CUE && kind !== sfx.PRIEST_CONVERT_COMPLETE_CUE && kind !== sfx.PRIEST_CONVERT_CAST_CUE) {
@@ -1377,10 +1465,12 @@ function drawBlessGround(vp,actorMetadata,previewFrame=null){
 function preparePriestEffectsFrame(renderTime){
   const count=wasm.priest_effect_count()>>>0,names=['','convert','bless','converted'];
   const records=new DataView(wasm.memory.buffer,wasm.priest_effect_ptr()>>>0,count*12);
-  const keys=new Set(),effects=[],converted=new Map();
+  const keys=new Set(),effects=[],heals=[],converted=new Map();
   for(let index=0;index<count;index++){
-    const at=index*12,handle=records.getUint32(at,true),kind=names[records.getUint32(at+4,true)];
-    const started=records.getFloat32(at+8,true),key=`${handle}:${kind}:${started}`;
+    const at=index*12,handle=records.getUint32(at,true),type=records.getUint32(at+4,true);
+    const started=records.getFloat32(at+8,true);
+    if(type===4){if(rallyHealGate)heals.push({handle,kind:'healed',started});continue;}
+    const kind=names[type],key=`${handle}:${kind}:${started}`;
     if(!kind||keys.has(key))continue;
     keys.add(key);
     if(!priestAttachments.has(key)){
@@ -1392,11 +1482,11 @@ function preparePriestEffectsFrame(renderTime){
     effects.push({handle,kind,started,key,elapsed:renderTime-started});
   }
   priestParticles?.advance(effects.filter(effect=>effect.kind!=='bless'&&effect.elapsed>=0));
-  return {keys,effects};
+  return {keys,effects,heals:rallyHealGate?.advance(heals,previousPriestViews,renderTime)??[]};
 }
 
 function drawPriestEffects(currentView,actorMetadata,renderTime){
-  if(!priestEffects&&!priestParticles)return null;
+  if(!priestEffects&&!priestParticles&&!rallyHeal)return null;
   if(actorMetadata)currentPriestViews.push(actorMetadata);
   priestFrameEffects??=preparePriestEffectsFrame(renderTime);
   const meshes=[],particles=[];
@@ -1409,13 +1499,22 @@ function drawPriestEffects(currentView,actorMetadata,renderTime){
     if(kind!=='converted'&&actor.renderTime>=started)meshes.push({...row,elapsed:actor.renderTime-started});
     if(kind!=='bless'&&scale>0)particles.push(row);
   }
+  const heals=[];
+  for(const effect of priestFrameEffects.heals){
+    const actor=actorMetadata?.forHandle(effect.handle);
+    if(!actor||actor.hpRatio<=0||actor.renderTime<effect.started)continue;
+    const scale=originalModels.sourceScaleForActor?.(actor);
+    if(scale>0)heals.push({...effect,visible:true,scale,yaw:actor.renderYaw,elapsed:actor.renderTime-effect.started,
+      position:[actor.renderX,actor.renderAltitude,actor.renderY]});
+  }
   return {meshDraws:priestEffects?.draw({...currentView,effects:meshes})??0,
     particleQuads:priestParticles?.draw({...currentView,effects:particles})??0,
+    rallyDraws:rallyHeal?.draw({...currentView,lighting:originalModels.lighting,effects:heals})??0,
     particleTargets:qaMode?particles.filter(effect=>effect.kind==='converted').length:0};
 }
 
 function finishPriestEffectsFrame(){
-  if(!priestEffects&&!priestParticles)return;
+  if(!priestEffects&&!priestParticles&&!rallyHeal)return;
   for(const key of priestAttachments.keys())if(!priestFrameEffects?.keys.has(key))priestAttachments.delete(key);
   previousPriestViews=currentPriestViews;currentPriestViews=[];priestFrameEffects=null;
 }
@@ -1484,7 +1583,10 @@ function drawFullmapPipScene(pipView, alpha, renderEpochs, now, mission) {
   const extraction=drawSpyExtraction(pipView,wasm.sim_render_seconds?.(alpha));
   if(qaMode&&extraction!==null)canvas.dataset.spyPipExtraction=extraction;
   const priestDraws=drawPriestEffects(pipView,actorMetadata,wasm.sim_render_seconds?.(alpha));
-  if(qaMode&&priestDraws)canvas.dataset.priestPipParticles=`${priestDraws.particleQuads}:${priestDraws.particleTargets}`;
+  if(qaMode&&priestDraws){
+    canvas.dataset.priestPipParticles=`${priestDraws.particleQuads}:${priestDraws.particleTargets}`;
+    canvas.dataset.rallyHealPip=String(priestDraws.rallyDraws);
+  }
   drawAirMissionFlags(vp,actorMetadata,mission);
   carrierGarrisonFlag?.draw({vp,actors:actorMetadata?.actors,epochs:renderEpochs,local:ui?.local});
 }
@@ -1682,6 +1784,7 @@ function frame(now) {
   if(qaMode&&priestDraws){
     canvas.dataset.priestEffects=String(priestDraws.meshDraws);
     canvas.dataset.priestParticles=`${priestDraws.particleQuads}:${priestDraws.particleTargets}`;
+    canvas.dataset.rallyHeal=String(priestDraws.rallyDraws);
   }
   drawAirMissionFlags(view.vp,actorMetadata,mission);
   carrierGarrisonFlag?.draw({vp:view.vp,actors:actorMetadata?.actors,epochs:renderEpochs,local:ui?.local});
@@ -1710,7 +1813,7 @@ function frame(now) {
 
 // ---------------------------------------------------------------- HUD
 const HOT = ['Q', 'W', 'E', 'R', 'T', 'Z', 'X', 'C', 'V', 'B'];
-const unitPresentation=id=>id===86?spyPresentation:id===85?priestPresentation:id===84?carrierPresentation:id===83?fighterBomberPresentation:tradePresentation;
+const unitPresentation=id=>id>=87&&id<=89?leaderPresentation:id===86?spyPresentation:id===85?priestPresentation:id===84?carrierPresentation:id===83?fighterBomberPresentation:tradePresentation;
 function icon(id, px,context=undefined) {
   const c = document.createElement('canvas'); c.width = c.height = px;
   const regional = ui && rulesProfile.ruleset === 2
@@ -1778,7 +1881,8 @@ function updateUi(drawn, now) {
   $('perf').textContent = status;
 
   const s = ui.sel, info = $('info-content');
-  const powerRead=s.def===85?wasm.priest_power:s.def===86?wasm.spy_power:null;
+  const militaryLeader=militaryLeaderControl(s,ui.epoch);
+  const powerRead=s.def===85?wasm.priest_power:s.def===86?wasm.spy_power:s.def>=87&&s.def<=89?wasm.leader_power_reserve:null;
   const airStatus=airMission&&!bench&&!ui.win?airMissionSelection(wasm):null;
   tradeWaitStatus.update(!ui.win&&selectedTradeWait(wasm,s),ui.epoch);
   if (!s.n) info.innerHTML = bench ? '<h3>Stress test</h3><span class="dim">Two armies are kept at full strength and thrown at each other. Zoom and pan freely; you can still select and command the blue side.</span>'
@@ -1795,7 +1899,8 @@ function updateUi(drawn, now) {
       if (s.dmg) h += ` · ${s.dmg} dmg · range ${s.rng}`;
       if (s.built < 1) h += `<br>Im Bau: ${Math.round(s.built * 100)}%`;
     }
-    if(referenceMode&&s.def===56&&s.cargomax)h+=`<br>Garnison: ${s.cargoUnits??s.cargo} ${(s.cargoUnits??s.cargo)===1?'Einheit':'Einheiten'} · ${s.cargo} / ${s.cargomax} Plätze<br>Angriffsbonus: +${s.garrisonAttackBonus??s.cargo*3} %${s.garrisonHealRate?` · Heilung ${s.garrisonHealRate} HP/s`:""}`;
+    if(referenceMode&&s.def===5&&s.cargomax)h+=`<br>Liegeplätze: ${s.cargo} / ${s.cargomax}`;
+    else if(referenceMode&&s.def===56&&s.cargomax)h+=`<br>Garnison: ${s.cargoUnits??s.cargo} ${(s.cargoUnits??s.cargo)===1?'Einheit':'Einheiten'} · ${s.cargo} / ${s.cargomax} Plätze<br>Angriffsbonus: +${s.garrisonAttackBonus??s.cargo*3} %${s.garrisonHealRate?` · Heilung ${s.garrisonHealRate} HP/s`:""}`;
     else if (s.cargomax) h += s.def===47 ? `<br>Forscher: ${s.cargo} / ${s.cargomax}<br>Forschung insgesamt: +${(ui.research.rate*60).toFixed(1)} TP / Minute` : s.def===53||s.def===54 ? `<br>Förderarbeiter: ${s.cargo} / ${s.cargomax}<br>+${(s.cargo*.75).toFixed(2)} ${s.def===53?'Öl':'Uran'} / Sekunde` : referenceMode&&(s.def===0||s.def===52) ? `<br>Einquartiert: ${s.cargo} / ${s.cargomax}<br>Abgabebonus: +${s.cargo*2} %` : `<br>Passagiere: ${s.cargo} / ${s.cargomax}`;
     if(s.n===1&&airStatus?.kind===1&&airStatus.complete)h+=`<br>Stationierte Flugzeuge ${airStatus.count} / ${airStatus.max}`;
     if(s.n===1&&airStatus?.kind===2)h+=`<br>Munition ${airStatus.count} / ${airStatus.max}`;
@@ -1852,9 +1957,11 @@ function updateUi(drawn, now) {
   const flightActions=airMissionActions(airStatus), airArmed=!!airMission?.active();
   const market=referenceMode&&!bench&&!ui.win&&s.n===1&&s.def===50
     ?marketOrders(wasm,wasm.selected_actor_handle()>>>0):[];
-  const sig = ui.epoch+':'+ui.act.map(a => a.k + a.id + label(a.name,actionUnitId(a))).join(',')+':'+canCapture+':'+canTrade+
+  const dockSelected=s.def===5&&s.n===1;
+  const sig = ui.epoch+':'+dockSelected+':'+ui.act.map(a => a.k + a.id + label(a.name,actionUnitId(a))).join(',')+':'+canCapture+':'+canTrade+
     ':'+airStatus?.kind+':'+flightActions.map(action=>action.role+action.ready).join(',')+':'+airStatus?.auto+':'+airArmed+
     ':'+powerActions.map(({command,ready})=>command.action+ready).join(',')+':'+spyExtraction+':'+canExtract+
+    ':'+militaryLeader?.mode+':'+militaryLeader?.ready+
     ':'+market.map(order=>`${order.host}/${order.resource}/${order.side}/${order.normal}/${order.shift}`).join(',');
   const acts = $('acts');
   acts.classList.toggle('has-market',market.length>0);
@@ -1862,9 +1969,10 @@ function updateUi(drawn, now) {
     actSig = sig; acts.innerHTML = '';
     ui.act.forEach((a, i) => {
       const b = document.createElement('button'); b.className = 'act'; b.dataset.i = i;
-      b.append(GLYPH[a.k] ? glyph(GLYPH[a.k], 44) : icon(a.id, 44));
+      const dockIcon=dockSelected&&a.k==='u'?ungarrisonIcon(dockArt,nativeMetaEpoch(ui.epoch)):null;
+      b.append(dockIcon??(GLYPH[a.k] ? glyph(GLYPH[a.k], 44) : icon(a.id, 44)));
       const sm = document.createElement('small'); sm.textContent = label(a.name,actionUnitId(a)); b.append(sm);
-      const shortcut=a.k==='t'&&a.id===86?'S':airMissionTrainingKey(airStatus,a)??HOT[i];
+      const shortcut=a.k==='u'?'U':a.k==='t'&&a.id===86?'S':airMissionTrainingKey(airStatus,a)??HOT[i];
       if (shortcut && !(canCapture && shortcut === captureOrderText.shortcut) &&
           (airStatus?.kind!==1||!['R','F','T','B'].includes(shortcut)||airMissionTrainingKey(airStatus,a))) {
         const k = document.createElement('kbd'); k.textContent = shortcut; b.append(k);
@@ -1900,8 +2008,22 @@ function updateUi(drawn, now) {
       b.disabled=!ready;b.classList.toggle('no',!ready);
       command.order.decorateButton(b,ui.epoch);
       const caption=document.createElement('small');caption.textContent=command.art?.label(command.action)??command.label;b.append(caption);
-      const key=document.createElement('kbd');key.textContent=`Alt+${command.key}`;b.append(key);
+      const key=document.createElement('kbd');key.textContent=command.shortcut??`Alt+${command.key}`;b.append(key);
       b.onclick=()=>armPowerOrder(command);acts.append(b);
+    }
+    if(militaryLeader){
+      const {action,ready,mode,label,help}=militaryLeader;
+      const b=document.createElement('button');b.className='act';b.dataset.action=`leader-${mode}`;
+      b.title=action?.help??help;
+      b.disabled=!ready;b.classList.toggle('no',!ready);
+      const picture=document.createElement('span');picture.className='leader-power-icon';
+      picture.setAttribute('aria-hidden','true');
+      for(const state of ['idle','hover','pressed'])if(action?.art?.[state])
+        picture.style.setProperty(`--leader-power-${state}`,action.art[state]);
+      if(!action?.art?.idle)picture.append(glyph('✚',44));
+      const caption=document.createElement('small');caption.textContent=action?.label??label;
+      const key=document.createElement('kbd');key.textContent=';';
+      b.append(picture,caption,key);b.onclick=orderMilitaryLeaderPower;acts.append(b);
     }
     if(spyExtraction){
       const b=document.createElement('button');b.className='act spy-action';b.dataset.action='extraction';
@@ -2332,6 +2454,15 @@ addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && k === 'S') { e.preventDefault(); saveGame(); return; }
   if(referenceMode&&!ghost&&e.ctrlKey&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();keys.add('Control');return;}
   if (e.ctrlKey || e.metaKey) return;
+  if((e.key===';'||e.code==='Semicolon'&&!e.shiftKey)&&!e.altKey){
+    if(militaryLeaderControl(ui?.sel,ui?.epoch)){
+      e.preventDefault();if(!e.repeat)orderMilitaryLeaderPower();return;
+    }
+    const target=leaderTargetOrders.find(command=>selectedPowerType(ui?.sel,command.definition)&&command.available());
+    if(target){
+      e.preventDefault();if(!e.repeat)armPowerOrder(target);return;
+    }
+  }
   const airStatus=airMission&&!bench&&!ui?.win&&!e.altKey?airMissionSelection(wasm):null;
   if(airStatus?.kind===1){
     if(k==='R'&&!e.shiftKey){e.preventDefault();if(!e.repeat)armAirMission();return;}

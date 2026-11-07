@@ -26,6 +26,7 @@ pub(crate) struct State {
 }
 
 fn valid_recipient(def: DefId, allied: bool) -> bool {
+    if crate::leader58_defs::branch(def).is_some() { return true; }
     match def {
         61 | 86 => !allied,
         8..=28 | 43 | 46 | 57 | 62..=81 | 85 => true,

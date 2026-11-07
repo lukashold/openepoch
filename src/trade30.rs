@@ -77,7 +77,7 @@ fn trade_factor(baseline: f32, percent: i16) -> f32 {
 
 /// Connectivity for an order is read-only. The flow-field cache and its tick
 /// budget are part of live movement and must stay untouched during local input.
-fn connected(pass: &[bool], goal: usize) -> Vec<bool> {
+pub(super) fn connected(pass: &[bool], goal: usize) -> Vec<bool> {
     let mut reached = vec![false; NN];
     if !pass[goal] { return reached; }
     let mut queue = vec![goal];
@@ -122,7 +122,7 @@ impl Game {
     }
 
     pub(crate) fn trade_hidden(&self, index: usize, actor: &Ent) -> bool {
-        self.trade.is_hidden(index, actor)
+        self.trade.is_hidden(index, actor) || self.dock_parked(index, actor)
     }
 
     pub(crate) fn trade_wait_active(&self, handle: u32) -> bool {
@@ -285,13 +285,14 @@ impl Game {
         self.research_points[team as usize] = account.technology;
     }
 
-    fn trade_delivery(&mut self, team: u8, foreign: u8, paid_at_destination: bool, quote: Quote) {
+    fn trade_delivery(&mut self, team: u8, foreign: u8, host: usize, paid_at_destination: bool, quote: Quote) {
         let mut owner = self.trade_account(team);
         let mut partner = self.trade_account(foreign);
         let owner_gold = owner.gold;
         let partner_gold = partner.gold;
         let foreign_account = (team != foreign).then_some((&mut partner, paid_at_destination));
-        credit::deliver(&mut owner, foreign_account, Account { gold: quote.gold, technology: quote.tech });
+        let gold = self.economic_trade_gold(host, quote.gold);
+        credit::deliver(&mut owner, foreign_account, Account { gold, technology: quote.tech });
         self.write_trade_account(team, owner);
         self.crown_trade_gold(team, owner.gold - owner_gold);
         if team != foreign {
@@ -554,7 +555,7 @@ impl State {
                 .or_else(|| game.trade_replacement(unit, route.destination).and_then(|h| game.get(h)));
             if matches!(decision, Exit::Loaded(_)) {
                 if let (Some(_), Some(destination)) = (home, game.get(route.destination)) {
-                    game.trade_delivery(unit.team, game.ents[destination].team, !route.returning, route.quote);
+                    game.trade_delivery(unit.team, game.ents[destination].team, index, !route.returning, route.quote);
                 }
             }
             let (Some(home), Some(destination)) = (home, destination) else {
