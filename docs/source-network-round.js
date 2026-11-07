@@ -94,10 +94,10 @@ export class SourceRoundPeer {
     const tick = wasm.game_tick();
     const validStart = resume === null ? tick === 0 :
       integerIn(resume.tick, 1, 0xfffffffe) && resume.tick === tick && integerIn(resume.rate, 5, BOOTSTRAP_RATE) &&
-      wasm.network_resume_pending?.() === 1;
+      (resume.sharedOwner===true) === sharedOwner && wasm.network_resume_pending?.() === 1;
     if (!integerIn(humanSeats, 2, 4) || !integerIn(seat, 0, humanSeats - 1) ||
         sharedOwner !== (wasm.network_shared_owner?.() === 1) ||
-        (sharedOwner && (humanSeats !== 2 || resume !== null || onCheckpoint !== null)) ||
+        (sharedOwner && (humanSeats !== 2 || (onCheckpoint !== null && typeof wasm.save_shared_owner_resume !== 'function'))) ||
         (humanSeats > 2 && (typeof wasm.init_network_roster !== 'function' ||
           typeof wasm.network_roster_peer_disconnected !== 'function')) ||
         !validSpeed(requested) || typeof locked !== 'boolean' ||
@@ -250,7 +250,7 @@ export class SourceRoundPeer {
 
   requestCheckpoint(id) {
     if (this.local !== 0 || !this.onCheckpoint || this.alone || this.terminal || this.desync || this.round < 0 ||
-        !integerIn(id, 1, 0xffffffff) || this.pending.length > MAX_RECORDS-2) return false;
+        (this.sharedOwner && this.links.size!==1) || !integerIn(id, 1, 0xffffffff) || this.pending.length > MAX_RECORDS-2) return false;
     this.collectHostCommands();
     this.pending.push({type:'checkpoint',id});
     return true;

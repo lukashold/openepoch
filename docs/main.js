@@ -39,13 +39,13 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=clock38';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native50';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native51';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native44';
-import {SourceRoundPeer, SOURCE_ROUND_VERSION} from './source-network-round.js?v=native50';
-import {createSourceRoundCarrier, selectedRoundTripMilliseconds} from './source-network-wire.js?v=native50';
-import {mountSourceRosterLobby} from './source-network-lobby.js?v=native50';
-import {applyNetworkCheckpoint} from './source-network-resume.js?v=native48';
+import {SourceRoundPeer, SOURCE_ROUND_VERSION} from './source-network-round.js?v=native51';
+import {createSourceRoundCarrier, selectedRoundTripMilliseconds} from './source-network-wire.js?v=native51';
+import {mountSourceRosterLobby} from './source-network-lobby.js?v=native51';
+import {applyNetworkCheckpoint} from './source-network-resume.js?v=native51';
 import {createFullscreenController} from './fullscreen.js?v=building2';
 import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native17';
 import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=native39ceasefire';
@@ -2631,7 +2631,13 @@ function startRosterGame(cfg,seat,send,links,{archive,onCheckpoint}) {
   peer.rosterConnected=cfg.humanSeats;
   begin({...startingTempo(cfg.gameTempo),requested,locked});
   toast(archive?`Spielstand fortgesetzt · Platz ${seat+1}`:sharedOwner?'Koop · Gemeinsame Zivilisation gegen die KI':`Mehrspieler · Platz ${seat+1}`);
-  return {peer,connected:count=>{peer.rosterConnected=count;}};
+  return {peer,connected:count=>{
+    peer.rosterConnected=count;
+    if(sharedOwner&&seat===0&&onCheckpoint){
+      session.checkpointHost=count===cfg.humanSeats;
+      $('save').style.display=session.checkpointHost?'':'none';
+    }
+  }};
 }
 
 const supportsSourceRoster=supportsSourceNetworkClock&&civilizationSetup.enabled&&
@@ -2639,6 +2645,8 @@ const supportsSourceRoster=supportsSourceNetworkClock&&civilizationSetup.enabled
 const supportsNetworkCheckpoint=supportsSourceRoster&&!!globalThis.crypto?.subtle&&
   ['save_network_resume','load_network_resume','validate_network_resume','network_resume_pending'].every(name=>typeof wasm[name]==='function');
 const supportsSharedOwner=supportsSourceRoster&&typeof wasm.init_network_shared_owner==='function'&&typeof wasm.network_shared_owner==='function';
+const supportsSharedCheckpoint=supportsSharedOwner&&supportsNetworkCheckpoint&&
+  ['save_shared_owner_resume','load_shared_owner_resume','validate_shared_owner_resume'].every(name=>typeof wasm[name]==='function');
 // The ordinary roster hello keeps its Native46 simulation compatibility key.
 const rosterProfile='openepoch-ee2-up15.wasm?v=native46';
 let checkpointDownload=null;
@@ -2656,13 +2664,14 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
   rtcHost,rtcJoin,
   localHello:()=>({protocol:PROTOCOL_VERSION,profile:rosterProfile,rules:wasm.ruleset(),
     civilization:civilizationSetup.choice(0),climates,features:supportedRosterFeatures,
-    checkpoints:supportsNetworkCheckpoint,sharedOwner:supportsSharedOwner}),
+    checkpoints:supportsNetworkCheckpoint,sharedOwner:supportsSharedOwner,sharedOwnerCheckpoint:supportsSharedCheckpoint}),
   checkHello(hello){
     if(hello?.protocol!==PROTOCOL_VERSION||hello.profile!==rosterProfile||hello.rules!==wasm.ruleset()||
       !Array.isArray(hello.features)||hello.features.length>11||hello.features.some(key=>typeof key!=='string'))
       throw Error('Alle Teilnehmer brauchen dieselbe UP-Spielversion.');
     return {civilization:civilizationChoice(hello.civilization),climates:peerClimates(hello.climates),features:hello.features,
-      checkpoints:hello.checkpoints===true,sharedOwner:hello.sharedOwner===true};
+      checkpoints:hello.checkpoints===true,sharedOwner:hello.sharedOwner===true,
+      sharedOwnerCheckpoint:hello.sharedOwner===true&&hello.sharedOwnerCheckpoint===true};
   },
   makeSettings(humanSeats,ai,guests,sharedOwner){
     const choices=civilizationSetup.choices(),climate=menuClimate();
@@ -2676,10 +2685,11 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
   },
   checkSettings:checkRosterSettings,
   validateArchive:supportsNetworkCheckpoint?(archive,seat,seats)=>{
-    if(archive.settings.sharedOwner!==undefined)throw Error('Dieser Spielstand enthält eine unbekannte Spielerzuordnung.');
+    if(archive.decoded.meta.sharedOwner&&!supportsSharedCheckpoint)throw Error('Dieser Spielstand benötigt Koop-Spielstandunterstützung.');
     applyNetworkCheckpoint(wasm,archive.decoded,seat,seats,true);
   }:null,
   sharedOwnerAvailable:supportsSharedOwner,
+  sharedCheckpointAvailable:supportsSharedCheckpoint,
   onCheckpointState(message,archive){
     toast(message);
     if(archive){

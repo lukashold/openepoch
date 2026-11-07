@@ -29,6 +29,8 @@ impl Resignation {
         [self.policy.into(), self.departed.into(), self.defeated.into(), u32::from(self.finished)]
     }
 
+    fn active_shared_owner(self) -> bool { self.words() == [1, 0, 0, 0] }
+
     pub(crate) fn hash(self, mut mix: impl FnMut(u32)) {
         mix(MAGIC);
         for word in self.words() { mix(word); }
@@ -41,10 +43,20 @@ impl Game {
     }
 
     pub(crate) fn network_resume_eligible(&self) -> bool {
-        self.net && self.bench == 0 && (1..u32::MAX).contains(&self.tick) && self.winner == 0
-            && self.network_resume_tempo.is_none() && self.source_clock.is_some_and(|clock| clock.network)
+        self.network_resume_world_active()
             && (2..=4).contains(&self.humans)
             && (0..self.humans).all(|team| self.network_departure_allowed(team as u8))
+    }
+
+    pub(crate) fn shared_owner_resume_eligible(&self) -> bool {
+        self.network_resume_world_active() && self.humans == 1 && self.nplayers == 2 && self.n_ai == 1
+            && self.players[0].alive && !self.players[0].ai && self.players[1].ai
+            && self.net_resignation.is_some_and(Resignation::active_shared_owner)
+    }
+
+    fn network_resume_world_active(&self) -> bool {
+        self.net && self.bench == 0 && (1..u32::MAX).contains(&self.tick) && self.winner == 0
+            && self.network_resume_tempo.is_none() && self.source_clock.is_some_and(|clock| clock.network)
     }
 
     pub(crate) fn configure_network_resignation(&mut self, policy: u32) -> bool {
@@ -123,6 +135,13 @@ impl Game {
     }
 
     pub(crate) fn restore_network_resignation(&mut self, state: Option<Resignation>) -> Option<()> {
+        if self.net && self.humans == 1 {
+            let state = state.filter(|state| state.active_shared_owner())?;
+            if self.solo_resigned || self.bench != 0 { return None; }
+            self.net_resignation = Some(state);
+            self.refresh_display_fog();
+            return Some(());
+        }
         let Some(state) = state else { return Some(()); };
         if !self.net || !(2..=4).contains(&self.humans) || self.solo_resigned || self.bench != 0 { return None; }
         for seat in 0..self.humans as usize {

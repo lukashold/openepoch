@@ -1,7 +1,7 @@
 // A host and independent authenticated RTC links for roster and shared-owner rooms.
-import {createSourceRosterCarrier,createSourceCheckpointCarrier,createSourceSharedOwnerCarrier} from './source-network-wire.js?v=native50';
+import {createSourceRosterCarrier,createSourceCheckpointCarrier,createSourceSharedOwnerCarrier} from './source-network-wire.js?v=native51';
 import {captureBrowserCheckpoint,readBrowserCheckpoint,sendCheckpointWindow,receiveCheckpointChunk,
-  validCheckpointDigest,validCheckpointSize,CHECKPOINT_WINDOW} from './source-network-checkpoint.js?v=native48';
+  validCheckpointDigest,validCheckpointSize,CHECKPOINT_WINDOW} from './source-network-checkpoint.js?v=native51';
 
 const PREFIX='OE-R2.';
 const VERSION=2;
@@ -23,7 +23,7 @@ function unpackCode(code,kind) {
 }
 
 export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHello,makeSettings,checkSettings,
-  launch,onOpen,onDeparture,onHostLoss,validateArchive,onCheckpointState,sharedOwnerAvailable}) {
+  launch,onOpen,onDeparture,onHostLoss,validateArchive,onCheckpointState,sharedOwnerAvailable,sharedCheckpointAvailable}) {
   const get=id=>root.querySelector('#mp-roster-'+id);
   const status=get('status'),hostRoom=get('host-room'),guestRoom=get('guest-room');
   const startButton=get('start'),countSelect=get('count'),aiSelect=get('ai');
@@ -70,9 +70,12 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
     const ready=connected(room);
     if(room.phase==='lobby'){
       const incompatible=room.sharedOwner&&[...room.links.values()].some(link=>link.hello&&!link.hello.sharedOwner);
-      startButton.disabled=ready!==room.seats||incompatible;
+      const missingSharedSave=room.sharedOwner&&room.archive&&[...room.links.values()].some(link=>link.hello&&!link.hello.sharedOwnerCheckpoint);
+      startButton.disabled=ready!==room.seats||incompatible||!!missingSharedSave;
       const count=`${ready}/${room.seats} Plätze`;
       if(incompatible)setStatus('Der Mitspieler benötigt eine Spielversion mit gemeinsamer Zivilisation.');
+      else if(missingSharedSave)setStatus('Der Mitspieler benötigt eine Spielversion mit Koop-Spielständen.');
+      else if(room.sharedOwner&&room.archive)setStatus(`Koop-Spielstand bei Schritt ${room.archive.decoded.meta.tick} · ${ready}/${room.seats} Controller bereit.`);
       else if(room.sharedOwner)setStatus(`Gemeinsame Zivilisation gegen die KI · ${count} bereit.`);
       else setStatus(room.archive?`Spielstand bei Schritt ${room.archive.decoded.meta.tick} · ${count} verbunden.`:`${count} bereit.`);
     }
@@ -128,12 +131,14 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
     room.session=launch(room.settings,room.local,send,()=>[...room.links.values()],{archive:room.archive,onCheckpoint});
     room.phase='playing';
     room.archive=null;
-    const makeCarrier=room.settings.sharedOwner?createSourceSharedOwnerCarrier:
-      room.checkpoints?createSourceCheckpointCarrier:createSourceRosterCarrier;
+    const makeCarrier=room.checkpoints?createSourceCheckpointCarrier:createSourceRosterCarrier;
     for(const link of room.links.values()){
-      link.carrier=makeCarrier(bytes=>{
+      const sendBytes=bytes=>{
         if(link.channel.readyState==='open')link.channel.send(bytes);
-      },message=>room.session.peer.receive(link.seat,message));
+      };
+      const receiveMessage=message=>room.session.peer.receive(link.seat,message);
+      link.carrier=room.settings.sharedOwner?createSourceSharedOwnerCarrier(sendBytes,receiveMessage,room.checkpoints)
+        :makeCarrier(sendBytes,receiveMessage);
     }
     if(room.local===0){
       room.session.connected(connected(room));
@@ -162,6 +167,8 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
       link.download=null;
       void readBrowserCheckpoint(download.bytes,download.digest).then(archive=>{
         if(!active(room,link)||room.phase!=='preparing')return;
+        if((archive.decoded.meta.sharedOwner===true)!==room.expectedSharedOwner)
+          throw Error('Der Spielstand hat eine andere Spielerzuordnung.');
         room.settings=checkSettings(archive.settings,room.seats);
         validateArchive(archive,room.local,room.seats);
         room.archive=archive;
@@ -223,6 +230,7 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
     if(room.local===0&&message.type==='checkpoint-report'){
       if(room.save?.id===message.id){
         if(message.digest===null){failCheckpoint(room,'Ein Mitspieler konnte den Spielstand nicht speichern.');return true;}
+        if(room.sharedOwner&&room.save.reports.has(link.seat))return room.save.reports.get(link.seat)===message.digest;
         if(!validCheckpointDigest(message.digest)||room.save.reports.has(link.seat))return false;
         room.save.reports.set(link.seat,message.digest);
         settleCheckpoint(room);
@@ -272,7 +280,8 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
         room.settings=checkSettings(message.settings,room.seats);
         room.checkpoints=message.checkpoints===true&&!!validateArchive;
         if(message.checkpoints===true&&!room.checkpoints)throw Error('Diese Spielversion kann gemeinsame Spielstände nicht öffnen.');
-        if(room.settings.sharedOwner&&(!link.hello.sharedOwner||room.checkpoints))
+        if(room.settings.sharedOwner&&(!link.hello.sharedOwner||(room.checkpoints&&
+            (!sharedCheckpointAvailable||!link.hello.sharedOwnerCheckpoint))))
           throw Error('Ungültige Einstellungen für die gemeinsame Zivilisation.');
         room.phase='preparing';
         armPreparation(room);
@@ -281,6 +290,9 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
       }
       if(room.local!==0&&message.type==='prepare-resume'&&room.phase==='lobby'&&validateArchive){
         if(!validCheckpointSize(message.length)||!validCheckpointDigest(message.digest))throw Error('Ungültige Spielstandsankündigung.');
+        room.expectedSharedOwner=message.sharedOwner===true;
+        if(message.sharedOwner!==undefined&&(!room.expectedSharedOwner||!sharedCheckpointAvailable||!link.hello.sharedOwnerCheckpoint))
+          throw Error('Diese Spielversion kann Koop-Spielstände nicht öffnen.');
         room.checkpoints=true;
         room.phase='preparing';
         armPreparation(room);
@@ -301,10 +313,12 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
         if(room.archive&&(message.digest!==room.archive.digest||link.archiveOffset!==room.archive.bytes.length))
           throw Error('Der Mitspieler hat den Spielstand nicht bestätigt.');
         link.prepared=true;
+        link.preparedDigest=message.digest;
         room.rows.get(link.seat).state.textContent=room.archive?'Spielstand geprüft':'Einstellungen bestätigt';
         if([...room.links.values()].every(entry=>entry.prepared))run(room);
         return;
       }
+      if(room.local===0&&room.sharedOwner&&message.type==='prepared'&&link.prepared&&message.digest===link.preparedDigest)return;
       if(room.local!==0&&message.type==='begin'&&room.phase==='preparing'&&room.prepared){
         run(room);
         return;
@@ -437,7 +451,7 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
       const {humanSeats}=archive.decoded.meta;
       const settings=checkSettings(archive.settings,humanSeats);
       validateArchive(archive,0,humanSeats);
-      finishHostRoom(room,humanSeats,settings.ai,archive);
+      finishHostRoom(room,humanSeats,settings.ai,archive,settings.sharedOwner===true);
     }catch(error){if(active(room))reset(error.message);}
   };
   get('join').onclick=()=>{
@@ -472,7 +486,9 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
     try{
       const guests=[...room.links].sort(([left],[right])=>left-right).map(([,link])=>link.hello);
       if(room.sharedOwner&&!guests.every(guest=>guest.sharedOwner))throw Error('Der Mitspieler benötigt eine Spielversion mit gemeinsamer Zivilisation.');
-      room.checkpoints=!room.sharedOwner&&!!validateArchive&&guests.every(guest=>guest.checkpoints);
+      room.checkpoints=room.sharedOwner?sharedCheckpointAvailable&&guests.every(guest=>guest.sharedOwnerCheckpoint)
+        :!!validateArchive&&guests.every(guest=>guest.checkpoints);
+      if(room.sharedOwner&&room.archive&&!room.checkpoints)throw Error('Der Mitspieler benötigt eine Spielversion mit Koop-Spielständen.');
       if(room.archive&&(!room.checkpoints||!guests.every(guest=>guest.climates.includes(room.archive.settings.climate)&&
           room.archive.settings.features.every(key=>guest.features.includes(key)))))
         throw Error('Einem Mitspieler fehlen Regeln oder Grafiken für diesen Spielstand.');
@@ -483,7 +499,8 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
       armPreparation(room);
       if(room.archive){
         setStatus('Warte, bis alle Mitspieler den Spielstand geprüft haben.');
-        for(const link of room.links.values())control(link,room,'prepare-resume',{length:room.archive.bytes.length,digest:room.archive.digest});
+        for(const link of room.links.values())control(link,room,'prepare-resume',{length:room.archive.bytes.length,digest:room.archive.digest,
+          ...(room.sharedOwner?{sharedOwner:true}:{})});
       }else{
         setStatus('Warte auf Bestätigung der Scharmützeleinstellungen.');
         for(const link of room.links.values())control(link,room,'prepare',{settings:room.settings,checkpoints:room.checkpoints});

@@ -1,5 +1,5 @@
 // Portable browser checkpoint and bounded WebRTC file fragments.
-import {captureNetworkCheckpoint,readNetworkCheckpoint} from './source-network-resume.js?v=native48';
+import {captureNetworkCheckpoint,readNetworkCheckpoint} from './source-network-resume.js?v=native51';
 
 const FILE_MAGIC=0x31434f45; // EOC1
 const CHUNK_MAGIC=0x31415345; // ESA1
@@ -16,6 +16,7 @@ const digest=async bytes=>new Uint8Array(await crypto.subtle.digest('SHA-256',by
 const hex=bytes=>Array.from(bytes,value=>value.toString(16).padStart(2,'0')).join('');
 
 export async function captureBrowserCheckpoint(peer,settings) {
+  if ((settings.sharedOwner===true)!==(peer.sharedOwner===true))throw Error('Spielstand und Spielerzuordnung passen nicht zusammen.');
   // captureNetworkCheckpoint copies the admitted world synchronously before hashing.
   const tick=peer.wasm.game_tick();
   const inner=await captureNetworkCheckpoint(peer);
@@ -44,7 +45,8 @@ export async function readBrowserCheckpoint(bytes,advertised=null) {
     throw Error('Die Prüfsumme des Spielstands stimmt nicht.');
   const settings=JSON.parse(decoder.decode(bytes.subarray(HEADER,HEADER+configLength)));
   const decoded=await readNetworkCheckpoint(bytes.subarray(HEADER+configLength,end));
-  if(settings?.humanSeats!==decoded.meta.humanSeats)throw Error('Spielstand und Spielerplätze passen nicht zusammen.');
+  if(settings?.humanSeats!==decoded.meta.humanSeats||(settings.sharedOwner===true)!==(decoded.meta.sharedOwner===true))
+    throw Error('Spielstand und Spielerplätze passen nicht zusammen.');
   return {bytes,digest:sha,settings,decoded};
 }
 

@@ -1,12 +1,13 @@
 // Browser carrier for the negotiated source-round mode. DTLS supplies the peer
 // identity and SCTP supplies reliable ordering. All sizes and record types are
 // local to this adapter.
-import {MAX_ROUND_PACKET_BYTES as MAX_PACKET} from './source-network-round.js?v=native50';
+import {MAX_ROUND_PACKET_BYTES as MAX_PACKET} from './source-network-round.js?v=native51';
 
 const MAGIC = 0x314e5253; // SRN1, carrier version 1
 const ROSTER_MAGIC = 0x324e5253; // SRN2, isolated three/four-seat carrier
 const CHECKPOINT_MAGIC = 0x334e5253; // SRN3, negotiated coordinated checkpoints
 const SHARED_OWNER_MAGIC = 0x344e5253; // SRN4, shared-owner room
+const SHARED_CHECKPOINT_MAGIC = 0x354e5253; // SRN5, shared-owner room with checkpoints
 const HEADER = 16;
 const FRAGMENT = 0x4000;
 const KINDS = {ack:1, commands:2, round:3, abort:4};
@@ -111,13 +112,13 @@ export function createSourceCheckpointCarrier(send, dispatch) {
   return createCarrier(send,dispatch,CHECKPOINT_MAGIC);
 }
 
-export function createSourceSharedOwnerCarrier(send, dispatch) {
-  return createCarrier(send,dispatch,SHARED_OWNER_MAGIC);
+export function createSourceSharedOwnerCarrier(send, dispatch, checkpoints = false) {
+  return createCarrier(send,dispatch,checkpoints ? SHARED_CHECKPOINT_MAGIC : SHARED_OWNER_MAGIC);
 }
 
 function createCarrier(send, dispatch, magic) {
-  const checkpoints=magic===CHECKPOINT_MAGIC;
-  const roster=checkpoints||magic===ROSTER_MAGIC;
+  const checkpoints=magic===CHECKPOINT_MAGIC||magic===SHARED_CHECKPOINT_MAGIC;
+  const roster=magic===CHECKPOINT_MAGIC||magic===ROSTER_MAGIC;
   let nextSend = 0, nextReceive = 0, pending = null, received = 0;
   return {
     send(message) {

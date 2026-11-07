@@ -713,6 +713,31 @@ pub extern "C" fn validate_network_resume(humans: u32, local: u32, tick: u32, ra
 
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
+pub extern "C" fn save_shared_owner_resume() -> *const u8 {
+    g().save_shared_owner_resume();
+    g().savebuf.as_ptr()
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn load_shared_owner_resume(controller: u32, tick: u32, rate: u32, scale: f32) -> u32 {
+    unsafe {
+        let Some(game) = Game::load_shared_owner_resume(&*addr_of_mut!(LOADBUF), controller, tick, rate, scale) else { return 0; };
+        *addr_of_mut!(GAME) = Some(Box::new(game));
+    }
+    render_meta7::reset_session();
+    1
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn validate_shared_owner_resume(controller: u32, tick: u32, rate: u32, scale: f32) -> u32 {
+    let bytes = unsafe { &*addr_of_mut!(LOADBUF) };
+    u32::from(Game::load_shared_owner_resume(bytes, controller, tick, rate, scale).is_some())
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
 pub extern "C" fn network_resume_pending() -> u32 {
     u32::from(g().network_resume_tempo.is_some())
 }

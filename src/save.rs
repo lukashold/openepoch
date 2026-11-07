@@ -13,6 +13,16 @@ use core::mem::size_of;
 
 const MAGIC: u32 = if cfg!(feature="ee2-paidqueue7"){0x3755_454f}else if cfg!(feature="ee2-roster6"){0x3655_454f}else if cfg!(feature="ee2-up15") {0x3555_454f} else if cfg!(feature = "ee2-reference") { 0x3252_454f } else { 0x3250_454f };
 
+#[cfg(feature = "ee2-native13")]
+const SHARED_OWNER_HEADER: &[u8; 8] = b"CSW1\x02\x01\x00\x00"; // two controllers, one human owner, owner map [0, 0]
+
+enum ArchiveRoster {
+    #[cfg(feature = "ee2-native13")]
+    Distinct { humans: u32, local: u32 },
+    #[cfg(feature = "ee2-native13")]
+    SharedOwner,
+}
+
 pub(crate) fn checksum(bytes: &[u8]) -> u32 {
     bytes.iter().fold(2166136261u32, |value, &byte| (value ^ u32::from(byte)).wrapping_mul(16777619))
 }
@@ -47,6 +57,18 @@ impl Game {
             return;
         }
         self.write_archive(true);
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn save_shared_owner_resume(&mut self) {
+        if !self.shared_owner_resume_eligible() {
+            self.savebuf.clear();
+            return;
+        }
+        self.write_archive(true);
+        if self.savebuf.is_empty() { return; }
+        self.savebuf.splice(..0, SHARED_OWNER_HEADER.iter().copied());
+        self.savebuf.extend_from_slice(&checksum(&self.savebuf).to_le_bytes());
     }
 
     fn write_archive(&mut self, shared_network: bool) {
@@ -162,13 +184,25 @@ impl Game {
     pub(crate) fn load_network_resume(buf: &[u8], humans: u32, local: u32, tick: u32, rate: u32, scale: f32) -> Option<Game> {
         if !(2..=4).contains(&humans) || local >= humans { return None; }
         let tempo = crate::source_clock38::AdaptiveTempo::network_resume(rate, scale)?;
-        let mut game = Self::read_archive(buf, Some((humans, local)))?;
+        let mut game = Self::read_archive(buf, Some(ArchiveRoster::Distinct { humans, local }))?;
         if game.tick != tick || !game.network_resume_eligible() { return None; }
         game.network_resume_tempo = Some(tempo);
         Some(game)
     }
 
-    fn read_archive(buf: &[u8], roster: Option<(u32, u32)>) -> Option<Game> {
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn load_shared_owner_resume(buf: &[u8], controller: u32, tick: u32, rate: u32, scale: f32) -> Option<Game> {
+        if controller >= 2 { return None; }
+        let tempo = crate::source_clock38::AdaptiveTempo::network_resume(rate, scale)?;
+        let (world, stored) = buf.split_at_checked(buf.len().checked_sub(4)?)?;
+        if checksum(world) != u32::from_le_bytes(stored.try_into().ok()?) { return None; }
+        let mut game = Self::read_archive(world.strip_prefix(SHARED_OWNER_HEADER.as_slice())?, Some(ArchiveRoster::SharedOwner))?;
+        if game.tick != tick || !game.shared_owner_resume_eligible() { return None; }
+        game.network_resume_tempo = Some(tempo);
+        Some(game)
+    }
+
+    fn read_archive(buf: &[u8], roster: Option<ArchiveRoster>) -> Option<Game> {
         let (buf, source_clock) = crate::source_clock38::split(buf)?;
         let (buf, diplomacy_clock) = crate::diplomacy::DiplomacyClock::split(buf)?;
         if diplomacy_clock.is_some() && source_clock.is_none() { return None; }
@@ -259,13 +293,19 @@ impl Game {
         if city_chunk.is_some() && (trailer!=236 || !has_diplomacy || !has_territory || u(3) as usize!=SAVE_DEFINITION_COUNT) {return None;}
         let humans=if has_diplomacy{u32::from_le_bytes(buf[end+trailer+8..end+trailer+12].try_into().ok()?)}else{1};
         let local = match roster {
-            Some((expected, local)) if expected == humans && u(5) <= 4 - humans => local,
+            #[cfg(feature="ee2-native13")]
+            Some(ArchiveRoster::Distinct { humans: expected, local }) if expected == humans && u(5) <= 4 - humans => local,
+            #[cfg(feature="ee2-native13")]
+            Some(ArchiveRoster::SharedOwner) if humans == 1 && u(5) == 1 => 0,
             None if (1..=2).contains(&humans) => 0,
             _ => return None,
         };
         #[cfg(feature="ee2-native13")]
-        let mut g = if humans > 2 { Game::new_network_roster(u(4), u(5), humans, local)? }
-            else { Game::new(u(4), u(5), 0, humans, local) };
+        let mut g = match roster {
+            Some(ArchiveRoster::SharedOwner) => Game::new_shared_owner_network(u(4)),
+            _ if humans > 2 => Game::new_network_roster(u(4), u(5), humans, local)?,
+            _ => Game::new(u(4), u(5), 0, humans, local),
+        };
         #[cfg(not(feature="ee2-native13"))]
         let mut g = Game::new(u(4), u(5), 0, humans, local);
         g.tick = u(6);
@@ -350,7 +390,7 @@ impl Game {
             fill(&mut g.extra_resources,&ext[8..104]);
         }
         if has_diplomacy{g.read_diplomacy(&buf[end+trailer..end+trailer+crate::diplomacy::DIP_BYTES])?;}
-        if (g.god_mode || g.fog_inverted) && g.humans != 1 { return None; }
+        if (g.god_mode || g.fog_inverted) && (g.humans != 1 || g.net) { return None; }
         if has_territory{g.read_territory(&buf[end+trailer+crate::diplomacy::DIP_BYTES..])?;}
         if let Some(clock) = diplomacy_clock {
             if !clock.valid(g.sim_elapsed(), g.nplayers) { return None; }
