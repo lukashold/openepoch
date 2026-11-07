@@ -151,6 +151,7 @@
   <span class="r" title="Deine Gebiete. Baue ein Stadtzentrum in einem freien Gebiet.">Gebiete <b id="terr">1</b></span>
   <span class="r" id="territory-victory-status" hidden></span>
   <span class="r" id="sole-survivor-status" hidden></span>
+  <span class="r" id="initial-ceasefire-status" hidden></span>
   <span class="r" id="observer-status" hidden>Beobachter</span>
   <button id="idle" title="Select next idle worker (F)">Idle workers: 0</button>
   <span class="sp"></span>
@@ -329,6 +330,22 @@
         <div class="row"><label for="supplies">Startvorräte</label><select id="supplies"><option value="0">Normal</option><option value="1" selected>Großzügig</option><option value="2">Sehr großzügig</option></select><span class="dim">Für alle Spieler gleich</span></div>
       </section>
       <section id="sk-advanced" class="skirmish-pane">
+        <div class="row" id="initial-ceasefire-option" hidden>
+          <label for="initial-ceasefire">Anfänglicher Waffenstillstand</label>
+          <select id="initial-ceasefire">
+            <option value="0">Deaktiviert</option>
+            <option value="1">2 Minuten</option>
+            <option value="2">5 Minuten</option>
+            <option value="3">10 Minuten</option>
+            <option value="4">15 Minuten</option>
+            <option value="5">20 Minuten (1.6)</option>
+            <option value="6">30 Minuten (1.6)</option>
+            <option value="7">45 Minuten (1.6)</option>
+            <option value="8">60 Minuten (1.6)</option>
+            <option value="9">2 Stunden (1.6)</option>
+            <option value="10">24 Stunden (1.6)</option>
+          </select>
+        </div>
         <div id="original-tempo-options" hidden>
           <div class="row"><label for="game-speed-preset">Spielgeschwindigkeit</label><select id="game-speed-preset"><option value="0">Langsam</option><option value="1" selected>Normal</option><option value="2">Schnell</option><option value="3">Sehr schnell</option></select></div>
           <div class="row"><label for="game-speed-locked">Geschwindigkeit sperren</label><input id="game-speed-locked" type="checkbox" checked></div>
@@ -405,6 +422,6 @@
 </aside>
 <div id="trade-route-caption" hidden role="status"></div>
 <div id="air-mission-caption" hidden role="status"></div>
-<script type="module" src="main.js?v=native38"></script>
+<script type="module" src="main.js?v=native39ceasefire"></script>
 </body>
 </html>

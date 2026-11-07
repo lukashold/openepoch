@@ -77,6 +77,10 @@ impl Game {
         }
         let territory = self.map.terr[(ty + s / 2) as usize * N + (tx + s / 2) as usize];
         let owner = self.towner[territory as usize];
+        #[cfg(feature="ee2-native13")]
+        if owner != team && (owner != 255 || matches!(def, TOWER | FORTRESS)) && self.initial_ceasefire_active() {
+            return 11;
+        }
         if owner != team && owner != 255 {
             return 2;
         }

@@ -61,6 +61,8 @@ impl Game {
         let options = options | if self.air_carrier_enabled { crate::carrier36_defs::SAVE_FLAG } else { 0 };
         #[cfg(feature="ee2-native13")]
         let options = options | if self.solo_resigned { crate::cmd::SOLO_RESIGN_SAVE_FLAG } else { 0 };
+        #[cfg(feature="ee2-native13")]
+        let options = options | crate::initial_ceasefire::save_option(self.initial_ceasefire);
         for v in [options, self.instant_build as u32, self.tech_points] {
             b.extend_from_slice(&v.to_le_bytes());
         }
@@ -237,7 +239,7 @@ impl Game {
             let allowed = allowed | crate::infantry_roster27::SAVE_FLAG | crate::production_roster29::SAVE_FLAG |
                 crate::game::trade30::SAVE_FLAG | crate::air31::SAVE_FLAG | crate::runway32::SAVE_FLAG |
                 crate::takeoff33::SAVE_FLAG | crate::landing34::SAVE_FLAG | crate::carrier36_defs::SAVE_FLAG |
-                crate::cmd::SOLO_RESIGN_SAVE_FLAG;
+                crate::cmd::SOLO_RESIGN_SAVE_FLAG | crate::initial_ceasefire::SAVE_MASK;
             let flags = v(0);
             if flags & !allowed != 0 || v(4) > 1 { return None; }
             g.cheats_enabled = flags & 1 != 0;
@@ -254,6 +256,7 @@ impl Game {
                 g.air_landing_enabled = flags & crate::landing34::SAVE_FLAG != 0;
                 g.air_carrier_enabled = flags & crate::carrier36_defs::SAVE_FLAG != 0;
                 g.solo_resigned = flags & crate::cmd::SOLO_RESIGN_SAVE_FLAG != 0;
+                g.initial_ceasefire = crate::initial_ceasefire::read_option(flags)?;
                 if g.air_runway_enabled && !g.air_missions_enabled { return None; }
                 if g.air_takeoff_enabled && !g.air_runway_enabled { return None; }
                 if g.air_landing_enabled && !g.air_takeoff_enabled { return None; }

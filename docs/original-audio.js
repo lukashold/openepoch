@@ -1,9 +1,11 @@
 import {createTypedAudioBindings} from './original-audio-bindings.js?v=native8';
 import {createRegionalMusicPlayback} from './original-regional-music.js?v=regional12';
+import {originalOneShotAudible} from './original-spatial-audio.js?v=native39audio';
 // Playback of original assets extracted from the user's local EE2 installation.
 // Metadata and byte-for-byte source hashes live beside those assets. This module
 // contains no recordings and remains usable when local-original is absent.
 const DEFAULT_BASE=new URL('./local-original/audio/',import.meta.url);
+const STONE_THROWER_LAUNCH=26;
 
 export function createOriginalAudio(options={}) {
   const enabled=options.enabled ?? (typeof window!=='undefined' && new URLSearchParams(window.location?.search||'').get('rules')==='ee2');
@@ -137,7 +139,7 @@ export function createOriginalAudio(options={}) {
     if([...live].filter(source=>source.originalGroup===group).length>=event.maximumInstances)return false;
     return !!start(takeoffBuffers.get(event.sha256),volume*event.volume,pan,group);
   }
-  function updateStoneThrowerWheels(session, tracks) {
+  function updateStoneThrowerWheels(session, tracks, audible=volume=>volume>=.02) {
     const event=manifest?.nativeStoneThrowerEffects?.events?.fx_move_wheeled_04;
     if(muted||ctx?.state!=='running'||!session||!tracks?.length||!event?.loop||!event.file
       ||!Number.isInteger(event.maxInstances)||event.maxInstances<1||!Number.isFinite(event.volume)){
@@ -146,7 +148,7 @@ export function createOriginalAudio(options={}) {
     }
     if(wheelSession!==session)stopStoneThrowerWheels();
     wheelSession=session;
-    const wanted=new Map(tracks.filter(track=>track.volume>=.02).map(track=>[track.handle,track]));
+    const wanted=new Map(tracks.filter(track=>audible(track.volume)).map(track=>[track.handle,track]));
     for(const [handle,row] of wheelLoops){
       if(wanted.get(handle)?.clip===row.clip)continue;
       stop(row.source);
@@ -294,6 +296,19 @@ export function createOriginalAudio(options={}) {
     if(source)source.originalEffect=kind;
     stats.effectPlays++;return true;
   }
+  function stoneThrowerLaunch(volume,pan) {
+    const event=manifest?.nativeStoneThrowerEffects?.events?.Trebuchet_firing1;
+    if (!event || muted || ctx?.state!=='running') return false;
+    const buffer=buffers.get(event.file);
+    if (!buffer) { if (originalOneShotAudible(volume)) load(event.file); return false; }
+    const activeShots=[...live].filter(source=>source.originalEffect===STONE_THROWER_LAUNCH);
+    if (event.maxInstances>0 && activeShots.length>=event.maxInstances) stop(activeShots[0]);
+    if (originalOneShotAudible(volume)) {
+      const source=start(buffer,volume*event.volume,pan,'effect');
+      if (source) { source.originalEffect=STONE_THROWER_LAUNCH;stats.effectPlays++; }
+    }
+    return true;
+  }
   function regionalPlayback() {
     if (!regionalMusicEnabled || !ctx || !musicBus) return null;
     if (!regionalMusic) {
@@ -326,7 +341,7 @@ export function createOriginalAudio(options={}) {
     return !musicEnabled||!!tracks?.some(file=>!failed.has(file));
   }
   return {
-    prepare,acknowledge,citizenDeath,effect,music,menuMusic,setDefinitionBindings,updateStoneThrowerWheels,stopStoneThrowerWheels,
+    prepare,acknowledge,citizenDeath,effect,stoneThrowerLaunch,music,menuMusic,setDefinitionBindings,updateStoneThrowerWheels,stopStoneThrowerWheels,
     bindTakeoffEvents,playTakeoff,stopTakeoff,playInterfaceCue,
     role:(id,epoch)=>typed.role(id,epoch),
     resetRegionalMusic(){regionalMusic?.reset();},

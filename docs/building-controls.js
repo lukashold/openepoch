@@ -9,7 +9,8 @@ export const PLACEMENT_ERRORS=Object.freeze([
   'Kein Landweg für die gewählten Bürger. Öffne einen Zugang oder setze sie beim Bauplatz ab.',
   'Dieses Gebäude ist in deiner Epoche noch nicht verfügbar.',
   'Das Einheitenlimit ist erreicht.',
-  'In einem Gebiet sind höchstens zwei Festungen möglich.'
+  'In einem Gebiet sind höchstens zwei Festungen möglich.',
+  'Der anfängliche Waffenstillstand verbietet den Bau an dieser Stelle.'
 ]);
 
 export function placementMessage(error,id){

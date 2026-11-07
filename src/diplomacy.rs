@@ -86,6 +86,13 @@ impl Game {
     }
 
     #[inline]
+    pub(crate) fn combat_hostile(&self, from: u8, to: u8) -> bool {
+        #[cfg(feature="ee2-native13")]
+        if self.initial_ceasefire_active() { return false; }
+        self.hostile(from, to)
+    }
+
+    #[inline]
     pub fn allied(&self, from: u8, to: u8) -> bool {
         from == to || (self.relation(from, to) == ALLIED && self.relation(to, from) == ALLIED)
     }

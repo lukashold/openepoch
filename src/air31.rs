@@ -916,7 +916,7 @@ impl State {
         let actor = game.ents[index];
         let target = game.ents[target_index];
         if target.hp <= 0.0 || !game.air_valid_target(actor.team, game.h(target_index)) { return; }
-        if game.hostile(actor.team, target.team) && game.can_see(actor.team, target_index) &&
+        if game.combat_hostile(actor.team, target.team) && game.can_see(actor.team, target_index) &&
             DEFS[actor.def as usize].weapon_vs(DEFS[target.def as usize].dom).is_some() &&
             game.rps_allows(&actor, &target) {
             if frame.ordnance > 0 && (actor.order != O_ATTACK || actor.otgt != game.h(target_index)) {

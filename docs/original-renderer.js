@@ -786,7 +786,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     const visibilityKey=hiddenParts?.length?':hidden:'+hiddenParts.map(part=>variant.parts.indexOf(part)).join(','):'';
     const preview=!!previewFlags,key=variantIndex+':'+team+':'+activity+':'+(far&&variant.farRequested?1:0)+':'+previewFlags+':'+clip+':'+once+(variant.houseLodKey===undefined?'':':house:'+variant.houseLodKey)+visibilityKey;
     if(collectStoneThrowerWheels&&!preview&&actor?.def===22&&epoch<2&&variant.stoneThrowerWheelClips?.has(clip)){
-     stoneThrowerWheels.push({handle:actor.handle,clip,x:actor.renderX,y:actor.renderY});
+     stoneThrowerWheels.push({handle:actor.handle,clip,x:actor.renderX,y:actor.renderY,altitude:actor.renderAltitude});
     }
     const group=groups.get(key)||{variant,team,activity,clip,once,preview,hiddenParts,list:[],instanceIndices:[]};
     group.instanceIndices.push(i);

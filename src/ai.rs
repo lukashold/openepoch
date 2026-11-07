@@ -346,7 +346,7 @@ impl Game {
             let mut bd = f32::MAX;
             for i in 0..self.high {
                 let e = &self.ents[i];
-                if e.alive && self.hostile(team,e.team) && self.can_see(team,i) && DEFS[e.def as usize].building {
+                if e.alive && self.combat_hostile(team,e.team) && self.can_see(team,i) && DEFS[e.def as usize].building {
                     let dd = (e.x - bx).powi(2) + (e.y - by).powi(2);
                     if dd < bd {
                         bd = dd;
@@ -356,7 +356,7 @@ impl Game {
             }
             let (x, y, delay) = if best != NOIDX {
                 (self.ents[best].x, self.ents[best].y, 20 * 100)
-            } else if (0..self.nplayers).any(|p|self.players[p].alive&&self.hostile(team,p as u8)) {
+            } else if (0..self.nplayers).any(|p|self.players[p].alive&&self.combat_hostile(team,p as u8)) {
                 // Scout deterministic map sectors, never hidden enemy entity
                 // coordinates. Real sight then permits a targeted attack wave.
                 let k=(self.tick/400+team as u32*5+self.seed0)%16;

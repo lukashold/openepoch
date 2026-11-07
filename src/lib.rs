@@ -23,6 +23,8 @@ mod landing34;
 mod air_audio35;
 #[cfg(feature = "ee2-native13")]
 mod net_resign38;
+#[cfg(feature="ee2-native13")]
+mod initial_ceasefire;
 #[cfg(feature = "ee2-native13")]
 mod carrier36_defs;
 #[cfg(feature = "ee2-native13")]
@@ -950,6 +952,18 @@ pub extern "C" fn configure_network_resignation(policy: u32) -> u32 {
 
 #[cfg(feature="ee2-native13")]
 #[no_mangle]
+pub extern "C" fn configure_initial_ceasefire(mode: u32) -> u32 {
+    u32::from(g().configure_initial_ceasefire(mode))
+}
+
+#[cfg(feature="ee2-native13")]
+#[no_mangle]
+pub extern "C" fn initial_ceasefire_seconds() -> f32 {
+    g().initial_ceasefire_seconds()
+}
+
+#[cfg(feature="ee2-native13")]
+#[no_mangle]
 pub extern "C" fn cmd_resign_network() -> u32 {
     let game = g();
     if !game.network_departure_allowed(game.local) { return 0; }
@@ -1200,7 +1214,7 @@ pub extern "C" fn cmd_context(x: f32, y: f32, attack_move: u32) {
         let td = &DEFS[t.def as usize];
         let th = g.h(j) as i32;
         if t.team != g.local {
-            if g.hostile(g.local,t.team){if g.can_see(g.local,j){g.submit(C_ATTACK,x,y,th,&all);}else{g.submit(C_AMOVE,x,y,0,&all);}}
+            if g.combat_hostile(g.local,t.team){if g.can_see(g.local,j){g.submit(C_ATTACK,x,y,th,&all);}else{g.submit(C_AMOVE,x,y,0,&all);}}
             else{g.submit(C_MOVE,x,y,0,&all);}return;
         }
         if td.has(F_TRANSPORT) || (td.has(F_RESEARCH|F_EXTRACT|F_DROPOFF|F_GARRISON) && t.built >= 1.0) {

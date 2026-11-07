@@ -1,10 +1,11 @@
 // The EE2 profile uses locally extracted original recordings when available.
 // Procedural sounds and local speech remain the fallback for the standalone game.
-import { createOriginalAudio } from './original-audio.js?v=native38audio';
+import { createOriginalAudio } from './original-audio.js?v=native39audio';
 import {ORIGINAL_AUDIO_DEFAULTS,originalAudioLevel,originalAudioGain} from './original-audio-levels.js?v=native38audio';
+import {originalOneShotAudible,originalLoopAudible,originalSpatialMix} from './original-spatial-audio.js?v=native39audio';
 import {createPresentationRandom} from './source-music-controller.js?v=regional11';
 import {createAirFlightPlayback} from './air-flight-audio.js?v=native36';
-import {takeoffSpatialMix} from './air-takeoff.js?v=native33';
+import {takeoffSpatialMix} from './air-takeoff.js?v=native39audio';
 const presentationRandom = createPresentationRandom(1);
 const originals=createOriginalAudio({presentationRandom});
 export const presentationWord = () => presentationRandom.word15();
@@ -151,9 +152,10 @@ export function spatialSound(dx,dy,zoom) {
   const gain=Math.max(0,1-Math.hypot(dx,dy)/range);
   return {volume:gain*gain*Math.min(1,.35+zoom/40),pan:dx/range*1.4};
 }
-export function updateStoneThrowerWheels(session,actors,cam) {
-  const tracks=actors?.map(({handle,clip,x,y})=>({handle,clip,...spatialSound(x-cam.x,y-cam.y,cam.zoom)}));
-  originals.updateStoneThrowerWheels(session,tracks);
+export function updateStoneThrowerWheels(session,actors,cam,view) {
+  const tracks=actors?.map(({handle,clip,x,y,altitude})=>({handle,clip,...(view
+    ? originalSpatialMix(view,x,y,altitude) : spatialSound(x-cam.x,y-cam.y,cam.zoom))}));
+  originals.updateStoneThrowerWheels(session,tracks,view ? originalLoopAudible : undefined);
 }
 
 export function citizenDeath(context, volume, pan) {
@@ -220,6 +222,18 @@ export const STONE_THROWER_LAUNCH_CUE = 26;
 export const FULLMAP_CUE = 27;
 export const CAPTURE_COMPLETE_CUE = 30;
 const WARPLAN_CUES = Object.freeze({ui_warplans_path_addPoint:28,ui_warplans_path_finish:29});
+
+export function playWorld(kind,x,y,altitude,view,citizen) {
+  if (muted) return;
+  const {volume,pan}=originalSpatialMix(view,x,y,altitude);
+  const audible=originalOneShotAudible(volume);
+  if (!ctx && audible) ensure();
+  if (ctx?.state==='running') {
+    if (kind===STONE_THROWER_LAUNCH_CUE && originals.stoneThrowerLaunch(volume,pan)) return;
+    if (audible && citizen && originals.citizenDeath(citizen,volume,pan)) return;
+  }
+  play(citizen ? 10 : kind,volume,pan);
+}
 export function playWarplanCue(name) {
   if (!Object.hasOwn(WARPLAN_CUES,name) || muted || !ensure() || ctx.state!=='running') return;
   const kind=WARPLAN_CUES[name];

@@ -107,7 +107,7 @@ impl Game {
     pub(crate) fn capture_allowed(&self, owner: u8, target: usize) -> bool {
         let actor = self.ents[target];
         if !self.capture_match_enabled() || !actor.alive || actor.built != 1.0 || actor.hp <= 0.0
-            || !self.hostile(owner, actor.team) || !self.can_see(owner, target) || native::capture_target(actor.def).is_none() {
+            || !self.combat_hostile(owner, actor.team) || !self.can_see(owner, target) || native::capture_target(actor.def).is_none() {
             return false;
         }
         let state = self.capture.targets.get(&self.h(target)).copied().unwrap_or_default();
@@ -425,7 +425,7 @@ impl Game {
             let victim = self.ents[self.get(target)?];
             if source.hp <= 0.0 || source.team != team || source.order != O_CAPTURE || source.otgt != target
                 || native::capture_attacker(source.def).is_none() || native::capture_target(victim.def).is_none()
-                || victim.hp <= 0.0 || victim.built != 1.0 || !self.hostile(team, victim.team)
+                || victim.hp <= 0.0 || victim.built != 1.0 || !self.combat_hostile(team, victim.team)
                 || !next.is_finite() || next < 0.0 || flags & !0x87 != 0
                 || (flags == 0 && next != 0.0) || (flags != 0 && flags & 0x80 == 0)
                 || (flags & 1 != 0 && flags & 4 == 0)

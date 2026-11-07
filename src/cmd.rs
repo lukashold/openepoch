@@ -154,7 +154,7 @@ impl Game {
             C_MOVE => {self.order_move(&ids,a,b,false);#[cfg(feature="ee2-pack8")]self.pack_direct_move(&ids);},
             C_AMOVE => {self.order_move(&ids,a,b,true);#[cfg(feature="ee2-pack8")]self.pack_direct_move(&ids);},
             C_ATTACK => {
-                if let Some(j) = target.filter(|&j| self.hostile(team,self.ents[j].team)&&self.can_see(team,j)) {
+                if let Some(j) = target.filter(|&j| self.combat_hostile(team,self.ents[j].team)&&self.can_see(team,j)) {
                     self.order_attack(&ids, j);
                 }
             }

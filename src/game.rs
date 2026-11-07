@@ -245,6 +245,8 @@ pub struct Game {
     pub(crate) solo_resigned: bool,
     #[cfg(feature="ee2-native13")]
     pub(crate) net_resignation: Option<crate::net_resign38::Resignation>,
+    #[cfg(feature="ee2-native13")]
+    pub(crate) initial_ceasefire: u8,
     #[cfg(feature = "ee2-native13")]
     pub(crate) landing: crate::landing34::State,
     #[cfg(feature = "ee2-native13")]
@@ -386,6 +388,8 @@ impl Game {
             solo_command_queue: false,
             #[cfg(feature="ee2-native13")]
             solo_resigned: false,
+            #[cfg(feature="ee2-native13")]
+            initial_ceasefire: 0,
             #[cfg(feature="ee2-native13")]
             net_resignation: None,
             #[cfg(feature = "ee2-native13")]
@@ -836,7 +840,7 @@ impl Game {
         for &i in ids {
             #[cfg(feature = "ee2-native13")]
             if self.air_parked(i, &self.ents[i]) { continue; }
-            if !self.hostile(self.ents[i].team,t.team)||!self.can_see(self.ents[i].team,tj){continue;}
+            if !self.combat_hostile(self.ents[i].team,t.team)||!self.can_see(self.ents[i].team,tj){continue;}
             let d = &DEFS[self.ents[i].def as usize];
             if d.building {
                 continue;
@@ -1098,6 +1102,11 @@ impl Game {
         if self.solo_resigned { mix(u32::from_le_bytes(*b"RSG1")); }
         #[cfg(feature="ee2-native13")]
         if let Some(state) = self.net_resignation { state.hash(&mut mix); }
+        #[cfg(feature="ee2-native13")]
+        if self.initial_ceasefire != 0 {
+            mix(crate::initial_ceasefire::HASH_TAG);
+            mix(u32::from(self.initial_ceasefire));
+        }
         #[cfg(feature="ee2-civ8")]
         if self.civilizations.iter().any(|&c|c!=crate::civ8_runtime::LEGACY_NEUTRAL){
             mix(0x38564943);for c in self.civilizations{mix(c as u32);}
@@ -1446,7 +1455,7 @@ impl Game {
                 for k in self.grid.start[c]..self.grid.start[c + 1] {
                     let j = self.grid.items[k as usize] as usize;
                     let t = &self.ents[j];
-                    if !self.hostile(e.team,t.team) {
+                    if !self.combat_hostile(e.team,t.team) {
                         continue;
                     }
                     let td = &DEFS[t.def as usize];
@@ -1528,7 +1537,7 @@ impl Game {
         #[cfg(not(feature="ee2-up15"))]{let _=(index,e);false}
     }
     fn fire(&mut self, _source_index: usize, e: &mut Ent, w: &Wpn, tj: usize) {
-        if !self.hostile(e.team,self.ents[tj].team)||!self.can_see(e.team,tj)||!self.rps_allows(e,&self.ents[tj]){e.tgt=NONE;return;}
+        if !self.combat_hostile(e.team,self.ents[tj].team)||!self.can_see(e.team,tj)||!self.rps_allows(e,&self.ents[tj]){e.tgt=NONE;return;}
         #[cfg(feature = "ee2-native13")]
         if !self.air_can_fire(_source_index) { e.tgt = NONE; return; }
         #[cfg(feature="ee2-reference")]
@@ -1651,10 +1660,10 @@ impl Game {
                 }
             }
         };
-        if radius<=0.0 {if let Some(j)=self.get(primary){if self.hostile(team,self.ents[j].team){hit(self,j,damage);}}return;}
+        if radius<=0.0 {if let Some(j)=self.get(primary){if self.combat_hostile(team,self.ents[j].team){hit(self,j,damage);}}return;}
         for j in 0..self.high{
             let t=self.ents[j];if !t.alive||targets&DEFS[t.def as usize].dom==0{continue;}
-            let ratio=if self.hostile(team,t.team){1.0}else if team==t.team{friendly}else{0.0};if ratio<=0.0{continue;}
+            let ratio=if self.combat_hostile(team,t.team){1.0}else if team==t.team{friendly}else{0.0};if ratio<=0.0{continue;}
             let distance=((t.x-x).powi(2)+(t.y-y).powi(2)).sqrt();
             if distance<=radius{let falloff=crate::ee2_combat::splash_factor(distance,radius,self.h(j)==primary);hit(self,j,damage*falloff*ratio);}
         }
@@ -1667,7 +1676,7 @@ impl Game {
             p.py = p.y;
             if p.kind != W_SHELL && p.kind != W_BOMB {
                 if let Some(j) = self.get(p.tgt) {
-                    if self.hostile(p.team,self.ents[j].team)&&self.can_see(p.team,j){p.tx = self.ents[j].x;
+                    if self.combat_hostile(p.team,self.ents[j].team)&&self.can_see(p.team,j){p.tx = self.ents[j].x;
                     p.ty = self.ents[j].y;}
                 }
             }
@@ -1699,7 +1708,7 @@ impl Game {
                             let j = self.grid.items[q as usize] as usize;
                             let t = &self.ents[j];
                             let td = &DEFS[t.def as usize];
-                            if !self.hostile(p.team,t.team) || td.dom & p.targets == 0 || !t.alive {
+                            if !self.combat_hostile(p.team,t.team) || td.dom & p.targets == 0 || !t.alive {
                                 continue;
                             }
                             let center_distance=((t.x-p.tx).powi(2)+(t.y-p.ty).powi(2)).sqrt();
@@ -1721,7 +1730,7 @@ impl Game {
                     }
                 }
             } else if let Some(j) = self.get(p.tgt) {
-                if self.hostile(p.team,self.ents[j].team){
+                if self.combat_hostile(p.team,self.ents[j].team){
                     #[cfg(feature="ee2-reference")]
                     self.damage_from(j,p.dmg,p.kind,p.attacker_profile);
                     #[cfg(not(feature="ee2-reference"))]
@@ -1946,7 +1955,7 @@ impl Game {
         if d.armed() {
             let mut tj = NOIDX;
             if let Some(j) = self.get(e.tgt) {
-                if self.hostile(e.team,self.ents[j].team)&&self.can_see(e.team, j)&&self.rps_allows(e,&self.ents[j]) {
+                if self.combat_hostile(e.team,self.ents[j].team)&&self.can_see(e.team, j)&&self.rps_allows(e,&self.ents[j]) {
                     tj = j;
                 }
             }
@@ -2054,7 +2063,7 @@ impl Game {
         // ---- resolve the current target
         if e.order == O_ATTACK {
             match self.get(e.otgt) {
-                Some(j) if self.hostile(e.team,self.ents[j].team)&&self.can_see(e.team, j)&&self.rps_allows(&e,&self.ents[j]) => {
+                Some(j) if self.combat_hostile(e.team,self.ents[j].team)&&self.can_see(e.team, j)&&self.rps_allows(&e,&self.ents[j]) => {
                     e.tgt = e.otgt;
                     if (self.tick + i as u32) % 32 == 0 {
                         e.fkey = self.key_for(d.dom, self.ents[j].x, self.ents[j].y);
@@ -2075,7 +2084,7 @@ impl Game {
         let mut tj = NOIDX;
         if e.tgt != NONE {
             match self.get(e.tgt) {
-                Some(j) if self.hostile(e.team,self.ents[j].team)&&self.can_see(e.team, j)&&self.rps_allows(&e,&self.ents[j]) => tj = j,
+                Some(j) if self.combat_hostile(e.team,self.ents[j].team)&&self.can_see(e.team, j)&&self.rps_allows(&e,&self.ents[j]) => tj = j,
                 _ => {self.native_stop_attack(i);e.tgt = NONE;},
             }
         }

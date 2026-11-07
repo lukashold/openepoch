@@ -1,4 +1,5 @@
 import {loadAnimationPayload} from './original-animation-payload.js?v=citizen9';
+import {originalSpatialMix} from './original-spatial-audio.js?v=native39audio';
 
 const none=0xffffffff, tickSeconds=Math.fround(.05);
 const directory='local-original/air-takeoff/';
@@ -81,25 +82,8 @@ export function takeoffElapsed(tick,alpha,start){
   return start===none||tick<start ? -1 : Math.fround(Math.fround(tick-start+alpha)*tickSeconds);
 }
 
-// 00511BC0 mixes camera-space angles independently from squared distance.
 export function takeoffSpatialMix(view,actor){
-  if(!view?.right||!view.u||!view.f||!view.eye||!(view.fov>0)||!(view.tanX>0)||!(view.tanY>0))return {volume:0,pan:0};
-  const delta=[actor.renderX-view.eye[0],actor.renderAltitude-view.eye[1],actor.renderY-view.eye[2]];
-  const dot=axis=>Math.fround(delta[0]*axis[0]+delta[1]*axis[1]+delta[2]*axis[2]);
-  const x=dot(view.right),y=dot(view.u),z=dot(view.f), d=x*x+y*y+z*z;
-  if(!(z>0)||d>2500)return {volume:0,pan:0};
-  const horizontal=Math.fround(view.fov*.5), vertical=Math.fround(horizontal/(view.tanX/view.tanY));
-  const az=Math.fround(Math.atan2(Math.abs(x),z)), el=Math.fround(Math.atan2(Math.abs(y),z));
-  const falloff=(angle,low,high)=>{
-    if(angle<=low)return 1;
-    if(angle>=high)return 0;
-    return Math.log(1+(Math.fround(Math.E)-1)*(high-angle)/(high-low));
-  };
-  const volume=Math.min(1,(2500-Math.fround(d))/1600)*
-    falloff(az,Math.fround(.75*horizontal),Math.fround(1.5*horizontal))*
-    falloff(el,Math.fround(.75*vertical),Math.fround((y<0?3:1.5)*vertical));
-  const pan=(x<0?-1:1)*(1-falloff(az,Math.fround(Math.fround(.3)*horizontal),Math.fround(1.5*horizontal)));
-  return {volume:Math.fround(volume),pan:2*Math.fround(pan*.5+.5)-1};
+  return originalSpatialMix(view,actor.renderX,actor.renderY,actor.renderAltitude);
 }
 
 export function takeoffKeyCrossings(first,last,duration){
