@@ -4,8 +4,8 @@ import { buildAtlas, tintAtlas, CELL } from './atlas.js?v=fortress1';
 import { buildModels } from './models.js?v=fortress1';
 import { parseCheat } from './cheats.js?v=native45';
 import { researchPanel } from './research.js?v=rank-families';
-import {loadCrownArt,mountCrownProgress} from './crown-progress.js?v=native57';
-import {loadCrownStatusArt,readCrownActorVisuals,crownStatusSlots} from './crown-visuals.js?v=native57';
+import {loadCrownArt,mountCrownProgress} from './crown-progress.js?v=native58';
+import {loadCrownStatusArt,readCrownActorVisuals,crownStatusSlots} from './crown-visuals.js?v=native58';
 import { originalResearchActions, researchCost, researchState } from './original-research-actions.js?v=rank-families';
 import { diplomacyPanel } from './diplomacy.js?v=native17';
 import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native6';
@@ -41,13 +41,13 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=clock38';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native57';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native58';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
 import {createSourceRoundCarrier, selectedRoundTripMilliseconds} from './source-network-wire.js?v=native54';
-import {mountSourceRosterLobby} from './source-network-lobby.js?v=native56';
-import {applyNetworkCheckpoint} from './source-network-resume.js?v=native54';
+import {mountSourceRosterLobby} from './source-network-lobby.js?v=native58';
+import {applyNetworkCheckpoint} from './source-network-resume.js?v=native58';
 import {createFullscreenController} from './fullscreen.js?v=building2';
 import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native17';
 import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=native39ceasefire';
@@ -63,10 +63,10 @@ import {createSpyShimmerFrames} from './original-spy-shimmer.js?v=native-spy';
 import {createSpyExtractionTimer} from './spy-extraction-renderer.js?v=native-spy';
 import {loadPriestEffects} from './original-priest-fx.js?v=native45';
 import {loadOriginalPriestParticles} from './original-priest-particles.js?v=native47';
-import {loadBlessGroundGlow} from './priest-ground-glow.js?v=native57';
-import {loadAirCrownGlow} from './crown-air-glow.js?v=native57';
+import {loadBlessGroundGlow} from './priest-ground-glow.js?v=native58';
+import {loadAirCrownGlow} from './crown-air-glow.js?v=native58';
 import {createTradeRoute,supportsTradeRoute,tradeRouteText} from './trade-route.js?v=native30';
-import {loadMarketArt,marketOrders,marketOrderButton,marketOrderHotkey} from './market-orders.js?v=native57';
+import {loadMarketArt,marketOrders,marketOrderButton,marketOrderHotkey} from './market-orders.js?v=native58';
 import {loadCarrierPresentation,loadFighterBomberPresentation,loadPriestPresentation,loadSpyPresentation,loadTradePresentation,loadTradeRouteArt} from './original-trade-presentation.js?v=native-spy-powers';
 import {createTradeWaitStatus,loadTradeWaitArt,selectedTradeWait} from './trade-wait-status.js?v=native31';
 import {airActions,airMissionActions,airMissionSelection,airMissionTrainingKey,createAirMissionOrder,decorateAirMissionButton,loadAirMissionArt,supportsAirMission} from './air-mission-order.js?v=native32';
@@ -867,6 +867,7 @@ const captureOrder = typeof wasm.cmd_capture_at === 'function' ? createCaptureOr
   pickTarget:(x,y)=>wasm.capture_target_at_for?.(x,y,1)??wasm.capture_target_at(x,y),issue:wasm.cmd_capture_at}) : null;
 const priestEnabled=rulesProfile.ruleset===2&&typeof wasm.configure_priest_skirmish==='function';
 const crownSupported=rulesProfile.ruleset===2&&typeof wasm.configure_crowns==='function';
+const supportsPeerCrowns=crownSupported&&typeof wasm.configure_crowns_peer==='function';
 const crownArt=await loadCrownArt(crownSupported&&originalEnabled);
 const crownStatusArt=await loadCrownStatusArt({enabled:crownSupported&&originalEnabled});
 const crownProgress=crownSupported?mountCrownProgress({button:$('crown-progress-toggle'),panel:$('crown-progress'),
@@ -1126,6 +1127,11 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
   }
   if(!benchUnits&&humans===1&&crownSupported&&!wasm.configure_crowns(Number($('disable-crowns').checked))){
     toast('Die Kronenwertung konnte für dieses Scharmützel nicht eingerichtet werden.');
+    return;
+  }
+  if(!benchUnits&&humans===1&&crownSupported&&priestEnabled&&typeof wasm.configure_city_heal==='function'
+    &&!wasm.configure_city_heal()){
+    toast('Die Heilung im Stadtgebiet konnte für dieses Scharmützel nicht aktiviert werden.');
     return;
   }
   cam.x = benchUnits ? MAP / 2 : wasm.start_x(); cam.y = benchUnits ? MAP / 2 : wasm.start_y(); cam.zoom = benchUnits ? 11 : 28;
@@ -2476,6 +2482,7 @@ function channel(local) {
   let remoteOriginalTempo = false;
   let remoteResignation = false;
   let remoteInitialCeasefire = false;
+  let remoteCrownRules = false;
   let allowSourceRounds = false, remoteSourceRounds = false, helloSeen = false;
   const supportsCapture = typeof wasm.capture_configure_peer === 'function';
   const supportsCaptureAnimation = supportsCapture && typeof wasm.capture_animation_configure_peer === 'function';
@@ -2508,6 +2515,7 @@ function channel(local) {
         ...(hasNetworkResignation?{networkResignation:1}:{}),
         ...(allowSourceRounds?{sourceRounds:SOURCE_ROUND_VERSION}:{}),
         ...(hasInitialCeasefire?{initialCeasefire:1}:{}),
+        ...(supportsPeerCrowns?{crownRules:1}:{}),
         ...(climates.length>1?{climates}:{})}));
       mpStatus('Verbunden – Spielversion wird geprüft …');
     },
@@ -2537,6 +2545,7 @@ function channel(local) {
           remoteOriginalTempo=m.originalTempo===1;
           remoteResignation=m.networkResignation===1;
           remoteInitialCeasefire=m.initialCeasefire===1;
+          remoteCrownRules=m.crownRules===1;
           remoteSourceRounds=m.sourceRounds===SOURCE_ROUND_VERSION;
           if (local === 0 && !net) {
             try{
@@ -2562,6 +2571,7 @@ function channel(local) {
                 ...(hasNetworkResignation&&remoteResignation?{resignationPolicy:+$('mp-resign-policy').value}:{}),
                 ...(allowSourceRounds&&remoteSourceRounds&&remoteOriginalTempo&&remoteResignation?{sourceRounds:SOURCE_ROUND_VERSION}:{}),
                 ...(ceasefire?{ceasefire}:{}),
+                ...(supportsPeerCrowns&&remoteCrownRules?{crownsDisabled:$('disable-crowns').checked}:{}),
                 ...resolved,popLimit:choices?+$('pop-limit').value:null,supplies:choices?+$('supplies').value:null};
               checkStart(cfg);ch.send(JSON.stringify(cfg));launch(cfg);
             }catch{return reject('Die Scharmützeleinstellungen konnten nicht übernommen werden.');}
@@ -2619,6 +2629,8 @@ function channel(local) {
       !cfg.gameTempo||cfg.resignationPolicy===undefined))throw Error('Unsupported source rounds');
     if(cfg.ceasefire!==undefined&&(!hasInitialCeasefire||!remoteInitialCeasefire||
       !Number.isInteger(cfg.ceasefire)||cfg.ceasefire<1||cfg.ceasefire>10))throw Error('Unsupported initial ceasefire');
+    if(cfg.crownsDisabled!==undefined&&(!supportsPeerCrowns||!remoteCrownRules||typeof cfg.crownsDisabled!=='boolean'))
+      throw Error('Unsupported Crown settings');
     if(civilizationSetup.enabled){
       checkedCivilizations(cfg.civilizations,2+cfg.ai);
       if(![250,500,1000].includes(cfg.popLimit)||![0,1,2].includes(cfg.supplies))throw Error('Invalid skirmish setup');
@@ -2642,6 +2654,7 @@ function channel(local) {
     if(cfg.airCarrier===1&&!wasm.air_carrier_configure_peer(1))throw Error('Aircraft carrier setup failed');
     if(cfg.resignationPolicy!==undefined&&!wasm.configure_network_resignation(cfg.resignationPolicy))throw Error('Resignation setup failed');
     if(cfg.ceasefire!==undefined&&!wasm.configure_initial_ceasefire(cfg.ceasefire))throw Error('Initial ceasefire setup failed');
+    if(cfg.crownsDisabled!==undefined&&!wasm.configure_crowns_peer(Number(cfg.crownsDisabled)))throw Error('Crown setup failed');
     seasonSession.configure(peerSeasonSettings(cfg.seasons),cfg.climate);setSeasonControls(seasonSession.settings);climateControl.value=seasonSession.climate;
     const sourceRounds = cfg.sourceRounds===SOURCE_ROUND_VERSION;
     net = {ch,pc,ls:null,resignation:cfg.resignationPolicy!==undefined,...(sourceRounds?{sourceRounds:true}:{})};
@@ -2710,6 +2723,7 @@ const rosterFeatures=Object.freeze(Object.fromEntries([
   ...(tradeAvailable?[['tradeRoute','trade_route_configure_peer']]:[]),
   ...(airMissionAvailable?[['airMission','air_mission_configure_peer'],['airRunway','air_runway_configure_peer'],
     ['airTakeoff','air_takeoff_configure_peer'],['airLanding','air_landing_configure_peer'],['airCarrier','air_carrier_configure_peer']]:[]),
+  ...(supportsPeerCrowns?[['crowns','configure_crowns_peer']]:[]),
 ].filter(([,name])=>typeof wasm[name]==='function')));
 const supportedRosterFeatures=Object.keys(rosterFeatures);
 
@@ -2732,6 +2746,8 @@ function checkRosterSettings(cfg,humanSeats,resuming=false) {
   const features=cfg.features;
   if(!Array.isArray(features)||new Set(features).size!==features.length||features.some(key=>!Object.hasOwn(rosterFeatures,key)))
     throw Error('Der Raum verwendet nicht verfügbare Spielbefehle.');
+  if(features.includes('crowns')?typeof cfg.crownsDisabled!=='boolean':cfg.crownsDisabled!==undefined)
+    throw Error('Ungültige Kroneneinstellungen für diesen Raum.');
   const featureDeps={captureAnimation:'capture',airRunway:'airMission',airTakeoff:'airRunway',airLanding:'airTakeoff',airCarrier:'airLanding'};
   for(const [key,parent] of Object.entries(featureDeps))if(features.includes(key)&&!features.includes(parent))
     throw Error('Unvollständige Spielbefehle für diesen Raum.');
@@ -2741,15 +2757,20 @@ function checkRosterSettings(cfg,humanSeats,resuming=false) {
     civilizations:checkedCivilizations(cfg.civilizations,worldHumans+cfg.ai),
     climate:checkedClimate(cfg.climate,climates),seasons:peerSeasonSettings(cfg.seasons),
     gameTempo:checkOriginalTempo(cfg.gameTempo),features:supportedRosterFeatures.filter(key=>features.includes(key)),
+    ...(features.includes('crowns')?{crownsDisabled:cfg.crownsDisabled}:{}),
     ...(sharedOwner?{sharedOwner:true}:cfg.groupedOwners?{groupedOwners:cfg.groupedOwners.slice(),
       ...(resuming?{groupedWorldHumans:worldHumans}:{})}:{})};
+}
+
+function checkpointCrownRules(cfg){
+  return cfg.crownsDisabled===undefined?0:cfg.crownsDisabled?2:1;
 }
 
 function startRosterGame(cfg,seat,send,links,{archive,onCheckpoint}) {
   const sharedOwner=cfg.sharedOwner===true;
   const groupedOwners=cfg.groupedOwners??null;
   const worldHumans=sharedOwner?1:groupedOwners?Math.max(...groupedOwners)+1:cfg.humanSeats;
-  if(archive)applyNetworkCheckpoint(wasm,archive.decoded,seat,cfg.humanSeats);
+  if(archive)applyNetworkCheckpoint(wasm,archive.decoded,seat,cfg.humanSeats,false,checkpointCrownRules(cfg));
   else{
     if(sharedOwner){
       if(wasm.init_network_shared_owner(cfg.seed,seat)!==1)throw Error('Der Koop-Controller konnte nicht gestartet werden.');
@@ -2763,7 +2784,10 @@ function startRosterGame(cfg,seat,send,links,{archive,onCheckpoint}) {
     wasm.skirmish_visibility(cfg.visibility);
     if((!sharedOwner&&!wasm.configure_network_resignation(cfg.resignationPolicy))||
       (cfg.ceasefire&&!wasm.configure_initial_ceasefire(cfg.ceasefire)))throw Error('Die Regeln für diesen Raum konnten nicht aktiviert werden.');
-    for(const name of cfg.features)if(wasm[rosterFeatures[name]](1)!==1)throw Error('Ein Spielbefehl konnte nicht aktiviert werden.');
+    for(const name of cfg.features){
+      const value=name==='crowns'?Number(cfg.crownsDisabled):1;
+      if(wasm[rosterFeatures[name]](value)!==1)throw Error('Ein Spielbefehl konnte nicht aktiviert werden.');
+    }
   }
   seasonSession.configure(cfg.seasons,cfg.climate);setSeasonControls(seasonSession.settings);climateControl.value=seasonSession.climate;
   const roundTrip=new Map();
@@ -2850,10 +2874,11 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
     if(groupedOwners){
       for(let owner=1;owner<worldHumans;owner++)choices[owner]=guests[groupedOwners.indexOf(owner)-1].civilization;
     }else if(!sharedOwner)for(const [index,guest] of guests.entries())choices[index+1]=guest.civilization;
+    const features=supportedRosterFeatures.filter(key=>guests.every(guest=>guest.features.includes(key)));
     return {humanSeats,ai,seed:(seedOf()>>>0)||1,visibility:+$('map-visibility').value,
       popLimit:+$('pop-limit').value,supplies:+$('supplies').value,resignationPolicy:+$('mp-resign-policy').value,
       ceasefire:+$('initial-ceasefire').value,climate,seasons:menuSeasonSettings(),gameTempo:menuTempo(),
-      features:supportedRosterFeatures.filter(key=>guests.every(guest=>guest.features.includes(key))),
+      features,...(features.includes('crowns')?{crownsDisabled:$('disable-crowns').checked}:{}),
       ...resolvedSkirmishChoices(choices,worldHumans+ai),
       ...(sharedOwner?{sharedOwner:true}:groupedOwners?{groupedOwners}:{})};
   },
@@ -2861,7 +2886,7 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
   validateArchive:supportsNetworkCheckpoint?(archive,seat,seats)=>{
     if(archive.decoded.meta.groupedOwners&&!supportsGroupedCheckpoint)throw Error('Dieser Spielstand benötigt Unterstützung für Gruppen-Koop-Spielstände.');
     if(archive.decoded.meta.sharedOwner&&!supportsSharedCheckpoint)throw Error('Dieser Spielstand benötigt Koop-Spielstandunterstützung.');
-    applyNetworkCheckpoint(wasm,archive.decoded,seat,seats,true);
+    applyNetworkCheckpoint(wasm,archive.decoded,seat,seats,true,checkpointCrownRules(archive.settings));
   }:null,
   sharedOwnerAvailable:supportsSharedOwner,
   sharedCheckpointAvailable:supportsSharedCheckpoint,

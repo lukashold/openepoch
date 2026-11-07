@@ -33,6 +33,9 @@ pub(crate) mod spy_toxic50;
 #[path = "crowns54.rs"]
 pub(crate) mod crowns54;
 #[cfg(feature = "ee2-native13")]
+#[path = "city_heal58.rs"]
+pub(crate) mod city_heal58;
+#[cfg(feature = "ee2-native13")]
 #[path = "market57.rs"]
 pub(crate) mod market57;
 #[cfg(feature = "ee2-native13")]
@@ -366,6 +369,8 @@ pub struct Game {
     #[cfg(feature = "ee2-native13")]
     pub(crate) crowns: Option<crowns54::Crowns>,
     #[cfg(feature = "ee2-native13")]
+    pub(crate) city_heal: Option<city_heal58::State>,
+    #[cfg(feature = "ee2-native13")]
     pub(crate) market: market57::Market,
     // ---- not part of the deterministic simulation state ----
     /// Which player this client controls and sees through.
@@ -551,6 +556,8 @@ impl Game {
             #[cfg(feature = "ee2-native13")]
             crowns: None,
             #[cfg(feature = "ee2-native13")]
+            city_heal: None,
+            #[cfg(feature = "ee2-native13")]
             market: market57::Market::default(),
             #[cfg(feature = "ee2-native13")]
             priest_effects: Vec::new(),
@@ -666,6 +673,8 @@ impl Game {
     }
 
     pub(crate) fn kill(&mut self, i: usize) {
+        #[cfg(feature = "ee2-native13")]
+        if self.ents[i].def == TC { self.retire_city_heal(i); }
         #[cfg(feature = "ee2-native13")]
         if self.powers.is_some() {
             let handle = self.h(i);
@@ -1268,6 +1277,8 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         if let Some(crowns) = &self.crowns { crowns.hash(&mut mix); }
         #[cfg(feature = "ee2-native13")]
+        if let Some(city_heal) = &self.city_heal { city_heal.hash(&mut mix); }
+        #[cfg(feature = "ee2-native13")]
         self.market.hash(&mut mix);
         #[cfg(feature = "ee2-native13")]
         if self.infantry_roster_enabled { mix(u32::from_le_bytes(*b"INF1")); }
@@ -1529,6 +1540,8 @@ impl Game {
         self.tick_trade();
         #[cfg(feature = "ee2-native13")]
         self.tick_aircraft();
+        #[cfg(feature = "ee2-native13")]
+        self.tick_city_heal();
         if city_death{self.rebuild_territories();self.void_landless_alliances();}
         #[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
         self.recount_paid_players();
@@ -1572,6 +1585,8 @@ impl Game {
         }
         #[cfg(feature = "ee2-native13")]
         self.tick_crowns();
+        #[cfg(feature = "ee2-native13")]
+        self.tick_city_heal_growth();
         #[cfg(feature = "ee2-native13")]
         if let Some(signals) = &mut self.battle_signals { signals.update_markers(DT); }
         #[cfg(feature = "ee2-native13")]

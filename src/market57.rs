@@ -104,7 +104,7 @@ impl Order {
 
 impl Game {
     fn market_order(&self, owner: u8, host: u32, native: u8, lots: i32) -> Option<Order> {
-        if self.net || self.bench != 0 || self.winner != 0 || owner as usize >= self.nplayers
+        if self.net && self.crown_rules() == 0 || self.bench != 0 || self.winner != 0 || owner as usize >= self.nplayers
             || !matches!(lots, -5 | -1 | 1 | 5) { return None; }
         let index = self.get(host)?;
         let actor = &self.ents[index];

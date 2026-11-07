@@ -189,9 +189,22 @@ fn total_natural(amounts: [f32; 9]) -> i32 {
 
 impl Game {
     pub(crate) fn configure_crowns(&mut self, disabled: bool) -> bool {
-        if self.tick != 0 || self.net || self.bench != 0 || self.crowns.is_some() { return false; }
+        if self.net { return false; }
+        self.configure_crown_rules(disabled)
+    }
+
+    pub(crate) fn configure_crowns_peer(&mut self, disabled: bool) -> bool {
+        self.net && self.configure_crown_rules(disabled)
+    }
+
+    fn configure_crown_rules(&mut self, disabled: bool) -> bool {
+        if self.tick != 0 || self.bench != 0 || self.crowns.is_some() { return false; }
         self.crowns = Some(Crowns::new(disabled));
         true
+    }
+
+    pub(crate) fn crown_rules(&self) -> u32 {
+        self.crowns.as_ref().map_or(0, |crowns| 1 + u32::from(crowns.disabled))
     }
 
     pub(crate) fn crown_rating(&self, owner: usize, kind: usize) -> Option<Rating> {
@@ -205,18 +218,27 @@ impl Game {
     }
 
     pub(crate) fn can_choose_crown_power(&self, kind: usize, index: u8) -> bool {
+        self.can_choose_crown_power_for(self.local, kind, index)
+    }
+
+    fn can_choose_crown_power_for(&self, owner: u8, kind: usize, index: u8) -> bool {
         let Some(power) = stat_powers::get(kind, index) else { return false; };
         let Some(crowns) = &self.crowns else { return false; };
-        let epoch = self.players[self.local as usize].epoch + 1;
+        if owner as usize >= self.nplayers || !self.players[owner as usize].alive { return false; }
+        let epoch = self.players[owner as usize].epoch + 1;
         (power.first_epoch..=power.last_epoch).contains(&epoch)
-            && crowns.score.holders[kind].is_some_and(|holder| holder.owner == self.local)
+            && crowns.score.holders[kind].is_some_and(|holder| holder.owner == owner)
             && crowns.choices[kind].is_none()
     }
 
     pub(crate) fn choose_crown_power(&mut self, kind: usize, index: u8) -> bool {
-        if !self.can_choose_crown_power(kind, index) { return false; }
+        self.choose_crown_power_for(self.local, kind, index)
+    }
+
+    pub(crate) fn choose_crown_power_for(&mut self, owner: u8, kind: usize, index: u8) -> bool {
+        if !self.can_choose_crown_power_for(owner, kind, index) { return false; }
         self.crowns.as_mut().unwrap().choices[kind] = Some(index);
-        self.rebuild_modifiers(self.local, true);
+        self.rebuild_modifiers(owner, true);
         true
     }
 
@@ -508,6 +530,48 @@ impl Game {
 mod tests {
     use super::*;
     use crate::priest42_defs::PRIEST;
+
+    #[test]
+    fn crown_network_selection_market_and_checkpoint_are_owner_authoritative() {
+        let mut peers = [Game::new(7, 0, 0, 2, 0), Game::new(7, 0, 0, 2, 1)];
+        for game in &mut peers {
+            assert!(!game.configure_crowns(false));
+            assert!(game.configure_network_resignation(0));
+            assert!(game.configure_crowns_peer(false));
+            assert!(!game.configure_crowns_peer(true));
+            game.researched[0][0] |= 0b1111 << 4;
+            for tick in 0..64 {
+                assert_eq!(game.tick_with_network_source_slot(30, 30, 1.0, tick == 0), 1);
+            }
+            assert_eq!(game.crown_holder(ECONOMIC).unwrap().owner, 0);
+            game.apply(1, crate::cmd::C_CROWN_CHOOSE, 1.0, 0.0, 6, &[]);
+            game.apply(0, crate::cmd::C_CROWN_CHOOSE, 1.0, 1.0, 6, &[]);
+            assert_eq!(game.owner_crown_power(0, ECONOMIC), None);
+            game.apply(0, crate::cmd::C_CROWN_CHOOSE, 1.0, 0.0, 6, &[]);
+            game.apply(0, crate::cmd::C_CROWN_CHOOSE, 1.0, 0.0, 5, &[]);
+            assert_eq!(game.owner_crown_power(0, ECONOMIC), Some(6));
+            let market = game.spawn(MARKET, 0, 80.0, 80.0);
+            let host = game.h(market);
+            game.set_resource(0, 4, 700.0);
+            assert_eq!(game.market_quote(0, host, 0, 5), Some((580, true)));
+            game.apply(0, crate::cmd::C_MARKET, 0.0, 0.0, 5, &[host]);
+            assert_eq!(game.resource(0, 4), 120.0);
+            game.save_network_resume();
+            assert!(!game.savebuf.is_empty());
+        }
+        assert_eq!(peers[0].state_hash(), peers[1].state_hash());
+        assert_eq!(peers[0].savebuf, peers[1].savebuf);
+        let checkpoint = &peers[0].savebuf;
+        let restored = [0, 1].map(|owner| {
+            let mut game = Game::load_network_resume(checkpoint, 2, owner, 64, 30, 1.0).unwrap();
+            assert_eq!(game.crown_rules(), 1);
+            assert_eq!(game.owner_crown_power(0, ECONOMIC), Some(6));
+            assert_eq!(game.resource(0, 4), 120.0);
+            assert_eq!(game.tick_with_network_source_slot(30, 30, 1.0, false), 1);
+            game.state_hash()
+        });
+        assert_eq!(restored[0], restored[1]);
+    }
 
     #[test]
     fn crown_world_statistics_and_award_survive_save_and_load() {

@@ -35,7 +35,7 @@ const powers = [
     [5,'firingranges','Schießstände','Fernkämpfer zu Fuß, zu Pferd und in Fahrzeugen erhalten 20 % mehr Angriffsreichweite.'],
     [6,'missionaries','Missionare','Priester kosten 25 % weniger und erhalten 25 % mehr Tempo und Bekehrungsreichweite.'],
     [7,'piracy','Piraterie','Wenn eigene Schiffe gegnerische Einheiten oder Gebäude zerstören, erhältst du die Hälfte ihrer Rohstoffkosten.'],
-    [8,'socializedmedicine','Öffentliches Gesundheitswesen','Flugplätze und Festungen heilen stationierte Einheiten um 33 % schneller.'],
+    [8,'socializedmedicine','Öffentliches Gesundheitswesen','Heilung im Stadtgebiet und für stationierte Einheiten in Flugplätzen und Festungen steigt um 33 %.'],
     [9,'superspies','Superspione','25 % mehr Lebenspunkte und Tempo für Spione. Sabotage hält 25 % länger.'],
     [10,'thinktanks','Denkfabriken','Universitäten und Tempel liefern 10 % mehr Technologiepunkte.'],
   ],

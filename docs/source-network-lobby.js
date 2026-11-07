@@ -107,19 +107,32 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
     link.channel.send(JSON.stringify({type,version:VERSION,room:room.id,...details}));
   }
 
+  function archiveAdmissionError(room,guests) {
+    if(!room.archive)return '';
+    if(room.sharedOwner&&(!sharedCheckpointAvailable||guests.some(guest=>!guest.sharedOwnerCheckpoint)))
+      return 'Der Mitspieler benötigt eine Spielversion mit Koop-Spielständen.';
+    if(room.groupedOwners&&(!groupedCheckpointAvailable||guests.some(guest=>!guest.groupedCheckpoint)))
+      return 'Alle Mitspieler benötigen eine Spielversion mit Gruppen-Koop-Spielständen.';
+    if(!room.sharedOwner&&!room.groupedOwners&&(!validateArchive||guests.some(guest=>!guest.checkpoints)))
+      return 'Alle Mitspieler benötigen eine Spielversion mit Mehrspieler-Spielständen.';
+    const {climate,features}=room.archive.settings;
+    if(guests.some(guest=>!guest.climates.includes(climate)||features.some(key=>!guest.features.includes(key))))
+      return 'Einem Mitspieler fehlen Regeln oder Grafiken für diesen Spielstand.';
+    return '';
+  }
+
   function updateHost(room) {
     const ready=connected(room);
     if(room.phase==='lobby'){
-      const incompatible=room.sharedOwner&&[...room.links.values()].some(link=>link.hello&&!link.hello.sharedOwner);
-      const missingSharedSave=room.sharedOwner&&room.archive&&[...room.links.values()].some(link=>link.hello&&!link.hello.sharedOwnerCheckpoint);
-      const missingGroups=room.groupedOwners&&[...room.links.values()].some(link=>link.hello&&!link.hello.groupedCoop);
-      const missingGroupedSave=room.groupedOwners&&room.archive&&[...room.links.values()].some(link=>link.hello&&!link.hello.groupedCheckpoint);
-      startButton.disabled=ready!==room.seats||incompatible||!!missingSharedSave||!!missingGroups||!!missingGroupedSave;
+      const guests=[...room.links.values()].map(link=>link.hello).filter(Boolean);
+      const incompatible=room.sharedOwner&&guests.some(guest=>!guest.sharedOwner);
+      const missingGroups=room.groupedOwners&&guests.some(guest=>!guest.groupedCoop);
+      const archiveError=archiveAdmissionError(room,guests);
+      startButton.disabled=ready!==room.seats||incompatible||missingGroups||!!archiveError;
       const count=`${ready}/${room.seats} Plätze`;
       if(incompatible)setStatus('Der Mitspieler benötigt eine Spielversion mit gemeinsamer Zivilisation.');
-      else if(missingSharedSave)setStatus('Der Mitspieler benötigt eine Spielversion mit Koop-Spielständen.');
       else if(missingGroups)setStatus('Alle Mitspieler benötigen eine Spielversion mit Gruppen-Koop.');
-      else if(missingGroupedSave)setStatus('Alle Mitspieler benötigen eine Spielversion mit Gruppen-Koop-Spielständen.');
+      else if(archiveError)setStatus(archiveError);
       else if(room.groupedOwners&&room.archive)setStatus(`Gruppen-Koop-Spielstand bei Schritt ${room.archive.decoded.meta.tick} · ${ready}/${room.seats} Controller bereit.`);
       else if(room.groupedOwners)setStatus(`Gruppen-Koop · ${ready}/${room.seats} Controller bereit.`);
       else if(room.sharedOwner&&room.archive)setStatus(`Koop-Spielstand bei Schritt ${room.archive.decoded.meta.tick} · ${ready}/${room.seats} Controller bereit.`);
@@ -629,14 +642,11 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
       const guests=[...room.links].sort(([left],[right])=>left-right).map(([,link])=>link.hello);
       if(room.sharedOwner&&!guests.every(guest=>guest.sharedOwner))throw Error('Der Mitspieler benötigt eine Spielversion mit gemeinsamer Zivilisation.');
       if(room.groupedOwners&&!guests.every(guest=>guest.groupedCoop))throw Error('Alle Mitspieler benötigen eine Spielversion mit Gruppen-Koop.');
+      const archiveError=archiveAdmissionError(room,guests);
+      if(archiveError)throw Error(archiveError);
       room.checkpoints=room.sharedOwner?sharedCheckpointAvailable&&guests.every(guest=>guest.sharedOwnerCheckpoint)
         :room.groupedOwners?groupedCheckpointAvailable&&guests.every(guest=>guest.groupedCheckpoint)
           :!!validateArchive&&guests.every(guest=>guest.checkpoints);
-      if(room.sharedOwner&&room.archive&&!room.checkpoints)throw Error('Der Mitspieler benötigt eine Spielversion mit Koop-Spielständen.');
-      if(room.groupedOwners&&room.archive&&!room.checkpoints)throw Error('Alle Mitspieler benötigen eine Spielversion mit Gruppen-Koop-Spielständen.');
-      if(room.archive&&(!room.checkpoints||!guests.every(guest=>guest.climates.includes(room.archive.settings.climate)&&
-          room.archive.settings.features.every(key=>guest.features.includes(key)))))
-        throw Error('Einem Mitspieler fehlen Regeln oder Grafiken für diesen Spielstand.');
       const settings=room.archive?.settings??makeSettings(room.seats,room.ai,guests,room.sharedOwner,room.groupedOwners);
       room.settings=checkSettings(settings,room.seats,!!room.archive);
       directory.stopHosting();

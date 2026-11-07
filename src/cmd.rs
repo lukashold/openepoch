@@ -36,6 +36,7 @@ pub const C_PLACE_ROTATED:u8=16;
 #[cfg(feature="ee2-native13")]pub(crate) const C_GATHER_INTEL:u8=24;
 #[cfg(feature="ee2-native13")]pub(crate) const C_EXTRACTION:u8=25;
 #[cfg(feature="ee2-native13")]pub(crate) const C_MARKET:u8=26;
+#[cfg(feature="ee2-native13")]pub(crate) const C_CROWN_CHOOSE:u8=27;
 #[cfg(feature="ee2-native13")]pub(crate) const SOLO_RESIGN_SAVE_FLAG:u32=1<<11;
 
 const HEAD: usize = 14; // kind, count, a, b, c
@@ -147,6 +148,13 @@ impl Game {
             }
             return;
         }
+        #[cfg(feature="ee2-native13")]
+        if kind == C_CROWN_CHOOSE {
+            if self.net && hs.is_empty() && b == 0.0 && (0.0..=2.0).contains(&a) && a.fract() == 0.0 {
+                if let Ok(choice) = u8::try_from(c) { self.choose_crown_power_for(team, a as usize, choice); }
+            }
+            return;
+        }
         #[cfg(feature="ee2-civ8")]
         if (1..=if cfg!(feature="ee2-pack8"){17}else{16}).contains(&kind){self.civ_setup_open=false;}
         if kind==C_TERRITORY{
@@ -240,6 +248,8 @@ impl Game {
                 let mut city=false;
                 for &i in &ids {
                     city |= self.ents[i].def == TC;
+                    #[cfg(feature = "ee2-native13")]
+                    if self.ents[i].def == TC { self.retire_city_heal(i); }
                     #[cfg(feature = "ee2-native13")]
                     { self.retire_city_name(i); self.forget_capture_actor(i); }
                     self.ents[i].hp = 0.0;

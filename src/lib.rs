@@ -711,9 +711,10 @@ pub extern "C" fn save_network_resume() -> *const u8 {
 
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
-pub extern "C" fn load_network_resume(humans: u32, local: u32, tick: u32, rate: u32, scale: f32) -> u32 {
+pub extern "C" fn load_network_resume(humans: u32, local: u32, tick: u32, rate: u32, scale: f32, crown_rules: u32) -> u32 {
     unsafe {
         let Some(game) = Game::load_network_resume(&*addr_of_mut!(LOADBUF), humans, local, tick, rate, scale) else { return 0; };
+        if !crown_resume_matches(&game, crown_rules) { return 0; }
         *addr_of_mut!(GAME) = Some(Box::new(game));
     }
     render_meta7::reset_session();
@@ -722,9 +723,10 @@ pub extern "C" fn load_network_resume(humans: u32, local: u32, tick: u32, rate: 
 
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
-pub extern "C" fn validate_network_resume(humans: u32, local: u32, tick: u32, rate: u32, scale: f32) -> u32 {
+pub extern "C" fn validate_network_resume(humans: u32, local: u32, tick: u32, rate: u32, scale: f32, crown_rules: u32) -> u32 {
     let bytes = unsafe { &*addr_of_mut!(LOADBUF) };
-    u32::from(Game::load_network_resume(bytes, humans, local, tick, rate, scale).is_some())
+    u32::from(Game::load_network_resume(bytes, humans, local, tick, rate, scale)
+        .is_some_and(|game| crown_resume_matches(&game, crown_rules)))
 }
 
 #[cfg(feature = "ee2-native13")]
@@ -736,9 +738,10 @@ pub extern "C" fn save_shared_owner_resume() -> *const u8 {
 
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
-pub extern "C" fn load_shared_owner_resume(controller: u32, tick: u32, rate: u32, scale: f32) -> u32 {
+pub extern "C" fn load_shared_owner_resume(controller: u32, tick: u32, rate: u32, scale: f32, crown_rules: u32) -> u32 {
     unsafe {
         let Some(game) = Game::load_shared_owner_resume(&*addr_of_mut!(LOADBUF), controller, tick, rate, scale) else { return 0; };
+        if !crown_resume_matches(&game, crown_rules) { return 0; }
         *addr_of_mut!(GAME) = Some(Box::new(game));
     }
     render_meta7::reset_session();
@@ -747,9 +750,10 @@ pub extern "C" fn load_shared_owner_resume(controller: u32, tick: u32, rate: u32
 
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
-pub extern "C" fn validate_shared_owner_resume(controller: u32, tick: u32, rate: u32, scale: f32) -> u32 {
+pub extern "C" fn validate_shared_owner_resume(controller: u32, tick: u32, rate: u32, scale: f32, crown_rules: u32) -> u32 {
     let bytes = unsafe { &*addr_of_mut!(LOADBUF) };
-    u32::from(Game::load_shared_owner_resume(bytes, controller, tick, rate, scale).is_some())
+    u32::from(Game::load_shared_owner_resume(bytes, controller, tick, rate, scale)
+        .is_some_and(|game| crown_resume_matches(&game, crown_rules)))
 }
 
 #[cfg(feature = "ee2-native13")]
@@ -765,9 +769,10 @@ pub extern "C" fn save_grouped_resume() -> *const u8 {
 
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
-pub extern "C" fn load_grouped_resume(layout: u32, controller: u32, tick: u32, rate: u32, scale: f32) -> u32 {
+pub extern "C" fn load_grouped_resume(layout: u32, controller: u32, tick: u32, rate: u32, scale: f32, crown_rules: u32) -> u32 {
     unsafe {
         let Some(game) = Game::load_grouped_resume(&*addr_of_mut!(LOADBUF), layout, controller, tick, rate, scale) else { return 0; };
+        if !crown_resume_matches(&game, crown_rules) { return 0; }
         *addr_of_mut!(GAME) = Some(Box::new(game));
     }
     render_meta7::reset_session();
@@ -776,9 +781,15 @@ pub extern "C" fn load_grouped_resume(layout: u32, controller: u32, tick: u32, r
 
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
-pub extern "C" fn validate_grouped_resume(layout: u32, controller: u32, tick: u32, rate: u32, scale: f32) -> u32 {
+pub extern "C" fn validate_grouped_resume(layout: u32, controller: u32, tick: u32, rate: u32, scale: f32, crown_rules: u32) -> u32 {
     let bytes = unsafe { &*addr_of_mut!(LOADBUF) };
-    u32::from(Game::load_grouped_resume(bytes, layout, controller, tick, rate, scale).is_some())
+    u32::from(Game::load_grouped_resume(bytes, layout, controller, tick, rate, scale)
+        .is_some_and(|game| crown_resume_matches(&game, crown_rules)))
+}
+
+#[cfg(feature = "ee2-native13")]
+fn crown_resume_matches(game: &Game, encoded: u32) -> bool {
+    encoded == 0 || encoded == game.crown_rules() + 1
 }
 
 #[cfg(feature = "ee2-native13")]
@@ -1967,6 +1978,22 @@ pub extern "C" fn configure_crowns(disabled: u32) -> u32 {
 
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
+pub extern "C" fn configure_crowns_peer(disabled: u32) -> u32 {
+    u32::from(disabled <= 1 && g().configure_crowns_peer(disabled != 0))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn crown_rules() -> u32 { g().crown_rules() }
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_city_heal() -> u32 {
+    u32::from(g().configure_city_heal())
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
 pub extern "C" fn crown_rating(owner: u32, kind: u32, field: u32) -> f32 {
     let Some(rating) = g().crown_rating(owner as usize, kind as usize) else { return f32::NAN; };
     match field { 0 => rating.score, 1 => rating.threshold as f32, 2 => f32::from(rating.eligible_rank), _ => f32::NAN }
@@ -1998,7 +2025,12 @@ pub extern "C" fn crown_holder(kind: u32, field: u32) -> f32 {
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
 pub extern "C" fn crown_choose_power(kind: u32, power: u32) -> u32 {
-    u32::from(u8::try_from(power).is_ok_and(|id| g().choose_crown_power(kind as usize, id)))
+    let Ok(power) = u8::try_from(power) else { return 0; };
+    let game = g();
+    if !game.net { return u32::from(game.choose_crown_power(kind as usize, power)); }
+    if !game.can_choose_crown_power(kind as usize, power) || game.network_observer(game.local) { return 0; }
+    game.submit(cmd::C_CROWN_CHOOSE, kind as f32, 0.0, i32::from(power), &[]);
+    1
 }
 
 #[cfg(feature = "ee2-native13")]
@@ -2035,7 +2067,7 @@ pub extern "C" fn crown_actor_glow(handle: u32) -> u32 {
 #[no_mangle]
 pub extern "C" fn market_commodity(position: u32) -> u32 {
     let game = g();
-    if game.net || game.bench != 0 { return u32::MAX; }
+    if game.net && game.crown_rules() == 0 || game.bench != 0 { return u32::MAX; }
     let epoch = game.players[game.local as usize].epoch;
     crate::game::market57::commodities(epoch).get(position as usize).copied()
         .filter(|&id| id != u8::MAX).map_or(u32::MAX, u32::from)

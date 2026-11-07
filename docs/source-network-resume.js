@@ -92,7 +92,7 @@ export async function restoreNetworkCheckpoint(wasm, input, authenticatedSeat, e
   return decoded.meta;
 }
 
-export function applyNetworkCheckpoint(wasm, {meta, world}, authenticatedSeat, expectedRoster, validateOnly = false) {
+export function applyNetworkCheckpoint(wasm, {meta, world}, authenticatedSeat, expectedRoster, validateOnly = false, crownRules = -1) {
   if (meta.humanSeats !== expectedRoster || !integer(authenticatedSeat, 0, expectedRoster - 1))
     throw Error('Checkpoint does not match admitted roster');
   const at = wasm.load_alloc(world.length);
@@ -101,14 +101,14 @@ export function applyNetworkCheckpoint(wasm, {meta, world}, authenticatedSeat, e
     const packed=groupedOwnerLayout(meta.groupedOwners,meta.humanSeats,meta.groupedWorldHumans);
     const load=validateOnly?wasm.validate_grouped_resume:wasm.load_grouped_resume;
     if (!packed || typeof load!=='function' ||
-        load((meta.groupedWorldHumans<<16)|packed,authenticatedSeat,meta.tick,meta.rate,meta.requested)!==1)
+        load((meta.groupedWorldHumans<<16)|packed,authenticatedSeat,meta.tick,meta.rate,meta.requested,crownRules+1)!==1)
       throw Error('Checkpoint world is incompatible');
     return;
   }
   const load = meta.sharedOwner ? (validateOnly ? wasm.validate_shared_owner_resume : wasm.load_shared_owner_resume)
     : (validateOnly ? wasm.validate_network_resume : wasm.load_network_resume);
   if (typeof load !== 'function' || (meta.sharedOwner
-    ? load(authenticatedSeat, meta.tick, meta.rate, meta.requested)
-    : load(meta.humanSeats, authenticatedSeat, meta.tick, meta.rate, meta.requested)) !== 1)
+    ? load(authenticatedSeat, meta.tick, meta.rate, meta.requested, crownRules+1)
+    : load(meta.humanSeats, authenticatedSeat, meta.tick, meta.rate, meta.requested, crownRules+1)) !== 1)
     throw Error('Checkpoint world is incompatible');
 }
