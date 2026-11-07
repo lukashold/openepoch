@@ -116,6 +116,8 @@ pub struct Map {
     pub territory_neighbors: [u32; 32],
     /// Terrain elevation at tile corners, `(N + 1)^2` values, for the 3D view.
     pub hm: Vec<f32>,
+    #[cfg(feature = "ee2-authored-valley37")]
+    pub(crate) source_world: Option<Box<crate::native_valley37::Geometry>>,
 }
 
 #[inline]
@@ -126,10 +128,10 @@ pub fn tile_of(x: f32, y: f32) -> usize {
 }
 
 impl Map {
-    pub fn new(seed: u32, players: usize) -> Map {
+    pub(crate) fn blank(seed: u32) -> Map {
         let s0 = (N as f32 * 0.2) as usize;
         let s1 = N - s0;
-        let mut m = Map {
+        Map {
             ter: vec![0; NN],
             h: vec![0.0; NN],
             res: vec![0; NN],
@@ -148,7 +150,19 @@ impl Map {
             tseeds: Vec::new(),
             territory_neighbors: [0; 32],
             hm: vec![0.0; (N + 1) * (N + 1)],
-        };
+            #[cfg(feature = "ee2-authored-valley37")]
+            source_world: None,
+        }
+    }
+
+    pub(crate) fn world_dimensions(&self) -> [usize; 2] {
+        #[cfg(feature = "ee2-authored-valley37")]
+        if let Some(world) = &self.source_world { return [world.width, world.height]; }
+        [N, N]
+    }
+
+    pub fn new(seed: u32, players: usize) -> Map {
+        let mut m = Self::blank(seed);
         let mut seed = seed;
         for attempt in 0..24 {
             m.gen_terrain(seed, players);
@@ -246,6 +260,10 @@ impl Map {
 
     /// Bilinear terrain elevation at a world position.
     pub fn height(&self, x: f32, y: f32) -> f32 {
+        #[cfg(feature = "ee2-authored-valley37")]
+        if let Some(world) = &self.source_world {
+            return world.surface_height(&world.heights, x.clamp(0.0, world.width as f32), y.clamp(0.0, world.height as f32));
+        }
         let hn = N + 1;
         let x = x.clamp(0.0, N as f32 - 0.001);
         let y = y.clamp(0.0, N as f32 - 0.001);
@@ -434,6 +452,14 @@ impl Map {
     }
 
     pub fn upd_pass(&mut self, i: usize) {
+        #[cfg(feature = "ee2-authored-valley37")]
+        if let Some(world) = &self.source_world {
+            if i % N >= world.width || i / N >= world.height {
+                self.pass[0][i] = false;
+                self.pass[1][i] = false;
+                return;
+            }
+        }
         let t = self.ter[i];
         let b = self.blocked[i];
         self.pass[0][i] = t >= T_SAND && t != T_ROCK && !b;

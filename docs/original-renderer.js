@@ -12,6 +12,8 @@ import {createDynamicSailBinding,createDynamicSailGPU,dynamicSailForces} from '.
 import {appendNativePackAnimations,nativePackPose} from './original-pack-states.js?v=pack8';
 import {captureAnimationBindings,captureOverlayMatches,loadCaptureAnimationOverlay,nativeCapturePose,regionalCaptureBindings,loadRegionalCaptureAsset} from './original-capture-animations.js?v=native26';
 import {nativeTakeoffPose} from './air-takeoff.js?v=native33';
+import {scaffoldInstanceKey,wonderScaffoldStage} from './original-wonder-scaffold.js?v=native63';
+import {wonderFenceAtSite} from './original-wonder-fence.js?v=native63';
 const VS=`#version 300 es
 layout(location=0) in vec3 aPosition;layout(location=1) in vec3 aNormal;layout(location=2) in vec2 aUV;
 layout(location=3) in vec4 iA;layout(location=4) in vec4 iB;layout(location=5) in vec4 iC;
@@ -194,14 +196,19 @@ async function verifiedModelJSON(url,digest,kind='Original sail composite'){
  if(Array.from(hash,value=>value.toString(16).padStart(2,'0')).join('')!==digest)throw new Error(kind+' hash differs');
  return JSON.parse(new TextDecoder().decode(bytes));
 }
-async function texture(gl,url,cache,sail=false){
- const key=sail?'initial-sail:'+url:url;if(cache.has(key))return cache.get(key);
+async function texture(gl,url,cache,sail=false,digest=null){
+ const key=digest?`${url}:${digest}`:sail?'initial-sail:'+url:url;if(cache.has(key))return cache.get(key);
  const promise=(async()=>{
   const t=gl.createTexture();gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,t);
   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([255,255,255,255]));
   if(url){
    const r=await fetch(absolute(url));if(!r.ok)throw new Error(`Material ${url}: ${r.status}`);
-   const image=await createImageBitmap(await r.blob(),{premultiplyAlpha:'none',colorSpaceConversion:'none'});
+   const blob=await r.blob();
+   if(digest){
+    const hash=new Uint8Array(await crypto.subtle.digest('SHA-256',await blob.arrayBuffer()));
+    if(Array.from(hash,byte=>byte.toString(16).padStart(2,'0')).join('')!==digest)throw new Error(`Material ${url}: hash differs`);
+   }
+   const image=await createImageBitmap(blob,{premultiplyAlpha:'none',colorSpaceConversion:'none'});
    gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,t);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);image.close();
   }
@@ -460,14 +467,16 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   if(options.houseLodProfile!==undefined)result.setHouseLodProfile(options.houseLodProfile);
  }catch(error){houseLodModels.clear();houseLodError(error);}}
  const entries=[...(Array.isArray(manifest.models)?manifest.models:Object.entries(manifest.models||manifest.mapping||{}).map(([id,value])=>typeof value==='string'?{id:+id,url:value}:{id:+id,...value})),...regionalEntries,...citizenEntries,...presentationEntries];
- const loadParts=async (model,keepPickingGeometry=false,modelUrl=null,teamOverride=null)=>{
+ const loadParts=async (model,keepPickingGeometry=false,modelUrl=null,teamOverride=null,textureHashes=null)=>{
    const parts=[],selectedSeasonManifest=regionalSeasonManifest.models?.[modelUrl]?regionalSeasonManifest:seasonManifest;
    let sourceSailIndex=0;for(const part of model.parts){
     const sailIndex=part.nativeSail?sourceSailIndex++:null;
     const url=part.textureUrl||part.texture||manifest.textures?.[part.textureSource?.toLowerCase()]||null;
     let materialTexture,darkTexture,darkTextures;
     try{
-     materialTexture=await texture(gl,url,textures,!!part.nativeSail);
+     const digest=textureHashes?.get(url);
+     if(textureHashes&&!digest)throw new Error(`Unbound material ${url}`);
+     materialTexture=await texture(gl,url,textures,!!part.nativeSail,digest);
      if(part.nativeSail){
       darkTexture=await texture(gl,part.nativeSail.damageMaskUrls[part.nativeSail.initialDamageMask],textures,true);
       if(!sailShader)sailShader=program(gl,SAIL_FS,['uDark','uSailDiffuse']);
@@ -577,6 +586,29 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   }
   return cache[lod].variant;
  };
+ const scaffold=options.wonderScaffold;
+ let scaffoldModules=null;
+ if(scaffold){try{
+  scaffoldModules=await Promise.all(scaffold.templates.map(async row=>{
+   const model=await verifiedModelJSON(row.url,row.sha256,'Original scaffold model');
+   const transform=nativeModelTransform(model,{verified:true,sourceScale:scaffold.sourceScale,sourceSha256:row.sourceSha256});
+   if(model.format!=='ee2-original-mesh-v1'||!transform.native||model.parts?.length!==1)throw new Error('Original scaffold model differs');
+   const parts=await loadParts(model,false,row.url,null,scaffold.textures);
+   if(parts.length!==1)throw new Error('Original scaffold material is missing');
+   return {parts,assetKind:4,yOffset:0,originOffset:transform.originOffset,nativeScale:transform.scale};
+  }));
+ }catch(error){result.errors.push(error.message);}}
+ const scaffoldBindings=new Map();
+ const fence=options.wonderFence;
+ let fenceModule=null;
+ if(fence){try{
+  const row=fence.foundation,model=await verifiedModelJSON(row.url,row.sha256,'Original construction fence');
+  const transform=nativeModelTransform(model,{verified:true,sourceScale:fence.sourceScale,sourceSha256:row.sourceSha256});
+  if(model.format!=='ee2-original-mesh-v1'||!transform.native||model.parts?.length!==1)throw new Error('Original construction fence differs');
+  const parts=await loadParts(model,false,row.url,null,fence.textures);
+  if(parts.length!==1)throw new Error('Original construction fence material is missing');
+  fenceModule={parts,assetKind:4,yOffset:0,originOffset:transform.originOffset,nativeScale:transform.scale};
+ }catch(error){result.errors.push(error.message);}}
  let loaded=0;
  for(const entry of entries){
   onProgress(++loaded,entries.length);
@@ -609,6 +641,10 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     if(Number.isFinite(minimum)&&Number.isFinite(maximum)&&maximum>minimum){
      variant.wonderConstructionPlane=[(minimum+offset[1])*scale,(maximum-minimum)*scale];
     }
+    const scaffoldBinding=scaffoldModules&&scaffold.rows.get(id);
+    if(scaffoldBinding?.sourceSha256===model.source?.sha256)variant.wonderScaffold=scaffoldBinding;
+    const fenceBinding=fenceModule&&fence.rows.get(id);
+    if(fenceBinding?.sourceSha256===model.source?.sha256)variant.wonderFence=fenceBinding;
    }
    if(entry.presentation)variant.presentationEntry=entry;
    if(entry.priestClips)variant.priestClips=entry.priestClips;
@@ -647,6 +683,24 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   }
  }
  for(const list of result.models.values())list.sort((a,b)=>a.epoch-b.epoch);
+ for(const [renderId,variants] of result.models){
+  if(variants.length===1&&variants[0].wonderScaffold)scaffoldBindings.set(renderId,variants[0].wonderScaffold);
+ }
+ const legacyScaffold=sourceRenderBindings(assetMapping,4,111)[0]?.renderId;
+ result.wonderScaffoldModels=scaffoldBindings.size;
+ result.maskWonderScaffoldFallback=(data,ranges,fallback)=>{
+  if(!scaffoldBindings.size||legacyScaffold===undefined||!ranges[2*legacyScaffold+1])return 0;
+  const keys=new Set();
+  for(const [renderId,binding] of scaffoldBindings){
+   const first=ranges[2*renderId],end=first+ranges[2*renderId+1];
+   for(let i=first;i<end;i++)if(wonderScaffoldStage(binding,data,12*i))keys.add(scaffoldInstanceKey(data,12*i));
+  }
+  let masked=0;
+  const first=ranges[2*legacyScaffold],end=first+ranges[2*legacyScaffold+1];
+  for(let i=first;i<end;i++)if(keys.has(scaffoldInstanceKey(data,12*i))){fallback[12*i+8]=0;masked++;}
+  return masked;
+ };
+ result.wonderFenceModels=[...result.models.values()].filter(variants=>variants.some(variant=>variant.wonderFence)).length;
  if(result.models.size){
   const profile=lightingData?.profiles?.[options.lightingSettings?.profile??'native155'];
   for(const [name, extra] of Object.entries(climateProfiles)){
@@ -718,6 +772,8 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
  };
  result.draw=({data,ranges,vp,epochs,zoom=80,shadow=false,eye=[0,200,0],lighting=defaultLighting,clipPlane=null,capture=false,actorMetadata=null,civilizations=visualCivilizations,stoneThrowerWheels=null})=>{
   const started=performance.now();let calls=0,triangles=0,querying=false;
+  const scaffoldDraws=[];
+  const fenceDraws=[];
   const collectActorPresentation=(actorVisuals||actorSourceScales)&&!shadow&&!clipPlane;
   if(collectActorPresentation)for(const actor of actorMetadata?.actors??[]){
    actorVisuals?.delete(actor);actorSourceScales?.delete(actor);
@@ -760,8 +816,20 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     const citizen=selectCitizenModel(variants,epoch,civilizations?.[team],identity,{neutralFallback:options.citizenNeutralFallback??null});
     let variant=citizen===undefined?selectRegionalModel(variants.filter(v=>v.sourceIdentity===undefined),epoch,civilizations?.[team]):citizen;if(!variant)continue;
     const sourceId=variant.sourceId,time=data[i*12+10],seed=data[i*12+6],previewFlags=Math.round(data[i*12+7])&24;
-    // The native initial ConstructionSite has a null body. The placement ghost still shows the chosen model.
-    if(variant.presentationEntry?.wonderFamily&&seed===0&&!previewFlags)continue;
+    // The initial site has a separate perimeter and a null main model.
+    if(variant.presentationEntry?.wonderFamily&&seed===0&&!previewFlags){
+     const at=i*12,binding=variant.wonderFence;
+     if(!shadow&&binding&&wonderFenceAtSite(data,at)){
+      const yaw=data[at+3]+variant.yawOffset,c=Math.cos(yaw),s=Math.sin(yaw),key=`fence:${team}`;
+      const fenceGroup=groups.get(key)||{variant:fenceModule,team,activity:0,clip:'idle',once:false,preview:false,list:[]};
+      for(const segment of binding.segments){
+       fenceGroup.list.push(data[at]+segment.x*c-segment.y*s,data[at+1]+segment.x*s+segment.y*c,
+        data[at+2]+binding.altitude,yaw+segment.yaw,id,team,1,Math.round(data[at+7])&~64,fenceModule.nativeScale,0,0,0);
+      }
+      fenceDraws.push({id:sourceId,instances:binding.segments.length});groups.set(key,fenceGroup);
+     }
+     continue;
+    }
     const civ=civilizations?.[team],regionalEntry=regionalCaptureRows?.get(`${sourceId}:${epoch}:${civ}`);
     const productionEntry=variant.assetKind===0&&productionRows.get(sourceId)?.find(row=>row.epoch<=epoch&&epoch<row.until&&
      (row.regionalCivilizations.length===14||row.regionalCivilizations.includes(civ)));
@@ -850,6 +918,18 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     group.list[offset+3]+=variant.yawOffset;group.list[offset+9]=phase;
     if(variant.nativeScale!==null)group.list[offset+8]=variant.nativeScale;
     groups.set(key,group);
+    const scaffoldStage=!shadow&&variant.wonderScaffold&&wonderScaffoldStage(variant.wonderScaffold,data,i*12);
+    if(scaffoldStage){
+     const at=i*12,yaw=group.list[offset+3],c=Math.cos(yaw),s=Math.sin(yaw);
+     scaffoldDraws.push({id:variant.sourceId,layers:scaffoldStage.layers,instances:scaffoldStage.parts.length});
+     for(const tile of scaffoldStage.parts){
+      const tileKey=`scaffold:${tile.module}:${team}`,module=scaffoldModules[tile.module];
+      const tiles=groups.get(tileKey)||{variant:module,team,activity:0,clip:'idle',once:false,preview:false,list:[]};
+      tiles.list.push(data[at]+tile.x*c-tile.y*s,data[at+1]+tile.x*s+tile.y*c,data[at+2]+tile.altitude,
+        yaw+tile.yaw,id,team,1,Math.round(data[at+7])&~64,module.nativeScale,0,0,0);
+      groups.set(tileKey,tiles);
+     }
+    }
    }
    for(const {variant,team,list,activity,clip,once,preview,hiddenParts,shimmer,instanceIndices} of groups.values()){
     if(rememberPicks&&variant.assetKind===1&&variant.pickBounds)rememberResources(data,instanceIndices,variant,activity);
@@ -913,7 +993,10 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   if(querying)gl.endQuery(timer.TIME_ELAPSED_EXT);
   if(capture)return;
   if(shadow)result.metrics.shadowMs=performance.now()-started;
-  else{result.metrics.colorMs=performance.now()-started;result.metrics.calls=calls;result.metrics.triangles=triangles;}
+  else{
+   result.metrics.colorMs=performance.now()-started;result.metrics.calls=calls;result.metrics.triangles=triangles;
+   result.metrics.wonderScaffolds=scaffoldDraws;result.metrics.wonderFences=fenceDraws;
+  }
  };
  return result;
 }

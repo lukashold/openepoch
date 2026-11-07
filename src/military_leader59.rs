@@ -281,6 +281,7 @@ impl Game {
     }
 
     pub(super) fn leader_damage_scale(&self, index: usize, area: bool) -> f32 {
+        if self.imperialism_active(index) { return 0.0; }
         let mut factor = 1.0_f32;
         for kind in self.military_auras_for(index) {
             let scale = match kind {

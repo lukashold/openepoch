@@ -169,6 +169,7 @@ impl Game {
             || !self.combat_hostile(owner, actor.team) || !self.can_see(owner, target) || self.conversion_target_profile(actor.def).is_none() {
             return false;
         }
+        if self.imperialism_active(target) { return false; }
         if native::capture_target(actor.def).is_some()
             && self.owns_completed_wonder(actor.team, crate::wonders61::SPHINX) { return false; }
         let state = self.capture.targets.get(&self.h(target)).copied().unwrap_or_default();
@@ -542,7 +543,7 @@ impl Game {
         true
     }
 
-    fn replace_converted_actor(&mut self, index: usize, owner: u8, tribute: CaptureTribute) -> bool {
+    pub(super) fn replace_converted_actor(&mut self, index: usize, owner: u8, tribute: CaptureTribute) -> bool {
         let old = self.ents[index];
         if self.free.len() <= usize::from(old.ncargo) { return false; }
         if old.ncargo > 0 {

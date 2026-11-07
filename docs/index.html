@@ -417,6 +417,11 @@
         <div class="row"><label for="quality">Auflösung</label><select id="quality"><option value="1">Standard · 1×</option><option value="1.5">Hoch · bis 1,5×</option><option value="2" selected>Sehr hoch · bis 2×</option></select></div>
       </section>
       <section id="sk-map" class="skirmish-pane">
+        <div id="valley-preview-menu" hidden>
+          <div class="row"><label for="valley-map-choice">Karte</label><select id="valley-map-choice"><option value="own">Zufallskarte</option><option id="valley-preview-map-option" value="valley">Valley · private Vorschau</option><option id="valley-archive-qa-option" value="valley-archive-qa" hidden disabled>Valley · Archivstart (Test)</option></select></div>
+          <p id="valley-fixed-settings" class="dim" hidden>Steinzeit, Griechen gegen ägyptische KI, 250 Bevölkerung. Kartenaufdeckung und Tempo bleiben wählbar.</p>
+          <p id="valley-archive-qa-note" class="dim" hidden>Originalkarte und archivierte Rohstoffe. Die Spieler starten mit geprüften Positionen aus einem Testlauf. Die vollständige Originalinitialisierung wird noch geprüft.</p>
+        </div>
         <div class="row"><label for="seed">Kartenschlüssel</label><input id="seed" size="8" placeholder="zufällig"></div>
         <div class="row map-options" id="map-climate-row" hidden><label for="map-climate">Klima</label><select id="map-climate"><option value="0" selected>Gemäßigt</option><option value="1">Trocken</option><option value="2">Tropisch</option><option value="3">Tundra (1.6)</option></select></div>
         <div class="row map-options"><label for="map-visibility">Kartenaufdeckung</label><select id="map-visibility"><option value="0">Unerforscht · mit Kriegsnebel</option><option value="1">Erkundet · mit Kriegsnebel</option><option value="2">Vollständig aufgedeckt · ohne Kriegsnebel</option></select></div>
@@ -556,6 +561,6 @@
 </aside>
 <div id="trade-route-caption" hidden role="status"></div>
 <div id="air-mission-caption" hidden role="status"></div>
-<script type="module" src="main.js?v=native62"></script>
+<script type="module" src="main.js?v=native63"></script>
 </body>
 </html>

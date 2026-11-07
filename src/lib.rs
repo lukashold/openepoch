@@ -170,6 +170,8 @@ mod ee2_combat;
 mod research;
 mod game;
 mod map;
+#[cfg(feature = "ee2-authored-valley37")]
+mod native_valley37;
 mod render;
 #[cfg(feature="ee2-render-meta7")]
 mod render_meta7;
@@ -605,11 +607,17 @@ pub extern "C" fn ui_len() -> u32 {
 }
 #[no_mangle]
 pub extern "C" fn start_x() -> f32 {
-    g().map.starts[g().local as usize].0 as f32
+    let game = g();
+    #[cfg(feature = "ee2-authored-valley37")]
+    if let Some([x, _]) = game.valley_fixture.as_ref().and_then(|state| state.focus(game.local)) { return x; }
+    game.map.starts[game.local as usize].0 as f32
 }
 #[no_mangle]
 pub extern "C" fn start_y() -> f32 {
-    g().map.starts[g().local as usize].1 as f32
+    let game = g();
+    #[cfg(feature = "ee2-authored-valley37")]
+    if let Some([_, y]) = game.valley_fixture.as_ref().and_then(|state| state.focus(game.local)) { return y; }
+    game.map.starts[game.local as usize].1 as f32
 }
 #[no_mangle]
 pub extern "C" fn events_ptr() -> *const f32 {
@@ -1472,10 +1480,33 @@ pub extern "C" fn active_capture_glow(handle: u32) -> u32 {
     u32::from(g().active_capture_glow(handle))
 }
 
+#[cfg(feature = "ee2-valley71-neutral-qa")]
+#[no_mangle]
+pub extern "C" fn valley71_force_attack_at(x: f32, y: f32, flags: u32) -> u32 {
+    use crate::native_valley37::{FORCE_ATTACK, RAW_ATTACK_MODIFIER};
+    if flags & RAW_ATTACK_MODIFIER == 0 || !x.is_finite() || !y.is_finite() { return 0; }
+    let game = g();
+    if !game.valid_valley_neutral_opening() { return 0; }
+    let [width, height] = game.map.world_dimensions();
+    if !(0.0..width as f32).contains(&x) || !(0.0..height as f32).contains(&y) { return 0; }
+    let target = pick(game, x, y, false);
+    if target == NOIDX || !game.can_see(game.local, target) { return 0; }
+    let sources: Vec<_> = selected(game).into_iter()
+        .filter(|&i| game.admits_valley_neutral_target(&game.ents[i], &game.ents[target])).collect();
+    if sources.is_empty() { return 0; }
+    let sources = handles(game, &sources);
+    game.submit(C_ATTACK, FORCE_ATTACK, -1.0, game.h(target) as i32, &sources);
+    sources.len() as u32
+}
+
 /// Right click: attack / gather / build / board / unload / move / set rally.
 #[no_mangle]
 pub extern "C" fn cmd_context(x: f32, y: f32, attack_move: u32) {
     let g = g();
+    #[cfg(feature = "ee2-authored-valley37")]
+    if let Some(world) = &g.map.source_world {
+        if !(0.0..world.width as f32).contains(&x) || !(0.0..world.height as f32).contains(&y) { return; }
+    }
     let ids = selected(g);
     #[cfg(feature = "ee2-native13")]
     let mut ids = ids;
@@ -2059,6 +2090,68 @@ pub extern "C" fn cmd_leader_mobilization_at(x: f32, y: f32) -> u32 {
     let hs = handles(game,&ids);
     game.submit(C_LEADER_MOBILIZATION,0.0,0.0,target as i32,&hs);
     hs.len() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn leader_purchase_selection_count() -> u32 {
+    let game = g();
+    selected(game).into_iter().filter(|&index| game.leader_purchase_ready(index)).count() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn leader_purchase_target_at(x: f32, y: f32) -> u32 {
+    if !x.is_finite() || !y.is_finite() || leader_purchase_selection_count() == 0 { return 0; }
+    let game = g();
+    let target = pick(game, x, y, false);
+    u32::from(target != NOIDX && game.leader_purchase_target(game.local, target))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn cmd_leader_purchase_at(x: f32, y: f32) -> u32 {
+    if leader_purchase_target_at(x, y) == 0 { return 0; }
+    let game = g();
+    let target = game.h(pick(game, x, y, false));
+    let ids: Vec<_> = selected(game).into_iter().filter(|&index| game.leader_purchase_ready(index)).collect();
+    let hs = handles(game, &ids);
+    game.submit(C_LEADER_PURCHASE, 0.0, 0.0, target as i32, &hs);
+    hs.len() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn imperialism_selection_count() -> u32 {
+    let game = g();
+    selected(game).into_iter().filter(|&index| game.imperialism_ready(index)).count() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn imperialism_target_at(x: f32, y: f32) -> u32 {
+    if !x.is_finite() || !y.is_finite() || imperialism_selection_count() == 0 { return 0; }
+    let game = g();
+    let target = pick(game, x, y, true);
+    u32::from(target != NOIDX && game.imperialism_target(game.local, target))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn cmd_imperialism_at(x: f32, y: f32) -> u32 {
+    if imperialism_target_at(x, y) == 0 { return 0; }
+    let game = g();
+    let target = game.h(pick(game, x, y, true));
+    let ids: Vec<_> = selected(game).into_iter().filter(|&index| game.imperialism_ready(index)).collect();
+    let hs = handles(game, &ids);
+    game.submit(C_IMPERIALISM, 0.0, 0.0, target as i32, &hs);
+    hs.len() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn imperialism_visible(handle: u32) -> u32 {
+    u32::from(g().imperialism_visible(handle))
 }
 
 #[cfg(feature = "ee2-native13")]

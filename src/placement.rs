@@ -114,12 +114,13 @@ impl Game {
     }
     pub fn placement_geometry_error(&self, team: u8, def:DefId, tx: i32, ty: i32, turn: u32) -> u32 {
         let (width, height) = Self::footprint_axes(def, turn);
+        let [map_width, map_height] = self.map.world_dimensions().map(|dimension| dimension as i32);
         if width == 0
             || team as usize >= self.nplayers
             || tx < 2
             || ty < 2
-            || tx > N as i32 - 2 - width
-            || ty > N as i32 - 2 - height
+            || tx > map_width - 2 - width
+            || ty > map_height - 2 - height
         {
             return 1;
         }

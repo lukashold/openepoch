@@ -41,6 +41,8 @@ pub const C_PLACE_ROTATED:u8=16;
 #[cfg(feature="ee2-native13")]pub(crate) const C_LEADER_MOBILIZATION:u8=29;
 #[cfg(feature="ee2-native13")]pub(crate) const C_LEADER_CONSTRUCTION:u8=30;
 #[cfg(feature="ee2-native13")]pub(crate) const C_LEADER_DIVERSION:u8=31;
+#[cfg(feature="ee2-native13")]pub(crate) const C_LEADER_PURCHASE:u8=32;
+#[cfg(feature="ee2-native13")]pub(crate) const C_IMPERIALISM:u8=33;
 #[cfg(feature="ee2-native13")]pub(crate) const SOLO_RESIGN_SAVE_FLAG:u32=1<<11;
 
 const HEAD: usize = 14; // kind, count, a, b, c
@@ -181,6 +183,11 @@ impl Game {
             C_MOVE => {self.order_move(&ids,a,b,false);#[cfg(feature="ee2-pack8")]self.pack_direct_move(&ids);},
             C_AMOVE => {self.order_move(&ids,a,b,true);#[cfg(feature="ee2-pack8")]self.pack_direct_move(&ids);},
             C_ATTACK => {
+                #[cfg(feature = "ee2-valley71-neutral-qa")]
+                if self.valley_neutral_opening() && a == crate::native_valley37::FORCE_ATTACK && b == -1.0 {
+                    if let Some(j) = target { self.order_valley_attack(&ids, j); }
+                    return;
+                }
                 if let Some(j) = target.filter(|&j| self.combat_hostile(team,self.ents[j].team)&&self.can_see(team,j)) {
                     self.order_attack(&ids, j);
                 }
@@ -297,6 +304,22 @@ impl Game {
             C_LEADER_MOBILIZATION => {
                 if a == 0.0 && b == 0.0 {
                     for &index in &ids { self.order_leader_mobilization(index, c as u32); }
+                }
+            }
+            #[cfg(feature = "ee2-native13")]
+            C_LEADER_PURCHASE => {
+                if a == 0.0 && b == 0.0 {
+                    if let Some(target) = target {
+                        for &index in &ids { self.order_leader_purchase(index, target); }
+                    }
+                }
+            }
+            #[cfg(feature = "ee2-native13")]
+            C_IMPERIALISM => {
+                if a == 0.0 && b == 0.0 {
+                    if let Some(target) = target {
+                        for &index in &ids { self.order_imperialism(index, target); }
+                    }
                 }
             }
             #[cfg(feature = "ee2-native13")]

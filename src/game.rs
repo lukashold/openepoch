@@ -51,6 +51,12 @@ pub(crate) mod wonder_automation62;
 #[path = "economic_leader60.rs"]
 pub(crate) mod economic_leader60;
 #[cfg(feature = "ee2-native13")]
+#[path = "leader_purchase63.rs"]
+pub(crate) mod leader_purchase63;
+#[cfg(feature = "ee2-native13")]
+#[path = "imperialism63.rs"]
+pub(crate) mod imperialism63;
+#[cfg(feature = "ee2-native13")]
 #[path = "city_heal58.rs"]
 pub(crate) mod city_heal58;
 #[cfg(feature = "ee2-native13")]
@@ -105,6 +111,10 @@ pub(crate) const O_LEADER_FIRE_MANEUVER: u8 = 15;
 pub(crate) const O_LEADER_DIVERSION: u8 = 16;
 #[cfg(feature = "ee2-native13")]
 pub(crate) const O_FACTORY_EGRESS: u8 = 17;
+#[cfg(feature = "ee2-native13")]
+pub(crate) const O_LEADER_PURCHASE: u8 = 18;
+#[cfg(feature = "ee2-native13")]
+pub(crate) const O_IMPERIALISM: u8 = 19;
 /// Marker in `Ent::stuck`: the unit walked onto a transport, remove it without an explosion.
 const BOARDED: u8 = 255;
 
@@ -414,6 +424,8 @@ pub struct Game {
     #[cfg(feature = "ee2-native13")]
     pub(crate) economic_leader_effects: Option<economic_leader60::EconomicLeaderEffects>,
     #[cfg(feature = "ee2-native13")]
+    pub(crate) imperialism: imperialism63::State,
+    #[cfg(feature = "ee2-native13")]
     pub(crate) city_heal: Option<city_heal58::State>,
     #[cfg(feature = "ee2-native13")]
     pub(crate) dock_garrison: Option<dock_garrison59::State>,
@@ -449,6 +461,8 @@ pub struct Game {
     /// Camera position (x, height, y) for picking; height 0 = top-down, no parallax.
     pub eye: [f32; 3],
     pub placement_cache:crate::placement::PlacementCache,
+    #[cfg(feature = "ee2-authored-valley37")]
+    pub(crate) valley_fixture: Option<crate::native_valley37::FixtureState>,
 }
 
 impl Game {
@@ -475,7 +489,13 @@ impl Game {
     fn new_with_humans(seed: u32, n_ai: u32, bench: u32, humans: u32, local: u32, net: bool) -> Game {
         let nplayers = ((humans + n_ai) as usize).clamp(2, 4);
         let map = Map::new(seed.max(1), nplayers);
-        let mut g = Game {
+        let mut g = Self::blank(map, seed, n_ai, bench, humans, local, nplayers, net);
+        g.procedural_start(bench, humans);
+        g
+    }
+
+    pub(crate) fn blank(map: Map, seed: u32, n_ai: u32, bench: u32, humans: u32, local: u32, nplayers: usize, net: bool) -> Game {
+        Game {
             map,
             ents: vec![E0; MAXE],
             free: (0..MAXE as u16).rev().collect(),
@@ -615,6 +635,8 @@ impl Game {
             #[cfg(feature = "ee2-native13")]
             economic_leader_effects: None,
             #[cfg(feature = "ee2-native13")]
+            imperialism: imperialism63::State::default(),
+            #[cfg(feature = "ee2-native13")]
             city_heal: None,
             #[cfg(feature = "ee2-native13")]
             dock_garrison: None,
@@ -641,7 +663,14 @@ impl Game {
             ranges: vec![0; crate::ids::render_capacity()*2],
             eye: [0.0; 3],
             placement_cache:crate::placement::PlacementCache::default(),
-        };
+            #[cfg(feature = "ee2-authored-valley37")]
+            valley_fixture: None,
+        }
+    }
+
+    fn procedural_start(&mut self, bench: u32, humans: u32) {
+        let g = self;
+        let nplayers = g.nplayers;
         for p in 0..nplayers {
             g.rebuild_modifiers(p as u8, false);
             let (sx, sy) = g.map.starts[p];
@@ -670,7 +699,6 @@ impl Game {
         }
         g.build_grid();
         g.update_fog();
-        g
     }
 
     // ------------------------------------------------------------------ entities
@@ -728,14 +756,26 @@ impl Game {
         i
     }
 
-    fn block(&mut self, i: usize, on: bool) {
+    pub(crate) fn block(&mut self, i: usize, on: bool) {
         let e = &self.ents[i];
         let (tx0,ty0,width,height)=Self::building_bounds(e);
-        for ty in ty0.max(0)..(ty0+height).min(N as i32){for tx in tx0.max(0)..(tx0+width).min(N as i32){let t=ty as usize*N+tx as usize;self.map.blocked[t]=on;self.map.upd_pass(t);}}
+        #[cfg(feature = "ee2-valley74-city-footprint")]
+        let mask = self.valley_start_city_mask(i);
+        for ty in ty0.max(0)..(ty0+height).min(N as i32) {
+            for tx in tx0.max(0)..(tx0+width).min(N as i32) {
+                #[cfg(feature = "ee2-valley74-city-footprint")]
+                if mask.is_some_and(|footprint| !footprint.blocks(tx, ty)) { continue; }
+                let t = ty as usize * N + tx as usize;
+                self.map.blocked[t] = on;
+                self.map.upd_pass(t);
+            }
+        }
         self.map.nav_ver += 1;
     }
 
     pub(crate) fn kill(&mut self, i: usize) {
+        #[cfg(feature = "ee2-native13")]
+        self.retire_imperialism(i);
         #[cfg(feature = "ee2-native13")]
         self.retire_dock_garrison(i);
         #[cfg(feature = "ee2-native13")]
@@ -1014,8 +1054,9 @@ impl Game {
     }
 
     pub fn order_move(&mut self, ids: &[usize], x: f32, y: f32, attack: bool) {
-        let x = x.clamp(1.0, N as f32 - 1.0);
-        let y = y.clamp(1.0, N as f32 - 1.0);
+        let [width, height] = self.map.world_dimensions();
+        let x = x.clamp(1.0, width as f32 - 1.0);
+        let y = y.clamp(1.0, height as f32 - 1.0);
         let kl = self.key_for(LAND, x, y);
         let ks = self.key_for(SEA, x, y);
         let mut k = 0.0f32;
@@ -1057,13 +1098,28 @@ impl Game {
     }
 
     pub fn order_attack(&mut self, ids: &[usize], tj: usize) {
+        self.order_attack_inner(ids, tj, false);
+    }
+
+    #[cfg(feature = "ee2-valley71-neutral-qa")]
+    pub(crate) fn order_valley_attack(&mut self, ids: &[usize], tj: usize) {
+        self.order_attack_inner(ids, tj, true);
+    }
+
+    fn order_attack_inner(&mut self, ids: &[usize], tj: usize, force: bool) {
         let t = self.ents[tj];
         let td = &DEFS[t.def as usize];
         let h = self.h(tj);
         for &i in ids {
             #[cfg(feature = "ee2-native13")]
             if self.air_parked(i, &self.ents[i]) { continue; }
-            if !self.combat_hostile(self.ents[i].team,t.team)||!self.can_see(self.ents[i].team,tj){continue;}
+            let a = &self.ents[i];
+            let admitted = self.combat_hostile(a.team, t.team);
+            #[cfg(feature = "ee2-valley71-neutral-qa")]
+            let admitted = if force { self.admits_valley_neutral_target(a, &t) } else { admitted };
+            #[cfg(not(feature = "ee2-valley71-neutral-qa"))]
+            let _ = force;
+            if !admitted || !self.can_see(a.team, tj) { continue; }
             let d = &DEFS[self.ents[i].def as usize];
             if d.building {
                 continue;
@@ -1319,6 +1375,8 @@ impl Game {
             }
             self.diplomacy.clock.hash(&mut mix);
         }
+        #[cfg(feature = "ee2-authored-valley37")]
+        crate::native_valley37::hash_game(self, &mut mix);
         #[cfg(feature = "ee2-epoch-range13")]
         if self.final_epoch != MAX_EPOCH {
             mix(crate::match_epoch_range13::MAGIC);
@@ -1381,6 +1439,8 @@ impl Game {
         if let Some(powers) = &self.military_leader_powers { powers.hash(&mut mix); }
         #[cfg(feature = "ee2-native13")]
         if let Some(effects) = &self.economic_leader_effects { effects.hash(&mut mix); }
+        #[cfg(feature = "ee2-native13")]
+        self.imperialism.hash(&mut mix);
         #[cfg(feature = "ee2-native13")]
         if let Some(city_heal) = &self.city_heal { city_heal.hash(&mut mix); }
         #[cfg(feature = "ee2-native13")]
@@ -1655,6 +1715,8 @@ impl Game {
         self.tick_trade();
         #[cfg(feature = "ee2-native13")]
         self.tick_economic_leader_effects();
+        #[cfg(feature = "ee2-native13")]
+        self.tick_imperialism();
         #[cfg(feature = "ee2-native13")]
         self.tick_aircraft();
         #[cfg(feature = "ee2-native13")]
@@ -1976,7 +2038,7 @@ impl Game {
         #[cfg(not(feature="ee2-up15"))]{let _=(index,e);false}
     }
     fn fire(&mut self, _source_index: usize, e: &mut Ent, w: &Wpn, tj: usize) {
-        if !self.combat_hostile(e.team,self.ents[tj].team)||!self.can_see(e.team,tj)||!self.rps_allows(e,&self.ents[tj]){e.tgt=NONE;return;}
+        if !self.active_attack_target(e,tj)||!self.can_see(e.team,tj)||!self.rps_allows(e,&self.ents[tj]){e.tgt=NONE;return;}
         #[cfg(feature = "ee2-native13")]
         if !self.air_can_fire(_source_index) { e.tgt = NONE; return; }
         #[cfg(feature="ee2-reference")]
@@ -2027,6 +2089,8 @@ impl Game {
             #[cfg(not(feature="ee2-up15"))] {w.kind==W_MELEE}
         };
         if direct || self.projs.len() >= 4000 {
+            #[cfg(feature = "ee2-valley71-neutral-qa")]
+            if direct && w.splash == 0.0 { self.commit_valley_regular_impact(e, tj); }
             #[cfg(feature="ee2-up15")]
             self.native_attack_impact(e.team,self.h(tj),self.ents[tj].x,self.ents[tj].y,dmg,w.kind,w.targets,w.splash,attack.map_or(0.0,|a|a.friendly),attacker_profile,
                 #[cfg(feature = "ee2-native13")]
@@ -2051,6 +2115,12 @@ impl Game {
             #[cfg(feature = "ee2-native13")]
             attack_source: self.h(_source_index),
             d0 });
+    }
+
+    fn active_attack_target(&self, attacker: &Ent, index: usize) -> bool {
+        #[cfg(feature = "ee2-valley71-neutral-qa")]
+        if self.valley_order_keeps_target(attacker, index) { return true; }
+        self.combat_hostile(attacker.team, self.ents[index].team)
     }
 
     #[inline]
@@ -2570,7 +2640,7 @@ impl Game {
         // ---- resolve the current target
         if e.order == O_ATTACK {
             match self.get(e.otgt) {
-                Some(j) if self.combat_hostile(e.team,self.ents[j].team)&&self.can_see(e.team, j)&&self.rps_allows(&e,&self.ents[j]) => {
+                Some(j) if self.active_attack_target(&e,j)&&self.can_see(e.team, j)&&self.rps_allows(&e,&self.ents[j]) => {
                     e.tgt = e.otgt;
                     if (self.tick + i as u32) % 32 == 0 {
                         e.fkey = self.key_for(d.dom, self.ents[j].x, self.ents[j].y);
@@ -2591,7 +2661,7 @@ impl Game {
         let mut tj = NOIDX;
         if e.tgt != NONE {
             match self.get(e.tgt) {
-                Some(j) if self.combat_hostile(e.team,self.ents[j].team)&&self.can_see(e.team, j)&&self.rps_allows(&e,&self.ents[j]) => tj = j,
+                Some(j) if self.active_attack_target(&e,j)&&self.can_see(e.team, j)&&self.rps_allows(&e,&self.ents[j]) => tj = j,
                 _ => {self.native_stop_attack(i);e.tgt = NONE;},
             }
         }
@@ -2723,7 +2793,11 @@ impl Game {
                 #[cfg(feature = "ee2-native13")]
                 O_LEADER_MOBILIZATION => self.do_leader_mobilization(i, &mut e),
                 #[cfg(feature = "ee2-native13")]
+                O_LEADER_PURCHASE => self.do_leader_purchase(i, &mut e),
+                #[cfg(feature = "ee2-native13")]
                 O_LEADER_CONSTRUCTION => self.do_leader_construction(i, &mut e),
+                #[cfg(feature = "ee2-native13")]
+                O_IMPERIALISM => self.do_imperialism(i, &mut e),
                 #[cfg(feature = "ee2-native13")]
                 O_LEADER_FIRE_MANEUVER => self.do_fire_maneuver(i, &mut e),
                 #[cfg(feature = "ee2-native13")]
@@ -3054,18 +3128,19 @@ impl Game {
         }
     }
 
-    fn paint_unit_sight(visibility: &mut [u8], viewer: u8, unit: &Ent, range: f32) {
+    fn paint_unit_sight(visibility: &mut [u8], viewer: u8, unit: &Ent, range: f32, [width, height]: [usize; 2]) {
         let (cx, cy) = (unit.x as i32, unit.y as i32);
         let radius = range as i32;
         let start = viewer as usize * NN;
         for dy in -radius..=radius {
             let y = cy + dy;
-            if y < 0 || y >= N as i32 { continue; }
-            let width = ((range * range - (dy * dy) as f32).max(0.0)).sqrt() as i32;
-            let x0 = (cx - width).max(0) as usize;
-            let x1 = (cx + width).min(N as i32 - 1) as usize;
+            if y < 0 || y >= height as i32 { continue; }
+            let span = ((range * range - (dy * dy) as f32).max(0.0)).sqrt() as i32;
+            let x0 = (cx - span).max(0);
+            let x1 = (cx + span).min(width as i32 - 1);
+            if x0 > x1 { continue; }
             let row = start + y as usize * N;
-            visibility[row + x0..=row + x1].fill(255);
+            visibility[row + x0 as usize..=row + x1 as usize].fill(255);
         }
     }
 
@@ -3080,6 +3155,7 @@ impl Game {
         }
         #[cfg(feature = "ee2-native13")]
         let farseeing = self.completed_wonder_owners(crate::wonders61::TOWER_OF_MOON_AND_STARS);
+        let [width, height] = self.map.world_dimensions();
         for (_index, e) in self.ents[..self.high].iter().enumerate() {
             if !e.alive {
                 continue;
@@ -3089,12 +3165,12 @@ impl Game {
             let range = self.modifiers[e.team as usize][e.def as usize][5];
             #[cfg(feature = "ee2-native13")]
             let range = if farseeing & (1 << e.team) != 0 && DEFS[e.def as usize].building { range + 14.0 } else { range };
-            Self::paint_unit_sight(&mut self.team_vis, e.team, e, range);
+            Self::paint_unit_sight(&mut self.team_vis, e.team, e, range, [width, height]);
             #[cfg(feature = "ee2-native13")]
             if farseeing != 0 && e.def == TC && e.hp > 0.0 && e.built >= 1.0 {
                 for viewer in 0..self.nplayers {
                     if farseeing & (1 << viewer) != 0 && viewer != e.team as usize {
-                        Self::paint_unit_sight(&mut self.team_vis, viewer as u8, e, range);
+                        Self::paint_unit_sight(&mut self.team_vis, viewer as u8, e, range, [width, height]);
                     }
                 }
             }

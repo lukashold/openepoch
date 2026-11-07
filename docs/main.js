@@ -20,15 +20,17 @@ import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regi
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native6';
-import {loadOriginalModels} from './original-renderer.js?v=native62';
-import {loadWonderPresentation} from './original-wonders.js?v=native61';
+import {loadOriginalModels} from './original-renderer.js?v=native63';
+import {loadWonderPresentation} from './original-wonders.js?v=native63';
+import {loadWonderScaffold} from './original-wonder-scaffold.js?v=native63';
+import {loadWonderFence} from './original-wonder-fence.js?v=native63';
 import {loadDiversionPresentation} from './original-diversion-presentation.js?v=native62';
 import {createDiversionShimmerFrames} from './original-diversion-shimmer.js?v=native62';
 import {loadHeavyMounted3Presentation} from './original-heavy-mounted3.js?v=native62';
 import {loadArtemisPresentation} from './original-artemis.js?v=native62';
 import {loadCrownLeaderPresentation} from './original-crown-leaders.js?v=native60';
 import {loadUngarrisonArt,ungarrisonIcon} from './original-ungarrison.js?v=native60';
-import {loadLeaderCursors} from './original-leader-cursors.js?v=native60';
+import {loadLeaderCursors,loadImperialismBadge} from './original-leader-cursors.js?v=native63';
 import {createRallyHealGate,loadOriginalRallyHeal} from './original-rally-heal.js?v=native60';
 import {ownMapTerrainOrigin} from './original-citycenter-terrain.js?v=regional10';
 import {loadCityCenterIcons,loadHouseIcons,loadDockIcons,loadBarracksIcons,loadMillIcons,loadTempleIcons,loadLightArtilleryIcons,loadWarehouseIcons,loadStableIcons,loadKingIcons} from './original-citycenter-icons.js?v=native17';
@@ -50,7 +52,7 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=clock38';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native62';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native63';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
@@ -61,6 +63,7 @@ import {createFullscreenController} from './fullscreen.js?v=building2';
 import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native17';
 import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=native61';
 import {updateOriginalCamera,originalCameraRay,originalFractionForZoom,normalizeOriginalHeading,rotateOriginalCameraHeading} from './original-camera.js?v=heading2';
+import {updateAuthoredCamera} from './authored-camera-axis.js';
 import {createFullmap} from './fullmap.js?v=native24';
 import {createPlayerFlare} from './player-flare.js?v=native24';
 import {createBattleFlare} from './battle-flare.js?v=native25';
@@ -84,6 +87,8 @@ import {createTakeoffAudioClock,loadAirTakeoff,takeoffElapsed} from './air-takeo
 import {addCarrierFlightAudio,loadAirFlightAudio,readAirFlightAudio} from './air-flight-audio.js?v=native40clock';
 import {loadFullmapCityNameCatalog,loadFullmapTerritoryNameCatalog} from './fullmap-territory-names.js?v=native22';
 import {createWarplanPeer,WARPLAN_PEER_VERSION} from './original-warplan-peer.js';
+import {activeValleyGeometry,initialValleyViews,pickValleyGround,valleyMinimapPoint,valleyMinimapSnapshot} from './authored-view.js';
+import {installedValleyManifest,loadValleyPreview,valleySaveLocator} from './valley-preview.js';
 
 const $ = id => document.getElementById(id);
 const canvas = $('gl');
@@ -136,7 +141,20 @@ if (referenceMode) {
   // Both multiplayer peers must explicitly match this ruleset.
 }
 let wasm;
-try{wasm=await loadRulesWasm(rulesProfile,import.meta.url);}catch(error){rulesLoadFailure(error);throw error;}
+const valleyParams=new URL(location.href).searchParams;
+const valleyMode=valleyParams.get('valley-preview');
+const valleyNormal=rulesProfile.id==='up15'&&valleyMode===null&&valleyParams.get('assets')!=='procedural';
+const valleyManifest=valleyNormal?await installedValleyManifest():null;
+const valleyNeutralRequested=valleyMode==='neutral-qa'||valleyNormal;
+const valleyRequested=rulesProfile.id==='up15'&&(!!valleyManifest||['1','archive-qa','neutral-qa'].includes(valleyMode));
+try{
+  if(valleyRequested){
+    const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley75_commit','valley71_force_attack_at','valley71_neutral_opening']:rulesProfile.requiredExports;
+    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native63-valley'};
+    try{wasm=await loadRulesWasm(previewRules,import.meta.url);}catch{/* The ordinary ruleset remains available. */}
+  }
+  wasm??=await loadRulesWasm(rulesProfile,import.meta.url);
+}catch(error){rulesLoadFailure(error);throw error;}
 // Always take the pointer BEFORE touching memory.buffer: the call may grow (and detach) the memory.
 const u8 = (ptr, len) => new Uint8Array(wasm.memory.buffer, ptr, len);
 const f32 = (ptr, len) => new Float32Array(wasm.memory.buffer, ptr, len);
@@ -465,6 +483,7 @@ function uploadTerrain() {
   heights = f32(wasm.hmap_ptr(), HN * HN).slice();
   originalGround.updateTerrain(heights);
   originalModels.updateTerrain?.(heights);
+  if(valleyWorld)return;
   uploadOriginalTerrainClasses();
   const v = new Float32Array(HN * HN * 6), h = (x, y) => heights[Math.min(MAP, Math.max(0, y)) * HN + Math.min(MAP, Math.max(0, x))];
   for (let y = 0, k = 0; y < HN; y++) for (let x = 0; x < HN; x++) {
@@ -479,6 +498,7 @@ function uploadOriginalTerrainClasses(){
   originalWater.updateMap({heights,types});
 }
 const groundAt = (x, y) => {
+  if(valleyWorld)return wasm.valley37_view_ground(x,y);
   x = Math.min(MAP - 0.001, Math.max(0, x)); y = Math.min(MAP - 0.001, Math.max(0, y));
   const xi = x | 0, yi = y | 0, fx = x - xi, fy = y - yi, i = yi * HN + xi;
   const a = heights[i] + (heights[i + 1] - heights[i]) * fx, b = heights[i + HN] + (heights[i + HN + 1] - heights[i + HN]) * fx;
@@ -626,9 +646,13 @@ const spyPoseForActor=spyPresentation&&typeof wasm.spy_visual_state==='function'
     if(!state)return null;
     return {state,elapsed:wasm.spy_visual_elapsed(actor.handle,actor.renderTime),once:true,duration:5};
   }:null;
+const [wonderScaffold,wonderFence]=await Promise.all([
+  loadWonderScaffold(wonderPresentation,{enabled:valleyParams.get('wonderScaffold')!=='0'}),
+  loadWonderFence(wonderPresentation,{enabled:valleyParams.get('wonderFence')!=='0'}),
+]);
 const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,total)=>{
   $('play').textContent=`Originalgrafiken laden · ${Math.round(loaded/total*100)} %`;
-},{assetMapping,climateProfiles,capturePoseForActor,tradePresentation,fighterBomberPresentation,carrierPresentation,priestPresentation,priestPoseForActor,spyPresentation,spyPoseForActor,leaderPresentation,wonderPresentation,diversionPresentation,heavyMounted3Presentation,
+},{assetMapping,climateProfiles,capturePoseForActor,tradePresentation,fighterBomberPresentation,carrierPresentation,priestPresentation,priestPoseForActor,spyPresentation,spyPoseForActor,leaderPresentation,wonderPresentation,wonderScaffold,wonderFence,diversionPresentation,heavyMounted3Presentation,
   spyShimmerForActor:spyShimmer?actor=>spyShimmer.sample(actor,wasm.spy_disguised(actor.handle)===1):null,
   diversionShimmerForActor:diversionShimmer?(actor,visual)=>diversionShimmer.sample(actor,visual,wasm.leader_diversion_visual(actor.handle)===1):null,
   sourceVisualForModel:blessGround?.modelVisual,priestParticleScales:!!priestParticles,rallyTargetTags:airMissionFlag?.targetTags,
@@ -668,6 +692,8 @@ if(qaMode){
   canvas.dataset.originalGroundErrors=JSON.stringify(originalGround.errors);
   canvas.dataset.originalGroundPolicy=originalGround.policy;
   canvas.dataset.originalModelBindings=String(originalModels.manifest?.models?.length||0);
+  canvas.dataset.wonderScaffoldBindings=String(originalModels.wonderScaffoldModels??0);
+  canvas.dataset.wonderFenceBindings=String(originalModels.wonderFenceModels??0);
   canvas.dataset.originalEpochIcons=String([...originalAssets.epochIcons.values()].reduce((n,list)=>n+list.filter(row=>row.nativeExact).length,0));
   canvas.dataset.originalTerrainPolicy=originalTerrain.policy;
   canvas.dataset.originalTerrainErrors=JSON.stringify(originalTerrain.errors);
@@ -685,6 +711,56 @@ if(originalAssets.enabled){
 if(originalEnabled&&(!originalAssets.enabled||originalModels.available.size<67)){
   $('rules-note').textContent='Einige Originalmedien fehlen. Entpacke das vollständige Spielpaket und lasse den Spielordner zusammen. Bis dahin verwendet das Spiel die vorhandenen Ersatzgrafiken.';
 }
+const valleyPreview=await loadValleyPreview({requested:valleyRequested&&originalEnabled,
+  authoredRequested:valleyMode==='archive-qa'||valleyNeutralRequested,neutralRequested:valleyNeutralRequested,
+  requireAuthored:valleyNormal,manifest:valleyManifest,wasm,gl,teams:TEAM,
+  onUnavailable:error=>console.warn('Valley-Vorschau:',error.message)});
+$('valley-preview-menu').hidden=!valleyPreview;
+const valleyMapChoice=$('valley-map-choice');
+const valleyArchiveOption=$('valley-archive-qa-option');
+valleyArchiveOption.disabled=valleyArchiveOption.hidden=!valleyPreview?.authoredAvailable;
+if(valleyNormal&&valleyPreview?.authoredAvailable){
+  const earlier=$('valley-preview-map-option');
+  earlier.disabled=earlier.hidden=true;
+  valleyArchiveOption.textContent='Tal des Todes';
+  $('valley-archive-qa-note').textContent='Originalkarte mit festem Start in der Steinzeit und normalen Startvorräten. Wähle mit Umschalt+A den Angriff und klicke mit Alt+Linksklick auf einen sichtbaren gegnerischen Bürger.';
+}else if(valleyNeutralRequested&&valleyPreview?.authoredAvailable){
+  valleyArchiveOption.textContent='Valley · Neutraler Archivstart (Test)';
+  $('valley-archive-qa-note').textContent += ' Wähle im Test mit Umschalt+A den Angriff. Klicke mit Alt+Linksklick auf den sichtbaren gegnerischen Bürger.';
+}
+const valleyFixedControls=new Map();
+const valleyPresetValues={nai:'1','pop-limit':'250',supplies:'0','start-epoch':'0','end-epoch':String(wasm.epoch_count()-1),
+  'map-climate':'0','season-start':'6','season-length':'5','initial-ceasefire':'0','sk-victory-condition':'conquest',
+  'civilization-0':'4','civilization-1':'8'};
+const valleyPresetUnchecked=new Set(['season-cycle','disable-crowns','source-solo-clock','source-adaptive-clock','sk-sole-survivor']);
+valleyMapChoice.onchange=()=>{
+  const selected=valleyMapChoice.value!=='own';
+  $('valley-fixed-settings').hidden=!selected;
+  $('valley-archive-qa-note').hidden=valleyMapChoice.value!=='valley-archive-qa';
+  if(selected&&!valleyFixedControls.size){
+    const ids=['seed','nai','pop-limit','supplies','start-epoch','end-epoch','map-climate','season-cycle','season-start',
+      'season-length','sk-victory-condition','sk-sole-survivor','sk-territory-percent',
+      'disable-crowns','initial-ceasefire','source-solo-clock','source-adaptive-clock','mpopen'];
+    for(const control of [...ids.map($),...document.querySelectorAll('#civilization-options select')].filter(Boolean)){
+      valleyFixedControls.set(control,{disabled:control.disabled,value:control.value,checked:control.checked});
+      if(valleyNormal){
+        if(Object.hasOwn(valleyPresetValues,control.id))control.value=valleyPresetValues[control.id];
+        if(valleyPresetUnchecked.has(control.id))control.checked=false;
+      }
+      control.disabled=true;
+    }
+  }else if(!selected){
+    for(const [control,previous] of valleyFixedControls){
+      control.disabled=previous.disabled;
+      if(valleyNormal){
+        if(Object.hasOwn(valleyPresetValues,control.id))control.value=previous.value;
+        if(valleyPresetUnchecked.has(control.id))control.checked=previous.checked;
+      }
+    }
+    valleyFixedControls.clear();
+  }
+  if(valleyNormal&&window.openepoch)void refreshContinue();
+};
 $('play').disabled=false;$('play').textContent='Scharmützel starten';
 
 // ---------------------------------------------------------------- state
@@ -697,6 +773,7 @@ let gameOptions = null;
 let worldMaterialPending = null;
 let initialMusicEpoch = 0, musicCivilization = 0;
 let net = null;          // { ls: Lockstep, ch: RTCDataChannel } in multiplayer
+let valleyWorld = null;
 let ghost = null;        // { id, size, name, turn } while placing a building
 let placementKey='',lastWheelRotation=0;
 let attackMode = false;  // A pressed: next left click is attack-move
@@ -758,9 +835,11 @@ const fullmapPip = createFullmapPipBridge({gl,canvas,available:()=>referenceMode
 // At heading0 the eye sits south of and above the look-at point.
 const view = { eye: [0, 0, 0], f: [0, -Math.sin(PITCH), -Math.cos(PITCH)], u: [0, Math.cos(PITCH), -Math.sin(PITCH)], vp: new Float32Array(16) };
 function updateCamera() {
-  cam.x = Math.min(MAP, Math.max(0, cam.x)); cam.y = Math.min(MAP, Math.max(0, cam.y));
+  cam.x = Math.min(valleyWorld?.width??MAP, Math.max(0, cam.x));
+  cam.y = Math.min(valleyWorld?.height??MAP, Math.max(0, cam.y));
   if(referenceMode){
-    updateOriginalCamera(cam,view,innerWidth,innerHeight,groundAt);
+    if(valleyWorld)updateAuthoredCamera(updateOriginalCamera,cam,view,innerWidth,innerHeight,groundAt);
+    else updateOriginalCamera(cam,view,innerWidth,innerHeight,groundAt);
     if(running)wasm.set_eye(...view.eye);
     return;
   }
@@ -797,6 +876,10 @@ function toPlane(px, py) {
 }
 /** Screen pixel -> point on the actual terrain (ray-marched against the height map). */
 function toWorld(px, py) {
+  if(valleyWorld){
+    const point=pickValleyGround(valleyWorld,view,px,py,innerWidth,innerHeight);
+    return point?[point.x,point.y]:null;
+  }
   const d = ray(px, py), e = view.eye, dy = Math.min(d[1], -1e-4);
   let t = Math.max(0,(3.2 - e[1]) / dy), prev = t;
   const end = -e[1] / dy;
@@ -828,7 +911,9 @@ function footprintAxes(){
   return [size,size];
 }
 function ghostTile() {
-  let [wx, wy] = toWorld(mouse.x, mouse.y);
+  const point=toWorld(mouse.x,mouse.y);
+  if(!point)return null;
+  const [wx,wy]=point;
   if(ghost.id===5&&!ghost.manual&&wasm.dock_orientation){
     const size=wasm.footprint_size(ghost.id,0)||ghost.size;ghost.turn=0;
     const tx=Math.round(wx-size/2),ty=Math.round(wy-size/2),turn=wasm.dock_orientation(tx,ty);
@@ -844,7 +929,13 @@ function ghostTile() {
 }
 function updatePlacement(now=performance.now()){
   if(!ghost){buildingControls.hide();placementKey='';delete canvas.dataset.placement;return;}
-  const [tx,ty]=ghostTile(),key=[ghost.id,ghost.turn,tx,ty,ui?.sel?.n,ui?.sel?.def,Math.floor(now/250)].join(':');
+  const tile=ghostTile();
+  if(!tile){
+    placementKey='';delete canvas.dataset.placement;
+    buildingControls.update({name:ghost.name,id:ghost.id,turn:ghost.turn,error:1,size:footprintSize(),manual:ghost.manual,note:''});
+    return;
+  }
+  const [tx,ty]=tile,key=[ghost.id,ghost.turn,tx,ty,ui?.sel?.n,ui?.sel?.def,Math.floor(now/250)].join(':');
   if(key===placementKey)return;placementKey=key;
   const error=wasm.place_error_rotated?wasm.place_error_rotated(ghost.id,tx,ty,ghost.turn):wasm.place_error(ghost.id,tx,ty);
   const [width,height]=footprintAxes();
@@ -971,6 +1062,40 @@ const mobilizationOrder=mobilizationSupported?targetedPower(88,{
   available:()=>ui?.epoch<5&&wasm.leader_power_reserve(wasm.selected_actor_handle()>>>0)>=0,
   count:wasm.leader_mobilization_selection_count,pick:wasm.leader_mobilization_target_at,issue:wasm.cmd_leader_mobilization_at,
 },mobilizationArt,'economic-action'):null;
+const purchaseSource=theme=>leaderPresentation?.power(88,ui?.epoch??5,theme);
+const purchaseSupported=typeof wasm.cmd_leader_purchase_at==='function';
+const imperialismSupported=typeof wasm.cmd_imperialism_at==='function';
+const [lateLeaderCursors,imperialismBadge]=await Promise.all([
+  loadLeaderCursors(originalEnabled&&(purchaseSupported||imperialismSupported),'late-leader-powers'),
+  loadImperialismBadge(originalEnabled&&imperialismSupported),
+]);
+const purchaseArt={
+  label:()=>purchaseSource(1)?.label??(ui?.epoch<10?'Auslandsinvestition':'Kapitalismus'),
+  description:()=>purchaseSource(1)?.help??(ui?.epoch<10
+    ?'Kauft ein zulässiges fremdes Gebäude für den doppelten Preis.'
+    :'Kauft eine fremde Landeinheit für den doppelten Preis in Gold.'),
+  button:(_action,theme,state)=>{
+    const art=purchaseSource(theme)?.art;
+    return art?.[state]??art?.idle;
+  },
+  cursor:(_action,valid)=>lateLeaderCursors?.(ui?.epoch<10?'ForeignInvestment':'Capitalism',valid),
+};
+const purchaseOrder=purchaseSupported?targetedPower(88,{
+  action:'purchase',shortcut:';',fallback:'◈',
+  available:()=>ui?.epoch>=5&&!net&&wasm.leader_power_reserve(wasm.selected_actor_handle()>>>0)>=0,
+  count:wasm.leader_purchase_selection_count,pick:wasm.leader_purchase_target_at,issue:wasm.cmd_leader_purchase_at,
+},purchaseArt,'economic-action'):null;
+const imperialismArt={
+  label:()=>imperialSourceAction(3)?.label??'Imperialismus',
+  description:()=>imperialSourceAction(3)?.help??'Schützt ein eigenes Gebäude 45 Sekunden vor Angriffen und Eroberung.',
+  button:(_action,theme,state)=>imperialSourceAction(theme)?.art?.[state],
+  cursor:(_action,valid)=>lateLeaderCursors?.('Imperialism',valid),
+};
+const imperialismOrder=imperialismSupported?targetedPower(89,{
+  action:'imperialism',shortcut:';',fallback:'⌂',
+  available:()=>ui?.epoch>=10&&!net&&wasm.leader_power_reserve(wasm.selected_actor_handle()>>>0)>=0,
+  count:wasm.imperialism_selection_count,pick:wasm.imperialism_target_at,issue:wasm.cmd_imperialism_at,
+},imperialismArt,'imperial-action'):null;
 const diversionArt=await diversionPresentation?.loadCommandArt();
 const diversionOrder=diversionSupported?targetedPower(87,{
   action:'diversion',shortcut:';',fallback:'◈',label:'Ablenkungsmanöver',
@@ -979,7 +1104,7 @@ const diversionOrder=diversionSupported?targetedPower(87,{
   count:()=>wasm.leader_diversion_ready(wasm.selected_actor_handle()>>>0),
   pick:(x,y)=>wasm.leader_diversion_target_at(x,y),issue:wasm.cmd_leader_diversion_at,
 },diversionArt,'military-action'):null;
-const leaderTargetOrders=[imperialOrder,mobilizationOrder,diversionOrder].filter(Boolean);
+const leaderTargetOrders=[imperialOrder,imperialismOrder,mobilizationOrder,purchaseOrder,diversionOrder].filter(Boolean);
 const powerOrders=[...priestOrders,...spyOrders,...leaderTargetOrders];
 const extractionAvailable=spyEnabled&&typeof wasm.cmd_spy_extraction==='function';
 const selectedPowerType=(selection,definition)=>selection?.def===definition||selection?.types?.some(type=>type[0]===definition);
@@ -1082,10 +1207,11 @@ const fullmap = rulesProfile.ruleset===2&&packActorReader ? createFullmap({
   drawFlares:playerFlare.draw,
   drawBattleFlares:battleFlare?.draw,
 }) : null;
-$('fullmap-button').onclick=()=>{if(running&&!bench&&!modalOpen())fullmap?.open();};
+$('fullmap-button').onclick=()=>{if(running&&!bench&&!valleyWorld&&!modalOpen())fullmap?.open();};
 
 // ---------------------------------------------------------------- starting, saving, loading
 function bindWorldTerrainMaterial() {
+  if(valleyWorld){worldMaterialPending=null;originalModels.bindNativeTerrainMaterial?.(null);return;}
   worldMaterialPending = null;
   if (rulesProfile.ruleset !== 2 || !originalTerrain.enabled || !originalModels.bindNativeTerrainMaterial) return;
   originalModels.bindNativeTerrainMaterial(null);
@@ -1112,6 +1238,7 @@ function begin(tempo = null, useSourceClock = wasm.sim_clock_active?.() === 1, a
   adaptiveSoloClock = sourceSoloClock && supportsAdaptiveSoloClock && adaptiveRate
     ? createAdaptiveSourceClock(wasm.game_tick(), adaptiveRate, storedRate ? wasm.sim_adaptive_scale() : tempo?.requested ?? 1)
     : null;
+  valleyWorld=valleyPreview?activeValleyGeometry(wasm):null;
   originalModels.clearResourcePicks();
   takeoffAudio?.reset();
   sfx.resetAirFlightAudio();
@@ -1157,7 +1284,7 @@ function begin(tempo = null, useSourceClock = wasm.sim_clock_active?.() === 1, a
   $('menu').style.display = 'none'; $('end').style.display = 'none';
   shellMovie(false);
   $('camera-tools').hidden=!referenceMode;
-  $('fullmap-button').hidden=!fullmap||!!bench;
+  $('fullmap-button').hidden=!fullmap||!!bench||!!valleyWorld;
   $('player-flare-button').hidden=!fullmap||!!bench||!!net;
   uploadTerrain();
   bindWorldTerrainMaterial();
@@ -1270,12 +1397,43 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
   }
 }
 
-const db = () => new Promise((res, rej) => {
-  const r = indexedDB.open(rulesProfile.database, 1);
+function startValley(authored) {
+  if(!valleyPreview?.start(+$('map-visibility').value,authored))return toast('Valley konnte nicht gestartet werden.');
+  net=null;bench=0;restartPoint=null;
+  seasonSession.configure({cycle:false,startMonth:6,minutesPerSeason:5},0);
+  if(!wasm.ai9_game_research_setup_manual?.())toast('Originalforschung konnte für dieses Scharmützel nicht gestartet werden.');
+  const initial=initialValleyViews(wasm,{primary:[innerWidth,innerHeight],pip:[340,200]});
+  Object.assign(cam,initial.primaryPose);
+  begin(hasOriginalTempo?startingTempo(menuTempo()):null);
+  const bytes=worldSaveBytes();
+  if(bytes&&hasOriginalTempo)restartPoint={bytes,cam:{...cam}};
+}
+
+const valleyDebugDatabase=!!valleyPreview&&!valleyNormal;
+const db = (valley = valleyDebugDatabase) => new Promise((res, rej) => {
+  const r = indexedDB.open(rulesProfile.database+(valley?'-valley-preview':''), 1);
   r.onupgradeneeded = () => r.result.createObjectStore('saves');
   r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
 });
-const dbDo = async (mode, fn) => { const d = await db(); return new Promise((res, rej) => { const rq = fn(d.transaction('saves', mode).objectStore('saves')); rq.onsuccess = () => res(rq.result); rq.onerror = () => rej(rq.error); }); };
+async function readLocalSave(slot) {
+  const read = async valley => {
+    const d = await db(valley);
+    try {
+      return await new Promise((res, rej) => {
+        const rq = d.transaction('saves','readonly').objectStore('saves').get(slot);
+        rq.onsuccess = () => res(rq.result);
+        rq.onerror = () => rej(rq.error);
+      });
+    } finally { d.close(); }
+  };
+  const normalArchive=valleyNormal&&valleyPreview?.authoredAvailable;
+  const preferredValley=valleyDebugDatabase||!!normalArchive&&(running?!!valleyWorld:valleyMapChoice.value===valleyArchiveOption.value);
+  const current=await read(preferredValley).catch(()=>null);
+  if(normalArchive&&preferredValley&&!valleySaveLocator(current?.bytes))return null;
+  if(current||preferredValley||!normalArchive)return current;
+  const archive=await read(true).catch(()=>null);
+  return valleySaveLocator(archive?.bytes)?archive:null;
+}
 let saveSession=Date.now();
 function worldSaveBytes() {
   const ptr=wasm.save(), length=wasm.save_len();
@@ -1283,6 +1441,8 @@ function worldSaveBytes() {
 }
 function applyWorldSave(bytes) {
   if(bytes?.[0]===0x56&&bytes[1]===0x43&&bytes[2]===0x4e&&bytes[3]===0x31)return 0;
+  const locator=valleySaveLocator(bytes);
+  if(locator&&!valleyPreview?.prepareLoad(locator))return 0;
   const ptr=wasm.load_alloc(bytes.length);
   u8(ptr,bytes.length).set(bytes);
   return wasm.load_apply();
@@ -1305,7 +1465,7 @@ async function saveGame(silent) {
       ...(adaptiveSoloClock&&wasm.game_tick()===0?{adaptiveStartRate:adaptiveSoloClock.rate}:{}),
       ...(restartPoint?{restart:restartPoint}:{}),
       ...(seasonSession.climate?{climate:seasonSession.climate}:{}),rules:rulesProfile.ruleset,profile:rulesProfile.id};
-    const d=await db();
+    const d=await db(valleyDebugDatabase||valleyNormal&&!!valleySaveLocator(bytes));
     await new Promise((resolve,reject)=>{
       const tx=d.transaction('saves','readwrite'),store=tx.objectStore('saves'),old=store.get('slot1');
       old.onsuccess=()=>{if(old.result&&old.result.session!==saveSession)store.put(old.result,'previous');store.put(record,'slot1');};
@@ -1316,7 +1476,7 @@ async function saveGame(silent) {
   } catch (e) { if (!silent) toast('Could not save: ' + e.message); }
 }
 async function loadGame(slot='slot1') {
-  const s = await dbDo('readonly', st => st.get(slot)).catch(() => null);
+  const s = await readLocalSave(slot);
   if (!s) return toast('No saved game found');
   if(!savedRulesProfileMatches(s,rulesProfile))return toast('Dieser Spielstand gehört zu einer anderen Regelversion. Wähle im Menü die passende Regelversion.');
   let seasons,climate,tempo=null;
@@ -1336,11 +1496,13 @@ async function loadGame(slot='slot1') {
   begin(tempo, wasm.sim_clock_active?.() === 1 || unstarted, adaptiveStartRate);
   toast('Spielstand geladen');
 }
+let continueRefresh=0;
 async function refreshContinue() {
-  const s = await dbDo('readonly', st => st.get('slot1')).catch(() => null);
+  const request=++continueRefresh;
+  const [s,previous]=await Promise.all([readLocalSave('slot1'),readLocalSave('previous')]);
+  if(request!==continueRefresh)return;
   $('continue').style.display = savedRulesProfileMatches(s,rulesProfile) ? '' : 'none';
   if (s) $('continue').textContent = `Fortsetzen (${s.epoch || 'Spielstand'}, ${new Date(s.when).toLocaleString()})`;
-  const previous=await dbDo('readonly',st=>st.get('previous')).catch(()=>null);
   $('previous-save').style.display=savedRulesProfileMatches(previous,rulesProfile)?'':'none';
   if(previous)$('previous-save').textContent=`Vorheriger Spielstand (${previous.epoch||'Scharmützel'})`;
 }
@@ -1450,7 +1612,7 @@ function drawCaptureGlow(vp,actorMetadata){
   const crown=wasm.crown_visuals_present?.();
   const bad=handle=>(capture&&wasm.active_capture_glow(handle))||(spy&&spyAdverseGlow(handle));
   const isMixed=handle=>spyAdvancedArt?.mixedGlow&&bad(handle)
-    && (wasm.bless_glow_active?.(handle)||(crown&&(wasm.crown_actor_glow(handle)&1)));
+    && (wasm.bless_glow_active?.(handle)||wasm.imperialism_visible?.(handle)||(crown&&(wasm.crown_actor_glow(handle)&1)));
   const projected = captureGlow.project(actorMetadata.actors, handle=>bad(handle)&&!isMixed(handle));
   originalGround.drawCaptureGlow({vp,...projected});
   if(spyAdvancedArt?.mixedGlow){
@@ -1494,7 +1656,7 @@ function drawBlessGround(vp,actorMetadata,previewFrame=null){
   const layer=blessGround.project({actors:actorMetadata.actors,local:ui?.local??0,
     visualForActor:originalModels.sourceVisualForActor,isBlessed:handle=>{
       const crownGood=crown&&(wasm.crown_actor_glow(handle)&1);
-      const good=wasm.bless_glow_active(handle)||crownGood;
+      const good=wasm.bless_glow_active(handle)||wasm.imperialism_visible?.(handle)||crownGood;
       if(crownGood)crownGround++;
       return good;
     },
@@ -1610,7 +1772,7 @@ function drawFullmapPipScene(pipView, alpha, renderEpochs, now, mission) {
     actorMetadata=packMetadata?packMetadata.snapshot(packActorReader.snapshot({count,instances:data,namespace:renderNamespace})):null;
     originalGround.draw({data,ranges,vp,epochs:renderEpochs,isUrbanAt:(x,z)=>!!wasm.ground_urban_at(x,z)});
     gl.bindBuffer(gl.ARRAY_BUFFER,instBuf);
-    gl.bufferData(gl.ARRAY_BUFFER,renderNamespace.fallbackInstances(data),gl.STREAM_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER,fallbackModelInstances(data,ranges),gl.STREAM_DRAW);
     drawFallbackModels(vp,ranges);
     originalModels.draw({data,ranges,vp,eye,zoom,epochs:renderEpochs,actorMetadata,capture:true});
   }
@@ -1633,6 +1795,13 @@ function drawFullmapPipScene(pipView, alpha, renderEpochs, now, mission) {
   }
   drawAirMissionFlags(vp,actorMetadata,mission);
   carrierGarrisonFlag?.draw({vp,actors:actorMetadata?.actors,epochs:renderEpochs,local:ui?.local});
+}
+
+function fallbackModelInstances(data,ranges) {
+  const fallback=renderNamespace.fallbackInstances(data);
+  const masked=originalModels.maskWonderScaffoldFallback?.(data,ranges,fallback)??0;
+  if(qaMode)canvas.dataset.wonderScaffoldMasked=String(masked);
+  return fallback;
 }
 
 function drawFallbackModels(vp,ranges) {
@@ -1695,7 +1864,7 @@ function frame(now) {
   gl.viewport(0, 0, w, h);
 
   // textures that change
-  if (wasm.map_dirty()) { bindTexture(1,mapTexture); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, MAP, MAP, gl.RGBA, gl.UNSIGNED_BYTE, u8(wasm.map_ptr(), MAP * MAP * 4)); uploadOriginalTerrainClasses(); fullmap?.invalidate(); }
+  if (wasm.map_dirty()&&!valleyWorld) { bindTexture(1,mapTexture); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, MAP, MAP, gl.RGBA, gl.UNSIGNED_BYTE, u8(wasm.map_ptr(), MAP * MAP * 4)); uploadOriginalTerrainClasses(); fullmap?.invalidate(); }
   if (wasm.terr_dirty()) { const p = wasm.terr_ptr(); bindTexture(3,territoryTexture); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, MAP, MAP, gl.RGBA, gl.UNSIGNED_BYTE, u8(p, MAP * MAP * 4)); fullmap?.invalidateTerritories(); }
   const tickNow = wasm.game_tick()>>>0;
   playerFlare.update(tickNow,dt);
@@ -1713,7 +1882,8 @@ function frame(now) {
 
   const [x0, y0, x1, y1] = viewRect();
   let gid = -1, gx = 0, gy = 0;
-  if (ghost) { gid = ghost.id; [gx, gy] = ghostTile(); }
+  const ghostAt=ghost?ghostTile():null;
+  if (ghostAt) { gid = ghost.id; [gx, gy] = ghostAt; }
   updatePlacement(now);
   const n = (wasm.render_rotated||wasm.render)(alpha, x0, y0, x1, y1, gid, gx, gy,ghost?.turn||0);
   if (!n) originalModels.clearResourcePicks();
@@ -1748,7 +1918,7 @@ function frame(now) {
     runPhysics:!paused&&!(net&&net.ls.waiting),lighting:originalModels.lighting,wind:airMissionFlag?.normalWind(),occupied:carrierOccupied});
   if(qaMode&&sourceSails)canvas.dataset.sourceSails=JSON.stringify(sourceSails.metrics);
   let reflection=null;
-  if(originalTerrain.enabled&&!reflectionError){
+  if(!valleyWorld&&originalTerrain.enabled&&!reflectionError){
     const scale=+$('quality').value>1?1:.5;
     try{
       reflection=originalReflection.render({vp:view.vp,eye:view.eye,width:Math.max(1,Math.round(w*scale)),height:Math.max(1,Math.round(h*scale)),
@@ -1761,7 +1931,10 @@ function frame(now) {
   }
 
   bindTexture(2,fogTexture);
-  if(originalTerrain.enabled){
+  if(valleyWorld){
+    valleyPreview.drawTerrain(view.vp,fogTexture);
+    valleyPreview.drawWorld(view,[x0,y0,x1,y1]);
+  }else if(originalTerrain.enabled){
     originalTerrain.drawTerrain({vao:vaoT,vp:view.vp,px,fogTexture,territoryTexture});
   }else{
     bindTexture(1,mapTexture);bindTexture(3,territoryTexture);bindTexture(4,originalAssets.terrainTexture,gl.TEXTURE_2D_ARRAY);
@@ -1772,7 +1945,7 @@ function frame(now) {
 
   if (n) {
     gl.bindBuffer(gl.ARRAY_BUFFER, instBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, renderNamespace.fallbackInstances(f32(wasm.inst_ptr(), n * STRIDE)), gl.STREAM_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, fallbackModelInstances(f32(wasm.inst_ptr(), n * STRIDE),ranges), gl.STREAM_DRAW);
     originalGround.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,vp:view.vp,
       epochs:renderEpochs,isUrbanAt:(x,z)=>!!wasm.ground_urban_at(x,z)});
     if(qaMode)canvas.dataset.originalGroundDrawn=String(originalGround.metrics.instances);
@@ -1806,17 +1979,21 @@ function frame(now) {
     // one instanced draw per model type
     drawFallbackModels(view.vp,ranges);
     originalModels.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,vp:view.vp,epochs:renderEpochs,zoom:cam.zoom,eye:view.eye,actorMetadata,stoneThrowerWheels});
+    if(qaMode){
+      canvas.dataset.wonderScaffolds=JSON.stringify(originalModels.metrics.wonderScaffolds??[]);
+      canvas.dataset.wonderFences=JSON.stringify(originalModels.metrics.wonderFences??[]);
+    }
   }
   if(rulesProfile.ruleset===2)sfx.updateStoneThrowerWheels(actorMetadata?.session,stoneThrowerWheels,cam,referenceMode?view:undefined);
 
   // Native base-water depth/alpha followed by the separate reflection overlay.
   gl.enable(gl.BLEND); gl.depthMask(false);
-  if(originalWater.enabled){
+  if(!valleyWorld&&originalWater.enabled){
     originalWater.drawWater({vp:view.vp,time:now/1000,fogTexture,reflectionTexture:reflection?.texture,reflectionVP:reflection?.vp});
     if(qaMode)canvas.dataset.originalWater=JSON.stringify(originalWater.metrics);
-  }else if(originalTerrain.enabled){
+  }else if(!valleyWorld&&originalTerrain.enabled){
     originalTerrain.drawWater({vao:vaoW,vp:view.vp,time:now/1000,eye:view.eye,fogTexture,reflectionTexture:reflection?.texture,reflectionVP:reflection?.vp});
-  }else{
+  }else if(!valleyWorld){
     bindTexture(1,mapTexture);bindTexture(4,originalAssets.terrainTexture,gl.TEXTURE_2D_ARRAY);
     gl.useProgram(water.p); gl.bindVertexArray(vaoW);
     gl.uniformMatrix4fv(water.u.uVP, false, view.vp); gl.uniform1f(water.u.uTime, now / 1000);
@@ -1983,9 +2160,10 @@ function updateUi(drawn, now) {
       if(wasm.building_sabotaged?.(selected))effects.push(['sabotage','Sabotiert']);
       if(toxic&1)effects.push(['contamination','Kontaminiert']);
       if(toxic&2)effects.push(['contamination','Toxische Krankheit']);
+      if(wasm.imperialism_visible?.(selected))effects.push(['imperialism',imperialismArt.label()]);
       for(const [key,label] of effects){
-        const tag=document.createElement('span');tag.className='activity';tag.title=label;
-        const source=spyAdvancedArt?.status(key);
+        const tag=document.createElement('span');tag.className='activity';tag.title=label;tag.dataset.effect=key;
+        const source=key==='imperialism'?imperialismBadge:spyAdvancedArt?.status(key);
         if(source){const img=document.createElement('img');img.src=source;img.alt=label;img.width=22;img.height=22;tag.append(img);}
         else tag.textContent=label;
         info.querySelector('h3')?.append(tag);
@@ -2154,25 +2332,33 @@ function doAct(i, count=1) {
 
 const mini = $('mini'), mctx = mini.getContext('2d');
 function drawMini() {
-  const p = wasm.minimap();
-  mctx.putImageData(new ImageData(new Uint8ClampedArray(wasm.memory.buffer, p, MAP * MAP * 4), MAP, MAP), 0, 0);
+  const width=valleyWorld?.width??MAP,height=valleyWorld?.height??MAP;
+  if(mini.width!==width||mini.height!==height){mini.width=width;mini.height=height;mini.style.objectFit=valleyWorld?'contain':'';}
+  const pixels=valleyWorld?valleyMinimapSnapshot(wasm,valleyWorld):new Uint8ClampedArray(wasm.memory.buffer,wasm.minimap(),MAP*MAP*4);
+  mctx.putImageData(new ImageData(pixels,width,height),0,0);
   const c = corners();
   mctx.strokeStyle = '#fff'; mctx.lineWidth = 1.5; mctx.beginPath();
   c.forEach((q, i) => i ? mctx.lineTo(q[0], q[1]) : mctx.moveTo(q[0], q[1]));
   mctx.closePath(); mctx.stroke();
-  playerFlare.draw(mctx,(x,y)=>[x,y],48*MAP/Math.max(1,mini.clientWidth));
-  battleFlare?.draw(mctx,(x,y)=>[x,y],48*MAP/Math.max(1,mini.clientWidth));
+  playerFlare.draw(mctx,(x,y)=>[x,y],48*width/Math.max(1,mini.clientWidth));
+  battleFlare?.draw(mctx,(x,y)=>[x,y],48*width/Math.max(1,mini.clientWidth));
 }
-function miniWorld(e) { const r = mini.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * MAP, (e.clientY - r.top) / r.height * MAP]; }
+function miniWorld(e) {
+  const r=mini.getBoundingClientRect();
+  if(valleyWorld)return valleyMinimapPoint(valleyWorld,e.clientX,e.clientY,{left:r.left+mini.clientLeft,top:r.top+mini.clientTop,
+    width:mini.clientWidth,height:mini.clientHeight});
+  return [(e.clientX-r.left)/r.width*MAP,(e.clientY-r.top)/r.height*MAP];
+}
 mini.addEventListener('mousedown', e => {
   if(modalOpen()||playerFlare.isArmed())return;
   if(ui?.observer&&e.button===2)return;
   if(airMission?.active()&&e.button===2)return;
   if(e.button===2&&(tradeRoute?.cancel()||activeTargetOrder()?.cancel()))return;
-  const [x, y] = miniWorld(e);
+  const point=miniWorld(e);if(!point)return;
+  const [x,y]=point;
   if (e.button === 2) { wasm.cmd_context(x, y, 0); if (!selectedUnitVoice('order')) sfx.play(22); } else { cam.x = x; cam.y = y; mini.dragging = true; }
 });
-addEventListener('mousemove', e => { if (!modalOpen()&&mini.dragging) [cam.x, cam.y] = miniWorld(e); });
+addEventListener('mousemove',e=>{if(!modalOpen()&&mini.dragging){const point=miniWorld(e);if(point)[cam.x,cam.y]=point;}});
 addEventListener('mouseup', () => mini.dragging = false);
 mini.addEventListener('contextmenu', e => e.preventDefault());
 
@@ -2235,10 +2421,11 @@ canvas.addEventListener('mousedown', e => {
   }
   const targetOrder=activeTargetOrder();
   if (targetOrder) { if (e.button===2) targetOrder.cancel(); return; }
-  const [wx, wy] = toWorld(e.clientX, e.clientY);
   if (e.button === 1) { mouse.pan = true; e.preventDefault(); return; }
   if (e.button === 2) {
     if (ghost || attackMode) { ghost = null; attackMode = false; canvas.style.cursor = 'default'; return; }
+    const point=toWorld(e.clientX,e.clientY);if(!point)return;
+    const [wx,wy]=point;
     const workers=ui?.sel?.def===8||ui?.sel?.types?.some(type=>type[0]===8);
     let target=null;
     if(workers){
@@ -2255,12 +2442,19 @@ canvas.addEventListener('mousedown', e => {
     return;
   }
   if (ghost) {
-    const [tx, ty] = ghostTile(), err = wasm.place_error_rotated?wasm.place_error_rotated(ghost.id,tx,ty,ghost.turn):wasm.place_error(ghost.id,tx,ty);
+    const tile=ghostTile();if(!tile)return;
+    const [tx,ty]=tile,err=wasm.place_error_rotated?wasm.place_error_rotated(ghost.id,tx,ty,ghost.turn):wasm.place_error(ghost.id,tx,ty);
     const placed=!err&&(wasm.cmd_place_rotated?wasm.cmd_place_rotated(ghost.id,tx,ty,ghost.turn):wasm.cmd_place(ghost.id,tx,ty));
     if (placed) { if (!selectedUnitVoice('build')) sfx.play(20); if (!e.shiftKey) cancelBuilding(); } else { sfx.play(21); toast(placementMessage(err||1,ghost.id)); }
     return;
   }
-  if (attackMode) { wasm.cmd_context(wx, wy, 1); if (!selectedUnitVoice('attack')) sfx.play(22); attackMode = false; canvas.style.cursor = 'default'; return; }
+  if (attackMode) {
+    const point=toWorld(e.clientX,e.clientY);if(!point)return;
+    if(attackMode==='valley-direct'){
+      if(!e.altKey||!wasm.valley71_force_attack_at(...point,0x400))return;
+    }else wasm.cmd_context(...point,1);
+    if(!selectedUnitVoice('attack'))sfx.play(22);attackMode=false;canvas.style.cursor='default';return;
+  }
   mouse.down = true; mouse.drag = false; mouse.sx = e.clientX; mouse.sy = e.clientY;
 });
 addEventListener('mousemove', e => {
@@ -2321,9 +2515,16 @@ addEventListener('mouseup', e => {
   if (mouse.drag) {
     // a screen rectangle is a trapezoid on the ground under a tilted camera
     const l = Math.min(mouse.x, mouse.sx), r = Math.max(mouse.x, mouse.sx), t = Math.min(mouse.y, mouse.sy), b = Math.max(mouse.y, mouse.sy);
-    wasm.select_quad(...toWorld(l, t), ...toWorld(r, t), ...toWorld(r, b), ...toWorld(l, b), add);
+    const points=[[l,t],[r,t],[r,b],[l,b]].map(([x,y])=>{
+      const point=toWorld(x,y);
+      if(point||!valleyWorld)return point;
+      const [wx,wy]=toPlane(x,y);
+      return [Math.min(valleyWorld.width,Math.max(0,wx)),Math.min(valleyWorld.height,Math.max(0,wy))];
+    });
+    wasm.select_quad(...points.flat(),add);
   } else {
-    const [wx, wy] = toWorld(mouse.x, mouse.y);
+    const point=toWorld(mouse.x,mouse.y);if(!point)return;
+    const [wx,wy]=point;
     const now = performance.now(), dbl = now - lastClick < 300; lastClick = now;
     wasm.select_point(wx, wy, add, dbl ? 1 : 0, ...viewRect());
   }
@@ -2455,7 +2656,7 @@ addEventListener('keydown', e => {
     if(!e.repeat&&crownProgress.toggle())e.preventDefault();
     return;
   }
-  if(fullmap&&running&&!bench&&!ui?.win&&e.key==='Tab'&&!e.ctrlKey&&!e.altKey&&!e.metaKey&&!e.shiftKey){
+  if(fullmap&&running&&!bench&&!valleyWorld&&!ui?.win&&e.key==='Tab'&&!e.ctrlKey&&!e.altKey&&!e.metaKey&&!e.shiftKey){
     e.preventDefault();if(!e.repeat)fullmap.open();return;
   }
   if(e.target.closest?.('#building-controls,#camera-tools')&&['Enter',' '].includes(e.key))return;
@@ -2507,6 +2708,14 @@ addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && k === 'S') { e.preventDefault(); saveGame(); return; }
   if(referenceMode&&!ghost&&e.ctrlKey&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();keys.add('Control');return;}
   if (e.ctrlKey || e.metaKey) return;
+  if(valleyNeutralRequested&&e.code==='KeyA'&&e.shiftKey&&!e.altKey&&wasm.valley71_neutral_opening?.()){
+    e.preventDefault();
+    if(!e.repeat){
+      activeTargetOrder()?.cancel();tradeRoute?.cancel();airMission?.cancel();
+      attackMode='valley-direct';ghost=null;canvas.style.cursor='crosshair';
+    }
+    return;
+  }
   if((e.key===';'||e.code==='Semicolon'&&!e.shiftKey)&&!e.altKey){
     if(militaryLeaderControl(ui?.sel,ui?.epoch)){
       e.preventDefault();if(!e.repeat)orderMilitaryLeaderPower();return;
@@ -2633,13 +2842,18 @@ function toMenu() {
   worldMaterialPending = null;
   originalModels.bindNativeTerrainMaterial?.(null);
   running = false; $('menu').style.display = 'flex'; $('end').style.display = 'none'; $('mp').style.display = 'none';
+  if(valleyNormal)void refreshContinue();
   shellMovie(true);
   sfx.resetWorldAmbience();
   sfx.menuMusic();
 }
 $('quit').onclick = toMenu; $('again').onclick = toMenu;
 const seedOf = () => { const v = parseInt($('seed').value, 10); return Number.isFinite(v) && v > 0 ? v : (Math.random() * 2 ** 31) | 0 || 1; };
-$('play').onclick = () => { rosterLobby?.reset(); net = null; start(+$('nai').value, seedOf(), 0); };
+$('play').onclick = () => {
+  rosterLobby?.reset();
+  if(valleyPreview&&valleyMapChoice.value!=='own')startValley(valleyMapChoice.value==='valley-archive-qa');
+  else{net=null;start(+$('nai').value,seedOf(),0);}
+};
 $('continue').onclick = () => { rosterLobby?.reset(); loadGame(); };
 for (const b of document.querySelectorAll('[data-bench]')) b.onclick = () => { net = null; start(1, seedOf(), +b.dataset.bench); };
 

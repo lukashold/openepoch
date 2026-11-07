@@ -127,7 +127,8 @@ impl Game {
 
         // ---- resource tiles
         let (tx0, ty0) = ((x0 - 1.0).max(0.0) as usize, (y0 - 1.0).max(0.0) as usize);
-        let (tx1, ty1) = (((x1 + 2.0).max(0.0) as usize).min(N), ((y1 + 2.0).max(0.0) as usize).min(N));
+        let [width, height] = self.map.world_dimensions();
+        let (tx1, ty1) = (((x1 + 2.0).max(0.0) as usize).min(width), ((y1 + 2.0).max(0.0) as usize).min(height));
         for ty in ty0..ty1 {
             for tx in tx0..tx1 {
                 let i = ty * N + tx;
@@ -139,6 +140,8 @@ impl Game {
                 let jx = (h & 255) as f32 / 255.0 - 0.5;
                 let jy = ((h >> 8) & 255) as f32 / 255.0 - 0.5;
                 let (cx, cy) = (tx as f32 + 0.5 + jx * 0.4, ty as f32 + 0.5 + jy * 0.4);
+                #[cfg(feature = "ee2-authored-valley37")]
+                let (cx, cy) = self.valley_fixture.as_ref().and_then(|fixture| fixture.resource_xy(i, r)).unwrap_or((cx, cy));
                 let alt = self.map.height(cx, cy).max(0.0);
                 let rot = (h >> 16) as f32 * 0.001;
                 let hidden=cfg!(feature="ee2-reference")&&self.players[self.local as usize].epoch<crate::economy::REVEAL_EPOCH[r as usize-1];

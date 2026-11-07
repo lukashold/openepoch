@@ -207,6 +207,15 @@ impl Game {
         #[cfg(feature="ee2-native13")]
         if let Some(economic_leader_effects) = &self.economic_leader_effects { b = economic_leader_effects.wrap(b); }
         #[cfg(feature="ee2-native13")]
+        if self.ents[..self.high].iter().any(|actor| actor.alive && actor.order == O_LEADER_PURCHASE) {
+            b = crate::game::leader_purchase63::wrap_order_archive(b);
+        }
+        #[cfg(feature="ee2-native13")]
+        {
+            let pending = self.ents[..self.high].iter().any(|actor| actor.alive && actor.order == O_IMPERIALISM);
+            b = self.imperialism.wrap(b, pending);
+        }
+        #[cfg(feature="ee2-native13")]
         if let Some(city_heal) = &self.city_heal { b = city_heal.wrap(b); }
         #[cfg(feature="ee2-native13")]
         if let Some(dock_garrison) = &self.dock_garrison { b = dock_garrison.wrap(b); }
@@ -223,7 +232,10 @@ impl Game {
         #[cfg(feature="ee2-native13")]
         if let Some(powers) = &self.powers { b = powers.wrap(b); }
         if self.source_clock.is_some() { b = self.diplomacy.clock.wrap(b); }
-        self.savebuf = crate::source_clock38::wrap(b, self.source_clock);
+        let b = crate::source_clock38::wrap(b, self.source_clock);
+        #[cfg(feature = "ee2-authored-valley37")]
+        let b = crate::native_valley37::wrap_save(b, self);
+        self.savebuf = b;
     }
 
     pub fn load(buf: &[u8]) -> Option<Game> {
@@ -268,6 +280,10 @@ impl Game {
     }
 
     fn read_archive(buf: &[u8], roster: Option<ArchiveRoster>) -> Option<Game> {
+        #[cfg(feature = "ee2-authored-valley37")]
+        let (buf, valley) = crate::native_valley37::split_save(buf)?;
+        #[cfg(feature = "ee2-authored-valley37")]
+        if valley.is_some() && roster.is_some() { return None; }
         let (buf, source_clock) = crate::source_clock38::split(buf)?;
         let (buf, diplomacy_clock) = crate::diplomacy::DiplomacyClock::split(buf)?;
         if diplomacy_clock.is_some() && source_clock.is_none() { return None; }
@@ -289,6 +305,10 @@ impl Game {
         let (buf, dock_garrison) = crate::game::dock_garrison59::split(buf)?;
         #[cfg(feature="ee2-native13")]
         let (buf, city_heal) = crate::game::city_heal58::split(buf)?;
+        #[cfg(feature="ee2-native13")]
+        let (buf, imperialism, imperialism_order) = crate::game::imperialism63::split(buf)?;
+        #[cfg(feature="ee2-native13")]
+        let (buf, purchase_order) = crate::game::leader_purchase63::split_order_archive(buf)?;
         #[cfg(feature="ee2-native13")]
         let (buf, economic_leader_effects) = crate::game::economic_leader60::split(buf)?;
         #[cfg(feature="ee2-native13")]
@@ -409,14 +429,21 @@ impl Game {
             _ => return None,
         };
         #[cfg(feature="ee2-native13")]
-        let mut g = match roster {
+        let regular_game = || Some(match roster {
             Some(ArchiveRoster::SharedOwner) => Game::new_shared_owner_network(u(4)),
             Some(ArchiveRoster::Grouped { grouping, .. }) => Game::new_grouped_world(u(4), u(5), humans, grouping, local)?,
             _ if humans > 2 => Game::new_network_roster(u(4), u(5), humans, local)?,
             _ => Game::new(u(4), u(5), 0, humans, local),
-        };
+        });
         #[cfg(not(feature="ee2-native13"))]
-        let mut g = Game::new(u(4), u(5), 0, humans, local);
+        let regular_game = || Some(Game::new(u(4), u(5), 0, humans, local));
+        #[cfg(feature = "ee2-authored-valley37")]
+        let mut g = match valley {
+            Some(locator) => crate::native_valley37::restore_private_map(locator, u(4), u(5), humans)?,
+            None => regular_game()?,
+        };
+        #[cfg(not(feature = "ee2-authored-valley37"))]
+        let mut g = regular_game()?;
         #[cfg(feature="ee2-native13")]
         if wonders && g.net { return None; }
         #[cfg(feature="ee2-native13")]
@@ -424,6 +451,7 @@ impl Game {
             if heavy_mounted3 && g.net { return None; }
             g.heavy_mounted3 = heavy_mounted3;
         }
+        let [width, height] = g.map.world_dimensions();
         g.tick = u(6);
         if source_clock.is_some_and(|clock| !clock.valid_at(g.tick, g.net)) {
             return None;
@@ -438,7 +466,7 @@ impl Game {
         fill(&mut g.players, take(psz));
         // wipe what `new` spawned, then drop the saved world in
         for i in 0..NN {
-            g.map.blocked[i] = false;
+            g.map.blocked[i] = i % N >= width || i / N >= height;
         }
         for e in g.ents.iter_mut() {
             e.alive = false;
@@ -453,6 +481,11 @@ impl Game {
         g.map.res.copy_from_slice(take(NN));
         fill(&mut g.map.amt, take(NN * 2));
         g.vis.copy_from_slice(take(NN));
+        #[cfg(feature = "ee2-authored-valley37")]
+        if g.map.source_world.is_some() && (0..NN).any(|i| g.map.ter[i] > T_ROCK ||
+            (i % N >= width || i / N >= height) && (g.map.ter[i] != T_ROCK || g.map.res[i] != R_NONE || g.map.amt[i] != 0)) {
+            return None;
+        }
         let end = H + psz + esz + NN * 5;
         #[cfg(feature="ee2-native13")]
         {
@@ -509,6 +542,8 @@ impl Game {
             fill(&mut g.extra_resources,&ext[8..104]);
         }
         if has_diplomacy{g.read_diplomacy(&buf[end+trailer..end+trailer+crate::diplomacy::DIP_BYTES])?;}
+        #[cfg(feature = "ee2-valley71-neutral-qa")]
+        if g.valley_neutral_opening() && (!has_diplomacy || !g.valid_valley_neutral_opening()) { return None; }
         if (g.god_mode || g.fog_inverted) && (g.humans != 1 || g.net) { return None; }
         if has_territory{g.read_territory(&buf[end+trailer+crate::diplomacy::DIP_BYTES..])?;}
         if let Some(clock) = diplomacy_clock {
@@ -567,6 +602,10 @@ impl Game {
         #[cfg(feature="ee2-native13")]
         if wonders == g.wonder_sites.is_empty() { return None; }
         #[cfg(feature="ee2-native13")]
+        if purchase_order != g.ents[..high].iter().any(|actor| actor.alive && actor.order == O_LEADER_PURCHASE) { return None; }
+        #[cfg(feature="ee2-native13")]
+        if imperialism_order != g.ents[..high].iter().any(|actor| actor.alive && actor.order == O_IMPERIALISM) { return None; }
+        #[cfg(feature="ee2-native13")]
         {
             if !factory_clocks.valid(g.sim_elapsed(), |handle, owner, late| {
                 let Some(index) = g.get(handle) else { return false; };
@@ -600,14 +639,26 @@ impl Game {
             if e.order == O_LEADER_MOBILIZATION && (economic_leader_effects.is_none()
                 || e.def != crate::game::economic_leader60::ECONOMIC_LEADER || e.tgt != NONE || e.otgt == NONE) { return None; }
             #[cfg(feature="ee2-native13")]
+            if e.order == O_LEADER_PURCHASE && (g.net || !purchase_order || economic_leader_effects.is_none()
+                || e.def != crate::game::economic_leader60::ECONOMIC_LEADER || e.tgt != NONE || e.otgt == NONE
+                || (e.otgt & 0xffff) as usize >= MAXE) { return None; }
+            #[cfg(feature="ee2-native13")]
             if e.order == O_LEADER_CONSTRUCTION && (military_leader_powers.is_none() || e.def != crate::leader58_defs::END - 1
                 || e.tgt != NONE || e.otgt == NONE) { return None; }
+            #[cfg(feature="ee2-native13")]
+            if e.order == O_IMPERIALISM && (g.net || military_leader_powers.is_none() || e.def != crate::leader58_defs::END - 1
+                || e.tgt != NONE || e.otgt == NONE || (e.otgt & 0xffff) as usize >= MAXE) { return None; }
             if !e.x.is_finite()||!e.y.is_finite()||!e.rot.is_finite()||!e.prot.is_finite(){return None;}
             #[cfg(feature="ee2-native13")]
             if crate::wonders61::is_wonder(e.def) && ![0, 2, 4, 6].into_iter().any(|turn| e.rot == Game::angle_for_turn(turn)) {
                 return None;
             }
-            if DEFS[e.def as usize].building{let(tx,ty,width,height)=Game::building_bounds(e);if tx<0||ty<0||tx+width>N as i32||ty+height>N as i32{return None;}}
+            #[cfg(feature = "ee2-authored-valley37")]
+            if g.map.source_world.is_some() && (!(0.0..width as f32).contains(&e.x) || !(0.0..height as f32).contains(&e.y)) { return None; }
+            if DEFS[e.def as usize].building {
+                let (tx, ty, footprint_width, footprint_height) = Game::building_bounds(e);
+                if tx < 0 || ty < 0 || tx + footprint_width > width as i32 || ty + footprint_height > height as i32 { return None; }
+            }
             if e.cargo[..e.ncargo as usize].iter().any(|&c| !valid_definition(c)) {return None;}
             #[cfg(feature="ee2-native13")]
             if e.cargo[..e.ncargo as usize].iter().copied().any(crate::wonders61::is_wonder) { return None; }
@@ -683,7 +734,15 @@ impl Game {
             g.ents[i].fslot = u16::MAX; // flow-field cache starts empty
             if g.ents[i].alive && DEFS[g.ents[i].def as usize].building {
                 let(tx0,ty0,width,height)=Game::building_bounds(&g.ents[i]);
-                for ty in ty0..ty0+height{for tx in tx0..tx0+width{g.map.blocked[ty as usize*N+tx as usize]=true;}}
+                #[cfg(feature = "ee2-valley74-city-footprint")]
+                let mask = g.valley_start_city_mask(i);
+                for ty in ty0..ty0+height {
+                    for tx in tx0..tx0+width {
+                        #[cfg(feature = "ee2-valley74-city-footprint")]
+                        if mask.is_some_and(|footprint| !footprint.blocks(tx, ty)) { continue; }
+                        g.map.blocked[ty as usize * N + tx as usize] = true;
+                    }
+                }
             }
         }
         if cfg!(feature="ee2-reference")&&trailer<236 {g.map.seed_extra_resources(g.nplayers);}
@@ -771,6 +830,8 @@ impl Game {
         if let Some(payload) = military_leader_powers {
             g.military_leader_powers = Some(crate::game::military_leader59::State::read(&g, payload)?);
         }
+        #[cfg(feature="ee2-native13")]
+        g.restore_imperialism(imperialism)?;
         #[cfg(feature="ee2-native13")]
         {
             if !market.valid_players(if g.net && g.crown_rules() == 0 || g.bench != 0 { 0 } else { g.nplayers }) { return None; }

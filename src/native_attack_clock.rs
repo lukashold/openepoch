@@ -100,17 +100,21 @@ impl crate::game::Game{
  pub fn read_attack_clock(&mut self,tail:Option<&[u8]>)->Option<()>{
   #[cfg(feature="ee2-native13")]
   let air_missions_enabled=self.air_missions_enabled;
-  let known_attack=|id|{
+  let known_attack=|id,_epoch|{
    #[cfg(feature="ee2-native13")]
    if id==crate::air31_defs::FIGHTER_BOMBER{return air_missions_enabled;}
+   #[cfg(feature="ee2-native13")]
+   if crate::leader58_defs::hit_delay(id,_epoch).is_some(){return true;}
    crate::ee2_up15_attack::ROWS.iter().any(|a|a.id==id&&a.present)
   };
-  let Some(tail)=tail else{let now=self.sim_elapsed();for i in 0..self.high{let e=self.ents[i];if e.alive&&e.cd>0.0&&known_attack(e.def){if !e.cd.is_finite(){return None;}self.attack_clock[i]=Clock{handle:self.h(i),next:((now as f64)+(e.cd as f64))as f32,flags:INIT};}}return Some(());};
+  let actor_epoch=|owner:usize|self.players.get(owner).map_or(0,|player|player.epoch);
+  let Some(tail)=tail else{let now=self.sim_elapsed();for i in 0..self.high{let e=self.ents[i];if e.alive&&e.cd>0.0&&known_attack(e.def,actor_epoch(e.team as usize)){if !e.cd.is_finite(){return None;}self.attack_clock[i]=Clock{handle:self.h(i),next:((now as f64)+(e.cd as f64))as f32,flags:INIT};}}return Some(());};
   let count=u32::from_le_bytes(tail[8..12].try_into().ok()?)as usize;let mut previous=None;
   for n in 0..count{let at=12+n*12;let handle=u32::from_le_bytes(tail[at..at+4].try_into().ok()?);let next=f32::from_le_bytes(tail[at+4..at+8].try_into().ok()?);let flags=u32::from_le_bytes(tail[at+8..at+12].try_into().ok()?);
    let i=self.get(handle)?;if previous.map_or(false,|p|i<=p)||!next.is_finite()||next<0.0||flags&!0x87!=0||flags&INIT as u32==0{return None;}
    if flags&STARTED as u32!=0&&flags&IN_ATTACK as u32==0{return None;}
-   if !known_attack(self.ents[i].def){return None;}
+   let actor=&self.ents[i];
+   if !known_attack(actor.def,actor_epoch(actor.team as usize)){return None;}
    previous=Some(i);self.attack_clock[i]=Clock{handle,next,flags:flags as u8};
   }Some(())
  }

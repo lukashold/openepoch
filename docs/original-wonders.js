@@ -107,7 +107,7 @@ export async function loadWonderPresentation({enabled, fetchFile = globalThis.fe
       }
     }
     const {modelRows, groundRows, descriptions} = manifestRows(bodies, geometry);
-    return {enabled: true, modelRows, groundRows,
+    return {enabled: true, modelRows, groundRows, bodyManifestSha256: geometry.bodyManifestSha256,
       iconFor: (id, profile = 'packed7') => descriptions.get(id)?.icons[profile] ?? null,
       nameFor: id => descriptions.get(id)?.name ?? null};
   } catch (error) {

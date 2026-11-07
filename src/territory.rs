@@ -358,6 +358,8 @@ impl Game {
         for &(i, new_team) in &objects {
             #[cfg(feature = "ee2-native13")]
             { self.forget_capture_actor(i); self.mark_capture_gift(i); self.trade_interrupt(i); }
+            #[cfg(feature = "ee2-native13")]
+            self.retire_imperialism(i);
             #[cfg(feature="ee2-reference")]
             self.sync_city_ground_entry(i);
             let old = self.ents[i];

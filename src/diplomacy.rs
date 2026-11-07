@@ -376,7 +376,20 @@ impl Game {
         }
     }
 
+    #[cfg(feature = "ee2-valley71-neutral-qa")]
+    pub(crate) fn apply_valley_regular_hostility(&mut self) {
+        let now = self.sim_elapsed();
+        // 0054BD80 sets the attacker first and suppresses the declaration prompt.
+        for slot in [1, 4] {
+            self.diplomacy.relation[slot] = WAR;
+            self.diplomacy.war_tick[slot] = self.tick;
+            self.diplomacy.clock.war[slot] = now;
+        }
+    }
+
     fn declare_war(&mut self, from: u8, to: u8) {
+        #[cfg(feature = "ee2-valley71-neutral-qa")]
+        self.close_valley_neutral_opening();
         let i = from as usize * 4 + to as usize;
         let j = to as usize * 4 + from as usize;
         if self.allied(from, to) {
@@ -454,6 +467,8 @@ impl Game {
                 let offer = self.diplomacy.offers[j];
                 if offer <= 2 {
                     let relation = if offer == 1 { NEUTRAL } else { ALLIED };
+                    #[cfg(feature = "ee2-valley71-neutral-qa")]
+                    self.close_valley_neutral_opening();
                     self.diplomacy.relation[i] = relation;
                     self.diplomacy.relation[j] = relation;
                     self.diplomacy.neutral_since[i] = self.tick;
