@@ -43,7 +43,7 @@ impl Game {
     }
 
     pub(crate) fn network_resume_eligible(&self) -> bool {
-        self.network_resume_world_active()
+        self.grouped_coop.is_none() && self.network_resume_world_active()
             && (2..=4).contains(&self.humans)
             && (0..self.humans).all(|team| self.network_departure_allowed(team as u8))
     }

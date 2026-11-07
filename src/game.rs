@@ -267,6 +267,8 @@ pub struct Game {
     pub(crate) solo_resigned: bool,
     #[cfg(feature="ee2-native13")]
     pub(crate) net_resignation: Option<crate::net_resign38::Resignation>,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) grouped_coop: Option<crate::grouped_coop52::GroupedCoop>,
     #[cfg(feature="ee2-native13")]
     pub(crate) initial_ceasefire: u8,
     #[cfg(feature = "ee2-native13")]
@@ -454,6 +456,8 @@ impl Game {
             initial_ceasefire: 0,
             #[cfg(feature="ee2-native13")]
             net_resignation: None,
+            #[cfg(feature = "ee2-native13")]
+            grouped_coop: None,
             #[cfg(feature = "ee2-native13")]
             landing: crate::landing34::State::default(),
             #[cfg(feature = "ee2-native13")]
@@ -1267,6 +1271,8 @@ impl Game {
         if self.solo_resigned { mix(u32::from_le_bytes(*b"RSG1")); }
         #[cfg(feature="ee2-native13")]
         if let Some(state) = self.net_resignation { state.hash(&mut mix); }
+        #[cfg(feature = "ee2-native13")]
+        if let Some(grouping) = self.grouped_coop { grouping.hash(&mut mix); }
         #[cfg(feature="ee2-native13")]
         if self.initial_ceasefire != 0 {
             mix(crate::initial_ceasefire::HASH_TAG);

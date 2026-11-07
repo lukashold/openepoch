@@ -23,6 +23,8 @@ mod landing34;
 mod air_audio35;
 #[cfg(feature = "ee2-native13")]
 mod net_resign38;
+#[cfg(feature = "ee2-native13")]
+mod grouped_coop52;
 #[cfg(feature="ee2-native13")]
 mod initial_ceasefire;
 #[cfg(feature = "ee2-native13")]
@@ -270,6 +272,20 @@ pub extern "C" fn init_network_shared_owner(seed: u32, controller: u32) -> u32 {
 pub extern "C" fn network_shared_owner() -> u32 {
     let game = g();
     u32::from(game.net && game.humans == 1)
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn init_network_grouped_coop(seed: u32, ai: u32, controllers: u32, packed: u32, local: u32) -> u32 {
+    let Some(game) = Game::new_network_grouped_coop(seed, ai, controllers, packed, local) else { return 0; };
+    install_game(game);
+    1
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn network_grouped_coop_layout() -> u32 {
+    g().grouped_coop.map_or(0, grouped_coop52::GroupedCoop::layout)
 }
 
 fn install_game(game: Game) {
@@ -767,8 +783,19 @@ pub extern "C" fn inbox_alloc(len: u32) -> *mut u8 {
 #[no_mangle]
 pub extern "C" fn net_apply(team: u32) {
     let game = g();
+    #[cfg(feature = "ee2-native13")]
+    if game.grouped_coop.is_some() { return; }
     let limit = if game.net && game.humans != 2 { game.humans } else { game.nplayers as u32 };
     if team < limit { game.net_apply(team as u8); }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn net_apply_grouped_controller(controller: u32) -> u32 {
+    let game = g();
+    let Some(owner) = game.grouped_coop.and_then(|grouping| grouping.active_owner(controller)) else { return 0; };
+    game.net_apply(owner);
+    1
 }
 #[no_mangle]
 pub extern "C" fn state_hash() -> u32 {
@@ -1153,7 +1180,7 @@ pub extern "C" fn initial_ceasefire_seconds() -> f32 {
 #[no_mangle]
 pub extern "C" fn cmd_resign_network() -> u32 {
     let game = g();
-    if !game.network_departure_allowed(game.local) { return 0; }
+    if game.grouped_coop.is_some() || !game.network_departure_allowed(game.local) { return 0; }
     game.submit(C_NET_RESIGN, 0.0, 0.0, 0, &[]);
     1
 }
@@ -1162,7 +1189,7 @@ pub extern "C" fn cmd_resign_network() -> u32 {
 #[no_mangle]
 pub extern "C" fn network_peer_disconnected() {
     let game = g();
-    if game.humans == 2 {
+    if game.humans == 2 && game.grouped_coop.is_none() {
         if let Some(peer) = 1u8.checked_sub(game.local) { game.apply_network_departure(peer); }
     }
 }
@@ -1172,11 +1199,17 @@ pub extern "C" fn network_peer_disconnected() {
 #[no_mangle]
 pub extern "C" fn network_roster_peer_disconnected(seat: u32) -> u32 {
     let game = g();
-    if game.humans < 3 || seat == 0 || seat >= game.humans || game.net_resignation.is_none() {
+    if game.humans < 3 || seat == 0 || seat >= game.humans || game.net_resignation.is_none() || game.grouped_coop.is_some() {
         return 0;
     }
     game.apply_network_departure(seat as u8);
     1
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn network_grouped_controller_disconnected(controller: u32) -> u32 {
+    u32::from(g().detach_grouped_controller(controller))
 }
 
 #[cfg(feature = "ee2-native13")]

@@ -31,6 +31,17 @@ function integerIn(value, min, max) {
   return Number.isInteger(value) && value >= min && value <= max;
 }
 
+export function groupedOwnerLayout(owners, controllers) {
+  if (!integerIn(controllers, 3, 4) || !Array.isArray(owners) || owners.length !== controllers) return 0;
+  let nextOwner = 0, packed = 0;
+  for (const [controller, owner] of owners.entries()) {
+    if (!integerIn(owner, 0, nextOwner)) return 0;
+    if (owner === nextOwner) nextOwner++;
+    packed |= owner << (controller * 2);
+  }
+  return nextOwner >= 2 && nextOwner < controllers ? (controllers << 8) | packed : 0;
+}
+
 function validSpeed(value, cap = MAX_SPEED) {
   return f32(value) === value && value >= MIN_SPEED && value <= cap;
 }
@@ -90,14 +101,17 @@ const framedLength = record => 5+(record.type==='commands'?record.bytes.length+1
 
 /** An original-style host scheduler over one authenticated link per remote seat. */
 export class SourceRoundPeer {
-  constructor(wasm, seat, send, {renderFps, linkMs, nowSeconds, onRequested, requested = 1, locked = true, humanSeats = 2, resume = null, onCheckpoint = null, sharedOwner = false}) {
+  constructor(wasm, seat, send, {renderFps, linkMs, nowSeconds, onRequested, requested = 1, locked = true, humanSeats = 2, resume = null, onCheckpoint = null, sharedOwner = false, groupedOwners = null}) {
     const tick = wasm.game_tick();
+    const groupedLayout = groupedOwners === null ? 0 : groupedOwnerLayout(groupedOwners, humanSeats);
     const validStart = resume === null ? tick === 0 :
       integerIn(resume.tick, 1, 0xfffffffe) && resume.tick === tick && integerIn(resume.rate, 5, BOOTSTRAP_RATE) &&
       (resume.sharedOwner===true) === sharedOwner && wasm.network_resume_pending?.() === 1;
     if (!integerIn(humanSeats, 2, 4) || !integerIn(seat, 0, humanSeats - 1) ||
         sharedOwner !== (wasm.network_shared_owner?.() === 1) ||
         (sharedOwner && (humanSeats !== 2 || (onCheckpoint !== null && typeof wasm.save_shared_owner_resume !== 'function'))) ||
+        (wasm.network_grouped_coop_layout?.() ?? 0) !== groupedLayout ||
+        (groupedOwners !== null && (!groupedLayout || sharedOwner || resume !== null || onCheckpoint !== null)) ||
         (humanSeats > 2 && (typeof wasm.init_network_roster !== 'function' ||
           typeof wasm.network_roster_peer_disconnected !== 'function')) ||
         !validSpeed(requested) || typeof locked !== 'boolean' ||
@@ -108,6 +122,7 @@ export class SourceRoundPeer {
     this.local = seat;
     this.humanSeats = humanSeats;
     this.sharedOwner = sharedOwner;
+    this.groupedOwners = groupedOwners === null ? null : Object.freeze(groupedOwners.slice());
     this.send = send;
     this.renderFps = renderFps;
     this.linkMs = linkMs;
@@ -295,13 +310,16 @@ export class SourceRoundPeer {
       } else if (record.type === 'roundLength') {
         this.length = record.length;
       } else if (record.type === 'departure') {
-        if (w.network_roster_peer_disconnected(record.seat)!==1) throw new Error('Invalid roster departure');
+        const detach = this.groupedOwners ? w.network_grouped_controller_disconnected : w.network_roster_peer_disconnected;
+        if (detach(record.seat)!==1) throw new Error('Invalid roster departure');
       } else if (record.type === 'checkpoint') {
         this.onCheckpoint(record.id);
       } else {
         const pointer = w.inbox_alloc(record.bytes.length);
         new Uint8Array(w.memory.buffer, pointer, record.bytes.length).set(record.bytes);
-        w.net_apply(this.sharedOwner ? 0 : record.seat);
+        if (this.groupedOwners) {
+          if (w.net_apply_grouped_controller(record.seat)!==1) throw new Error('Invalid grouped controller');
+        } else w.net_apply(this.sharedOwner ? 0 : record.seat);
       }
     }
   }

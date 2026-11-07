@@ -119,7 +119,7 @@ impl Game {
         if self.solo_resigned || self.network_match_finished() || self.network_observer(team) { return; }
         #[cfg(feature="ee2-native13")]
         if kind == C_NET_RESIGN {
-            if a == 0.0 && b == 0.0 && c == 0 && hs.is_empty() { self.apply_network_departure(team); }
+            if self.grouped_coop.is_none() && a == 0.0 && b == 0.0 && c == 0 && hs.is_empty() { self.apply_network_departure(team); }
             return;
         }
         #[cfg(feature="ee2-native13")]
