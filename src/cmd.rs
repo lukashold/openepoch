@@ -32,6 +32,7 @@ pub const C_PLACE_ROTATED:u8=16;
 #[cfg(feature="ee2-native13")]pub const C_AIR_MISSION:u8=20;
 #[cfg(feature="ee2-native13")]pub(crate) const C_SOLO_RESIGN:u8=21;
 #[cfg(feature="ee2-native13")]pub(crate) const C_NET_RESIGN:u8=22;
+#[cfg(feature="ee2-native13")]pub(crate) const C_BLESS:u8=23;
 #[cfg(feature="ee2-native13")]pub(crate) const SOLO_RESIGN_SAVE_FLAG:u32=1<<11;
 
 const HEAD: usize = 14; // kind, count, a, b, c
@@ -224,10 +225,18 @@ impl Game {
                 if city{self.rebuild_territories();self.void_landless_alliances();}
                 self.prune_territory_offers();
             }
+            #[cfg(feature = "ee2-native13")]
+            C_BLESS => {
+                if self.powers.is_some() && !self.net {
+                    if let Some(target) = self.get(c as u32) { self.order_bless(&ids, target); }
+                }
+            }
             _ => {}
         }
         #[cfg(feature = "ee2-native13")]
         self.reconcile_capture_orders();
+        #[cfg(feature = "ee2-native13")]
+        self.reconcile_bless_casts();
         #[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
         self.recount_paid_players();
     }

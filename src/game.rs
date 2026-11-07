@@ -12,6 +12,9 @@ mod capture25;
 #[cfg(feature = "ee2-native13")]
 pub(crate) use capture25::split_capture_save;
 #[cfg(feature = "ee2-native13")]
+#[path = "bless42.rs"]
+pub(crate) mod bless42;
+#[cfg(feature = "ee2-native13")]
 #[path = "trade30.rs"]
 pub(crate) mod trade30;
 #[cfg(all(test,feature="ee2-reference"))]
@@ -41,6 +44,8 @@ pub const O_UNLOAD: u8 = 7;
 pub const O_CAPTURE: u8 = 8;
 #[cfg(feature = "ee2-native13")]
 pub(crate) const O_RENDEZVOUS: u8 = 9;
+#[cfg(feature = "ee2-native13")]
+pub(crate) const O_BLESS: u8 = 10;
 /// Marker in `Ent::stuck`: the unit walked onto a transport, remove it without an explosion.
 const BOARDED: u8 = 255;
 
@@ -317,11 +322,17 @@ pub struct Game {
     pub push: Vec<(f32, f32)>,
     pub scratch: Vec<usize>,
     pub sim_units: u32,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) powers: Option<crate::power42::PowerState>,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) bless: bless42::BlessState,
     // ---- not part of the deterministic simulation state ----
     /// Which player this client controls and sees through.
     pub local: u8,
     #[cfg(feature = "ee2-native13")]
     pub(crate) conversion_click: u32,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) priest_effects: Vec<crate::power42::PriestEffect>,
     /// Lockstep multiplayer: commands go to `outbox` instead of being applied at once.
     pub net: bool,
     pub seed0: u32,
@@ -459,6 +470,12 @@ impl Game {
             local: (local as usize).min(nplayers - 1) as u8,
             #[cfg(feature = "ee2-native13")]
             conversion_click: NONE,
+            #[cfg(feature = "ee2-native13")]
+            powers: None,
+            #[cfg(feature = "ee2-native13")]
+            bless: bless42::BlessState::default(),
+            #[cfg(feature = "ee2-native13")]
+            priest_effects: Vec::new(),
             net: humans > 1,
             seed0: seed,
             n_ai,
@@ -543,6 +560,11 @@ impl Game {
         let gen = self.ents[i].gen;
         self.ents[i] = Ent { alive: true, def, team, gen, x, y, px: x, py: y, ox: x, oy: y, hp: self.max_hp(team,def), rot:angle,prot:angle,..E0 };
         #[cfg(feature = "ee2-native13")]
+        if self.powers.is_some() {
+            let handle = self.h(i);
+            self.powers.as_mut().unwrap().register(handle);
+        }
+        #[cfg(feature = "ee2-native13")]
         self.air_register(i);
         #[cfg(feature="ee2-pack8")] self.pack_reset(i);
         #[cfg(feature="ee2-citizen9")] self.source_birth.register(i,self.h(i),def==WORKER);
@@ -566,6 +588,14 @@ impl Game {
     }
 
     pub(crate) fn kill(&mut self, i: usize) {
+        #[cfg(feature = "ee2-native13")]
+        if self.powers.is_some() {
+            let handle = self.h(i);
+            if let Some(actor) = self.powers.as_ref().and_then(|powers| powers.actor(handle)) {
+                self.retire_bless_actor(handle, actor.serial);
+            }
+            self.powers.as_mut().unwrap().retire(handle);
+        }
         #[cfg(feature = "ee2-native13")]
         self.air_remove(i);
         #[cfg(feature = "ee2-native13")]
@@ -612,6 +642,8 @@ impl Game {
         #[cfg(feature="ee2-up15")]
         {self.attack_clock[i]=crate::native_attack_clock::EMPTY;}
         self.free.push(i as u16);
+        #[cfg(feature = "ee2-native13")]
+        self.reconcile_bless_casts();
         #[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
         self.recount_paid_players();
     }
@@ -654,6 +686,8 @@ impl Game {
 
     /// Would `train(b, def)` succeed right now?
     pub(crate) fn unit_production_available(&self, team: u8, host: DefId, unit: DefId) -> bool {
+        #[cfg(feature="ee2-native13")]
+        if unit == crate::priest42_defs::PRIEST { return self.powers.is_some() && host == TEMPLE; }
         #[cfg(feature = "ee2-native13")]
         if !self.air_production_enabled(unit) { return false; }
         #[cfg(feature="ee2-native13")]
@@ -915,17 +949,17 @@ impl Game {
             return;
         }
         let research = DEFS[t.def as usize].has(F_RESEARCH|F_EXTRACT|F_DROPOFF);
-        if (!DEFS[t.def as usize].has(F_TRANSPORT|F_GARRISON) && !research) || t.built < 1.0 {
-            return;
-        }
+        let host = research || DEFS[t.def as usize].has(F_TRANSPORT|F_GARRISON);
+        #[cfg(feature = "ee2-native13")]
+        let host = host || self.powers.is_some() && t.def == TEMPLE;
+        if !host || t.built < 1.0 { return; }
         let h = self.h(tj);
         let key = self.key_for(LAND, t.x, t.y);
         let mut first = None;
         for &i in ids {
             if t.def==FORTRESS && self.fortress_slot_cost(t.team,self.ents[i].def).is_none() {continue;}
             let e = &self.ents[i];
-            let d = &DEFS[e.def as usize];
-            if d.building || d.dom != LAND || e.team != t.team || (research && !d.has(F_WORKER)) {
+            if e.team != t.team || !self.can_garrison(e.def, t.def) {
                 continue;
             }
             #[cfg(feature = "ee2-native13")]
@@ -946,12 +980,26 @@ impl Game {
         }
     }
 
+    pub(crate) fn can_garrison(&self, unit: DefId, host: DefId) -> bool {
+        let unit_type = &DEFS[unit as usize];
+        if unit_type.building || unit_type.dom != LAND { return false; }
+        #[cfg(feature = "ee2-native13")]
+        if unit == crate::priest42_defs::PRIEST { return self.priest_can_garrison(unit, host); }
+        let host_type = &DEFS[host as usize];
+        let worker_job = host_type.has(F_RESEARCH|F_EXTRACT|F_DROPOFF);
+        (worker_job || host_type.has(F_TRANSPORT|F_GARRISON)) && (!worker_job || unit_type.has(F_WORKER))
+    }
+
     /// Transports sail to the shore nearest `(x, y)` and put everyone ashore.
     pub fn order_unload(&mut self, ids: &[usize], x: f32, y: f32) {
         let key = self.key_for(SEA, x.clamp(1.0, N as f32 - 1.0), y.clamp(1.0, N as f32 - 1.0));
         let t = (key & 0xffff) as usize;
         for &i in ids {
-            if DEFS[self.ents[i].def as usize].has(F_RESEARCH|F_EXTRACT|F_DROPOFF|F_GARRISON) {
+            let def = self.ents[i].def;
+            let interior = DEFS[def as usize].has(F_RESEARCH|F_EXTRACT|F_DROPOFF|F_GARRISON);
+            #[cfg(feature = "ee2-native13")]
+            let interior = interior || self.powers.is_some() && def == TEMPLE;
+            if interior {
                 let mut e=self.ents[i]; self.unload(i,&mut e); self.ents[i]=e;
                 continue;
             }
@@ -985,7 +1033,15 @@ impl Game {
             let (a, r) = (k as f32 * 2.4, 0.45 * (k as f32).sqrt());
             let (mut x, mut y) = (lx + a.cos() * r, ly + a.sin() * r);
             if !self.map.pass[0][tile_of(x, y)] { x = lx; y = ly; }
+            #[cfg(feature="ee2-native13")]
+            let power_cursor = self.powers.as_ref().map(|state| state.cursor);
             let u = self.spawn(e.cargo[k], e.team, x, y);
+            #[cfg(feature="ee2-native13")]
+            if let Some(cursor) = power_cursor {
+                let result = if u == NOIDX { Err(remaining) } else { Ok(self.h(u)) };
+                let host = self.h(_host);
+                self.powers.as_mut().unwrap().finish_unload(host, k, result, cursor);
+            }
             if u != NOIDX {
                 self.ents[u].hp = self.max_hp(e.team,e.cargo[k]) * (e.cargo_hp[k] as f32 / 100.0).min(1.0);
                 #[cfg(feature="ee2-citizen9")] if e.cargo[k]==WORKER&&source_mask>>k&1!=0{self.set_citizen_identity(u,crate::native_rng9::CitizenIdentity::Female);}
@@ -1009,11 +1065,16 @@ impl Game {
         };
         let t = self.ents[j];
         let td=&DEFS[t.def as usize];
-        if t.built < 1.0 || (!td.has(F_TRANSPORT|F_GARRISON) && !td.has(F_RESEARCH|F_EXTRACT|F_DROPOFF)) || (td.has(F_RESEARCH|F_EXTRACT|F_DROPOFF) && !d.has(F_WORKER)) { Self::set_idle(e); return; }
+        if t.built < 1.0 || !self.can_garrison(e.def, t.def) { Self::set_idle(e); return; }
         let slots=if t.def==FORTRESS {match self.fortress_slot_cost(t.team,e.def){Some(v)=>v,None=>{Self::set_idle(e);return;}}}else{1};
         if if td.building{(t.x-e.x).abs().max((t.y-e.y).abs())<=Self::building_half(&t)+0.95}else{(t.x-e.x).powi(2)+(t.y-e.y).powi(2)<2.8*2.8}{
             if (t.ncargo as usize)<CARGO_MAX && self.cargo_slots_used(&t)+slots<=self.cargo_capacity(t.team,t.def) {
                 let maxhp=self.max_hp(e.team,e.def);
+                #[cfg(feature="ee2-native13")]
+                if self.powers.is_some() {
+                    let (handle, host) = (self.h(i), self.h(j));
+                    self.powers.as_mut().unwrap().embark(handle, host, t.ncargo as usize);
+                }
                 #[cfg(feature="ee2-citizen9")] self.source_birth.set_cargo(j,t.ncargo as usize,e.def==WORKER&&self.source_birth.slots[i].identity==1);
                 let tr = &mut self.ents[j];
                 tr.cargo[tr.ncargo as usize] = e.def;
@@ -1100,6 +1161,10 @@ impl Game {
         }
         #[cfg(feature = "ee2-native13")]
         self.capture.hash(self.capture_animation_enabled, self.source_clock.is_some(), &mut mix);
+        #[cfg(feature = "ee2-native13")]
+        if let Some(powers) = &self.powers { powers.hash(&mut mix); }
+        #[cfg(feature = "ee2-native13")]
+        self.bless.hash(&mut mix);
         #[cfg(feature = "ee2-native13")]
         if self.infantry_roster_enabled { mix(u32::from_le_bytes(*b"INF1")); }
         #[cfg(feature = "ee2-native13")]
@@ -1309,8 +1374,12 @@ impl Game {
                 #[cfg(feature = "ee2-native13")]
                 if self.trade_hidden(i, &self.ents[i]) || self.air_parked(i, &self.ents[i]) { continue; }
                 self.update_ent(i);
+                #[cfg(feature = "ee2-native13")]
+                self.tick_priest_reserve(i);
             }
         }
+        #[cfg(feature = "ee2-native13")]
+        self.tick_garrisoned_priest_reserves();
         self.separate();
         self.update_projs();
         let mut k = 0;
@@ -1330,6 +1399,10 @@ impl Game {
                 deaths=true;city_death|=self.ents[i].def==TC;self.kill(i);
             }
         }
+        #[cfg(feature = "ee2-native13")]
+        self.tick_blessings();
+        #[cfg(feature = "ee2-native13")]
+        self.prune_priest_effects();
         #[cfg(feature = "ee2-native13")]
         self.tick_trade();
         #[cfg(feature = "ee2-native13")]
@@ -1375,6 +1448,8 @@ impl Game {
         if let Some(signals) = &mut self.battle_signals { signals.update_markers(DT); }
         #[cfg(feature = "ee2-native13")]
         self.reconcile_capture_orders();
+        #[cfg(feature = "ee2-native13")]
+        self.reconcile_bless_casts();
     }
 
     #[cfg(feature = "ee2-native13")]
@@ -1655,6 +1730,8 @@ impl Game {
             e.reveal_t = 3.0;
         }
         let dmg = self.scaled_weapon_damage(e.team,e.def,w.dmg,self.players[e.team as usize].atk[class_of(d)]) * (1.0+self.fortress_attack_bonus(e));
+        #[cfg(feature = "ee2-native13")]
+        let dmg = crate::power42_math::store_toward_zero(f64::from(dmg) * f64::from(self.blessed_attack(self.h(_source_index))));
         let sound = if w.kind == W_MELEE { 7.0 } else { w.kind as f32 };
         #[cfg(feature="ee2-up15")]
         let sound = match attack {
@@ -1929,7 +2006,10 @@ impl Game {
             }
             e.carry=after;
         }else if e.def==FORTRESS {e.carry=0.0;}
-        if d.has(F_RESEARCH) {
+        let technology_garrison = d.has(F_RESEARCH);
+        #[cfg(feature = "ee2-native13")]
+        let technology_garrison = technology_garrison || self.powers.is_some() && e.def == TEMPLE;
+        if technology_garrison {
             // Ghidra 007e7cf0: accumulate per building, floor, then credit the owner's bank.
             e.carry += (if cfg!(feature="ee2-up15"){self.native_generation(e.def,e.team,9)}else{UNIVERSITY_RATE}) * (e.ncargo as usize).min(self.cargo_capacity(e.team,e.def)) as f32 * dt * self.modifiers[e.team as usize][e.def as usize][7];
             let points=e.carry.floor();
@@ -2283,6 +2363,12 @@ impl Game {
                 #[cfg(feature = "ee2-native13")]
                 O_CAPTURE => {
                     let (direction, movement) = self.do_capture(i, &mut e, d);
+                    face = direction;
+                    if let Some(velocity) = movement { want = velocity; moving = true; }
+                }
+                #[cfg(feature = "ee2-native13")]
+                O_BLESS => {
+                    let (direction, movement) = self.do_bless(i, &mut e, d);
                     face = direction;
                     if let Some(velocity) = movement { want = velocity; moving = true; }
                 }

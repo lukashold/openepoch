@@ -122,6 +122,10 @@ impl Game {
         { b = self.wrap_landing_save(b); }
         #[cfg(feature="ee2-native13")]
         { b = self.wrap_network_resignation(b); }
+        #[cfg(feature="ee2-native13")]
+        { b = self.bless.wrap(b); }
+        #[cfg(feature="ee2-native13")]
+        if let Some(powers) = &self.powers { b = powers.wrap(b); }
         if self.source_clock.is_some() { b = self.diplomacy.clock.wrap(b); }
         self.savebuf = crate::source_clock38::wrap(b, self.source_clock);
     }
@@ -130,6 +134,10 @@ impl Game {
         let (buf, source_clock) = crate::source_clock38::split(buf)?;
         let (buf, diplomacy_clock) = crate::diplomacy::DiplomacyClock::split(buf)?;
         if diplomacy_clock.is_some() && source_clock.is_none() { return None; }
+        #[cfg(feature="ee2-native13")]
+        let (buf, powers) = crate::power42::split(buf)?;
+        #[cfg(feature="ee2-native13")]
+        let (buf, blessings) = crate::game::bless42::split(buf)?;
         #[cfg(feature="ee2-native13")]
         let (buf, net_resignation) = crate::net_resign38::split(buf)?;
         #[cfg(feature="ee2-native13")]
@@ -157,6 +165,8 @@ impl Game {
         let actor_definition_count = if trade.is_some() { crate::trade30_defs::TRADE_DEFINITION_COUNT } else { actor_definition_count };
         #[cfg(feature="ee2-native13")]
         let actor_definition_count = if air.is_some() { crate::carrier36_defs::CARRIER as usize } else { actor_definition_count };
+        #[cfg(feature="ee2-native13")]
+        let actor_definition_count = if powers.is_some() { crate::priest42_defs::PRIEST as usize + 1 } else { actor_definition_count };
         #[cfg(feature="ee2-native13")]
         let (buf, sole_survivor) = crate::ee2_sole_survivor::split(buf)?;
         #[cfg(feature="ee2-native13")]
@@ -356,6 +366,8 @@ impl Game {
                 if air.is_some() && q as DefId == crate::air31_defs::FIGHTER_BOMBER { return false; }
                 #[cfg(feature="ee2-native13")]
                 if g.air_carrier_enabled && q == crate::carrier36_defs::CARRIER as _ { return e.def != DOCK; }
+                #[cfg(feature="ee2-native13")]
+                if powers.is_some() && q == crate::priest42_defs::PRIEST as _ { return e.def != TEMPLE; }
                 q != RESEARCH && !original_research(q) && q as usize >= SAVE_DEFINITION_COUNT &&
                     (q < TECH0 || (q - TECH0) as usize >= TECHS.len())
             }) { return None; }
@@ -466,6 +478,10 @@ impl Game {
         if let Some(memory) = city_memory {
             g.restore_city_memory(memory)?;
         }
+        #[cfg(feature="ee2-native13")]
+        g.restore_priest_power(powers)?;
+        #[cfg(feature="ee2-native13")]
+        g.restore_blessings(blessings)?;
         #[cfg(feature="ee2-native13")]
         g.restore_capture_save(capture)?;
         #[cfg(feature="ee2-native13")]

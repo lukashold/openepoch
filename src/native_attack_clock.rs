@@ -6,16 +6,41 @@ pub const EMPTY:Clock=Clock{handle:u32::MAX,next:0.0,flags:0};
 pub const MAGIC:u32=0x314b5441;pub const END:u32=0x454b5441;
 pub const INIT:u8=0x80;pub const STARTED:u8=1;pub const EXECUTED:u8=2;pub const IN_ATTACK:u8=4;
 #[derive(Debug,PartialEq)]pub enum Event{None,Start,Fire,End}
-pub fn step(now:f32,reload:f32,apply:f32,next:&mut f32,flags:&mut u8)->Event{
- if *flags&INIT==0{*flags=INIT;*next=0.0;}
- *flags|=IN_ATTACK;
- if *flags&STARTED==0{
-  if *next<=now{*next=((now as f64)+(reload as f64))as f32;*flags=(*flags|STARTED)&!EXECUTED;return Event::Start;}
- }else if *flags&EXECUTED==0{
-  // Source comparison is strict and keeps source-float arithmetic extended.
-  if (*next as f64)-(now as f64)<(reload as f64)-(apply as f64){*flags|=EXECUTED;return Event::Fire;}
- }else if *next<=now{*flags&=!STARTED;return Event::End;}
- Event::None
+pub fn step(now: f32, reload: f32, apply: f32, next: &mut f32, flags: &mut u8) -> Event {
+    step_round(now, reload, apply, next, flags, false)
+}
+
+pub(crate) fn step_toward_zero(now: f32, reload: f32, apply: f32, next: &mut f32, flags: &mut u8) -> Event {
+    step_round(now, reload, apply, next, flags, true)
+}
+
+fn step_round(now: f32, reload: f32, apply: f32, next: &mut f32, flags: &mut u8, chopped: bool) -> Event {
+    if *flags & INIT == 0 {
+        *flags = INIT;
+        *next = 0.0;
+    }
+    *flags |= IN_ATTACK;
+    if *flags & STARTED == 0 {
+        if *next <= now {
+            let deadline = f64::from(now) + f64::from(reload);
+            *next = deadline as f32;
+            if chopped && f64::from(*next) > deadline {
+                *next = f32::from_bits(next.to_bits() - 1);
+            }
+            *flags = (*flags | STARTED) & !EXECUTED;
+            return Event::Start;
+        }
+    } else if *flags & EXECUTED == 0 {
+        // Source comparison is strict and keeps source-float arithmetic extended.
+        if f64::from(*next) - f64::from(now) < f64::from(reload) - f64::from(apply) {
+            *flags |= EXECUTED;
+            return Event::Fire;
+        }
+    } else if *next <= now {
+        *flags &= !STARTED;
+        return Event::End;
+    }
+    Event::None
 }
 pub fn stop(flags:&mut u8){if *flags&INIT!=0{*flags=(*flags&!(STARTED|IN_ATTACK))|EXECUTED;}}
 #[cfg(test)]mod tests{use super::*;

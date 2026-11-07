@@ -134,12 +134,12 @@ function restore(gl,state){
 export async function loadOriginalGround(gl,enabled,options={}){
   const result={enabled:false,entries:new Map(),errors:[],manifest:null,
     policy:'native-epoch-slots; CityManager callback, explicit rural fallback when absent',metrics:{calls:0,instances:0},
-    seasonClimates:['Temperate'],climateErrors:[],updateTerrain(){},draw(){},drawCaptureGlow(){},setSeasonClimate(){return false;},setSeasonPhase(){return false;}};
+    seasonClimates:['Temperate'],climateErrors:[],updateTerrain(){},draw(){},drawCaptureGlow(){},drawBlessGlow(){},setSeasonClimate(){return false;},setSeasonPhase(){return false;}};
   if(!enabled)return result;
   let assetMapping;try{assetMapping=normalizeRenderAssetMapping(options.assetMapping);}catch(error){result.errors.push(error.message);return result;}
   result.assetMapping=assetMapping;
   const fetchFile=options.fetch||fetch,decode=options.decode||createImageBitmap;
-  const state=snapshot(gl),textures=new Map();let shader,vao,instances,height,glowTexture;
+  const state=snapshot(gl),textures=new Map(),blessTextures=new Map();let shader,vao,instances,height,glowTexture;
   const groundProfiles=Object.entries(options.climateProfiles||{}).filter(([name])=>name!=='Temperate');
   async function loadTexture(url){
     let texture=textures.get(url);
@@ -187,6 +187,12 @@ export async function loadOriginalGround(gl,enabled,options={}){
     if(options.captureGlow){
       try{glowTexture=await loadTexture('./local-original/capture-glow/glow_bad.png');}
       catch(error){result.captureGlowError=error.message;}
+    }
+    if(options.blessGlow){
+      for(const kind of ['good','neutral']){
+        try{blessTextures.set(kind,await loadTexture(`./local-original/priest-fx/glow_${kind}.png`));}
+        catch(error){(result.blessGlowErrors??=[]).push(error.message);}
+      }
     }
     shader=createProgram(gl);vao=gl.createVertexArray();gl.bindVertexArray(vao);
     const vertices=new Float32Array((GRID+1)**2*2),indices=new Uint16Array(GRID*GRID*6);
@@ -256,6 +262,14 @@ export async function loadOriginalGround(gl,enabled,options={}){
   };
   result.drawCaptureGlow=({vp,list,alpha})=>{
     if(glowTexture&&list.length)drawGroups([{texture:glowTexture,textureB:glowTexture,blend:0,list}],vp,alpha);
+  };
+  result.drawBlessGlow=({vp,good,neutral,alpha})=>{
+    const groups=[];
+    for(const [kind,list] of [['neutral',neutral],['good',good]]){
+      const texture=blessTextures.get(kind);
+      if(texture&&list?.length)groups.push({texture,textureB:texture,blend:0,list});
+    }
+    if(groups.length)drawGroups(groups,vp,alpha);
   };
   function drawGroups(groups,vp,glowAlpha){
     if(!groups.length)return;

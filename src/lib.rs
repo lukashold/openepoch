@@ -28,6 +28,12 @@ mod initial_ceasefire;
 #[cfg(feature = "ee2-native13")]
 mod carrier36_defs;
 #[cfg(feature = "ee2-native13")]
+mod priest42_defs;
+#[cfg(feature = "ee2-native13")]
+mod power42;
+#[cfg(feature = "ee2-native13")]
+mod power42_math;
+#[cfg(feature = "ee2-native13")]
 mod battle_signals;
 #[cfg(feature = "ee2-native13")]
 mod capture_animation26;
@@ -1209,17 +1215,40 @@ pub extern "C" fn capture_animation_elapsed(handle: u32, render_time: f32) -> f3
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
 pub extern "C" fn capture_selection_count() -> u32 {
+    capture_selection_count_for(0)
+}
+
+#[cfg(feature = "ee2-native13")]
+fn capture_source_matches(def: DefId, mode: u32) -> bool {
+    let priest = def == crate::priest42_defs::PRIEST;
+    match mode { 0 => true, 1 => !priest, 2 => priest, _ => false }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn capture_selection_count_for(mode: u32) -> u32 {
     let game = g();
-    selected(game).into_iter().filter(|&index| game.capture_actor_ready(index)).count() as u32
+    selected(game).into_iter().filter(|&index| capture_source_matches(game.ents[index].def, mode) &&
+        game.capture_actor_ready(index)).count() as u32
 }
 
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
 pub extern "C" fn capture_target_at(x: f32, y: f32) -> u32 {
-    if !x.is_finite() || !y.is_finite() { return 0; }
+    capture_target_at_for(x, y, 0)
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn capture_target_at_for(x: f32, y: f32, mode: u32) -> u32 {
+    if !x.is_finite() || !y.is_finite() || mode > 2 { return 0; }
     let game = g();
     let target = pick(game, x, y, false);
-    u32::from(target != NOIDX && game.capture_allowed(game.local, target))
+    if target == NOIDX || !game.capture_allowed(game.local, target) { return 0; }
+    let selection = selected(game);
+    u32::from(if selection.is_empty() { mode == 0 && DEFS[game.ents[target].def as usize].building }
+        else { selection.iter().any(|&index| capture_source_matches(game.ents[index].def, mode)
+            && game.capture_actor_ready(index) && game.capture_compatible(index, target)) })
 }
 
 #[cfg(feature = "ee2-native13")]
@@ -1227,8 +1256,10 @@ pub extern "C" fn capture_target_at(x: f32, y: f32) -> u32 {
 pub extern "C" fn cmd_capture_at(x: f32, y: f32) -> u32 {
     if capture_target_at(x, y) == 0 { return 0; }
     let game = g();
-    let target = game.h(pick(game, x, y, false));
-    let ids: Vec<_> = selected(game).into_iter().filter(|&index| game.capture_actor_ready(index)).collect();
+    let victim = pick(game, x, y, false);
+    let target = game.h(victim);
+    let ids: Vec<_> = selected(game).into_iter().filter(|&index|
+        game.capture_actor_ready(index) && game.capture_compatible(index, victim)).collect();
     if ids.is_empty() { return 0; }
     let hs = handles(game, &ids);
     game.submit(C_CAPTURE, 0.0, 0.0, target as i32, &hs);
@@ -1313,8 +1344,8 @@ pub extern "C" fn cmd_context(x: f32, y: f32, attack_move: u32) {
             if g.combat_hostile(g.local,t.team){if g.can_see(g.local,j){g.submit(C_ATTACK,x,y,th,&all);}else{g.submit(C_AMOVE,x,y,0,&all);}}
             else{g.submit(C_MOVE,x,y,0,&all);}return;
         }
-        if td.has(F_TRANSPORT) || (td.has(F_RESEARCH|F_EXTRACT|F_DROPOFF|F_GARRISON) && t.built >= 1.0) {
-            let land = part(g, &|_, d| d.dom == LAND && (!td.has(F_RESEARCH|F_EXTRACT|F_DROPOFF) || d.has(F_WORKER)));
+        if td.has(F_TRANSPORT) || t.built >= 1.0 {
+            let land = part(g, &|actor, _| g.can_garrison(actor.def, t.def));
             if !land.is_empty() {
                 g.submit(C_BOARD, x, y, th, &land);
                 return;
@@ -1521,8 +1552,104 @@ pub extern "C" fn cheat(code: u32) -> u32 {
         9 => if game.force_epoch_advance() { 1 } else { 4 },
         #[cfg(feature = "ee2-native13")]
         10 => if game.convert_last_clicked() { 1 } else { 5 },
+        #[cfg(feature = "ee2-native13")]
+        11 => if game.recharge_selected_priests() { 1 } else { 0 },
         _ => 0,
     }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_priest_skirmish() -> u32 {
+    g().configure_priest_skirmish() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn priest_power(handle: u32) -> f32 {
+    let game = g();
+    let Some(index) = game.get(handle) else { return -1.0; };
+    if game.ents[index].def != crate::priest42_defs::PRIEST { return -1.0; }
+    game.powers.as_ref().and_then(|state| state.actor(handle)).map_or(-1.0, |actor| actor.charge)
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn priest_visual_state(handle: u32) -> u32 {
+    let game = g();
+    let now = game.sim_elapsed();
+    if game.priest_bless_elapsed(handle, now).is_some() { 2 }
+    else { game.priest_conversion_elapsed(handle, now).is_some() as u32 }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn priest_visual_elapsed(handle: u32, render_time: f32) -> f32 {
+    let game = g();
+    game.priest_bless_elapsed(handle, render_time).or_else(|| game.priest_conversion_elapsed(handle, render_time)).unwrap_or(0.0)
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn priest_effect_count() -> u32 {
+    g().priest_effects.len() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn priest_effect_ptr() -> *const u32 {
+    let effects = &g().priest_effects;
+    if effects.is_empty() { core::ptr::null() } else { effects.as_ptr().cast() }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn bless_selection_count() -> u32 {
+    let game = g();
+    selected(game).iter().filter(|&&index| game.bless_ready(index)).count() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn bless_target_at(x: f32, y: f32) -> u32 {
+    if !x.is_finite() || !y.is_finite() || bless_selection_count() == 0 { return 0; }
+    let game = g();
+    let target = pick(game, x, y, false);
+    (target != NOIDX && game.bless_target(game.local, target)) as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn cmd_bless_at(x: f32, y: f32) -> u32 {
+    if bless_target_at(x, y) == 0 { return 0; }
+    let game = g();
+    let target = game.h(pick(game, x, y, false));
+    let ids: Vec<_> = selected(game).into_iter().filter(|&index| game.bless_ready(index)).collect();
+    let hs = handles(game, &ids);
+    game.submit(C_BLESS, 0.0, 0.0, target as i32, &hs);
+    hs.len() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn bless_multiplier(handle: u32) -> f32 {
+    let game = g();
+    if game.get(handle).is_some_and(|index| game.ents[index].team == game.local) { game.blessed_attack(handle) }
+    else { 1.0 }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn bless_glow_active(handle: u32) -> u32 {
+    let game = g();
+    u32::from(game.get(handle).is_some_and(|index| game.visible(index) && game.blessed_attack(handle) > 1.0))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn bless_preview_eligible(handle: u32) -> u32 {
+    let game = g();
+    u32::from(game.powers.is_some() && game.get(handle).is_some_and(|index| game.bless_target(game.local, index)))
 }
 
 #[no_mangle]

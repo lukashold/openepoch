@@ -2,14 +2,14 @@
 // The simulation lives in openepoch.wasm (Rust); this file never touches game rules.
 import { buildAtlas, tintAtlas, CELL } from './atlas.js?v=fortress1';
 import { buildModels } from './models.js?v=fortress1';
-import { parseCheat } from './cheats.js?v=native41';
+import { parseCheat } from './cheats.js?v=native45';
 import { researchPanel } from './research.js?v=rank-families';
 import { originalResearchActions, researchCost, researchState } from './original-research-actions.js?v=rank-families';
 import { diplomacyPanel } from './diplomacy.js?v=native17';
 import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native6';
 import {loadNativeFontUI} from './original-font-ui.js?v=native21names';
 import {territoryClaimMessage} from './territory-help.js?v=fortress1';
-import * as sfx from './audio.js?v=native41';
+import * as sfx from './audio.js?v=native45';
 import {generatedAmbientCoverage,loadOriginalAmbient,originalAmbientPriorities} from './original-ambient.js?v=ambient39';
 import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=citizen9';
 import {mountOriginalShellVideo} from './original-shell-video.js?v=native12';
@@ -18,7 +18,7 @@ import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regi
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native6';
-import {loadOriginalModels} from './original-renderer.js?v=native39audio';
+import {loadOriginalModels} from './original-renderer.js?v=native45';
 import {ownMapTerrainOrigin} from './original-citycenter-terrain.js?v=regional10';
 import {loadCityCenterIcons,loadHouseIcons,loadDockIcons,loadBarracksIcons,loadMillIcons,loadTempleIcons,loadLightArtilleryIcons,loadWarehouseIcons,loadStableIcons,loadKingIcons} from './original-citycenter-icons.js?v=native17';
 import {loadSourceSailRuntime} from './source-sail-runtime.js?v=sails7';
@@ -31,7 +31,7 @@ import {mountOriginalGameSettings} from './original-game-settings.js?v=native38a
 import {createRenderActorMetadata} from './render-actor-metadata.js?v=pack8';
 import {createPackRenderMetadata} from './original-pack-states.js?v=pack8';
 import {createFullmapPipBridge} from './original-fullmap-pip-bridge.js';
-import {loadOriginalGround,sampleGroundHeight} from './original-ground.js?v=native28';
+import {loadOriginalGround,sampleGroundHeight} from './original-ground.js?v=native45';
 import {createCaptureGlow} from './capture-glow.js?v=native28';
 import {loadOriginalTerrain} from './original-terrain.js?v=skirmish-climates';
 import {loadOriginalWater} from './original-water.js?v=water-farm3';
@@ -39,7 +39,7 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=clock38';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native44';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native45';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native44';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION} from './source-network-round.js?v=native44';
@@ -51,9 +51,12 @@ import {updateOriginalCamera,originalCameraRay,originalFractionForZoom,normalize
 import {createFullmap} from './fullmap.js?v=native24';
 import {createPlayerFlare} from './player-flare.js?v=native24';
 import {createBattleFlare} from './battle-flare.js?v=native25';
-import {createCaptureOrder,captureOrderText} from './capture-order.js?v=native25';
+import {createCaptureOrder,captureOrderText} from './capture-order.js?v=native45';
+import {loadPriestCommandArt} from './original-priest-command-art.js?v=native45';
+import {loadPriestEffects} from './original-priest-fx.js?v=native45';
+import {loadBlessGroundGlow} from './priest-ground-glow.js?v=native45';
 import {createTradeRoute,supportsTradeRoute,tradeRouteText} from './trade-route.js?v=native30';
-import {loadCarrierPresentation,loadFighterBomberPresentation,loadTradePresentation,loadTradeRouteArt} from './original-trade-presentation.js?v=native36';
+import {loadCarrierPresentation,loadFighterBomberPresentation,loadPriestPresentation,loadTradePresentation,loadTradeRouteArt} from './original-trade-presentation.js?v=native42';
 import {createTradeWaitStatus,loadTradeWaitArt,selectedTradeWait} from './trade-wait-status.js?v=native31';
 import {airActions,airMissionActions,airMissionSelection,airMissionTrainingKey,createAirMissionOrder,decorateAirMissionButton,loadAirMissionArt,supportsAirMission} from './air-mission-order.js?v=native32';
 import {loadAirMissionFlag,loadCarrierGarrisonFlag,projectAirMissionFlags,readAirMissionVisualRoutes} from './air-mission-flag.js?v=native36';
@@ -517,12 +520,13 @@ const citizenPresentation=await loadCitizenPresentation({enabled:originalEnabled
 const tradeAvailable=rulesProfile.ruleset===2&&supportsTradeRoute(wasm);
 const airMissionAvailable=rulesProfile.ruleset===2&&supportsAirMission(wasm);
 const hasTakeoffState=typeof wasm.air_takeoff_start_tick==='function';
-const [tradePresentation,tradeRouteArt,tradeWaitArt,fighterBomberPresentation,carrierPresentation,airMissionArt,airMissionFlag,airTakeoff,aircraftFlightAudio]=await Promise.all([
+const [tradePresentation,tradeRouteArt,tradeWaitArt,fighterBomberPresentation,carrierPresentation,priestPresentation,airMissionArt,airMissionFlag,airTakeoff,aircraftFlightAudio]=await Promise.all([
   loadTradePresentation({enabled:originalEnabled&&rulesProfile.ruleset===2&&renderNamespace.definitionCount>82}),
   loadTradeRouteArt({enabled:originalEnabled&&tradeAvailable}),
   loadTradeWaitArt({enabled:originalEnabled&&tradeAvailable&&typeof wasm.trade_wait_active==='function'}),
   loadFighterBomberPresentation({enabled:originalEnabled&&rulesProfile.ruleset===2&&renderNamespace.definitionCount>83}),
   loadCarrierPresentation({enabled:originalEnabled&&rulesProfile.ruleset===2&&renderNamespace.definitionCount>84}),
+  loadPriestPresentation({enabled:originalEnabled&&rulesProfile.ruleset===2&&renderNamespace.definitionCount>85}),
   loadAirMissionArt({enabled:originalEnabled&&airMissionAvailable}),
   loadAirMissionFlag(gl,{enabled:originalEnabled&&airMissionAvailable&&typeof wasm.air_mission_visual_routes==='function'}),
   loadAirTakeoff({enabled:originalEnabled&&airMissionAvailable&&hasTakeoffState}),
@@ -555,9 +559,22 @@ const capturePoseForActor = typeof wasm.capture_animation_request === 'function'
   if (!(elapsed >= 0)) return null;
   return {state:packed&3, variation:Math.fround((packed>>>2)*Math.fround(1/32767)), elapsed};
 } : null;
+const priestPoseForActor=priestPresentation&&typeof wasm.priest_visual_state==='function'&&
+  typeof wasm.priest_visual_elapsed==='function'?actor=>{
+    const state=wasm.priest_visual_state(actor.handle)>>>0;
+    if(state!==1&&state!==2)return null;
+    return {state,elapsed:wasm.priest_visual_elapsed(actor.handle,actor.renderTime),once:state===2,duration:state===2?4:0};
+  }:null;
+const priestEffects=await loadPriestEffects(gl,{enabled:originalEnabled&&!!priestPresentation&&
+  typeof wasm.priest_effect_count==='function'});
+const blessGround=await loadBlessGroundGlow({enabled:originalEnabled&&typeof wasm.bless_glow_active==='function'});
+let previousPriestViews=[],currentPriestViews=[],priestFrameEffects=null;
+const priestAttachments=new Map();
+let blessPreview=null;
 const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,total)=>{
   $('play').textContent=`Originalgrafiken laden · ${Math.round(loaded/total*100)} %`;
-},{assetMapping,climateProfiles,capturePoseForActor,tradePresentation,fighterBomberPresentation,carrierPresentation,rallyTargetTags:airMissionFlag?.targetTags,
+},{assetMapping,climateProfiles,capturePoseForActor,tradePresentation,fighterBomberPresentation,carrierPresentation,priestPresentation,priestPoseForActor,
+  sourceVisualForModel:blessGround?.modelVisual,rallyTargetTags:airMissionFlag?.targetTags,
   airTakeoff,takeoffElapsedForActor:airTakeoff?actor=>{
     if(takeoffSample.now===null)return takeoffElapsed(takeoffSample.tick,takeoffSample.alpha,takeoffStartTick(actor.handle));
     const start=takeoffStartSeconds(actor.handle);
@@ -569,10 +586,10 @@ const carrierGarrisonFlag=airMissionAvailable&&originalModels.available.has(rend
 const carrierOccupied=handle=>wasm.air_mission_status(handle,1)>0;
 const sourceSails=await loadSourceSailRuntime({wasm,namespace:renderNamespace,models:originalModels,enabled:originalEnabled&&rulesProfile.ruleset===2,decorateMetadata:metadata=>packMetadata?packMetadata.snapshot(metadata):metadata});
 if(sourceSails?.metrics.error)console.warn('Source sails:',sourceSails.metrics.error);
-const unitPresentations=[tradePresentation,fighterBomberPresentation,carrierPresentation].filter(Boolean);
+const unitPresentations=[tradePresentation,fighterBomberPresentation,carrierPresentation,priestPresentation].filter(Boolean);
 sfx.configureOriginalDefinitions({wasm,bindings:[...(originalModels.manifest?.models||[]),...(originalModels.additionalRegionalAudio||[]),...unitPresentations.flatMap(source=>source.modelRows)],additionalFamilyManifest:unitPresentations.map(source=>source.audioManifest),citizenPresentation,regionalMusic:rulesProfile.ruleset===2,...(rulesProfile.ruleset===2?{familyManifestURL:'native-families-civ8-regicide.json',playbackManifestURL:'manifest-stone-thrower-up.json'}:{})});
 const captureGlow = originalEnabled && typeof wasm.active_capture_glow === 'function' ? createCaptureGlow() : null;
-const originalGround=await loadOriginalGround(gl,originalEnabled,{assetMapping,captureGlow:!!captureGlow,...(rulesProfile.ruleset===2
+const originalGround=await loadOriginalGround(gl,originalEnabled,{assetMapping,captureGlow:!!captureGlow,blessGlow:!!blessGround,...(rulesProfile.ruleset===2
   ?{manifestURL:'./local-original/regional-temple/ground-decals.json'}:{})});
 const originalTerrain=await loadOriginalTerrain(gl,originalEnabled,TEAM,{climateProfiles});
 originalTerrain.setLightingContext?.(originalModels.lighting);
@@ -808,9 +825,26 @@ const playerFlare = createPlayerFlare({mapSize:MAP,tickSeconds:TICK,originalArt:
     canvas.style.cursor=active?'crosshair':'default';
   }});
 const battleFlare = typeof wasm.battle_signals_enable === 'function' ? createBattleFlare({wasm,originalArt:originalEnabled}) : null;
+const canTargetOrder=()=>running&&!bench&&!ui?.win;
+const militaryCaptureCount=()=>wasm.capture_selection_count_for?.(1)??wasm.capture_selection_count?.()??0;
 const captureOrder = typeof wasm.cmd_capture_at === 'function' ? createCaptureOrder({canvas,originalArt:originalEnabled,
-  canOrder:()=>running&&!bench&&!ui?.win&&wasm.capture_selection_count()>0,
-  pickTarget:(x,y)=>wasm.capture_target_at(x,y),issue:(x,y)=>wasm.cmd_capture_at(x,y)}) : null;
+  canOrder:()=>canTargetOrder()&&militaryCaptureCount()>0,
+  pickTarget:(x,y)=>wasm.capture_target_at_for?.(x,y,1)??wasm.capture_target_at(x,y),issue:wasm.cmd_capture_at}) : null;
+const priestEnabled=rulesProfile.ruleset===2&&typeof wasm.configure_priest_skirmish==='function';
+sfx.configurePriestCues(originalEnabled&&priestEnabled);
+const priestArt=await loadPriestCommandArt({enabled:originalEnabled&&priestEnabled});
+const priestOrders=priestEnabled?[
+  {action:'convert',key:'C',fallback:'↪',label:'Bekehren',description:'Bekehrt eine gegnerische Einheit.',
+    count:()=>wasm.capture_selection_count_for(2),pick:(x,y)=>wasm.capture_target_at_for(x,y,2),issue:wasm.cmd_capture_at},
+  {action:'bless',key:'L',fallback:'✧',label:'Segnen',description:'Segnet verbündete Landeinheiten im Umkreis.',
+    count:wasm.bless_selection_count,pick:wasm.bless_target_at,issue:wasm.cmd_bless_at},
+].map(command=>({...command,order:createCaptureOrder({canvas,originalArt:false,fallback:command.fallback,
+  shortcut:`Alt+${command.key}`,canOrder:()=>canTargetOrder()&&command.count()>0,pickTarget:command.pick,issue:command.issue,
+  appearance:priestArt?{button:(theme,state)=>priestArt.button(command.action,theme,state),
+    cursor:valid=>priestArt.cursor(command.action,valid)}:null,
+})})):[];
+const activePriestOrder=()=>priestOrders.find(command=>command.order.active());
+const activeTargetOrder=()=>activePriestOrder()?.order??(captureOrder?.active()?captureOrder:null);
 const tradeRoute=tradeAvailable?createTradeRoute({canvas,caption:$('trade-route-caption'),art:tradeRouteArt,
   canOrder:()=>running&&!bench&&!ui?.win&&wasm.trade_selected_count()>0,
   selectionKey:()=>`${wasm.trade_selected_count()}:${wasm.selected_actor_handle?.()>>>0}`,
@@ -849,10 +883,16 @@ function armTradeRoute() {
   return tradeRoute.arm(point,screen);
 }
 function armCapture() {
-  if (!captureOrder || modalOpen() || !wasm.capture_selection_count()) return false;
+  if (!captureOrder || modalOpen() || !militaryCaptureCount()) return false;
   const point=mouse.inside?toWorld(mouse.x,mouse.y):null;
   cancelMapGesture();cancelBuilding();attackMode=false;playerFlare.cancel();
   return captureOrder.arm(point);
+}
+function armPriestOrder(command) {
+  if (modalOpen() || !command.count()) return false;
+  const point=mouse.inside?toWorld(mouse.x,mouse.y):null;
+  cancelMapGesture();cancelBuilding();attackMode=false;playerFlare.cancel();
+  return command.order.arm(point);
 }
 function armPlayerFlare(){
   if(rulesProfile.ruleset!==2||!running||bench||net||!ui||ui.win||modalOpen())return;
@@ -917,6 +957,10 @@ function begin(tempo = null, useSourceClock = wasm.sim_clock_active?.() === 1, a
   tradeWaitStatus.update(false);
   tradeRoute?.cancel();tradePress=null;
   airMission?.cancel();airPress=null;
+  activeTargetOrder()?.cancel();
+  previousPriestViews=[];currentPriestViews=[];priestFrameEffects=null;priestAttachments.clear();
+  blessPreview=null;
+  blessGround?.reset();
   playerFlare.reset(wasm.game_tick()>>>0);
   battleFlare?.reset(!bench);
   fullmapPip.reset();
@@ -997,6 +1041,10 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
   if(!benchUnits&&humans===1&&civilizationSetup.enabled&&wasm.stat(local,0)===0
      && typeof wasm.ai9_game_research_setup_manual==='function' && !wasm.ai9_game_research_setup_manual()){
     toast('Originalforschung konnte für dieses Scharmützel nicht gestartet werden.');
+  }
+  if(!benchUnits&&humans===1&&priestEnabled&&!wasm.configure_priest_skirmish()){
+    toast('Priester konnten für dieses Scharmützel nicht eingerichtet werden.');
+    return;
   }
   cam.x = benchUnits ? MAP / 2 : wasm.start_x(); cam.y = benchUnits ? MAP / 2 : wasm.start_y(); cam.zoom = benchUnits ? 11 : 28;
   cam.heading=0;
@@ -1136,10 +1184,12 @@ function advance(dt, now) {
       if(airFlightAudio&&shot&&sfx.airFlightAttackHandled(shot&0xffff,shot>>>16,wasm.air_audio_shot_duration(i/3)))continue;
       const kind = ev[i], x = ev[i + 1], y = ev[i + 2];
       const citizen = decodeCitizenDeathCue(kind);
-      if (kind >= 12 && !citizen && kind !== sfx.STONE_THROWER_LAUNCH_CUE && kind !== sfx.CAPTURE_COMPLETE_CUE && kind !== sfx.CONVERT_CUE) {
+      if (kind >= 12 && !citizen && kind !== sfx.STONE_THROWER_LAUNCH_CUE && kind !== sfx.CAPTURE_COMPLETE_CUE &&
+          kind !== sfx.CONVERT_CUE && kind !== sfx.PRIEST_CONVERT_COMPLETE_CUE && kind !== sfx.PRIEST_CONVERT_CAST_CUE) {
         sfx.play(kind, 1, 0);
       } else if (referenceMode && !shot && kind !== sfx.CAPTURE_COMPLETE_CUE) {
-        sfx.playWorld(kind,x,y,groundAt(x,y),view,citizen);
+        const altitude=groundAt(x,y)+(kind===sfx.PRIEST_CONVERT_CAST_CUE ? .5 : 0);
+        sfx.playWorld(kind,x,y,altitude,view,citizen);
       } else {
         const {volume,pan}=sfx.spatialSound(x-cam.x,y-cam.y,cam.zoom);
         if (citizen) {
@@ -1165,6 +1215,61 @@ function drawCaptureGlow(vp,actorMetadata){
   if(!captureGlow||!actorMetadata||!wasm.has_active_capture_glow())return;
   const projected = captureGlow.project(actorMetadata.actors, wasm.active_capture_glow);
   originalGround.drawCaptureGlow({vp,...projected});
+}
+
+function drawBlessGround(vp,actorMetadata,previewFrame=null){
+  if(!blessGround||!actorMetadata||!originalGround.enabled||!originalModels.sourceVisualForActor)return;
+  if(previewFrame){
+    const preview=activePriestOrder()?.action==='bless'&&mouse.inside&&document.elementFromPoint(mouse.x,mouse.y)===canvas;
+    if(!preview)blessPreview=null;
+    else if(!blessPreview||(blessPreview.remaining-=previewFrame.visualSeconds)<=0){
+      const [x,y]=toWorld(mouse.x,mouse.y);
+      const handles=new Set(actorMetadata.actors.filter(actor=>
+        (actor.simX-x)**2+(actor.simY-y)**2<=4&&wasm.bless_preview_eligible(actor.handle)).map(actor=>actor.handle));
+      blessPreview={remaining:.2,handles};
+    }
+  }
+  const layer=blessGround.project({actors:actorMetadata.actors,local:ui?.local??0,
+    visualForActor:originalModels.sourceVisualForActor,isBlessed:wasm.bless_glow_active,
+    hasPreview:handle=>!!previewFrame&&!!blessPreview?.handles.has(handle)});
+  originalGround.drawBlessGlow({vp,...layer});
+  if(qaMode&&previewFrame)canvas.dataset.blessGround=`${layer.good.length/5}:${layer.neutral.length/5}`;
+}
+
+function drawPriestEffects(currentView,actorMetadata){
+  if(!priestEffects)return 0;
+  if(actorMetadata)currentPriestViews.push(actorMetadata);
+  if(!priestFrameEffects){
+    const count=wasm.priest_effect_count()>>>0,names=['','convert','bless','converted'];
+    const records=new DataView(wasm.memory.buffer,wasm.priest_effect_ptr()>>>0,count*12);
+    priestFrameEffects=Array.from({length:count},(_,index)=>{
+      const at=index*12,handle=records.getUint32(at,true),kind=names[records.getUint32(at+4,true)];
+      const started=records.getFloat32(at+8,true);
+      return {handle,kind,started,key:`${handle}:${kind}:${started}`};
+    });
+  }
+  const effects=[],converted=new Map();
+  for(const {handle,kind,started,key} of priestFrameEffects){
+    const actor=actorMetadata?.forHandle(handle);
+    if(!priestAttachments.has(key)&&(kind!=='converted'||started-(converted.get(handle)??-Infinity)>=2)&&
+      previousPriestViews.some(snapshot=>snapshot.forHandle(handle)))priestAttachments.set(key,true);
+    if(priestAttachments.get(key)!==true)continue;
+    if(kind==='converted'){converted.set(handle,started);continue;}
+    if(!actor||actor.hpRatio<=0)continue;
+    const elapsed=actor.renderTime-started;
+    if(!kind||elapsed<0)continue;
+    effects.push({kind,elapsed,visible:true,yaw:actor.renderYaw,scale:.13435028493404388,
+      position:[actor.renderX,actor.renderAltitude,actor.renderY]});
+  }
+  return priestEffects.draw({...currentView,effects});
+}
+
+function finishPriestEffectsFrame(){
+  if(!priestEffects)return;
+  const current=new Set(priestFrameEffects?.map(record=>record.key));
+  for(const key of priestAttachments.keys())if(!current.has(key))priestAttachments.delete(key);
+  for(const key of current)if(!priestAttachments.has(key))priestAttachments.set(key,false);
+  previousPriestViews=currentPriestViews;currentPriestViews=[];priestFrameEffects=null;
 }
 
 function drawAirMissionFlags(vp,actorMetadata,mission) {
@@ -1211,6 +1316,8 @@ function drawFullmapPipScene(pipView, alpha, renderEpochs, now, mission) {
     originalTerrain.drawWater({vao:vaoW,vp,time:now/1000,eye,fogTexture});
   }
   drawCaptureGlow(vp,actorMetadata);
+  drawBlessGround(vp,actorMetadata);
+  drawPriestEffects(pipView,actorMetadata);
   drawAirMissionFlags(vp,actorMetadata,mission);
   carrierGarrisonFlag?.draw({vp,actors:actorMetadata?.actors,epochs:renderEpochs,local:ui?.local});
 }
@@ -1262,6 +1369,7 @@ function frame(now) {
       weather:'Normal',running:audible,priorities:audible?originalAmbientPriorities(ambientCoverage,view,u8(wasm.fog_ptr(),MAP*MAP)):null});
   }
   if(captureGlow&&!paused&&!(net&&net.ls.waiting)&&wasm.has_active_capture_glow())captureGlow.advance(visualSeconds);
+  blessGround?.advance(visualSeconds);
   const interpolation = net?.sourceRounds ? net.ls.interpolation()
     : adaptiveSoloClock ? adaptiveSoloClock.remainder / sourceWallInterval(adaptiveSoloClock.rate)
     : acc / (sourceSoloClock ? SOURCE_SOLO_INTERVAL : TICK);
@@ -1397,6 +1505,9 @@ function frame(now) {
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }
   drawCaptureGlow(view.vp,actorMetadata);
+  drawBlessGround(view.vp,actorMetadata,{visualSeconds});
+  const priestEffectDraws=drawPriestEffects(view,actorMetadata);
+  if(qaMode&&priestEffects)canvas.dataset.priestEffects=String(priestEffectDraws);
   drawAirMissionFlags(view.vp,actorMetadata,mission);
   carrierGarrisonFlag?.draw({vp:view.vp,actors:actorMetadata?.actors,epochs:renderEpochs,local:ui?.local});
 
@@ -1418,17 +1529,18 @@ function frame(now) {
   if (now - lastMini > 250) { lastMini = now; drawMini(); }
   fullmap?.paint(now,ui,corners);
   if(fullmapPip.isOpen())fullmapPip.draw(dt,pipView=>drawFullmapPipScene(pipView,alpha,renderEpochs,now,mission));
+  finishPriestEffectsFrame();
   if(supportsAdaptiveSoloClock)sampleSourceRenderFps(adaptiveRenderSample,wallSeconds);
 }
 
 // ---------------------------------------------------------------- HUD
 const HOT = ['Q', 'W', 'E', 'R', 'T', 'Z', 'X', 'C', 'V', 'B'];
-const unitPresentation=id=>id===84?carrierPresentation:id===83?fighterBomberPresentation:tradePresentation;
+const unitPresentation=id=>id===85?priestPresentation:id===84?carrierPresentation:id===83?fighterBomberPresentation:tradePresentation;
 function icon(id, px,context=undefined) {
   const c = document.createElement('canvas'); c.width = c.height = px;
   const regional = ui && rulesProfile.ruleset === 2
     ? regionalIcons.get(id)?.icon(ui.epoch, wasm.player_civilization(ui.local) >>> 0) : undefined;
-  const original=regional??unitPresentation(id)?.icon(id,ui?.epoch??0)??originalIcon(originalAssets,id,ui?.epoch||0,context);
+  const original=regional??unitPresentation(id)?.icon(id,ui?.epoch??0,ui?wasm.player_civilization(ui.local)>>>0:0)??originalIcon(originalAssets,id,ui?.epoch||0,context);
   if(original){
     const scale=Math.min(px/original.width,px/original.height),w=original.width*scale,h=original.height*scale;
     c.getContext('2d').drawImage(original,(px-w)/2,(px-h)/2,w,h);return c;
@@ -1490,6 +1602,7 @@ function updateUi(drawn, now) {
   $('perf').textContent = status;
 
   const s = ui.sel, info = $('info-content');
+  const hasPriest=priestEnabled&&!bench&&!ui.win&&(s.def===85||s.types?.some(type=>type[0]===85));
   const airStatus=airMission&&!bench&&!ui.win?airMissionSelection(wasm):null;
   tradeWaitStatus.update(!ui.win&&selectedTradeWait(wasm,s),ui.epoch);
   if (!s.n) info.innerHTML = bench ? '<h3>Stress test</h3><span class="dim">Two armies are kept at full strength and thrown at each other. Zoom and pan freely; you can still select and command the blue side.</span>'
@@ -1498,6 +1611,10 @@ function updateUi(drawn, now) {
     let h = `<h3>${s.n > 1 && s.types.length > 1 ? s.n + ' Einheiten' : escapeLabelHtml(label(s.name,s.def,s.n)) + (s.n > 1 ? ' ×' + s.n : '')}</h3>`;
     if (s.n === 1) {
       h += `<div class="hp"><i style="width:${100 * s.hp / s.max}%"></i></div>${s.hp} / ${s.max} HP`;
+      if (hasPriest) {
+        const power=wasm.priest_power(wasm.selected_actor_handle()>>>0);
+        if (power>=0) h+=`<div class="hp priest-power" role="meter" aria-label="Kraftreserve" aria-valuemin="0" aria-valuemax="1" aria-valuenow="${power}"><i style="width:${100*Math.max(.001,power)}%"></i></div>`;
+      }
       if (renderNamespace.isMobile(s.def)) h += `<div class="activity">${ACTIVITIES[s.activity] || 'Bereit'}</div>`;
       if (s.dmg) h += ` · ${s.dmg} dmg · range ${s.rng}`;
       if (s.built < 1) h += `<br>Im Bau: ${Math.round(s.built * 100)}%`;
@@ -1522,11 +1639,13 @@ function updateUi(drawn, now) {
     if (q) { for (const id of s.q) {const job=renderNamespace.queueJob(id);q.append(!job?glyph('?',30):job.kind===3?glyph('⬆',30):job.kind===1||job.kind===2?glyph('⚗',30):icon(job.value,30));} q.title = 'Rechtsklick oder Rücktaste: letzten Auftrag abbrechen'; }
   }
 
-  const canCapture=!!captureOrder&&!bench&&!ui.win&&wasm.capture_selection_count()>0;
+  const canCapture=!!captureOrder&&!bench&&!ui.win&&militaryCaptureCount()>0;
   const canTrade=!!tradeRoute&&!bench&&!ui.win&&wasm.trade_selected_count()>0;
+  const priestActions=hasPriest?priestOrders.map(command=>({command,ready:command.count()>0})):[];
   const flightActions=airMissionActions(airStatus), airArmed=!!airMission?.active();
   const sig = ui.epoch+':'+ui.act.map(a => a.k + a.id + label(a.name,actionUnitId(a))).join(',')+':'+canCapture+':'+canTrade+
-    ':'+airStatus?.kind+':'+flightActions.map(action=>action.role+action.ready).join(',')+':'+airStatus?.auto+':'+airArmed;
+    ':'+airStatus?.kind+':'+flightActions.map(action=>action.role+action.ready).join(',')+':'+airStatus?.auto+':'+airArmed+
+    ':'+priestActions.map(({ready})=>ready).join(',');
   const acts = $('acts');
   if (sig !== actSig) {
     actSig = sig; acts.innerHTML = '';
@@ -1563,6 +1682,15 @@ function updateUi(drawn, now) {
       const caption=document.createElement('small');caption.textContent=captureOrderText.label;b.append(caption);
       const key=document.createElement('kbd');key.textContent=captureOrderText.shortcut;b.append(key);
       b.onclick=armCapture;acts.append(b);
+    }
+    for (const {command,ready} of priestActions) {
+      const b=document.createElement('button');b.className='act priest-action';b.dataset.action=command.action;
+      b.title=priestArt?.description(command.action)??command.description;
+      b.disabled=!ready;b.classList.toggle('no',!ready);
+      command.order.decorateButton(b,ui.epoch);
+      const caption=document.createElement('small');caption.textContent=priestArt?.label(command.action)??command.label;b.append(caption);
+      const key=document.createElement('kbd');key.textContent=`Alt+${command.key}`;b.append(key);
+      b.onclick=()=>armPriestOrder(command);acts.append(b);
     }
     if (canTrade) {
       const b=document.createElement('button');b.className='act';b.title=tradeRouteText.title;
@@ -1608,7 +1736,7 @@ function doAct(i, count=1) {
   if (!a) return;
   tradeRoute?.cancel();
   airMission?.cancel();
-  if (a.k === 'b') { captureOrder?.cancel();ghost = { id: a.id, size: a.size,name:label(a.name,a.id),turn:0,manual:false }; placementKey='';attackMode = false; sfx.play(20);updatePlacement();return; }
+  if (a.k === 'b') { activeTargetOrder()?.cancel();ghost = { id: a.id, size: a.size,name:label(a.name,a.id),turn:0,manual:false }; placementKey='';attackMode = false; sfx.play(20);updatePlacement();return; }
   if (a.k === 'u') { wasm.cmd_unload(); sfx.play(22); return; }
   if(a.k==='p'){if(typeof wasm.cmd_pack==='function'&&wasm.cmd_pack(a.id)){if(!selectedUnitVoice('order'))sfx.play(20);}else sfx.play(21);lastUi=0;return;}
   if(a.k==='i'&&!a.ok){sfx.play(21);toast(researchState(a,a.hostName));return;}
@@ -1634,7 +1762,7 @@ mini.addEventListener('mousedown', e => {
   if(modalOpen()||playerFlare.isArmed())return;
   if(ui?.observer&&e.button===2)return;
   if(airMission?.active()&&e.button===2)return;
-  if(e.button===2&&(tradeRoute?.cancel()||captureOrder?.cancel()))return;
+  if(e.button===2&&(tradeRoute?.cancel()||activeTargetOrder()?.cancel()))return;
   const [x, y] = miniWorld(e);
   if (e.button === 2) { wasm.cmd_context(x, y, 0); if (!selectedUnitVoice('order')) sfx.play(22); } else { cam.x = x; cam.y = y; mini.dragging = true; }
 });
@@ -1657,7 +1785,7 @@ gameOptions=await mountOriginalGameOptions({
   onAction:handleGameOption,
   onCue:cue=>{void sfx.playInterfaceCue(cue);},
 });
-function cancelMapGesture(){captureOrder?.cancel();tradeRoute?.cancel();airMission?.cancel();tradePress=null;airPress=null;mouse.down=false;mouse.drag=false;mouse.pan=false;mouse.inside=false;mini.dragging=false;box.style.display='none';canvas.style.cursor='default';}
+function cancelMapGesture(){activeTargetOrder()?.cancel();tradeRoute?.cancel();airMission?.cancel();tradePress=null;airPress=null;mouse.down=false;mouse.drag=false;mouse.pan=false;mouse.inside=false;mini.dragging=false;box.style.display='none';canvas.style.cursor='default';}
 const fullscreen=createFullscreenController({buttons:[$('fullscreen'),$('menu-fullscreen')],notify:toast,
   onChange(){keys.clear();cancelMapGesture();updateCamera();}});
 const gameSettings=await mountOriginalGameSettings({
@@ -1698,7 +1826,8 @@ canvas.addEventListener('mousedown', e => {
     if (e.button===2) tradeRoute.cancel();
     return;
   }
-  if (captureOrder?.active()) { if (e.button===2) captureOrder.cancel(); return; }
+  const targetOrder=activeTargetOrder();
+  if (targetOrder) { if (e.button===2) targetOrder.cancel(); return; }
   const [wx, wy] = toWorld(e.clientX, e.clientY);
   if (e.button === 1) { mouse.pan = true; e.preventDefault(); return; }
   if (e.button === 2) {
@@ -1732,7 +1861,7 @@ addEventListener('mousemove', e => {
   if(ghost&&e.target!==canvas&&!mouse.pan){mouse.inside=false;return;}
   if (mouse.pan) panCameraScreen(-e.movementX/cam.zoom,-e.movementY/(cam.zoom*Math.sin(view.pitch??PITCH)));
   mouse.x = e.clientX; mouse.y = e.clientY; mouse.inside = true;
-  if (captureOrder?.active()) captureOrder.update(e.target===canvas?toWorld(mouse.x,mouse.y):null);
+  activeTargetOrder()?.update(e.target===canvas?toWorld(mouse.x,mouse.y):null);
   if (tradeRoute?.active()) {
     if(tradePress&&(e.target!==canvas||Math.abs(mouse.x-tradePress[0])+Math.abs(mouse.y-tradePress[1])>6))tradePress=null;
     tradeRoute.update(e.target===canvas?toWorld(mouse.x,mouse.y):null,e.target===canvas?[mouse.x,mouse.y]:null);
@@ -1754,9 +1883,11 @@ addEventListener('mouseup', e => {
     const point=e.button===0 ? (e.target===canvas?toWorld(e.clientX,e.clientY):e.target===mini?miniWorld(e):null) : null;
     if(playerFlare.release(e.button,point))return;
   }
-  if (captureOrder?.active()) {
-    if (e.button===0 && e.target===canvas && captureOrder.release(toWorld(e.clientX,e.clientY))) {
-      if (!selectedUnitVoice('attack')) sfx.play(22);
+  const targetOrder=activeTargetOrder();
+  if (targetOrder) {
+    const voice=activePriestOrder()?.action==='bless'?'order':'attack';
+    if (e.button===0 && e.target===canvas && targetOrder.release(toWorld(e.clientX,e.clientY))) {
+      if (!selectedUnitVoice(voice)) sfx.play(22);
       lastUi=0;
     }
     return;
@@ -1884,6 +2015,7 @@ $('cheat-form').addEventListener('submit', e => {
   const result = wasm.cheat(code);
   const messages = ['Cheats aktiviert.', rulesProfile.ruleset===2?'Cheat-Eingabe deaktiviert.':'Cheats deaktiviert. Sofortbau ist aus.', referenceMode?'Bis zu 10.000 Einheiten je Rohstoff erhalten.':'+10.000 Nahrung, Holz und Metall.', result === 2 ? 'Sofortbau aus.' : 'Sofortbau an.', 'Forschungskonto aktualisiert.', 'Bis zu 100 Einheiten je Rohstoff abgezogen.', 'Strafbefehl für die Auswahl ausgeführt.', result===2?'Schadensschutz aus.':'Schadensschutz an.', result===2?'Kriegsnebel aus.':'Kriegsnebel an.', result===4?'Die Endepoche ist erreicht.':'In die nächste Epoche gewechselt.'];
   if (code === 10) messages[code] = result === 5 ? 'Klicke zuerst eine übernehmbare Einheit oder ein Gebäude an.' : 'Übernommen.';
+  if (code === 11) messages[code] = 'Kraftreserve der ausgewählten Priester aufgefüllt.';
   $('cheat-result').textContent = result === 3 ? 'Nur im Einzelspieler verfügbar.' : result === 0 ? 'Zuerst icheat eingeben.' : messages[code] + ` Guthaben: ${wasm.cheat_status(2)} Technologiepunkte.`;
   $('cheat-input').value = ''; $('cheat-input').focus(); lastUi = 0;
 });
@@ -1927,7 +2059,7 @@ addEventListener('keydown', e => {
     e.preventDefault();if(!e.repeat)armPlayerFlare();return;
   }
   if(k==='Escape'&&playerFlare.cancel()){e.preventDefault();return;}
-  if(k==='Escape'&&captureOrder?.cancel()){e.preventDefault();return;}
+  if(k==='Escape'&&activeTargetOrder()?.cancel()){e.preventDefault();return;}
   if(k==='Escape'&&airMission?.cancel()){e.preventDefault();airPress=null;return;}
   if(k==='Escape'&&(tradeRoute?.cancel()||e.repeat)){e.preventDefault();tradePress=null;return;}
   if(ghost&&!e.metaKey&&(e.key==='Control'||k==='R'||e.code==='Comma'||e.code==='Period')){
@@ -1936,7 +2068,7 @@ addEventListener('keydown', e => {
   if (e.code.startsWith('Digit')) {
     const n = +e.code[5];
     if (e.ctrlKey) { wasm.group_set(n); toast(`Group ${n} set`); }
-    else if (wasm.group_get(n)) { tradeRoute?.cancel();airMission?.cancel();const now = performance.now(); if (lastGroup.n === n && now - lastGroup.t < 400) jumpToSelection(); lastGroup = { n, t: now }; lastUi = 0; }
+    else if (wasm.group_get(n)) { activeTargetOrder()?.cancel();tradeRoute?.cancel();airMission?.cancel();const now = performance.now(); if (lastGroup.n === n && now - lastGroup.t < 400) jumpToSelection(); lastGroup = { n, t: now }; lastUi = 0; }
     e.preventDefault(); return;
   }
   if ((e.ctrlKey || e.metaKey) && k === 'S') { e.preventDefault(); saveGame(); return; }
@@ -1955,14 +2087,20 @@ addEventListener('keydown', e => {
   if(k==='T'&&e.shiftKey&&!e.altKey&&tradeRoute&&wasm.trade_selected_count()){
     e.preventDefault();if(!e.repeat)armTradeRoute();return;
   }
-  if (k===captureOrderText.shortcut && !e.altKey && captureOrder && wasm.capture_selection_count()) {
+  if(e.altKey&&!e.shiftKey){
+    const command=priestOrders.find(row=>e.code===`Key${row.key}`);
+    if(command&&(ui?.sel?.def===85||ui?.sel?.types?.some(type=>type[0]===85))){
+      e.preventDefault();if(!e.repeat)armPriestOrder(command);return;
+    }
+  }
+  if (k===captureOrderText.shortcut && !e.altKey && captureOrder && militaryCaptureCount()) {
     if(!e.shiftKey){e.preventDefault();if(!e.repeat)armCapture();}return;
   }
   const hi = HOT.indexOf(k);
   if (hi >= 0 && ui && ui.act[hi]) { doAct(hi); return; }
   switch (k) {
-    case 'A': captureOrder?.cancel();tradeRoute?.cancel();airMission?.cancel();attackMode = true; ghost = null; canvas.style.cursor = 'crosshair'; break;
-    case 'S': tradeRoute?.cancel();airMission?.cancel();wasm.cmd_stop(); break;
+    case 'A': activeTargetOrder()?.cancel();tradeRoute?.cancel();airMission?.cancel();attackMode = true; ghost = null; canvas.style.cursor = 'crosshair'; break;
+    case 'S': activeTargetOrder()?.cancel();tradeRoute?.cancel();airMission?.cancel();wasm.cmd_stop(); break;
     case 'U': tradeRoute?.cancel();airMission?.cancel();wasm.cmd_unload(); break;
     case 'M': toggleMute(); break;
     case 'Delete': tradeRoute?.cancel();airMission?.cancel();wasm.cmd_delete(); break;

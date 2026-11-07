@@ -1018,6 +1018,7 @@ const ADJUSTMENTS:[(u32,u16);516]=[
    crate::trade30_defs::MERCHANT_SHIP => return index + 2,
    crate::air31_defs::FIGHTER_BOMBER if epoch >= 10 => return index + 3,
    crate::carrier36_defs::CARRIER if epoch >= 10 => return index + 4,
+   crate::priest42_defs::PRIEST => return index + 5,
    _ => {}
   }
  }
@@ -1029,9 +1030,16 @@ const ADJUSTMENTS:[(u32,u16);516]=[
   // Cart uses LandNonCombat and MerchantShip inherits SeaNonCombat.
   // The current roster has no Sniper, the only explicit TradeCart pair override.
   // The current roster also has no Satellite or Balloon, the carrier pair overrides.
-  return [34, 11, 31, 15, 29].get(extra).map(|&rps| CombatProfile { rps, upgrade: 65535 });
+  // No currently bound combat actor has the Priest-specific Sniper adjustment.
+  return [34, 11, 31, 15, 29, 9].get(extra).map(|&rps| CombatProfile { rps, upgrade: 65535 });
  }
  PROFILES.get(index as usize).copied()
+}
+
+#[cfg(feature="ee2-native13")]
+pub(crate) fn land_effect_target(id: DefId, epoch: u8) -> bool {
+    resolve_profile(profile(id, epoch)).is_some_and(|actor| matches!(actor.rps, 1..=3 | 5..=9 | 11..=14 | 34)) ||
+        crate::ee2_units::lookup_class(id, epoch).is_some_and(|row| row.source_unit == "LightArtillery2")
 }
 #[inline] pub fn base_percent(attacker_profile:u16,defender_profile:u16)->Option<u16> {
  let attacker=resolve_profile(attacker_profile)?;let defender=resolve_profile(defender_profile)?;

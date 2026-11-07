@@ -356,7 +356,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    productionStatus.manifestAvailable=true;
   }catch(error){productionStatus.errors.push(error.message);}}
  }
- const presentationEntries=[options.tradePresentation,options.fighterBomberPresentation,options.carrierPresentation].filter(Boolean)
+ const presentationEntries=[options.tradePresentation,options.fighterBomberPresentation,options.carrierPresentation,options.priestPresentation].filter(Boolean)
   .flatMap(presentation=>presentation.modelRows.map(row=>({...row,presentation})));
  const sailStatus={enabled:options.initialSails!==false,manifestAvailable:false,models:0,parts:0,errors:[]},sailErrors=new Set(),sailComposites=new Map();let sailManifest=null,sailShader=null,dynamicSailShader=null;const dynamicBindings=new WeakMap();
  result.initialSails=sailStatus;
@@ -519,6 +519,9 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
  };
  const rallyAttachments=new WeakMap();
  result.rallyAttachment=actor=>rallyAttachments.get(actor);
+ const actorVisuals=options.sourceVisualForModel?new WeakMap():null;
+ result.sourceVisualForActor=actor=>actorVisuals?.get(actor);
+ const sourceVisual=(model,url)=>options.sourceVisualForModel?.(model,url);
  function rallyTag(model){
   const point=options.rallyTargetTags?.[model.source?.sha256]?.point, n=model.normalization;
   if(!point||!n)return null;
@@ -535,7 +538,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     const transform=nativeModelTransform(model,entry.nativeScaleBinding);
     if(!transform.native)throw new Error('Regional capture model has no exact source scale');
     const gpu=await loadParts({...model,parts},false,url,regionalCaptureTeam);
-    record.variant={assetKind:0,parts:gpu,hasClipVisibility:gpu.some(part=>part.clipVisibility),
+    record.variant={assetKind:0,parts:gpu,hasClipVisibility:gpu.some(part=>part.clipVisibility),sourceVisual:sourceVisual(model,url),
      nativeCapture:{clips},nativeScale:transform.scale,originOffset:transform.originOffset,yOffset:0,
      yawOffset:entry.yawOffset??model.yawOffset??0,rallyTag:rallyTag(model)};
     regionalCaptureStatus[lod]++;
@@ -555,7 +558,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     if(!transform.native)throw new Error('Production model has no exact source scale');
     const parts=await loadParts(model,false,url,productionTeam);
     if(!parts.length)throw new Error('Production model has no renderable parts');
-    record.variant={sourceId:entry.id,assetKind:0,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),
+    record.variant={sourceId:entry.id,assetKind:0,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),sourceVisual:sourceVisual(model,url),
      nativeScale:transform.scale,originOffset:transform.originOffset,yOffset:0,farRequested:lod==='far',
      yawOffset:entry.yawOffset??model.yawOffset??0,rallyTag:rallyTag(model),nativeTakeoff:model.nativeTakeoff};
     productionStatus[lod]++;
@@ -583,7 +586,9 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    const yOffset=!transform.native&&sea?-(model.normalization?.offset?.[1]||0)*(model.normalization?.scale||1):0;
    const variant={sourceId:id,assetKind,scaleKey,epoch:entry.epoch??0,until:entry.until,regionalCivilizations:entry.regionalCivilizations,regionalFallback:entry.regionalFallback===true,sourceIdentity:entry.sourceIdentity,region:entry.region,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),nativeAttackClock:entry.nativeAttackClock===true,yOffset,originOffset:transform.originOffset,nativeScale:transform.native?transform.scale:null,yawOffset:entry.yawOffset??model.yawOffset??0,farUrl:entry.lodFarUrl,far:null,farRequested:false,pickBounds:resourceBounds(parts),rallyTag:rallyTag(model),nativeTakeoff:model.nativeTakeoff};
    variant.nativeCapture=model.nativeCapture;
+   variant.sourceVisual=sourceVisual(model,modelUrl);
    if(entry.presentation)variant.presentationEntry=entry;
+   if(entry.priestClips)variant.priestClips=entry.priestClips;
    if(assetKind===0&&id===22&&entry.verified&&model.databaseVisualBinding?.visualDefinition==='LightArtillery1_01'
       &&entry.epoch===0&&entry.until===2&&entry.source?.sha256===model.source?.sha256){
     // Only clips with the original moving-state KF can start its text-key sound.
@@ -688,6 +693,8 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
  };
  result.draw=({data,ranges,vp,epochs,zoom=80,shadow=false,eye=[0,200,0],lighting=defaultLighting,clipPlane=null,capture=false,actorMetadata=null,civilizations=visualCivilizations,stoneThrowerWheels=null})=>{
   const started=performance.now();let calls=0,triangles=0,querying=false;
+  const collectActorVisuals=actorVisuals&&!shadow&&!clipPlane;
+  if(collectActorVisuals)for(const actor of actorMetadata?.actors??[])actorVisuals.delete(actor);
   const previousState=drawState(gl);
   const rememberPicks=!shadow&&!capture;
   if(rememberPicks)result.clearResourcePicks();
@@ -729,9 +736,10 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     const civ=civilizations?.[team],regionalEntry=regionalCaptureRows?.get(`${sourceId}:${epoch}:${civ}`);
     const productionEntry=variant.assetKind===0&&productionRows.get(sourceId)?.find(row=>row.epoch<=epoch&&epoch<row.until&&
      (row.regionalCivilizations.length===14||row.regionalCivilizations.includes(civ)));
-    const exactActor=(regionalEntry||variant.nativeCapture||variant.nativeTakeoff||productionEntry)&&!previewFlags&&actor?.def===sourceId&&actor.team===team
+    const matchingActor=!previewFlags&&actor?.def===sourceId&&actor.team===team
      &&actor.index===i&&actor.hpRatio>0&&actor.renderTime===time&&actor.renderX===data[i*12]&&actor.renderY===data[i*12+1]
      &&actor.renderAltitude===data[i*12+2]&&actor.renderYaw===data[i*12+3];
+    const exactActor=(regionalEntry||variant.nativeCapture||variant.nativeTakeoff||productionEntry||variant.priestClips)&&matchingActor;
     const regional=exactActor&&regionalEntry&&regionalCaptureVariant(regionalEntry,'near');
     const production=productionEntry&&productionVariant(productionEntry,'near');
     if(production)variant=production;
@@ -745,10 +753,11 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
       variant.farRequested=true;const near=variant;
       const presentation=near.presentationEntry;
       const request=presentation?verifiedModelJSON(near.farUrl,presentation.lodFarSha256,'Original Far unit model'):json(near.farUrl);
-      request.then(model=>augmentModel(model,presentation||{id:near.sourceId,assetKind:near.assetKind,epoch:near.epoch},'far')).then(async model=>({model,parts:await loadParts(model,near.assetKind===1,near.farUrl,presentation?.presentation?.teamManifest)})).then(({model,parts})=>{near.far={...near,parts,pickBounds:resourceBounds(parts),sailComposite:model.nativeSailComposite,dynamicSailBinding:null,nativeCapture:model.nativeCapture,rallyTag:rallyTag(model),nativeTakeoff:model.nativeTakeoff};}).catch(e=>{result.errors.push(e.message);console.warn('Original-Fernmodell:',e);});
+      request.then(model=>augmentModel(model,presentation||{id:near.sourceId,assetKind:near.assetKind,epoch:near.epoch},'far')).then(async model=>({model,parts:await loadParts(model,near.assetKind===1,near.farUrl,presentation?.presentation?.teamManifest)})).then(({model,parts})=>{near.far={...near,parts,sourceVisual:sourceVisual(model,near.farUrl),pickBounds:resourceBounds(parts),sailComposite:model.nativeSailComposite,dynamicSailBinding:null,nativeCapture:model.nativeCapture,rallyTag:rallyTag(model),nativeTakeoff:model.nativeTakeoff};}).catch(e=>{result.errors.push(e.message);console.warn('Original-Fernmodell:',e);});
      }
      if(variant.far)variant=variant.far;
     }
+    if(collectActorVisuals&&matchingActor&&variant.sourceVisual)actorVisuals.set(actor,variant.sourceVisual);
     if(variant.rallyTag&&actor&&!shadow&&!clipPlane){
      const scale=variant.nativeScale??data[i*12+8], yaw=actor.renderYaw+variant.yawOffset;
      const [x,y,z]=variant.rallyTag.map((value,index)=>(value+variant.originOffset[index])*scale);
@@ -762,7 +771,15 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
      &&(regional||nativeCapture.contexts.some(context=>epoch>=context.from&&epoch<context.until&&context.ids.includes(actor.def)&&context.civs.includes(civ)))
      ? nativeCapturePose(options.capturePoseForActor(actor),nativeCapture.clips,options.captureAnimationDetail) : null;
     const takeoff=variant.nativeTakeoff&&exactActor?nativeTakeoffPose(variant.nativeTakeoff,options.takeoffElapsedForActor?.(actor)):null;
-    const dedicatedPose=packPose||capturePose||takeoff;
+    const priest=variant.priestClips&&exactActor?options.priestPoseForActor?.(actor):null;
+    const priestClip=variant.priestClips?.[priest?.state];
+    const priestAnimation=priestClip&&variant.parts.find(part=>part.animations?.[priestClip])?.animations?.[priestClip];
+    const priestDuration=Number.isFinite(priest?.duration)&&priest.duration>0?priest.duration:priestAnimation?.duration;
+    const priestPose=priestAnimation&&Number.isFinite(priest.elapsed)&&priest.elapsed>=0
+      ? {clip:priestClip,once:priest.once,phase:priest.once?Math.min(1,priest.elapsed/priestDuration):
+          priest.elapsed/priestDuration%1}
+      : null;
+    const dedicatedPose=packPose||capturePose||takeoff||priestPose;
     const attackElapsed=variant.nativeAttackClock&&requestedClip==='combat'&&actor?.def===variant.sourceId&&actor.team===team
      &&actor.index===i&&actor.renderTime===time&&actor.renderX===data[i*12]&&actor.renderY===data[i*12+1]
      ? options.stoneAttackElapsedForActor?.(actor) : undefined;
@@ -819,7 +836,8 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
      if(part.nativeSail){gl.uniform1f(u.uYOffset,variant.yOffset);gl.uniform3fv(u.uOriginOffset,variant.originOffset);}
      gl.uniform1i(u.uFarmPlotConform,part.farmPlotOffset?1:0);gl.uniform3fv(u.uFarmPlotCenter,part.farmPlotOffset||[0,0,0]);
      const pose=part.pose(clip);gl.uniform1i(u.uAnimated,pose?1:0);
-     gl.uniform1i(u.uAnimationOnce,once&&part.animations?.[clip]?1:0);
+     const samples=part.animations?.[clip];
+     gl.uniform1i(u.uAnimationOnce,samples&&(once||variant.priestClips&&samples.endpointIncluded)?1:0);
      gl.activeTexture(gl.TEXTURE5);gl.bindTexture(gl.TEXTURE_2D_ARRAY,pose?.texture||emptyFrames);
      gl.uniform1i(u.uFrameWidth,pose?.width||1);gl.uniform1i(u.uFrameCount,pose?.count||1);
      const seasonal=part.forSeason(team);

@@ -132,13 +132,39 @@ impl Game {
     }
 
     pub(crate) fn capture_actor_ready(&self, index: usize) -> bool {
-        self.capture_match_enabled() && self.ents[index].hp > 0.0 && native::capture_attacker(self.ents[index].def).is_some()
+        let actor = self.ents[index];
+        self.capture_match_enabled() && actor.hp > 0.0 && native::capture_attacker(actor.def).is_some()
+            && self.has_conversion_reserve(actor.def, self.h(index))
+    }
+
+    fn has_conversion_reserve(&self, def: DefId, handle: u32) -> bool {
+        def != crate::priest42_defs::PRIEST || self.powers.as_ref().and_then(|state| state.actor(handle))
+            .is_some_and(|power| f64::from(power.charge) > 0.01)
+    }
+
+    fn conversion_target_profile(&self, def: DefId) -> Option<CaptureTarget> {
+        native::capture_target(def).or_else(|| self.powers.as_ref().and_then(|_| native::conversion_target(def)))
+    }
+
+    pub(crate) fn capture_compatible(&self, index: usize, target: usize) -> bool {
+        let source = self.ents[index];
+        let victim = self.ents[target];
+        if source.def == crate::priest42_defs::PRIEST { native::conversion_target(victim.def).is_some() }
+        else { native::capture_target(victim.def).is_some() }
+    }
+
+    pub(crate) fn priest_conversion_active(&self, handle: u32) -> bool {
+        self.get(handle).is_some_and(|index| {
+            let actor = self.ents[index];
+            actor.def == crate::priest42_defs::PRIEST && actor.order == O_CAPTURE
+                && self.capture.orders.get(&handle).is_some_and(|order| order.flags & crate::native_attack_clock::IN_ATTACK != 0)
+        })
     }
 
     pub(crate) fn capture_allowed(&self, owner: u8, target: usize) -> bool {
         let actor = self.ents[target];
         if !self.capture_match_enabled() || !actor.alive || actor.built != 1.0 || actor.hp <= 0.0
-            || !self.combat_hostile(owner, actor.team) || !self.can_see(owner, target) || native::capture_target(actor.def).is_none() {
+            || !self.combat_hostile(owner, actor.team) || !self.can_see(owner, target) || self.conversion_target_profile(actor.def).is_none() {
             return false;
         }
         let state = self.capture.targets.get(&self.h(target)).copied().unwrap_or_default();
@@ -150,12 +176,13 @@ impl Game {
     }
 
     pub(crate) fn has_active_capture_glow(&self) -> bool {
-        self.capture.targets.values().any(|target| target.count > 0)
+        self.capture.targets.iter().any(|(&handle, target)| target.count > 0 && self.get(handle)
+            .is_some_and(|index| native::capture_target(self.ents[index].def).is_some()))
     }
 
     pub(crate) fn active_capture_glow(&self, handle: u32) -> bool {
         self.get(handle).is_some_and(|index| {
-            self.capture_progress(index).is_some()
+            native::capture_target(self.ents[index].def).is_some() && self.capture_progress(index).is_some()
                 && (self.display_visibility() == 2 || self.can_see(self.local, index))
         })
     }
@@ -180,7 +207,7 @@ impl Game {
         let key = self.key_for(LAND, object.x, object.y);
         for &index in indices {
             let owner = self.ents[index].team;
-            if !self.capture_actor_ready(index) || !self.capture_allowed(owner, target) { continue; }
+            if !self.capture_actor_ready(index) || !self.capture_allowed(owner, target) || !self.capture_compatible(index, target) { continue; }
             let handle = self.h(index);
             if self.capture.orders.get(&handle).is_some_and(|order| order.target == target_handle && order.team == owner) {
                 continue;
@@ -205,7 +232,7 @@ impl Game {
         let (Some(index), Some(target)) = (self.get(handle), self.get(order.target)) else { return false; };
         let actor = &self.ents[index];
         actor.order == O_CAPTURE && actor.team == order.team && actor.otgt == order.target
-            && self.capture_actor_ready(index) && self.capture_allowed(order.team, target)
+            && self.capture_actor_ready(index) && self.capture_allowed(order.team, target) && self.capture_compatible(index, target)
     }
 
     pub(crate) fn reconcile_capture_orders(&mut self) {
@@ -243,6 +270,7 @@ impl Game {
         if self.capture.empty() { return; }
         let dt = self.sim_step();
         let entities = &self.ents;
+        let powers = self.powers.as_ref();
         let tick = self.tick;
         let living = |handle: u32| {
             let index = (handle & 0xffff) as usize;
@@ -252,9 +280,14 @@ impl Game {
             let Some(actor) = living(handle) else { return false; };
             // OpenEpoch uses generation handles. Adapt the original seat bits
             // and retain the one-second stagger over this map's slot IDs.
-            let phase = (u32::from(actor.team) + 1) << 27 | handle & 0xffff;
+            let serial = powers.and_then(|state| state.actor(handle)).map_or(handle & 0xffff, |actor| actor.serial);
+            let phase = (u32::from(actor.team) + 1) << 27 | serial;
             if target.count == 0 && native::capture_event_due(tick, phase, dt) {
-                target.progress = native::decay_capture_progress(target.progress);
+                target.progress = if native::capture_target(actor.def).is_some() {
+                    native::decay_capture_progress(target.progress)
+                } else {
+                    crate::power42_math::store_toward_zero((f64::from(target.progress) - f64::from(0.1_f32)).max(0.0))
+                };
             }
             target.count > 0 || target.progress > 0.0
         });
@@ -271,7 +304,8 @@ impl Game {
 
     pub(super) fn do_capture(&mut self, index: usize, actor: &mut Ent, def: &Def) -> (Option<f32>, Option<(f32, f32)>) {
         let handle = (u32::from(actor.gen) << 16) | index as u32;
-        let Some(target) = self.get(actor.otgt).filter(|&target| self.capture_allowed(actor.team, target)) else {
+        let Some(target) = self.get(actor.otgt).filter(|&target| self.capture_allowed(actor.team, target)
+            && self.capture_compatible(index, target)) else {
             self.capture.remove_order(handle);
             Self::set_idle(actor);
             return (None, None);
@@ -280,8 +314,10 @@ impl Game {
         let building = self.ents[target];
         let dx = building.x - actor.x;
         let dy = building.y - actor.y;
-        let radius = Self::building_half(&building);
-        let edge = (dx.abs() - radius).max(0.0).hypot((dy.abs() - radius).max(0.0));
+        let edge = if DEFS[building.def as usize].building {
+            let radius = Self::building_half(&building);
+            (dx.abs() - radius).max(0.0).hypot((dy.abs() - radius).max(0.0))
+        } else { (dx.hypot(dy) - DEFS[building.def as usize].rad()).max(0.0) };
         let now = self.sim_elapsed();
         let Some(order) = self.capture.orders.get_mut(&handle) else {
             Self::set_idle(actor);
@@ -300,15 +336,22 @@ impl Game {
             state.count += 1;
             state.owner = actor.team;
         }
-        let round = crate::native_attack_clock::step(now, attack.reload_seconds,
-            attack.impact_seconds, &mut order.next, &mut order.flags);
-        if self.capture_animation_enabled && round == crate::native_attack_clock::Event::Start {
+        let round = if actor.def == crate::priest42_defs::PRIEST {
+            crate::native_attack_clock::step_toward_zero(now, attack.reload_seconds,
+                attack.impact_seconds, &mut order.next, &mut order.flags)
+        } else { crate::native_attack_clock::step(now, attack.reload_seconds,
+            attack.impact_seconds, &mut order.next, &mut order.flags) };
+        if actor.def != crate::priest42_defs::PRIEST && self.capture_animation_enabled && round == crate::native_attack_clock::Event::Start {
             let context = animation::context(actor.def, self.players[actor.team as usize].epoch);
             let previous = order.pose;
             Pose::apply(&mut order.pose, &mut self.source_birth.rng, context, self.tick);
             if order.pose != previous { order.pose_at = now; }
         }
         actor.cd = (order.next - now).max(0.0);
+        if actor.def == crate::priest42_defs::PRIEST && round == crate::native_attack_clock::Event::Start {
+            self.attach_priest_effect(handle, crate::power42::FX_CONVERT);
+            self.ev(33.0, actor.x, actor.y);
+        }
         if round == crate::native_attack_clock::Event::Fire {
             self.capture_impact(index, actor, target, attack);
         }
@@ -316,6 +359,10 @@ impl Game {
     }
 
     fn capture_impact(&mut self, attacker_index: usize, actor: &mut Ent, index: usize, attack: native::CaptureAttacker) {
+        if actor.def == crate::priest42_defs::PRIEST {
+            self.priest_conversion_impact(attacker_index, actor, index, attack);
+            return;
+        }
         let building = self.ents[index];
         let mut profile = native::capture_target(building.def).expect("Admitted capture target");
         let research = [5, 65, 125].iter().filter(|&&id| self.has_research(building.team, id)).count() as f32 * 10.0;
@@ -358,6 +405,45 @@ impl Game {
         let (progress, done) = native::apply_capture_delta(target.progress, native::capture_delta(attack, profile, factors));
         target.progress = progress;
         if done && self.complete_capture(index, actor.team, profile) { Self::set_idle(actor); }
+    }
+
+    fn priest_conversion_impact(&mut self, attacker_index: usize, actor: &mut Ent, index: usize, mut attack: native::CaptureAttacker) {
+        let victim = self.ents[index];
+        let target_handle = self.h(index);
+        let target = native::conversion_target(victim.def).expect("admitted mobile conversion");
+        if self.has_research(actor.team, 23) { attack.time_modifier *= 0.9; }
+        let research = [54, 114, 174].iter().filter(|&&id| self.has_research(victim.team, id)).count() as f32 * 10.0;
+        let regional = if self.civilizations[victim.team as usize] == 6 { 25.0 } else { 0.0 };
+        let target_time = target.time_modifier + target.time_modifier * ((research + regional) * 0.01);
+        let count = self.capture.targets[&target_handle].count;
+        let delta = crate::power42_math::conversion_impact_delta(
+            i32::from(self.players[actor.team as usize].epoch) - i32::from(self.players[victim.team as usize].epoch),
+            count, attack.time_modifier, target_time, 1.0, 1.0, 1.0, attack.reload_seconds);
+        let handle = (u32::from(actor.gen) << 16) | attacker_index as u32;
+        let delta = self.spend_priest_reserve(handle, delta);
+        if delta > 0.0 { self.attach_priest_effect(target_handle, crate::power42::FX_CONVERTED); }
+        let target = self.capture.targets.get_mut(&target_handle).unwrap();
+        let done = f64::from(target.progress) + f64::from(delta) >= f64::from(native::CAPTURE_COMPLETE);
+        target.progress = crate::power42_math::conversion_progress(target.progress, delta);
+        if done && self.replace_converted_actor(index, actor.team, CaptureTribute::None) {
+            self.ev(32.0, victim.x, victim.y);
+            Self::set_idle(actor);
+        } else if self.powers.as_ref().and_then(|state| state.actor(handle))
+            .is_some_and(|power| f64::from(power.charge) <= 0.01) {
+            self.capture.remove_order(handle);
+            Self::set_idle(actor);
+        }
+    }
+
+    pub(crate) fn priest_conversion_elapsed(&self, handle: u32, render_time: f32) -> Option<f32> {
+        let actor = self.ents[self.get(handle)?];
+        let order = self.capture.orders.get(&handle)?;
+        let locked = crate::native_attack_clock::STARTED | crate::native_attack_clock::IN_ATTACK;
+        if actor.def != crate::priest42_defs::PRIEST || actor.order != O_CAPTURE || order.flags & locked != locked { return None; }
+        let (start, end) = if self.source_clock.is_some() { (self.sim_previous_elapsed(), self.sim_elapsed()) }
+            else { (self.sim_elapsed(), (self.tick as f32 + 1.0) * DT) };
+        if !(start..=end).contains(&render_time) { return None; }
+        Some(((f64::from(render_time) + 2.0 - f64::from(order.next)) as f32).clamp(0.0, 2.0))
     }
 
     fn capture_owner_city(&self, building: &Ent) -> bool {
@@ -410,7 +496,7 @@ impl Game {
         if old.hp <= 0.0 || old.stuck == BOARDED { return false; }
         let tribute = match native::capture_target(old.def) {
             Some(profile) => profile.tribute,
-            None if matches!(old.def, 8..=28 | 46 | 57 | 61..=79 | crate::trade30_defs::TRADE_CART) => CaptureTribute::None,
+            None if matches!(old.def, 8..=28 | 46 | 57 | 61..=79 | crate::trade30_defs::TRADE_CART | crate::priest42_defs::PRIEST) => CaptureTribute::None,
             None => return false,
         };
         if !self.replace_converted_actor(index, self.local, tribute) { return false; }
@@ -494,10 +580,14 @@ impl Game {
             let next = f32::from_bits(word(fields, offset + 12)?);
             let flags = u8::try_from(word(fields, offset + 16)?).ok()?;
             offset += 20;
-            let source = self.ents[self.get(handle)?];
-            let victim = self.ents[self.get(target)?];
+            let source_index = self.get(handle)?;
+            let target_index = self.get(target)?;
+            let source = self.ents[source_index];
+            let victim = self.ents[target_index];
             if source.hp <= 0.0 || source.team != team || source.order != O_CAPTURE || source.otgt != target
-                || native::capture_attacker(source.def).is_none() || native::capture_target(victim.def).is_none()
+                || native::capture_attacker(source.def).is_none() || !self.has_conversion_reserve(source.def, handle)
+                || !self.capture_compatible(source_index, target_index)
+                || self.conversion_target_profile(victim.def).is_none()
                 || victim.hp <= 0.0 || victim.built != 1.0 || !self.combat_hostile(team, victim.team)
                 || !next.is_finite() || next < 0.0 || flags & !0x87 != 0
                 || (flags == 0 && next != 0.0) || (flags != 0 && flags & 0x80 == 0)
@@ -530,7 +620,7 @@ impl Game {
             let progress = f32::from_bits(word(fields, offset + 4)?);
             offset += 8;
             let target = self.ents[self.get(handle)?];
-            if target.hp <= 0.0 || target.built != 1.0 || native::capture_target(target.def).is_none()
+            if target.hp <= 0.0 || target.built != 1.0 || self.conversion_target_profile(target.def).is_none()
                 || !(0.0..=1.0).contains(&progress)
                 || state.targets.last_key_value().is_some_and(|(&old, _)| old >= handle) { return None; }
             state.targets.insert(handle, Target { progress, ..Target::default() });

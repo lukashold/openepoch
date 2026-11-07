@@ -5,10 +5,11 @@ use crate::game::Game;
 
 include!("ee2_conquest_rows.rs");
 const _: [(); SAVE_DEFINITION_COUNT] = [(); CONQUEST_CAPABLE.len()];
-const _: [(); DEFS.len()] = [(); CONQUEST_CAPABLE.len() + 5];
+const _: [(); DEFS.len()] = [(); CONQUEST_CAPABLE.len() + 6];
 
 fn capable(def: crate::ids::DefId) -> bool {
-    matches!(def, crate::ee2_regicide::KING | crate::air31_defs::FIGHTER_BOMBER | crate::carrier36_defs::CARRIER) ||
+    matches!(def, crate::ee2_regicide::KING | crate::air31_defs::FIGHTER_BOMBER | crate::carrier36_defs::CARRIER |
+        crate::priest42_defs::PRIEST) ||
         CONQUEST_CAPABLE.get(def as usize).copied().unwrap_or(false)
 }
 
@@ -88,6 +89,15 @@ mod tests {
         step_result(&mut loaded);
         assert!(!loaded.players[0].alive);
         assert_eq!(loaded.winner, 2);
+    }
+
+    #[test]
+    fn a_priest_counts_even_with_no_power_reserve() {
+        let mut game = skirmish();
+        assert!(game.configure_priest_skirmish());
+        clear_seat(&mut game, 0);
+        game.spawn(crate::priest42_defs::PRIEST, 0, 130.5, 130.5);
+        assert!(living_seats(&game)[0]);
     }
 
     #[test]

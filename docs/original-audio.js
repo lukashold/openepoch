@@ -7,6 +7,10 @@ import {createOriginalAmbientPlayback} from './original-ambient.js?v=ambient39';
 // contains no recordings and remains usable when local-original is absent.
 const DEFAULT_BASE=new URL('./local-original/audio/',import.meta.url);
 const STONE_THROWER_LAUNCH=26;
+const PRIEST_CUES=Object.freeze({
+  32:{file:'Building_select.mp3',sha256:'e25cb0a14c057f20d40fd32566a481927b8751f191b19622beb169cd67792646',volume:1,maximumInstances:1},
+  33:{file:'priest/fx_priest_convert.mp3',sha256:'89e788acae48316721f25c00a602c13616551a387fbc32638259e4b8259e7ea8',volume:.7,maximumInstances:4},
+});
 
 export function createOriginalAudio(options={}) {
   const enabled=options.enabled ?? (typeof window!=='undefined' && new URLSearchParams(window.location?.search||'').get('rules')==='ee2');
@@ -16,6 +20,7 @@ export function createOriginalAudio(options={}) {
   const buffers=new Map(),pending=new Map(),failed=new Set(),live=new Set(),counters=new Map();
   const takeoffBuffers=new Map(),takeoffLoads=new Map();
   let takeoffEvents=new Map();
+  let priestCues=false;
   const wheelLoops=new Map();
   let wheelSession=null;
   let musicSource=null,musicBuffer=null,musicFile=null,musicOffset=0,musicStarted=0,musicIndex=0,musicGeneration=0,musicPendingFile=null;
@@ -123,6 +128,33 @@ export function createOriginalAudio(options={}) {
   function bindTakeoffEvents(events){
     takeoffEvents=events??new Map();
     for(const event of takeoffEvents.values())loadVerifiedEffect(event);
+  }
+  function preloadPriestCues(){
+    if(!enabled||!priestCues)return;
+    for(const cue of Object.values(PRIEST_CUES))loadVerifiedEffect({...cue,url:new URL(cue.file,base)});
+  }
+  function bindPriestCues(active){
+    priestCues=active;
+    preloadPriestCues();
+  }
+  function playPriestCue(kind,volume,pan){
+    const cue=priestCues&&PRIEST_CUES[kind];
+    if(!cue||!ctx||ctx.state!=='running'||!originalOneShotAudible(volume))return false;
+    const buffer=takeoffBuffers.get(cue.sha256);
+    if(!buffer)return false;
+    const now=ctx.currentTime;
+    const matching=[...live].filter(source=>source.originalEffect===kind);
+    if(matching.length>=cue.maximumInstances){
+      let oldest;
+      for(const source of matching){
+        if(source.originalStartedAt<now&&(!oldest||source.originalStartedAt<oldest.originalStartedAt))oldest=source;
+      }
+      if(!oldest)return true;
+      stop(oldest);
+    }
+    const source=start(buffer,volume*cue.volume,pan,'effect');
+    if(source){source.originalEffect=kind;source.originalStartedAt=now;stats.effectPlays++;}
+    return !!source;
   }
   async function playInterfaceCue(event){
     if(!enabled||muted||!Number.isFinite(event?.gain))return false;
@@ -239,6 +271,7 @@ export function createOriginalAudio(options={}) {
   async function prepare(context,destination,musicDestination=destination) {
     if(!enabled||typeof context?.decodeAudioData!=='function')return false;
     ctx=context;soundBus=destination;musicBus=musicDestination;
+    preloadPriestCues();
     for(const event of takeoffEvents.values())loadVerifiedEffect(event);
     if(loading)return loading;
     const readManifest=async file=>{
@@ -353,6 +386,7 @@ export function createOriginalAudio(options={}) {
   }
   return {
     prepare,acknowledge,citizenDeath,effect,stoneThrowerLaunch,music,menuMusic,setDefinitionBindings,updateStoneThrowerWheels,stopStoneThrowerWheels,
+    bindPriestCues,playPriestCue,
     bindTakeoffEvents,playTakeoff,stopTakeoff,playInterfaceCue,frameAmbient,resetWorldAmbience,
     setAmbientPresentation(presentation){resetWorldAmbience();nativeAmbient=null;ambientPresentation=presentation;},
     role:(id,epoch)=>typed.role(id,epoch),

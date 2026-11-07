@@ -48,7 +48,10 @@ impl Game {
         {cost.map(|v|(v as f32*m).round().clamp(0.0,65535.0) as u16)}
     }
     pub fn cargo_capacity(&self, team: u8, def:DefId) -> usize {
-        if DEFS[def as usize].has(F_RESEARCH|F_EXTRACT|F_DROPOFF|F_GARRISON) {
+        let internal = DEFS[def as usize].has(F_RESEARCH|F_EXTRACT|F_DROPOFF|F_GARRISON);
+        #[cfg(feature = "ee2-native13")]
+        let internal = internal || self.powers.is_some() && def == TEMPLE;
+        if internal {
             self.modifiers[team as usize][def as usize][11].round().clamp(0.0, CARGO_MAX as f32) as usize
         } else { CARGO_MAX }
     }

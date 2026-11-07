@@ -48,6 +48,9 @@ pub(crate) struct CaptureFactors {
 /// LightInfantry. The current roster's linked epoch upgrades retain these
 /// fields. Research modifiers, if present, are supplied by the caller.
 pub(crate) fn capture_attacker(def_id: DefId) -> Option<CaptureAttacker> {
+    if def_id == crate::priest42_defs::PRIEST {
+        return Some(CaptureAttacker { range: 8.0, reload_seconds: 2.0, impact_seconds: 0.5, time_modifier: 5.0 });
+    }
     let range = match def_id {
         9 | 13 | 15..=17 => 0.2,
         10..=12 | 14 => 2.0,
@@ -59,6 +62,18 @@ pub(crate) fn capture_attacker(def_id: DefId) -> Option<CaptureAttacker> {
         impact_seconds: 1.0,
         time_modifier: 3.0,
     })
+}
+
+/// The active Convertable descriptors with capture=false. The empty TradeCart
+/// descriptor is normalized to one; ordinary Human/Mounted/Artillery uses three.
+pub(crate) fn conversion_target(def_id: DefId) -> Option<CaptureTarget> {
+    let time_modifier = match def_id {
+        crate::trade30_defs::TRADE_CART => 1.0,
+        8..=28 | 46 | 57 | 61..=79 | crate::priest42_defs::PRIEST => 3.0,
+        _ => return None,
+    };
+    Some(CaptureTarget { time_modifier, garrison_time_per_unit: 1.0, garrison_damage_per_unit: 0.0,
+        damage_rate: 0.0, has_garrison: false, tribute: CaptureTribute::None })
 }
 
 /// All 19 effective Convertable capture=1 rows in the civ8 registry.

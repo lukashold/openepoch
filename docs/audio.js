@@ -1,6 +1,6 @@
 // The EE2 profile uses locally extracted original recordings when available.
 // Procedural sounds and local speech remain the fallback for the standalone game.
-import { createOriginalAudio } from './original-audio.js?v=ambient39';
+import { createOriginalAudio } from './original-audio.js?v=native45';
 import {ORIGINAL_AUDIO_DEFAULTS,originalAudioLevel,originalAudioGain} from './original-audio-levels.js?v=native38audio';
 import {originalOneShotAudible,originalLoopAudible,originalSpatialMix} from './original-spatial-audio.js?v=native39audio';
 import {createPresentationRandom} from './source-music-controller.js?v=regional11';
@@ -225,6 +225,9 @@ export const STONE_THROWER_LAUNCH_CUE = 26;
 export const FULLMAP_CUE = 27;
 export const CAPTURE_COMPLETE_CUE = 30;
 export const CONVERT_CUE = 31;
+export const PRIEST_CONVERT_COMPLETE_CUE = 32;
+export const PRIEST_CONVERT_CAST_CUE = 33;
+export const configurePriestCues=active=>originals.bindPriestCues(active);
 const WARPLAN_CUES = Object.freeze({ui_warplans_path_addPoint:28,ui_warplans_path_finish:29});
 
 export function playWorld(kind,x,y,altitude,view,citizen) {
@@ -235,6 +238,7 @@ export function playWorld(kind,x,y,altitude,view,citizen) {
   if (ctx?.state==='running') {
     if (kind===STONE_THROWER_LAUNCH_CUE && originals.stoneThrowerLaunch(volume,pan)) return;
     if (kind===CONVERT_CUE && audible && originals.effect(12,volume,pan)) return;
+    if ((kind===PRIEST_CONVERT_COMPLETE_CUE||kind===PRIEST_CONVERT_CAST_CUE) && originals.playPriestCue(kind,volume,pan)) return;
     if (audible && citizen && originals.citizenDeath(citizen,volume,pan)) return;
   }
   play(citizen ? 10 : kind===CONVERT_CUE ? 12 : kind,volume,pan);
@@ -245,7 +249,8 @@ export function playWarplanCue(name) {
   if (!originals.effect(kind)) play(kind);
 }
 export function play(kind, vol = 1, pan = 0) {
-  const fallbackKind = kind === STONE_THROWER_LAUNCH_CUE ? 3 : kind>=FULLMAP_CUE && kind<=CAPTURE_COMPLETE_CUE ? 20 : kind;
+  const fallbackKind = kind===PRIEST_CONVERT_CAST_CUE ? 3 : kind===PRIEST_CONVERT_COMPLETE_CUE ? 20
+    : kind === STONE_THROWER_LAUNCH_CUE ? 3 : kind>=FULLMAP_CUE && kind<=CAPTURE_COMPLETE_CUE ? 20 : kind;
   const s = SOUNDS[fallbackKind];
   if (muted || !s || vol < 0.02 || !ensure() || ctx.state !== 'running') return;
   const now = ctx.currentTime;
