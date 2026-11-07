@@ -8,6 +8,7 @@ const IMPERIAL: DefId = END - 1;
 fn advancement(epoch: u8, target: DefId) -> Option<f32> {
     match (epoch, target) {
         (0..=4, TC) => Some(0.5),
+        (0..=4, definition) if crate::wonders61::is_wonder(definition) => Some(0.5),
         (5..=9, 1 | 3..=7 | 47..=52 | 56 | 59 | 60) => Some(1.0),
         _ => None,
     }
@@ -60,6 +61,7 @@ impl Game {
         if new_progress == 1.0 {
             if site.def == TC { self.name_completed_city(target, self.ents[target]); }
             if site.team == self.local { self.ev(14.0, site.x, site.y); }
+            self.wonder_notice(crate::wonders61::Notice::Completed, site.def, site.team);
         }
     }
 }

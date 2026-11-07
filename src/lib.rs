@@ -36,6 +36,10 @@ mod spy46_defs;
 #[cfg(feature = "ee2-native13")]
 mod leader58_defs;
 #[cfg(feature = "ee2-native13")]
+mod wonders61;
+#[cfg(feature = "ee2-native13")]
+mod wonder_open_sides61;
+#[cfg(feature = "ee2-native13")]
 mod power42;
 #[cfg(feature = "ee2-native13")]
 mod power42_math;
@@ -914,7 +918,7 @@ fn pick_where(g: &Game, x: f32, y: f32, allowed: impl Fn(usize, &Ent) -> bool) -
         let d = &DEFS[e.def as usize];
         let (ex, ey) = seen_ent(g, i, e, d);
         let (dx, dy) = ((ex - x).abs(), (ey - y).abs());
-        let hit = if d.building { dx.max(dy) <= Game::building_half(e) + 0.2 } else { dx * dx + dy * dy <= (d.rad() + 0.45).powi(2) };
+        let hit = if d.building { Game::building_within(e, dx, dy, 0.2) } else { dx * dx + dy * dy <= (d.rad() + 0.45).powi(2) };
         // units win over the building they stand next to; aircraft win over everything
         let score = dx * dx + dy * dy + if d.building { 100.0 } else if d.dom == AIR { -50.0 } else { 0.0 };
         if hit && score < bd {
@@ -1639,11 +1643,18 @@ pub extern "C" fn place_error_rotated(def:u32,tx:i32,ty:i32,turn:u32)->u32{
 }
 #[no_mangle]
 pub extern "C" fn footprint_size(def:u32,turn:u32)->u32{if def>=DEFS.len()as u32{return 0;}Game::footprint_side(def as DefId,turn)as u32}
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn wonder_footprint(def: u32, turn: u32) -> u32 {
+    if def >= DEFS.len() as u32 || !wonders61::is_wonder(def as DefId) { return 0; }
+    let (width, height) = Game::footprint_axes(def as DefId, turn);
+    width as u32 | (height as u32) << 16
+}
 #[no_mangle]
 pub extern "C" fn dock_orientation(tx:i32,ty:i32)->u32{g().dock_auto_turn(tx,ty)}
 #[no_mangle]
 pub extern "C" fn placement_time_multiplier(def:u32,tx:i32,ty:i32,turn:u32)->f32{
-    if def>=DEFS.len()as u32{return 0.0;}let side=Game::footprint_side(def as DefId,turn);if side==0||tx<0||ty<0||tx>N as i32-side||ty>N as i32-side{return 0.0;}let game=g();if def==TC as u32{return 1.0;}let owner=game.towner[game.map.terr[(ty+side/2)as usize*N+(tx+side/2)as usize]as usize];if owner==game.local{1.0}else if owner==255{2.0}else{3.0}
+    if def>=DEFS.len()as u32{return 0.0;}let (width,height)=Game::footprint_axes(def as DefId,turn);if width==0||tx<0||ty<0||tx>N as i32-width||ty>N as i32-height{return 0.0;}let game=g();if def==TC as u32{return 1.0;}let owner=game.towner[game.map.terr[(ty+height/2)as usize*N+(tx+width/2)as usize]as usize];if owner==game.local{1.0}else if owner==255{2.0}else{3.0}
 }
 #[no_mangle]
 pub extern "C" fn cmd_place(def:u32,tx:i32,ty:i32)->u32{cmd_place_rotated(def,tx,ty,0)}

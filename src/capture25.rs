@@ -169,6 +169,8 @@ impl Game {
             || !self.combat_hostile(owner, actor.team) || !self.can_see(owner, target) || self.conversion_target_profile(actor.def).is_none() {
             return false;
         }
+        if native::capture_target(actor.def).is_some()
+            && self.owns_completed_wonder(actor.team, crate::wonders61::SPHINX) { return false; }
         let state = self.capture.targets.get(&self.h(target)).copied().unwrap_or_default();
         native::can_join_capture(actor.hp, state.count, Some(state.owner).filter(|&seat| seat != NO_OWNER), owner)
     }
@@ -433,11 +435,36 @@ impl Game {
         target.progress = crate::power42_math::conversion_progress(target.progress, delta);
         if done && self.replace_converted_actor(index, actor.team, CaptureTribute::None) {
             self.ev(32.0, victim.x, victim.y);
+            self.proselytize_near_conversion(actor.team, victim.x, victim.y);
             Self::set_idle(actor);
         } else if self.powers.as_ref().and_then(|state| state.actor(handle))
             .is_some_and(|power| f64::from(power.charge) <= 0.01) {
             self.capture.remove_order(handle);
             Self::set_idle(actor);
+        }
+    }
+
+    fn proselytize_near_conversion(&mut self, owner: u8, x: f32, y: f32) {
+        let effects = self.count_completed_wonders(owner, crate::wonders61::GREAT_PYRAMID);
+        for _ in 0..effects {
+            // 00803210 rebuilds the candidate vector for every application.
+            // This uses the current world grid traversal as the spatial adapter.
+            let candidates: Vec<_> = self.grid.items.iter().copied().filter_map(|slot| {
+                let index = slot as usize;
+                let e = &self.ents[index];
+                let dx = f64::from(e.x) - f64::from(x);
+                let dy = f64::from(e.y) - f64::from(y);
+                (e.alive && e.hp > 0.0 && e.team != owner && e.stuck != BOARDED
+                    && native::conversion_target(e.def).is_some() && dx * dx + dy * dy <= 9.0).then(|| self.h(index))
+            }).collect();
+            for handle in candidates {
+                let Some(index) = self.get(handle) else { continue; };
+                // The original consumes the roll before it checks NoConversion.
+                if crate::wonders61::proselytizing_roll(self.source_birth.rng.next_word15())
+                    && !self.crown_prevents_conversion(self.ents[index].team) {
+                    self.replace_converted_actor(index, owner, CaptureTribute::None);
+                }
+            }
         }
     }
 
@@ -465,12 +492,15 @@ impl Game {
         let same_gift = self.capture.gifts.get(&handle).is_some_and(|gift|
             gift.previous == recipient && gift.active(self.tick, self.source_clock));
         if same_gift { return; }
-        let (mut rate, slots): (f32, &[usize]) = match tribute {
+        let (base, slots): (f32, &[usize]) = match tribute {
             CaptureTribute::Natural(rate) => (rate, &NATURAL_ORDER),
             CaptureTribute::Gold(rate) => (rate, &[4]),
             CaptureTribute::Tech(rate) => (rate, &[9]),
             CaptureTribute::None => return,
         };
+        let modified = f64::from(self.wonder_capture_yield(building.team)) - 1.0 + f64::from(base);
+        if modified <= f64::from(0.001_f32) { return; }
+        let mut rate = modified as f32;
         let area = self.map.terr[tile_of(building.x, building.y)] as usize;
         if self.towner[area] == building.team { rate += 0.05; }
         if self.capture_owner_city(building) { rate += 0.05; }
@@ -494,6 +524,7 @@ impl Game {
         let old = self.ents[index];
         if !self.replace_converted_actor(index, owner, profile.tribute) { return false; }
         if old.team == self.local || owner == self.local { self.ev(30.0, old.x, old.y); }
+        self.wonder_notice(crate::wonders61::Notice::Captured, old.def, owner);
         true
     }
 
@@ -697,6 +728,37 @@ mod tests {
     use super::*;
     use crate::cmd::{C_CAPTURE, C_STOP};
 
+    #[test]
+    fn pyramid_rolls_once_per_eligible_neighbor_after_conversion() {
+        use crate::{native_rng9::NativeRng, wonders61::{GREAT_PYRAMID, proselytizing_roll}};
+        assert!(proselytizing_roll(1638));
+        assert!(!proselytizing_roll(1639));
+        let mut game = Game::new(7, 0, 0, 1, 0);
+        assert!(game.configure_priest_skirmish());
+        let center = [120.0, 120.0];
+        let first = game.spawn(9, 1, 120.0, 120.5);
+        let second = game.spawn(9, 1, 121.0, 120.0);
+        let outside = game.spawn(9, 1, 120.0, 124.0);
+        let [first, second, outside] = [game.h(first), game.h(second), game.h(outside)];
+        game.build_grid();
+        let seed = (0..100_000).find(|&seed| {
+            let mut rng = NativeRng::from_state(seed);
+            proselytizing_roll(rng.next_word15()) && !proselytizing_roll(rng.next_word15())
+        }).unwrap();
+        game.source_birth.rng = NativeRng::from_state(seed);
+        game.proselytize_near_conversion(0, center[0], center[1]);
+        assert_eq!(game.source_birth.rng.state(), seed);
+        game.spawn(GREAT_PYRAMID, 0, 85.0, 85.0);
+        let mut expected = NativeRng::from_state(seed);
+        expected.next_word15();
+        expected.next_word15();
+        game.proselytize_near_conversion(0, center[0], center[1]);
+        assert_eq!(game.source_birth.rng.state(), expected.state());
+        assert!(game.get(first).is_none());
+        assert!(game.get(second).is_some());
+        assert!(game.get(outside).is_some());
+    }
+
     fn scenario(definition: DefId) -> (Game, usize, usize) {
         scenario_with_seats(definition, 2)
     }
@@ -761,9 +823,9 @@ mod tests {
         assert_eq!(game.get(handle), None);
         let new = game.ents[..game.high].iter().find(|actor| actor.alive && actor.def == HOUSE && actor.x == 226.0).unwrap();
         assert_eq!((new.team, new.built, new.rot), (0, 0.4, core::f32::consts::FRAC_PI_4));
-        let (x, y, side) = Game::building_bounds(new);
-        for j in y..y + side {
-            for i in x..x + side { assert!(game.map.blocked[j as usize * N + i as usize]); }
+        let (x, y, width, height) = Game::building_bounds(new);
+        for j in y..y + height {
+            for i in x..x + width { assert!(game.map.blocked[j as usize * N + i as usize]); }
         }
         for definition in [FARM, 29, crate::trade30_defs::MERCHANT_SHIP, crate::air31_defs::FIGHTER_BOMBER] {
             let index = game.spawn(definition, 1, 228.0, 216.0);

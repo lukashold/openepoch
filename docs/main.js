@@ -20,7 +20,8 @@ import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regi
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native6';
-import {loadOriginalModels} from './original-renderer.js?v=native60';
+import {loadOriginalModels} from './original-renderer.js?v=native61';
+import {loadWonderPresentation} from './original-wonders.js?v=native61';
 import {loadCrownLeaderPresentation} from './original-crown-leaders.js?v=native60';
 import {loadUngarrisonArt,ungarrisonIcon} from './original-ungarrison.js?v=native60';
 import {loadLeaderCursors} from './original-leader-cursors.js?v=native60';
@@ -37,7 +38,7 @@ import {mountOriginalGameSettings} from './original-game-settings.js?v=native38a
 import {createRenderActorMetadata} from './render-actor-metadata.js?v=pack8';
 import {createPackRenderMetadata} from './original-pack-states.js?v=pack8';
 import {createFullmapPipBridge} from './original-fullmap-pip-bridge.js';
-import {loadOriginalGround,sampleGroundHeight} from './original-ground.js?v=native-spy-powers';
+import {loadOriginalGround,sampleGroundHeight} from './original-ground.js?v=native61';
 import {createCaptureGlow} from './capture-glow.js?v=native-spy-powers';
 import {loadOriginalTerrain} from './original-terrain.js?v=skirmish-climates';
 import {loadOriginalWater} from './original-water.js?v=water-farm3';
@@ -45,7 +46,7 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=clock38';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native60';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native61';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
@@ -54,7 +55,7 @@ import {mountSourceRosterLobby} from './source-network-lobby.js?v=native58';
 import {applyNetworkCheckpoint} from './source-network-resume.js?v=native58';
 import {createFullscreenController} from './fullscreen.js?v=building2';
 import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native17';
-import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=native39ceasefire';
+import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=native61';
 import {updateOriginalCamera,originalCameraRay,originalFractionForZoom,normalizeOriginalHeading,rotateOriginalCameraHeading} from './original-camera.js?v=heading2';
 import {createFullmap} from './fullmap.js?v=native24';
 import {createPlayerFlare} from './player-flare.js?v=native24';
@@ -542,7 +543,7 @@ const hasTakeoffState=typeof wasm.air_takeoff_start_tick==='function';
 const leaderPresentation=await loadCrownLeaderPresentation({
   enabled:originalEnabled&&rulesProfile.ruleset===2&&typeof wasm.configure_crown_leaders==='function',
 });
-const [tradePresentation,tradeRouteArt,tradeWaitArt,fighterBomberPresentation,carrierPresentation,priestPresentation,spyPresentation,airMissionArt,airMissionFlag,airTakeoff,aircraftFlightAudio]=await Promise.all([
+const [tradePresentation,tradeRouteArt,tradeWaitArt,fighterBomberPresentation,carrierPresentation,priestPresentation,spyPresentation,airMissionArt,airMissionFlag,airTakeoff,aircraftFlightAudio,wonderPresentation]=await Promise.all([
   loadTradePresentation({enabled:originalEnabled&&rulesProfile.ruleset===2&&renderNamespace.definitionCount>82}),
   loadTradeRouteArt({enabled:originalEnabled&&tradeAvailable}),
   loadTradeWaitArt({enabled:originalEnabled&&tradeAvailable&&typeof wasm.trade_wait_active==='function'}),
@@ -554,6 +555,7 @@ const [tradePresentation,tradeRouteArt,tradeWaitArt,fighterBomberPresentation,ca
   loadAirMissionFlag(gl,{enabled:originalEnabled&&airMissionAvailable&&typeof wasm.air_mission_visual_routes==='function'}),
   loadAirTakeoff({enabled:originalEnabled&&airMissionAvailable&&hasTakeoffState}),
   loadAirFlightAudio({enabled:originalEnabled&&airMissionAvailable&&wasm.air_audio_version?.()===1}),
+  loadWonderPresentation({enabled:originalEnabled&&rulesProfile.ruleset===2&&renderNamespace.definitionCount>=102}),
 ]);
 const airFlightAudio=addCarrierFlightAudio(aircraftFlightAudio,wasm.air_audio_version?.()===1?carrierPresentation?.movementAudio:null);
 const takeoffSample={tick:0,alpha:0,now:null};
@@ -616,7 +618,7 @@ const spyPoseForActor=spyPresentation&&typeof wasm.spy_visual_state==='function'
   }:null;
 const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,total)=>{
   $('play').textContent=`Originalgrafiken laden · ${Math.round(loaded/total*100)} %`;
-},{assetMapping,climateProfiles,capturePoseForActor,tradePresentation,fighterBomberPresentation,carrierPresentation,priestPresentation,priestPoseForActor,spyPresentation,spyPoseForActor,leaderPresentation,
+},{assetMapping,climateProfiles,capturePoseForActor,tradePresentation,fighterBomberPresentation,carrierPresentation,priestPresentation,priestPoseForActor,spyPresentation,spyPoseForActor,leaderPresentation,wonderPresentation,
   spyShimmerForActor:spyShimmer?actor=>spyShimmer.sample(actor,wasm.spy_disguised(actor.handle)===1):null,
   sourceVisualForModel:blessGround?.modelVisual,priestParticleScales:!!priestParticles,rallyTargetTags:airMissionFlag?.targetTags,
   airTakeoff,takeoffElapsedForActor:airTakeoff?actor=>{
@@ -633,7 +635,7 @@ if(sourceSails?.metrics.error)console.warn('Source sails:',sourceSails.metrics.e
 const unitPresentations=[tradePresentation,fighterBomberPresentation,carrierPresentation,priestPresentation,spyPresentation,leaderPresentation].filter(Boolean);
 sfx.configureOriginalDefinitions({wasm,bindings:[...(originalModels.manifest?.models||[]),...(originalModels.additionalRegionalAudio||[]),...unitPresentations.flatMap(source=>source.audioModelRows)],additionalFamilyManifest:unitPresentations.map(source=>source.audioManifest),citizenPresentation,regionalMusic:rulesProfile.ruleset===2,...(rulesProfile.ruleset===2?{familyManifestURL:'native-families-civ8-regicide.json',playbackManifestURL:'manifest-stone-thrower-up.json'}:{})});
 const captureGlow = originalEnabled && typeof wasm.active_capture_glow === 'function' ? createCaptureGlow() : null;
-const originalGround=await loadOriginalGround(gl,originalEnabled,{assetMapping,captureGlow:!!captureGlow,blessGlow:!!blessGround,
+const originalGround=await loadOriginalGround(gl,originalEnabled,{assetMapping,captureGlow:!!captureGlow,blessGlow:!!blessGround,wonderPresentation,
   extractionDecal:spyArt?.extractionVisuals.decal.url,mixedGlow:spyAdvancedArt?.mixedGlow,...(rulesProfile.ruleset===2
   ?{manifestURL:'./local-original/regional-temple/ground-decals.json'}:{})});
 const originalTerrain=await loadOriginalTerrain(gl,originalEnabled,TEAM,{climateProfiles});
@@ -804,30 +806,38 @@ function cancelBuilding(){ghost=null;placementKey='';buildingControls.hide();del
 function rotateBuilding(direction,fine=false){
   if(!ghost)return;
   if(!wasm.cmd_place_rotated)return toast('Lade die aktuelle Spielfassung neu, um Gebäude zu drehen.');
-  ghost.turn=nextBuildingTurn(ghost.turn,direction,fine);ghost.manual=true;placementKey='';updatePlacement();
+  const isWonder=Boolean(wasm.wonder_footprint?.(ghost.id,0));
+  ghost.turn=nextBuildingTurn(ghost.turn,direction,fine&&!isWonder);ghost.manual=true;placementKey='';updatePlacement();
 }
 function footprintSize(){return ghost?(wasm.footprint_size?.(ghost.id,ghost.turn)||ghost.size):0;}
+function footprintAxes(){
+  const packed=ghost&&wasm.wonder_footprint?.(ghost.id,ghost.turn);
+  if(packed)return [packed&0xffff,packed>>>16];
+  const size=footprintSize();
+  return [size,size];
+}
 function ghostTile() {
   let [wx, wy] = toWorld(mouse.x, mouse.y);
-  let size=footprintSize();
   if(ghost.id===5&&!ghost.manual&&wasm.dock_orientation){
-    size=wasm.footprint_size(ghost.id,0)||ghost.size;ghost.turn=0;
+    const size=wasm.footprint_size(ghost.id,0)||ghost.size;ghost.turn=0;
     const tx=Math.round(wx-size/2),ty=Math.round(wy-size/2),turn=wasm.dock_orientation(tx,ty);
     if(turn<8)ghost.turn=turn;
   }
+  const [width,height]=footprintAxes();
   if(referenceMode&&(ghost.id===53||ghost.id===54)){
     const direction=ray(mouse.x,mouse.y),distance=(groundAt(wx,wy)-view.eye[1])/direction[1];
     const resource=originalModels.pickResource(view.eye,direction,distance+.02);
-    if(resource)return [Math.floor(resource[0])-Math.floor(size/2),Math.floor(resource[1])-Math.floor(size/2)];
+    if(resource)return [Math.floor(resource[0])-Math.floor(width/2),Math.floor(resource[1])-Math.floor(height/2)];
   }
-  return [Math.round(wx - size / 2), Math.round(wy - size / 2)];
+  return [Math.round(wx - width / 2), Math.round(wy - height / 2)];
 }
 function updatePlacement(now=performance.now()){
   if(!ghost){buildingControls.hide();placementKey='';delete canvas.dataset.placement;return;}
   const [tx,ty]=ghostTile(),key=[ghost.id,ghost.turn,tx,ty,ui?.sel?.n,ui?.sel?.def,Math.floor(now/250)].join(':');
   if(key===placementKey)return;placementKey=key;
   const error=wasm.place_error_rotated?wasm.place_error_rotated(ghost.id,tx,ty,ghost.turn):wasm.place_error(ghost.id,tx,ty);
-  const area=wasm.territory_at(tx+footprintSize()/2,ty+footprintSize()/2),owner=wasm.territory_owner(area);
+  const [width,height]=footprintAxes();
+  const area=wasm.territory_at(tx+width/2,ty+height/2),owner=wasm.territory_owner(area);
   const notes=[];
   if(error===0&&ghost.id!==0&&owner===255)notes.push('Neutrales Land: doppelte Bauzeit');
   if(referenceMode&&error===0&&(ghost.id===0||ghost.id===56)&&owner===255){
@@ -835,8 +845,8 @@ function updatePlacement(now=performance.now()){
     if(info)notes.push(territoryClaimMessage(info,{building:true}));
   }
   const note=notes.join(' · ');
-  buildingControls.update({name:ghost.name,id:ghost.id,turn:ghost.turn,error,size:footprintSize(),manual:ghost.manual,note});
-  if(qaMode)canvas.dataset.placement=JSON.stringify({id:ghost.id,turn:ghost.turn,tx,ty,error,size:footprintSize()});
+  buildingControls.update({name:ghost.name,id:ghost.id,turn:ghost.turn,error,width,height,manual:ghost.manual,note});
+  if(qaMode)canvas.dataset.placement=JSON.stringify({id:ghost.id,turn:ghost.turn,tx,ty,error,size:footprintSize(),width,height});
 }
 
 const sourceResearch=originalResearchActions(wasm);
@@ -1371,6 +1381,12 @@ function advance(dt, now) {
         toast('Sie haben einen Anführer gewonnen.');
         continue;
       }
+      if(kind>=36&&kind<=39){
+        const name=wonderPresentation.nameFor(y)||'ein Weltwunder',player=`Spieler ${x+1}`;
+        toast([`${player} beginnt den Bau von ${name}.`,`${player} stellt ${name} fertig.`,
+          `${name} wurde zerstört.`,`${player} übernimmt ${name}.`][kind-36]);
+        continue;
+      }
       const citizen = decodeCitizenDeathCue(kind);
       if (kind >= 12 && !citizen && kind !== sfx.STONE_THROWER_LAUNCH_CUE && kind !== sfx.CAPTURE_COMPLETE_CUE &&
           kind !== sfx.CONVERT_CUE && kind !== sfx.PRIEST_CONVERT_COMPLETE_CUE && kind !== sfx.PRIEST_CONVERT_CAST_CUE) {
@@ -1815,6 +1831,10 @@ function frame(now) {
 const HOT = ['Q', 'W', 'E', 'R', 'T', 'Z', 'X', 'C', 'V', 'B'];
 const unitPresentation=id=>id>=87&&id<=89?leaderPresentation:id===86?spyPresentation:id===85?priestPresentation:id===84?carrierPresentation:id===83?fighterBomberPresentation:tradePresentation;
 function icon(id, px,context=undefined) {
+  const wonderUrl=wonderPresentation.iconFor(id);
+  if(wonderUrl){
+    const img=document.createElement('img');img.src=wonderUrl;img.alt='';img.width=img.height=px;img.style.objectFit='contain';return img;
+  }
   const c = document.createElement('canvas'); c.width = c.height = px;
   const regional = ui && rulesProfile.ruleset === 2
     ? regionalIcons.get(id)?.icon(ui.epoch, wasm.player_civilization(ui.local) >>> 0) : undefined;
@@ -1830,7 +1850,7 @@ function icon(id, px,context=undefined) {
 const glyph = (ch, px) => { const d = document.createElement('div'); d.style.cssText = `font-size:${px * 0.66}px;height:${px}px;line-height:${px}px`; d.textContent = ch; return d; };
 const GLYPH = { e: '⬆', r: '⚗', i: '⬆', u: '⚓', p:'⇄' };
 const LABELS = {'Worker':'Bürger','Town Center':'Stadtzentrum','House':'Haus','Farm':'Bauernhof','Barracks':'Kaserne','Workshop':'Werkstatt','Dock':'Hafen','Airfield':'Flugplatz','Watchtower':'Wachturm','Next Epoch':'Nächste Epoche','University':'Universität','Mill':'Mühle','Stable':'Stall','Market':'Markt','Temple':'Tempel','Warehouse':'Lagerhaus','Oil Rig':'Bohrturm','Uranium Mine':'Uranmine','HercFacility':'HERC-Fabrik','Fortress':'Festung','Trade Cart':'Handelskarren','Merchant Ship':'Handelsschiff'};
-const label = (name,id,count=1) => sourceResearch.unitName(unitPresentation(id)?.name(id,ui?.epoch??0,count)??originalLabels.name(id,ui?.epoch??0,LABELS[name]||name,count),id,ui?.local);
+const label = (name,id,count=1) => sourceResearch.unitName(wonderPresentation.nameFor(id)??unitPresentation(id)?.name(id,ui?.epoch??0,count)??originalLabels.name(id,ui?.epoch??0,LABELS[name]||name,count),id,ui?.local);
 const actionUnitId = a => a&&(a.k==='b'||a.k==='t')?a.id:undefined;
 const ACTIVITIES = ['Bereit','Unterwegs','Holz fällen','Erz abbauen','Nahrung sammeln','Bauen','Im Kampf'];
 function costText(c) {return c.flatMap((value,slot)=>value?[`${value} ${!referenceMode&&slot===2?'Metall':RESOURCE_NAMES[slot]}`]:[]).join(' · ')||'Kostenlos';}
@@ -1938,7 +1958,7 @@ function updateUi(drawn, now) {
         else tag.textContent=label;
         info.querySelector('h3')?.append(tag);
       }
-      if ((context && citizenPresentation.enabled) || regionalPortraits.has(s.def) || unitPresentation(s.def)?.icon(s.def,ui.epoch)) {
+      if ((context && citizenPresentation.enabled) || regionalPortraits.has(s.def) || wonderPresentation.iconFor(s.def) || unitPresentation(s.def)?.icon(s.def,ui.epoch)) {
         const portrait = icon(s.def, 40, context);
         portrait.style.cssText = 'vertical-align:middle;margin-right:6px';
         info.querySelector('h3')?.prepend(portrait);

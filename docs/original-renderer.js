@@ -357,7 +357,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    productionStatus.manifestAvailable=true;
   }catch(error){productionStatus.errors.push(error.message);}}
  }
- const presentationEntries=[options.tradePresentation,options.fighterBomberPresentation,options.carrierPresentation,options.priestPresentation,options.spyPresentation,options.leaderPresentation].filter(Boolean)
+ const presentationEntries=[options.tradePresentation,options.fighterBomberPresentation,options.carrierPresentation,options.priestPresentation,options.spyPresentation,options.leaderPresentation,options.wonderPresentation].filter(Boolean)
   .flatMap(presentation=>presentation.modelRows.map(row=>({...row,presentation})));
  const sailStatus={enabled:options.initialSails!==false,manifestAvailable:false,models:0,parts:0,errors:[]},sailErrors=new Set(),sailComposites=new Map();let sailManifest=null,sailShader=null,dynamicSailShader=null;const dynamicBindings=new WeakMap();
  result.initialSails=sailStatus;
@@ -588,7 +588,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    const model=await augmentModel(body??await (entry.presentation?verifiedModelJSON(modelUrl,entry.sha256,'Original unit model'):json(modelUrl)),{...entry,id}),parts=await loadParts(model,assetKind===1,modelUrl,entry.presentation?.teamManifest);
    if(!parts.length)continue;
    const scaleKey=(entry.assetKind===undefined?'':assetKind+':')+id+':'+(entry.epoch??0),sea=assetKind===0&&((id>=29&&id<=36)||id===42||id===45);
-   const scaleBinding=entry.regionalCivilizations?entry.nativeScaleBinding:scales.variants?.[scaleKey];
+   const scaleBinding=entry.regionalCivilizations||entry.wonderFamily?entry.nativeScaleBinding:scales.variants?.[scaleKey];
    const transform=nativeModelTransform(model,scaleBinding);
    const yOffset=!transform.native&&sea?-(model.normalization?.offset?.[1]||0)*(model.normalization?.scale||1):0;
    const variant={sourceId:id,assetKind,scaleKey,epoch:entry.epoch??0,until:entry.until,regionalCivilizations:entry.regionalCivilizations,regionalFallback:entry.regionalFallback===true,sourceIdentity:entry.sourceIdentity,region:entry.region,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),nativeAttackClock:entry.nativeAttackClock===true,yOffset,originOffset:transform.originOffset,nativeScale:transform.native?transform.scale:null,yawOffset:entry.yawOffset??model.yawOffset??0,farUrl:entry.lodFarUrl,far:null,farRequested:false,pickBounds:resourceBounds(parts),rallyTag:rallyTag(model),nativeTakeoff:model.nativeTakeoff};
@@ -744,6 +744,8 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     const citizen=selectCitizenModel(variants,epoch,civilizations?.[team],identity,{neutralFallback:options.citizenNeutralFallback??null});
     let variant=citizen===undefined?selectRegionalModel(variants.filter(v=>v.sourceIdentity===undefined),epoch,civilizations?.[team]):citizen;if(!variant)continue;
     const sourceId=variant.sourceId,time=data[i*12+10],seed=data[i*12+6],previewFlags=Math.round(data[i*12+7])&24;
+    // The native initial ConstructionSite has a null body. The placement ghost still shows the chosen model.
+    if(variant.presentationEntry?.wonderFamily&&seed===0&&!previewFlags)continue;
     const civ=civilizations?.[team],regionalEntry=regionalCaptureRows?.get(`${sourceId}:${epoch}:${civ}`);
     const productionEntry=variant.assetKind===0&&productionRows.get(sourceId)?.find(row=>row.epoch<=epoch&&epoch<row.until&&
      (row.regionalCivilizations.length===14||row.regionalCivilizations.includes(civ)));

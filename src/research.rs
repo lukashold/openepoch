@@ -33,8 +33,20 @@ impl Game {
     }
     pub fn production_time(&self, team: u8, def:DefId) -> f32 { self.modifiers[team as usize][def as usize][3] }
     pub fn unit_cost(&self, team: u8, def:DefId) -> [u16;9] {
+        self.cost_with_modifier(team, def, self.modifiers[team as usize][def as usize][4])
+    }
+    pub(crate) fn construction_cost(&self, team: u8, def: DefId) -> [u16; 9] {
+        let modifier = self.modifiers[team as usize][def as usize][4];
+        #[cfg(feature = "ee2-native13")]
+        let modifier = {
+            let solar = self.count_completed_wonders(team, crate::wonders61::SOLAR_POWER_STATION);
+            // 00803E24 adds each deviation from 1 and clamps at C62D54.
+            (modifier - solar as f32 * 0.5).max(0.05)
+        };
+        self.cost_with_modifier(team, def, modifier)
+    }
+    fn cost_with_modifier(&self, team: u8, def: DefId, m: f32) -> [u16; 9] {
         let d = &DEFS[def as usize];
-        let m = self.modifiers[team as usize][def as usize][4];
         let mut cost=[0u16;9];cost[..3].copy_from_slice(&d.cost);
         #[cfg(feature="ee2-reference")]
         if let Some(row)=crate::ee2_units::lookup_class(def,self.players[team as usize].epoch){if let Some(value)=row.cost9{cost=value;}}

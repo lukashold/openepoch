@@ -42,7 +42,8 @@ export function groundPlacement(entry,instance){
   if(!entry.nativeSize?.every(n=>Number.isFinite(n)&&n>0)||!(entry.width>0)||!(entry.depth>0))return null;
   // Native UndertextureSize/Offset values are world dimensions independent of
   // NIF/model normalization. Old manifests retain their explicitly sized adapter.
-  const scale=['native-world-undertexture','native-unit-factory-undertexture'].includes(entry.placementProfile)?1:instance[8]/Math.max(...entry.nativeSize),angle=instance[3];
+  const scale=['native-world-undertexture','native-unit-factory-undertexture'].includes(entry.placementProfile)?1:instance[8]/Math.max(...entry.nativeSize);
+  const angle=instance[3]+(entry.yawOffset??0);
   const ox=entry.offsetX*scale,oz=entry.offsetY*scale,c=Math.cos(angle),s=Math.sin(angle);
   return [instance[0]+ox*c-oz*s,instance[1]+ox*s+oz*c,angle,entry.width*scale,entry.depth*scale];
 }
@@ -164,14 +165,15 @@ export async function loadOriginalGround(gl,enabled,options={}){
     if(!response.ok)throw Error(`Ground manifest: ${response.status}`);
     const manifest=await response.json();result.manifest=manifest;
     // Deduplicate physical source images shared by several building bindings.
-    for(const entry of manifest.entries||[]){
+    const entries=[...(manifest.entries||[]),...(options.wonderPresentation?.groundRows||[])];
+    for(const entry of entries){
       const bindings=sourceRenderBindings(assetMapping,0,+entry.id);if(!bindings.length)continue;
       const entryTextures=new Map();
       // All source-declared slots are distinct bindings. Preload their physical
       // images once so a later epoch/context change cannot retain the old floor.
       const declared=[...(entry.rural||[]),...(entry.urban||[]),...(entry.death?.rural||[]),...(entry.death?.urban||[])];
       const sprites=declared.flatMap(sprite=>{
-        const climateUrls=groundProfiles.flatMap(([,profile])=>profile.ground[sprite.sprite?.toLowerCase()]||[]);
+        const climateUrls=groundProfiles.flatMap(([name,profile])=>sprite.climates?.[name]||profile.ground[sprite.sprite?.toLowerCase()]||[]);
         return [sprite,...(sprite.seasonalUrls||[]).map(url=>({...sprite,url})),...climateUrls.map(url=>({...sprite,url,optionalClimate:true}))];
       });
       for(const sprite of sprites){
@@ -230,14 +232,15 @@ export async function loadOriginalGround(gl,enabled,options={}){
   if(!result.enabled)return result;
   for(const [name,profile] of groundProfiles){
     const ready=[...result.entries.values()].every(({entry,textures})=>[...entry.rural,...entry.urban].every(sprite=>{
-      const sequence=profile.ground[sprite.sprite.toLowerCase()];
+      const sequence=sprite.climates?.[name]||profile.ground[sprite.sprite.toLowerCase()];
       return sequence?.length&&sequence.every(url=>textures.has(url));
     }));
     if(ready)result.seasonClimates.push(name);
   }
-  let yearPhase, climateGround=null;
+  let yearPhase, climateGround=null, climateName='Temperate';
   result.setSeasonClimate=name=>{
     if(!result.seasonClimates.includes(name))return false;
+    climateName=name;
     climateGround=name==='Temperate'?null:options.climateProfiles[name].ground;
     return true;
   };
@@ -261,7 +264,7 @@ export async function loadOriginalGround(gl,enabled,options={}){
         const placement=groundPlacement(entry,instance);if(!placement)continue;
         const hasOwner=epochs[team]!==undefined,urban=typeof isUrbanAt==='function'&&!!isUrbanAt(instance[0],instance[1],team,sourceId,i,id);
         const sprite=selectGroundSprite(entry,{epoch:epochs[team]??0,hasOwner,urban});
-        const frames=groundSeasonFrames(sprite,yearPhase,climateGround?.[sprite?.sprite?.toLowerCase()]);
+        const frames=groundSeasonFrames(sprite,yearPhase,sprite?.climates?.[climateName]||climateGround?.[sprite?.sprite?.toLowerCase()]);
         const texture=textures.get(frames?.first),textureB=textures.get(frames?.next);
         if(!texture||!textureB)continue;
         const key=JSON.stringify([frames.first,frames.next,frames.blend]);

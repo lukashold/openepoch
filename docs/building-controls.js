@@ -29,8 +29,8 @@ export function createBuildingControls({document:doc=globalThis.document,rotate,
   const auto=doc.getElementById('building-auto');auto.onclick=automatic;
   return {
     hide(){panel.hidden=true;},
-    update({name,id,turn,error,size,manual,note=''}){
-      panel.hidden=false;heading.textContent=name;angle.textContent=`${turn*45}° · ${size} × ${size} Felder`;
+    update({name,id,turn,error,size,width=size,height=size,manual,note=''}){
+      panel.hidden=false;heading.textContent=name;angle.textContent=`${turn*45}° · ${width} × ${height} Felder`;
       auto.hidden=id!==5;auto.textContent=manual?'Küste: manuell':'Küste: automatisch';
       const text=placementMessage(error,id)+(note?` · ${note}`:'');if(status.textContent!==text)status.textContent=text;
       status.dataset.valid=String(error===0);

@@ -76,7 +76,7 @@ pub(crate) fn conversion_target(def_id: DefId) -> Option<CaptureTarget> {
         damage_rate: 0.0, has_garrison: false, tribute: CaptureTribute::None })
 }
 
-/// All 19 effective Convertable capture=1 rows in the civ8 registry.
+/// Effective Convertable capture=1 rows in the active registry.
 /// Ordinary mobile Convertable rows lack capture=1. Linked DDF epoch upgrades
 /// do not replace these descriptors or change whether a Garrison slot exists.
 pub(crate) fn capture_target(def_id: DefId) -> Option<CaptureTarget> {
@@ -114,6 +114,7 @@ pub(crate) fn capture_target(def_id: DefId) -> Option<CaptureTarget> {
                 _ => Gold(0.1),
             };
         }
+        definition if crate::wonders61::is_wonder(definition) => target.time_modifier = 300.0,
         _ => return None,
     }
     Some(target)

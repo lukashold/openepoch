@@ -66,7 +66,11 @@ impl Game {
             for &def in &e.cargo[..e.ncargo as usize]{pop[t]+=crate::economy::population(def,epoch);}
             if d.building{
                 buildings[t]+=1;
-                if e.built>=1.0{cap[t]+=self.modifiers[t][e.def as usize][18].round().max(0.0)as u32;}
+                if e.built>=1.0{
+                    cap[t]+=self.modifiers[t][e.def as usize][18].round().max(0.0)as u32;
+                    #[cfg(feature="ee2-native13")]
+                    {cap[t]+=crate::wonders61::population_bonus(e);}
+                }
                 for &job in &e.q[..e.qn as usize]{if(job as usize)<DEFS.len(){pop[t]+=crate::economy::population(job as DefId,epoch);}}
             }
         }

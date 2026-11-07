@@ -211,6 +211,10 @@ impl Game {
         #[cfg(feature="ee2-native13")]
         if let Some(dock_garrison) = &self.dock_garrison { b = dock_garrison.wrap(b); }
         #[cfg(feature="ee2-native13")]
+        if !self.wonder_sites.is_empty() {
+            b = crate::wonders61::wrap_save(b);
+        }
+        #[cfg(feature="ee2-native13")]
         { b = self.market.wrap(b); }
         #[cfg(feature="ee2-native13")]
         if let Some(powers) = &self.powers { b = powers.wrap(b); }
@@ -267,6 +271,10 @@ impl Game {
         let (buf, powers) = crate::power42::split(buf)?;
         #[cfg(feature="ee2-native13")]
         let (buf, market) = crate::game::market57::split(buf)?;
+        #[cfg(feature="ee2-native13")]
+        let (buf, wonders) = crate::wonders61::split_save(buf)?;
+        #[cfg(feature="ee2-native13")]
+        if wonders && (powers.is_none() || roster.is_some()) { return None; }
         #[cfg(feature="ee2-native13")]
         let (buf, dock_garrison) = crate::game::dock_garrison59::split(buf)?;
         #[cfg(feature="ee2-native13")]
@@ -326,6 +334,8 @@ impl Game {
             if powers.is_none() || crowns.is_none() || roster.is_some() { return None; }
             crate::leader58_defs::END as usize
         } else { actor_definition_count };
+        #[cfg(feature="ee2-native13")]
+        let actor_definition_count = if wonders { crate::wonders61::END as usize } else { actor_definition_count };
         #[cfg(feature="ee2-native13")]
         let (buf, sole_survivor) = crate::ee2_sole_survivor::split(buf)?;
         #[cfg(feature="ee2-native13")]
@@ -395,6 +405,8 @@ impl Game {
         };
         #[cfg(not(feature="ee2-native13"))]
         let mut g = Game::new(u(4), u(5), 0, humans, local);
+        #[cfg(feature="ee2-native13")]
+        if wonders && g.net { return None; }
         g.tick = u(6);
         if source_clock.is_some_and(|clock| !clock.valid_at(g.tick, g.net)) {
             return None;
@@ -416,6 +428,9 @@ impl Game {
         }
         g.territory.claims.fill(NONE);
         fill(&mut g.ents[..high], take(esz));
+        #[cfg(feature="ee2-native13")]
+        g.wonder_sites.extend(g.ents[..high].iter().enumerate().filter_map(|(index, e)|
+            (e.alive && crate::wonders61::is_wonder(e.def)).then_some(index)));
         if cfg!(feature="ee2-reference")&&trailer<236 {for e in &mut g.ents[..high]{if e.alive&&e.def==WORKER{e.carry=0.0;e.q[1]=0;e.q[2]=0;}}}
         g.map.ter.copy_from_slice(take(NN));
         g.map.res.copy_from_slice(take(NN));
@@ -521,6 +536,8 @@ impl Game {
         #[cfg(feature="ee2-native13")]
         let valid_definition = |id: DefId| {
             if id == crate::carrier36_defs::CARRIER { return g.air_carrier_enabled; }
+            if crate::leader58_defs::branch(id).is_some() { return crown_leaders; }
+            if crate::wonders61::is_wonder(id) { return wonders; }
             (id as usize) < actor_definition_count &&
                 (id != crate::ee2_regicide::KING || regicide.is_some()) &&
                 (!crate::trade30_defs::is_trader(id) || trade.is_some()) &&
@@ -528,6 +545,8 @@ impl Game {
         };
         #[cfg(not(feature="ee2-native13"))]
         let valid_definition = |id: DefId| (id as usize) < actor_definition_count;
+        #[cfg(feature="ee2-native13")]
+        if wonders == g.wonder_sites.is_empty() { return None; }
         for e in &g.ents[..high] {
             if !e.alive {continue;}
             if !valid_definition(e.def) || e.team as usize>=g.nplayers || e.qn>5 || e.ncargo as usize>CARGO_MAX {return None;}
@@ -543,8 +562,14 @@ impl Game {
             if e.order == O_LEADER_CONSTRUCTION && (military_leader_powers.is_none() || e.def != crate::leader58_defs::END - 1
                 || e.tgt != NONE || e.otgt == NONE) { return None; }
             if !e.x.is_finite()||!e.y.is_finite()||!e.rot.is_finite()||!e.prot.is_finite(){return None;}
-            if DEFS[e.def as usize].building{let(tx,ty,side)=Game::building_bounds(e);if tx<0||ty<0||tx+side>N as i32||ty+side>N as i32{return None;}}
+            #[cfg(feature="ee2-native13")]
+            if crate::wonders61::is_wonder(e.def) && ![0, 2, 4, 6].into_iter().any(|turn| e.rot == Game::angle_for_turn(turn)) {
+                return None;
+            }
+            if DEFS[e.def as usize].building{let(tx,ty,width,height)=Game::building_bounds(e);if tx<0||ty<0||tx+width>N as i32||ty+height>N as i32{return None;}}
             if e.cargo[..e.ncargo as usize].iter().any(|&c| !valid_definition(c)) {return None;}
+            #[cfg(feature="ee2-native13")]
+            if e.cargo[..e.ncargo as usize].iter().copied().any(crate::wonders61::is_wonder) { return None; }
             if DEFS[e.def as usize].building && e.q[..e.qn as usize].iter().any(|&q| {
                 #[cfg(feature="ee2-native13")]
                 if trade.is_some() && crate::trade30_defs::is_trader(q as DefId) { return false; }
@@ -605,8 +630,8 @@ impl Game {
         for i in 0..high {
             g.ents[i].fslot = u16::MAX; // flow-field cache starts empty
             if g.ents[i].alive && DEFS[g.ents[i].def as usize].building {
-                let(tx0,ty0,s)=Game::building_bounds(&g.ents[i]);
-                for ty in ty0..ty0+s{for tx in tx0..tx0+s{g.map.blocked[ty as usize*N+tx as usize]=true;}}
+                let(tx0,ty0,width,height)=Game::building_bounds(&g.ents[i]);
+                for ty in ty0..ty0+height{for tx in tx0..tx0+width{g.map.blocked[ty as usize*N+tx as usize]=true;}}
             }
         }
         if cfg!(feature="ee2-reference")&&trailer<236 {g.map.seed_extra_resources(g.nplayers);}
@@ -618,7 +643,7 @@ impl Game {
         // Validate claimed city handles before ownership reconstruction can
         // replace a malformed or stale handle with a convenient different city.
         if has_territory{
-            for k in 0..32{let h=g.territory.claims[k];if h==NONE{continue;}let i=g.get(h)?;let e=g.ents[i];if k>=g.map.tseeds.len()||e.def!=TC||e.hp<=0.0||g.map.terr[tile_of(e.x,e.y)] as usize!=k{return None;}}
+            for k in 0..32{let h=g.territory.claims[k];if h==NONE{continue;}let i=g.get(h)?;let e=g.ents[i];if k>=g.map.tseeds.len()||!g.valid_territory_anchor(&e,k){return None;}}
         }
         if cfg!(feature="ee2-reference") && u(3)<57 {g.seed_legacy_territory_claims();}
         #[cfg(feature="ee2-native13")]

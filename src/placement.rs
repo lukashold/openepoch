@@ -3,7 +3,7 @@
 use crate::{defs::*, game::*, map::*};
 pub const ROTATION_STEPS: u32 = 8;
 pub struct PlacementCache {
-    pub key: Option<(u32, i32, i32, i32)>,
+    pub key: Option<(u32, i32, i32, i32, i32)>,
     pub approach: Vec<u32>,
     pub queue: Vec<u32>,
 }
@@ -18,33 +18,76 @@ impl Default for PlacementCache {
 }
 impl Game {
     pub fn footprint_side(def:DefId, turn: u32) -> i32 {
+        let (width, height) = Self::footprint_axes(def, turn);
+        width.max(height)
+    }
+    pub fn footprint_axes(def: DefId, turn: u32) -> (i32, i32) {
         let Some(d) = DEFS.get(def as usize) else {
-            return 0;
+            return (0, 0);
         };
         if !d.building || turn >= ROTATION_STEPS {
-            return 0;
+            return (0, 0);
+        }
+        #[cfg(feature = "ee2-native13")]
+        if let Some([x, y]) = crate::wonders61::shape(def, true) {
+            if turn % 2 != 0 { return (0, 0); }
+            let axes = (x.ceil() as i32, y.ceil() as i32);
+            return if turn % 4 == 0 { axes } else { (axes.1, axes.0) };
         }
         let scale = if turn & 1 == 0 {
             1.0
         } else {
             core::f32::consts::SQRT_2
         };
-        (d.size * scale - 0.00001).ceil() as i32
+        let side = (d.size * scale - 0.00001).ceil() as i32;
+        (side, side)
     }
     pub fn angle_for_turn(turn: u32) -> f32 {
         turn as f32 * core::f32::consts::FRAC_PI_4
     }
-    pub fn building_bounds(e: &Ent) -> (i32, i32, i32) {
+    pub fn building_bounds(e: &Ent) -> (i32, i32, i32, i32) {
+        #[cfg(feature = "ee2-native13")]
+        if let Some(size) = crate::wonders61::shape(e.def, false) {
+            return Self::rect_bounds(e, size);
+        }
         let size = DEFS[e.def as usize].size;
         let span = size * (e.rot.cos().abs() + e.rot.sin().abs());
         let x0 = (e.x - span * 0.5 + 0.0001).floor() as i32;
         let y0 = (e.y - span * 0.5 + 0.0001).floor() as i32;
         let x1 = (e.x + span * 0.5 - 0.0001).ceil() as i32;
         let y1 = (e.y + span * 0.5 - 0.0001).ceil() as i32;
-        (x0, y0, (x1 - x0).max(y1 - y0))
+        let side = (x1 - x0).max(y1 - y0);
+        (x0, y0, side, side)
+    }
+    #[cfg(feature = "ee2-native13")]
+    fn rect_bounds(e: &Ent, [width, height]: [f32; 2]) -> (i32, i32, i32, i32) {
+        let (sin, cos) = e.rot.sin_cos();
+        let half_x = (width * cos.abs() + height * sin.abs()) * 0.5;
+        let half_y = (width * sin.abs() + height * cos.abs()) * 0.5;
+        let x0 = (e.x - half_x + 0.0001).floor() as i32;
+        let y0 = (e.y - half_y + 0.0001).floor() as i32;
+        let x1 = (e.x + half_x - 0.0001).ceil() as i32;
+        let y1 = (e.y + half_y - 0.0001).ceil() as i32;
+        (x0, y0, x1 - x0, y1 - y0)
     }
     pub fn building_half(e: &Ent) -> f32 {
-        Self::building_bounds(e).2 as f32 * 0.5
+        let (_, _, width, height) = Self::building_bounds(e);
+        width.max(height) as f32 * 0.5
+    }
+    pub fn building_within(e: &Ent, dx: f32, dy: f32, padding: f32) -> bool {
+        let (_, _, width, height) = Self::building_bounds(e);
+        dx <= width as f32 * 0.5 + padding && dy <= height as f32 * 0.5 + padding
+    }
+    pub fn construction_available(&self, team: u8, def: DefId) -> bool {
+        let Some(definition) = DEFS.get(def as usize) else { return false; };
+        if team as usize >= self.nplayers || !definition.building
+            || definition.epoch > self.players[team as usize].epoch { return false; }
+        #[cfg(feature = "ee2-native13")]
+        if crate::wonders61::is_wonder(def) {
+            return !self.net && self.bench == 0 && self.powers.is_some()
+                && crate::wonders61::available(def, self.civilizations[team as usize] as i8, self.players[team as usize].epoch);
+        }
+        true
     }
     pub fn entity_radius(&self, e: &Ent) -> f32 {
         if DEFS[e.def as usize].building {
@@ -54,28 +97,29 @@ impl Game {
         }
     }
     pub fn footprint_known(&self, team: u8, def:DefId, tx: i32, ty: i32, turn: u32) -> bool {
-        let s = Self::footprint_side(def, turn);
-        if s == 0 || tx < 0 || ty < 0 || tx > N as i32 - s || ty > N as i32 - s {
+        let (width, height) = Self::footprint_axes(def, turn);
+        if width == 0 || tx < 0 || ty < 0 || tx > N as i32 - width || ty > N as i32 - height {
             return false;
         }
         if self.display_visibility() >= 1 && !self.players[team as usize].ai {
             return true;
         }
-        (ty..ty + s)
-            .all(|y| (tx..tx + s).all(|x| self.real_fog(team, y as usize * N + x as usize) > 0))
+        (ty..ty + height)
+            .all(|y| (tx..tx + width).all(|x| self.real_fog(team, y as usize * N + x as usize) > 0))
     }
     pub fn placement_geometry_error(&self, team: u8, def:DefId, tx: i32, ty: i32, turn: u32) -> u32 {
-        let s = Self::footprint_side(def, turn);
-        if s == 0
+        let (width, height) = Self::footprint_axes(def, turn);
+        if width == 0
             || team as usize >= self.nplayers
             || tx < 2
             || ty < 2
-            || tx > N as i32 - 2 - s
-            || ty > N as i32 - 2 - s
+            || tx > N as i32 - 2 - width
+            || ty > N as i32 - 2 - height
         {
             return 1;
         }
-        let territory = self.map.terr[(ty + s / 2) as usize * N + (tx + s / 2) as usize];
+        let center = (ty + height / 2) as usize * N + (tx + width / 2) as usize;
+        let territory = self.map.terr[center];
         let owner = self.towner[territory as usize];
         #[cfg(feature="ee2-native13")]
         if owner != team && (owner != 255 || matches!(def, TOWER | FORTRESS)) && self.initial_ceasefire_active() {
@@ -101,17 +145,22 @@ impl Game {
             return 10;
         }
         let deposit = Self::extractor_kind(def);
-        if deposit != R_NONE
-            && self.map.res[(ty + s / 2) as usize * N + (tx + s / 2) as usize] != deposit
-        {
+        if deposit != R_NONE && self.map.res[center] != deposit {
             return 1;
         }
+        #[cfg(feature = "ee2-native13")]
+        if self.wonder_sites.iter().map(|&index| &self.ents[index]).any(|actor| {
+            if !actor.alive || actor.hp <= 0.0 { return false; }
+            let Some(size) = crate::wonders61::shape(actor.def, true) else { return false; };
+            let (x, y, w, h) = Self::rect_bounds(actor, size);
+            tx < x + w && x < tx + width && ty < y + h && y < ty + height
+        }) { return 1; }
         let mut water = 0u32;
         let mut land = 0u32;
         #[cfg(feature="ee2-roster6")]
-        if def==60 && !crate::roster6_placement::near_accepted_water(&self.map,tx as f32+s as f32*0.5,ty as f32+s as f32*0.5){return 1;}
-        for y in ty..ty + s {
-            for x in tx..tx + s {
+        if def==60 && !crate::roster6_placement::near_accepted_water(&self.map,tx as f32+width as f32*0.5,ty as f32+height as f32*0.5){return 1;}
+        for y in ty..ty + height {
+            for x in tx..tx + width {
                 let t = y as usize * N + x as usize;
                 if self.map.blocked[t] || (self.map.res[t] != R_NONE && self.map.res[t] != deposit)
                 {
@@ -132,6 +181,7 @@ impl Game {
             }
         }
         if def == DOCK {
+            let s = width;
             let mut land_access = false;
             let mut sea_exit = false;
             for k in -1..=s {
@@ -151,12 +201,18 @@ impl Game {
                 return 1;
             }
         }
+        #[cfg(feature = "ee2-native13")]
+        {
+            let mut site = Self::planned_building(def, tx, ty, turn);
+            site.team = team;
+            if self.factory_placement_blocked(&site) { return 1; }
+        }
         0
     }
     /// Reverse flood from every exterior work tile. It is independent of client
     /// selection, cached by nav version/site; click revalidates current workers.
-    pub fn prepare_build_routes(&mut self, tx: i32, ty: i32, s: i32) {
-        let key = (self.map.nav_ver, tx, ty, s);
+    pub fn prepare_build_routes(&mut self, (tx, ty, width, height): (i32, i32, i32, i32)) {
+        let key = (self.map.nav_ver, tx, ty, width, height);
         if self.placement_cache.key == Some(key) {
             return;
         }
@@ -164,9 +220,9 @@ impl Game {
         cache.approach.fill(NONE);
         cache.queue.clear();
         let pass = &self.map.pass[0];
-        for y in ty - 1..=ty + s {
-            for x in tx - 1..=tx + s {
-                if x >= tx && x < tx + s && y >= ty && y < ty + s {
+        for y in ty - 1..=ty + height {
+            for x in tx - 1..=tx + width {
+                if x >= tx && x < tx + width && y >= ty && y < ty + height {
                     continue;
                 }
                 if x < 0 || y < 0 || x >= N as i32 || y >= N as i32 {
@@ -224,20 +280,20 @@ impl Game {
         ids: &[usize],
         check_fog: bool,
     ) -> u32 {
-        let s = Self::footprint_side(def, turn);
-        if s == 0
+        let (width, height) = Self::footprint_axes(def, turn);
+        if width == 0
             || team as usize >= self.nplayers
             || tx < 2
             || ty < 2
-            || tx > N as i32 - 2 - s
-            || ty > N as i32 - 2 - s
+            || tx > N as i32 - 2 - width
+            || ty > N as i32 - 2 - height
         {
             return 1;
         }
-        if DEFS[def as usize].epoch > self.players[team as usize].epoch {
+        if !self.construction_available(team, def) {
             return 8;
         }
-        if !self.afford(team, &self.unit_cost(team, def)) {
+        if !self.afford(team, &self.construction_cost(team, def)) {
             return 4;
         }
         if check_fog && !self.footprint_known(team, def, tx, ty, turn) {
@@ -251,7 +307,8 @@ impl Game {
         if builders.is_empty() {
             return 6;
         }
-        self.prepare_build_routes(tx, ty, s);
+        let bounds = Self::building_bounds(&Self::planned_building(def, tx, ty, turn));
+        self.prepare_build_routes(bounds);
         if !builders.iter().any(|&i| {
             self.placement_cache.approach[tile_of(self.ents[i].x, self.ents[i].y)] != NONE
         }) {
@@ -275,7 +332,6 @@ impl Game {
         if self.placement_error_for(team, def, tx, ty, turn, ids, check_fog) != 0 {
             return NOIDX;
         }
-        let s = Self::footprint_side(def, turn);
         let builders: Vec<(usize, u32)> = self
             .valid_builders(team, ids)
             .into_iter()
@@ -288,6 +344,7 @@ impl Game {
         if bi == NOIDX {
             return bi;
         }
+        let (x0, y0, width, height) = Self::building_bounds(&self.ents[bi]);
         let ids: Vec<usize> = builders.iter().map(|p| p.0).collect();
         let handle = self.h(bi);
         for (i, tile) in builders {
@@ -318,10 +375,10 @@ impl Game {
             {
                 continue;
             }
-            if e.x >= tx as f32
-                && e.x < (tx + s) as f32
-                && e.y >= ty as f32
-                && e.y < (ty + s) as f32
+            if e.x >= x0 as f32
+                && e.x < (x0 + width) as f32
+                && e.y >= y0 as f32
+                && e.y < (y0 + height) as f32
             {
                 displaced.push(i);
             }
@@ -339,27 +396,23 @@ impl Game {
         bi
     }
     pub fn place_with_rotation(&mut self, def:DefId, tx: i32, ty: i32, team: u8, turn: u32) -> usize {
-        if self.placement_geometry_error(team, def, tx, ty, turn) != 0
-            || DEFS[def as usize].epoch > self.players[team as usize].epoch
+        if !self.construction_available(team, def)
+            || self.placement_geometry_error(team, def, tx, ty, turn) != 0
         {
             return NOIDX;
         }
-        let cost = self.unit_cost(team, def);
+        let cost = self.construction_cost(team, def);
         if !self.afford(team, &cost) {
             return NOIDX;
         }
-        let side = Self::footprint_side(def, turn);
-        let i = self.spawn_oriented(
-            def,
-            team,
-            tx as f32 + side as f32 * 0.5,
-            ty as f32 + side as f32 * 0.5,
-            Self::angle_for_turn(turn),
-        );
+        let site = Self::planned_building(def, tx, ty, turn);
+        let i = self.spawn_oriented(def, team, site.x, site.y, site.rot);
         if i != NOIDX {
             self.pay(team, &cost, 1.0);
             self.ents[i].built = 0.0;
             self.ents[i].hp = self.max_hp(team, def) * 0.1;
+            #[cfg(feature="ee2-native13")]
+            self.wonder_notice(crate::wonders61::Notice::Started, def, team);
             #[cfg(feature="ee2-reference")]
             self.sync_city_ground_entry(i);
             if def == TC {
@@ -369,6 +422,12 @@ impl Game {
             self.recount_paid_players();
         }
         i
+    }
+
+    fn planned_building(def: DefId, tx: i32, ty: i32, turn: u32) -> Ent {
+        let (width, height) = Self::footprint_axes(def, turn);
+        Ent { def, x: tx as f32 + width as f32 * 0.5, y: ty as f32 + height as f32 * 0.5,
+            rot: Self::angle_for_turn(turn), ..E0 }
     }
     pub fn construction_multiplier(&self, e: &Ent) -> f32 {
         if e.def == TC {
@@ -447,9 +506,9 @@ mod tests {
         g.map.blocked.fill(false);
         for e in &g.ents[..g.high] {
             if e.alive && DEFS[e.def as usize].building {
-                let (x, y, s) = Game::building_bounds(e);
-                for yy in y..y + s {
-                    for xx in x..x + s {
+                let (x, y, width, height) = Game::building_bounds(e);
+                for yy in y..y + height {
+                    for xx in x..x + width {
                         g.map.blocked[yy as usize * N + xx as usize] = true;
                     }
                 }
@@ -531,7 +590,7 @@ mod tests {
             assert!(side >= DEFS[HOUSE as usize].size as i32);
             let i = g.begin_construction(0, HOUSE, x, y, turn, &[1], true);
             assert_ne!(i, NOIDX);
-            assert_eq!(Game::building_bounds(&g.ents[i]), (x, y, side));
+            assert_eq!(Game::building_bounds(&g.ents[i]), (x, y, side, side));
             assert_eq!(g.ents[i].rot, Game::angle_for_turn(turn));
             for yy in y..y + side {
                 for xx in x..x + side {
@@ -562,7 +621,7 @@ mod tests {
             let h = g.state_hash();
             let loaded = Game::load(&g.savebuf).unwrap();
             assert_eq!(loaded.state_hash(), h);
-            assert_eq!(Game::building_bounds(&loaded.ents[i]), (x, y, side));
+            assert_eq!(Game::building_bounds(&loaded.ents[i]), (x, y, side, side));
             for yy in y..y + side {
                 for xx in x..x + side {
                     assert!(loaded.map.blocked[yy as usize * N + xx as usize]);

@@ -61,6 +61,20 @@ impl Game {
     fn territory_control_ready(e: &Ent) -> bool {
         e.alive && e.hp > 0.0 && e.built >= 1.0
     }
+    #[cfg(feature = "ee2-native13")]
+    fn has_colonization_mill(&self, team: u8, territory: usize) -> bool {
+        self.ents[..self.high].iter().any(|e| Self::territory_control_ready(e) && e.team == team
+            && matches!(e.def, MILL | WORKSHOP) && self.map.terr[tile_of(e.x, e.y)] as usize == territory)
+    }
+    pub(crate) fn valid_territory_anchor(&self, e: &Ent, territory: usize) -> bool {
+        if e.hp <= 0.0 || self.map.terr[tile_of(e.x, e.y)] as usize != territory { return false; }
+        #[cfg(feature = "ee2-native13")]
+        if e.def == BARRACKS && e.built >= 1.0 {
+            return self.owns_completed_wonder(e.team, crate::wonders61::PARTHENON)
+                && self.has_colonization_mill(e.team, territory);
+        }
+        e.def == TC
+    }
     pub fn territory_adjacent_owned(&self, team: u8, id: usize) -> bool {
         let mask=self.map.territory_neighbors[id];
         self.towner.iter().enumerate().any(|(k,&o)|o==team && mask & (1<<k)!=0)
@@ -114,11 +128,12 @@ impl Game {
         let mut owner = [TERR_NONE; 32];
         for k in 0..self.map.tseeds.len() {
             let claim = self.territory.claims[k];
-            let valid = self.get(claim).filter(|&i| {
-                let e = &self.ents[i];
-                e.def == TC && e.hp > 0.0 && self.map.terr[tile_of(e.x, e.y)] as usize == k
-            });
-            let h = if valid.is_some() { claim } else if cfg!(feature="ee2-reference") {NONE} else { first[k] };
+            let valid = self.get(claim).filter(|&i| self.valid_territory_anchor(&self.ents[i], k));
+            let mut h = if valid.is_some() { claim } else if cfg!(feature="ee2-reference") {NONE} else { first[k] };
+            #[cfg(feature = "ee2-native13")]
+            if let (Some(anchor), Some(city)) = (valid, self.get(first[k])) {
+                if self.ents[anchor].def == BARRACKS && self.ents[anchor].team == self.ents[city].team { h = first[k]; }
+            }
             self.territory.claims[k] = h;
             if let Some(i) = self.get(h) {
                 owner[k] = self.ents[i].team;
@@ -133,8 +148,29 @@ impl Game {
                     forts[self.map.terr[tile_of(e.x,e.y)] as usize]|=1<<e.team;
                 }
             }
+            let colony = [NONE; 32];
+            #[cfg(feature = "ee2-native13")]
+            let colony = {
+                let mut colony = colony;
+                let parthenon = self.completed_wonder_owners(crate::wonders61::PARTHENON);
+                if parthenon != 0 {
+                    let mut mills = [0u8; 32];
+                    for e in &self.ents[..self.high] {
+                        if matches!(e.def, MILL | WORKSHOP) && Self::territory_control_ready(e) {
+                            mills[self.map.terr[tile_of(e.x, e.y)] as usize] |= 1 << e.team;
+                        }
+                    }
+                    for (index, e) in self.ents[..self.high].iter().enumerate() {
+                        if e.def != BARRACKS || !Self::territory_control_ready(e) || parthenon & (1 << e.team) == 0 { continue; }
+                        let k = self.map.terr[tile_of(e.x, e.y)] as usize;
+                        if colony[k] == NONE && mills[k] & (1 << e.team) != 0 { colony[k] = self.h(index); }
+                    }
+                }
+                colony
+            };
             for _ in 0..self.map.tseeds.len() {
                 let mut added=[TERR_NONE;32];
+                let mut anchors=[NONE;32];
                 let mut changed=false;
                 let mut bootstrap=[usize::MAX;4];
                 for k in 0..self.map.tseeds.len() {
@@ -146,16 +182,21 @@ impl Game {
                 }
                 for k in 0..self.map.tseeds.len() {
                     if owner[k]!=TERR_NONE {continue;}
-                    let Some(i)=self.get(first[k]) else {continue;};
-                    let team=self.ents[i].team;
-                    let adjacent=owner.iter().enumerate().any(|(j,&o)|o==team && self.map.territory_neighbors[k]&(1<<j)!=0);
-                    // 00719280 also uses adjacentReq when this player owns no
-                    // territory: a landless player's first city can bootstrap.
-                    if adjacent || bootstrap[team as usize]==k || forts[k]&(1<<team)!=0 {added[k]=team;changed=true;}
+                    if let Some(i)=self.get(first[k]) {
+                        let team=self.ents[i].team;
+                        let adjacent=owner.iter().enumerate().any(|(j,&o)|o==team && self.map.territory_neighbors[k]&(1<<j)!=0);
+                        // 00719280 uses adjacentReq when this player owns no territory.
+                        if adjacent || bootstrap[team as usize]==k || forts[k]&(1<<team)!=0 {
+                            anchors[k]=first[k];added[k]=team;changed=true;continue;
+                        }
+                    }
+                    if let Some(i)=self.get(colony[k]) {
+                        anchors[k]=colony[k];added[k]=self.ents[i].team;changed=true;
+                    }
                 }
                 if !changed {break;}
                 for k in 0..self.map.tseeds.len() {
-                    if added[k]!=TERR_NONE {owner[k]=added[k];self.territory.claims[k]=first[k];}
+                    if added[k]!=TERR_NONE {owner[k]=added[k];self.territory.claims[k]=anchors[k];}
                 }
             }
         }
@@ -212,10 +253,7 @@ impl Game {
                 .get(self.territory.claims[id as usize])
                 .map_or(false, |i| {
                     let e = &self.ents[i];
-                    e.team == team
-                        && e.hp > 0.0
-                        && e.def == TC
-                        && self.map.terr[tile_of(e.x, e.y)] as u32 == id
+                    e.team == team && self.valid_territory_anchor(e, id as usize)
                 })
     }
     pub fn territory_counts(&self, id: usize, owner: u8) -> [u32; 3] {
@@ -767,11 +805,7 @@ impl Game {
                 return false;
             };
             let e = self.ents[i];
-            if k >= self.map.tseeds.len()
-                || e.def != TC
-                || e.hp <= 0.0
-                || self.map.terr[tile_of(e.x, e.y)] as usize != k
-            {
+            if k >= self.map.tseeds.len() || !self.valid_territory_anchor(&e, k) {
                 return false;
             }
         }

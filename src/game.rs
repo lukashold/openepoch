@@ -328,6 +328,8 @@ pub struct Game {
     pub team_vis: Vec<u8>,
     pub diplomacy: crate::diplomacy::Diplomacy,
     pub territory: crate::territory::TerritoryDiplomacy,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) wonder_sites: std::collections::BTreeSet<usize>,
     #[cfg(feature="ee2-reference")]
     pub city_ground: Vec<crate::city_ground::CityBand>,
     #[cfg(feature="ee2-up15")]
@@ -526,6 +528,8 @@ impl Game {
             vis: vec![0; NN],
             team_vis: vec![0; 4*NN], diplomacy: crate::diplomacy::Diplomacy::default(),
             territory: crate::territory::TerritoryDiplomacy::default(),
+            #[cfg(feature = "ee2-native13")]
+            wonder_sites: std::collections::BTreeSet::new(),
             #[cfg(feature="ee2-reference")]
             city_ground: vec![crate::city_ground::EMPTY; MAXE],
             #[cfg(feature="ee2-up15")]
@@ -684,6 +688,8 @@ impl Game {
         let gen = self.ents[i].gen;
         self.ents[i] = Ent { alive: true, def, team, gen, x, y, px: x, py: y, ox: x, oy: y, hp: self.max_hp(team,def), rot:angle,prot:angle,..E0 };
         #[cfg(feature = "ee2-native13")]
+        if crate::wonders61::is_wonder(def) { self.wonder_sites.insert(i); }
+        #[cfg(feature = "ee2-native13")]
         if self.powers.is_some() {
             let handle = self.h(i);
             self.powers.as_mut().unwrap().register(handle);
@@ -706,8 +712,8 @@ impl Game {
 
     fn block(&mut self, i: usize, on: bool) {
         let e = &self.ents[i];
-        let (tx0,ty0,s)=Self::building_bounds(e);
-        for ty in ty0.max(0)..(ty0+s).min(N as i32){for tx in tx0.max(0)..(tx0+s).min(N as i32){let t=ty as usize*N+tx as usize;self.map.blocked[t]=on;self.map.upd_pass(t);}}
+        let (tx0,ty0,width,height)=Self::building_bounds(e);
+        for ty in ty0.max(0)..(ty0+height).min(N as i32){for tx in tx0.max(0)..(tx0+width).min(N as i32){let t=ty as usize*N+tx as usize;self.map.blocked[t]=on;self.map.upd_pass(t);}}
         self.map.nav_ver += 1;
     }
 
@@ -747,6 +753,8 @@ impl Game {
         #[cfg(feature="ee2-paidqueue7")] self.clear_queue_payments(i);
         let e = self.ents[i];
         let d = &DEFS[e.def as usize];
+        #[cfg(feature = "ee2-native13")]
+        if e.built >= 1.0 { self.wonder_notice(crate::wonders61::Notice::Destroyed, e.def, e.team); }
         if d.building {
             self.block(i, false);
             for &q in &e.q[..e.qn as usize] {
@@ -775,6 +783,17 @@ impl Game {
         #[cfg(feature="ee2-up15")]
         {self.attack_clock[i]=crate::native_attack_clock::EMPTY;}
         self.free.push(i as u16);
+        #[cfg(feature = "ee2-native13")]
+        if crate::wonders61::is_wonder(e.def) { self.wonder_sites.remove(&i); }
+        #[cfg(feature = "ee2-native13")]
+        if e.def == crate::wonders61::PARTHENON || matches!(e.def, BARRACKS | MILL | WORKSHOP) && {
+            let territory = self.map.terr[tile_of(e.x, e.y)] as usize;
+            self.territory.claims[territory] != NONE && self.towner[territory] == e.team
+                && !self.get(self.territory.claims[territory]).is_some_and(|anchor| self.ents[anchor].def == TC)
+        } {
+            self.rebuild_territories();
+            self.void_landless_alliances();
+        }
         #[cfg(feature = "ee2-native13")]
         self.reconcile_bless_casts();
         #[cfg(feature = "ee2-native13")]
@@ -1075,9 +1094,9 @@ impl Game {
     pub fn order_building(&mut self, ids: &[usize], bj: usize) {
         let b = self.ents[bj];
         let h = self.h(bj);
-        let(tx,ty,side)=Self::building_bounds(&b);self.prepare_build_routes(tx,ty,side);
+        let bounds=Self::building_bounds(&b);let(tx,ty,width,height)=bounds;self.prepare_build_routes(bounds);
         let assignments:Vec<(usize,u32)>=ids.iter().copied().filter_map(|i|{let e=*self.ents.get(i)?;if !e.alive||e.team!=b.team||!DEFS[e.def as usize].has(F_WORKER){return None;}let route=self.placement_cache.approach[tile_of(e.x,e.y)];
-            let route=if route==NONE&&e.x>=tx as f32&&e.x<(tx+side)as f32&&e.y>=ty as f32&&e.y<(ty+side)as f32{self.map.snap(e.x,e.y,0)as u32}else{route};(route!=NONE).then_some((i,route))}).collect();
+            let route=if route==NONE&&e.x>=tx as f32&&e.x<(tx+width)as f32&&e.y>=ty as f32&&e.y<(ty+height)as f32{self.map.snap(e.x,e.y,0)as u32}else{route};(route!=NONE).then_some((i,route))}).collect();
         for(i,key)in assignments{let e=&mut self.ents[i];e.prev=match e.order{O_GATHER if e.otgt==NONE=>e.q[0] as u8,O_BUILD=>e.prev,_=>0};e.order=if b.built<1.0{O_BUILD}else{O_GATHER};e.q[0]=R_FOOD as QueueItem;e.otgt=h;e.tgt=NONE;e.fkey=key;e.fslot=u16::MAX;e.stuck=0;}
     }
 
@@ -1767,6 +1786,8 @@ impl Game {
                 bld[t] += 1;
                 if e.built >= 1.0 {
                     cap[t] += self.modifiers[t][e.def as usize][18].round().max(0.0) as u32;
+                    #[cfg(feature = "ee2-native13")]
+                    { cap[t] += crate::wonders61::population_bonus(e); }
                 }
                 for &q in &e.q[..e.qn as usize] {
                     if (q as usize) < DEFS.len() {
@@ -2047,7 +2068,7 @@ impl Game {
                 let victim = game.ents[j];
                 game.crown_kill(team, victim.def);
                 if let Some(attacker) = origin {
-                    game.crown_piracy_payment(team, attacker.definition, victim.team, victim.def);
+                    game.combat_kill_payment(team, attacker.definition, victim.team, victim.def);
                 }
             }
             #[cfg(feature = "ee2-native13")]
@@ -2376,6 +2397,10 @@ impl Game {
                 e.qt = 0.0;
             }
         }
+        #[cfg(feature = "ee2-native13")]
+        let defended_house = self.defended_house(e, d);
+        #[cfg(feature = "ee2-native13")]
+        let d = defended_house.as_ref().unwrap_or(d);
         if d.armed() {
             let mut tj = NOIDX;
             if let Some(j) = self.get(e.tgt) {
@@ -2401,6 +2426,9 @@ impl Game {
                     _ => {self.native_stop_attack(i);e.tgt = NONE;},
                 }
             }else{self.native_stop_attack(i);}
+        } else if cfg!(feature = "ee2-native13") && e.def == HOUSE && e.tgt != NONE {
+            self.native_stop_attack(i);
+            e.tgt = NONE;
         }
     }
 
@@ -2799,7 +2827,11 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         let amount = {
             let forage = farm == NOIDX && self.map.ter[e.otile as usize] >= T_SAND;
-            amount * self.crown_gather_scale(e.team, e.def, kind, farm != NOIDX, forage)
+            let scale = self.crown_gather_scale(e.team, e.def, kind, farm != NOIDX, forage);
+            let desalination = if e.def == WORKER && kind == R_FOOD && farm == NOIDX {
+                self.count_completed_wonders(e.team, crate::wonders61::DESALINATION_PLANT) as f32 * 0.5
+            } else { 0.0 };
+            amount * (scale + desalination)
         };
         if cfg!(feature="ee2-reference"){
             if farm==NOIDX {
@@ -2857,8 +2889,8 @@ impl Game {
         };
         if self.ents[j].team!=e.team{Self::set_idle(e);e.otgt=NONE;return;}
         let b = self.ents[j];
-        let (bx,by,side)=Self::building_bounds(&b);
-        if b.built<1.0&&e.x>=bx as f32&&e.x<(bx+side)as f32&&e.y>=by as f32&&e.y<(by+side)as f32{
+        let (bx,by,width,height)=Self::building_bounds(&b);
+        if b.built<1.0&&e.x>=bx as f32&&e.x<(bx+width)as f32&&e.y>=by as f32&&e.y<(by+height)as f32{
             let goal=(e.fkey&0xffff)as usize;
             *want=self.steer(e,d,(goal%N)as f32+0.5,(goal/N)as f32+0.5);*moving=true;return;
         }
@@ -2879,7 +2911,7 @@ impl Game {
             }
             return;
         }
-        if (b.x - e.x).abs().max((b.y - e.y).abs()) > Self::building_half(&b) + 0.95 {
+        if !Self::building_within(&b, (b.x - e.x).abs(), (b.y - e.y).abs(), 0.95) {
             let goal=(e.fkey&0xffff)as usize;
             *want = self.steer(e, d, (goal%N)as f32+0.5, (goal/N)as f32+0.5);
             *moving = true;
@@ -2890,15 +2922,15 @@ impl Game {
         let t = &mut self.ents[j];
         t.built = (t.built + step).min(1.0);
         t.hp = (t.hp + maxhp * 0.9 * step).min(maxhp);
-        #[cfg(feature = "ee2-native13")]
-        let city_completed = t.def == TC && t.built >= 1.0;
-        if t.built >= 1.0 && t.team == self.local {
-            self.ev(14.0, b.x, b.y);
-        }
+        let completed = t.built >= 1.0;
+        if completed && b.team == self.local { self.ev(14.0, b.x, b.y); }
         #[cfg(feature="ee2-reference")]
         self.sync_city_ground_entry(j);
         #[cfg(feature = "ee2-native13")]
-        if city_completed { self.name_completed_city(j, self.ents[j]); }
+        if completed {
+            if b.def == TC { self.name_completed_city(j, self.ents[j]); }
+            self.wonder_notice(crate::wonders61::Notice::Completed, b.def, b.team);
+        }
     }
 
     /// Soft collision: overlapping units in the same layer push each other apart.
@@ -2998,6 +3030,8 @@ impl Game {
                 *v = 128;
             }
         }
+        #[cfg(feature = "ee2-native13")]
+        let farseeing = self.completed_wonder_owners(crate::wonders61::TOWER_OF_MOON_AND_STARS);
         for (_index, e) in self.ents[..self.high].iter().enumerate() {
             if !e.alive {
                 continue;
@@ -3005,7 +3039,17 @@ impl Game {
             #[cfg(feature = "ee2-native13")]
             if self.trade_hidden(_index, e) || self.air_parked(_index, e) { continue; }
             let range = self.modifiers[e.team as usize][e.def as usize][5];
+            #[cfg(feature = "ee2-native13")]
+            let range = if farseeing & (1 << e.team) != 0 && DEFS[e.def as usize].building { range + 14.0 } else { range };
             Self::paint_unit_sight(&mut self.team_vis, e.team, e, range);
+            #[cfg(feature = "ee2-native13")]
+            if farseeing != 0 && e.def == TC && e.hp > 0.0 && e.built >= 1.0 {
+                for viewer in 0..self.nplayers {
+                    if farseeing & (1 << viewer) != 0 && viewer != e.team as usize {
+                        Self::paint_unit_sight(&mut self.team_vis, viewer as u8, e, range);
+                    }
+                }
+            }
         }
         #[cfg(feature = "ee2-native13")]
         self.paint_spy_intel();

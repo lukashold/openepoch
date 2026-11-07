@@ -204,7 +204,11 @@ impl Game {
                 if o.len()>before {crate::render_meta7::actor(before/STRIDE,self.h(i),e,self.max_hp(e.team,e.def));}
                 #[cfg(feature="ee2-pack8")]
                 if o.len()>before {crate::pack8_render::actor(before/STRIDE,self.canonical_pack(i),self.pack_spec(e).is_some_and(|s|s.capable));}
-                if e.built < 1.0 && !far {
+                #[cfg(feature = "ee2-native13")]
+                let show_scaffold = !crate::wonders61::is_wonder(e.def) || e.built > 0.0;
+                #[cfg(not(feature = "ee2-native13"))]
+                let show_scaffold = true;
+                if e.built < 1.0 && !far && show_scaffold {
                     put(&mut o, x, y, a, rot, S_SCAFFOLD, team, e.built, fl, d.size);
                 }
                 (a, d.size * 0.6 + 0.7)
@@ -268,9 +272,9 @@ impl Game {
         }
 
         if ghost>=0&&(ghost as usize)<DEFS.len()&&turn<crate::placement::ROTATION_STEPS{
-            let d=&DEFS[ghost as usize];let side=Self::footprint_side(ghost as DefId,turn);
-            if side>0{let ids:Vec<usize>=(0..self.high).filter(|&i|self.ents[i].alive&&self.ents[i].sel&&self.ents[i].team==me).collect();let ok=self.placement_error_for(me,ghost as DefId,gx,gy,turn,&ids,true)==0;
-                let(cx,cy)=(gx as f32+side as f32*0.5,gy as f32+side as f32*0.5);let a=if ghost as DefId==DOCK{0.0}else{self.map.height(cx,cy).max(0.0)};
+            let d=&DEFS[ghost as usize];let (width,height)=Self::footprint_axes(ghost as DefId,turn);
+            if width>0{let ids:Vec<usize>=(0..self.high).filter(|&i|self.ents[i].alive&&self.ents[i].sel&&self.ents[i].team==me).collect();let ok=self.placement_error_for(me,ghost as DefId,gx,gy,turn,&ids,true)==0;
+                let(cx,cy)=(gx as f32+width as f32*0.5,gy as f32+height as f32*0.5);let a=if ghost as DefId==DOCK{0.0}else{self.map.height(cx,cy).max(0.0)};
                 put(&mut o,cx,cy,a,Self::angle_for_turn(turn),crate::ids::unit_render(ghost as DefId),me as f32,1.0,FL_NOFOG+if ok{FL_GHOST_OK}else{FL_GHOST_BAD},d.size);
             }
         }
@@ -493,6 +497,10 @@ impl Game {
                 let _ = write!(s, "{}[{},{},\"{}\"]", if k > 0 { "," } else { "" }, t.0, t.1, DEFS[t.0 as usize].name);
             }
             s.push(']');
+            #[cfg(feature = "ee2-native13")]
+            let defended_house = self.defended_house(&e, d);
+            #[cfg(feature = "ee2-native13")]
+            let d = defended_house.as_ref().unwrap_or(d);
             if d.armed() {
                 let _ = write!(s, ",\"dmg\":{},\"rng\":{:.1}", (self.scaled_weapon_damage(me,e.def,d.w[0].dmg,p.atk[class_of(d)])) as i32, d.w[0].range+self.modifiers[me as usize][e.def as usize][6]);
             }
@@ -516,7 +524,7 @@ impl Game {
         let mut tip = String::new();
         if !observer && has_worker {
             for (id, d) in DEFS.iter().enumerate() {
-                if d.building && d.epoch <= ep {
+                if self.construction_available(me, id as DefId) {
                     tip.clear();
                     let _ = write!(tip, "{} HP", self.max_hp(me,id as DefId) as i32);
                     tip.push_str(match id as DefId {
@@ -532,7 +540,7 @@ impl Game {
                     if id as DefId != TC {
                         tip.push_str(if cfg!(feature="ee2-reference") {" · neutrales Land: doppelte Bauzeit"} else {" \u{b7} only inside your territory"});
                     }
-                    let cost=self.unit_cost(me,id as DefId);
+                    let cost=self.construction_cost(me,id as DefId);
                     act(&mut s, "b", id as QueueItem, d.name, &cost, self.afford(me, &cost), d.size, &tip);
                 }
             }

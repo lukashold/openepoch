@@ -22,3 +22,8 @@ pub(super) const MASKS: [u16; 90] = [
     517, 517, 517, 517, 517, 517, 517, 517, 517, 517,
     513, 513, 513, 513, 513, 673, 673, 513, 513, 513,
 ];
+
+pub(super) fn mask(definition: crate::ids::DefId) -> u16 {
+    if crate::wonders61::is_wonder(definition) { return BUILDING | WONDER; }
+    MASKS[definition as usize]
+}

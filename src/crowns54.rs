@@ -160,7 +160,7 @@ pub(crate) fn split(data: &[u8]) -> Option<(&[u8], Option<&[u8]>)> {
 }
 
 fn count_units(counters: &mut Counters, definition: DefId) {
-    let flags = MASKS[definition as usize];
+    let flags = mask(definition);
     counters.military_units += i32::from(flags & MILITARY != 0);
     counters.military_buildings += i32::from(flags & MILITARY_BUILDING != 0);
     counters.economic_buildings += i32::from(flags & ECONOMIC_BUILDING != 0);
@@ -299,7 +299,7 @@ impl Game {
 
     pub(crate) fn crown_city_protected(&self, actor: &Ent) -> bool {
         self.owner_crown_power(actor.team, IMPERIAL) == Some(0)
-            && MASKS[actor.def as usize] & BUILDING != 0 && self.capture_owner_city(actor)
+            && mask(actor.def) & BUILDING != 0 && self.capture_owner_city(actor)
     }
 
     pub(crate) fn crown_powers_active_for(&self, owner: u8) -> bool {
@@ -415,26 +415,44 @@ impl Game {
     pub(crate) fn crown_kill(&mut self, owner: u8, target: DefId) {
         let Some(crowns) = &mut self.crowns else { return; };
         let events = &mut crowns.events[owner as usize];
-        let flags = MASKS[target as usize];
+        let flags = mask(target);
         events.mobile_kills = events.mobile_kills.wrapping_add(i32::from(flags & MOBILE != 0));
         events.building_kills = events.building_kills.wrapping_add(i32::from(flags & BUILDING != 0));
     }
 
-    pub(crate) fn crown_piracy_payment(&mut self, owner: u8, attacker: DefId, victim_owner: u8, victim: DefId) {
-        if self.owner_crown_power(owner, IMPERIAL) != Some(PIRACY)
-            || victim_owner as usize >= self.nplayers || owner == victim_owner
-            || !glows::rows(IMPERIAL, PIRACY).iter().any(|row| {
+    pub(crate) fn combat_kill_payment(&mut self, owner: u8, attacker: DefId, victim_owner: u8, victim: DefId) {
+        if victim_owner as usize >= self.nplayers || owner == victim_owner { return; }
+        let piracy = self.owner_crown_power(owner, IMPERIAL) == Some(PIRACY)
+            && glows::rows(IMPERIAL, PIRACY).iter().any(|row| {
                 matches!(row.selector, glows::Selector::Units(units) if units.contains(&attacker))
-            }) { return; }
-        for (slot, cost) in self.unit_cost(victim_owner, victim).into_iter().enumerate() {
-            if cost != 0 { self.add_resource(owner, slot, f32::from(cost) * 0.5); }
+            });
+        let mosques = self.count_completed_wonders(owner, crate::wonders61::SELIMIYE_MOSQUE);
+        let gates = self.count_completed_wonders(owner, crate::wonders61::BRANDENBURG_GATE);
+        // 00803000 accumulates separate scale and bonus vectors, then credits
+        // positive scaled amounts and positive flat amounts in that order.
+        if piracy || mosques != 0 {
+            let base = if piracy { 0.5f32 } else { 0.0 };
+            let gold = (0..mosques).fold(base, |sum, _| sum + 0.2f32);
+            for (slot, cost) in self.unit_cost(victim_owner, victim).into_iter().enumerate() {
+                let scale = if slot == 4 { gold } else { base };
+                let amount = f64::from(cost) * f64::from(scale);
+                if amount > 0.0 {
+                    let bank = (f64::from(self.resource(owner, slot)) + amount).min(999_999.0) as f32;
+                    self.set_resource(owner, slot, bank);
+                }
+            }
+        }
+        if gates != 0 {
+            let points = (0..gates).fold(0.0f32, |sum, _| sum + 0.201f32);
+            let bank = &mut self.research_points[owner as usize];
+            *bank = (f64::from(*bank) + f64::from(points)).min(999_999.0) as f32;
         }
     }
 
     pub(crate) fn crown_conversion(&mut self, owner: u8, target: DefId) {
         let Some(crowns) = &mut self.crowns else { return; };
         let events = &mut crowns.events[owner as usize];
-        let flags = MASKS[target as usize];
+        let flags = mask(target);
         events.buildings_converted = events.buildings_converted.wrapping_add(i32::from(flags & BUILDING != 0));
         events.non_buildings_converted = events.non_buildings_converted.wrapping_add(i32::from(flags & NON_BUILDING != 0));
     }

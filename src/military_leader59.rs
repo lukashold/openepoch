@@ -274,7 +274,8 @@ impl Game {
         for kind in self.military_auras_for(index) {
             if kind == AuraKind::Fervor { ordinary = store_toward_zero(f64::from(ordinary) + (f64::from(1.2_f32) - 1.0)); }
         }
-        store_toward_zero(f64::from(ordinary) + f64::from(self.bless_attack_bonus(self.h(index))))
+        let art_of_war = self.art_of_war_bonus(&self.ents[index]);
+        store_toward_zero(f64::from(ordinary) + f64::from(self.bless_attack_bonus(self.h(index))) + f64::from(art_of_war))
     }
 
     pub(super) fn leader_damage_scale(&self, index: usize, area: bool) -> f32 {
@@ -287,7 +288,8 @@ impl Game {
             };
             factor = store_toward_zero(f64::from(factor) + (f64::from(scale) - 1.0));
         }
-        factor.max(0.0)
+        let art_of_war = self.art_of_war_bonus(&self.ents[index]);
+        store_toward_zero(f64::from(factor) - f64::from(art_of_war)).max(0.0)
     }
 
     pub(crate) fn military_leader_status(&self, index: usize) -> u32 {
