@@ -11,9 +11,17 @@ const messages={
   'ticket-expired':'Die LAN-Einladung ist abgelaufen. Lass dir eine neue Einladung geben.',
   'seat-claimed':'Dieser LAN-Platz wurde schon beansprucht. Lass dir eine neue Einladung geben.',
   'room-limit':'Der Spielstarter hat bereits zu viele offene LAN-Einladungen.',
+  'browse-unavailable':'Die LAN-Raumsuche konnte den lokalen UDP-Port 8127 nicht öffnen.',
+  'browse-in-use':'In einem anderen Fenster läuft bereits eine LAN-Raumsuche.',
+  'browse-expired':'Die LAN-Raumsuche wurde beendet.',
+  'room-already-listed':'Dieser Spielstarter zeigt bereits einen LAN-Raum an.',
+  'room-expired':'Der LAN-Raum ist nicht mehr sichtbar.',
+  'room-full':'In diesem LAN-Raum ist gerade kein Platz frei.',
+  'room-name':'Der Name muss aus 1 bis 40 sichtbaren Zeichen bestehen.',
+  'join-expired':'Die Beitrittsanfrage ist nicht mehr gültig.',
 };
 
-async function request(action, fields={}, keepalive=false) {
+export async function lanRequest(action, fields={}, keepalive=false) {
   if(!LOCAL_PAGE)throw Error('LAN-Verbindungen benötigen den lokalen OpenEpoch-Spielstarter.');
   let response;
   const controller=new AbortController();
@@ -34,21 +42,22 @@ async function request(action, fields={}, keepalive=false) {
 export const isLanInvite=code=>code.trim().startsWith(PREFIX);
 
 export async function lanStatus(){
-  try{return await request('status');}
+  try{return await lanRequest('status');}
   catch{return {available:false,host:null};}
 }
 
 export async function publishLanInvite(address,assignment,offer){
   if(!IPV4.test(address))throw Error(messages['host-disabled']);
-  const authority=await request('publish',{...assignment,offer});
+  const authority=await lanRequest('publish',{...assignment,offer});
   const {ticket,owner}=authority;
   if(!TICKET.test(ticket)||!TICKET.test(owner))throw Error('Der Spielstarter lieferte keine gültige Einladung.');
   let closed=false;
   return {
-    code:`${PREFIX}${address}:${ticket}`,
+    code:lanInviteCode(address,ticket),
+    approve:(roomOwner,request)=>lanRequest('room-approve',{owner:roomOwner,request,ticket,ticketOwner:owner}),
     async answer(){
       while(!closed){
-        const {answer}=await request('read',authority);
+        const {answer}=await lanRequest('read',authority);
         if(closed||answer)return closed?null:answer;
         await new Promise(done=>setTimeout(done,650));
       }
@@ -57,19 +66,24 @@ export async function publishLanInvite(address,assignment,offer){
     close(){
       if(closed)return;
       closed=true;
-      void request('close',authority,true).catch(()=>{});
+      void lanRequest('close',authority,true).catch(()=>{});
     },
   };
+}
+
+export function lanInviteCode(address,ticket){
+  if(!IPV4.test(address)||!TICKET.test(ticket))throw Error('Ungültige LAN-Einladung.');
+  return `${PREFIX}${address}:${ticket}`;
 }
 
 export async function claimLanInvite(code){
   const fields=code.trim().slice(PREFIX.length).split(':');
   const [address,ticket]=fields;
   if(fields.length!==2||!IPV4.test(address)||!TICKET.test(ticket))throw Error('Ungültige LAN-Einladung.');
-  const {offer,claim,room,seat,seats}=await request('claim',{address,ticket});
+  const {offer,claim,room,seat,seats}=await lanRequest('claim',{address,ticket});
   const authority={address,ticket,claim};
   return {sdp:offer,room,seat,seats,
-    answer:answer=>request('answer',{...authority,answer}),
-    release:()=>{void request('release',authority,true).catch(()=>{});},
+    answer:answer=>lanRequest('answer',{...authority,answer}),
+    release:()=>{void lanRequest('release',authority,true).catch(()=>{});},
   };
 }

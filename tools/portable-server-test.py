@@ -157,7 +157,7 @@ class PortableServerTest(unittest.TestCase):
         self.assertEqual(headers.get_content_type(), 'application/json')
         value = json.loads(body)
         self.assertEqual(value['application'], 'openepoch')
-        self.assertEqual(value['serverVersion'], 4)
+        self.assertEqual(value['serverVersion'], 5)
         self.assertIsNone(value['lanAddress'])
         self.assertRegex(value['rootToken'], r'^[0-9a-f]{16}$')
         self.assertEqual(set(value['wasmSha256ByFile']), {'openepoch.wasm','openepoch-ee2.wasm','openepoch-ee2-up15.wasm'})
@@ -173,7 +173,7 @@ class PortableServerTest(unittest.TestCase):
         self.assertEqual(status['wasmSha256'], hashlib.sha256((self.root/'openepoch-ee2.wasm').read_bytes()).hexdigest())
         for name,digest in status['wasmSha256ByFile'].items():
             self.assertEqual(digest, hashlib.sha256((self.root/name).read_bytes()).hexdigest())
-        self.assertEqual(urllib.parse.parse_qs(urllib.parse.urlsplit(server.ready['url']).query), {'rules':['ee2'],'build':['native55']})
+        self.assertEqual(urllib.parse.parse_qs(urllib.parse.urlsplit(server.ready['url']).query), {'rules':['ee2'],'build':['native56']})
         # This is another local loopback address, never an external connection.
         # A wildcard 0.0.0.0 listener would prevent the exclusive second bind.
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as check:
@@ -407,8 +407,8 @@ def main():
     result=program.result
     if args.report:
         digest=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
-        report={'format':'openepoch-portable-server-tests-v4','passed':result.wasSuccessful(),
-            'platform':sys.platform,'pythonVersion':sys.version.split()[0],'serverVersion':4,
+        report={'format':'openepoch-portable-server-tests-v5','passed':result.wasSuccessful(),
+            'platform':sys.platform,'pythonVersion':sys.version.split()[0],'serverVersion':5,
             'testsRun':result.testsRun,'failures':len(result.failures),'errors':len(result.errors),'skipped':len(result.skipped),
             'sourceHashes':{'tools/serve_game.py':digest(SERVER),'tools/portable-server-test.py':digest(Path(__file__).resolve())},
             'wasmSha256ByFile':{name:digest(DOCS/name) for name in ('openepoch.wasm','openepoch-ee2.wasm','openepoch-ee2-up15.wasm')},

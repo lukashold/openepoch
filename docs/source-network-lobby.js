@@ -3,7 +3,8 @@ import {createSourceRosterCarrier,createSourceCheckpointCarrier,createSourceShar
   createSourceGroupedCoopCarrier} from './source-network-wire.js?v=native54';
 import {captureBrowserCheckpoint,readBrowserCheckpoint,sendCheckpointWindow,receiveCheckpointChunk,
   validCheckpointDigest,validCheckpointSize,CHECKPOINT_WINDOW} from './source-network-checkpoint.js?v=native54';
-import {isLanInvite,lanStatus,publishLanInvite,claimLanInvite} from './lan-signaling.js?v=native55';
+import {isLanInvite,lanStatus,publishLanInvite,claimLanInvite} from './lan-signaling.js?v=native56';
+import {mountLanRoomList} from './lan-room-list.js?v=native56';
 
 const PREFIX='OE-R2.';
 const VERSION=2;
@@ -26,7 +27,7 @@ function unpackCode(code,kind) {
 
 export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHello,makeSettings,checkSettings,
   launch,onOpen,onDeparture,onHostLoss,validateArchive,onCheckpointState,sharedOwnerAvailable,sharedCheckpointAvailable,
-  groupedCoopAvailable,groupedCheckpointAvailable}) {
+  groupedCoopAvailable,groupedCheckpointAvailable,describeRoom,epochName}) {
   const get=id=>root.querySelector('#mp-roster-'+id);
   const status=get('status'),hostRoom=get('host-room'),guestRoom=get('guest-room');
   const startButton=get('start'),countSelect=get('count'),aiSelect=get('ai');
@@ -34,6 +35,25 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
   const active=(room,link)=>current===room&&room.phase!=='closed'&&(!link||room.links.get(link.seat)===link);
   const connected=room=>[...room.links.values()].filter(link=>link.hello&&link.reachable&&link.channel?.readyState==='open').length+1;
   const setStatus=message=>{status.textContent=message;};
+  const directory=mountLanRoomList(get,{
+    epochName,
+    details(name){
+      const room=current;
+      if(room?.local!==0||room.phase!=='lobby')return null;
+      return {room:room.id,name,seats:room.seats,ready:connected(room),open:room.seats-1-room.links.size,ai:room.ai,
+        mode:room.groupedOwners?'grouped':room.sharedOwner?'shared':'ordinary',tick:room.archive?.decoded.meta.tick??null,
+        ...describeRoom(room.archive?.settings)};
+    },
+    approve(owner,request){
+      const room=current;
+      if(room?.local!==0||room.phase!=='lobby')throw Error('Der Raum nimmt keine neuen Spieler mehr auf.');
+      const available=[...room.rows].find(([seat])=>!room.links.has(seat));
+      if(!available)throw Error('In diesem LAN-Raum ist gerade kein Platz frei.');
+      return available[1].beginInvitation(true,{owner,request});
+    },
+    join(code){showRoom('guest');void joinInvitation(code);},
+  });
+  window.addEventListener('pagehide',()=>directory.reset());
   void lanStatus().then(lan=>{
     lanAvailable=lan.available===true;
     lanHost=typeof lan.host==='string'?lan.host:null;
@@ -41,12 +61,15 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
     get('lan-help').textContent=lanHost?`Direktes LAN aktiv · ${lanHost}`:
       'LAN-Beitritt verfügbar. Zum Hosten den Spielstarter mit --lan und deiner privaten IPv4-Adresse starten.';
     for(const row of current?.rows?.values()??[])row.lan.hidden=!lanHost;
+    directory.availability(lan);
+    if(current?.local===0&&current.phase==='lobby')directory.showHost();
   });
 
   function reset(message='2 bis 4 Personen mit installiertem UP-Regelprofil.') {
     const old=current;
     current=null;
     guestRequest=null;
+    directory.reset();
     if(old){
       old.phase='closed';
       clearTimeout(old.prepareTimer);
@@ -414,7 +437,7 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
     row.lan.hidden=!lanHost;
     row.state.textContent='Einladung fehlt';
     row.answer.oninput=()=>{row.connect.disabled=!row.answer.value.trim()||!room.links.get(seat)?.invitation;};
-    async function beginInvitation(local){
+    async function beginInvitation(local,admission=null){
       row.invite.disabled=true;
       row.lan.disabled=true;
       row.state.textContent='Einladung wird erstellt …';
@@ -428,8 +451,14 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
           if(!active(room,link)){ticket.close();return;}
           link.lanTicket=ticket;
           row.manual.hidden=true;
-          row.offer.value=ticket.code;
-          row.state.textContent='LAN · Warte auf Beitritt';
+          if(admission){
+            await ticket.approve(admission.owner,admission.request);
+            if(!active(room,link))return;
+            row.state.textContent='LAN · Freigegeben · warte auf Verbindung';
+          }else{
+            row.offer.value=ticket.code;
+            row.state.textContent='LAN · Warte auf Beitritt';
+          }
           const answer=await ticket.answer();
           if(!answer||!active(room,link))return;
           row.state.textContent='LAN · Verbindung wird aufgebaut …';
@@ -451,8 +480,10 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
           closeLink(room,link);
           if(active(room))row.state.textContent=local?error.message:'Einladung fehlgeschlagen';
         }
+        if(admission)throw error;
       }
     }
+    row.beginInvitation=beginInvitation;
     row.invite.onclick=()=>beginInvitation(false);
     row.lan.onclick=()=>beginInvitation(true);
     row.connect.onclick=async()=>{
@@ -484,6 +515,7 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
     startButton.textContent=archive?'Spielstand fortsetzen':sharedOwner?'Koop-Partie starten':
       groupedOwners?'Gruppen-Koop starten':'Partie starten';
     for(let seat=1;seat<room.seats;seat++)addHostRow(room,seat);
+    directory.showHost();
     updateHost(room);
   }
 
@@ -534,20 +566,24 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
     showRoom('guest');
     setStatus(lanAvailable?'LAN- oder manuellen Einladungscode für deinen Platz einfügen.':'Einladungscode für deinen Platz einfügen.');
   };
+  get('browse').onclick=()=>{
+    showRoom('browse');
+    void directory.startBrowsing();
+  };
   get('invite').oninput=()=>{
     get('reply').textContent=isLanInvite(get('invite').value)?'Über LAN beitreten':'Antwort erzeugen';
   };
-  get('reply').onclick=async()=>{
+  async function joinInvitation(invitation){
     let room,claim,attempt;
     try{
       if(current)throw Error('Schließe zuerst die bisherige Verbindung.');
       attempt={};
       guestRequest=attempt;
-      const invitation=get('invite').value;
       const local=isLanInvite(invitation);
       get('reply').disabled=true;
       if(local){
         get('manual-answer').hidden=true;
+        get('reply').textContent='Über LAN beitreten';
         setStatus('LAN-Host wird kontaktiert …');
         claim=await claimLanInvite(invitation);
         if(guestRequest!==attempt){claim.release();return;}
@@ -584,7 +620,8 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
         setStatus(error.message);
       }
     }
-  };
+  }
+  get('reply').onclick=()=>void joinInvitation(get('invite').value);
   startButton.onclick=()=>{
     const room=current;
     if(!room||room.local!==0||room.phase!=='lobby'||connected(room)!==room.seats)return;
@@ -602,6 +639,7 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
         throw Error('Einem Mitspieler fehlen Regeln oder Grafiken für diesen Spielstand.');
       const settings=room.archive?.settings??makeSettings(room.seats,room.ai,guests,room.sharedOwner,room.groupedOwners);
       room.settings=checkSettings(settings,room.seats,!!room.archive);
+      directory.stopHosting();
       room.phase='preparing';
       startButton.disabled=true;
       armPreparation(room);

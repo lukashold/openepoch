@@ -44,7 +44,7 @@ import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
 import {createSourceRoundCarrier, selectedRoundTripMilliseconds} from './source-network-wire.js?v=native54';
-import {mountSourceRosterLobby} from './source-network-lobby.js?v=native55';
+import {mountSourceRosterLobby} from './source-network-lobby.js?v=native56';
 import {applyNetworkCheckpoint} from './source-network-resume.js?v=native54';
 import {createFullscreenController} from './fullscreen.js?v=building2';
 import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native17';
@@ -2726,6 +2726,10 @@ $('mp-roster-resume-file').disabled=!supportsNetworkCheckpoint;
 $('mp-roster-count').querySelector('[value="2"]').hidden=!supportsNetworkCheckpoint;
 const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
   rtcHost,rtcJoin,
+  describeRoom:archive=>archive?{climate:archive.climate,epoch:archive.epoch,finalEpoch:archive.finalEpoch}:
+    {climate:menuClimate(),epoch:+$('start-epoch').value,finalEpoch:+$('end-epoch').value},
+  epochName:epoch=>epoch===-1?'Zufall':epoch>=0&&epoch<wasm.epoch_count()?
+    dec.decode(u8(wasm.epoch_name_ptr(epoch),wasm.epoch_name_len(epoch))):`Epoche ${epoch+1}`,
   localHello:()=>({protocol:PROTOCOL_VERSION,profile:rosterProfile,rules:wasm.ruleset(),
     civilization:civilizationSetup.choice(0),climates,features:supportedRosterFeatures,
     checkpoints:supportsNetworkCheckpoint,sharedOwner:supportsSharedOwner,sharedOwnerCheckpoint:supportsSharedCheckpoint,

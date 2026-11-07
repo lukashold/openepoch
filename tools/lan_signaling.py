@@ -77,6 +77,20 @@ class Tickets:
         self.lock = threading.Lock()
         self.entries = {}
 
+    def assignment(self, key, owner):
+        with self.lock:
+            entry = self.entries.get(key)
+            if (not entry or entry['expires'] <= self.clock() or 'claim' in entry
+                    or not secrets.compare_digest(owner, entry['owner'])):
+                raise SignalingError(404, 'ticket-expired')
+            return entry['assignment'].copy()
+
+    def discard(self, key, owner):
+        with self.lock:
+            entry = self.entries.get(key)
+            if entry and secrets.compare_digest(owner, entry['owner']):
+                del self.entries[key]
+
     def handle(self, request, local):
         action = request.get('action')
         with self.lock:
@@ -149,14 +163,7 @@ def send_result(handler, status, result):
     handler.wfile.write(body)
 
 
-def forward(request):
-    address = private_ipv4(request.get('address'))
-    action = request.get('action')
-    fields = {'action': action, 'ticket': token(request.get('ticket'))}
-    if action in ('answer', 'release'):
-        fields['claim'] = token(request.get('claim'))
-    if action == 'answer':
-        fields['answer'] = description(request.get('answer'), 'answer')
+def forward_http(address, fields):
     # Only this fixed protocol endpoint can be contacted. A numeric private
     # address, direct HTTP connection, and no redirect or proxy handling are required.
     conn = http.client.HTTPConnection(address, LAN_PORT, timeout=3)
@@ -170,18 +177,33 @@ def forward(request):
             raise SignalingError(502, 'host-unreachable')
         if response.status != 200:
             reason = result.get('error')
-            raise SignalingError(response.status, reason if reason in ('ticket-expired', 'seat-claimed') else 'host-unreachable')
-        if action == 'claim':
-            return {'offer': description(result.get('offer'), 'offer'), 'claim': token(result.get('claim')),
-                    **seat_assignment(result)}
-        return {}
+            accepted = ('ticket-expired', 'seat-claimed', 'room-expired', 'room-full', 'room-limit', 'join-expired')
+            raise SignalingError(response.status, reason if reason in accepted else 'host-unreachable')
+        return result
     except (OSError, ValueError, UnicodeError, http.client.HTTPException, RecursionError):
         raise SignalingError(502, 'host-unreachable') from None
     finally:
         conn.close()
 
 
+def forward(request):
+    address = private_ipv4(request.get('address'))
+    action = request.get('action')
+    fields = {'action': action, 'ticket': token(request.get('ticket'))}
+    if action in ('answer', 'release'):
+        fields['claim'] = token(request.get('claim'))
+    if action == 'answer':
+        fields['answer'] = description(request.get('answer'), 'answer')
+    result = forward_http(address, fields)
+    if action == 'claim':
+        return {'offer': description(result.get('offer'), 'offer'), 'claim': token(result.get('claim')),
+                **seat_assignment(result)}
+    return {}
+
+
 def local_request(handler):
+    from lan_directory import LOCAL_ACTIONS, REMOTE_ACTIONS, forward_directory
+
     handler.connection.settimeout(6)
     address, tickets = handler.server.lan_address, handler.server.lan_tickets
     host = handler.headers.get('Host', '')
@@ -192,7 +214,11 @@ def local_request(handler):
         request = read_request(handler)
         action = request.get('action')
         if action == 'status':
-            result = {'available': True, 'host': address}
+            result = {'available': True, 'host': address, 'browse': 1}
+        elif action in LOCAL_ACTIONS:
+            result = handler.server.lan_directory.local(request)
+        elif action in REMOTE_ACTIONS:
+            result = forward_directory(request)
         elif action in ('claim', 'answer', 'release'):
             result = forward(request)
         elif tickets:
@@ -208,13 +234,19 @@ def local_request(handler):
 
 class LanHandler(BaseHTTPRequestHandler):
     def do_POST(self):
+        from lan_directory import REMOTE_ACTIONS
+
         try:
             private_ipv4(self.client_address[0])
             if (self.path != LAN_PATH or self.headers.get('Host') != f'{self.server.server_address[0]}:{LAN_PORT}'
                     or self.headers.get('Origin') is not None):
                 raise SignalingError(403, 'endpoint')
             request = read_request(self)
-            send_result(self, 200, self.server.tickets.handle(request, local=False))
+            if request.get('action') in REMOTE_ACTIONS:
+                result = self.server.directory.remote(request, self.client_address[0])
+            else:
+                result = self.server.tickets.handle(request, local=False)
+            send_result(self, 200, result)
         except SignalingError as error:
             send_result(self, error.status, {'error': str(error)})
         except OSError:
@@ -233,8 +265,9 @@ class LanServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = os.name != 'nt'
 
-    def __init__(self, address, tickets):
+    def __init__(self, address, tickets, directory):
         self.tickets = tickets
+        self.directory = directory
         self.slots = threading.BoundedSemaphore(16)
         super().__init__((private_ipv4(address), LAN_PORT), LanHandler)
 

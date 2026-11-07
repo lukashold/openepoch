@@ -22,10 +22,11 @@ from urllib.request import urlopen
 import webbrowser
 
 from lan_signaling import LAN_PATH, LAN_PORT, LanServer, SignalingError, Tickets, local_request, private_ipv4
+from lan_directory import DIRECTORY_PORT, RoomDirectory
 
 HOST = "127.0.0.1"
 STATUS_PATH = "/__openepoch__/status"
-SERVER_VERSION = 4
+SERVER_VERSION = 5
 WASM_FILES = ("openepoch.wasm", "openepoch-ee2.wasm", "openepoch-ee2-up15.wasm")
 
 
@@ -188,6 +189,7 @@ def bind_server(root, port, strict, verbose, lan_address=None):
             server = GameServer((HOST, candidate), handler)
             server.game_root, server.game_status, server.verbose = root, identity, verbose
             server.lan_address, server.lan_tickets = None, None
+            server.lan_directory = RoomDirectory(None, None)
             return server, server.server_address[1], False
         except OSError as error:
             if error.errno not in (errno.EADDRINUSE, errno.EACCES) and getattr(error, "winerror", None) not in (10048, 10013):
@@ -241,13 +243,15 @@ def main(argv=None):
     if args.lan and not reused:
         try:
             server.lan_tickets = Tickets()
-            lan = LanServer(args.lan, server.lan_tickets)
+            server.lan_directory = RoomDirectory(args.lan, server.lan_tickets)
+            lan = LanServer(args.lan, server.lan_tickets, server.lan_directory)
             server.lan_address = args.lan
         except OSError as error:
+            server.lan_directory.close()
             server.server_close()
             print(f"LAN-Einladungen auf {args.lan}:{LAN_PORT} konnten nicht starten: {error}", file=sys.stderr)
             return 2
-    url = f"http://{HOST}:{port}/?rules=ee2&build=native55"
+    url = f"http://{HOST}:{port}/?rules=ee2&build=native56"
     print("READY " + json.dumps({"url": url, "host": HOST, "port": port, "reused": reused}), flush=True)
     if port != args.port and args.port:
         print(f"Port{args.port} war belegt. Dieses Mal wird Port{port} verwendet; gespeicherte Spiele im Browser sind an den Port gebunden.", flush=True)
@@ -259,6 +263,7 @@ def main(argv=None):
     print("Spiel: " + url, flush=True)
     if lan:
         print(f"LAN-Einladungen im vertrauten lokalen Netz: {args.lan}:{LAN_PORT}", flush=True)
+        print(f"Optionale LAN-Raumliste: UDP {DIRECTORY_PORT}", flush=True)
         threading.Thread(target=lan.serve_forever, kwargs={"poll_interval": 0.2}, daemon=True).start()
     print("Dieses Fenster geoeffnet lassen. Ctrl+C beendet den Server.", flush=True)
     if not server.game_status["originalAssets"]:
@@ -284,6 +289,7 @@ def main(argv=None):
     finally:
         if timer:
             timer.cancel()
+        server.lan_directory.close()
         if lan:
             lan.shutdown()
             lan.server_close()

@@ -226,3 +226,9 @@ Der Host öffnet im Spiel den Mehrspielerraum und wählt bei jedem Gast
 »LAN-Einladung«. Der Gast fügt diesen Code unter »Raum beitreten« ein und wählt
 »Über LAN beitreten«. Der Host startet, sobald alle Plätze bereit sind. Dieselbe
 Einladung funktioniert für einen Raum mit geladenem Mehrspieler-Spielstand.
+
+Für die Raumsuche wählt der Host »Im LAN anzeigen«. Gäste starten OpenEpoch
+wie gewohnt, öffnen »LAN-Räume suchen« und wählen einen Raum. Der Host bestätigt
+die Beitrittsanfrage am freien Platz. Für diese optionale Raumsuche muss UDP 8127
+im lokalen Netz erreichbar sein. Geschlossene Räume und gestartete Partien
+verschwinden aus der Liste. Die Suche beginnt erst nach dem Klick im Menü.

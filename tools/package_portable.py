@@ -32,7 +32,7 @@ def main(project=None, overlay_paths=None):
         if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc":
             files.append((path, path.relative_to(project).as_posix()))
     for name in ("Start-OpenEpoch.command", "Start-OpenEpoch.cmd", "MAC-START.txt", "LICENSE",
-                 "tools/serve_game.py", "tools/lan_signaling.py", "tools/portable-assets-test.py",
+                 "tools/serve_game.py", "tools/lan_signaling.py", "tools/lan_directory.py", "tools/portable-assets-test.py",
                  "tools/portable-server-test.py"):
         path = overlay_paths.get(name, project / name)
         if not path.is_file():

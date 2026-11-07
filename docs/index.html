@@ -412,6 +412,7 @@
             <option value="pairs">2 + 2 Controller</option><option value="singlePair">2 + 1 + 1 Controller</option><option value="trio">3 + 1 Controller</option>
           </select></label>
           <button id="mp-roster-join" type="button" class="alt">Raum beitreten</button>
+          <button id="mp-roster-browse" type="button" class="alt" hidden>LAN-Räume suchen</button>
           <button id="mp-roster-close" type="button" class="alt" hidden>Raum schließen</button>
         </div>
         <div class="row">
@@ -420,6 +421,14 @@
         </div>
         <p id="mp-roster-status" role="status" class="dim">2 bis 4 Personen mit installiertem UP-Regelprofil.</p>
         <div id="mp-roster-host-room" hidden>
+          <fieldset id="mp-roster-lan-host" hidden>
+            <legend>LAN-Raumliste</legend>
+            <label for="mp-roster-lan-room-name">Raumname</label>
+            <input id="mp-roster-lan-room-name" value="OpenEpoch-Scharmützel" maxlength="40" autocomplete="off">
+            <button id="mp-roster-lan-list" type="button" class="alt">Im LAN anzeigen</button>
+            <p id="mp-roster-lan-host-status" role="status" class="dim">Dieser Raum ist nur über Einladungen erreichbar.</p>
+            <div id="mp-roster-lan-pending"></div>
+          </fieldset>
           <div id="mp-roster-players"></div>
           <button id="mp-roster-start" type="button" disabled>Partie starten</button>
         </div>
@@ -432,6 +441,14 @@
             <textarea id="mp-roster-answer" rows="2" readonly spellcheck="false"></textarea>
           </div>
         </div>
+        <fieldset id="mp-roster-lan-browser" hidden>
+          <legend>LAN-Räume</legend>
+          <label for="mp-roster-lan-guest-name">Anzeigename für die Anfrage</label>
+          <input id="mp-roster-lan-guest-name" value="Mitspieler" maxlength="40" autocomplete="off">
+          <p id="mp-roster-lan-browse-status" role="status" class="dim"></p>
+          <button id="mp-roster-lan-cancel-request" type="button" class="alt" hidden>Anfrage zurückziehen</button>
+          <div id="mp-roster-lan-rooms"></div>
+        </fieldset>
         <template id="mp-roster-player-template">
           <fieldset>
             <legend></legend>
@@ -484,6 +501,6 @@
 </aside>
 <div id="trade-route-caption" hidden role="status"></div>
 <div id="air-mission-caption" hidden role="status"></div>
-<script type="module" src="main.js?v=native55"></script>
+<script type="module" src="main.js?v=native56"></script>
 </body>
 </html>
