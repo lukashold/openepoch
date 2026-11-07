@@ -383,6 +383,7 @@
       <div class="row"><button id="mphost" class="alt">Host a game</button><button id="mpjoin" class="alt">Join a game</button>
         <label style="width:auto;margin-left:10px">AI opponents</label><select id="mpai"><option>0</option><option>1</option><option>2</option></select></div>
       <div class="row" id="mp-resignation-options" hidden><label for="mp-resign-policy">Bei Verlassen</label><select id="mp-resign-policy"><option value="0">Entfernen</option><option value="1">Defensiv</option><option value="5" selected>KI erstellen</option></select></div>
+      <div class="row" id="mp-source-rounds-option" hidden><label for="mp-source-rounds">Originaler Mehrspieler-Rundentakt</label><input id="mp-source-rounds" type="checkbox"><span class="dim">Beide Spieler müssen ihn aktivieren.</span></div>
       <div id="mpstatus">1 vs 1, directly between two browsers — no server. The host creates an invite code, the guest answers with a reply code (send them by chat or mail).</div>
       <textarea id="mpin" rows="3" placeholder="Choose Host or Join first" spellcheck="false"></textarea>
       <div class="row"><button id="mpgo" class="alt">Connect</button></div>
@@ -424,6 +425,6 @@
 </aside>
 <div id="trade-route-caption" hidden role="status"></div>
 <div id="air-mission-caption" hidden role="status"></div>
-<script type="module" src="main.js?v=native41"></script>
+<script type="module" src="main.js?v=native44"></script>
 </body>
 </html>

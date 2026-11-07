@@ -1047,7 +1047,7 @@ impl Game {
         mix(self.tick);
         mix(self.rng.0);
         if let Some(clock) = self.source_clock {
-            mix(if clock.adaptive.is_some() { crate::source_clock38::ADAPTIVE_MAGIC } else { crate::source_clock38::MAGIC });
+            mix(clock.magic());
             mix(clock.elapsed.to_bits());
             mix(clock.last_step.to_bits());
             mix(clock.previous.to_bits());
@@ -1241,6 +1241,16 @@ impl Game {
         let Some(advanced) = self.source_clock_for_step()
             .and_then(|clock| clock.advance_adaptive(self.tick, wall_rate, rate, scale)) else { return false; };
         self.commit_source_step(advanced)
+    }
+
+    /// Experimental network scheduler entry. Round admission and the authenticated
+    /// command batch remain the scheduler's responsibility.
+    pub(crate) fn tick_with_network_source_slot(&mut self, wall_rate: u32, rate: u32, scale: f32, enters_round: bool) -> u32 {
+        if !self.net || self.bench != 0 || self.tick == u32::MAX { return 0; }
+        let clock = self.source_clock.or_else(|| (self.tick == 0).then(crate::source_clock38::SourceClock::default));
+        let Some(advanced) = clock.and_then(|clock| clock.advance_network(self.tick, wall_rate, rate, scale, enters_round))
+        else { return 0; };
+        if self.commit_source_step(advanced) { 1 } else { 2 }
     }
 
     fn source_clock_for_step(&self) -> Option<crate::source_clock38::SourceClock> {

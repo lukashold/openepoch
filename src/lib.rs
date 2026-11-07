@@ -267,6 +267,17 @@ pub extern "C" fn tick_with_adaptive_source_slot(wall_rate: u32, rate: u32, scal
     }
 }
 
+/// A negotiated host-authoritative scheduler supplies the round boundary.
+/// 0 rejects malformed input, 1 commits a world step, 2 settles a terminal round.
+#[no_mangle]
+pub extern "C" fn tick_with_network_source_slot(wall_rate: u32, rate: u32, scale: f32, enters_round: u32) -> u32 {
+    if enters_round > 1 { return 0; }
+    unsafe {
+        (&mut *addr_of_mut!(GAME)).as_mut().map_or(0, |game|
+            game.tick_with_network_source_slot(wall_rate, rate, scale, enters_round != 0))
+    }
+}
+
 fn adaptive_tempo() -> Option<source_clock38::AdaptiveTempo> {
     unsafe { (&*addr_of_mut!(GAME)).as_ref()?.source_clock?.adaptive }
 }

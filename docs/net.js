@@ -128,7 +128,12 @@ function wire(pc, ch, on) {
   ch.onopen = () => on.open(ch);
   ch.onclose = () => on.close();
   ch.onmessage = e => on.message(e.data);
-  pc.onconnectionstatechange = () => { if (['failed', 'disconnected', 'closed'].includes(pc.connectionState)) on.close(); };
+  pc.onconnectionstatechange = () => {
+    const state=pc.connectionState;
+    if(state==='connected')on.transport?.(true);
+    if(state==='disconnected'&&on.transport?.(false))return;
+    if(['failed','disconnected','closed'].includes(state))on.close();
+  };
 }
 
 /** Host: returns { code, accept(replyCode) }. */

@@ -1,10 +1,11 @@
-//! Opt-in solo simulation clock. The scheduler supplies the unrounded product
+//! Opt-in simulation clock. The scheduler supplies the unrounded product
 //! of wall tick interval and effective speed. Source 0059A770 stores dt as f32
 //! and adds the retained binary64 product to the f32 game time. The native
 //! frame wrapper selects x87 53-bit precision and round-toward-zero stores.
 
 pub(crate) const MAGIC: u32 = u32::from_le_bytes(*b"VCL3");
 pub(crate) const ADAPTIVE_MAGIC: u32 = u32::from_le_bytes(*b"VCA1");
+pub(crate) const NETWORK_MAGIC: u32 = u32::from_le_bytes(*b"VCN1");
 const HEADER_LEN: usize = 16;
 const ADAPTIVE_HEADER_LEN: usize = 28;
 const CHECKSUM_LEN: usize = 4;
@@ -51,6 +52,7 @@ pub(crate) struct SourceClock {
     pub(crate) last_step: f32,
     pub(crate) previous: f32,
     pub(crate) adaptive: Option<AdaptiveTempo>,
+    pub(crate) network: bool,
 }
 
 impl SourceClock {
@@ -60,12 +62,34 @@ impl SourceClock {
     }
 
     pub(crate) fn advance_adaptive(self, tick: u32, wall_rate: u32, rate: u32, scale: f32) -> Option<Self> {
+        if self.network { return None; }
         let tempo = AdaptiveTempo::checked(wall_rate, rate, scale)?;
         if let Some(previous) = self.adaptive {
             if wall_rate != previous.rate || (tick % MAX_RATE != 0 &&
                 (rate != previous.rate || scale.to_bits() != previous.scale.to_bits())) { return None; }
         } else if tick != 0 || wall_rate != rate { return None; }
         self.advance_inner(tempo.delta(), Some(tempo))
+    }
+
+    pub(crate) fn advance_network(self, tick: u32, wall_rate: u32, rate: u32, scale: f32, enters_round: bool) -> Option<Self> {
+        let tempo = AdaptiveTempo::checked(wall_rate, rate, scale)?;
+        if let Some(previous) = self.adaptive {
+            if !self.network || wall_rate != previous.rate || (!enters_round &&
+                (rate != previous.rate || scale.to_bits() != previous.scale.to_bits())) {
+                return None;
+            }
+        } else if tick != 0 || wall_rate != MAX_RATE || rate != wall_rate {
+            return None;
+        }
+        let mut advanced = self.advance_inner(tempo.delta(), Some(tempo))?;
+        advanced.network = true;
+        Some(advanced)
+    }
+
+    pub(crate) fn magic(self) -> u32 {
+        if self.network { NETWORK_MAGIC }
+        else if self.adaptive.is_some() { ADAPTIVE_MAGIC }
+        else { MAGIC }
     }
 
     fn advance_inner(self, seconds: f64, adaptive: Option<AdaptiveTempo>) -> Option<Self> {
@@ -76,14 +100,18 @@ impl SourceClock {
         let last_step = store_positive_f32(seconds);
         if last_step == 0.0 { return None; }
         let elapsed = store_positive_f32(add_positive_f64(f64::from(self.elapsed), seconds));
-        Some(Self { elapsed, last_step, previous: self.elapsed, adaptive })
+        Some(Self { elapsed, last_step, previous: self.elapsed, adaptive, network: self.network })
     }
 
     pub(crate) fn valid_at(self, tick: u32, network: bool) -> bool {
         let maximum = if self.adaptive.is_some() { MAX_ADAPTIVE_STEP } else { f64::from(MAX_STEP) };
-        !network && tick > 0 && f64::from(self.elapsed) <= f64::from(tick) * maximum
+        self.network == network && tick > 0 && f64::from(self.elapsed) <= f64::from(tick) * maximum
             && f64::from(self.previous) <= f64::from(tick - 1) * maximum
-            && self.adaptive.is_none_or(|tempo| tempo.wall_rate == tempo.rate || (tick > 1 && (tick - 1) % MAX_RATE == 0))
+            && self.adaptive.is_none_or(|tempo| {
+                if self.network && tick == 1 { return tempo.wall_rate == MAX_RATE && tempo.rate == MAX_RATE; }
+                if tempo.wall_rate == tempo.rate { return true; }
+                if self.network { tick > 1 } else { tick > 1 && (tick - 1) % MAX_RATE == 0 }
+            })
     }
 }
 
@@ -126,9 +154,9 @@ fn valid_advance(previous: f32, elapsed: f32, last_step: f32) -> bool {
 pub(crate) fn wrap(inner: Vec<u8>, clock: Option<SourceClock>) -> Vec<u8> {
     let Some(clock) = clock else { return inner; };
     if inner.is_empty() { return inner; }
-    let (magic, header) = if clock.adaptive.is_some() { (ADAPTIVE_MAGIC, ADAPTIVE_HEADER_LEN) } else { (MAGIC, HEADER_LEN) };
+    let header = if clock.adaptive.is_some() { ADAPTIVE_HEADER_LEN } else { HEADER_LEN };
     let mut out = Vec::with_capacity(header + inner.len() + CHECKSUM_LEN);
-    out.extend_from_slice(&magic.to_le_bytes());
+    out.extend_from_slice(&clock.magic().to_le_bytes());
     out.extend_from_slice(&clock.elapsed.to_le_bytes());
     out.extend_from_slice(&clock.last_step.to_le_bytes());
     out.extend_from_slice(&clock.previous.to_le_bytes());
@@ -143,7 +171,8 @@ pub(crate) fn wrap(inner: Vec<u8>, clock: Option<SourceClock>) -> Vec<u8> {
 }
 
 pub(crate) fn split(buf: &[u8]) -> Option<(&[u8], Option<SourceClock>)> {
-    let adaptive_archive = buf.starts_with(&ADAPTIVE_MAGIC.to_le_bytes());
+    let network = buf.starts_with(&NETWORK_MAGIC.to_le_bytes());
+    let adaptive_archive = network || buf.starts_with(&ADAPTIVE_MAGIC.to_le_bytes());
     if !adaptive_archive && !buf.starts_with(&MAGIC.to_le_bytes()) { return Some((buf, None)); }
     let elapsed = f32::from_le_bytes(buf.get(4..8)?.try_into().ok()?);
     let last_step = f32::from_le_bytes(buf.get(8..12)?.try_into().ok()?);
@@ -167,5 +196,5 @@ pub(crate) fn split(buf: &[u8]) -> Option<(&[u8], Option<SourceClock>)> {
         (HEADER_LEN, None)
     };
     let payload = buf.get(header..end)?;
-    Some((payload, Some(SourceClock { elapsed, last_step, previous, adaptive })))
+    Some((payload, Some(SourceClock { elapsed, last_step, previous, adaptive, network })))
 }

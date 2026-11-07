@@ -25,7 +25,7 @@ import {loadSourceSailRuntime} from './source-sail-runtime.js?v=sails7';
 import {createRenderAssetMapping} from './original-render-namespace.js?v=native6';
 import {createFrontendNamespace} from './render-namespace.js?v=native36';
 import {ORIGINAL_SPEEDS, changeOriginalSpeed, checkOriginalTempo, loadOriginalTempo, originalStartingSpeed} from './original-game-tempo.js?v=native37';
-import {advanceAdaptiveSourceFrame, advanceSourceSoloFrame, createAdaptiveSourceClock, sampleSourceRenderFps, SOURCE_SOLO_INTERVAL, sourceRenderSeconds, sourceStepDelta, sourceWallInterval} from './source-solo-clock.js?v=native41';
+import {advanceAdaptiveSourceFrame, advanceSourceSoloFrame, createAdaptiveSourceClock, sampleSourceRenderFps, SOURCE_SOLO_INTERVAL, sourceRenderSeconds, sourceStepDelta, sourceWallInterval} from './source-solo-clock.js?v=native44';
 import {mountOriginalGameOptions} from './original-game-options.js?v=native37';
 import {mountOriginalGameSettings} from './original-game-settings.js?v=native38audio';
 import {createRenderActorMetadata} from './render-actor-metadata.js?v=pack8';
@@ -39,9 +39,11 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=clock38';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native41';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native44';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
-import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native37';
+import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native44';
+import {SourceRoundPeer, SOURCE_ROUND_VERSION} from './source-network-round.js?v=native44';
+import {createSourceRoundCarrier, selectedRoundTripMilliseconds} from './source-network-wire.js?v=native44';
 import {createFullscreenController} from './fullscreen.js?v=building2';
 import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native17';
 import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=native39ceasefire';
@@ -640,6 +642,8 @@ const adaptiveRenderSample = {remainder:0,count:0,fps:0};
 $('original-tempo-options').hidden = !hasOriginalTempo;
 const hasNetworkResignation=hasOriginalTempo&&typeof wasm.configure_network_resignation==='function';
 $('mp-resignation-options').hidden=!hasNetworkResignation;
+const supportsSourceNetworkClock=hasNetworkResignation&&typeof wasm.tick_with_network_source_slot==='function';
+$('mp-source-rounds-option').hidden=!supportsSourceNetworkClock;
 const hasInitialCeasefire=hasOriginalTempo&&typeof wasm.configure_initial_ceasefire==='function';
 $('initial-ceasefire-option').hidden=!hasInitialCeasefire;
 const ceasefireStatus=$('initial-ceasefire-status');
@@ -667,7 +671,7 @@ function startingTempo(tempo) {
 
 function showSpeed() {
   $('speed').textContent = originalTempo ? `${speed.toLocaleString('de-DE',{maximumFractionDigits:2})}×` : `${speed}×`;
-  $('speed').disabled = originalTempo?.locked === true || (net!==null&&net.ls.local!==0);
+  $('speed').disabled = originalTempo?.locked === true || (net!==null&&(net.ls.local!==0||(net.sourceRounds&&net.ls.alone)));
 }
 const fullmapPip = createFullmapPipBridge({gl,canvas,available:()=>referenceMode&&originalTerrain.enabled&&running&&!bench,
   mainPose:()=>cam, setMainFocus(x,y){cam.x=x;cam.y=y;updateCamera();}, heightAt:groundAt,
@@ -1020,6 +1024,7 @@ function worldSaveBytes() {
   return length ? u8(ptr,length).slice() : null;
 }
 function applyWorldSave(bytes) {
+  if(bytes?.[0]===0x56&&bytes[1]===0x43&&bytes[2]===0x4e&&bytes[3]===0x31)return 0;
   const ptr=wasm.load_alloc(bytes.length);
   u8(ptr,bytes.length).set(bytes);
   return wasm.load_apply();
@@ -1080,7 +1085,14 @@ refreshContinue();
 // ---------------------------------------------------------------- simulation stepping & sound
 function advance(dt, now) {
   let visualSeconds = dt * speed;
-  if (net) {
+  if (net?.sourceRounds) {
+    net.refreshLink?.(now);
+    let result;
+    try { result=net.ls.advance(dt); }
+    catch(error) { net.ls.abort(error.message); }
+    visualSeconds=result?.gameSeconds??0;
+    if(result?.steps){simMs=net.ls.cpuSeconds*1000;waitSince=now;}
+  } else if (net) {
     acc = Math.min(acc + dt * speed, TICK * 6);         // allow a short catch-up burst, never a spiral
     let steps = 0; const t0 = performance.now();
     while (acc >= TICK && steps < 8 && net.ls.step()) { acc -= TICK; steps++; }
@@ -1218,7 +1230,7 @@ function drawFallbackModels(vp,ranges) {
 
 function frame(now) {
   const wallSeconds = (now - last) / 1000;
-  const dt = Math.min(0.1, wallSeconds); last = now;
+  const dt = Math.min(0.1, Math.max(0, wallSeconds)); last = now;
   if (!running) { sfx.menuMusic(); return; }
   if (worldMaterialPending) return;
   if(gameSettings.active())sfx.menuMusic();
@@ -1250,7 +1262,8 @@ function frame(now) {
       weather:'Normal',running:audible,priorities:audible?originalAmbientPriorities(ambientCoverage,view,u8(wasm.fog_ptr(),MAP*MAP)):null});
   }
   if(captureGlow&&!paused&&!(net&&net.ls.waiting)&&wasm.has_active_capture_glow())captureGlow.advance(visualSeconds);
-  const interpolation = adaptiveSoloClock ? adaptiveSoloClock.remainder / sourceWallInterval(adaptiveSoloClock.rate)
+  const interpolation = net?.sourceRounds ? net.ls.interpolation()
+    : adaptiveSoloClock ? adaptiveSoloClock.remainder / sourceWallInterval(adaptiveSoloClock.rate)
     : acc / (sourceSoloClock ? SOURCE_SOLO_INTERVAL : TICK);
   const alpha = paused || (net && net.ls.waiting) ? 1 : Math.min(1, interpolation);
   if (!net && !bench && now - lastAuto > 180000) { lastAuto = now; saveGame(true); }
@@ -1468,7 +1481,8 @@ function updateUi(drawn, now) {
   let status = `${Math.round(1000 / frameMs)} fps · worst ${worstMs.toFixed(0)} ms · sim ${simMs.toFixed(2)} ms/tick · ${ui.n} entities · ${drawn} drawn`;
   if(bench)status+=` · originals CPU ${(originalModels.metrics.colorMs+originalModels.metrics.shadowMs).toFixed(1)} ms / ${originalModels.metrics.calls} draws / ${(originalModels.metrics.triangles/1000).toFixed(0)}k tris / GPU ${originalModels.metrics.gpuMs.toFixed(1)}ms`;
   if (net) {
-    if (net.ls.desync) status = '⚠ OUT OF SYNC with the other player · ' + status;
+    if(net.sourceRounds)status=sourceRoundStatus(net.ls)+' · '+status;
+    else if (net.ls.desync) status = '⚠ OUT OF SYNC with the other player · ' + status;
     else if (net.ls.alone) status = 'other player left · ' + status;
     else if (net.ls.waiting && now - waitSince > 600) status = 'waiting for the other player… · ' + status;
     else status = 'multiplayer · ' + status;
@@ -2042,6 +2056,13 @@ for (const b of document.querySelectorAll('[data-bench]')) b.onclick = () => { n
 // ---------------------------------------------------------------- multiplayer lobby
 const mpStatus = t => $('mpstatus').textContent = t;
 let pending = null;
+function sourceRoundStatus(peer) {
+  if(peer.desync)return 'Mehrspieler · Synchronisation verloren';
+  if(peer.terminal)return 'Mehrspieler · Partie beendet';
+  const label=peer.alone?'Nach Verbindungsabbruch lokal':peer.waiting?'Warte auf Mitspieler':'Originaler Rundentakt';
+  return peer.round<0?label:`${label} · Runde ${peer.round+1} · ${peer.rate} Hz · ${peer.length} Schritte/Runde`;
+}
+
 function channel(local) {
   let ch = null, pc = null, rejected = false, remoteWarplans, remoteCapture = false, remoteCaptureAnimation = false;
   let remoteInfantryRoster = false, remoteProductionRoster = false, remoteTradeRoute = false, remoteAirMission = false, remoteAirRunway = false, remoteAirTakeoff = false, remoteAirLanding = false;
@@ -2049,6 +2070,7 @@ function channel(local) {
   let remoteOriginalTempo = false;
   let remoteResignation = false;
   let remoteInitialCeasefire = false;
+  let allowSourceRounds = false, remoteSourceRounds = false, helloSeen = false;
   const supportsCapture = typeof wasm.capture_configure_peer === 'function';
   const supportsCaptureAnimation = supportsCapture && typeof wasm.capture_animation_configure_peer === 'function';
   const supportsInfantryRoster = typeof wasm.infantry_roster_configure_peer === 'function';
@@ -2062,6 +2084,8 @@ function channel(local) {
   return {
     open(c) {
       ch = c;
+      allowSourceRounds=supportsSourceNetworkClock&&$('mp-source-rounds').checked&&
+        c.ordered===true&&c.maxRetransmits===null&&c.maxPacketLifeTime===null;
       ch.send(JSON.stringify({t:'hello', protocol:PROTOCOL_VERSION, rules:wasm.ruleset(),civilizationChoice:civilizationSetup.choice(0),
         ...(originalEnabled&&fullmap?{warplans:WARPLAN_PEER_VERSION}:{}),
         ...(supportsCapture?{capture:1}:{}),
@@ -2076,6 +2100,7 @@ function channel(local) {
         ...(supportsCarrier?{airCarrier:1}:{}),
         ...(hasOriginalTempo?{originalTempo:1}:{}),
         ...(hasNetworkResignation?{networkResignation:1}:{}),
+        ...(allowSourceRounds?{sourceRounds:SOURCE_ROUND_VERSION}:{}),
         ...(hasInitialCeasefire?{initialCeasefire:1}:{}),
         ...(climates.length>1?{climates}:{})}));
       mpStatus('Verbunden – Spielversion wird geprüft …');
@@ -2085,6 +2110,8 @@ function channel(local) {
         let m; try { m = JSON.parse(d);if(!m||typeof m!=='object'||Array.isArray(m))throw new Error('invalid message'); } catch { rejected = true; mpStatus('Ungültige Verbindungsdaten.'); ch.close(); return; }
         if(rejected)return;
         if (m.t === 'hello') {
+          if(helloSeen)return;
+          helloSeen=true;
           if (m.protocol !== PROTOCOL_VERSION || m.rules !== wasm.ruleset()) { rejected = true; mpStatus('Unterschiedliche Spielversion oder Regelprofile. Beide müssen denselben Stand öffnen.'); ch.close(); return; }
           let guestClimates;
           try{guestClimates=peerClimates(m.climates);}catch{return reject('Ungültige Klimaauswahl des Mitspielers.');}
@@ -2104,6 +2131,7 @@ function channel(local) {
           remoteOriginalTempo=m.originalTempo===1;
           remoteResignation=m.networkResignation===1;
           remoteInitialCeasefire=m.initialCeasefire===1;
+          remoteSourceRounds=m.sourceRounds===SOURCE_ROUND_VERSION;
           if (local === 0 && !net) {
             try{
               const ai=+$('mpai').value,players=2+ai,choices=civilizationSetup.choices();
@@ -2126,6 +2154,7 @@ function channel(local) {
                 ...(supportsCarrier&&remoteAirCarrier?{airCarrier:1}:{}),
                 ...(hasOriginalTempo&&remoteOriginalTempo?{gameTempo:menuTempo()}:{}),
                 ...(hasNetworkResignation&&remoteResignation?{resignationPolicy:+$('mp-resign-policy').value}:{}),
+                ...(allowSourceRounds&&remoteSourceRounds&&remoteOriginalTempo&&remoteResignation?{sourceRounds:SOURCE_ROUND_VERSION}:{}),
                 ...(ceasefire?{ceasefire}:{}),
                 ...resolved,popLimit:choices?+$('pop-limit').value:null,supplies:choices?+$('supplies').value:null};
               checkStart(cfg);ch.send(JSON.stringify(cfg));launch(cfg);
@@ -2135,12 +2164,25 @@ function channel(local) {
           try{checkStart(m);launch(m);}catch{return reject('Ungültige Spielversion, Völker- oder Scharmützeleinstellungen.');}
         } else if (net?.ch===ch) net.warplans?.receive(m);
       }
-      else if (net) net.ls.receive(d);
+      else if (net?.ch===ch) {
+        if(net.sourceRounds){
+          try { if(!net.carrier.receive(d))net.ls.abort('Netzwerkpaket wurde abgelehnt'); }
+          catch(error) { net.ls.abort(error.message); }
+        } else net.ls.receive(d);
+      }
+    },
+    transport(available) {
+      if(net?.ch!==ch||!net.sourceRounds||net.ls.alone)return false;
+      net.ls.setTransportAvailable(available);
+      return true;
     },
     close() {
       if(net?.ch===ch&&!net.ls.alone){
-        net.ls.dropPeer();net.warplans?.cancelPending();
+        if(net.sourceRounds&&!net.ls.dropPeer())return;
+        if(!net.sourceRounds)net.ls.dropPeer();
+        net.warplans?.cancelPending();
         if(net.resignation)wasm.network_peer_disconnected();
+        if(net.sourceRounds)showSpeed();
         toast('Die Verbindung zum Mitspieler wurde getrennt.');
       }else if(!net&&!rejected)mpStatus('Verbindung geschlossen.');
     },
@@ -2167,6 +2209,8 @@ function channel(local) {
     }
     if(cfg.resignationPolicy!==undefined&&(!hasNetworkResignation||!remoteResignation||
       !Number.isInteger(cfg.resignationPolicy)||cfg.resignationPolicy<0||cfg.resignationPolicy>7))throw Error('Unsupported resignation policy');
+    if(cfg.sourceRounds!==undefined&&(cfg.sourceRounds!==SOURCE_ROUND_VERSION||!allowSourceRounds||!remoteSourceRounds||
+      !cfg.gameTempo||cfg.resignationPolicy===undefined))throw Error('Unsupported source rounds');
     if(cfg.ceasefire!==undefined&&(!hasInitialCeasefire||!remoteInitialCeasefire||
       !Number.isInteger(cfg.ceasefire)||cfg.ceasefire<1||cfg.ceasefire>10))throw Error('Unsupported initial ceasefire');
     if(civilizationSetup.enabled){
@@ -2193,9 +2237,29 @@ function channel(local) {
     if(cfg.resignationPolicy!==undefined&&!wasm.configure_network_resignation(cfg.resignationPolicy))throw Error('Resignation setup failed');
     if(cfg.ceasefire!==undefined&&!wasm.configure_initial_ceasefire(cfg.ceasefire))throw Error('Initial ceasefire setup failed');
     seasonSession.configure(peerSeasonSettings(cfg.seasons),cfg.climate);setSeasonControls(seasonSession.settings);climateControl.value=seasonSession.climate;
-    net = {ch,pc,ls:null,resignation:cfg.resignationPolicy!==undefined};
+    const sourceRounds = cfg.sourceRounds===SOURCE_ROUND_VERSION;
+    net = {ch,pc,ls:null,resignation:cfg.resignationPolicy!==undefined,...(sourceRounds?{sourceRounds:true}:{})};
     const tempo = cfg.gameTempo ? {locked:cfg.gameTempo.locked,apply:applyRequestedSpeed} : null;
-    net.ls = new Lockstep(wasm, local, buf => { if (ch.readyState === 'open') ch.send(buf); }, tempo);
+    const send = buf => { if(ch.readyState==='open')ch.send(buf); };
+    if(sourceRounds){
+      const session=net;
+      let roundTrip=0,nextStats=0;
+      const carrier=createSourceRoundCarrier(send,message=>session.ls.receive(1-local,message));
+      session.carrier=carrier;
+      session.ls=new SourceRoundPeer(wasm,local,carrier.send,{
+        requested:originalStartingSpeed(cfg.gameTempo),locked:cfg.gameTempo.locked,
+        renderFps:()=>adaptiveRenderSample.fps,linkMs:()=>roundTrip,
+        nowSeconds:()=>performance.now()/1000,onRequested:applyRequestedSpeed,
+      });
+      if(local===0&&typeof pc?.getStats==='function')session.refreshLink=now=>{
+        if(session.ls.alone||session.ls.terminal||now<nextStats)return;
+        nextStats=now+1000;
+        pc.getStats().then(stats=>{
+          const measurement=selectedRoundTripMilliseconds(stats);
+          if(net===session&&measurement!==null)roundTrip=measurement;
+        }).catch(()=>{});
+      };
+    } else net.ls = new Lockstep(wasm, local, send, tempo);
     if(originalEnabled&&fullmap&&remoteWarplans===WARPLAN_PEER_VERSION)net.warplans=createWarplanPeer({
       local,peerVersion:remoteWarplans,end:MAP-1,recipientAvailable:()=>!!warplanRecipient(),
       post:packet=>{if(ch.readyState!=='open')return false;ch.send(JSON.stringify(packet));return true;},
@@ -2205,7 +2269,9 @@ function channel(local) {
     cam.heading=0;
     if(referenceMode)cam.nativeFraction=.2;
     begin(cfg.gameTempo ? startingTempo(cfg.gameTempo) : null);
-    toast(local === 0 ? 'You are blue. Good luck!' : 'You are red. Good luck!');
+    if(sourceRounds&&local===1)net.ls.activate();
+    toast(allowSourceRounds&&!sourceRounds?'Die Partie verwendet den kompatiblen Mehrspieler-Takt.'
+      :local === 0 ? 'You are blue. Good luck!' : 'You are red. Good luck!');
   }
 }
 $('mpopen').onclick = () => { $('mp').style.display = $('mp').style.display === 'block' ? 'none' : 'block'; };
