@@ -4,6 +4,8 @@ const manifestHash='6f7f187a80af5248e912984a1ca20c99c29d62021416b13e9360a05d069b
 const digest=/^[a-f0-9]{64}$/;
 const oneShotMinimum=Math.fround(.01), loopMinimum=Math.fround(.05);
 const stateNames=[null,'walk','attack1','death','takeoff','parked','idle'];
+import {sourceRenderSeconds} from './source-solo-clock.js?v=native40clock';
+
 const stepSeconds=Math.fround(.05);
 
 const audioFamily=definition=>{
@@ -49,6 +51,7 @@ export function addCarrierFlightAudio(flight, carrier){
 }
 
 export function readAirFlightAudio(wasm,alpha){
+  const sourceSeconds=sourceRenderSeconds(wasm,alpha);
   const count=wasm.air_audio_prepare(alpha)>>>0;
   const currentPtr=wasm.air_audio_current_ptr()>>>0;
   const eventCount=wasm.air_audio_transition_count()>>>0;
@@ -69,12 +72,13 @@ export function readAirFlightAudio(wasm,alpha){
   }
   for(let i=0;i<eventCount;i++){
     const at=eventPtr+24*i;
-    const row={revision:u32(at),at:Math.fround(Math.fround(u32(at+4))*stepSeconds),handle:u32(at+8),
+    const stamp=sourceSeconds===null?Math.fround(Math.fround(u32(at+4))*stepSeconds):wasm.air_audio_transition_seconds(i);
+    const row={revision:u32(at),at:stamp,handle:u32(at+8),
       definition:view.getUint16(at+12,true),epoch:view.getUint8(at+14),state:stateNames[view.getUint8(at+15)],
       duration:f32(at+16),mode:view.getUint8(at+20)};
     if(row.state)transitions.push(row);
   }
-  return {current,transitions,actors:current,now:Math.fround(Math.fround((wasm.game_tick()>>>0)+alpha)*stepSeconds)};
+  return {current,transitions,actors:current,now:sourceSeconds??Math.fround(Math.fround((wasm.game_tick()>>>0)+alpha)*stepSeconds)};
 }
 
 // 005FDF10 folds the whole delta and submits at most the old tail and new head.

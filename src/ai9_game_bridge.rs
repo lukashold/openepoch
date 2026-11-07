@@ -17,7 +17,7 @@ use crate::ai9_research_tick::{cancel, tick_active, ResearchFrame, ResearchTick}
 use crate::ai9_research_unlock::{unlock_successors, ImprovementFamilies, ResearchUnlock};
 use crate::ai9_tech_tree::{Budget, Node, TechnologyTree};
 use crate::defs::{DefId, TC, WAREHOUSE};
-use crate::game::{Game, DT};
+use crate::game::Game;
 
 include!("ai9_game_source_rows.rs");
 
@@ -455,10 +455,10 @@ impl DurableResearch {
     }
 
     fn tick(&mut self, game: &mut Game) {
-        let now = game.tick as f32 * DT;
+        let now = game.sim_elapsed();
         let balance = snapshot_balance(game, self.owner);
         let research_tick = ResearchFrame {
-            delta: DT,
+            delta: game.sim_step(),
             immediate: game.instant_build_for(self.owner),
             precision: PRECISION,
         };
@@ -544,7 +544,7 @@ impl Game {
                 flags[index] = 0x07;
             }
         }
-        let now = self.tick as f32 * DT;
+        let now = self.sim_elapsed();
         let clock = ControllerClock {
             last_frame: now,
             last_planner: now,

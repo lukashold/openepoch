@@ -349,6 +349,7 @@
         <div id="original-tempo-options" hidden>
           <div class="row"><label for="game-speed-preset">Spielgeschwindigkeit</label><select id="game-speed-preset"><option value="0">Langsam</option><option value="1" selected>Normal</option><option value="2">Schnell</option><option value="3">Sehr schnell</option></select></div>
           <div class="row"><label for="game-speed-locked">Geschwindigkeit sperren</label><input id="game-speed-locked" type="checkbox" checked></div>
+          <div class="row" id="source-solo-clock-option" hidden><label for="source-solo-clock">Variabler Originaltakt (Testmodus)</label><input id="source-solo-clock" type="checkbox"></div>
         </div>
         <div class="row"><label for="rules-profile">Regelversion</label><select id="rules-profile"><option value="up15">EE2 · installierte UP-Regeln</option><option value="base">EE2 · Basisdaten</option><option value="own">OpenEpoch-Regeln</option></select></div>
         <p class="dim" style="font-size:12px;margin:0 0 10px">Jede Regelversion hat eigene Spielstände. Für Multiplayer wählen beide dieselbe Version.</p>
@@ -422,6 +423,6 @@
 </aside>
 <div id="trade-route-caption" hidden role="status"></div>
 <div id="air-mission-caption" hidden role="status"></div>
-<script type="module" src="main.js?v=native39ceasefire"></script>
+<script type="module" src="main.js?v=native40clock"></script>
 </body>
 </html>

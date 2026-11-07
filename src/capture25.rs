@@ -9,6 +9,8 @@ const NO_OWNER: u8 = u8::MAX;
 const MAGIC: u32 = u32::from_le_bytes(*b"CAP1");
 const VERSION: u32 = 1;
 const VISUAL_VERSION: u32 = 2;
+const CLOCK_VERSION: u32 = 3;
+const CLOCK_VISUAL_VERSION: u32 = 4;
 const NATURAL_ORDER: [usize; 9] = [0, 1, 3, 4, 5, 2, 6, 7, 8];
 
 #[derive(Clone, Copy)]
@@ -18,6 +20,7 @@ struct Order {
     next: f32,
     flags: u8,
     pose: Option<Pose>,
+    pose_at: f32,
 }
 
 #[derive(Clone, Copy)]
@@ -35,6 +38,32 @@ impl Default for Target {
 struct Gift {
     previous: u8,
     tick: u32,
+    at: f32,
+}
+
+impl Gift {
+    fn active(self, tick: u32, clock: Option<crate::source_clock38::SourceClock>) -> bool {
+        if let Some(clock) = clock {
+            self.at > 0.0 && f64::from(clock.elapsed) < f64::from(self.at) + 60.0
+        } else {
+            tick.saturating_sub(self.tick) < 1200
+        }
+    }
+}
+
+pub(crate) struct CaptureSave<'a> {
+    fields: &'a [u8],
+    visual: bool,
+    clock: bool,
+}
+
+fn archive_version(visual: bool, clock: bool) -> u32 {
+    match (visual, clock) {
+        (false, false) => VERSION,
+        (true, false) => VISUAL_VERSION,
+        (false, true) => CLOCK_VERSION,
+        (true, true) => CLOCK_VISUAL_VERSION,
+    }
 }
 
 #[derive(Default)]
@@ -57,13 +86,14 @@ impl State {
 
     fn empty(&self) -> bool { self.orders.is_empty() && self.targets.is_empty() && self.gifts.is_empty() }
 
-    fn fields(&self, with_visual: bool, mut write: impl FnMut(u32)) {
+    fn fields(&self, with_visual: bool, with_clock: bool, mut write: impl FnMut(u32)) {
         for value in [self.orders.len(), self.targets.len(), self.gifts.len()] { write(value as u32); }
         for (&handle, order) in &self.orders {
             for value in [handle, order.target, order.team.into(), order.next.to_bits(), order.flags.into()] { write(value); }
             if with_visual {
                 write(order.pose.map_or(0, Pose::packed));
                 write(order.pose.map_or(0, |pose| pose.tick));
+                if with_clock { write(order.pose_at.to_bits()); }
             }
         }
         for (&handle, target) in &self.targets {
@@ -72,14 +102,15 @@ impl State {
         }
         for (&handle, gift) in &self.gifts {
             for value in [handle, gift.previous.into(), gift.tick] { write(value); }
+            if with_clock { write(gift.at.to_bits()); }
         }
     }
 
-    pub(crate) fn hash(&self, with_visual: bool, mut mix: impl FnMut(u32)) {
+    pub(crate) fn hash(&self, with_visual: bool, with_clock: bool, mut mix: impl FnMut(u32)) {
         if self.empty() { return; }
         mix(MAGIC);
-        if with_visual { mix(VISUAL_VERSION); }
-        self.fields(with_visual, mix);
+        if with_visual || with_clock { mix(archive_version(with_visual, with_clock)); }
+        self.fields(with_visual, with_clock, mix);
     }
 }
 
@@ -137,6 +168,12 @@ impl Game {
         pose.matches_context(context).then_some(pose)
     }
 
+    pub(crate) fn capture_animation_started(&self, handle: u32) -> Option<f32> {
+        let pose = self.capture_animation_pose(handle)?;
+        if self.source_clock.is_some() { Some(self.capture.orders.get(&handle)?.pose_at) }
+        else { Some(pose.tick as f32 * DT) }
+    }
+
     pub(crate) fn order_capture(&mut self, indices: &[usize], target: usize) {
         let object = self.ents[target];
         let target_handle = self.h(target);
@@ -149,7 +186,9 @@ impl Game {
                 continue;
             }
             self.capture.remove_order(handle);
-            self.capture.orders.insert(handle, Order { target: target_handle, team: owner, next: 0.0, flags: 0, pose: None });
+            self.capture.orders.insert(handle, Order {
+                target: target_handle, team: owner, next: 0.0, flags: 0, pose: None, pose_at: 0.0,
+            });
             self.pack_interrupt(index);
             self.native_stop_attack(index);
             let actor = &mut self.ents[index];
@@ -202,6 +241,7 @@ impl Game {
     pub(super) fn tick_capture_state(&mut self) {
         self.reconcile_capture_orders();
         if self.capture.empty() { return; }
+        let dt = self.sim_step();
         let entities = &self.ents;
         let tick = self.tick;
         let living = |handle: u32| {
@@ -213,20 +253,19 @@ impl Game {
             // OpenEpoch uses generation handles. Adapt the original seat bits
             // and retain the one-second stagger over this map's slot IDs.
             let phase = (u32::from(actor.team) + 1) << 27 | handle & 0xffff;
-            if target.count == 0 && native::capture_event_due(tick, phase, DT) {
+            if target.count == 0 && native::capture_event_due(tick, phase, dt) {
                 target.progress = native::decay_capture_progress(target.progress);
             }
             target.count > 0 || target.progress > 0.0
         });
-        self.capture.gifts.retain(|&handle, gift| {
-            living(handle).is_some() && tick.saturating_sub(gift.tick) < 1200
-        });
+        let clock = self.source_clock;
+        self.capture.gifts.retain(|&handle, gift| living(handle).is_some() && gift.active(tick, clock));
     }
 
     pub(crate) fn mark_capture_gift(&mut self, index: usize) {
         let entity = self.ents[index];
         if self.capture_enabled && self.tick > 0 && native::capture_target(entity.def).is_some() {
-            self.capture.gifts.insert(self.h(index), Gift { previous: entity.team, tick: self.tick });
+            self.capture.gifts.insert(self.h(index), Gift { previous: entity.team, tick: self.tick, at: self.sim_elapsed() });
         }
     }
 
@@ -243,6 +282,7 @@ impl Game {
         let dy = building.y - actor.y;
         let radius = Self::building_half(&building);
         let edge = (dx.abs() - radius).max(0.0).hypot((dy.abs() - radius).max(0.0));
+        let now = self.sim_elapsed();
         let Some(order) = self.capture.orders.get_mut(&handle) else {
             Self::set_idle(actor);
             return (None, None);
@@ -251,6 +291,7 @@ impl Game {
         if edge > attack.range + def.rad() && order.flags & locked != locked {
             crate::native_attack_clock::stop(&mut order.flags);
             order.pose = None;
+            order.pose_at = 0.0;
             return (None, Some(self.steer(actor, def, building.x, building.y)));
         }
         let target_handle = actor.otgt;
@@ -259,13 +300,15 @@ impl Game {
             state.count += 1;
             state.owner = actor.team;
         }
-        let round = crate::native_attack_clock::step(self.tick as f32 * DT, attack.reload_seconds,
+        let round = crate::native_attack_clock::step(now, attack.reload_seconds,
             attack.impact_seconds, &mut order.next, &mut order.flags);
         if self.capture_animation_enabled && round == crate::native_attack_clock::Event::Start {
             let context = animation::context(actor.def, self.players[actor.team as usize].epoch);
+            let previous = order.pose;
             Pose::apply(&mut order.pose, &mut self.source_birth.rng, context, self.tick);
+            if order.pose != previous { order.pose_at = now; }
         }
-        actor.cd = (order.next - self.tick as f32 * DT).max(0.0);
+        actor.cd = (order.next - now).max(0.0);
         if round == crate::native_attack_clock::Event::Fire {
             self.capture_impact(index, actor, target, attack);
         }
@@ -327,8 +370,8 @@ impl Game {
     }
 
     fn capture_tribute(&mut self, handle: u32, building: &Ent, recipient: u8, tribute: CaptureTribute) {
-        let same_gift = self.capture.gifts.get(&handle).is_some_and(|gift| gift.previous == recipient
-            && self.tick.saturating_sub(gift.tick) < 1200);
+        let same_gift = self.capture.gifts.get(&handle).is_some_and(|gift|
+            gift.previous == recipient && gift.active(self.tick, self.source_clock));
         if same_gift { return; }
         let (mut rate, slots): (f32, &[usize]) = match tribute {
             CaptureTribute::Natural(rate) => (rate, &NATURAL_ORDER),
@@ -397,18 +440,21 @@ impl Game {
     pub(crate) fn wrap_capture_save(&self, core: Vec<u8>) -> Vec<u8> {
         if self.capture.empty() || core.is_empty() { return core; }
         let mut out = Vec::with_capacity(core.len() + 128);
-        let version = if self.capture_animation_enabled { VISUAL_VERSION } else { VERSION };
+        let clock = self.source_clock.is_some();
+        let version = archive_version(self.capture_animation_enabled, clock);
         for word in [MAGIC, version, core.len() as u32] { out.extend_from_slice(&word.to_le_bytes()); }
-        self.capture.fields(self.capture_animation_enabled, |word| out.extend_from_slice(&word.to_le_bytes()));
+        self.capture.fields(self.capture_animation_enabled, clock, |word| out.extend_from_slice(&word.to_le_bytes()));
         out.extend_from_slice(&core);
         out.extend_from_slice(&crate::pack8_save::checksum(&out).to_le_bytes());
         out
     }
 
-    pub(crate) fn restore_capture_save(&mut self, fields: Option<(&[u8], bool)>) -> Option<()> {
-        let Some((fields, with_visual)) = fields else {
+    pub(crate) fn restore_capture_save(&mut self, fields: Option<CaptureSave<'_>>) -> Option<()> {
+        let Some(CaptureSave { fields, visual: with_visual, clock: with_clock }) = fields else {
             return self.ents[..self.high].iter().all(|actor| !actor.alive || actor.order != O_CAPTURE).then_some(());
         };
+        if with_clock != self.source_clock.is_some() { return None; }
+        let now = self.sim_elapsed();
         let mut state = State::default();
         let order_count = word(fields, 0)? as usize;
         let target_count = word(fields, 4)? as usize;
@@ -433,6 +479,7 @@ impl Game {
                 return None;
             }
             let mut pose = None;
+            let mut pose_at = 0.0;
             if with_visual {
                 let packed = word(fields, offset)?;
                 let tick = word(fields, offset + 4)?;
@@ -441,8 +488,15 @@ impl Game {
                     if flags == 0 || tick > self.tick { return None; }
                     pose = Some(Pose::restore(packed, tick, source.def)?);
                 }
+                if with_clock {
+                    pose_at = f32::from_bits(word(fields, offset)?);
+                    offset += 4;
+                    if pose.is_some() {
+                        if !(0.0..=now).contains(&pose_at) || pose_at == 0.0 { return None; }
+                    } else if pose_at.to_bits() != 0 { return None; }
+                }
             }
-            state.orders.insert(handle, Order { target, team, next, flags, pose });
+            state.orders.insert(handle, Order { target, team, next, flags, pose, pose_at });
         }
         for _ in 0..target_count {
             let handle = word(fields, offset)?;
@@ -459,11 +513,17 @@ impl Game {
             let previous = u8::try_from(word(fields, offset + 4)?).ok()?;
             let tick = word(fields, offset + 8)?;
             offset += 12;
+            let at = if with_clock {
+                let at = f32::from_bits(word(fields, offset)?);
+                offset += 4;
+                if !(0.0..=now).contains(&at) || at == 0.0 { return None; }
+                at
+            } else { tick as f32 * DT };
             let target = self.ents[self.get(handle)?];
             if usize::from(previous) >= self.nplayers || previous == target.team || tick == 0
                 || tick > self.tick || target.hp <= 0.0 || native::capture_target(target.def).is_none()
                 || state.gifts.last_key_value().is_some_and(|(&old, _)| old >= handle) { return None; }
-            state.gifts.insert(handle, Gift { previous, tick });
+            state.gifts.insert(handle, Gift { previous, tick, at });
         }
         for order in state.orders.values().filter(|order| order.flags != 0) {
             let target = state.targets.get_mut(&order.target)?;
@@ -488,17 +548,21 @@ fn word(bytes: &[u8], offset: usize) -> Option<u32> {
     Some(u32::from_le_bytes(bytes.get(offset..offset.checked_add(4)?)?.try_into().ok()?))
 }
 
-pub(crate) fn split_capture_save(bytes: &[u8]) -> Option<(&[u8], Option<(&[u8], bool)>)> {
+pub(crate) fn split_capture_save(bytes: &[u8]) -> Option<(&[u8], Option<CaptureSave<'_>>)> {
     if word(bytes, 0) != Some(MAGIC) { return Some((bytes, None)); }
     let core_len = word(bytes, 8)? as usize;
     let counts = [word(bytes, 12)? as usize, word(bytes, 16)? as usize, word(bytes, 20)? as usize];
-    let with_visual = match word(bytes, 4)? { VERSION => false, VISUAL_VERSION => true, _ => return None };
+    let (visual, clock) = match word(bytes, 4)? {
+        VERSION => (false, false), VISUAL_VERSION => (true, false),
+        CLOCK_VERSION => (false, true), CLOCK_VISUAL_VERSION => (true, true), _ => return None,
+    };
     if core_len == 0 || counts.iter().any(|&count| count > MAXE) { return None; }
-    let order_bytes = if with_visual { 28 } else { 20 };
-    let start = 24 + counts[0] * order_bytes + counts[1] * 8 + counts[2] * 12;
+    let order_bytes = if visual { if clock { 32 } else { 28 } } else { 20 };
+    let gift_bytes = if clock { 16 } else { 12 };
+    let start = 24 + counts[0] * order_bytes + counts[1] * 8 + counts[2] * gift_bytes;
     let end = start.checked_add(core_len)?;
     if end.checked_add(4)? != bytes.len() || crate::pack8_save::checksum(bytes.get(..end)?) != word(bytes, end)? { return None; }
-    Some((bytes.get(start..end)?, Some((bytes.get(12..start)?, with_visual))))
+    Some((bytes.get(start..end)?, Some(CaptureSave { fields: bytes.get(12..start)?, visual, clock })))
 }
 
 #[cfg(test)]
@@ -507,8 +571,12 @@ mod tests {
     use crate::cmd::{C_CAPTURE, C_STOP};
 
     fn scenario(definition: DefId) -> (Game, usize, usize) {
-        let mut game = Game::new(7, 0, 0, 2, 0);
-        assert!(game.configure_peer_capture(true));
+        scenario_with_seats(definition, 2)
+    }
+
+    fn scenario_with_seats(definition: DefId, humans: u32) -> (Game, usize, usize) {
+        let mut game = Game::new(7, 0, 0, humans, 0);
+        if humans == 2 { assert!(game.configure_peer_capture(true)); }
         let (x, y) = (25..220).flat_map(|y| (25..210).map(move |x| (x, y))).find(|&(x,y)| {
             game.map.starts[..2].iter().all(|&(sx,sy)| sx.abs_diff(x) + sy.abs_diff(y) > 40)
                 && (y-3..=y+3).all(|j| (x-3..=x+8).all(|i| game.map.pass[0][j*N+i]))
@@ -523,6 +591,44 @@ mod tests {
     fn issue(game: &mut Game, attacker: usize, building: usize) {
         game.apply(0, C_CAPTURE, 0.0, 0.0, game.h(building) as i32, &[game.h(attacker)]);
         assert_eq!(game.ents[attacker].order, O_CAPTURE);
+    }
+
+    #[test]
+    fn source_clock_capture_saves_exact_pose_and_previous_owner_gift_time() {
+        let (mut game, soldier, building) = scenario_with_seats(HOUSE, 1);
+        game.source_birth.rng = crate::native_rng9::NativeRng::from_state(12345);
+        assert!(game.tick_with_source_delta(0.125));
+        let gift = game.spawn(HOUSE, 0, 241.5, 241.5);
+        let gift_handle = game.h(gift);
+        game.mark_capture_gift(gift);
+        game.ents[gift].team = 1;
+        let stamp = game.capture.gifts[&gift_handle];
+        assert_eq!(stamp.at, 0.125);
+        assert_eq!(stamp.previous, 0);
+        assert!(stamp.active(1201, Some(crate::source_clock38::SourceClock { elapsed: 60.0, ..Default::default() })));
+        assert!(!stamp.active(481, Some(crate::source_clock38::SourceClock { elapsed: 60.125, ..Default::default() })));
+        issue(&mut game, soldier, building);
+        let handle = game.h(soldier);
+        for _ in 0..220 {
+            assert!(game.tick_with_source_delta(0.075));
+            if game.capture_animation_pose(handle).is_some() { break; }
+        }
+        let started = game.capture_animation_started(handle).expect("visible source capture request");
+        assert_eq!(started, game.sim_elapsed());
+        assert_ne!(started, game.tick as f32 * DT);
+        game.save();
+        assert_eq!(game.savebuf.get(16..20), Some(b"CAP1".as_slice()));
+        assert_eq!(word(&game.savebuf, 20), Some(CLOCK_VISUAL_VERSION));
+        let mut copy = Game::load(&game.savebuf).expect("source capture archive");
+        copy.save();
+        assert_eq!(copy.savebuf, game.savebuf);
+        assert_eq!(copy.capture_animation_started(handle), Some(started));
+        assert_eq!(copy.capture.gifts[&gift_handle].at, stamp.at);
+        for delta in [0.025, 0.075, 0.1].into_iter().cycle().take(30) {
+            assert!(game.tick_with_source_delta(delta));
+            assert!(copy.tick_with_source_delta(delta));
+            assert_eq!(copy.state_hash(), game.state_hash());
+        }
     }
 
     #[test]

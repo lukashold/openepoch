@@ -9,7 +9,8 @@ import { diplomacyPanel } from './diplomacy.js?v=native17';
 import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native6';
 import {loadNativeFontUI} from './original-font-ui.js?v=native21names';
 import {territoryClaimMessage} from './territory-help.js?v=fortress1';
-import * as sfx from './audio.js?v=native39audio';
+import * as sfx from './audio.js?v=native40clock';
+import {generatedAmbientCoverage,loadOriginalAmbient,originalAmbientPriorities} from './original-ambient.js?v=ambient39';
 import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=citizen9';
 import {mountOriginalShellVideo} from './original-shell-video.js?v=native12';
 import {mountSkirmishMenu} from './skirmish-menu.js?v=native13';
@@ -24,6 +25,7 @@ import {loadSourceSailRuntime} from './source-sail-runtime.js?v=sails7';
 import {createRenderAssetMapping} from './original-render-namespace.js?v=native6';
 import {createFrontendNamespace} from './render-namespace.js?v=native36';
 import {ORIGINAL_SPEEDS, changeOriginalSpeed, checkOriginalTempo, loadOriginalTempo, originalStartingSpeed} from './original-game-tempo.js?v=native37';
+import {advanceSourceSoloFrame, SOURCE_SOLO_INTERVAL, sourceRenderSeconds, sourceStepDelta} from './source-solo-clock.js?v=native40clock';
 import {mountOriginalGameOptions} from './original-game-options.js?v=native37';
 import {mountOriginalGameSettings} from './original-game-settings.js?v=native38audio';
 import {createRenderActorMetadata} from './render-actor-metadata.js?v=pack8';
@@ -35,9 +37,9 @@ import {loadOriginalTerrain} from './original-terrain.js?v=skirmish-climates';
 import {loadOriginalWater} from './original-water.js?v=water-farm3';
 import {createOriginalReflection} from './original-reflection.js?v=visual-seasons2';
 import {normalizeSeasonSettings} from './original-seasons.js';
-import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=skirmish-climates';
+import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=clock38';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native39ceasefire';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native40clock';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native37';
 import {createFullscreenController} from './fullscreen.js?v=building2';
@@ -53,8 +55,8 @@ import {loadCarrierPresentation,loadFighterBomberPresentation,loadTradePresentat
 import {createTradeWaitStatus,loadTradeWaitArt,selectedTradeWait} from './trade-wait-status.js?v=native31';
 import {airActions,airMissionActions,airMissionSelection,airMissionTrainingKey,createAirMissionOrder,decorateAirMissionButton,loadAirMissionArt,supportsAirMission} from './air-mission-order.js?v=native32';
 import {loadAirMissionFlag,loadCarrierGarrisonFlag,projectAirMissionFlags,readAirMissionVisualRoutes} from './air-mission-flag.js?v=native36';
-import {createTakeoffAudioClock,loadAirTakeoff,takeoffElapsed} from './air-takeoff.js?v=native39audio';
-import {addCarrierFlightAudio,loadAirFlightAudio,readAirFlightAudio} from './air-flight-audio.js?v=native36';
+import {createTakeoffAudioClock,loadAirTakeoff,takeoffElapsed} from './air-takeoff.js?v=native40clock';
+import {addCarrierFlightAudio,loadAirFlightAudio,readAirFlightAudio} from './air-flight-audio.js?v=native40clock';
 import {loadFullmapCityNameCatalog,loadFullmapTerritoryNameCatalog} from './fullmap-territory-names.js?v=native22';
 import {createWarplanPeer,WARPLAN_PEER_VERSION} from './original-warplan-peer.js';
 
@@ -494,6 +496,9 @@ for (const pr of [terrain, water, models, quads]) {
   if (pr.u.uTeam) gl.uniform3fv(pr.u.uTeam, teamFlat);
 }
 const originalEnabled=referenceMode&&new URLSearchParams(location.search).get('assets')!=='procedural';
+const ambientPresentation=await loadOriginalAmbient({enabled:originalEnabled&&rulesProfile.id==='up15'});
+sfx.configureOriginalAmbience(ambientPresentation);
+let ambientCoverage=null;
 const shellMovie=mountOriginalShellVideo($('shell-movie'),originalEnabled?rulesProfile.id:null);
 mountSkirmishMenu($('menu'), {enabled:rulesProfile.ruleset===2, originalArt:originalEnabled});
 const victoryOptions=$('sk-victory-options');
@@ -522,10 +527,11 @@ const [tradePresentation,tradeRouteArt,tradeWaitArt,fighterBomberPresentation,ca
   loadAirFlightAudio({enabled:originalEnabled&&airMissionAvailable&&wasm.air_audio_version?.()===1}),
 ]);
 const airFlightAudio=addCarrierFlightAudio(aircraftFlightAudio,wasm.air_audio_version?.()===1?carrierPresentation?.movementAudio:null);
-const takeoffSample={tick:0,alpha:0};
+const takeoffSample={tick:0,alpha:0,now:null};
 const takeoffStartTick=handle=>wasm.air_takeoff_start_tick(handle)>>>0;
+const takeoffStartSeconds=handle=>wasm.air_takeoff_start_seconds?.(handle)??-1;
 const takeoffAudio=airTakeoff?createTakeoffAudioClock({presentation:airTakeoff,startTick:takeoffStartTick,
-  play:sfx.playTakeoff,stop:sfx.stopTakeoff}):null;
+  startSeconds:takeoffStartSeconds,play:sfx.playTakeoff,stop:sfx.stopTakeoff}):null;
 sfx.bindTakeoffEvents(airTakeoff?.events);
 sfx.configureAirFlightAudio(airFlightAudio);
 const tradeWaitStatus=createTradeWaitStatus($('trade-wait-status'),tradeWaitArt);
@@ -550,7 +556,11 @@ const capturePoseForActor = typeof wasm.capture_animation_request === 'function'
 const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,total)=>{
   $('play').textContent=`Originalgrafiken laden · ${Math.round(loaded/total*100)} %`;
 },{assetMapping,climateProfiles,capturePoseForActor,tradePresentation,fighterBomberPresentation,carrierPresentation,rallyTargetTags:airMissionFlag?.targetTags,
-  airTakeoff,takeoffElapsedForActor:airTakeoff?actor=>takeoffElapsed(takeoffSample.tick,takeoffSample.alpha,takeoffStartTick(actor.handle)):null,
+  airTakeoff,takeoffElapsedForActor:airTakeoff?actor=>{
+    if(takeoffSample.now===null)return takeoffElapsed(takeoffSample.tick,takeoffSample.alpha,takeoffStartTick(actor.handle));
+    const start=takeoffStartSeconds(actor.handle);
+    return start<0 ? -1 : Math.fround(Math.max(0,takeoffSample.now-start));
+  }:null,
   packAnimations:rulesProfile.ruleset===2,dynamicSails:rulesProfile.ruleset===2&&typeof wasm.render_meta_version==='function',lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-civ8.json',scaleManifestURL:'./local-original/model-scales-civ8.json',teamManifestURL:'./local-original/team-textures/manifest-civ8.json',regionalManifestURL:'./local-original/regional-stable/regional-models-native17.json',additionalRegionalManifestURL:'./local-original/king-regicide/manifest.json',productionRegionalManifestURL:'./local-original/production-visuals/manifest.json',stoneAttackElapsedForActor:actor=>wasm.render_stone_thrower_attack_elapsed(actor.handle,actor.renderTime),terrainFallbackManifestURL:'./local-original/regional-e15-seasons/terrain-fallback.json',houseLodManifestURL:'./local-original/regional-house-lod/manifest.json',houseLodProfile:{mode:'resource',modelDetail:2,rendererCap0x200:false},citizenManifestURL:'./local-original/citizens9/manifest.json',citizenNeutralFallback:'west',sourceIdentityForActor:actor=>wasm.actor_source_identity(actor.handle)>>>0}:{})});
 const carrierGarrisonFlag=airMissionAvailable&&originalModels.available.has(renderNamespace.unitRenderId(84))
   ?await loadCarrierGarrisonFlag(gl,{source:carrierPresentation?.garrisonFlag}):null;
@@ -622,6 +632,8 @@ let pendingTempo = 0;
 let restartPoint = null;
 const hasOriginalTempo = rulesProfile.id==='up15';
 if(hasOriginalTempo)sfx.initializeOriginalAudioSettings();
+const supportsSourceSoloClock = hasOriginalTempo && typeof wasm.tick_with_source_delta === 'function';
+let sourceSoloClock = false;
 $('original-tempo-options').hidden = !hasOriginalTempo;
 const hasNetworkResignation=hasOriginalTempo&&typeof wasm.configure_network_resignation==='function';
 $('mp-resignation-options').hidden=!hasNetworkResignation;
@@ -639,6 +651,7 @@ function updateInitialCeasefire() {
   const text=`Anf. Waffenst. - ${clock}`;
   if(ceasefireStatus.textContent!==text)ceasefireStatus.textContent=text;
 }
+$('source-solo-clock-option').hidden = !supportsSourceSoloClock;
 function menuTempo() {
   return checkOriginalTempo({preset: +$('game-speed-preset').value, locked: $('game-speed-locked').checked});
 }
@@ -877,11 +890,15 @@ function bindWorldTerrainMaterial() {
   });
 }
 
-function begin(tempo = null) {
+function begin(tempo = null, useSourceClock = wasm.sim_clock_active?.() === 1) {
   if(tempo&&!net&&!wasm.configure_solo_command_queue(1))throw Error('Befehlswarteschlange konnte nicht aktiviert werden');
+  sourceSoloClock = supportsSourceSoloClock && !net && !bench && useSourceClock;
   originalModels.clearResourcePicks();
   takeoffAudio?.reset();
   sfx.resetAirFlightAudio();
+  sfx.resetWorldAmbience();
+  ambientCoverage=ambientPresentation&&!bench&&wasm.terrain_types_len?.()===MAP*MAP
+    ? generatedAmbientCoverage(u8(wasm.terrain_types_ptr(),MAP*MAP),MAP,MAP,wasm.resource_kind) : null;
   airMissionFlag?.reset();
   tradeWaitStatus.update(false);
   tradeRoute?.cancel();tradePress=null;
@@ -970,10 +987,11 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
   cam.x = benchUnits ? MAP / 2 : wasm.start_x(); cam.y = benchUnits ? MAP / 2 : wasm.start_y(); cam.zoom = benchUnits ? 11 : 28;
   cam.heading=0;
   if(referenceMode)cam.nativeFraction=benchUnits?originalFractionForZoom(11,innerWidth,innerHeight):.2;
-  begin(hasOriginalTempo&&!benchUnits&&humans===1 ? startingTempo(menuTempo()) : null);
+  const soloOriginal = hasOriginalTempo && !benchUnits && humans === 1;
+  begin(soloOriginal ? startingTempo(menuTempo()) : null, soloOriginal && $('source-solo-clock').checked);
   if(originalTempo){
     const bytes=worldSaveBytes();
-    if(bytes)restartPoint={bytes,cam:{...cam}};
+    if(bytes)restartPoint={bytes,cam:{...cam},...(sourceSoloClock ? {sourceSoloClock:true} : {})};
   }
 }
 
@@ -1000,6 +1018,7 @@ async function saveGame(silent) {
   try {
     const record={bytes,cam:{...cam},when:Date.now(),epoch:ui?ui.ename:'',session:saveSession,seasons:seasonSession.settings,
       ...(originalTempo?{gameTempo:{...originalTempo,requested:speed}}:{}),
+      ...(sourceSoloClock?{sourceSoloClock:true}:{}),
       ...(restartPoint?{restart:restartPoint}:{}),
       ...(seasonSession.climate?{climate:seasonSession.climate}:{}),rules:rulesProfile.ruleset,profile:rulesProfile.id};
     const d=await db();
@@ -1027,7 +1046,8 @@ async function loadGame(slot='slot1') {
   cam.heading=normalizeOriginalHeading(s.cam?.heading??0);
   seasonSession.configure(seasons,climate);setSeasonControls(seasons);climateControl.value=climate;
   if(referenceMode)cam.nativeFraction=Number.isFinite(s.cam?.nativeFraction)?s.cam.nativeFraction:originalFractionForZoom(s.cam?.zoom??28,innerWidth,innerHeight);
-  begin(tempo); toast('Spielstand geladen');
+  begin(tempo, wasm.sim_clock_active?.() === 1 || (s.sourceSoloClock === true && wasm.game_tick() === 0));
+  toast('Spielstand geladen');
 }
 async function refreshContinue() {
   const s = await dbDo('readonly', st => st.get('slot1')).catch(() => null);
@@ -1042,11 +1062,21 @@ refreshContinue();
 
 // ---------------------------------------------------------------- simulation stepping & sound
 function advance(dt, now) {
+  let visualSeconds = dt * speed;
   if (net) {
     acc = Math.min(acc + dt * speed, TICK * 6);         // allow a short catch-up burst, never a spiral
     let steps = 0; const t0 = performance.now();
     while (acc >= TICK && steps < 8 && net.ls.step()) { acc -= TICK; steps++; }
     if (steps) { simMs += ((performance.now() - t0) / steps - simMs) * 0.1; waitSince = now; }
+  } else if (sourceSoloClock) {
+    const t0 = performance.now();
+    const result = advanceSourceSoloFrame(acc, dt, paused, () => {
+      if (pendingTempo) { applyRequestedSpeed(pendingTempo); pendingTempo = 0; }
+      return speed;
+    }, delta => wasm.tick_with_source_delta(delta) === 1);
+    acc = result.remainder;
+    visualSeconds = result.gameSeconds;
+    if (result.steps) simMs += ((performance.now() - t0) / result.steps - simMs) * 0.1;
   } else if (!paused) {
     acc += dt * speed;
     let steps = 0; const t0 = performance.now();
@@ -1081,6 +1111,7 @@ function advance(dt, now) {
     }
     wasm.events_clear();
   }
+  return visualSeconds;
 }
 // A hidden tab gets no animation frames, but a multiplayer peer must keep simulating.
 setInterval(() => {
@@ -1182,10 +1213,15 @@ function frame(now) {
   panCameraScreen(moveRight,moveDown);
   updateCamera();
 
-  advance(dt, now);
+  const visualSeconds = advance(dt, now);
   updateInitialCeasefire();
-  if(captureGlow&&!paused&&!(net&&net.ls.waiting)&&wasm.has_active_capture_glow())captureGlow.advance(dt*speed);
-  const alpha = paused || (net && net.ls.waiting) ? 1 : Math.min(1, acc / TICK);
+  if(ambientCoverage){
+    const audible=!paused&&!gameSettings.active()&&!document.hidden;
+    sfx.frameOriginalAmbience({world:wasm.render_meta_session(),climate:seasonSession.climate,now:now/1000,
+      weather:'Normal',running:audible,priorities:audible?originalAmbientPriorities(ambientCoverage,view,u8(wasm.fog_ptr(),MAP*MAP)):null});
+  }
+  if(captureGlow&&!paused&&!(net&&net.ls.waiting)&&wasm.has_active_capture_glow())captureGlow.advance(visualSeconds);
+  const alpha = paused || (net && net.ls.waiting) ? 1 : Math.min(1, acc / (sourceSoloClock ? SOURCE_SOLO_INTERVAL : TICK));
   if (!net && !bench && now - lastAuto > 180000) { lastAuto = now; saveGame(true); }
 
   const dpr = Math.min(+($('quality').value), devicePixelRatio || 1);
@@ -1218,14 +1254,14 @@ function frame(now) {
   if (!n) originalModels.clearResourcePicks();
   const ranges = n ? new Uint32Array(wasm.memory.buffer, wasm.ranges_ptr(), renderNamespace.rangeLength) : null;
   const renderEpochs=[0,1,2,3].map(t=>wasm.stat(t,0));
-  if(airTakeoff){takeoffSample.tick=wasm.game_tick()>>>0;takeoffSample.alpha=alpha;}
+  if(airTakeoff){takeoffSample.tick=wasm.game_tick()>>>0;takeoffSample.alpha=alpha;takeoffSample.now=sourceRenderSeconds(wasm,alpha);}
   const stoneThrowerWheels=originalEnabled&&rulesProfile.ruleset===2&&!paused&&!document.hidden&&!(net&&net.ls.waiting)?[]:null;
   if(rulesProfile.ruleset===2)originalModels.setVisualCivilizations?.([0,1,2,3].map(team=>wasm.player_civilization(team)));
 
   // Own visual clock: once before every scene pass. Pause/wait freezes cloth;
   // solo speed scales the explicit delta. Native helpers apply their own cap.
   let actorMetadata=sourceSails?.advance({count:n,instances:f32(wasm.inst_ptr(),n*STRIDE),epochs:renderEpochs,
-    deltaSeconds:dt*speed,runPhysics:!paused&&!(net&&net.ls.waiting)})??null;
+    deltaSeconds:visualSeconds,runPhysics:!paused&&!(net&&net.ls.waiting)})??null;
   if(!actorMetadata&&packMetadata)actorMetadata=packMetadata.snapshot(packActorReader.snapshot({count:n,instances:f32(wasm.inst_ptr(),n*STRIDE),namespace:renderNamespace}));
   takeoffAudio?.update({...takeoffSample,session:actorMetadata?.session,actors:actorMetadata?.actors??[],epochs:renderEpochs,view,
     running:!paused&&!document.hidden&&!(net&&net.ls.waiting)});
@@ -1236,9 +1272,9 @@ function frame(now) {
     const draft=airMission?.active()?airMission.preview(mouse.inside&&document.elementFromPoint(mouse.x,mouse.y)===canvas?toWorld(mouse.x,mouse.y):null):null;
     const records=readAirMissionVisualRoutes(wasm).filter(route=>draft?draft.points.length||draft.target!==0xffffffff:
       route.points.length||route.target!==0xffffffff);
-    if(airMissionFlag.prepare(records,{deltaSeconds:dt*speed,runPhysics:!paused&&!(net&&net.ls.waiting),lighting:originalModels.lighting}))mission={records,draft};
+    if(airMissionFlag.prepare(records,{deltaSeconds:visualSeconds,runPhysics:!paused&&!(net&&net.ls.waiting),lighting:originalModels.lighting}))mission={records,draft};
   }
-  carrierGarrisonFlag?.begin({session:wasm.render_meta_session(),deltaSeconds:dt*speed,
+  carrierGarrisonFlag?.begin({session:wasm.render_meta_session(),deltaSeconds:visualSeconds,
     runPhysics:!paused&&!(net&&net.ls.waiting),lighting:originalModels.lighting,wind:airMissionFlag?.normalWind(),occupied:carrierOccupied});
   if(qaMode&&sourceSails)canvas.dataset.sourceSails=JSON.stringify(sourceSails.metrics);
   let reflection=null;
@@ -1752,7 +1788,7 @@ function taskSwitch() {
   if(originalTempo&&running)setPauseHold('task-switch',document.hidden||document.hasFocus?.()===false);
 }
 document.addEventListener('visibilitychange',()=>{
-  if(document.hidden){sfx.stopStoneThrowerWheels();takeoffAudio?.reset();sfx.resetAirFlightAudio();}
+  if(document.hidden){sfx.stopStoneThrowerWheels();takeoffAudio?.reset();sfx.resetAirFlightAudio();sfx.resetWorldAmbience();}
   taskSwitch();
 });
 function jumpToSelection() { const x = wasm.sel_center(0); if (x >= 0) { cam.x = x; cam.y = wasm.sel_center(1); } }
@@ -1930,7 +1966,7 @@ function handleGameOption(action) {
     if(net||!restartPoint||!window.confirm('Möchtest du das Spiel neu starten?'))return;
     if(!applyWorldSave(restartPoint.bytes)){toast('Dieses Scharmützel konnte nicht neu gestartet werden.');return;}
     Object.assign(cam,restartPoint.cam);
-    gameOptions.close();begin({...originalTempo,requested:speed});
+    gameOptions.close();begin({...originalTempo,requested:speed},restartPoint.sourceSoloClock===true);
   }
   else if(action==='exit'||action==='desktop'){
     if(!window.confirm('Möchtest du das laufende Spiel beenden?'))return;
@@ -1960,6 +1996,7 @@ function toMenu() {
   originalModels.bindNativeTerrainMaterial?.(null);
   running = false; $('menu').style.display = 'flex'; $('end').style.display = 'none'; $('mp').style.display = 'none';
   shellMovie(true);
+  sfx.resetWorldAmbience();
   sfx.menuMusic();
 }
 $('quit').onclick = toMenu; $('again').onclick = toMenu;
@@ -2164,7 +2201,11 @@ const qs = new URLSearchParams(location.search);
 if (qs.has('bench')) start(1, +qs.get('seed') || 7, +qs.get('bench') || 2000);
 else if (qs.has('seed')) start(+qs.get('ai') || 1, +qs.get('seed') || 1, 0);
 // ?warm=600 fast-forwards that many ticks; ?zoom= ?x= ?y= place the camera
-for (let i = +qs.get('warm') || 0; i > 0 && running; i--) wasm.tick();
+for (let i = +qs.get('warm') || 0; i > 0 && running; i--) {
+  if (sourceSoloClock) {
+    if (!wasm.tick_with_source_delta(sourceStepDelta(speed))) break;
+  } else wasm.tick();
+}
 for (const k of ['zoom', 'x', 'y']) if (qs.has(k)) cam[k] = +qs.get(k);
 window.openepoch = { wasm, rulesProfile, renderNamespace, cam, gl, frame, start, saveGame, loadGame, toWorld, channel, seasonSession, nativeDiplomacy, nativeBitmapFonts, fullmapPip, get net() { return net; } };
 const loop = now => { requestAnimationFrame(loop); frame(now); };

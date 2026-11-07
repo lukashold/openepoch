@@ -6,7 +6,7 @@ pub const END:u32=0x454b4350; // PCKE
 pub const HEADER:usize=64;pub const RECORD:usize=48;
 fn u(b:&[u8],at:usize)->Option<u32>{Some(u32::from_le_bytes(b.get(at..at+4)?.try_into().ok()?))}
 fn put(b:&mut Vec<u8>,v:u32){b.extend_from_slice(&v.to_le_bytes());}
-pub(crate) fn checksum(b:&[u8])->u32{b.iter().fold(2166136261u32,|a,&v|(a^v as u32).wrapping_mul(16777619))}
+pub(crate) use crate::save::checksum;
 pub fn split(buf:&[u8])->Option<(&[u8],Option<&[u8]>)>{
  if u(buf,0)!=Some(MAGIC){return Some((buf,None));}
  if buf.len()<HEADER+36+12||u(buf,56)!=Some(RECORD as u32)||u(buf,60)!=Some(HEADER as u32)||buf.get(24..56)?!=pack8_defs::SOURCE_HASH{return None;}
@@ -84,7 +84,10 @@ impl Game{
    // Delays may outlive an interrupted goal; they never need an unbounded
    // forged future wait. Source captured pack/unpack times remain class-bound.
    let maximum=pack8_defs::ROWS.iter().filter(|r|r.id==def).fold(0.0f32,|m,r|m.max(r.pack).max(r.unpack));
-   if state.ai_until as f64>now as f64+maximum as f64+DT as f64{return None;}
+   let max_deadline=now as f64+maximum as f64;
+   let too_late=if self.source_clock.is_some(){state.ai_until>max_deadline as f32}
+       else{state.ai_until as f64>max_deadline+DT as f64};
+   if too_late{return None;}
    self.pack_states[index]=state;
   }self.free=free;
   #[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]self.read_navigation(navigation)?;

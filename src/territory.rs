@@ -233,6 +233,7 @@ impl Game {
         counts
     }
     fn territory_offer_valid(&self, from: u8, to: u8, o: TerritoryOffer) -> bool {
+        let index = from as usize * 4 + to as usize;
         o.active
             && self.territory_living(from)
             && self.territory_living(to)
@@ -241,7 +242,7 @@ impl Game {
             && o.give != o.want
             && self.territory_owned(from, o.give as u32)
             && self.territory_owned(to, o.want as u32)
-            && self.tick.saturating_sub(o.tick) < 1200
+            && !self.diplomacy_proposal_expired(o.tick, self.diplomacy.clock.territory[index])
     }
     pub fn territory_valid(&self, from: u8, to: u32, action: u32, give: u32, want: u32) -> bool {
         if self.bench > 0
@@ -261,7 +262,7 @@ impl Game {
             0 => want == NONE && self.territory_owned(from, give),
             1 => {
                 !self.territory.offers[i].active
-                    && self.tick >= self.territory.offers[i].cooldown
+                    && self.diplomacy_cooldown_seconds(self.territory.offers[i].cooldown, self.diplomacy.clock.territory[i]) == 0.0
                     && !self.hostile(from, to)
                     && !self.hostile(to, from)
                     && give != want
@@ -419,6 +420,7 @@ impl Game {
                     tick: self.tick,
                     cooldown: self.tick.saturating_add(100),
                 };
+                self.diplomacy.clock.territory[i] = self.sim_elapsed();
                 self.territory_event(from, to, 1, 0, give, want);
             }
             2 => {
@@ -458,7 +460,7 @@ impl Game {
                     || !self.territory_owned(b as u8, o.want as u32)
                 {
                     2
-                } else if self.tick.saturating_sub(o.tick) >= 1200 {
+                } else if self.diplomacy_proposal_expired(o.tick, self.diplomacy.clock.territory[i]) {
                     4
                 } else {
                     0
@@ -510,7 +512,7 @@ impl Game {
             for b in 0..self.nplayers {
                 let i = a * 4 + b;
                 let o = self.territory.offers[i];
-                if o.active && self.players[b].ai && self.tick.saturating_sub(o.tick) >= 80 {
+                if o.active && self.players[b].ai && self.diplomacy_delay_reached(o.tick, self.diplomacy.clock.territory[i], 80) {
                     let offered = self.territory_value(a as u8, o.give);
                     let requested = self.territory_value(b as u8, o.want);
                     let margin = if self.allied(a as u8, b as u8) {
@@ -536,24 +538,23 @@ impl Game {
             let o = self.territory.offers[i];
             let _ = write!(s, ",\"{}\":", key);
             if o.active {
+                let expires = self.diplomacy_proposal_seconds(o.tick, self.diplomacy.clock.territory[i]);
                 let _ = write!(
                     s,
                     "{{\"give\":{},\"want\":{},\"expires\":{:.1}}}",
                     o.give,
                     o.want,
-                    (1200 - self.tick.saturating_sub(o.tick).min(1200)) as f32 * DT
+                    expires
                 );
             } else {
                 s.push_str("null");
             }
         }
+        let row = local as usize * 4 + other as usize;
         let _ = write!(
             s,
             ",\"territoryCooldown\":{:.1}",
-            self.territory.offers[local as usize * 4 + other as usize]
-                .cooldown
-                .saturating_sub(self.tick) as f32
-                * DT
+            self.diplomacy_cooldown_seconds(self.territory.offers[row].cooldown, self.diplomacy.clock.territory[row])
         );
     }
     pub fn append_territory_ui(&self, s: &mut String) {
@@ -792,6 +793,40 @@ impl Game {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn source_clock_territory_offer_expires_in_game_seconds_after_restore() {
+        let mut game = Game::new(7, 1, 0, 1, 0);
+        for player in &mut game.players[..game.nplayers] { player.ai = false; }
+        assert!(game.tick_with_source_delta(0.125));
+        assert!(game.apply_diplomacy(0, 1, 0, 0, 0.0));
+        assert!(game.apply_diplomacy(1, 0, 3, 0, 0.0));
+        let region = |seat| (0..32).find(|&id| game.territory_owned(seat, id)).unwrap();
+        let (give, want) = (region(0), region(1));
+        assert!(game.apply_territory(0, 1, 1, give, want));
+        for _ in 0..30 { assert!(game.tick_with_source_delta(0.125)); }
+        let mut ui = String::new();
+        game.append_territory_player_ui(&mut ui, 0, 1);
+        assert!(ui.contains("\"expires\":296.2"));
+        assert!(ui.contains("\"territoryCooldown\":1.2"));
+        game.save();
+        assert_eq!(game.savebuf.get(16..20), Some(b"DCT1".as_slice()));
+        let mut copy = Game::load(&game.savebuf).expect("source territory stamps load");
+        copy.save();
+        assert_eq!(game.savebuf, copy.savebuf);
+        let mut bad = game.savebuf.clone();
+        bad[24..28].copy_from_slice(&f32::NAN.to_le_bytes());
+        assert!(Game::load(&bad).is_none());
+        while game.sim_elapsed() < 300.125 {
+            assert!(game.territory.offers[1].active);
+            assert!(game.tick_with_source_delta(0.125));
+            assert!(copy.tick_with_source_delta(0.125));
+            assert_eq!(game.state_hash(), copy.state_hash());
+        }
+        assert_eq!(game.tick, 2401);
+        assert!(!game.territory.offers[1].active);
+        assert_eq!(game.territory.log.last().unwrap().reason, 4);
+    }
     fn humans() -> Game {
         Game::new(7, 0, 0, 2, 0)
     }

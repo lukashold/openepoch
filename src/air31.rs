@@ -5,7 +5,7 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use crate::air31_defs::{mission_aircraft, FIGHTER_BOMBER};
 use crate::carrier36_defs::{self, CARRIER};
 use crate::defs::{DefId, AIRFIELD, DEFS};
-use crate::game::{Ent, Game, DT, MAXE, NONE, O_ATTACK, O_IDLE, O_RENDEZVOUS};
+use crate::game::{Ent, Game, MAXE, NONE, O_ATTACK, O_IDLE, O_RENDEZVOUS};
 use crate::map::N;
 use crate::native_rng9::NativeRng;
 
@@ -108,8 +108,8 @@ fn launch_jitter(rng: &mut NativeRng) -> f32 {
 /// The source uses the full source ID in 008416C0. Imported starts will
 /// provide it through the actor ledger. Own starts use their stable handle
 /// and seat as the phase key until that ledger is available in the match.
-fn actor_pulse(tick: u32, phase_key: u32, seconds: f64) -> bool {
-    let period = (seconds / f64::from(DT)).ceil() as i32;
+fn actor_pulse(tick: u32, phase_key: u32, seconds: f64, dt: f32) -> bool {
+    let period = (seconds / f64::from(dt)).ceil() as i32;
     (tick.wrapping_add(phase_key) as i32) % period == 0
 }
 
@@ -816,7 +816,7 @@ impl State {
             let actor = game.ents[index];
             let frame = &self.aircraft[&handle];
             let periodic_return = frame.phase == Phase::Flying && frame.ordnance == 0 &&
-                actor_pulse(game.tick, phase_key(handle, actor.team), 2.0);
+                actor_pulse(game.tick, phase_key(handle, actor.team), 2.0, game.sim_step());
             if frame.return_pending || periodic_return {
                 let path = if frame.return_pending { ReturnPath::AfterCurrent } else { ReturnPath::Direct };
                 let frame = self.aircraft.get_mut(&handle).unwrap();
@@ -956,7 +956,7 @@ impl State {
                 airport.mission = None;
                 continue;
             }
-            if !actor_pulse(game.tick, phase_key(home, building.team), 1.0) { continue; }
+            if !actor_pulse(game.tick, phase_key(home, building.team), 1.0, game.sim_step()) { continue; }
             let epoch = game.players[building.team as usize].epoch;
             for &handle in &airport.stored {
                 let index = game.get(handle).unwrap();

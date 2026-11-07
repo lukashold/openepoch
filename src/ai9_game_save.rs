@@ -13,7 +13,7 @@ use crate::ai9_research_activation::ActiveResearch;
 use crate::ai9_research_completion::CompletionLedger;
 use crate::ai9_research_dispatch::ResearchState;
 use crate::ai9_research_start::{PaidResearch, IN_PROGRESS};
-use crate::game::{Game, DT};
+use crate::game::Game;
 
 pub(crate) const MAGIC: u32 = u32::from_le_bytes(*b"A9R1");
 const END: u32 = u32::from_le_bytes(*b"A9RE");
@@ -296,7 +296,7 @@ fn validate(game: &Game, state: &DurableResearch) -> bool {
     {
         return false;
     }
-    let now = game.tick as f32 * DT;
+    let now = game.sim_elapsed();
     let clock = state.clock;
     if clock.last_frame.to_bits() != now.to_bits()
         || clock.previous_aip_word != 2

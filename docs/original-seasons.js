@@ -21,6 +21,10 @@ export function seasonAtTick(tick,options=DEFAULT_SEASON_SETTINGS){
  const ticksPerYear=settings.minutesPerSeason*4*60*TICKS_PER_SECOND;
  // Reduce integral ticks first: long sessions do not accumulate float deltas.
  const elapsedMonths=settings.cycle?(tick%ticksPerYear)*12/ticksPerYear:0;
+ return seasonPhase(elapsedMonths,ticksPerYear,settings);
+}
+
+function seasonPhase(elapsedMonths,ticksPerYear,settings){
  const monthPosition=(settings.startMonth+elapsedMonths)%12;
  const month0=Math.floor(monthPosition),month1=(month0+1)%12,blend=monthPosition-month0;
  return Object.freeze({month0,month1,blend,monthPosition,monthName:MONTH_NAMES[month0],
@@ -29,5 +33,10 @@ export function seasonAtTick(tick,options=DEFAULT_SEASON_SETTINGS){
 
 export function createSeasonClock(options={}){
  const settings=normalizeSeasonSettings(options);
- return Object.freeze({settings,atTick:tick=>seasonAtTick(tick,settings)});
+ const secondsPerYear=settings.minutesPerSeason*4*60;
+ return Object.freeze({settings,atTick:tick=>seasonAtTick(tick,settings),atSeconds(seconds){
+   if(!Number.isFinite(seconds)||seconds<0)throw new RangeError('Season time must be finite and nonnegative');
+   const elapsedMonths=settings.cycle?(seconds%secondsPerYear)*12/secondsPerYear:0;
+   return seasonPhase(elapsedMonths,secondsPerYear*TICKS_PER_SECOND,settings);
+ }});
 }

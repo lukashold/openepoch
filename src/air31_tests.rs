@@ -182,7 +182,7 @@ fn carrier_reserves_a_seat_in_flight_rearms_without_repair_and_rebases_on_loss()
         game.ents[actors[0]].hp = health;
         game.aircraft.aircraft.get_mut(&handle).unwrap().ordnance = 1;
         let mut game = restored(&mut game);
-        let pulse = (game.tick + 1..=game.tick + 20).find(|&tick| actor_pulse(tick, phase_key(host, 0), 1.0)).unwrap();
+        let pulse = (game.tick + 1..=game.tick + 20).find(|&tick| actor_pulse(tick, phase_key(host, 0), 1.0, crate::game::DT)).unwrap();
         advance_until(&mut game, 20, |g| g.air_mission_status(handle, 1) != 1);
         assert_eq!(game.tick, pulse);
         assert_eq!(game.ents[actors[0]].hp, health);
@@ -241,7 +241,7 @@ fn empty_aircraft_without_a_pending_return_uses_the_two_second_actor_pulse() {
     game.air_fire(index, false);
     assert!(!game.aircraft.aircraft[&handle].return_pending);
     let expected = (game.tick + 1..=game.tick + 40)
-        .find(|&tick| actor_pulse(tick, phase_key(handle, 0), 2.0)).unwrap();
+        .find(|&tick| actor_pulse(tick, phase_key(handle, 0), 2.0, crate::game::DT)).unwrap();
     advance_until(&mut game, 40, |g| g.aircraft.aircraft[&handle].phase == Phase::Returning);
     assert_eq!(game.tick, expected);
 }
@@ -286,4 +286,82 @@ fn visual_route_snapshot_hides_an_unseen_actor_and_preserves_simulation_state() 
     game.team_vis[tile] = 128;
     assert_eq!(game.air_mission_visual_route(host).unwrap().target, NONE);
     assert!(game.air_mission_visual_route(target).is_none());
+}
+
+#[test]
+fn source_clock_aircraft_preserves_takeoff_audio_and_landing_across_saves() {
+    let mut game = Game::new(7, 1, 0, 1, 0);
+    game.players[0].epoch = 10;
+    game.rebuild_modifiers(0, false);
+    let airport = game.spawn(AIRFIELD, 0, 84.5, 118.5);
+    let home = game.h(airport);
+    let actor = game.spawn(FIGHTER_BOMBER, 0, 84.5, 118.5);
+    let handle = game.h(actor);
+    assert!(game.air_station_produced(actor, airport));
+    game.build_grid();
+    game.update_fog();
+    game.apply(0, C_AIR_MISSION, 0.0, 0.0, SCRAMBLE, &[home]);
+    let mut steps = [1.0 / 30.0, 0.041, 0.025].into_iter().cycle();
+    for _ in 0..50 {
+        assert!(game.tick_with_source_delta(steps.next().unwrap()));
+        if game.visible(actor) { break; }
+    }
+    assert!(game.visible(actor));
+    assert!(game.takeoff.rolling(handle));
+    assert_eq!(game.takeoff_start_seconds(handle), None);
+    game.prepare_air_audio(1.0);
+    assert!(game.air_audio.current.is_empty());
+    let mut copy = restored(&mut game);
+    assert_eq!(copy.takeoff_start_seconds(handle), None);
+    let before = game.ents[actor];
+    assert!(game.tick_with_source_delta(0.075));
+    assert!(copy.tick_with_source_delta(0.075));
+    assert_eq!(game.state_hash(), copy.state_hash());
+    let started = game.sim_elapsed();
+    assert_eq!(game.takeoff_start_seconds(handle), Some(started));
+    assert_eq!(game.ents[actor].x, (f64::from(before.x) + f64::from(game.ents[actor].vx) * f64::from(game.sim_step())) as f32);
+    game.prepare_air_audio(1.0);
+    assert_eq!(game.air_audio.current.len(), 1);
+    assert_eq!(game.air_audio.transition_seconds(0), Some(started));
+    let mut game = restored(&mut game);
+    assert_eq!(game.takeoff_start_seconds(handle), Some(started));
+    assert_eq!(game.air_audio.transition_seconds(0), None);
+    game.prepare_air_audio(1.0);
+    assert_eq!(game.air_audio.current.len(), 1);
+    let [first, second] = game.air_host_markers(&game.ents[airport]);
+    let dx = second[0] - first[0];
+    let dy = second[1] - first[1];
+    let scale = dx.hypot(dy);
+    let target = [84.5 + (dx * 7.0 - dy * 30.0) / scale, 118.5 + (dy * 7.0 + dx * 30.0) / scale];
+    game.order_move(&[actor], target[0], target[1], false);
+    for _ in 0..600 {
+        assert!(game.tick_with_source_delta(steps.next().unwrap()));
+        if (game.ents[actor].x - target[0]).hypot(game.ents[actor].y - target[1]) < 8.0 { break; }
+    }
+    assert!(!game.takeoff.rolling(handle));
+    let cruise = game.takeoff_height(handle, 1.0).unwrap();
+    assert!(cruise > game.map.height(game.ents[actor].x, game.ents[actor].y).max(0.0) + 4.0);
+    game.apply(0, C_AIR_MISSION, 0.0, 0.0, RECALL, &[handle]);
+    for _ in 0..1800 {
+        assert!(game.tick_with_source_delta(steps.next().unwrap()));
+        if game.landing.status(handle, 0) == 4 { break; }
+    }
+    assert_eq!(game.landing.status(handle, 0), 4);
+    let mut copy = restored(&mut game);
+    let mut descent = false;
+    for step in steps.take(1800) {
+        assert!(game.tick_with_source_delta(step));
+        assert!(copy.tick_with_source_delta(step));
+        assert_eq!(game.state_hash(), copy.state_hash());
+        let left = game.ents[actor];
+        let right = copy.ents[actor];
+        assert_eq!([left.x, left.y, left.rot, left.vx, left.vy], [right.x, right.y, right.rot, right.vx, right.vy]);
+        assert_eq!(game.takeoff_height(handle, 1.0), copy.takeoff_height(handle, 1.0));
+        if !game.visible(actor) { break; }
+        descent |= game.landing.status(handle, 0) == 5;
+    }
+    assert!(descent);
+    assert!(!game.visible(actor));
+    assert_eq!(game.air_mission_status(home, 1), 1);
+    assert_eq!(game.h(actor), handle);
 }

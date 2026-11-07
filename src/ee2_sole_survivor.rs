@@ -1,6 +1,6 @@
 //! The UP single-player Conquest modifier and its saved disband clock.
 
-use crate::{game::{Game, DT}, pack8_save};
+use crate::{game::Game, pack8_save};
 
 pub(crate) const MAGIC: u32 = u32::from_le_bytes(*b"VCS1");
 const HEADER: usize = 20;
@@ -22,9 +22,9 @@ impl SoleSurvivor {
         ((1u8 << seats) - 1) & !self.eliminated
     }
 
-    pub(crate) fn remaining_seconds(self, tick: u32) -> Option<i32> {
+    pub(crate) fn remaining_seconds(self, now: f32) -> Option<i32> {
         (self.deadline != IDLE).then(|| {
-            let seconds = (f64::from(self.deadline) - f64::from(tick as f32 * DT)).max(0.0);
+            let seconds = (f64::from(self.deadline) - f64::from(now)).max(0.0);
             (seconds + 0.5).floor() as i32
         })
     }
@@ -52,7 +52,7 @@ impl Game {
     }
 
     pub(crate) fn poll_sole_disband(&mut self, rule: &mut SoleSurvivor, candidates: u8) {
-        let now = self.tick as f32 * DT;
+        let now = self.sim_elapsed();
         if rule.deadline == IDLE {
             rule.deadline = now + DISBAND_SECONDS;
         } else if now > rule.deadline {
@@ -86,7 +86,7 @@ impl Game {
 
     pub(crate) fn restore_sole_survivor(&mut self, rule: SoleSurvivor, outcome: u8) -> Option<()> {
         let seats = (1u8 << self.nplayers) - 1;
-        let now = self.tick as f32 * DT;
+        let now = self.sim_elapsed();
         if self.net || self.humans != 1 || self.territory_victory.is_some()
             || rule.eliminated & !seats != 0
             || (rule.deadline != IDLE && !(DISBAND_SECONDS..=now + DISBAND_SECONDS).contains(&rule.deadline))
@@ -145,6 +145,7 @@ pub(crate) fn split(buf: &[u8]) -> Option<(&[u8], Option<(SoleSurvivor, u8)>)> {
 
 #[cfg(test)]
 mod tests {
+    use crate::game::DT;
     use super::*;
     use crate::defs::WORKER;
 
@@ -177,6 +178,41 @@ mod tests {
     }
 
     #[test]
+    fn source_clock_disbands_only_after_ten_actual_seconds_and_restores_mid_deadline() {
+        let mut game = match_for(2);
+        assert!(game.tick_with_source_delta(0.125));
+        assert!(game.apply_diplomacy(0, 1, 0, 0, 0.0));
+        assert!(game.apply_diplomacy(1, 0, 3, 0, 0.0));
+        for _ in 0..40 { assert!(game.tick_with_source_delta(0.125)); }
+        assert!(game.apply_diplomacy(0, 1, 1, 1, 0.0));
+        assert!(game.apply_diplomacy(1, 0, 3, 0, 0.0));
+        for actor in &mut game.ents[..game.high] {
+            if actor.team == 2 { actor.hp = 0.0; }
+        }
+        assert!(game.tick_with_source_delta(0.125));
+        let deadline = game.sole_survivor.unwrap().deadline;
+        assert_eq!(deadline, game.sim_elapsed() + 10.0);
+        for _ in 0..24 { assert!(game.tick_with_source_delta(0.125)); }
+        assert_eq!(game.sole_survivor.unwrap().remaining_seconds(game.sim_elapsed()), Some(7));
+        game.save();
+        let mut copy = Game::load(&game.savebuf).expect("source disband deadline saves");
+        copy.save();
+        assert_eq!(copy.savebuf, game.savebuf);
+        while game.sim_elapsed() < deadline {
+            assert!(game.tick_with_source_delta(0.125));
+            assert!(copy.tick_with_source_delta(0.125));
+            assert!(game.allied(0, 1));
+            assert_eq!(copy.state_hash(), game.state_hash());
+        }
+        assert_eq!(game.sim_elapsed(), deadline);
+        assert!(game.tick_with_source_delta(0.03125));
+        assert!(copy.tick_with_source_delta(0.03125));
+        assert_eq!(copy.state_hash(), game.state_hash());
+        assert!(game.hostile(0, 1) && game.hostile(1, 0));
+        assert_eq!(game.sole_survivor.unwrap().deadline, IDLE);
+    }
+
+    #[test]
     fn allied_final_pair_waits_for_the_strict_deadline_then_breaks_both_directions() {
         let mut game = match_for(2);
         ally(&mut game, 0, 1);
@@ -188,10 +224,10 @@ mod tests {
         assert!(armed.eliminated(2));
         assert!(!game.sole_alliances_allowed());
         assert_eq!(armed.deadline, game.tick as f32 * DT + 10.0);
-        assert_eq!(armed.remaining_seconds(game.tick), Some(10));
+        assert_eq!(armed.remaining_seconds(game.sim_elapsed()), Some(10));
         assert_eq!(game.winner, 0);
         for _ in 0..37 { game.tick(); }
-        assert_eq!(armed.remaining_seconds(game.tick), Some(8));
+        assert_eq!(armed.remaining_seconds(game.sim_elapsed()), Some(8));
         game.save();
         let mut resumed = Game::load(&game.savebuf).unwrap();
         resumed.save();

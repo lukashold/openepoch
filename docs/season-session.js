@@ -1,4 +1,4 @@
-import {createSeasonClock,normalizeSeasonSettings} from './original-seasons.js';
+import {createSeasonClock,normalizeSeasonSettings} from './original-seasons.js?v=clock38';
 import {checkedClimate,CLIMATE_NAMES} from './skirmish-climates.js';
 
 // Saves made before the calendar existed displayed fixed summer. Preserve that
@@ -16,8 +16,8 @@ export function savedSeasonSettings(record){
   return record.seasons===undefined?LEGACY_SEASON_SETTINGS:peerSeasonSettings(record.seasons);
 }
 
-// Both renderers read the same integer simulation tick. Pausing, network waits,
-// save/load and different display refresh rates therefore keep their phase.
+// Both renderers read the same simulation clock so pause, save/load and
+// different display refresh rates preserve their season phase.
 export function createSeasonSession(wasm,terrain,ground,models=null,climates=[0]){
   let clock=createSeasonClock(),climate=0;
   return Object.freeze({
@@ -38,7 +38,7 @@ export function createSeasonSession(wasm,terrain,ground,models=null,climates=[0]
     get settings(){return clock.settings;},
     get climate(){return climate;},
     update(){
-      const phase=clock.atTick(wasm.game_tick()>>>0);
+      const phase=wasm.sim_clock_active?.()===1?clock.atSeconds(wasm.sim_elapsed_seconds()):clock.atTick(wasm.game_tick()>>>0);
       terrain.setSeasonPhase(phase);
       ground.setSeasonPhase(phase);
       models?.setSeasonPhase?.(phase);

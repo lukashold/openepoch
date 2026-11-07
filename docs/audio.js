@@ -1,11 +1,11 @@
 // The EE2 profile uses locally extracted original recordings when available.
 // Procedural sounds and local speech remain the fallback for the standalone game.
-import { createOriginalAudio } from './original-audio.js?v=native39audio';
+import { createOriginalAudio } from './original-audio.js?v=ambient39';
 import {ORIGINAL_AUDIO_DEFAULTS,originalAudioLevel,originalAudioGain} from './original-audio-levels.js?v=native38audio';
 import {originalOneShotAudible,originalLoopAudible,originalSpatialMix} from './original-spatial-audio.js?v=native39audio';
 import {createPresentationRandom} from './source-music-controller.js?v=regional11';
-import {createAirFlightPlayback} from './air-flight-audio.js?v=native36';
-import {takeoffSpatialMix} from './air-takeoff.js?v=native39audio';
+import {createAirFlightPlayback} from './air-flight-audio.js?v=native40clock';
+import {takeoffSpatialMix} from './air-takeoff.js?v=native40clock';
 const presentationRandom = createPresentationRandom(1);
 const originals=createOriginalAudio({presentationRandom});
 export const presentationWord = () => presentationRandom.word15();
@@ -136,6 +136,9 @@ export function acknowledge(def, action, epoch=0,context=undefined) {
 export const isMuted = () => muted;
 export const originalAudioStatus = () => originals.status();
 export const configureOriginalDefinitions = settings => originals.setDefinitionBindings(settings);
+export const configureOriginalAmbience = presentation => originals.setAmbientPresentation(presentation);
+export const frameOriginalAmbience = frame => originals.frameAmbient(frame);
+export const resetWorldAmbience = () => originals.resetWorldAmbience();
 export const resetRegionalMusic = () => originals.resetRegionalMusic();
 export const rebindRegionalMusic = () => originals.rebindRegionalMusic();
 export const menuMusic = () => originals.menuMusic(musicEnabled);

@@ -33,10 +33,19 @@ impl Game {
     }
 
     pub(crate) fn initial_ceasefire_active(&self) -> bool {
+        if self.source_clock.is_some() {
+            let seconds = SECONDS[self.initial_ceasefire as usize];
+            return seconds != 0 && self.sim_elapsed() <= seconds as f32;
+        }
         self.initial_ceasefire_end().is_some_and(|end| self.tick <= end)
     }
 
     pub(crate) fn initial_ceasefire_seconds(&self) -> f32 {
+        if self.source_clock.is_some() {
+            let seconds = SECONDS[self.initial_ceasefire as usize];
+            let remaining = seconds as f32 - self.sim_elapsed();
+            return if seconds != 0 && remaining >= 0.0 { remaining } else { -1.0 };
+        }
         self.initial_ceasefire_end()
             .and_then(|end| end.checked_sub(self.tick))
             .map_or(-1.0, |remaining| remaining as f32 / TICKS_PER_SECOND as f32)

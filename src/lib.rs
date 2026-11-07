@@ -79,6 +79,7 @@ mod ids;
 mod cmd;
 mod defs;
 mod economy;
+mod source_clock38;
 #[cfg(all(feature="ee2-up15",not(feature="ee2-roster6")))]
 mod ee2_up15_economy;
 #[cfg(all(feature="ee2-roster6",not(feature="ee2-civ8")))]
@@ -244,6 +245,37 @@ pub extern "C" fn init(seed: u32, n_ai: u32, bench: u32, humans: u32, local: u32
 #[no_mangle]
 pub extern "C" fn tick() {
     g().tick();
+}
+
+/// Experimental solo clock. Takes an unrounded game-time delta in seconds.
+/// Returns 1 after one simulation tick. Invalid input changes nothing. An
+/// admitted resignation drains the command queue and returns 0 at game end.
+#[no_mangle]
+pub extern "C" fn tick_with_source_delta(seconds: f64) -> u32 {
+    unsafe {
+        (*addr_of_mut!(GAME)).as_mut().is_some_and(|game| game.tick_with_source_delta(seconds)) as u32
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn sim_clock_active() -> u32 {
+    unsafe { (&*addr_of_mut!(GAME)).as_ref().is_some_and(|game| game.source_clock.is_some()) as u32 }
+}
+
+#[no_mangle]
+pub extern "C" fn sim_elapsed_seconds() -> f32 {
+    unsafe { (&*addr_of_mut!(GAME)).as_ref().map_or(0.0, |game| game.sim_elapsed()) }
+}
+
+#[no_mangle]
+pub extern "C" fn sim_step_seconds() -> f32 {
+    unsafe { (&*addr_of_mut!(GAME)).as_ref().map_or(0.0, |game| game.sim_step()) }
+}
+
+#[no_mangle]
+pub extern "C" fn sim_render_seconds(alpha: f32) -> f32 {
+    let alpha = if alpha.is_finite() { alpha.clamp(0.0, 1.0) } else { 0.0 };
+    unsafe { (&*addr_of_mut!(GAME)).as_ref().map_or(0.0, |game| game.render_elapsed(alpha)) }
 }
 
 /// Simulation time for visual seasons; safe before game initialization.
@@ -524,6 +556,13 @@ pub extern "C" fn air_audio_transition_count() -> u32 {
 #[no_mangle]
 pub extern "C" fn air_audio_transition_ptr() -> *const u8 {
     g().air_audio.transitions.as_ptr().cast()
+}
+
+/// Game-time seconds for the same row index in the unchanged transition ABI.
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn air_audio_transition_seconds(index: u32) -> f32 {
+    g().air_audio.transition_seconds(index as usize).unwrap_or(-1.0)
 }
 
 #[cfg(feature = "ee2-native13")]
@@ -907,6 +946,15 @@ pub extern "C" fn air_takeoff_start_tick(handle: u32) -> u32 {
 
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
+pub extern "C" fn air_takeoff_start_seconds(handle: u32) -> f32 {
+    let game = g();
+    if game.get(handle).is_some_and(|i| game.ents[i].team == game.local || game.visible(i)) {
+        game.takeoff_start_seconds(handle).unwrap_or(-1.0)
+    } else { -1.0 }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
 pub extern "C" fn air_takeoff_height(handle: u32) -> f32 {
     let game = g();
     if game.get(handle).is_some_and(|i| game.ents[i].team == game.local || game.visible(i)) {
@@ -1106,8 +1154,13 @@ pub extern "C" fn capture_animation_request(handle: u32) -> u32 {
 #[no_mangle]
 pub extern "C" fn capture_animation_elapsed(handle: u32, render_time: f32) -> f32 {
     let game = g();
-    if !((game.tick as f32 * DT)..=((game.tick as f32 + 1.0) * DT)).contains(&render_time) { return -1.0; }
-    game.capture_animation_pose(handle).map_or(-1.0, |pose| (render_time - pose.tick as f32 * DT).max(0.0))
+    let bounds = if game.source_clock.is_some() {
+        game.render_elapsed(0.0)..=game.render_elapsed(1.0)
+    } else {
+        (game.tick as f32 * DT)..=((game.tick as f32 + 1.0) * DT)
+    };
+    if !bounds.contains(&render_time) { return -1.0; }
+    game.capture_animation_started(handle).map_or(-1.0, |at| (render_time - at).max(0.0))
 }
 
 #[cfg(feature = "ee2-native13")]

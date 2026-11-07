@@ -13,6 +13,10 @@ use core::mem::size_of;
 
 const MAGIC: u32 = if cfg!(feature="ee2-paidqueue7"){0x3755_454f}else if cfg!(feature="ee2-roster6"){0x3655_454f}else if cfg!(feature="ee2-up15") {0x3555_454f} else if cfg!(feature = "ee2-reference") { 0x3252_454f } else { 0x3250_454f };
 
+pub(crate) fn checksum(bytes: &[u8]) -> u32 {
+    bytes.iter().fold(2166136261u32, |value, &byte| (value ^ u32::from(byte)).wrapping_mul(16777619))
+}
+
 /// View a slice of plain `#[repr(C)]` values as bytes.
 fn raw<T: Copy>(s: &[T]) -> &[u8] {
     // SAFETY: only used with Ent / Player / u16, which are plain old data; the
@@ -118,10 +122,14 @@ impl Game {
         { b = self.wrap_landing_save(b); }
         #[cfg(feature="ee2-native13")]
         { b = self.wrap_network_resignation(b); }
-        self.savebuf = b;
+        if self.source_clock.is_some() { b = self.diplomacy.clock.wrap(b); }
+        self.savebuf = crate::source_clock38::wrap(b, self.source_clock);
     }
 
     pub fn load(buf: &[u8]) -> Option<Game> {
+        let (buf, source_clock) = crate::source_clock38::split(buf)?;
+        let (buf, diplomacy_clock) = crate::diplomacy::DiplomacyClock::split(buf)?;
+        if diplomacy_clock.is_some() && source_clock.is_none() { return None; }
         #[cfg(feature="ee2-native13")]
         let (buf, net_resignation) = crate::net_resign38::split(buf)?;
         #[cfg(feature="ee2-native13")]
@@ -201,6 +209,10 @@ impl Game {
         if !(1..=2).contains(&humans){return None;}
         let mut g = Game::new(u(4), u(5), 0, humans, 0);
         g.tick = u(6);
+        if source_clock.is_some_and(|clock| !clock.valid_at(g.tick, g.net)) {
+            return None;
+        }
+        g.source_clock = source_clock;
         g.rng = Rng(u(7));
         let mut o = H;
         let mut take = |n: usize| {
@@ -280,6 +292,10 @@ impl Game {
         if has_diplomacy{g.read_diplomacy(&buf[end+trailer..end+trailer+crate::diplomacy::DIP_BYTES])?;}
         if (g.god_mode || g.fog_inverted) && g.humans != 1 { return None; }
         if has_territory{g.read_territory(&buf[end+trailer+crate::diplomacy::DIP_BYTES..])?;}
+        if let Some(clock) = diplomacy_clock {
+            if !clock.valid(g.sim_elapsed(), g.nplayers) { return None; }
+            g.diplomacy.clock = clock;
+        }
         if g.extra_resources.iter().flatten().any(|v|!v.is_finite()||*v<0.0)||g.players.iter().flat_map(|p|p.res).any(|v|!v.is_finite()||v<0.0){return None;}
         if g.map.res.iter().any(|&v|v as usize>crate::economy::RESOURCE_COUNT){return None;}
         #[cfg(feature = "ee2-reference")]

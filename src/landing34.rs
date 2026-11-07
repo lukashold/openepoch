@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 use crate::air31_defs::{flight_profile, Flight as Profile};
 use crate::aircraft_steering::{self as steering, Controls, Motion};
 use crate::carrier36_defs::CARRIER;
-use crate::game::{Ent, Game, DT, MAXE};
+use crate::game::{Ent, Game, MAXE};
 use crate::landing_geometry::{self as geometry, Aircraft, Approach, Point, Runway};
 use crate::map::N;
 
@@ -48,12 +48,7 @@ impl Landing {
     }
 
     fn update(&mut self, runway: Runway, actor: Aircraft, profile: &Profile, target: f32,
-              current_height: f32) -> (Motion, f32, f32) {
-        self.update_for_deck(runway, actor, profile, target, current_height, 0.0, false)
-    }
-
-    fn update_for_deck(&mut self, runway: Runway, actor: Aircraft, profile: &Profile, target: f32,
-                       current_height: f32, deck_offset: f32, moving_deck: bool) -> (Motion, f32, f32) {
+              current_height: f32, deck_offset: f32, moving_deck: bool, dt: f32) -> (Motion, f32, f32) {
         let raw_turn = f64::from(profile.angle_degrees_per_second) * RADIANS;
         let max_turn = (f64::from(target) / f64::from(profile.speed) * f64::from(raw_turn as f32)) as f32;
         let angular_acceleration = (raw_turn / YAW_ACCEL_TIME) as f32;
@@ -72,7 +67,7 @@ impl Landing {
             Phase::Bank { center, height } => {
                 let rate = steering::approach_turn(actor.position, actor.heading, center.point,
                     *height - current_height, center.turn_left, target, max_turn);
-                let motion = steering::hold(actor.heading, motion, Controls { speed: target * 0.8, ..control }, rate, DT);
+                let motion = steering::hold(actor.heading, motion, Controls { speed: target * 0.8, ..control }, rate, dt);
                 (motion, profile.height, profile.elevation_rate)
             }
             Phase::Runway { path, cursor, mode, unreachable } => {
@@ -82,9 +77,9 @@ impl Landing {
                 let (allowed, next_flag) = steering::fixed_goal_gate(actor.position, actor.heading, goal, control, *unreachable);
                 *unreachable = next_flag;
                 let (motion, arrived) = if allowed {
-                    steering::steer(actor.position, actor.heading, goal, motion, control, DT)
+                    steering::steer(actor.position, actor.heading, goal, motion, control, dt)
                 } else {
-                    (steering::hold(actor.heading, motion, control, 0.0, DT), false)
+                    (steering::hold(actor.heading, motion, control, 0.0, dt), false)
                 };
                 if arrived {
                     if remaining == 1 {
@@ -188,17 +183,16 @@ impl Game {
         let pose = Aircraft { position: source_xy([actor.x, actor.y]), velocity: source_xy([actor.vx, actor.vy]),
             heading: (-actor.rot).rem_euclid(std::f32::consts::TAU), turn_rate: 0.0 };
         let height = self.takeoff_height(handle, 1.0).expect("landing requires tracked altitude");
+        let dt = self.sim_step();
         let flight = self.landing.0.entry(handle).or_insert_with(|| Landing::start(home, runway, pose, height));
         if flight.home != home { *flight = Landing::start(home, runway, pose, height); }
         let profile = flight_profile(actor.def, self.players[actor.team as usize].epoch).unwrap();
         let speed = self.modifiers[actor.team as usize][actor.def as usize][2];
         let pose = Aircraft { turn_rate: flight.angular_rate, ..pose };
-        let (motion, clearance, rate) = if carrier {
-            flight.update_for_deck(runway, pose, profile, speed, height, deck_offset, moving_deck)
-        } else { flight.update(runway, pose, profile, speed, height) };
+        let (motion, clearance, rate) = flight.update(runway, pose, profile, speed, height, deck_offset, moving_deck, dt);
         if matches!(flight.phase, Phase::Complete) { return true; }
         self.follow_air_height(handle, actor, clearance, rate);
-        let (position, heading) = steering::integrate(pose.position, pose.heading, motion, DT);
+        let (position, heading) = steering::integrate(pose.position, pose.heading, motion, dt);
         let [x, y] = source_xy(position);
         actor.x = x.clamp(0.0, N as f32 - 1.0);
         actor.y = y.clamp(0.0, N as f32 - 1.0);

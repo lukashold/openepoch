@@ -4,8 +4,13 @@ use crate::diplomacy::{NEUTRAL, WAR};
 use crate::map::{T_GRASS, T_SHALLOW};
 
 fn terrain_game(unit: DefId, local: u32) -> (Game, usize, usize, usize) {
-    let mut game = Game::new(7, 0, 0, 2, local);
-    assert!(game.configure_peer_trade_route(true));
+    terrain_game_with_seats(unit, local, 2)
+}
+
+fn terrain_game_with_seats(unit: DefId, local: u32, humans: u32) -> (Game, usize, usize, usize) {
+    let mut game = Game::new(7, 0, 0, humans, local);
+    if humans == 2 { assert!(game.configure_peer_trade_route(true)); }
+    assert!(game.trade_enabled);
     for team in 0..2 {
         game.players[team as usize].epoch = 2;
         game.rebuild_modifiers(team, false);
@@ -19,6 +24,39 @@ fn terrain_game(unit: DefId, local: u32) -> (Game, usize, usize, usize) {
     game.build_grid();
     game.update_fog();
     (game, home, destination, trader)
+}
+
+#[test]
+fn source_clock_market_slot_accumulates_injected_delta_and_replays_paid_cargo() {
+    let (mut game, home, destination, actor) = terrain_game_with_seats(TRADE_CART, 0, 1);
+    let handle = game.h(actor);
+    let initial = game.resource(0, GOLD);
+    command(&mut game, home, destination, &[actor]);
+    let quote = game.trade.routes[&handle].quote;
+    for _ in 0..500 {
+        assert!(game.tick_with_source_delta(0.075));
+        if game.trade_hidden(actor, &game.ents[actor]) { break; }
+    }
+    assert!(game.trade_hidden(actor, &game.ents[actor]));
+    let host = game.trade.routes[&handle].host();
+    let prior = game.trade.hosts[&host].snapshot().1;
+    assert!(game.tick_with_source_delta(0.025));
+    assert_eq!(game.sim_step().to_bits(), 0.025f32.to_bits() - 1);
+    let expected = (f64::from(prior) + f64::from(game.sim_step()) / 5.0) as f32;
+    assert_eq!(game.trade.hosts[&host].snapshot().1, expected);
+    let mut copy = reload(&mut game);
+    let mut progress = expected;
+    for delta in [0.025, 0.075, 0.125].into_iter().cycle().take(100) {
+        assert!(game.tick_with_source_delta(delta));
+        assert!(copy.tick_with_source_delta(delta));
+        progress = (f64::from(progress) + f64::from(game.sim_step()) / 5.0) as f32;
+        assert_eq!(copy.state_hash(), game.state_hash());
+        assert_eq!(game.trade_hidden(actor, &game.ents[actor]), progress < 1.0);
+        if progress >= 1.0 { break; }
+        assert_eq!(game.trade.hosts[&host].snapshot().1, progress);
+    }
+    assert!(progress >= 1.0);
+    assert_eq!(game.resource(0, GOLD), initial + quote.gold);
 }
 
 fn command(game: &mut Game, home: usize, destination: usize, traders: &[usize]) {

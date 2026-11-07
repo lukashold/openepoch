@@ -17,6 +17,10 @@ pub const DIP_MAGIC: u32 = 0x3150_4944; // DIP1
 pub const DIP_VERSION: u32 = 1;
 
 pub const DIP_LOGS: usize = 12;
+const CLOCK_MAGIC: &[u8; 4] = b"DCT1";
+const CLOCK_BYTES: usize = 4 + 4 * 16 * 4;
+const SOURCE_PROPOSAL_LIFETIME: f32 = 300.0;
+const LEGACY_PROPOSAL_TICKS: u32 = 1200;
 
 // Header, player/visibility metadata, byte matrices, five u32 matrices, log count,
 
@@ -47,6 +51,7 @@ pub struct Diplomacy {
     pub gifts: [u32; 16],
     pub neutral_since: [u32; 16],
     pub war_tick: [u32; 16],
+    pub(crate) clock: DiplomacyClock,
 
     pub visibility: u8,
     pub log: Vec<DipEvent>,
@@ -68,13 +73,91 @@ impl Default for Diplomacy {
             gifts: [0; 16],
             neutral_since: [0; 16],
             war_tick: [0; 16],
+            clock: DiplomacyClock::default(),
             visibility: 0,
             log: Vec::with_capacity(DIP_LOGS),
         }
     }
 }
 
+#[derive(Default)]
+pub(crate) struct DiplomacyClock {
+    offer: [f32; 16],
+    neutral: [f32; 16],
+    war: [f32; 16],
+    pub(crate) territory: [f32; 16],
+}
+
+impl DiplomacyClock {
+    fn stamps(&self) -> impl Iterator<Item = f32> + '_ {
+        [&self.offer, &self.neutral, &self.war, &self.territory].into_iter().flatten().copied()
+    }
+
+    fn has_stamps(&self) -> bool { self.stamps().any(|stamp| stamp != 0.0) }
+
+    pub(crate) fn wrap(&self, core: Vec<u8>) -> Vec<u8> {
+        if core.is_empty() || !self.has_stamps() { return core; }
+        let mut out = Vec::with_capacity(CLOCK_BYTES + core.len());
+        out.extend_from_slice(CLOCK_MAGIC);
+        for stamp in self.stamps() { out.extend_from_slice(&stamp.to_le_bytes()); }
+        out.extend(core);
+        out
+    }
+
+    pub(crate) fn split(bytes: &[u8]) -> Option<(&[u8], Option<Self>)> {
+        if bytes.get(..4) != Some(CLOCK_MAGIC.as_slice()) { return Some((bytes, None)); }
+        let mut clock = Self::default();
+        for (field, raw) in [&mut clock.offer, &mut clock.neutral, &mut clock.war, &mut clock.territory]
+            .into_iter().flatten().zip(bytes.get(4..CLOCK_BYTES)?.chunks_exact(4)) {
+            *field = f32::from_le_bytes(raw.try_into().ok()?);
+        }
+        clock.has_stamps().then_some((bytes.get(CLOCK_BYTES..)?, Some(clock)))
+    }
+
+    pub(crate) fn valid(&self, now: f32, seats: usize) -> bool {
+        self.stamps().enumerate().all(|(index, stamp)| {
+            let (from, to) = (index % 16 / 4, index % 4);
+            !stamp.is_sign_negative() && (0.0..=now).contains(&stamp)
+                && (stamp == 0.0 || (from < seats && to < seats && from != to))
+        })
+    }
+
+    pub(crate) fn hash(&self, mut mix: impl FnMut(u32)) {
+        if !self.has_stamps() { return; }
+        mix(u32::from_le_bytes(*CLOCK_MAGIC));
+        for stamp in self.stamps() { mix(stamp.to_bits()); }
+    }
+}
+
 impl Game {
+    /// Keep authored diplomacy policies in game seconds on an admitted source
+    /// clock. Raw tick stamps remain for legacy policy and event ordering.
+    pub(crate) fn diplomacy_delay_reached(&self, tick: u32, stamp: f32, delay: u32) -> bool {
+        if self.source_clock.is_some() {
+            f64::from(self.sim_elapsed()) >= f64::from(stamp) + f64::from(delay as f32 * DT)
+        } else { self.tick.saturating_sub(tick) >= delay }
+    }
+
+    pub(crate) fn diplomacy_cooldown_seconds(&self, deadline: u32, stamp: f32) -> f32 {
+        if self.source_clock.is_some() {
+            if deadline == 0 { return 0.0; }
+            (f64::from(stamp) + 5.0 - f64::from(self.sim_elapsed())).max(0.0) as f32
+        } else { deadline.saturating_sub(self.tick) as f32 * DT }
+    }
+
+    pub(crate) fn diplomacy_proposal_expired(&self, tick: u32, stamp: f32) -> bool {
+        if self.source_clock.is_some() {
+            // 0054762D stores the cutoff before comparing each saved stamp.
+            stamp <= self.sim_elapsed() - SOURCE_PROPOSAL_LIFETIME
+        } else { self.tick.saturating_sub(tick) >= LEGACY_PROPOSAL_TICKS }
+    }
+
+    pub(crate) fn diplomacy_proposal_seconds(&self, tick: u32, stamp: f32) -> f32 {
+        if self.source_clock.is_some() {
+            (f64::from(stamp) + f64::from(SOURCE_PROPOSAL_LIFETIME) - f64::from(self.sim_elapsed())).max(0.0) as f32
+        } else { LEGACY_PROPOSAL_TICKS.saturating_sub(self.tick.saturating_sub(tick)) as f32 * DT }
+    }
+
     #[inline]
     pub fn relation(&self, from: u8, to: u8) -> u8 {
         self.diplomacy.relation[from as usize * 4 + to as usize]
@@ -220,7 +303,7 @@ impl Game {
         match action {
             0 | 1 => {
                 self.diplomacy.offers[i] == 0
-                    && self.tick >= self.diplomacy.cooldown[i]
+                    && self.diplomacy_cooldown_seconds(self.diplomacy.cooldown[i], self.diplomacy.clock.offer[i]) == 0.0
                     && if action == 0 {
                         self.relation(from, to) == WAR || self.relation(to, from) == WAR
                     } else {
@@ -258,7 +341,7 @@ impl Game {
                     && self.allied(from, to)
                     && self.diplomacy.sharing[i] != (amount as u8)
                     && self.diplomacy.offers[i] == 0
-                    && self.tick >= self.diplomacy.cooldown[i]
+                    && self.diplomacy_cooldown_seconds(self.diplomacy.cooldown[i], self.diplomacy.clock.offer[i]) == 0.0
             }
 
             _ => false,
@@ -299,9 +382,11 @@ impl Game {
         if self.allied(from, to) {
             self.diplomacy.relation[j] = NEUTRAL;
             self.diplomacy.neutral_since[j] = self.tick;
+            self.diplomacy.clock.neutral[j] = self.sim_elapsed();
         }
         self.diplomacy.relation[i] = WAR;
         self.diplomacy.war_tick[i] = self.tick;
+        self.diplomacy.clock.war[i] = self.sim_elapsed();
         self.diplomacy.offers[i] = 0;
         self.diplomacy.offers[j] = 0;
         self.diplomacy.sharing[i] = 0;
@@ -357,6 +442,7 @@ impl Game {
                 self.diplomacy.offer_vision[i] = if action == 1 { resource as u8 } else { 0 };
                 self.diplomacy.offer_tick[i] = self.tick;
                 self.diplomacy.cooldown[i] = self.tick.saturating_add(100);
+                self.diplomacy.clock.offer[i] = self.sim_elapsed();
                 self.dip_event(from, to, action as u8, 0, 0, 0);
             }
 
@@ -372,6 +458,9 @@ impl Game {
                     self.diplomacy.relation[j] = relation;
                     self.diplomacy.neutral_since[i] = self.tick;
                     self.diplomacy.neutral_since[j] = self.tick;
+                    let now = self.sim_elapsed();
+                    self.diplomacy.clock.neutral[i] = now;
+                    self.diplomacy.clock.neutral[j] = now;
                     let sharing = if offer == 2 {
                         self.diplomacy.offer_vision[j]
                     } else {
@@ -410,6 +499,7 @@ impl Game {
                 self.diplomacy.offers[i] = if amount == 1.0 { 3 } else { 4 };
                 self.diplomacy.offer_tick[i] = self.tick;
                 self.diplomacy.cooldown[i] = self.tick.saturating_add(100);
+                self.diplomacy.clock.offer[i] = self.sim_elapsed();
                 self.dip_event(from, to, 7, 0, amount as u32, 0);
             }
 
@@ -436,7 +526,7 @@ impl Game {
                 if offer != 0 {
                     if !self.players[from].alive
                         || !self.players[to].alive
-                        || self.tick.saturating_sub(self.diplomacy.offer_tick[i]) >= 1200
+                        || self.diplomacy_proposal_expired(self.diplomacy.offer_tick[i], self.diplomacy.clock.offer[i])
                     {
                         self.diplomacy.offers[i] = 0;
                         self.dip_event(from as u8, to as u8, 8, 0, 0, 0);
@@ -446,7 +536,7 @@ impl Game {
                     let delay = 60 + 10 * ((from + to) % 3) as u32;
 
                     if self.players[to].ai
-                        && self.tick.saturating_sub(self.diplomacy.offer_tick[i]) >= delay
+                        && self.diplomacy_delay_reached(self.diplomacy.offer_tick[i], self.diplomacy.clock.offer[i], delay)
                     {
                         let common = (0..self.nplayers).any(|p| {
                             p != from
@@ -469,7 +559,7 @@ impl Game {
                                 2
                             }
                         } else if offer == 1 {
-                            if self.tick < 1200 && self.diplomacy.gifts[i] < 100 {
+                            if !self.diplomacy_delay_reached(0, 0.0, 1200) && self.diplomacy.gifts[i] < 100 {
                                 1
                             } else {
                                 0
@@ -478,10 +568,10 @@ impl Game {
                             || self.relation(to as u8, from as u8) != NEUTRAL
                         {
                             2
-                        } else if self.tick.saturating_sub(
-                            self.diplomacy.neutral_since[i]
-                                .max(self.diplomacy.neutral_since[to * 4 + from]),
-                        ) < 600
+                        } else if !self.diplomacy_delay_reached(
+                            self.diplomacy.neutral_since[i].max(self.diplomacy.neutral_since[to * 4 + from]),
+                            self.diplomacy.clock.neutral[i].max(self.diplomacy.clock.neutral[to * 4 + from]), 600,
+                        )
                         {
                             3
                         } else if self.diplomacy.gifts[i] < 200 {
@@ -510,7 +600,7 @@ impl Game {
                 if self.players[to].ai
                     && self.hostile(from as u8, to as u8)
                     && self.relation(to as u8, from as u8) == NEUTRAL
-                    && self.tick.saturating_sub(self.diplomacy.war_tick[i]) >= 40
+                    && self.diplomacy_delay_reached(self.diplomacy.war_tick[i], self.diplomacy.clock.war[i], 40)
                 {
                     self.apply_diplomacy(to as u8, from as u32, 2, 0, 0.0);
                 }
@@ -529,7 +619,8 @@ impl Game {
         for p in 0..self.nplayers {
             let i = me as usize * 4 + p;
             let j = p * 4 + me as usize;
-            let _=write!(s,"{}{{\"team\":{},\"alive\":{},\"ai\":{},\"relation\":{},\"theirRelation\":{},\"incoming\":{},\"outgoing\":{},\"incomingAllianceVision\":{},\"outgoingAllianceVision\":{},\"sharedVision\":{},\"sharingVision\":{},\"cooldown\":{:.1}}}",if p>0{","}else{""},p,self.players[p].alive,self.players[p].ai,self.diplomacy.relation[i],self.diplomacy.relation[j],self.diplomacy.offers[j],self.diplomacy.offers[i],self.diplomacy.offer_vision[j]!=0,self.diplomacy.offer_vision[i]!=0,self.shares_to(p as u8,me),self.shares_to(me,p as u8),self.diplomacy.cooldown[i].saturating_sub(self.tick) as f32*DT);
+            let cooldown=self.diplomacy_cooldown_seconds(self.diplomacy.cooldown[i],self.diplomacy.clock.offer[i]);
+            let _=write!(s,"{}{{\"team\":{},\"alive\":{},\"ai\":{},\"relation\":{},\"theirRelation\":{},\"incoming\":{},\"outgoing\":{},\"incomingAllianceVision\":{},\"outgoingAllianceVision\":{},\"sharedVision\":{},\"sharingVision\":{},\"cooldown\":{:.1}}}",if p>0{","}else{""},p,self.players[p].alive,self.players[p].ai,self.diplomacy.relation[i],self.diplomacy.relation[j],self.diplomacy.offers[j],self.diplomacy.offers[i],self.diplomacy.offer_vision[j]!=0,self.diplomacy.offer_vision[i]!=0,self.shares_to(p as u8,me),self.shares_to(me,p as u8),cooldown);
             s.pop();
             self.append_territory_player_ui(s, me, p as u8);
             s.push('}');

@@ -256,6 +256,25 @@ class AssetAudit:
             self.error('pinned-media-byte-mismatch',target,source)
         return target
 
+    def check_original_ambient(self):
+        name = 'local-original/ambient39/manifest.json'
+        pinned = '3b0927335f0245bd928206bcf89aa19037f61a7277f2214ccff21595a342cb09'
+        if not self.check_pinned_media(name, pinned, 'original-ambient.js', 'ambient-catalog'):
+            return
+        catalog = self.read_json(name)
+        profiles, sets, assets = (catalog.get(key, {}) for key in ('profiles', 'sets', 'assets'))
+        if (catalog.get('format') != 'ee2-native-ambient-audio-v1' or
+                set(profiles) != {'Temperate', 'Arid', 'Tropical', 'Tundra'} or
+                len(sets) != 19 or len(assets) != 59):
+            self.error('ambient-catalog-format', name)
+            return
+        used = {row['asset'] for sound_set in sets.values() for key in ('loops', 'shots') for row in sound_set[key]}
+        if used != assets.keys():
+            self.error('ambient-catalog-asset-coverage', name)
+        for asset, row in assets.items():
+            self.check_pinned_media('local-original/' + row['path'], row['sha256'], name + '.' + asset,
+                                    'ambient-audio', row['bytes'])
+
     def check_aircraft(self):
         name='local-original/fighter-bomber/manifest.json'
         self.ref(name,'original-trade-presentation.js','fighter-bomber-catalog')
@@ -1001,6 +1020,7 @@ class AssetAudit:
         if 'air-mission-flag.js' in self.files:self.check_air_mission_flag()
         if 'air-takeoff.js' in self.files:self.check_air_takeoff()
         if 'air-flight-audio.js' in self.files:self.check_air_flight_audio()
+        if 'original-ambient.js' in self.files:self.check_original_ambient()
         if 'trade-wait-status.js' in self.files:self.check_trade_wait_art()
         if 'local-original/king-regicide/manifest.json' in self.files:
             self.check_models('local-original/king-regicide/manifest.json','king-regicide-')

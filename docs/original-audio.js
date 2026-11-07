@@ -1,6 +1,7 @@
 import {createTypedAudioBindings} from './original-audio-bindings.js?v=native8';
 import {createRegionalMusicPlayback} from './original-regional-music.js?v=regional12';
 import {originalOneShotAudible} from './original-spatial-audio.js?v=native39audio';
+import {createOriginalAmbientPlayback} from './original-ambient.js?v=ambient39';
 // Playback of original assets extracted from the user's local EE2 installation.
 // Metadata and byte-for-byte source hashes live beside those assets. This module
 // contains no recordings and remains usable when local-original is absent.
@@ -19,6 +20,7 @@ export function createOriginalAudio(options={}) {
   let wheelSession=null;
   let musicSource=null,musicBuffer=null,musicFile=null,musicOffset=0,musicStarted=0,musicIndex=0,musicGeneration=0,musicPendingFile=null;
   let ambientSource=null,nextBird=0,currentEpoch=0,previousPeriod=-1;
+  let ambientPresentation=null,nativeAmbient=null,nativeAmbientOwnsMix=false;
   let citizenPresentation=options.citizenPresentation||null;
   let regionalMusicEnabled=!!options.regionalMusic, regionalMusic=null;
   let playbackManifestURL='manifest.json';
@@ -178,6 +180,15 @@ export function createOriginalAudio(options={}) {
     if(!preserve){musicOffset=0;musicBuffer=null;musicFile=null;musicPendingFile=null;}
   }
   function stopAmbient(){stop(ambientSource);ambientSource=null;}
+  function resetWorldAmbience(){nativeAmbient?.reset();nativeAmbientOwnsMix=false;}
+  function stopLegacyAmbient(){stopAmbient();for(const source of [...live])if(source.originalGroup==='ambient')stop(source);}
+  function frameAmbient(frame){
+    if(!ambientPresentation||!ctx||!soundBus||ctx.state!=='running')return;
+    nativeAmbient??=createOriginalAmbientPlayback({presentation:ambientPresentation,context:ctx,destination:soundBus,random:options.presentationRandom});
+    const owns=nativeAmbient.frame({...frame,running:frame.running&&ambienceEnabled&&!muted});
+    if(owns&&!nativeAmbientOwnsMix)stopLegacyAmbient();
+    nativeAmbientOwnsMix=owns;
+  }
   function canRun(){return active&&!muted&&ctx?.state==='running';}
   function chooseTrack(epoch) {
     const period=epoch>=10?1:0;
@@ -335,21 +346,22 @@ export function createOriginalAudio(options={}) {
     if (regional) {
       if (musicFile) stopMusic(false);
     } else if(!musicEnabled)stopMusic();else advanceMusic();
-    advanceAmbient();
+    if(!nativeAmbientOwnsMix)advanceAmbient();
     if (regional) return true;
     const tracks=currentEpoch>=10?manifest.music?.late:manifest.music?.west;
     return !musicEnabled||!!tracks?.some(file=>!failed.has(file));
   }
   return {
     prepare,acknowledge,citizenDeath,effect,stoneThrowerLaunch,music,menuMusic,setDefinitionBindings,updateStoneThrowerWheels,stopStoneThrowerWheels,
-    bindTakeoffEvents,playTakeoff,stopTakeoff,playInterfaceCue,
+    bindTakeoffEvents,playTakeoff,stopTakeoff,playInterfaceCue,frameAmbient,resetWorldAmbience,
+    setAmbientPresentation(presentation){resetWorldAmbience();nativeAmbient=null;ambientPresentation=presentation;},
     role:(id,epoch)=>typed.role(id,epoch),
     resetRegionalMusic(){regionalMusic?.reset();},
     rebindRegionalMusic(){regionalMusic?.rebind();},
-    setMuted(value){muted=value;if(value){regionalMusic?.suspend();stopMusic();stopAmbient();stopStoneThrowerWheels();for(const source of [...live])stop(source);}},
+    setMuted(value){muted=value;if(value){regionalMusic?.suspend();stopMusic();stopAmbient();resetWorldAmbience();stopStoneThrowerWheels();for(const source of [...live])stop(source);}},
     setSpeechEnabled(value){speech=value;if(!value)stopVoices();},
     setMusicEnabled(value){musicEnabled=value;if(!value){regionalMusic?.suspend();stopMusic();}},
-    setAmbienceEnabled(value){ambienceEnabled=value;if(!value){stopAmbient();for(const source of [...live])if(source.originalGroup==='ambient')stop(source);}},
-    status(){const regional=regionalMusic?.status()??null;return {typedAudio:typed.status(),citizens:citizenPresentation?.status()||null,enabled,ready:!!manifest,buffers:buffers.size,failed:[...failed],activeVoices:[...live].filter(x=>x.originalGroup==='voice').length,music:!!musicSource||!!regional?.active,regionalMusic:regional,ambient:!!ambientSource,...stats};}
+    setAmbienceEnabled(value){ambienceEnabled=value;if(!value){stopLegacyAmbient();resetWorldAmbience();}},
+    status(){const regional=regionalMusic?.status()??null;return {typedAudio:typed.status(),citizens:citizenPresentation?.status()||null,enabled,ready:!!manifest,buffers:buffers.size,failed:[...failed],activeVoices:[...live].filter(x=>x.originalGroup==='voice').length,music:!!musicSource||!!regional?.active,regionalMusic:regional,ambient:!!ambientSource,worldAmbience:nativeAmbient?.status()??null,...stats};}
   };
 }

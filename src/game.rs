@@ -259,6 +259,7 @@ pub struct Game {
     pub extra_resources: [[f32;6];4],
     pub nplayers: usize,
     pub tick: u32,
+    pub(crate) source_clock: Option<crate::source_clock38::SourceClock>,
     pub rng: Rng,
     #[cfg(feature="ee2-citizen9")]
     pub source_birth:crate::citizen9::SourceBirth,
@@ -403,6 +404,7 @@ impl Game {
             extra_resources: [[0.0;6];4],
             nplayers,
             tick: 0,
+            source_clock: None,
             rng: Rng(seed.wrapping_mul(2_654_435_761) | 1),
             #[cfg(feature="ee2-citizen9")]
             source_birth:crate::citizen9::SourceBirth::new(seed),
@@ -1040,6 +1042,13 @@ impl Game {
         let mut mix = |v: u32| h = (h ^ v).wrapping_mul(16_777_619);
         mix(self.tick);
         mix(self.rng.0);
+        if let Some(clock) = self.source_clock {
+            mix(crate::source_clock38::MAGIC);
+            mix(clock.elapsed.to_bits());
+            mix(clock.last_step.to_bits());
+            mix(clock.previous.to_bits());
+            self.diplomacy.clock.hash(&mut mix);
+        }
         #[cfg(feature = "ee2-epoch-range13")]
         if self.final_epoch != MAX_EPOCH {
             mix(crate::match_epoch_range13::MAGIC);
@@ -1081,7 +1090,7 @@ impl Game {
             for (&handle, &id) in &names.ids { mix(handle); mix(id.into()); }
         }
         #[cfg(feature = "ee2-native13")]
-        self.capture.hash(self.capture_animation_enabled, &mut mix);
+        self.capture.hash(self.capture_animation_enabled, self.source_clock.is_some(), &mut mix);
         #[cfg(feature = "ee2-native13")]
         if self.infantry_roster_enabled { mix(u32::from_le_bytes(*b"INF1")); }
         #[cfg(feature = "ee2-native13")]
@@ -1093,7 +1102,7 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         if self.air_runway_enabled { mix(crate::runway32::HASH_TAG); }
         #[cfg(feature = "ee2-native13")]
-        if self.air_takeoff_enabled { self.takeoff.hash(&mut mix); }
+        if self.air_takeoff_enabled { self.takeoff.hash(self.source_clock.is_some(), &mut mix); }
         #[cfg(feature = "ee2-native13")]
         if self.air_landing_enabled { self.landing.hash(&mut mix); }
         #[cfg(feature="ee2-native13")]
@@ -1198,10 +1207,61 @@ impl Game {
     // ------------------------------------------------------------------ tick
 
     pub fn tick(&mut self) {
-        #[cfg(feature="ee2-native13")]
-        self.apply_solo_commands();
-        #[cfg(feature="ee2-native13")]
-        if self.solo_resigned || self.finish_network_match() { return; }
+        if self.source_clock.is_none() && self.admit_solo_commands() {
+            self.step_simulation();
+        }
+    }
+
+    fn admit_solo_commands(&mut self) -> bool {
+        #[cfg(feature = "ee2-native13")]
+        {
+            self.apply_solo_commands();
+            if self.solo_resigned || self.finish_network_match() { return false; }
+        }
+        true
+    }
+
+    /// Start only from tick zero, so an existing match is never assigned an
+    /// invented elapsed time. All later ticks use this explicit entry point.
+    pub(crate) fn tick_with_source_delta(&mut self, seconds: f64) -> bool {
+        if self.net || self.bench != 0 || self.tick == u32::MAX {
+            return false;
+        }
+        let clock = match self.source_clock {
+            Some(clock) => clock,
+            None if self.tick == 0 => crate::source_clock38::SourceClock::default(),
+            None => return false,
+        };
+        let Some(advanced) = clock.advance(seconds) else { return false; };
+        if !self.admit_solo_commands() { return false; }
+        self.source_clock = Some(advanced);
+        self.step_simulation();
+        true
+    }
+
+    pub(crate) fn sim_elapsed(&self) -> f32 {
+        self.source_clock.map_or_else(|| self.tick as f32 * DT, |clock| clock.elapsed)
+    }
+
+    pub(crate) fn sim_step(&self) -> f32 {
+        self.source_clock.map_or(DT, |clock| clock.last_step)
+    }
+
+    pub(crate) fn sim_previous_elapsed(&self) -> f32 {
+        self.source_clock.map_or_else(|| self.tick.saturating_sub(1) as f32 * DT, |clock| clock.previous)
+    }
+
+    pub(crate) fn render_elapsed(&self, alpha: f32) -> f32 {
+        self.source_clock.map_or_else(
+            || (self.tick as f32 + alpha) * DT,
+            |clock| {
+                let previous = f64::from(self.sim_previous_elapsed());
+                (previous + (f64::from(clock.elapsed) - previous) * f64::from(alpha)) as f32
+            },
+        )
+    }
+
+    fn step_simulation(&mut self) {
         // Reset resource work slots once, before either old or newly trained
         // citizens run. Resetting inside a building update lets later IDs bypass it.
         for e in &mut self.ents[..self.high]{if e.alive&&e.def==FARM{e.carry=0.0;}}
@@ -1272,7 +1332,7 @@ impl Game {
                     self.ai_step(t as u8);
                 }
             }
-            let poll_result = self.tick % 20 == 0;
+            let poll_result = self.source_clock.is_some() || self.tick % 20 == 0;
             #[cfg(feature = "ee2-native13")]
             let poll_result = poll_result
                 || ((self.sole_survivor.is_some() || self.regicide.is_some()) && self.winner == 0);
@@ -1513,7 +1573,7 @@ impl Game {
         #[cfg(feature="ee2-pack8")] if self.pack_wait_for_attack(index,e){return;}
         #[cfg(feature="ee2-up15")]
         if let Some(a)=crate::ee2_up15_attack::lookup(e.def,self.players[e.team as usize].epoch){
-            let now=self.tick as f32*DT;
+            let now=self.sim_elapsed();
             let reload=crate::ee2_units::lookup_class(e.def,self.players[e.team as usize].epoch).and_then(|r|r.reload).unwrap_or(w.cd);
             let handle=((e.gen as u32)<<16)|index as u32;let c=&mut self.attack_clock[index];
             if c.handle!=handle{*c=crate::native_attack_clock::Clock{handle,next:0.0,flags:0};}
@@ -1669,6 +1729,7 @@ impl Game {
         }
     }
     fn update_projs(&mut self) {
+        let dt = self.sim_step();
         let mut k = 0;
         while k < self.projs.len() {
             let mut p = self.projs[k];
@@ -1682,7 +1743,7 @@ impl Game {
             }
             let (dx, dy) = (p.tx - p.x, p.ty - p.y);
             let dist = (dx * dx + dy * dy).sqrt();
-            let step = p.speed * DT;
+            let step = p.speed * dt;
             if dist > step {
                 p.x += dx / dist * step;
                 p.y += dy / dist * step;
@@ -1826,9 +1887,10 @@ impl Game {
         #[cfg(feature="ee2-reference")]
         self.observe_city_ground(i,*e);
         if e.built < 1.0 { return; }
+        let dt = self.sim_step();
         if e.def==FORTRESS && e.ncargo>0 {
             let rate=self.fortress_heal_rate(e.team);
-            let before=e.carry;let after=before+DT;
+            let before=e.carry;let after=before+dt;
             // Existing saves store cargo health in whole percent. A shared
             // healing clock accumulates native HP/sec without losing fractional
             // work every tick; display/storage precision remains one percent.
@@ -1841,7 +1903,7 @@ impl Game {
         }else if e.def==FORTRESS {e.carry=0.0;}
         if d.has(F_RESEARCH) {
             // Ghidra 007e7cf0: accumulate per building, floor, then credit the owner's bank.
-            e.carry += (if cfg!(feature="ee2-up15"){self.native_generation(e.def,e.team,9)}else{UNIVERSITY_RATE}) * (e.ncargo as usize).min(self.cargo_capacity(e.team,e.def)) as f32 * DT * self.modifiers[e.team as usize][e.def as usize][7];
+            e.carry += (if cfg!(feature="ee2-up15"){self.native_generation(e.def,e.team,9)}else{UNIVERSITY_RATE}) * (e.ncargo as usize).min(self.cargo_capacity(e.team,e.def)) as f32 * dt * self.modifiers[e.team as usize][e.def as usize][7];
             let points=e.carry.floor();
             if points>=1.0 {self.research_points[e.team as usize]+=points;e.carry-=points;}
         }
@@ -1850,7 +1912,7 @@ impl Game {
             // Gifts do not unlock a recipient's future or obsolete resource.
             // Keep every crew member; inactive deposits do not accumulate work.
             if self.resource_unlocked(e.team,kind){
-                e.carry+=(if cfg!(feature="ee2-up15"){self.native_generation(e.def,e.team,kind-1)}else{0.75})*(e.ncargo as usize).min(self.cargo_capacity(e.team,e.def)) as f32*DT*self.modifiers[e.team as usize][e.def as usize][crate::economy::gather_modifier(kind)];
+                e.carry+=(if cfg!(feature="ee2-up15"){self.native_generation(e.def,e.team,kind-1)}else{0.75})*(e.ncargo as usize).min(self.cargo_capacity(e.team,e.def)) as f32*dt*self.modifiers[e.team as usize][e.def as usize][crate::economy::gather_modifier(kind)];
                 let whole=e.carry.floor();if whole>=1.0{self.add_resource(e.team,kind as usize-1,whole);e.carry-=whole;}
             }else{e.carry=0.0;}
         }
@@ -1862,7 +1924,7 @@ impl Game {
             let team = e.team as usize;
             let mut done = false;
             if item == RESEARCH {
-                e.qt += DT;
+                e.qt += dt;
                 if (cfg!(feature = "ee2-up15") && instant) || e.qt >= {
                     #[cfg(feature="ee2-paidqueue7")] {job_limit}
                     #[cfg(not(feature="ee2-paidqueue7"))] {EPOCH_TIME}
@@ -1884,7 +1946,7 @@ impl Game {
                 #[cfg(feature = "ee2-reference")]
                 {
                     let k=(item-ORIGINAL_RESEARCH0) as usize;
-                    e.qt += DT;
+                    e.qt += dt;
                     if (cfg!(feature = "ee2-up15") && instant) || e.qt + 0.00001 >= {
                         #[cfg(feature="ee2-paidqueue7")] {job_limit}
                         #[cfg(not(feature="ee2-paidqueue7"))] {crate::ee2_research::NODES[k].time}
@@ -1897,7 +1959,7 @@ impl Game {
                     }
                 }
             } else if item >= TECH0 {
-                e.qt += DT;
+                e.qt += dt;
                 let k = item - TECH0;
                 if !self.net && self.cheats_enabled && e.team == self.local {
                     let used = self.tech_points.min((TECHS[k as usize].time - e.qt).max(0.0).ceil() as u32);
@@ -1917,8 +1979,8 @@ impl Game {
                 #[cfg(not(feature="ee2-paidqueue7"))] let time=self.production_time(e.team,item as DefId);
                 if instant { e.qt = time; }
                 if e.qt < time {
-                    #[cfg(feature="ee2-paidqueue7")] {e.qt=(e.qt+if job_start{0.009999999776482582_f32}else{DT}).min(time);}
-                    #[cfg(not(feature="ee2-paidqueue7"))] {e.qt+=DT;}
+                    #[cfg(feature="ee2-paidqueue7")] {e.qt=(e.qt+if job_start{0.009999999776482582_f32}else{dt}).min(time);}
+                    #[cfg(not(feature="ee2-paidqueue7"))] {e.qt+=dt;}
                 }
                 // population was already reserved when queued; cap can still drop if houses die
                 if e.qt >= time && (self.players[team].pop <= self.players[team].cap || self.bench > 0) {
@@ -2020,13 +2082,14 @@ impl Game {
 
     fn update_ent(&mut self, i: usize) {
         let mut e = self.ents[i];
+        let dt = self.sim_step();
         #[cfg(feature="ee2-pack8")] self.pack_tick_actor(i,&e);
         let d = &DEFS[e.def as usize];
         e.px = e.x;
         e.py = e.y;
         e.prot = e.rot;
         if e.cd > 0.0 {
-            e.cd -= DT;
+            e.cd -= dt;
         }
         if e.reveal_t > 0.0 {
             e.reveal_t -= DT;
@@ -2216,7 +2279,7 @@ impl Game {
                 crate::air31_defs::flight_profile(e.def, self.players[e.team as usize].epoch)
                     .map_or(angular_speed, |row| row.angle_degrees_per_second.to_radians())
             } else { angular_speed };
-            let rate = angular_speed * DT;
+            let rate = angular_speed * dt;
             let (dx, dy) = (goal.0 - e.x, goal.1 - e.y);
             let dist = (dx * dx + dy * dy).sqrt();
             let diff = angdiff(dy.atan2(dx), e.rot);
@@ -2238,14 +2301,14 @@ impl Game {
             e.rot = angdiff(e.rot, 0.0);
             e.vx = e.rot.cos() * speed;
             e.vy = e.rot.sin() * speed;
-            e.x = (e.x + e.vx * DT).clamp(0.6, N as f32 - 0.6);
-            e.y = (e.y + e.vy * DT).clamp(0.6, N as f32 - 0.6);
+            e.x = (e.x + e.vx * dt).clamp(0.6, N as f32 - 0.6);
+            e.y = (e.y + e.vy * dt).clamp(0.6, N as f32 - 0.6);
         } else {
             let (tvx, tvy) = if moving { (want.0 * speed, want.1 * speed) } else { (0.0, 0.0) };
             e.vx += (tvx - e.vx) * 0.4;
             e.vy += (tvy - e.vy) * 0.4;
             if e.vx != 0.0 || e.vy != 0.0 {
-                let (nx, ny) = (e.x + e.vx * DT, e.y + e.vy * DT);
+                let (nx, ny) = (e.x + e.vx * dt, e.y + e.vy * dt);
                 self.try_move(&mut e, d, nx, ny);
             }
             match face {
@@ -2259,7 +2322,7 @@ impl Game {
                         let turn = angdiff(e.vy.atan2(e.vx), e.rot) * 0.3;
                         #[cfg(feature="ee2-native13")]
                         let turn = if e.def == crate::carrier36_defs::CARRIER {
-                            let limit = crate::carrier36_defs::TURN_RATE * DT;
+                            let limit = crate::carrier36_defs::TURN_RATE * dt;
                             turn.clamp(-limit, limit)
                         } else { turn };
                         e.rot += turn;
@@ -2269,7 +2332,7 @@ impl Game {
             if moving && (e.order == O_MOVE || e.order == O_AMOVE || e.order == O_UNLOAD) && !engaged {
                 let moved = ((e.x - e.px).powi(2) + (e.y - e.py).powi(2)).sqrt();
                 let near = (e.ox - e.x).powi(2) + (e.oy - e.y).powi(2) < 36.0;
-                if moved < speed * DT * 0.25 && near {
+                if moved < speed * dt * 0.25 && near {
                     e.stuck += 1;
                     if e.stuck > 24 {
                         Self::set_idle(&mut e); // goal is crowded or walled off: close enough
@@ -2329,7 +2392,7 @@ impl Game {
         let rate=if cfg!(feature="ee2-reference"){if farm!=NOIDX{4.37}else{0.85}}else{0.55*(1.0+0.1*p.epoch as f32)};
         #[cfg(feature="ee2-up15")]
         let rate=crate::ee2_units::lookup_class(e.def,p.epoch).map(|r|if farm!=NOIDX{r.farm_rate.unwrap_or(0.0)}else{r.gather.and_then(|v|v.get(kind as usize-1).copied()).unwrap_or(0.0)}).unwrap_or(0.0);
-        let amount = rate * p.gather * resource_mod * DT;
+        let amount = rate * p.gather * resource_mod * self.sim_step();
         if cfg!(feature="ee2-reference"){
             if farm==NOIDX {
                 let limit=if kind==R_WOOD{3}else{6};
@@ -2415,7 +2478,7 @@ impl Game {
             return;
         }
         let maxhp=self.max_hp(e.team,b.def);
-        let step = DT / (self.production_time(e.team,b.def)*self.construction_multiplier(&b));
+        let step = self.sim_step() / (self.production_time(e.team,b.def)*self.construction_multiplier(&b));
         let t = &mut self.ents[j];
         t.built = (t.built + step).min(1.0);
         t.hp = (t.hp + maxhp * 0.9 * step).min(maxhp);
@@ -2605,6 +2668,10 @@ impl Game {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "source_clock38_tests.rs"]
+mod source_clock38_tests;
 
 #[cfg(test)]
 mod diplomacy_combat_tests {

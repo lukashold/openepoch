@@ -3,7 +3,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::defs::*;
-use crate::game::{Ent, Game, DT, MAXE, NONE, O_IDLE};
+use crate::game::{Ent, Game, MAXE, NONE, O_IDLE};
 use crate::map::{tile_of, DIRS, N, NN, R_GOLD};
 use crate::trade30_credit::{self as credit, Account};
 use crate::trade30_defs::{is_trader, MERCHANT_SHIP, TRADE_CART};
@@ -529,7 +529,7 @@ impl State {
             let destination = game.trade_host(unit.team, unit.def, route.destination, false);
             let hostile = destination.is_none() || game.hostile(unit.team, game.ents[index].team);
             let exit = game.trade_port(index, unit.def);
-            let decision = slot.update(DT, game.trade_load_time(unit.team), true, hostile, exit.is_some(),
+            let decision = slot.update(game.sim_step(), game.trade_load_time(unit.team), true, hostile, exit.is_some(),
                 |id| game.get(id).is_some());
             let Some(decision) = decision else { continue; };
             let (x, y) = exit.unwrap();

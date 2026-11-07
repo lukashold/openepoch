@@ -199,7 +199,7 @@ impl Game {
                     }
                 }
                 let before=o.len();put(&mut o, x, y, a, rot, crate::ids::unit_render(e.def), team, e.built, fl + FL_BUILDING, d.size);
-                if o.len()>before {o[before+10]=(self.tick as f32+alpha)*DT;o[before+11]=if d.has(F_EXTRACT)&&e.ncargo>0&&self.resource_unlocked(e.team,Self::extractor_kind(e.def)) {ACT_MINE as f32}else{ACT_IDLE as f32};}
+                if o.len()>before {o[before+10]=self.render_elapsed(alpha);o[before+11]=if d.has(F_EXTRACT)&&e.ncargo>0&&self.resource_unlocked(e.team,Self::extractor_kind(e.def)) {ACT_MINE as f32}else{ACT_IDLE as f32};}
                 #[cfg(feature="ee2-render-meta7")]
                 if o.len()>before {crate::render_meta7::actor(before/STRIDE,self.h(i),e,self.max_hp(e.team,e.def));}
                 #[cfg(feature="ee2-pack8")]
@@ -232,7 +232,7 @@ impl Game {
                     A_CAV => 1.3,
                     _ => 1.15,
                 };
-                let speed = ((e.x-e.px).powi(2)+(e.y-e.py).powi(2)).sqrt() / DT;
+                let speed = ((e.x-e.px).powi(2)+(e.y-e.py).powi(2)).sqrt() / self.sim_step();
                 let (activity, facing) = self.render_activity(e, d, speed);
                 let pose_rot = if (8..=17).contains(&e.def) && activity >= ACT_WOOD { facing } else { rot };
                 let before = o.len();
@@ -241,7 +241,7 @@ impl Game {
                     // Stable visual animation phase; independent of movement and simulation state.
                     o[before + 6] = (i as f32 * 0.75487766 + e.gen as f32 * 0.38196602).fract();
                     o[before + 9] = speed;
-                    o[before + 10] = (self.tick as f32 + alpha) * DT;
+                    o[before + 10] = self.render_elapsed(alpha);
                     o[before + 11] = activity;
                     #[cfg(feature="ee2-render-meta7")]
                     crate::render_meta7::actor(before/STRIDE,self.h(i),e,self.max_hp(e.team,e.def));
@@ -418,7 +418,7 @@ impl Game {
         }
         #[cfg(feature = "ee2-native13")]
         if let Some(rule) = self.sole_rules() {
-            let seconds = if self.winner == 0 { rule.remaining_seconds(self.tick).unwrap_or(-1) } else { -1 };
+            let seconds = if self.winner == 0 { rule.remaining_seconds(self.sim_elapsed()).unwrap_or(-1) } else { -1 };
             let _ = write!(s, "\"soleSurvivor\":{{\"players\":{},\"allianceAllowed\":{},\"seconds\":{}}},",
                 rule.active(self.nplayers).count_ones(), self.sole_alliances_allowed(), seconds);
         }
@@ -470,7 +470,7 @@ impl Game {
         if first != NOIDX {
             let e = self.ents[first];
             let d = &DEFS[e.def as usize];
-            let speed = ((e.x-e.px).powi(2)+(e.y-e.py).powi(2)).sqrt()/DT;
+            let speed = ((e.x-e.px).powi(2)+(e.y-e.py).powi(2)).sqrt()/self.sim_step();
             let activity = if d.building { ACT_IDLE } else { self.render_activity(&e,d,speed).0 };
             let _ = write!(s, ",\"activity\":{}", activity as u32);
             if cfg!(feature="ee2-reference")&&d.has(F_WORKER){let _=write!(s,",\"carrying\":{:.2},\"carriedResource\":{},\"returning\":{}",e.carry,e.q[2],e.q[1]==1);}

@@ -96,25 +96,26 @@ export function takeoffKeyCrossings(first,last,duration){
   return count;
 }
 
-export function createTakeoffAudioClock({presentation,startTick,play,stop,mix=takeoffSpatialMix}){
+export function createTakeoffAudioClock({presentation,startTick,startSeconds,play,stop,mix=takeoffSpatialMix}){
   let previous=null;
   function reset(){previous=null;stop();}
-  function update({tick,alpha,session,actors,epochs,view,running}){
+  function update({tick,alpha,now=null,session,actors,epochs,view,running}){
     const last=previous;
-    previous={tick,alpha,session,running};
+    previous={tick,alpha,now,session,running};
     if(!running){stop();return;}
     if(!last)return;
-    if(session!==last.session||tick+alpha<last.tick+last.alpha){stop();return;}
-    if(!last.running||tick+alpha===last.tick+last.alpha)return;
+    const currentTime=now??tick+alpha, lastTime=last.now??last.tick+last.alpha;
+    if(session!==last.session||(now===null)!==(last.now===null)||currentTime<lastTime){stop();return;}
+    if(!last.running||currentTime===lastTime)return;
     for(const actor of actors){
       if(actor.hpRatio<=0)continue;
       const row=presentation.row(actor.def,epochs[actor.team]);
       if(!row)continue;
-      const start=startTick(actor.handle);
-      if(start===none||tick<start)continue;
-      const first=Math.max(0,takeoffElapsed(last.tick,last.alpha,start));
-      const now=takeoffElapsed(tick,alpha,start);
-      const count=takeoffKeyCrossings(first,now,row.duration);
+      const start=now===null?startTick(actor.handle):startSeconds?.(actor.handle)??-1;
+      if(now===null?(start===none||tick<start):(start<0||now<start))continue;
+      const first=Math.max(0,now===null?takeoffElapsed(last.tick,last.alpha,start):Math.fround(last.now-start));
+      const end=now===null?takeoffElapsed(tick,alpha,start):Math.fround(now-start);
+      const count=takeoffKeyCrossings(first,end,row.duration);
       if(!count)continue;
       const spatial=mix(view,actor);
       if(spatial.volume<=Math.fround(.01))continue;

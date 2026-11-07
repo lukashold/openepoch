@@ -3,7 +3,7 @@
 use crate::{
     defs::{Def, A_INF, AIR, LAND, NOW, SEA, SUB, TC, W_MELEE, Wpn},
     ee2_sole_survivor::{SoleSurvivor, IDLE},
-    game::{Game, DT},
+    game::Game,
     ids::{DefId, DEF_NONE},
     pack8_save,
 };
@@ -149,7 +149,7 @@ impl Game {
 
     pub(crate) fn restore_regicide(&mut self, rule: Regicide, outcome: u8) -> Option<()> {
         let state = rule.state;
-        let now = self.tick as f32 * DT;
+        let now = self.sim_elapsed();
         let seats = (1u8 << self.nplayers) - 1;
         if self.net || self.humans != 1 || self.nplayers < 2
             || self.territory_victory.is_some() || self.sole_survivor.is_some()

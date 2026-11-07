@@ -82,6 +82,7 @@ pub(crate) struct State {
     shots: BTreeMap<usize, (u32, f32)>,
     pub(crate) current: Vec<Current>,
     pub(crate) transitions: Vec<Transition>,
+    transition_seconds: Vec<f32>,
 }
 
 impl State {
@@ -120,6 +121,12 @@ impl State {
     pub(crate) fn clear_shots(&mut self) {
         self.shots.clear();
     }
+
+    pub(crate) fn transition_seconds(&self, index: usize) -> Option<f32> {
+        self.transitions.get(index).map(|row| {
+            self.transition_seconds.get(index).copied().unwrap_or(row.tick as f32 * DT)
+        })
+    }
 }
 
 impl Game {
@@ -150,7 +157,7 @@ impl Game {
         let kind = ship_sound(actor);
         let epoch = self.players[actor.team as usize].epoch;
         if self.air_audio.live.get(&handle).is_some_and(|cue| cue.kind == kind && cue.epoch == epoch) { return; }
-        self.air_audio.queue(self.air_audio_cue(index, actor, kind, self.tick as f32 * DT, 0.0));
+        self.air_audio.queue(self.air_audio_cue(index, actor, kind, self.sim_elapsed(), 0.0));
     }
 
     pub(crate) fn observe_air_motion_audio(&mut self, index: usize, actor: &Ent) {
@@ -160,34 +167,37 @@ impl Game {
             self.air_audio.forget(handle);
             return;
         }
-        let now = self.tick as f32 * DT;
+        let now = self.sim_elapsed();
         let kind = if self.takeoff_start_tick(handle) == NONE { WALK } else { TAKEOFF };
         let epoch = self.players[actor.team as usize].epoch;
         if self.air_audio.live.get(&handle).is_some_and(|cue| {
             cue.epoch == epoch && (cue.kind == kind ||
                 (cue.kind == ATTACK && kind == WALK && !self.air_audio_returning(handle) && now < cue.at + cue.duration))
         }) { return; }
-        let cue = self.air_audio_cue(index, actor, kind, now, 0.0);
+        let at = if kind == TAKEOFF && self.source_clock.is_some() {
+            self.takeoff_start_seconds(handle).unwrap_or(now)
+        } else { now };
+        let cue = self.air_audio_cue(index, actor, kind, at, 0.0);
         self.air_audio.queue(cue);
     }
 
     pub(crate) fn observe_air_attack_audio(&mut self, index: usize, actor: &Ent, now: f32, reload: f32) {
         if !self.air_missions_enabled || !mission_aircraft(actor.def) || !self.air_audio_visible(index) || actor.hp <= 0.0 { return; }
-        let duration = (f64::from(reload) + 3.0 * f64::from(DT)) as f32;
+        let duration = (f64::from(reload) + 3.0 * f64::from(self.sim_step())) as f32;
         let cue = self.air_audio_cue(index, actor, ATTACK, now, duration);
         self.air_audio.queue(cue);
     }
 
     pub(crate) fn observe_air_death_audio(&mut self, index: usize) {
         if !self.air_missions_enabled || !self.air_audio_visible(index) { return; }
-        let cue = self.air_audio_cue(index, &self.ents[index], DEATH, self.tick as f32 * DT, 0.0);
+        let cue = self.air_audio_cue(index, &self.ents[index], DEATH, self.sim_elapsed(), 0.0);
         self.air_audio.queue(cue);
     }
 
     pub(crate) fn observe_air_parking_audio(&mut self, index: usize) {
         let handle = self.h(index);
         if !self.air_audio.live.contains_key(&handle) || !self.air_audio_visible(index) { return; }
-        let cue = self.air_audio_cue(index, &self.ents[index], PARKED, self.tick as f32 * DT, 0.0);
+        let cue = self.air_audio_cue(index, &self.ents[index], PARKED, self.sim_elapsed(), 0.0);
         self.air_audio.queue(cue);
     }
 
@@ -203,21 +213,29 @@ impl Game {
         self.air_audio.prune(self.tick);
         let mut current = std::mem::take(&mut self.air_audio.current);
         let mut transitions = std::mem::take(&mut self.air_audio.transitions);
+        let mut transition_seconds = std::mem::take(&mut self.air_audio.transition_seconds);
+        let source_clock = self.source_clock.is_some();
         current.clear();
         transitions.clear();
+        transition_seconds.clear();
         if self.air_missions_enabled {
             for i in 0..self.high {
                 let actor = &self.ents[i];
                 if actor.hp <= 0.0 || !self.air_audio_visible(i) || !self.air_audio_active(i) { continue; }
                 let handle = self.h(i);
+                let start = self.takeoff_start_tick(handle);
+                // The next variable step is unknown until its scheduler admits it.
+                if source_clock && self.takeoff.rolling(handle) && start == NONE { continue; }
                 let epoch = self.players[actor.team as usize].epoch;
                 let cue = self.air_audio.live.get(&handle).copied().filter(|cue| cue.epoch == epoch).unwrap_or_else(|| {
-                    let start = self.takeoff_start_tick(handle);
                     let (kind, at) = if actor.def == CARRIER { (ship_sound(actor), self.tick) }
                     else if start != NONE { (TAKEOFF, start) }
                     else if self.takeoff.rolling(handle) { (TAKEOFF, self.tick + 1) }
                     else { (WALK, self.tick) };
-                    self.air_audio_cue(i, actor, kind, at as f32 * DT, 0.0)
+                    let at = if source_clock {
+                        self.takeoff_start_seconds(handle).unwrap_or_else(|| self.sim_elapsed())
+                    } else { at as f32 * DT };
+                    self.air_audio_cue(i, actor, kind, at, 0.0)
                 });
                 let x = actor.px + (actor.x - actor.px) * alpha;
                 let y = actor.py + (actor.y - actor.py) * alpha;
@@ -238,10 +256,12 @@ impl Game {
                     transitions.push(Transition { revision: cue.revision, tick: cue.tick, handle: cue.handle,
                         definition: cue.definition, epoch: cue.epoch, kind: cue.kind,
                         duration: cue.duration, mode: cue.mode(), reserved: [0; 3] });
+                    if source_clock { transition_seconds.push(cue.at); }
                 }
             }
         }
         self.air_audio.current = current;
         self.air_audio.transitions = transitions;
+        self.air_audio.transition_seconds = transition_seconds;
     }
 }
