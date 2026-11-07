@@ -265,6 +265,8 @@ pub struct Game {
     pub nplayers: usize,
     pub tick: u32,
     pub(crate) source_clock: Option<crate::source_clock38::SourceClock>,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) network_resume_tempo: Option<crate::source_clock38::AdaptiveTempo>,
     pub rng: Rng,
     #[cfg(feature="ee2-citizen9")]
     pub source_birth:crate::citizen9::SourceBirth,
@@ -429,6 +431,8 @@ impl Game {
             nplayers,
             tick: 0,
             source_clock: None,
+            #[cfg(feature = "ee2-native13")]
+            network_resume_tempo: None,
             rng: Rng(seed.wrapping_mul(2_654_435_761) | 1),
             #[cfg(feature="ee2-citizen9")]
             source_birth:crate::citizen9::SourceBirth::new(seed),
@@ -1323,6 +1327,16 @@ impl Game {
     /// command batch remain the scheduler's responsibility.
     pub(crate) fn tick_with_network_source_slot(&mut self, wall_rate: u32, rate: u32, scale: f32, enters_round: bool) -> u32 {
         if !self.net || self.bench != 0 || self.tick == u32::MAX { return 0; }
+        #[cfg(feature = "ee2-native13")]
+        if let Some(tempo) = self.network_resume_tempo {
+            if enters_round || wall_rate != tempo.wall_rate || rate != tempo.rate || scale.to_bits() != tempo.scale.to_bits() {
+                return 0;
+            }
+            let Some(advanced) = self.source_clock.and_then(|clock| clock.advance_network_resume(tempo)) else { return 0; };
+            if !self.commit_source_step(advanced) { return 2; }
+            self.network_resume_tempo = None;
+            return 1;
+        }
         let clock = self.source_clock.or_else(|| (self.tick == 0).then(crate::source_clock38::SourceClock::default));
         let Some(advanced) = clock.and_then(|clock| clock.advance_network(self.tick, wall_rate, rate, scale, enters_round))
         else { return 0; };

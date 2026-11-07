@@ -96,7 +96,7 @@ pub fn write_players(players: &[Player; 4], b: &mut Vec<u8>) {
         put32(r, 92, p.terr);
     }
 }
-pub fn write_entities(entities: &[Ent], b: &mut Vec<u8>) {
+pub fn write_entities(entities: &[Ent], b: &mut Vec<u8>, keep_selection: bool) {
     for e in entities {
         let start = b.len();
         b.resize(start + ENT6, 0);
@@ -115,7 +115,7 @@ pub fn write_entities(entities: &[Ent], b: &mut Vec<u8>) {
         // Flow slots are transient array indices and are reset on every load.
         // Canonical UP6 saves never embed an incidental cache allocation.
         put16(r, 76, u16::MAX);
-        r[78] = e.sel as u8;
+        r[78] = u8::from(keep_selection && e.sel);
         for i in 0..5 {
             put32(r, 84 + i * 4, e.q[i]);
         }
@@ -280,7 +280,7 @@ pub fn normalize_input(input: &[u8], current_actor_defs: usize) -> Option<Vec<u8
     put32(&mut out, 4, ENT6 as u32);
     put32(&mut out,12,SAVE_DEFINITION_COUNT as u32);
     out.extend_from_slice(&b[36..entities_start]);
-    write_entities(&ents, &mut out);
+    write_entities(&ents, &mut out, true);
     out.extend_from_slice(&b[rest..]);
     Some(out)
 }

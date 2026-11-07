@@ -65,12 +65,13 @@ function validCommands(bytes) {
   return at === bytes.length;
 }
 
-function validRecord(record, humanSeats) {
+function validRecord(record, humanSeats, checkpoints) {
   if (!record) return false;
   if (record.type === 'requested') return validSpeed(record.value);
   if (record.type === 'simRate') return validSimRate(record.rate, record.scale);
   if (record.type === 'roundLength') return integerIn(record.length, 1, MAX_LENGTH);
   if (record.type === 'departure') return humanSeats > 2 && integerIn(record.seat, 1, humanSeats - 1);
+  if (record.type === 'checkpoint') return checkpoints && integerIn(record.id, 1, 0xffffffff);
   return record.type === 'commands' && integerIn(record.seat, 0, humanSeats - 1) && validCommands(record.bytes);
 }
 
@@ -89,12 +90,16 @@ const framedLength = record => 5+(record.type==='commands'?record.bytes.length+1
 
 /** An original-style host scheduler over one authenticated link per remote seat. */
 export class SourceRoundPeer {
-  constructor(wasm, seat, send, {renderFps, linkMs, nowSeconds, onRequested, requested = 1, locked = true, humanSeats = 2}) {
+  constructor(wasm, seat, send, {renderFps, linkMs, nowSeconds, onRequested, requested = 1, locked = true, humanSeats = 2, resume = null, onCheckpoint = null}) {
+    const tick = wasm.game_tick();
+    const validStart = resume === null ? tick === 0 :
+      integerIn(resume.tick, 1, 0xfffffffe) && resume.tick === tick && integerIn(resume.rate, 5, BOOTSTRAP_RATE) &&
+      wasm.network_resume_pending?.() === 1;
     if (!integerIn(humanSeats, 2, 4) || !integerIn(seat, 0, humanSeats - 1) ||
         (humanSeats > 2 && (typeof wasm.init_network_roster !== 'function' ||
           typeof wasm.network_roster_peer_disconnected !== 'function')) ||
         !validSpeed(requested) || typeof locked !== 'boolean' ||
-        typeof wasm.tick_with_network_source_slot !== 'function' || wasm.game_tick() !== 0) {
+        typeof wasm.tick_with_network_source_slot !== 'function' || !validStart) {
       throw new Error('Invalid source-round startup');
     }
     this.wasm = wasm;
@@ -105,8 +110,9 @@ export class SourceRoundPeer {
     this.linkMs = linkMs;
     this.nowSeconds = nowSeconds;
     this.onRequested = onRequested;
+    this.onCheckpoint = onCheckpoint;
     this.locked = locked;
-    this.rate = BOOTSTRAP_RATE;
+    this.rate = resume?.rate ?? BOOTSTRAP_RATE;
     this.requested = requested;
     this.effective = requested;
     this.round = -1;
@@ -187,7 +193,7 @@ export class SourceRoundPeer {
 
   stage({round, records}) {
     if (!integerIn(round, this.round + 1, this.round + 2) || !Array.isArray(records) ||
-        records.length > MAX_RECORDS || !records.every(record=>validRecord(record,this.humanSeats))) return false;
+        records.length > MAX_RECORDS || !records.every(record=>validRecord(record,this.humanSeats,!!this.onCheckpoint))) return false;
     const slot = round % 3;
     if (this.ring[slot]?.round === round) return false;
     this.ring[slot] = {round, records: records.map(copyRecord)};
@@ -239,6 +245,14 @@ export class SourceRoundPeer {
     return true;
   }
 
+  requestCheckpoint(id) {
+    if (this.local !== 0 || !this.onCheckpoint || this.alone || this.terminal || this.desync || this.round < 0 ||
+        !integerIn(id, 1, 0xffffffff) || this.pending.length > MAX_RECORDS-2) return false;
+    this.collectHostCommands();
+    this.pending.push({type:'checkpoint',id});
+    return true;
+  }
+
   takeOutbox() {
     const w = this.wasm;
     const length = w.outbox_len();
@@ -279,6 +293,8 @@ export class SourceRoundPeer {
         this.length = record.length;
       } else if (record.type === 'departure') {
         if (w.network_roster_peer_disconnected(record.seat)!==1) throw new Error('Invalid roster departure');
+      } else if (record.type === 'checkpoint') {
+        this.onCheckpoint(record.id);
       } else {
         const pointer = w.inbox_alloc(record.bytes.length);
         new Uint8Array(w.memory.buffer, pointer, record.bytes.length).set(record.bytes);

@@ -33,6 +33,11 @@ impl AdaptiveTempo {
         Some(Self { wall_rate, rate, scale })
     }
 
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn network_resume(rate: u32, scale: f32) -> Option<Self> {
+        Self::checked(rate, rate, scale)
+    }
+
     fn delta(self) -> f64 {
         let rate = f64::from(self.wall_rate);
         let nearest = 1.0 / rate;
@@ -84,6 +89,12 @@ impl SourceClock {
         let mut advanced = self.advance_inner(tempo.delta(), Some(tempo))?;
         advanced.network = true;
         Some(advanced)
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn advance_network_resume(self, tempo: AdaptiveTempo) -> Option<Self> {
+        if !self.network { return None; }
+        self.advance_inner(tempo.delta(), Some(tempo))
     }
 
     pub(crate) fn magic(self) -> u32 {

@@ -767,16 +767,13 @@ impl Game {
 
         if u(0) != DIP_MAGIC
             || u(4) != DIP_VERSION
-            || !(1..=2).contains(&u(8))
-            || !(2..=4).contains(&u(12))
-            || u(12) != (u(8) + self.n_ai).clamp(2, 4)
+            || u(8) != self.humans
+            || u(12) != self.nplayers as u32
             || u(16) > 2
         {
             return None;
         }
 
-        self.humans = u(8);
-        self.nplayers = u(12) as usize;
         self.diplomacy.visibility = u(16) as u8;
 
         self.diplomacy.relation.copy_from_slice(&b[20..36]);

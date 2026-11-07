@@ -165,6 +165,7 @@
   <button id="mute" title="Toggle sound (M)">Ton an</button>
   <button id="cheats" title="Cheats eingeben (Enter)">Cheats</button>
   <button id="save" title="Save game (Ctrl+S). The game also saves itself every few minutes.">Speichern</button>
+  <button id="mp-checkpoint-download" type="button" hidden>Spielstand herunterladen</button>
   <button id="speed" title="Spielgeschwindigkeit (Minus, Gleich, Rücktaste)">1×</button>
   <button id="pause" title="Pause">Pause</button>
   <button id="game-options-button" title="Optionen (Pause / Esc)" hidden>Optionen</button>
@@ -394,11 +395,11 @@
       <textarea id="mpout" rows="3" readonly placeholder="Your code will appear here" spellcheck="false"></textarea>
       <div class="row"><button id="mpcopy" class="alt">Copy code</button></div>
       <details id="mp-roster" hidden>
-        <summary>Mehrspieler für 3 oder 4 Personen</summary>
+        <summary>Mehrspielerraum für 2 bis 4 Personen</summary>
         <p class="dim">Jeder Gast erhält einen eigenen Einladungscode. Der Host startet, sobald alle Plätze bereit sind.</p>
         <div class="row">
           <label for="mp-roster-count">Menschliche Spieler</label>
-          <select id="mp-roster-count"><option value="3">3</option><option value="4">4</option></select>
+          <select id="mp-roster-count"><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option></select>
           <label for="mp-roster-ai">KI-Spieler</label>
           <select id="mp-roster-ai"><option value="0">0</option><option value="1">1</option></select>
         </div>
@@ -407,7 +408,11 @@
           <button id="mp-roster-join" type="button" class="alt">Raum beitreten</button>
           <button id="mp-roster-close" type="button" class="alt" hidden>Raum schließen</button>
         </div>
-        <p id="mp-roster-status" role="status" class="dim">3 oder 4 Personen mit installiertem UP-Regelprofil.</p>
+        <div class="row">
+          <label for="mp-roster-resume-file">Gespeicherten Mehrspielerraum öffnen</label>
+          <input id="mp-roster-resume-file" type="file" accept=".openepoch-mp,application/octet-stream">
+        </div>
+        <p id="mp-roster-status" role="status" class="dim">2 bis 4 Personen mit installiertem UP-Regelprofil.</p>
         <div id="mp-roster-host-room" hidden>
           <div id="mp-roster-players"></div>
           <button id="mp-roster-start" type="button" disabled>Partie starten</button>
@@ -452,7 +457,7 @@
       <tr><td>F4</td><td>Diplomatie · Frieden, Bündnisse, Sicht teilen und Rohstoffe schenken</td></tr>
       <tr><td>U</td><td>unload transport ships (or right-click a shore)</td></tr>
       <tr><td>Umschalt+Pause &nbsp; − &nbsp; = &nbsp; Rücktaste &nbsp; M</td><td>Pause · Tempo · Starttempo · Ton</td></tr>
-      <tr><td>Ctrl+S</td><td>save (single player; also saved automatically)</td></tr>
+      <tr><td>Strg+S</td><td>Spielstand speichern. Im Mehrspielerraum speichert der Host für alle.</td></tr>
     </table>
     <p><a href="reference.html">Basiswerte</a> · <a href="catalog.html">Basis-Technologiebaum</a> · <a href="?">OpenEpoch-Regeln</a></p>
     </details>
@@ -468,6 +473,6 @@
 </aside>
 <div id="trade-route-caption" hidden role="status"></div>
 <div id="air-mission-caption" hidden role="status"></div>
-<script type="module" src="main.js?v=native47"></script>
+<script type="module" src="main.js?v=native48"></script>
 </body>
 </html>

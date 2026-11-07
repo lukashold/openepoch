@@ -37,6 +37,19 @@ impl Game {
             self.savebuf.clear();
             return;
         }
+        self.write_archive(false);
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn save_network_resume(&mut self) {
+        if !self.network_resume_eligible() {
+            self.savebuf.clear();
+            return;
+        }
+        self.write_archive(true);
+    }
+
+    fn write_archive(&mut self, shared_network: bool) {
         let mut b = std::mem::take(&mut self.savebuf);
         b.clear();
         let head = [MAGIC, size_of::<Ent>() as u32, size_of::<Player>() as u32, SAVE_DEFINITION_COUNT as u32, self.seed0, self.n_ai, self.tick, self.rng.0, self.high as u32];
@@ -46,11 +59,13 @@ impl Game {
         #[cfg(not(feature="ee2-roster6"))]
         {b.extend_from_slice(raw(&self.players));b.extend_from_slice(raw(&self.ents[..self.high]));}
         #[cfg(feature="ee2-roster6")]
-        {crate::save6::write_players(&self.players,&mut b);crate::save6::write_entities(&self.ents[..self.high],&mut b);}
+        {crate::save6::write_players(&self.players,&mut b);crate::save6::write_entities(&self.ents[..self.high],&mut b,!shared_network);}
         b.extend_from_slice(&self.map.ter);
         b.extend_from_slice(&self.map.res);
         b.extend_from_slice(raw(&self.map.amt));
-        b.extend_from_slice(&self.vis);
+        // DIP1 carries the full team fog. Use a canonical legacy fog projection
+        // for the shared checkpoint so every authorized seat writes the same bytes.
+        b.extend_from_slice(if shared_network { &self.team_vis[..NN] } else { &self.vis });
         let options = self.cheats_enabled as u32 | ((self.god_mode as u32) << 1) | ((self.fog_inverted as u32) << 2);
         #[cfg(feature="ee2-native13")]
         let options = options | if self.infantry_roster_enabled { crate::infantry_roster27::SAVE_FLAG } else { 0 };
@@ -136,6 +151,20 @@ impl Game {
     }
 
     pub fn load(buf: &[u8]) -> Option<Game> {
+        Self::read_archive(buf, None)
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn load_network_resume(buf: &[u8], humans: u32, local: u32, tick: u32, rate: u32, scale: f32) -> Option<Game> {
+        if !(2..=4).contains(&humans) || local >= humans { return None; }
+        let tempo = crate::source_clock38::AdaptiveTempo::network_resume(rate, scale)?;
+        let mut game = Self::read_archive(buf, Some((humans, local)))?;
+        if game.tick != tick || !game.network_resume_eligible() { return None; }
+        game.network_resume_tempo = Some(tempo);
+        Some(game)
+    }
+
+    fn read_archive(buf: &[u8], roster: Option<(u32, u32)>) -> Option<Game> {
         let (buf, source_clock) = crate::source_clock38::split(buf)?;
         let (buf, diplomacy_clock) = crate::diplomacy::DiplomacyClock::split(buf)?;
         if diplomacy_clock.is_some() && source_clock.is_none() { return None; }
@@ -221,8 +250,16 @@ impl Game {
         #[cfg(feature="ee2-reference")]
         if city_chunk.is_some() && (trailer!=236 || !has_diplomacy || !has_territory || u(3) as usize!=SAVE_DEFINITION_COUNT) {return None;}
         let humans=if has_diplomacy{u32::from_le_bytes(buf[end+trailer+8..end+trailer+12].try_into().ok()?)}else{1};
-        if !(1..=2).contains(&humans){return None;}
-        let mut g = Game::new(u(4), u(5), 0, humans, 0);
+        let local = match roster {
+            Some((expected, local)) if expected == humans && u(5) <= 4 - humans => local,
+            None if (1..=2).contains(&humans) => 0,
+            _ => return None,
+        };
+        #[cfg(feature="ee2-native13")]
+        let mut g = if humans > 2 { Game::new_network_roster(u(4), u(5), humans, local)? }
+            else { Game::new(u(4), u(5), 0, humans, local) };
+        #[cfg(not(feature="ee2-native13"))]
+        let mut g = Game::new(u(4), u(5), 0, humans, local);
         g.tick = u(6);
         if source_clock.is_some_and(|clock| !clock.valid_at(g.tick, g.net)) {
             return None;

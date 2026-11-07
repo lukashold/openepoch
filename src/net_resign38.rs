@@ -36,6 +36,13 @@ impl Resignation {
 }
 
 impl Game {
+    pub(crate) fn network_resume_eligible(&self) -> bool {
+        self.net && self.bench == 0 && (1..u32::MAX).contains(&self.tick) && self.winner == 0
+            && self.network_resume_tempo.is_none() && self.source_clock.is_some_and(|clock| clock.network)
+            && (2..=4).contains(&self.humans)
+            && (0..self.humans).all(|team| self.network_departure_allowed(team as u8))
+    }
+
     pub(crate) fn configure_network_resignation(&mut self, policy: u32) -> bool {
         if !self.net || !(2..=4).contains(&self.humans) || self.bench != 0 || self.tick != 0 || policy >= 8 ||
             self.net_resignation.is_some() || !self.outbox.is_empty() || !self.inbox.is_empty() { return false; }
@@ -113,7 +120,7 @@ impl Game {
 
     pub(crate) fn restore_network_resignation(&mut self, state: Option<Resignation>) -> Option<()> {
         let Some(state) = state else { return Some(()); };
-        if !self.net || self.humans != 2 || self.solo_resigned || self.bench != 0 { return None; }
+        if !self.net || !(2..=4).contains(&self.humans) || self.solo_resigned || self.bench != 0 { return None; }
         for seat in 0..self.humans as usize {
             let player = &self.players[seat];
             if state.defeated(seat) && (player.alive || player.ai) { return None; }

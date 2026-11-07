@@ -1,5 +1,7 @@
 // A host and independent authenticated RTC links for the optional 3/4-seat mode.
-import {createSourceRosterCarrier} from './source-network-wire.js?v=native46';
+import {createSourceRosterCarrier,createSourceCheckpointCarrier} from './source-network-wire.js?v=native48';
+import {captureBrowserCheckpoint,readBrowserCheckpoint,sendCheckpointWindow,receiveCheckpointChunk,
+  validCheckpointDigest,validCheckpointSize,CHECKPOINT_WINDOW} from './source-network-checkpoint.js?v=native48';
 
 const PREFIX='OE-R2.';
 const VERSION=2;
@@ -14,14 +16,14 @@ function unpackCode(code,kind) {
   code=code.trim();
   if(!code.startsWith(PREFIX)||code.length>131072)throw Error('Ungültiger Raumcode.');
   const value=JSON.parse(atob(code.slice(PREFIX.length)));
-  if(value?.kind!==kind||!roomToken.test(value.room)||!integer(value.seats,3,4)||
+  if(value?.kind!==kind||!roomToken.test(value.room)||!integer(value.seats,2,4)||
     !integer(value.seat,1,value.seats-1)||typeof value.sdp!=='string'||!value.sdp)
     throw Error('Ungültiger Raumcode.');
   return value;
 }
 
 export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHello,makeSettings,checkSettings,
-  launch,onOpen,onDeparture,onHostLoss}) {
+  launch,onOpen,onDeparture,onHostLoss,validateArchive,onCheckpointState}) {
   const get=id=>root.querySelector('#mp-roster-'+id);
   const status=get('status'),hostRoom=get('host-room'),guestRoom=get('guest-room');
   const startButton=get('start'),countSelect=get('count'),aiSelect=get('ai');
@@ -30,11 +32,13 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
   const connected=room=>[...room.links.values()].filter(link=>link.hello&&link.reachable&&link.channel?.readyState==='open').length+1;
   const setStatus=message=>{status.textContent=message;};
 
-  function reset(message='3 oder 4 Personen mit installiertem UP-Regelprofil.') {
+  function reset(message='2 bis 4 Personen mit installiertem UP-Regelprofil.') {
     const old=current;
     current=null;
     if(old){
       old.phase='closed';
+      clearTimeout(old.prepareTimer);
+      clearTimeout(old.save?.timer);
       for(const link of old.links.values())link.pc?.close();
     }
     hostRoom.hidden=true;
@@ -43,6 +47,8 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
     get('players').replaceChildren();
     get('invite').value='';
     get('answer').value='';
+    get('resume-file').value='';
+    startButton.textContent='Partie starten';
     startButton.disabled=true;
     get('reply').disabled=false;
     setStatus(message);
@@ -64,7 +70,8 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
     const ready=connected(room);
     if(room.phase==='lobby'){
       startButton.disabled=ready!==room.seats;
-      setStatus(`${ready}/${room.seats} Plätze bereit.`);
+      const count=`${ready}/${room.seats} Plätze`;
+      setStatus(room.archive?`Spielstand bei Schritt ${room.archive.decoded.meta.tick} · ${count} verbunden.`:`${count} bereit.`);
     }
     for(const link of room.links.values())if(link.hello&&link.channel?.readyState==='open')
       control(link,room,'presence',{count:ready});
@@ -86,7 +93,12 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
     }
     room.links.delete(link.seat);
     if(room.phase==='playing'){
-      room.session.peer.detachPeer(link.seat);
+      if(room.save)failCheckpoint(room,'Spielstand konnte nicht von allen bestätigt werden.');
+      if(room.seats>2)room.session.peer.detachPeer(link.seat);
+      else{
+        room.session.peer.rosterUnavailable=true;
+        room.session.peer.setTransportAvailable(false);
+      }
       onDeparture(link.seat);
     }else{
       const row=room.rows.get(link.seat);
@@ -100,13 +112,18 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
   }
 
   function run(room) {
+    if(room.local===0&&connected(room)!==room.seats)throw Error('Beim Spielstart ging eine Verbindung verloren.');
+    clearTimeout(room.prepareTimer);
     const send=message=>{
       for(const link of room.links.values())if(!link.closed)link.carrier.send(message);
     };
-    room.session=launch(room.settings,room.local,send,()=>[...room.links.values()]);
+    const onCheckpoint=room.checkpoints?id=>saveAtBoundary(room,id):null;
+    room.session=launch(room.settings,room.local,send,()=>[...room.links.values()],{archive:room.archive,onCheckpoint});
     room.phase='playing';
+    room.archive=null;
+    const makeCarrier=room.checkpoints?createSourceCheckpointCarrier:createSourceRosterCarrier;
     for(const link of room.links.values()){
-      link.carrier=createSourceRosterCarrier(bytes=>{
+      link.carrier=makeCarrier(bytes=>{
         if(link.channel.readyState==='open')link.channel.send(bytes);
       },message=>room.session.peer.receive(link.seat,message));
     }
@@ -116,10 +133,113 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
     }else room.session.peer.activate();
   }
 
+  function armPreparation(room) {
+    room.prepareTimer=setTimeout(()=>{
+      if(active(room)&&room.phase==='preparing')reset('Der gemeinsame Spielstart hat zu lange gedauert.');
+    },120000);
+  }
+
+  function confirmPrepared(room,link,digest=null) {
+    room.prepared=true;
+    setStatus(digest?'Spielstand geprüft · warte auf den gemeinsamen Start.':'Einstellungen bestätigt · warte auf den gemeinsamen Start.');
+    control(link,room,'prepared',{digest});
+  }
+
+  function receiveArchive(room,link,packet) {
+    const download=link.download;
+    download.offset=receiveCheckpointChunk(download.bytes,download.offset,packet);
+    const percent=Math.floor(100*download.offset/download.bytes.length);
+    setStatus(`Spielstand wird übertragen · ${percent}%`);
+    if(download.offset===download.bytes.length){
+      link.download=null;
+      void readBrowserCheckpoint(download.bytes,download.digest).then(archive=>{
+        if(!active(room,link)||room.phase!=='preparing')return;
+        room.settings=checkSettings(archive.settings,room.seats);
+        validateArchive(archive,room.local,room.seats);
+        room.archive=archive;
+        confirmPrepared(room,link,archive.digest);
+      }).catch(error=>{
+        if(active(room,link)){closeLink(room,link);setStatus(error.message);}
+      });
+    }else if(download.offset%CHECKPOINT_WINDOW===0)control(link,room,'archive-next',{offset:download.offset});
+  }
+
+  function failCheckpoint(room,message) {
+    const save=room.save;
+    if(!save)return;
+    clearTimeout(save.timer);
+    room.save=null;
+    if(room.local===0)for(const link of room.links.values())if(link.channel?.readyState==='open')
+      control(link,room,'checkpoint-failed',{id:save.id});
+    onCheckpointState(message);
+  }
+
+  function settleCheckpoint(room) {
+    const save=room.save;
+    if(!save?.archive)return;
+    if([...save.reports.values()].some(digest=>digest!==save.archive.digest)){
+      failCheckpoint(room,'Die Spielstände der Mitspieler stimmen nicht überein.');
+      return;
+    }
+    const checked=save.reports.size+1;
+    if(checked!==room.seats){onCheckpointState(`Spielstand geprüft · ${checked}/${room.seats} Plätze.`);return;}
+    clearTimeout(save.timer);
+    room.save=null;
+    for(const link of room.links.values())control(link,room,'checkpoint-ready',{id:save.id,digest:save.archive.digest});
+    onCheckpointState('Gemeinsamer Spielstand bereit.',save.archive);
+  }
+
+  function saveAtBoundary(room,id) {
+    if(room.local!==0){
+      if(id<=(room.lastCheckpoint??0))throw Error('Wiederholter Speicherbefehl.');
+      room.lastCheckpoint=id;
+      room.save={id};
+      onCheckpointState('Gemeinsamer Spielstand wird geprüft …');
+    }
+    const save=room.save;
+    if(save?.id!==id)return;
+    void captureBrowserCheckpoint(room.session.peer,room.settings).then(archive=>{
+      if(!active(room)||room.save!==save)return;
+      save.archive=archive;
+      if(room.local===0)settleCheckpoint(room);
+      else control(room.links.get(0),room,'checkpoint-report',{id,digest:archive.digest});
+    }).catch(()=>{
+      if(!active(room)||room.save!==save)return;
+      if(room.local===0)failCheckpoint(room,'Dieser Spielstand kann gerade nicht gespeichert werden.');
+      else control(room.links.get(0),room,'checkpoint-report',{id,digest:null});
+    });
+  }
+
+  function receiveCheckpointStatus(room,link,message) {
+    if(!room.checkpoints)return false;
+    if(room.local===0&&message.type==='checkpoint-report'){
+      if(room.save?.id===message.id){
+        if(message.digest===null){failCheckpoint(room,'Ein Mitspieler konnte den Spielstand nicht speichern.');return true;}
+        if(!validCheckpointDigest(message.digest)||room.save.reports.has(link.seat))return false;
+        room.save.reports.set(link.seat,message.digest);
+        settleCheckpoint(room);
+      }
+      return true;
+    }
+    if(room.local!==0&&message.type==='checkpoint-failed'){
+      if(room.save?.id===message.id)failCheckpoint(room,'Der gemeinsame Spielstand konnte nicht bestätigt werden.');
+      return true;
+    }
+    if(room.local!==0&&message.type==='checkpoint-ready'){
+      const save=room.save;
+      if(save?.id!==message.id||save.archive?.digest!==message.digest)return false;
+      room.save=null;
+      onCheckpointState('Gemeinsamer Spielstand bereit.',save.archive);
+      return true;
+    }
+    return false;
+  }
+
   function receive(room,link,data) {
     if(!active(room,link)||link.closed)return;
     try{
       if(typeof data!=='string'){
+        if(room.phase==='preparing'&&room.local!==0&&link.download){receiveArchive(room,link,data);return;}
         if(room.phase!=='playing'||!link.carrier?.receive(data))throw Error('Ungültiges Rundensignal.');
         return;
       }
@@ -142,21 +262,44 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
       }
       if(room.local!==0&&message.type==='prepare'&&room.phase==='lobby'){
         room.settings=checkSettings(message.settings,room.seats);
+        room.checkpoints=message.checkpoints===true&&!!validateArchive;
+        if(message.checkpoints===true&&!room.checkpoints)throw Error('Diese Spielversion kann gemeinsame Spielstände nicht öffnen.');
         room.phase='preparing';
-        setStatus('Einstellungen bestätigt · warte auf den gemeinsamen Start.');
-        control(link,room,'prepared');
+        armPreparation(room);
+        confirmPrepared(room,link);
+        return;
+      }
+      if(room.local!==0&&message.type==='prepare-resume'&&room.phase==='lobby'&&validateArchive){
+        if(!validCheckpointSize(message.length)||!validCheckpointDigest(message.digest))throw Error('Ungültige Spielstandsankündigung.');
+        room.checkpoints=true;
+        room.phase='preparing';
+        armPreparation(room);
+        link.download={bytes:new Uint8Array(message.length),offset:0,digest:message.digest};
+        setStatus('Warte auf den Spielstand des Hosts …');
+        control(link,room,'archive-next',{offset:0});
+        return;
+      }
+      if(room.local===0&&message.type==='archive-next'&&room.phase==='preparing'&&room.archive){
+        const offset=link.archiveOffset??0;
+        if(message.offset!==offset||offset>=room.archive.bytes.length)throw Error('Ungültige Anfrage für einen Spielstandabschnitt.');
+        link.archiveOffset=sendCheckpointWindow(link.channel,room.archive.bytes,offset);
+        const percent=Math.floor(100*link.archiveOffset/room.archive.bytes.length);
+        room.rows.get(link.seat).state.textContent=`Spielstand übertragen · ${percent}%`;
         return;
       }
       if(room.local===0&&message.type==='prepared'&&room.phase==='preparing'&&!link.prepared){
+        if(room.archive&&(message.digest!==room.archive.digest||link.archiveOffset!==room.archive.bytes.length))
+          throw Error('Der Mitspieler hat den Spielstand nicht bestätigt.');
         link.prepared=true;
-        room.rows.get(link.seat).state.textContent='Einstellungen bestätigt';
+        room.rows.get(link.seat).state.textContent=room.archive?'Spielstand geprüft':'Einstellungen bestätigt';
         if([...room.links.values()].every(entry=>entry.prepared))run(room);
         return;
       }
-      if(room.local!==0&&message.type==='begin'&&room.phase==='preparing'){
+      if(room.local!==0&&message.type==='begin'&&room.phase==='preparing'&&room.prepared){
         run(room);
         return;
       }
+      if(room.phase==='playing'&&receiveCheckpointStatus(room,link,message))return;
       throw Error('Raumnachricht passt nicht zum Spielstand.');
     }catch(error){
       if(room.phase==='playing')room.session.peer.abort(error.message);
@@ -245,14 +388,39 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
     aiSelect.options[1].disabled=four;
     if(four)aiSelect.value='0';
   };
-  get('host').onclick=()=>{
-    showRoom('host');
-    const seats=Number(countSelect.value),ai=Number(aiSelect.value);
-    if(!integer(seats,3,4)||!integer(ai,0,4-seats))return;
-    const room={id:crypto.randomUUID(),seats,ai,local:0,phase:'lobby',links:new Map(),rows:new Map()};
-    current=room;
-    for(let seat=1;seat<seats;seat++)addHostRow(room,seat);
+  function finishHostRoom(room,seats,ai,archive=null) {
+    Object.assign(room,{seats,ai,archive,phase:'lobby'});
+    startButton.textContent=archive?'Spielstand fortsetzen':'Partie starten';
+    for(let seat=1;seat<room.seats;seat++)addHostRow(room,seat);
     updateHost(room);
+  }
+
+  function openHostRoom() {
+    showRoom('host');
+    const room={id:crypto.randomUUID(),local:0,phase:'reading',links:new Map(),rows:new Map(),lastCheckpoint:0};
+    current=room;
+    return room;
+  }
+
+  get('host').onclick=()=>{
+    const seats=Number(countSelect.value),ai=Number(aiSelect.value);
+    if(!integer(seats,validateArchive?2:3,4)||!integer(ai,0,Math.min(1,4-seats)))return;
+    finishHostRoom(openHostRoom(),seats,ai);
+  };
+  get('resume-file').onchange=async()=>{
+    const file=get('resume-file').files[0];
+    if(!validateArchive||!file)return;
+    const room=openHostRoom();
+    setStatus('Spielstand wird geprüft …');
+    try{
+      if(!validCheckpointSize(file.size))throw Error('Ungültige Spielstandsgröße.');
+      const archive=await readBrowserCheckpoint(new Uint8Array(await file.arrayBuffer()));
+      if(!active(room))return;
+      const {humanSeats}=archive.decoded.meta;
+      const settings=checkSettings(archive.settings,humanSeats);
+      validateArchive(archive,0,humanSeats);
+      finishHostRoom(room,humanSeats,settings.ai,archive);
+    }catch(error){if(active(room))reset(error.message);}
   };
   get('join').onclick=()=>{
     showRoom('guest');
@@ -262,6 +430,7 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
     let room;
     try{
       const code=unpackCode(get('invite').value,'invite');
+      if(code.seats===2&&!validateArchive)throw Error('Dieser Raum benötigt eine neuere Spielversion.');
       if(current)throw Error('Schließe zuerst die bisherige Verbindung.');
       room={id:code.room,seats:code.seats,local:code.seat,phase:'lobby',links:new Map()};
       current=room;
@@ -283,12 +452,23 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
     const room=current;
     if(!room||room.local!==0||room.phase!=='lobby'||connected(room)!==room.seats)return;
     try{
-      const settings=makeSettings(room.seats,room.ai,[...room.links].sort(([left],[right])=>left-right).map(([,link])=>link.hello));
+      const guests=[...room.links].sort(([left],[right])=>left-right).map(([,link])=>link.hello);
+      room.checkpoints=!!validateArchive&&guests.every(guest=>guest.checkpoints);
+      if(room.archive&&(!room.checkpoints||!guests.every(guest=>guest.climates.includes(room.archive.settings.climate)&&
+          room.archive.settings.features.every(key=>guest.features.includes(key)))))
+        throw Error('Einem Mitspieler fehlen Regeln oder Grafiken für diesen Spielstand.');
+      const settings=room.archive?.settings??makeSettings(room.seats,room.ai,guests);
       room.settings=checkSettings(settings,room.seats);
       room.phase='preparing';
       startButton.disabled=true;
-      setStatus('Warte auf Bestätigung der Scharmützeleinstellungen.');
-      for(const link of room.links.values())control(link,room,'prepare',{settings:room.settings});
+      armPreparation(room);
+      if(room.archive){
+        setStatus('Warte, bis alle Mitspieler den Spielstand geprüft haben.');
+        for(const link of room.links.values())control(link,room,'prepare-resume',{length:room.archive.bytes.length,digest:room.archive.digest});
+      }else{
+        setStatus('Warte auf Bestätigung der Scharmützeleinstellungen.');
+        for(const link of room.links.values())control(link,room,'prepare',{settings:room.settings,checkpoints:room.checkpoints});
+      }
     }catch(error){
       if(room.phase==='preparing')reset(error.message);
       else setStatus(error.message);
@@ -296,5 +476,15 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
   };
   get('close').onclick=()=>reset();
   root.hidden=false;
-  return {reset};
+  return {reset,requestCheckpoint(){
+    const room=current;
+    if(!room?.checkpoints||room.phase!=='playing'||room.local!==0||room.save||connected(room)!==room.seats)return false;
+    const id=room.lastCheckpoint+1;
+    if(!room.session.peer.requestCheckpoint(id))return false;
+    room.lastCheckpoint=id;
+    const timer=setTimeout(()=>{if(active(room)&&room.save?.id===id)failCheckpoint(room,'Spielstand konnte nicht rechtzeitig bestätigt werden.');},45000);
+    room.save={id,timer,reports:new Map()};
+    onCheckpointState('Gemeinsamer Spielstand wird erstellt …');
+    return true;
+  }};
 }
