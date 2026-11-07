@@ -3,7 +3,7 @@
 
 use super::*;
 use crate::hotspot_rule66::{add_chop, mul_chop, standing_box_intersects, Owner};
-use crate::hotspots66::{fortress_body, portable_plot};
+use crate::hotspots66::{fortress_body, portable_plot, SUPPORT_ROWS};
 
 const MIN_ARMY: usize = 3;
 const APPROACH_RADIUS: f32 = 8.0;
@@ -28,12 +28,11 @@ fn store_chop(value: f64) -> f32 {
 
 impl Game {
     pub(super) fn ai_support_hotspot(&mut self, team: u8, crew: &[usize]) -> bool {
-        let Some((visible, _)) = self.ai_hotspot_points() else { return false; };
-        if self.net || self.winner != 0 || crew.is_empty() || !self.construction_available(team, TOWER) { return false; }
+        let Some((visible, total)) = self.ai_hotspot_points() else { return false; };
+        if total <= 1 || self.net || self.winner != 0 || crew.is_empty() || !self.construction_available(team, TOWER) { return false; }
 
-        // The first ordinary Outpost row draws its demand from 1 through 2.
-        // The portable held-site adapter uses the ordinary construction
-        // spiral and counts live pending or completed local Outposts.
+        // Authored Outpost priorities are 5, 10 and 15. A lower priority
+        // row sees the same local count, including unfinished construction.
         let sites: Vec<_> = visible.iter().enumerate().filter_map(|(index, point)| {
             let [x, y, _] = point.position;
             if !matches!(point.owner, Owner::Player(seat) if seat.id() == team + 1) { return None; }
@@ -43,10 +42,24 @@ impl Game {
             }).count();
             Some((index, [x, y], existing))
         }).collect();
-        sites.into_iter().any(|(index, [x, y], existing)| {
-            let demand = usize::from(self.hotspot_support_demand(index, team));
-            existing < demand && self.ai_build(team, TOWER, x as i32, y as i32, crew)
-        })
+        let mut blocked = [false; 4];
+        for row in 0..SUPPORT_ROWS {
+            for &(index, [x, y], existing) in &sites {
+                if blocked[index] { continue; }
+                let demand = usize::from(self.hotspot_support_demand(index, team, row));
+                if existing >= demand { continue; }
+                match self.ai_build_attempt(team, TOWER, x as i32, y as i32, crew) {
+                    BuildOutcome::Posted => {
+                        self.hotspot_support_placement(index, team, row, true);
+                        return true;
+                    }
+                    BuildOutcome::NoPlot => self.hotspot_support_placement(index, team, row, false),
+                    BuildOutcome::Unavailable => {}
+                }
+                blocked[index] = true;
+            }
+        }
+        false
     }
 
     pub(super) fn ai_contest_hotspots(&mut self, team: u8, army: &[usize], workers: &[usize], home: [f32; 2]) -> bool {

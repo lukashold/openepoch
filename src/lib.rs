@@ -876,7 +876,9 @@ pub extern "C" fn validate_grouped_resume(layout: u32, controller: u32, tick: u3
 
 #[cfg(feature = "ee2-native13")]
 fn crown_resume_matches(game: &Game, encoded: u32) -> bool {
-    encoded == 0 || encoded == game.crown_rules() + 1
+    let rules = encoded & 255;
+    let victory = encoded >> 8;
+    (rules == 0 && victory == 0 || rules == game.crown_rules() + 1) && victory == game.crown_victory_config()
 }
 
 #[cfg(feature = "ee2-native13")]
@@ -2848,6 +2850,12 @@ pub extern "C" fn koth_definition() -> u32 { u32::from(crate::koth64::HILL) }
 #[no_mangle]
 pub extern "C" fn koth_status(field: u32) -> i32 {
     unsafe { (&*addr_of_mut!(GAME)).as_ref().map_or(if field == 0 { 0 } else { -1 }, |game| game.koth_status(field)) }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_network_crown_victory(mode: u32, target: u32) -> u32 {
+    g().configure_network_crown_victory(mode, target) as u32
 }
 
 #[cfg(feature = "ee2-native13")]

@@ -8,6 +8,9 @@ use crate::map::*;
 #[path = "hotspot_ai68.rs"]
 mod hotspot_ai68;
 
+#[derive(PartialEq, Eq)]
+enum BuildOutcome { Unavailable, NoPlot, Posted }
+
 impl Game {
     #[cfg(feature = "ee2-native13")]
     fn hill_combat_strength(&self, team: u8, def: DefId, hp: f32) -> f32 {
@@ -91,15 +94,20 @@ impl Game {
 
     /// Find a free site near `(bx, by)` and start construction with a few workers.
     fn ai_build(&mut self, team: u8, def:DefId, bx: i32, by: i32, builders: &[usize]) -> bool {
+        self.ai_build_attempt(team, def, bx, by, builders) == BuildOutcome::Posted
+    }
+
+    fn ai_build_attempt(&mut self, team: u8, def: DefId, bx: i32, by: i32, builders: &[usize]) -> BuildOutcome {
         let d = &DEFS[def as usize];
-        if d.epoch>self.players[team as usize].epoch{return false;}
+        if d.epoch>self.players[team as usize].epoch{return BuildOutcome::Unavailable;}
         if !self.afford(team, &self.unit_cost(team,def)) {
-            return false;
+            return BuildOutcome::Unavailable;
         }
         let s = d.size as i32;
         let wanted_territory=self.map.terr[tile_of(bx as f32,by as f32)];
         let (r0, r1) = if def == DOCK { (4, 48) } else if def == TC { (0, 16) } else { (5, 26) };
         let start = self.rng.range(8) as i32;
+        let mut found_plot = false;
         for r in r0..r1 {
             for k in (-r..=r).step_by(2) {
                 let k = ((k + r + start) % (2 * r + 1)) - r;
@@ -112,16 +120,17 @@ impl Game {
                         self.can_place(def, tx, ty, team) && self.lane_free(tx - 1, ty - 1, s + 2)
                     };
                     if ok {
+                        found_plot = true;
                         let turn=if def==DOCK{self.dock_auto_turn_for(team,tx,ty)}else{0};
                         let b = self.begin_construction(team,def,tx,ty,turn,builders,false);
                         if b != NOIDX {
-                            return true;
+                            return BuildOutcome::Posted;
                         }
                     }
                 }
             }
         }
-        false
+        if found_plot { BuildOutcome::Unavailable } else { BuildOutcome::NoPlot }
     }
 
     fn lane_free(&self, tx: i32, ty: i32, s: i32) -> bool {
@@ -139,6 +148,12 @@ impl Game {
     }
 
     pub fn ai_step(&mut self, team: u8) {
+        self.ai_step_orders(team);
+        #[cfg(feature = "ee2-native13")]
+        self.finish_hotspot_support(team);
+    }
+
+    fn ai_step_orders(&mut self, team: u8) {
         let ti = team as usize;
         if self.players[ti].buildings == 0 {
             return;

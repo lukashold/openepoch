@@ -63,20 +63,21 @@ pub(crate) struct Rule {
 impl Rule {
     fn new(objective: Objective) -> Self { Self { objective, totals: [[0.0; KINDS]; SEATS] } }
 
+    fn unique_winning_seat(self, players: &[Player]) -> Option<usize> {
+        // The admitted layouts assign one world player to each fixed team.
+        let leaders = players.iter().enumerate().filter(|(_, player)| player.alive)
+            .map(|(seat, _)| (seat, self.objective.score(self.totals[seat])));
+        let highest = leaders.clone().map(|(_, score)| score).max()?;
+        if highest < self.objective.required() { return None; }
+        let mut tied = leaders.filter(|&(_, score)| score == highest);
+        let (seat, _) = tied.next()?;
+        tied.next().is_none().then_some(seat)
+    }
+
     fn outcome(self, players: &[Player], local: usize) -> u8 {
-        // This solo adapter assigns each eligible seat its own fixed team.
-        let live = players.iter().enumerate().filter(|(_, player)| player.alive);
-        let leaders = live.clone().map(|(seat, _)| (seat, self.objective.score(self.totals[seat])));
-        if let Some(highest) = leaders.clone().map(|(_, score)| score).max() {
-            if highest >= self.objective.required() {
-                let mut tied = leaders.filter(|&(_, score)| score == highest);
-                if let (Some((seat, _)), None) = (tied.next(), tied.next()) {
-                    return if seat == local { 1 } else { 2 };
-                }
-            }
-        }
+        if let Some(seat) = self.unique_winning_seat(players) { return if seat == local { 1 } else { 2 }; }
         if !players[local].alive { 2 }
-        else if live.count() == 1 { 1 }
+        else if players.iter().filter(|player| player.alive).count() == 1 { 1 }
         else { 0 }
     }
 
@@ -111,6 +112,29 @@ pub(crate) fn split(bytes: &[u8]) -> Option<(&[u8], Option<(Rule, u8)>)> {
 }
 
 impl Game {
+    fn supports_network_crown_victory(&self) -> bool {
+        self.net && (2..=4).contains(&self.humans) && self.grouped_coop.is_none()
+            && self.bench == 0 && self.crown_rules() != 0
+    }
+
+    pub(crate) fn configure_network_crown_victory(&mut self, mode: u32, target: u32) -> bool {
+        let Some(objective) = Objective::parse(mode, target) else { return false; };
+        if !self.supports_network_crown_victory() || self.net_resignation.is_none() || self.civ_setup_open
+            || self.tick != 0 || self.crown_victory.is_some() || !self.outbox.is_empty() || !self.inbox.is_empty() {
+            return false;
+        }
+        self.crown_victory = Some(Rule::new(objective));
+        true
+    }
+
+    pub(crate) fn network_crown_winning_seat(&self) -> Option<usize> {
+        self.crown_victory?.unique_winning_seat(&self.players[..self.nplayers])
+    }
+
+    pub(crate) fn crown_victory_config(&self) -> u32 {
+        self.crown_victory.map_or(0, |rule| rule.objective.mode() | (u32::from(rule.objective.target()) << 8))
+    }
+
     pub(crate) fn configure_match_crown_victory(
         &mut self, civs: u32, pop: u32, supplies: u32, start: u32, end: u32, mode: u32, target: u32,
     ) -> bool {
@@ -140,11 +164,15 @@ impl Game {
         self.winner = rule.outcome(&self.players[..self.nplayers], self.local as usize);
     }
 
-    pub(crate) fn restore_crown_victory(&mut self, rule: Rule, outcome: u8) -> Option<()> {
+    pub(crate) fn restore_crown_victory(&mut self, rule: Rule, outcome: u8, network_departure_state: bool) -> Option<()> {
         #[cfg(feature = "ee2-authored-valley37")]
         if self.valley_fixture.is_some() { return None; }
-        if self.net || self.humans != 1 || self.local != 0 || self.bench != 0
-            || rule.totals[self.nplayers..].iter().flatten().any(|&value| value != 0.0)
+        if self.net {
+            if !network_departure_state || !self.supports_network_crown_victory() || outcome != 0 { return None; }
+        } else if self.humans != 1 || self.local != 0 || self.bench != 0 {
+            return None;
+        }
+        if rule.totals[self.nplayers..].iter().flatten().any(|&value| value != 0.0)
             || (self.crown_rules() != 1 && rule.totals.iter().flatten().any(|&value| value != 0.0))
             || (outcome != 0 && rule.outcome(&self.players[..self.nplayers], self.local as usize) != outcome) { return None; }
         self.crown_victory = Some(rule);
@@ -167,6 +195,32 @@ impl Game {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn distinct_network_seats_share_crown_outcome_without_hashing_the_local_message() {
+        let mut peers = [Game::new(7, 0, 0, 2, 0), Game::new(7, 0, 0, 2, 1)];
+        for game in &mut peers {
+            assert!(!game.configure_network_crown_victory(1, 2));
+            assert!(game.configure_match_epoch_range(0xee10, 250, 1, 0, 14));
+            assert!(game.configure_network_resignation(0));
+            assert!(game.configure_crowns_peer(false));
+            let before = game.state_hash();
+            assert!(!game.configure_network_crown_victory(1, 1));
+            assert_eq!(game.state_hash(), before);
+            assert!(game.configure_network_crown_victory(1, 2));
+            game.crown_victory.as_mut().unwrap().totals[..2].fill([2.0, 1.0, 0.0]);
+            assert!(!game.finish_network_match(), "equal qualifying teams keep playing");
+            game.crown_victory.as_mut().unwrap().totals[1][2] = 1.0;
+            assert!(game.finish_network_match());
+            game.save();
+        }
+        assert_eq!([peers[0].winner, peers[1].winner], [2, 1]);
+        assert_eq!(peers[0].state_hash(), peers[1].state_hash());
+        assert_eq!(&peers[0].savebuf[..HEADER], &peers[1].savebuf[..HEADER]);
+        let restored = Game::load(&peers[0].savebuf).expect("completed Crown match");
+        assert_eq!(restored.winner, 2);
+        assert_eq!(restored.state_hash(), peers[0].state_hash());
+    }
 
     fn skirmish(mode: u32, target: u32, disabled: bool) -> Game {
         let mut game = Game::new(7, 1, 0, 1, 0);

@@ -879,7 +879,7 @@ impl Game {
         #[cfg(feature="ee2-native13")]
         if let Some((rule, outcome)) = crown_victory {
             if koth.is_some() || territory_victory.is_some() || sole_survivor.is_some() || regicide.is_some() { return None; }
-            g.restore_crown_victory(rule, outcome)?;
+            g.restore_crown_victory(rule, outcome, net_resignation.is_some())?;
         }
         #[cfg(feature="ee2-native13")]
         if let Some((mode, outcome)) = hotspots {

@@ -115,7 +115,9 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
       return 'Alle Mitspieler benötigen eine Spielversion mit Gruppen-Koop-Spielständen.';
     if(!room.sharedOwner&&!room.groupedOwners&&(!validateArchive||guests.some(guest=>!guest.checkpoints)))
       return 'Alle Mitspieler benötigen eine Spielversion mit Mehrspieler-Spielständen.';
-    const {climate,features}=room.archive.settings;
+    const {climate,features,crownVictory}=room.archive.settings;
+    if(crownVictory&&guests.some(guest=>!guest.crownVictory))
+      return 'Alle Mitspieler benötigen eine Spielversion mit Kronen-Siegbedingungen.';
     if(guests.some(guest=>!guest.climates.includes(climate)||features.some(key=>!guest.features.includes(key))))
       return 'Einem Mitspieler fehlen Regeln oder Grafiken für diesen Spielstand.';
     return '';

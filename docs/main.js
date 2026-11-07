@@ -54,16 +54,16 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=clock38';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native69';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native70';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
 import {createSourceRoundCarrier, selectedRoundTripMilliseconds} from './source-network-wire.js?v=native54';
-import {mountSourceRosterLobby} from './source-network-lobby.js?v=native58';
+import {mountSourceRosterLobby} from './source-network-lobby.js?v=network-crowns1';
 import {applyNetworkCheckpoint} from './source-network-resume.js?v=native58';
 import {createFullscreenController} from './fullscreen.js?v=building2';
 import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native67';
-import {bindCrownVictoryMenu,readCrownVictoryHud,CROWN_VICTORY_COUNT} from './crown-victory-ui.js?v=native65';
+import {bindCrownVictoryMenu,checkCrownVictorySettings,readCrownVictoryHud,CROWN_VICTORY_COUNT} from './crown-victory-ui.js?v=network-crowns1';
 import {bindCapitolsMenu,readCapitolHud} from './capitols-menu.js?v=native66';
 import {capitolFeedback,loadCapitolFeedback} from './capitol-feedback.js?v=native67';
 import {bindKothMenu,formatKothStatus} from './koth-menu.js?v=native64-koth';
@@ -81,7 +81,7 @@ import {createSpyShimmerFrames} from './original-spy-shimmer.js?v=native-spy';
 import {createSpyExtractionTimer} from './spy-extraction-renderer.js?v=native-spy';
 import {loadPriestEffects} from './original-priest-fx.js?v=native45';
 import {guidedImpactInside,loadGuidedImpactEffects} from './guided-herc-impact.js?v=native66';
-import {loadGuidedHercBeam} from './guided-herc-beam.js?v=native69';
+import {loadGuidedHercBeam} from './guided-herc-beam.js?v=native70';
 import {loadOriginalPriestParticles} from './original-priest-particles.js?v=native47';
 import {loadBlessGroundGlow} from './priest-ground-glow.js?v=native58';
 import {loadAirCrownGlow} from './crown-air-glow.js?v=native58';
@@ -158,7 +158,7 @@ const valleyRequested=rulesProfile.id==='up15'&&(!!valleyManifest||['1','archive
 try{
   if(valleyRequested){
     const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley75_commit','valley71_force_attack_at','valley71_neutral_opening']:rulesProfile.requiredExports;
-    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native69-valley'};
+    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native70-valley'};
     try{wasm=await loadRulesWasm(previewRules,import.meta.url);}catch{/* The ordinary ruleset remains available. */}
   }
   wasm??=await loadRulesWasm(rulesProfile,import.meta.url);
@@ -1054,6 +1054,7 @@ const captureOrder = typeof wasm.cmd_capture_at === 'function' ? createCaptureOr
 const priestEnabled=rulesProfile.ruleset===2&&typeof wasm.configure_priest_skirmish==='function';
 const crownSupported=rulesProfile.ruleset===2&&typeof wasm.configure_crowns==='function';
 const supportsPeerCrowns=crownSupported&&typeof wasm.configure_crowns_peer==='function';
+const supportsNetworkCrownVictory=supportsPeerCrowns&&typeof wasm.configure_network_crown_victory==='function';
 const crownArt=await loadCrownArt(crownSupported&&originalEnabled);
 const crownVictoryRows=mountCrownVictoryRows($('crown-victory-rows'),crownArt);
 const crownStatusArt=await loadCrownStatusArt({enabled:crownSupported&&originalEnabled});
@@ -3322,6 +3323,12 @@ function checkRosterSettings(cfg,humanSeats,resuming=false) {
     throw Error('Der Raum verwendet nicht verfügbare Spielbefehle.');
   if(features.includes('crowns')?typeof cfg.crownsDisabled!=='boolean':cfg.crownsDisabled!==undefined)
     throw Error('Ungültige Kroneneinstellungen für diesen Raum.');
+  let crownVictory;
+  if(cfg.crownVictory!==undefined){
+    if(!supportsNetworkCrownVictory||!features.includes('crowns')||sharedOwner||cfg.groupedOwners)
+      throw Error('Kronen-Siegbedingungen benötigen einzelne Spielerplätze und eine passende UP-Spielversion.');
+    crownVictory=checkCrownVictorySettings(cfg.crownVictory);
+  }
   const featureDeps={captureAnimation:'capture',airRunway:'airMission',airTakeoff:'airRunway',airLanding:'airTakeoff',airCarrier:'airLanding'};
   for(const [key,parent] of Object.entries(featureDeps))if(features.includes(key)&&!features.includes(parent))
     throw Error('Unvollständige Spielbefehle für diesen Raum.');
@@ -3332,12 +3339,15 @@ function checkRosterSettings(cfg,humanSeats,resuming=false) {
     climate:checkedClimate(cfg.climate,climates),seasons:peerSeasonSettings(cfg.seasons),
     gameTempo:checkOriginalTempo(cfg.gameTempo),features:supportedRosterFeatures.filter(key=>features.includes(key)),
     ...(features.includes('crowns')?{crownsDisabled:cfg.crownsDisabled}:{}),
+    ...(crownVictory?{crownVictory}:{}),
     ...(sharedOwner?{sharedOwner:true}:cfg.groupedOwners?{groupedOwners:cfg.groupedOwners.slice(),
       ...(resuming?{groupedWorldHumans:worldHumans}:{})}:{})};
 }
 
 function checkpointCrownRules(cfg){
-  return cfg.crownsDisabled===undefined?0:cfg.crownsDisabled?2:1;
+  const rules=cfg.crownsDisabled===undefined?0:cfg.crownsDisabled?2:1;
+  const victory=cfg.crownVictory;
+  return victory?rules|(victory.mode<<8)|(victory.target<<16):rules;
 }
 
 function startRosterGame(cfg,seat,send,links,{archive,onCheckpoint}) {
@@ -3346,6 +3356,7 @@ function startRosterGame(cfg,seat,send,links,{archive,onCheckpoint}) {
   const worldHumans=sharedOwner?1:groupedOwners?Math.max(...groupedOwners)+1:cfg.humanSeats;
   if(archive)applyNetworkCheckpoint(wasm,archive.decoded,seat,cfg.humanSeats,false,checkpointCrownRules(cfg));
   else{
+    const {crownVictory,...matchSettings}=cfg;
     if(sharedOwner){
       if(wasm.init_network_shared_owner(cfg.seed,seat)!==1)throw Error('Der Koop-Controller konnte nicht gestartet werden.');
     }else if(groupedOwners){
@@ -3354,7 +3365,7 @@ function startRosterGame(cfg,seat,send,links,{archive,onCheckpoint}) {
         throw Error('Die Koop-Gruppe konnte nicht gestartet werden.');
     }else if(cfg.humanSeats===2)wasm.init(cfg.seed,cfg.ai,0,2,seat);
     else if(wasm.init_network_roster(cfg.seed,cfg.ai,cfg.humanSeats,seat)!==1)throw Error('Dieser Spielerplatz konnte nicht gestartet werden.');
-    applyMatchSettings(wasm,cfg,worldHumans+cfg.ai);
+    applyMatchSettings(wasm,matchSettings,worldHumans+cfg.ai);
     wasm.skirmish_visibility(cfg.visibility);
     if((!sharedOwner&&!wasm.configure_network_resignation(cfg.resignationPolicy))||
       (cfg.ceasefire&&!wasm.configure_initial_ceasefire(cfg.ceasefire)))throw Error('Die Regeln für diesen Raum konnten nicht aktiviert werden.');
@@ -3362,6 +3373,8 @@ function startRosterGame(cfg,seat,send,links,{archive,onCheckpoint}) {
       const value=name==='crowns'?Number(cfg.crownsDisabled):1;
       if(wasm[rosterFeatures[name]](value)!==1)throw Error('Ein Spielbefehl konnte nicht aktiviert werden.');
     }
+    if(crownVictory&&wasm.configure_network_crown_victory(crownVictory.mode,crownVictory.target)!==1)
+      throw Error('Die Kronen-Siegbedingung konnte nicht aktiviert werden.');
   }
   seasonSession.configure(cfg.seasons,cfg.climate);setSeasonControls(seasonSession.settings);climateControl.value=seasonSession.climate;
   const roundTrip=new Map();
@@ -3430,6 +3443,7 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
     dec.decode(u8(wasm.epoch_name_ptr(epoch),wasm.epoch_name_len(epoch))):`Epoche ${epoch+1}`,
   localHello:()=>({protocol:PROTOCOL_VERSION,profile:rosterProfile,rules:wasm.ruleset(),
     civilization:civilizationSetup.choice(0),climates,features:supportedRosterFeatures,
+    ...(supportsNetworkCrownVictory?{crownVictory:true}:{}),
     checkpoints:supportsNetworkCheckpoint,sharedOwner:supportsSharedOwner,sharedOwnerCheckpoint:supportsSharedCheckpoint,
     groupedCoop:supportsGroupedCoop,groupedCheckpoint:supportsGroupedCheckpoint}),
   checkHello(hello){
@@ -3437,6 +3451,7 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
       !Array.isArray(hello.features)||hello.features.length>11||hello.features.some(key=>typeof key!=='string'))
       throw Error('Alle Teilnehmer brauchen dieselbe UP-Spielversion.');
     return {civilization:civilizationChoice(hello.civilization),climates:peerClimates(hello.climates),features:hello.features,
+      crownVictory:hello.crownVictory===true,
       checkpoints:hello.checkpoints===true,sharedOwner:hello.sharedOwner===true,
       sharedOwnerCheckpoint:hello.sharedOwner===true&&hello.sharedOwnerCheckpoint===true,groupedCoop:hello.groupedCoop===true,
       groupedCheckpoint:hello.groupedCoop===true&&hello.groupedCheckpoint===true};
@@ -3449,10 +3464,16 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
       for(let owner=1;owner<worldHumans;owner++)choices[owner]=guests[groupedOwners.indexOf(owner)-1].civilization;
     }else if(!sharedOwner)for(const [index,guest] of guests.entries())choices[index+1]=guest.civilization;
     const features=supportedRosterFeatures.filter(key=>guests.every(guest=>guest.features.includes(key)));
+    const crownVictory=crownVictoryMenu.read();
+    if(crownVictory===null)throw Error('Ungültiges Kronen-Siegziel.');
+    if(crownVictory&&(!supportsNetworkCrownVictory||!features.includes('crowns')||sharedOwner||groupedOwners||
+      guests.some(guest=>!guest.crownVictory)))
+      throw Error('Kronen-Siegbedingungen benötigen einzelne Spielerplätze und eine passende UP-Spielversion.');
     return {humanSeats,ai,seed:(seedOf()>>>0)||1,visibility:+$('map-visibility').value,
       popLimit:+$('pop-limit').value,supplies:+$('supplies').value,resignationPolicy:+$('mp-resign-policy').value,
       ceasefire:+$('initial-ceasefire').value,climate,seasons:menuSeasonSettings(),gameTempo:menuTempo(),
       features,...(features.includes('crowns')?{crownsDisabled:$('disable-crowns').checked}:{}),
+      ...(crownVictory?{crownVictory}:{}),
       ...resolvedSkirmishChoices(choices,worldHumans+ai),
       ...(sharedOwner?{sharedOwner:true}:groupedOwners?{groupedOwners}:{})};
   },

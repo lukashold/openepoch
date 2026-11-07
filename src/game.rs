@@ -1865,7 +1865,7 @@ impl Game {
 
     #[cfg(feature="ee2-native13")]
     pub(crate) fn rule_save_outcome(&self) -> u8 {
-        if self.solo_resigned { 0 } else { self.winner }
+        if self.solo_resigned || self.net { 0 } else { self.winner }
     }
 
     fn match_has_winner(&self, local: usize) -> bool {

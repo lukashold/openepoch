@@ -115,11 +115,18 @@ impl Game {
         let Some(mut state) = self.net_resignation else { return false; };
         if state.finished { return true; }
         self.refresh_match_alive();
-        if state.humans(self) != 0 && !crate::ee2_conquest::survivors_are_allied(self) { return false; }
+        let crown_winner = self.network_crown_winning_seat();
+        if crown_winner.is_none() && state.humans(self) != 0 && !crate::ee2_conquest::survivors_are_allied(self) { return false; }
         state.finished = true;
         self.net_resignation = Some(state);
-        self.winner = if state.observer(self.local) || !self.players[self.local as usize].alive { 2 } else { 1 };
+        self.winner = self.project_network_outcome(state, crown_winner);
         true
+    }
+
+    fn project_network_outcome(&self, state: Resignation, crown_winner: Option<usize>) -> u8 {
+        let seat = self.local as usize;
+        let won = crown_winner.map_or(self.players[seat].alive, |winner| winner == seat);
+        if won && !state.observer(self.local) { 1 } else { 2 }
     }
 
     pub(crate) fn wrap_network_resignation(&self, core: Vec<u8>) -> Vec<u8> {
@@ -150,10 +157,11 @@ impl Game {
             if state.observer(seat as u8) && !state.defeated(seat) && (state.policy < 2 || !player.ai) { return None; }
             if !state.observer(seat as u8) && player.ai { return None; }
         }
-        if state.finished && state.humans(self) != 0 && !crate::ee2_conquest::survivors_are_allied(self) { return None; }
+        let crown_winner = state.finished.then(|| self.network_crown_winning_seat()).flatten();
+        if state.finished && crown_winner.is_none() && state.humans(self) != 0 && !crate::ee2_conquest::survivors_are_allied(self) { return None; }
         self.net_resignation = Some(state);
         if state.finished {
-            self.winner = if state.observer(self.local) || !self.players[self.local as usize].alive { 2 } else { 1 };
+            self.winner = self.project_network_outcome(state, crown_winner);
         }
         self.refresh_display_fog();
         Some(())

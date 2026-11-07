@@ -185,6 +185,14 @@ impl Game {
         match actor.def {
             crate::defs::TC => Some(0.5),
             crate::defs::TOWER => Some(2.0),
+            def @ (22 | 24 | 28) if self.source_production_offer(actor.team, def) == Some(true) => {
+                let row = crate::ee2_units::lookup_class(def, self.players[actor.team as usize].epoch)?;
+                // The ordinary Artillery ancestry supplies UnitHeight 1. This
+                // is the visual midpoint, independently of missile hit geometry.
+                matches!((def, row.source_unit),
+                    (22, "LightArtillery1") | (24, "HeavyArtillery") | (28, "LightArtillery2"))
+                    .then_some(0.5)
+            }
             def => crate::rocket_herc::source_mobile_capsule_offset(def, self.players[actor.team as usize].epoch),
         }
     }

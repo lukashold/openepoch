@@ -7,6 +7,12 @@ const rules = Object.freeze({
   'crowns-time': { mode: CROWN_VICTORY_TIME, defaultTarget: 10, targets: [10, 15, 20, 25, 30] },
 });
 
+export function checkCrownVictorySettings(settings) {
+  const rule = Object.values(rules).find(row => row.mode === settings?.mode);
+  if (!rule?.targets.includes(settings.target)) throw Error('Ungültiges Kronen-Siegziel.');
+  return { mode: rule.mode, target: settings.target };
+}
+
 export function bindCrownVictoryMenu({ victoryCondition, countRow, count, durationRow, duration, enabled }) {
   const fields = { 'crowns-count': [countRow, count], 'crowns-time': [durationRow, duration] };
   for (const option of victoryCondition.options) {
