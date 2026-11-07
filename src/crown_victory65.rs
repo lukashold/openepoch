@@ -1,7 +1,7 @@
 //! Crown victory uses possession history. The installed rules sample the
 //! previous committed step before applying the current Crown award and credit.
 
-use crate::game::{Game, Player};
+use crate::{ai9_count::Precision53, game::{Game, Player}};
 
 const TAG: u32 = u32::from_le_bytes(*b"CVS1");
 const SEATS: usize = 4;
@@ -41,7 +41,9 @@ impl Objective {
     fn score(self, totals: [f32; KINDS]) -> i32 {
         match self {
             Self::Count(_) => mask(totals).count_ones() as i32,
-            Self::Time(_) => totals.into_iter().map(f64::from).sum::<f64>() as i32,
+            Self::Time(_) => totals.into_iter().fold(0.0, |sum, time| {
+                Precision53::TowardZero.add(sum, f64::from(time))
+            }) as i32,
         }
     }
 }
@@ -124,10 +126,11 @@ impl Game {
     pub(crate) fn credit_crown_victory(&mut self, step: f32) {
         let Some(mut rule) = self.crown_victory else { return; };
         if self.winner != 0 { return; }
+        let rounding = Precision53::TowardZero;
         for kind in 0..KINDS {
             if let Some(holder) = self.crown_holder(kind) {
                 let total = &mut rule.totals[holder.owner as usize][kind];
-                *total = (f64::from(*total) + f64::from(step)) as f32;
+                *total = rounding.store_f32(rounding.add(f64::from(*total), f64::from(step)));
             }
         }
         self.crown_victory = Some(rule);
@@ -205,6 +208,31 @@ mod tests {
         let finished = Game::load(&game.savebuf).expect("finished crown victory archive");
         assert_eq!(finished.winner, 1);
         assert_eq!(finished.state_hash(), game.state_hash());
+    }
+
+    #[test]
+    fn an_active_crown_credits_f32_history_with_the_tick_chop_mode() {
+        let mut game = skirmish(2, 10, false);
+        for (index, node) in crate::ee2_research::NODES.iter().enumerate() {
+            if node.epoch == 0 && node.branch == 0 {
+                game.researched[0][index / 32] |= 1 << (index % 32);
+            }
+        }
+        for _ in 0..22 {
+            game.tick();
+            if game.crown_holder(0).is_some() { break; }
+        }
+        assert_eq!(game.crown_holder(0).unwrap().owner, 0);
+        game.crown_victory.as_mut().unwrap().totals[0][0] = 0.1;
+        game.credit_crown_victory(0.05);
+        assert_eq!(game.crown_victory.unwrap().totals[0][0].to_bits(), 0.15f32.to_bits() - 1);
+    }
+
+    #[test]
+    fn native_time_tally_chops_intermediate_addition_before_truncating_seconds() {
+        let native = [0x3f7fffff, 0x337fffff, 0x277fffff].map(f32::from_bits);
+        assert_eq!(native.into_iter().map(f64::from).sum::<f64>() as i32, 1);
+        assert_eq!(Objective::Time(10).score(native), 0);
     }
 
     #[test]

@@ -1,6 +1,6 @@
 //! The UP single-player Conquest modifier and its saved disband clock.
 
-use crate::{game::Game, pack8_save};
+use crate::{ai9_count::Precision53, game::Game, pack8_save};
 
 pub(crate) const MAGIC: u32 = u32::from_le_bytes(*b"VCS1");
 const HEADER: usize = 20;
@@ -49,12 +49,13 @@ impl Game {
 
     pub(crate) fn sole_rules(&self) -> Option<SoleSurvivor> {
         self.sole_survivor.or_else(|| self.regicide.filter(|rule| rule.sole).map(|rule| rule.state))
+            .or_else(|| self.capitols.and_then(crate::capitols66::Capitols::sole_state))
     }
 
-    pub(crate) fn poll_sole_disband(&mut self, rule: &mut SoleSurvivor, candidates: u8) {
+    pub(crate) fn poll_sole_disband(&mut self, rule: &mut SoleSurvivor, candidates: u8, rounding: Precision53) {
         let now = self.sim_elapsed();
         if rule.deadline == IDLE {
-            rule.deadline = now + DISBAND_SECONDS;
+            rule.deadline = rounding.store_f32(rounding.add(f64::from(now), f64::from(DISBAND_SECONDS)));
         } else if now > rule.deadline {
             self.force_sole_survivor_war(candidates);
             rule.deadline = IDLE;
@@ -71,7 +72,7 @@ impl Game {
         let survivors = rule.active(self.nplayers);
         let local = 1 << self.local;
         if survivors.count_ones() > 1 && crate::ee2_conquest::survivors_are_allied(self) {
-            self.poll_sole_disband(&mut rule, candidates);
+            self.poll_sole_disband(&mut rule, candidates, Precision53::NearestEven);
         } else if survivors.count_ones() == 2 && survivors != candidates {
             // 005B3110 clears offers at the transition into the final pair.
             self.clear_sole_diplomacy_offers();

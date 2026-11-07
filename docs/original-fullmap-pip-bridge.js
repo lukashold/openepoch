@@ -1,5 +1,6 @@
 import {createOriginalPipCamera, originalPipContains, ORIGINAL_PIP_CAMERA_PROFILE} from './original-pip-camera.js';
 import {createOriginalPipRenderer} from './original-pip-renderer.js';
+import {updateOriginalCamera} from './original-camera.js';
 
 const VS = `#version 300 es
 out vec2 uv;
@@ -81,6 +82,7 @@ export function createFullmapPipBridge({gl, canvas, available, mainPose, setMain
     return true;
   };
   const point = value => Array.isArray(value) && value.length === 2 && value.every(Number.isFinite);
+  const viewport=()=>opened&&fullmapPipDeviceRect(opened.getViewport(),canvas.getBoundingClientRect(),canvas.width,canvas.height);
   return Object.freeze({
     available,
     isOpen: () => opened !== null,
@@ -143,9 +145,17 @@ export function createFullmapPipBridge({gl, canvas, available, mainPose, setMain
     },
     cycle() { return opened?.getViewport() ? camera.toggleCycle() : false; },
     snapshot: () => camera?.snapshot() ?? null,
+    admissionProjection() {
+      if (!opened || !available()) return null;
+      const rect=viewport();
+      if (!rect) return null;
+      const pose=camera.pose();
+      if (held) [pose.x,pose.y]=held;
+      return updateOriginalCamera(pose,{},rect.width,rect.height,heightAt,ORIGINAL_PIP_CAMERA_PROFILE).vp;
+    },
     draw(delta, drawWorld) {
       if (!opened || !available()) return null;
-      const rect = fullmapPipDeviceRect(opened.getViewport(), canvas.getBoundingClientRect(), canvas.width, canvas.height);
+      const rect = viewport();
       if (!rect) return null;
       let pose = camera.update(delta, resolveUnit);
       if (held) { camera.focusMap(...held); pose = camera.pose(); }

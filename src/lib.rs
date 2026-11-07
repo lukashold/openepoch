@@ -22,6 +22,8 @@ mod landing34;
 #[cfg(feature = "ee2-native13")]
 mod air_audio35;
 #[cfg(feature = "ee2-native13")]
+mod herc_attack66;
+#[cfg(feature = "ee2-native13")]
 mod net_resign38;
 #[cfg(feature = "ee2-native13")]
 mod grouped_coop52;
@@ -43,6 +45,16 @@ mod heavy_mounted3_61;
 mod koth64;
 #[cfg(feature = "ee2-native13")]
 mod crown_victory65;
+#[cfg(feature = "ee2-native13")]
+mod capitols66;
+#[cfg(feature = "ee2-native13")]
+mod hotspot_rule66;
+#[cfg(feature = "ee2-native13")]
+mod hotspot_start66;
+#[cfg(feature = "ee2-native13")]
+mod hotspot_terrain66;
+#[cfg(feature = "ee2-native13")]
+mod hotspots66;
 #[cfg(feature = "ee2-native13")]
 mod rocket_herc;
 #[cfg(feature = "ee2-native13")]
@@ -650,6 +662,22 @@ pub extern "C" fn guided_herc_impact_visible(x: f32, y: f32) -> u32 {
     (game.real_fog(game.local, crate::map::tile_of(x, y)) == 255) as u32
 }
 
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn guided_herc_attack_prepare() -> u32 {
+    let game = g();
+    game.prepare_herc_attack();
+    game.herc_attack.rows.len() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn guided_herc_attack_ptr() -> *const u8 { g().herc_attack.rows.as_ptr().cast() }
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn guided_herc_attack_shot_at(index: u32) -> u32 { g().herc_attack.shot(index as usize) }
+
 #[no_mangle]
 pub extern "C" fn events_clear() {
     let game = g();
@@ -658,6 +686,8 @@ pub extern "C" fn events_clear() {
     game.guided_herc_impacts.clear();
     #[cfg(feature = "ee2-native13")]
     game.air_audio.clear_shots();
+    #[cfg(feature = "ee2-native13")]
+    game.herc_attack.clear_shots();
 }
 
 #[cfg(feature = "ee2-native13")]
@@ -2820,6 +2850,43 @@ pub extern "C" fn configure_match_crown_victory(
 pub extern "C" fn crown_victory_status(field: u32, seat: u32) -> i32 {
     unsafe { (&*addr_of_mut!(GAME)).as_ref().map_or(if field == 0 { 0 } else { -1 }, |game|
         game.crown_victory_status(field, seat as usize)) }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_match_capitols(
+    packed_civs: u32, pop: u32, supplies: u32, start: u32, end: u32, mode: u32, minutes: u32, sole: u32,
+) -> u32 {
+    unsafe { (&mut *addr_of_mut!(GAME)).as_mut().map_or(0, |game|
+        game.configure_match_capitols(packed_civs, pop, supplies, start, end, mode, minutes, sole) as u32) }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn capitol_status(field: u32, seat: u32) -> i32 {
+    unsafe { (&*addr_of_mut!(GAME)).as_ref().map_or(if field == 0 { 0 } else { -1 }, |game|
+        game.capitol_status(field, seat as usize)) }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_match_hotspots(civs: u32, pop: u32, supplies: u32, start: u32, end: u32, count: u32) -> u32 {
+    unsafe { (&mut *addr_of_mut!(GAME)).as_mut().map_or(0, |game|
+        game.configure_match_hotspots(civs, pop, supplies, start, end, count) as u32) }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn hotspot_status(field: u32, seat: u32) -> i32 {
+    unsafe { (&*addr_of_mut!(GAME)).as_ref().map_or(if field == 0 { 0 } else { -1 }, |game|
+        game.hotspot_status(field, seat as usize)) }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn hotspot_point(index: u32, axis: u32) -> f32 {
+    unsafe { (&*addr_of_mut!(GAME)).as_ref().map_or(f32::NAN, |game|
+        game.hotspot_point(index as usize, axis as usize)) }
 }
 
 #[cfg(feature = "ee2-native13")]

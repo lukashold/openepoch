@@ -143,6 +143,10 @@ impl Game {
             return 1;
         }
         let center = (ty + height / 2) as usize * N + (tx + width / 2) as usize;
+        #[cfg(feature = "ee2-native13")]
+        if !self.hotspot_allows_placement(team, def, [tx as f32 + width as f32 * 0.5, ty as f32 + height as f32 * 0.5]) {
+            return 12;
+        }
         let territory = self.map.terr[center];
         let owner = self.towner[territory as usize];
         #[cfg(feature="ee2-native13")]

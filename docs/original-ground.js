@@ -138,12 +138,12 @@ function restore(gl,state){
 export async function loadOriginalGround(gl,enabled,options={}){
   const result={enabled:false,entries:new Map(),errors:[],manifest:null,
     policy:'native-epoch-slots; CityManager callback, explicit rural fallback when absent',metrics:{calls:0,instances:0},
-    seasonClimates:['Temperate'],climateErrors:[],updateTerrain(){},draw(){},drawCaptureGlow(){},drawMixedGlow(){},drawBlessGlow(){},drawExtraction(){},setSeasonClimate(){return false;},setSeasonPhase(){return false;}};
+    seasonClimates:['Temperate'],climateErrors:[],updateTerrain(){},draw(){},drawCaptureGlow(){},drawMixedGlow(){},drawBlessGlow(){},drawExtraction(){},drawHotspot(){return 0;},setSeasonClimate(){return false;},setSeasonPhase(){return false;}};
   if(!enabled)return result;
   let assetMapping;try{assetMapping=normalizeRenderAssetMapping(options.assetMapping);}catch(error){result.errors.push(error.message);return result;}
   result.assetMapping=assetMapping;
   const fetchFile=options.fetch||fetch,decode=options.decode||createImageBitmap;
-  const state=snapshot(gl),textures=new Map(),blessTextures=new Map();let shader,vao,instances,height,glowTexture,extractionTexture,mixedGlow;
+  const state=snapshot(gl),textures=new Map(),blessTextures=new Map();let shader,vao,instances,height,glowTexture,extractionTexture,mixedGlow,hotspotTexture;
   const groundProfiles=Object.entries(options.climateProfiles||{}).filter(([name])=>name!=='Temperate');
   async function loadTexture(url){
     let texture=textures.get(url);
@@ -202,6 +202,10 @@ export async function loadOriginalGround(gl,enabled,options={}){
     if(options.extractionDecal){
       try{extractionTexture=await loadTexture(options.extractionDecal);}
       catch(error){result.extractionError=error.message;}
+    }
+    if(options.hotspotMarker){
+      try{hotspotTexture=await loadTexture('./local-original/hotspots/selection-scenedit-circle.png');}
+      catch(error){result.hotspotMarkerError=error.message;}
     }
     if(options.mixedGlow){
       try{mixedGlow=await loadTexture(options.mixedGlow);}
@@ -292,6 +296,11 @@ export async function loadOriginalGround(gl,enabled,options={}){
     if(!extractionTexture||!list.length)return 0;
     drawGroups([{texture:extractionTexture,textureB:extractionTexture,blend:0,list}],vp,-2,tint);
     return list.length/5;
+  };
+  result.drawHotspot=({vp,xy})=>{
+    if(!hotspotTexture||!xy)return 0;
+    drawGroups([{texture:hotspotTexture,textureB:hotspotTexture,blend:0,list:[...xy,0,2,2]}],vp,-2,[1,1,1]);
+    return 1;
   };
   function drawGroups(groups,vp,glowAlpha,tint){
     if(!groups.length)return;

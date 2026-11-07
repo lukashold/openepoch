@@ -116,7 +116,7 @@ pub(crate) const O_LEADER_PURCHASE: u8 = 18;
 #[cfg(feature = "ee2-native13")]
 pub(crate) const O_IMPERIALISM: u8 = 19;
 /// Marker in `Ent::stuck`: the unit walked onto a transport, remove it without an explosion.
-const BOARDED: u8 = 255;
+pub(crate) const BOARDED: u8 = 255;
 
 pub const RESEARCH: QueueItem = crate::ids::EPOCH_JOB;
 const GC: usize = 64; // grid cells per axis
@@ -334,6 +334,8 @@ pub struct Game {
     #[cfg(feature = "ee2-native13")]
     pub(crate) air_audio: crate::air_audio35::State,
     #[cfg(feature = "ee2-native13")]
+    pub(crate) herc_attack: crate::herc_attack66::State,
+    #[cfg(feature = "ee2-native13")]
     pub(crate) aircraft: crate::air31::State,
     pub fx: Vec<Fx>,
     pub players: [Player; 4],
@@ -423,6 +425,10 @@ pub struct Game {
     pub(crate) crowns: Option<crowns54::Crowns>,
     #[cfg(feature = "ee2-native13")]
     pub(crate) crown_victory: Option<crate::crown_victory65::Rule>,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) capitols: Option<crate::capitols66::Capitols>,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) hotspots: Option<crate::hotspots66::Match>,
     #[cfg(feature = "ee2-native13")]
     pub(crate) crown_leaders: bool,
     #[cfg(feature = "ee2-native13")]
@@ -568,6 +574,8 @@ impl Game {
             #[cfg(feature = "ee2-native13")]
             air_audio: crate::air_audio35::State::default(),
             #[cfg(feature = "ee2-native13")]
+            herc_attack: crate::herc_attack66::State::default(),
+            #[cfg(feature = "ee2-native13")]
             aircraft: crate::air31::State::default(),
             fx: Vec::with_capacity(1024),
             players: [Player::default(); 4],
@@ -651,6 +659,10 @@ impl Game {
             crowns: None,
             #[cfg(feature = "ee2-native13")]
             crown_victory: None,
+            #[cfg(feature = "ee2-native13")]
+            capitols: None,
+            #[cfg(feature = "ee2-native13")]
+            hotspots: None,
             #[cfg(feature = "ee2-native13")]
             crown_leaders: false,
             #[cfg(feature = "ee2-native13")]
@@ -804,11 +816,16 @@ impl Game {
 
     pub(crate) fn kill(&mut self, i: usize) {
         #[cfg(feature = "ee2-native13")]
+        self.herc_attack.forget(self.h(i));
+        #[cfg(feature = "ee2-native13")]
         self.retire_imperialism(i);
         #[cfg(feature = "ee2-native13")]
         self.retire_dock_garrison(i);
         #[cfg(feature = "ee2-native13")]
-        if self.ents[i].def == TC { self.retire_city_heal(i); }
+        if self.ents[i].def == TC {
+            self.rebind_capitol(self.h(i), NONE);
+            self.retire_city_heal(i);
+        }
         #[cfg(feature = "ee2-native13")]
         if self.powers.is_some() {
             let handle = self.h(i);
@@ -1467,6 +1484,10 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         if let Some(rule) = self.crown_victory { rule.hash(self.rule_save_outcome(), &mut mix); }
         #[cfg(feature = "ee2-native13")]
+        if let Some(rule) = self.capitols { rule.hash(self.rule_save_outcome(), &mut mix); }
+        #[cfg(feature = "ee2-native13")]
+        if let Some(mode) = &self.hotspots { mode.hash(self.rule_save_outcome(), &mut mix); }
+        #[cfg(feature = "ee2-native13")]
         if self.crown_leaders { mix(crown_leaders58::HASH_TAG); }
         #[cfg(feature = "ee2-native13")]
         if let Some(powers) = &self.military_leader_powers { powers.hash(&mut mix); }
@@ -1789,7 +1810,8 @@ impl Game {
             let poll_result = self.source_clock.is_some() || self.tick % 20 == 0;
             #[cfg(feature = "ee2-native13")]
             let poll_result = poll_result || (self.winner == 0 && (self.sole_survivor.is_some()
-                || self.regicide.is_some() || self.koth.is_some() || self.crown_victory.is_some()));
+                || self.regicide.is_some() || self.koth.is_some() || self.crown_victory.is_some()
+                || self.capitols.is_some() || self.hotspots.is_some()));
             if poll_result && (self.winner == 0 || cfg!(all(feature="ee2-pack8",feature="ee2-civ8"))) {
                 self.refresh_match_alive();
                 if self.winner == 0 {
@@ -1820,6 +1842,7 @@ impl Game {
         self.territory_victory.is_some_and(|rule| rule.eliminated(seat))
             || self.sole_survivor.is_some_and(|rule| rule.eliminated(seat))
             || self.regicide.is_some_and(|rule| rule.state.eliminated(seat))
+            || self.capitols.is_some_and(|rule| rule.state.eliminated(seat))
     }
 
     pub(crate) fn refresh_match_alive(&mut self) {
@@ -1856,6 +1879,16 @@ impl Game {
     fn poll_match_outcome(&mut self) {
         #[cfg(feature="ee2-native13")]
         if self.net_resignation.is_some() { return; }
+        #[cfg(feature = "ee2-native13")]
+        if self.hotspots.is_some() {
+            self.poll_hotspots();
+            if self.winner != 0 { return; }
+        }
+        #[cfg(feature="ee2-native13")]
+        if let Some(rule) = self.capitols {
+            self.poll_capitol_outcome(rule);
+            return;
+        }
         #[cfg(feature="ee2-native13")]
         if let Some(rule) = self.crown_victory {
             self.poll_crown_victory(rule);
@@ -2067,6 +2100,7 @@ impl Game {
             #[cfg(feature = "ee2-native13")]
             if event == crate::native_attack_clock::Event::Start {
                 self.observe_air_attack_audio(index, e, now, reload);
+                self.observe_herc_attack(index, e, now, reload);
             }
             if event==crate::native_attack_clock::Event::Fire{self.fire(index,e,w,tj);e.cd=remaining;}
             return;
@@ -2128,6 +2162,8 @@ impl Game {
         self.ev(sound, e.x, e.y);
         #[cfg(feature = "ee2-native13")]
         self.mark_air_shot(_source_index, event_start);
+        #[cfg(feature = "ee2-native13")]
+        self.mark_herc_shot(_source_index, event_start);
         let direct={
             #[cfg(feature="ee2-up15")] {attack.map(|a|!a.missile).unwrap_or(w.kind==W_MELEE)}
             #[cfg(not(feature="ee2-up15"))] {w.kind==W_MELEE}
@@ -2982,6 +3018,11 @@ impl Game {
             self.observe_carrier_motion_audio(i, &e);
         }
         #[cfg(feature="ee2-pack8")] self.pack_finish_actor(i,&e,engaged||e.order!=O_IDLE,moving);
+        #[cfg(feature = "ee2-native13")]
+        if self.guided_herc_rocket && crate::herc_attack66::is_herc(e.def) &&
+            (moving || !engaged || self.pack_states[i].phase != crate::pack8::NONE) {
+            self.herc_attack.forget(self.h(i));
+        }
         self.ents[i] = e;
     }
 

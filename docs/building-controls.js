@@ -10,7 +10,8 @@ export const PLACEMENT_ERRORS=Object.freeze([
   'Dieses Gebäude ist in deiner Epoche noch nicht verfügbar.',
   'Das Einheitenlimit ist erreicht.',
   'In einem Gebiet sind höchstens zwei Festungen möglich.',
-  'Der anfängliche Waffenstillstand verbietet den Bau an dieser Stelle.'
+  'Der anfängliche Waffenstillstand verbietet den Bau an dieser Stelle.',
+  'Am Krisenherd darf nur eine Festung direkt am Marker gebaut werden.'
 ]);
 
 export function placementMessage(error,id){

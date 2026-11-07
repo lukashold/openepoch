@@ -67,7 +67,15 @@ export function applyMatchSettings(wasm,settings,nplayers){
  if(typeof wasm.configure_match_settings!=='function')throw Error('Die Spieldatei unterstützt diese Scharmützeleinstellungen noch nicht.');
  const packed=values.reduce((n,v,i)=>n|(v<<(i*4)),0);
  let result;
- if (settings.crownVictory !== undefined) {
+ if (settings.capitols !== undefined) {
+  if(typeof wasm.configure_match_capitols!=='function')throw Error('Die Spieldatei unterstützt keine Kapitol-Siegbedingung.');
+  const {mode,minutes}=settings.capitols;
+  result=wasm.configure_match_capitols(packed,settings.popLimit,settings.supplies,settings.epoch,end,mode,minutes,Number(settings.soleSurvivor===true));
+ } else if (settings.hotspots !== undefined) {
+  if(settings.hotspots!==1||typeof wasm.configure_match_hotspots!=='function')throw Error('Die Karte unterstützt diese Krisenherd-Einstellung nicht.');
+  result=wasm.configure_match_hotspots(packed,settings.popLimit,settings.supplies,settings.epoch,end,settings.hotspots);
+  if(result!==1)throw Error('Für diesen Kartensamen wurde kein Bauplatz für den Krisenherd gefunden.');
+ } else if (settings.crownVictory !== undefined) {
   if(typeof wasm.configure_match_crown_victory!=='function')throw Error('Die Spieldatei unterstützt keine Kronen-Siegbedingungen.');
   const {mode,target}=settings.crownVictory;
   result=wasm.configure_match_crown_victory(packed,settings.popLimit,settings.supplies,settings.epoch,end,mode,target);

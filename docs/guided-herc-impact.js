@@ -47,6 +47,18 @@ const finite=(value,n)=>value?.length===n&&Array.prototype.every.call(value,Numb
 const corners=[[0,0],[1,0],[1,1],[0,0],[1,1],[0,1]];
 const componentScale=f(1/255);
 
+// 006242B0 tests the original descriptor's radius-1 sphere against six
+// inward-facing camera planes. VP encodes the same portable clip volume.
+export function guidedImpactInside(vp,x,y,z){
+ if(!finite(vp,16)||![x,y,z].every(Number.isFinite))return false;
+ for(let axis=0;axis<3;axis++)for(const sign of [1,-1]){
+  const nx=vp[3]+sign*vp[axis],ny=vp[7]+sign*vp[4+axis],nz=vp[11]+sign*vp[8+axis];
+  const offset=vp[15]+sign*vp[12+axis];
+  if(nx*x+ny*z+nz*y+offset < -Math.hypot(nx,ny,nz))return false;
+ }
+ return true;
+}
+
 function launchVelocity(layer,speed){
  // 00617090–00617242 takes three words from a private 1664525/1013904223 LCG.
  const random=()=>((layer.seed=(Math.imul(layer.seed,1664525)+1013904223)>>>0)>>>16)&0x7fff;
@@ -80,15 +92,15 @@ function makeParticle(def,layer,order,origin){
 }
 
 export function createGuidedImpactFrames({flashSeed=()=>Math.floor(Date.now()/1000)}={}){
- const active=[];
+ const active=[],pending=[];
  let last=0;
- const reset=seconds=>{active.length=0;last=Number.isFinite(seconds)?seconds:0;};
+ const reset=seconds=>{active.length=0;pending.length=0;last=Number.isFinite(seconds)?seconds:0;};
  return {
   reset,
   spawn(x,y,z){
    if(![x,y,z].every(Number.isFinite))return;
-   if(active.length===256)active.shift();
-   active.push({origin:[x,z,y],layers:materials.map(row=>({seed:row.seed||flashSeed(),age:0,next:0,particles:[]}))});
+   if(active.length+pending.length===256)(active.length?active:pending).shift();
+   pending.push({origin:[x,z,y],layers:materials.map(row=>({seed:row.seed||flashSeed(),age:0,next:0,particles:[]}))});
   },
   advance(seconds,wind=[0,0]){
    if(!Number.isFinite(seconds)||seconds<last){reset(seconds);return;}
@@ -121,6 +133,9 @@ export function createGuidedImpactFrames({flashSeed=()=>Math.floor(Date.now()/10
    for(let i=active.length-1;i>=0;i--){
     if(active[i].layers.every((layer,j)=>layer.next===materials[j].particles.length&&!layer.particles.length))active.splice(i,1);
    }
+   // The source composite already drained its child queue when the explosion
+   // wrapper attached these two effects. They update on the next context pass.
+   active.push(...pending);pending.length=0;
   },
   sample(visible){
    const layers=[[],[]];

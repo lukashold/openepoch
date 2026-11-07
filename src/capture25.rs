@@ -540,6 +540,7 @@ impl Game {
 
     fn complete_capture(&mut self, index: usize, owner: u8, profile: CaptureTarget) -> bool {
         let old = self.ents[index];
+        let owner = self.capitol_capture_owner(self.h(index), owner);
         if !self.replace_converted_actor(index, owner, profile.tribute) { return false; }
         if old.def == crate::koth64::HILL && old.team != owner {
             if self.events.len() < 3 * 64 {
@@ -594,6 +595,7 @@ impl Game {
             self.set_citizen_identity(new, if identity == 1 { Female } else { Male });
         }
         if old.def == TC {
+            self.rebind_capitol(old_handle, new_handle);
             if city.handle == old_handle { self.city_ground[new] = crate::city_ground::CityBand { handle: new_handle, ..city }; }
             if old.built < 1.0 { self.city_ground[new] = crate::city_ground::EMPTY; }
             for claim in &mut self.territory.claims {
@@ -1079,5 +1081,34 @@ mod tests {
         assert_eq!(game.resource(1,0),320.0);
         assert_eq!(game.resource(0,0),480.0);
         assert!(game.map.blocked[tile_of(old_pose.x,old_pose.y)]);
+    }
+
+    #[test]
+    fn capitol_capture_replaces_its_city_and_returns_it_to_an_ally() {
+        let mut game = Game::new(7, 2, 0, 1, 0);
+        assert!(game.configure_match_capitols(0xe281, 500, 2, 0, 0, 6, 2, 0));
+        for player in &mut game.players[..game.nplayers] { player.ai = false; }
+        let (x, y) = game.map.starts[1];
+        let area = game.map.terr[y * N + x] as usize;
+        let original = game.territory.claims[area];
+        let profile = native::capture_target(TC).unwrap();
+        assert!(game.complete_capture(game.get(original).unwrap(), 2, profile));
+        let occupied = game.territory.claims[area];
+        assert_ne!(occupied, original);
+        assert!(game.get(original).is_none());
+        game.tick();
+        assert_eq!(game.capitol_status(3, 1), 2);
+        assert!(game.capitol_status(2, 1) >= 119);
+        assert!(game.apply_diplomacy(0, 1, 0, 0, 0.0));
+        assert!(game.apply_diplomacy(1, 0, 3, 0, 0.0));
+        for _ in 0..100 { game.tick(); }
+        assert!(game.apply_diplomacy(0, 1, 1, 1, 0.0));
+        assert!(game.apply_diplomacy(1, 0, 3, 0, 0.0));
+        assert!(game.complete_capture(game.get(occupied).unwrap(), 0, profile));
+        assert!(game.get(occupied).is_none());
+        assert_eq!(game.towner[area], 1);
+        game.tick();
+        assert_eq!(game.capitol_status(3, 1), 1);
+        assert_eq!(game.capitol_status(2, 1), -1);
     }
 }

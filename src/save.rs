@@ -226,11 +226,17 @@ impl Game {
         #[cfg(feature="ee2-native13")]
         if let Some(rule) = self.crown_victory { b = rule.wrap(b, self.rule_save_outcome()); }
         #[cfg(feature="ee2-native13")]
+        if let Some(rule) = self.capitols { b = rule.wrap(b, self.rule_save_outcome()); }
+        #[cfg(feature="ee2-native13")]
+        if let Some(mode) = &self.hotspots { b = mode.wrap(b, self.rule_save_outcome()); }
+        #[cfg(feature="ee2-native13")]
         if let Some(rule) = self.koth { b = rule.wrap(b, self.rule_save_outcome()); }
         #[cfg(feature="ee2-native13")]
         { b = self.factory_clocks.wrap(b); }
         #[cfg(feature="ee2-native13")]
         if self.heavy_mounted3 { b = crate::heavy_mounted3_61::wrap(b); }
+        #[cfg(feature="ee2-native13")]
+        { b = self.wrap_herc_attack(b); }
         #[cfg(feature="ee2-native13")]
         { b = self.market.wrap(b); }
         #[cfg(feature="ee2-native13")]
@@ -296,6 +302,10 @@ impl Game {
         #[cfg(feature="ee2-native13")]
         let (buf, market) = crate::game::market57::split(buf)?;
         #[cfg(feature="ee2-native13")]
+        let (buf, herc_attack) = crate::herc_attack66::split_archive(buf)?;
+        #[cfg(feature="ee2-native13")]
+        if herc_attack.is_some() && roster.is_some() { return None; }
+        #[cfg(feature="ee2-native13")]
         let (buf, heavy_mounted3) = crate::heavy_mounted3_61::split(buf)?;
         #[cfg(feature="ee2-native13")]
         if heavy_mounted3 && roster.is_some() { return None; }
@@ -304,7 +314,13 @@ impl Game {
         #[cfg(feature="ee2-native13")]
         let (buf, koth) = crate::koth64::split(buf)?;
         #[cfg(feature="ee2-native13")]
+        let (buf, hotspots) = crate::hotspots66::split(buf)?;
+        #[cfg(feature="ee2-native13")]
+        let (buf, capitols) = crate::capitols66::split(buf)?;
+        #[cfg(feature="ee2-native13")]
         let (buf, crown_victory) = crate::crown_victory65::split(buf)?;
+        #[cfg(feature="ee2-native13")]
+        if capitols.is_some() && hotspots.is_some() { return None; }
         #[cfg(feature="ee2-native13")]
         let (buf, wonders) = crate::wonders61::split_save(buf)?;
         #[cfg(feature="ee2-native13")]
@@ -855,9 +871,20 @@ impl Game {
             }
         }
         #[cfg(feature="ee2-native13")]
+        if let Some((rule, outcome)) = capitols {
+            if koth.is_some() || crown_victory.is_some() || territory_victory.is_some()
+                || sole_survivor.is_some() || regicide.is_some() { return None; }
+            g.restore_capitols(rule, outcome)?;
+        }
+        #[cfg(feature="ee2-native13")]
         if let Some((rule, outcome)) = crown_victory {
             if koth.is_some() || territory_victory.is_some() || sole_survivor.is_some() || regicide.is_some() { return None; }
             g.restore_crown_victory(rule, outcome)?;
+        }
+        #[cfg(feature="ee2-native13")]
+        if let Some((mode, outcome)) = hotspots {
+            if g.crown_victory.is_some() || koth.is_some() || territory_victory.is_some() || sole_survivor.is_some() || regicide.is_some() { return None; }
+            g.restore_hotspots(mode, outcome)?;
         }
         #[cfg(feature="ee2-native13")]
         if let Some(payload) = military_leader_powers {
@@ -891,6 +918,8 @@ impl Game {
         }
         #[cfg(feature="ee2-native13")]
         g.restore_network_resignation(net_resignation)?;
+        #[cfg(feature="ee2-native13")]
+        g.restore_herc_attack(herc_attack)?;
         Some(g)
     }
 }

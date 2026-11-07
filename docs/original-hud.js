@@ -55,7 +55,7 @@ export async function loadNativeHud(assets,enabled,options={}){
  #native-koth-status>header,#native-koth-status #koth-victory-status{display:flex;align-items:center;min-height:calc(var(--native-sy)*35px)}
  #native-koth-status>header{gap:calc(var(--native-sx)*10px)}
  #native-koth-status[hidden],#native-koth-status #koth-victory-status[hidden],#native-koth-status.is-minimized #koth-victory-status{display:none}
- #native-koth-status.is-minimized #crown-victory-rows{display:none}
+ #native-koth-status.is-minimized #crown-victory-rows,#native-koth-status.is-minimized #hotspot-status-rows{display:none}
  #native-koth-status #crown-victory-rows{--crown-status-icon:calc(var(--native-sy)*32px);max-width:100%}
  #native-koth-status.is-minimized{min-width:min(100vw,calc(var(--native-sx)*270px))}
  #native-koth-status-toggle{width:calc(var(--native-sx)*30px);height:calc(var(--native-sy)*30px);min-width:18px;min-height:18px;margin:0 0 0 auto;padding:0;flex:none;border:0;background:transparent center/100% 100% no-repeat;color:inherit;cursor:pointer}
@@ -90,6 +90,7 @@ export async function loadNativeHud(assets,enabled,options={}){
  if(controls)while(controls.firstChild)content.append(controls.firstChild);
  const hillStatus=content.querySelector('#koth-victory-status')||get('koth-victory-status');
  const crownRows=get('crown-victory-rows');
+ const hotspotRows=get('hotspot-status-rows');
  let hillPanel=null,updateVictoryStatus;
  if(hillStatus&&manifest.widgets.game_bottom_bkg_1_cont){
   hillPanel=doc.createElement('section');hillPanel.id='native-koth-status';hillPanel.hidden=true;
@@ -105,29 +106,31 @@ export async function loadNativeHud(assets,enabled,options={}){
   for(const state of ['idle','rollover','pressed']){
    toggle.style.setProperty(`--koth-status-${state}`,`url("${buttonArt(state)}")`);
   }
-  let minimized=false,crownCaption=null;
+  let minimized=false,crownCaption=null,showHotspots=false;
   const syncToggle=()=>{
    hillPanel.classList.toggle('is-minimized',minimized);
    toggle.textContent=minimized?'▴':'▾';
-   const label=crownCaption?'Kronenstatus':'Hügelstatus';
+   const label=showHotspots?'Krisenherdstatus':crownCaption==='Kronen-Status'?'Kronenstatus':crownCaption??'Hügelstatus';
    toggle.title=label+(minimized?' ausklappen':' einklappen');
-   toggle.setAttribute('aria-controls',crownCaption?crownRows.id:hillStatus.id);
+   toggle.setAttribute('aria-controls',showHotspots?hotspotRows.id:crownCaption?crownRows.id:hillStatus.id);
    toggle.setAttribute('aria-label',toggle.title);
    toggle.setAttribute('aria-expanded',String(!minimized));
   };
-  updateVictoryStatus=(hill,crowns=null)=>{
-   if(crownCaption!==crowns){
+  updateVictoryStatus=(hill,crowns=null,hotspots=false)=>{
+   if(crownCaption!==crowns||showHotspots!==hotspots){
     crownCaption=crowns;
+    showHotspots=hotspots;
     syncToggle();
    }
-   const title=crowns??hillCaption;
+   const title=hotspots?'Krisenherde-Status':crowns??hillCaption;
    if(caption.textContent!==title)caption.textContent=title;
-   if((hill||crowns)&&!idleArt.src)idleArt.src=buttonArt('idle');
-   hillPanel.hidden=!hill&&!crowns;
+   if((hill||crowns||hotspots)&&!idleArt.src)idleArt.src=buttonArt('idle');
+   hillPanel.hidden=!hill&&!crowns&&!hotspots;
   };
   toggle.onclick=()=>{minimized=!minimized;syncToggle();};
   heading.append(caption,toggle);hillPanel.append(heading,hillStatus);
   if(crownRows){crownRows.hidden=true;hillPanel.append(crownRows);}
+  if(hotspotRows){hotspotRows.hidden=true;hillPanel.append(hotspotRows);}
   bottom.append(hillPanel);syncToggle();
  }
  const resourceList=doc.createElement('div');resourceList.id='native-hud-resources';bottom.append(resourceList);

@@ -11,7 +11,7 @@ import { diplomacyPanel } from './diplomacy.js?v=native17';
 import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native6';
 import {loadNativeFontUI} from './original-font-ui.js?v=native21names';
 import {territoryClaimMessage} from './territory-help.js?v=native64-koth';
-import * as sfx from './audio.js?v=native65-herc';
+import * as sfx from './audio.js?v=native66';
 import {generatedAmbientCoverage,loadOriginalAmbient,originalAmbientPriorities} from './original-ambient.js?v=ambient39';
 import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=citizen9';
 import {mountOriginalShellVideo} from './original-shell-video.js?v=native12';
@@ -19,8 +19,8 @@ import {mountSkirmishMenu} from './skirmish-menu.js?v=native13';
 import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regional10';
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
-import {loadNativeHud} from './original-hud.js?v=native65';
-import {loadOriginalModels} from './original-renderer.js?v=native64';
+import {loadNativeHud} from './original-hud.js?v=native66';
+import {loadOriginalModels} from './original-renderer.js?v=native66';
 import {loadKingOfTheHillPresentation} from './original-koth.js?v=native64-koth';
 import {loadWonderPresentation} from './original-wonders.js?v=native63';
 import {loadWonderScaffold} from './original-wonder-scaffold.js?v=native63';
@@ -29,6 +29,7 @@ import {loadDiversionPresentation} from './original-diversion-presentation.js?v=
 import {createDiversionShimmerFrames} from './original-diversion-shimmer.js?v=native62';
 import {loadHeavyMounted3Presentation} from './original-heavy-mounted3.js?v=native62';
 import {loadArtemisPresentation} from './original-artemis.js?v=native62';
+import {createGuidedHercAttack} from './guided-herc-attack.js?v=native66';
 import {loadCrownLeaderPresentation} from './original-crown-leaders.js?v=native60';
 import {loadUngarrisonArt,ungarrisonIcon} from './original-ungarrison.js?v=native60';
 import {loadLeaderCursors,loadImperialismBadge} from './original-leader-cursors.js?v=native63';
@@ -44,8 +45,8 @@ import {mountOriginalGameOptions} from './original-game-options.js?v=native37';
 import {mountOriginalGameSettings} from './original-game-settings.js?v=native38audio';
 import {createRenderActorMetadata} from './render-actor-metadata.js?v=pack8';
 import {createPackRenderMetadata} from './original-pack-states.js?v=pack8';
-import {createFullmapPipBridge} from './original-fullmap-pip-bridge.js';
-import {loadOriginalGround,sampleGroundHeight} from './original-ground.js?v=native61';
+import {createFullmapPipBridge} from './original-fullmap-pip-bridge.js?v=native66';
+import {loadOriginalGround,sampleGroundHeight} from './original-ground.js?v=native66';
 import {createCaptureGlow} from './capture-glow.js?v=native64-koth';
 import {loadOriginalTerrain} from './original-terrain.js?v=skirmish-climates';
 import {loadOriginalWater} from './original-water.js?v=water-farm3';
@@ -53,7 +54,7 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=clock38';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native65';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native66';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
@@ -61,10 +62,11 @@ import {createSourceRoundCarrier, selectedRoundTripMilliseconds} from './source-
 import {mountSourceRosterLobby} from './source-network-lobby.js?v=native58';
 import {applyNetworkCheckpoint} from './source-network-resume.js?v=native58';
 import {createFullscreenController} from './fullscreen.js?v=building2';
-import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native65';
+import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native66';
 import {bindCrownVictoryMenu,readCrownVictoryHud,CROWN_VICTORY_COUNT} from './crown-victory-ui.js?v=native65';
+import {bindCapitolsMenu,readCapitolHud} from './capitols-menu.js?v=native66';
 import {bindKothMenu,formatKothStatus} from './koth-menu.js?v=native64-koth';
-import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=native61';
+import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=native66';
 import {updateOriginalCamera,originalCameraRay,originalFractionForZoom,normalizeOriginalHeading,rotateOriginalCameraHeading} from './original-camera.js?v=heading2';
 import {updateAuthoredCamera} from './authored-camera-axis.js';
 import {createFullmap} from './fullmap.js?v=native64-koth';
@@ -77,7 +79,7 @@ import {loadSpyCommandArt,loadSpyAdvancedCommandArt} from './original-spy-comman
 import {createSpyShimmerFrames} from './original-spy-shimmer.js?v=native-spy';
 import {createSpyExtractionTimer} from './spy-extraction-renderer.js?v=native-spy';
 import {loadPriestEffects} from './original-priest-fx.js?v=native45';
-import {loadGuidedImpactEffects} from './guided-herc-impact.js?v=native65';
+import {guidedImpactInside,loadGuidedImpactEffects} from './guided-herc-impact.js?v=native66';
 import {loadOriginalPriestParticles} from './original-priest-particles.js?v=native47';
 import {loadBlessGroundGlow} from './priest-ground-glow.js?v=native58';
 import {loadAirCrownGlow} from './crown-air-glow.js?v=native58';
@@ -154,7 +156,7 @@ const valleyRequested=rulesProfile.id==='up15'&&(!!valleyManifest||['1','archive
 try{
   if(valleyRequested){
     const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley75_commit','valley71_force_attack_at','valley71_neutral_opening']:rulesProfile.requiredExports;
-    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native65-valley'};
+    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native66-valley'};
     try{wasm=await loadRulesWasm(previewRules,import.meta.url);}catch{/* The ordinary ruleset remains available. */}
   }
   wasm??=await loadRulesWasm(rulesProfile,import.meta.url);
@@ -557,16 +559,26 @@ mountSkirmishMenu($('menu'), {enabled:rulesProfile.ruleset===2, originalArt:orig
 const victoryOptions=$('sk-victory-options');
 victoryOptions.hidden=rulesProfile.id!=='up15';
 const victoryCondition=$('sk-victory-condition');
+const hotspotAvailable=rulesProfile.id==='up15'&&typeof wasm.configure_match_hotspots==='function'&&typeof wasm.hotspot_point==='function';
+const hotspotOption=victoryCondition.querySelector('option[value="hotspots"]');
+hotspotOption.hidden=hotspotOption.disabled=!hotspotAvailable;
+const hotspotXY=()=>wasm.hotspot_status?.(0,0)===1?[wasm.hotspot_point(0,0),wasm.hotspot_point(0,1)]:null;
 const kothDefinition=rulesProfile.id==='up15'?wasm.koth_definition?.():undefined;
 const kothMenu=bindKothMenu({victoryCondition,durationRow:$('sk-koth-victory'),duration:$('sk-koth-duration'),
   enabled:kothDefinition!==undefined&&typeof wasm.configure_match_koth==='function'&&typeof wasm.init_hill_world==='function'});
 const crownVictoryMenu=bindCrownVictoryMenu({victoryCondition,countRow:$('sk-crown-count-victory'),
   count:$('sk-crown-count'),durationRow:$('sk-crown-time-victory'),duration:$('sk-crown-time'),
   enabled:rulesProfile.id==='up15'&&typeof wasm.configure_match_crown_victory==='function'&&typeof wasm.crown_victory_status==='function'});
+const capitolsMenu=bindCapitolsMenu({victory:victoryCondition,durationRow:$('sk-capitols-victory'),
+  duration:$('sk-capitols-duration'),enabled:rulesProfile.id==='up15'&&typeof wasm.configure_match_capitols==='function'
+    &&typeof wasm.capitol_status==='function'});
 function updateVictoryOptions(){
   const koth=kothMenu.update(), crowns=crownVictoryMenu.update({locked:victoryCondition.disabled});
+  const hotspots=hotspotAvailable&&!victoryCondition.disabled&&victoryCondition.value==='hotspots';
   $('sk-territory-victory').hidden=victoryOptions.hidden||victoryCondition.value!=='territory';
-  $('sk-sole-victory').hidden=victoryOptions.hidden||victoryCondition.value==='territory'||koth||crowns;
+  $('sk-hotspot-victory').hidden=!hotspots;
+  const capitols=capitolsMenu.update({locked:victoryCondition.disabled});
+  $('sk-sole-victory').hidden=victoryOptions.hidden||victoryCondition.value==='territory'||koth||crowns||hotspots||capitols===6;
 }
 victoryCondition.addEventListener('change',updateVictoryOptions);
 updateVictoryOptions();
@@ -598,7 +610,12 @@ const [tradePresentation,tradeRouteArt,tradeWaitArt,fighterBomberPresentation,ca
   loadHeavyMounted3Presentation({enabled:originalEnabled,definition:heavyMounted3Id}),
   loadArtemisPresentation({enabled:originalEnabled&&rulesProfile.ruleset===2}),
 ]);
-const airFlightAudio=addCarrierFlightAudio(aircraftFlightAudio,wasm.air_audio_version?.()===1?carrierPresentation?.movementAudio:null);
+const hercAttack=originalEnabled&&Number.isInteger(heavyMounted3Id)&&
+  ['guided_herc_attack_prepare','guided_herc_attack_ptr','guided_herc_attack_shot_at'].every(name=>typeof wasm[name]==='function')
+  ?createGuidedHercAttack(wasm,heavyMounted3Id,{soundReady:sfx.airFlightEffectReady,
+    play:(event,x,y,z)=>sfx.playAirFlightEffect(event,x,y,z,view)}):null;
+const airFlightAudio=addCarrierFlightAudio(
+  addCarrierFlightAudio(aircraftFlightAudio,wasm.air_audio_version?.()===1?carrierPresentation?.movementAudio:null),hercAttack?.audio);
 const takeoffSample={tick:0,alpha:0,now:null};
 const takeoffStartTick=handle=>wasm.air_takeoff_start_tick(handle)>>>0;
 const takeoffStartSeconds=handle=>wasm.air_takeoff_start_seconds?.(handle)??-1;
@@ -673,6 +690,7 @@ const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,to
   spyShimmerForActor:spyShimmer?actor=>spyShimmer.sample(actor,wasm.spy_disguised(actor.handle)===1):null,
   diversionShimmerForActor:diversionShimmer?(actor,visual)=>diversionShimmer.sample(actor,visual,wasm.leader_diversion_visual(actor.handle)===1):null,
   sourceVisualForModel:blessGround?.modelVisual,priestParticleScales:!!priestParticles,rallyTargetTags:airMissionFlag?.targetTags,
+  hercAttack,
   airTakeoff,takeoffElapsedForActor:airTakeoff?actor=>{
     if(takeoffSample.now===null)return takeoffElapsed(takeoffSample.tick,takeoffSample.alpha,takeoffStartTick(actor.handle));
     const start=takeoffStartSeconds(actor.handle);
@@ -689,7 +707,7 @@ sfx.configureOriginalDefinitions({wasm,bindings:[...(originalModels.manifest?.mo
 const captureGlow = originalEnabled && typeof wasm.active_capture_glow === 'function'
   ? createCaptureGlow({kothDefinition:kothPresentation?kothDefinition:undefined}) : null;
 const originalGround=await loadOriginalGround(gl,originalEnabled,{assetMapping,captureGlow:!!captureGlow,blessGlow:!!blessGround,wonderPresentation,
-  extractionDecal:spyArt?.extractionVisuals.decal.url,mixedGlow:spyAdvancedArt?.mixedGlow,...(rulesProfile.ruleset===2
+  extractionDecal:spyArt?.extractionVisuals.decal.url,mixedGlow:spyAdvancedArt?.mixedGlow,hotspotMarker:hotspotAvailable,...(rulesProfile.ruleset===2
   ?{manifestURL:'./local-original/regional-temple/ground-decals.json'}:{})});
 const originalTerrain=await loadOriginalTerrain(gl,originalEnabled,TEAM,{climateProfiles});
 originalTerrain.setLightingContext?.(originalModels.lighting);
@@ -747,7 +765,7 @@ if(valleyNormal&&valleyPreview?.authoredAvailable){
   $('valley-archive-qa-note').textContent += ' Wähle im Test mit Umschalt+A den Angriff. Klicke mit Alt+Linksklick auf den sichtbaren gegnerischen Bürger.';
 }
 const valleyFixedControls=new Map();
-let valleyPreviousKothDuration=null,valleyPreviousCrown;
+let valleyPreviousKothDuration=null,valleyPreviousCrown,valleyPreviousCapitols;
 const valleyPresetValues={nai:'1','pop-limit':'250',supplies:'0','start-epoch':'0','end-epoch':String(wasm.epoch_count()-1),
   'map-climate':'0','season-start':'6','season-length':'5','initial-ceasefire':'0','sk-victory-condition':'conquest',
   'civilization-0':'4','civilization-1':'8'};
@@ -759,6 +777,7 @@ valleyMapChoice.onchange=()=>{
   if(selected&&!valleyFixedControls.size){
     valleyPreviousKothDuration=kothMenu.readMinutes();
     valleyPreviousCrown=crownVictoryMenu.read();
+    valleyPreviousCapitols=capitolsMenu.read();
     const ids=['seed','nai','pop-limit','supplies','start-epoch','end-epoch','map-climate','season-cycle','season-start',
       'season-length','sk-victory-condition','sk-sole-survivor','sk-territory-percent',
       'disable-crowns','initial-ceasefire','source-solo-clock','source-adaptive-clock','mpopen'];
@@ -789,6 +808,10 @@ valleyMapChoice.onchange=()=>{
     const field=valleyPreviousCrown.mode===CROWN_VICTORY_COUNT?'sk-crown-count':'sk-crown-time';
     $(field).value=String(valleyPreviousCrown.target);
     valleyPreviousCrown=undefined;
+  }
+  if(!selected&&valleyPreviousCapitols){
+    $('sk-capitols-duration').value=String(valleyPreviousCapitols.minutes);
+    valleyPreviousCapitols=undefined;
   }
   if(valleyNormal&&window.openepoch)void refreshContinue();
 };
@@ -1275,6 +1298,7 @@ function begin(tempo = null, useSourceClock = wasm.sim_clock_active?.() === 1, a
   takeoffAudio?.reset();
   sfx.resetAirFlightAudio();
   sfx.resetGuidedImpact();
+  hercAttack?.reset(wasm.sim_elapsed_seconds());
   guidedImpactFX?.reset(wasm.sim_elapsed_seconds());
   sfx.resetWorldAmbience();
   ambientCoverage=ambientPresentation&&!bench&&wasm.terrain_types_len?.()===MAP*MAP
@@ -1343,7 +1367,10 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
   const kothMinutes=originalSkirmish&&victoryMode==='koth'?kothMenu.readMinutes():undefined;
   if(kothMinutes===null){toast('Wähle 2, 5 oder 10 Minuten für Herr des Hügels.');return;}
   const crownVictory=originalSkirmish?crownVictoryMenu.read():undefined;
+  const hotspots=originalSkirmish&&hotspotAvailable&&victoryMode==='hotspots'?+$('sk-hotspot-count').value:undefined;
   if(crownVictory===null){toast('Wähle ein gültiges Ziel für den Kronensieg.');return;}
+  const capitols=originalSkirmish?capitolsMenu.read():undefined;
+  if(capitols===null){toast('Wähle 2, 5 oder 10 Minuten für die Rückeroberung.');return;}
   restartPoint=null;
   bench = benchUnits;
   seasonSession.configure(menuSeasonSettings(),benchUnits?0:menuClimate());
@@ -1362,9 +1389,11 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
     const territoryPercent=originalSkirmish&&victoryMode==='territory'
       ? +$('sk-territory-percent').value : undefined;
     const regicide=originalSkirmish&&victoryMode==='regicide';
-    const soleSurvivor=originalSkirmish&&(victoryMode==='conquest'||regicide)&&$('sk-sole-survivor').checked;
-    applyMatchSettings(wasm,{...resolvedSkirmishChoices(civilizationSetup.choices(),players),
-      popLimit:+$('pop-limit').value,supplies:+$('supplies').value,territoryPercent,regicide,soleSurvivor,kothMinutes,crownVictory},players);
+    const soleSurvivor=originalSkirmish&&(victoryMode==='conquest'||regicide||capitols?.mode===5)&&$('sk-sole-survivor').checked;
+    try {
+      applyMatchSettings(wasm,{...resolvedSkirmishChoices(civilizationSetup.choices(),players),
+        popLimit:+$('pop-limit').value,supplies:+$('supplies').value,territoryPercent,regicide,soleSurvivor,kothMinutes,crownVictory,capitols,hotspots},players);
+    } catch(error) { toast(error.message); return; }
   }else if(!benchUnits&&humans===1){
     wasm.skirmish_setup(+$('pop-limit').value, +$('supplies').value);
     if(referenceMode)wasm.skirmish_epoch(+$('start-epoch').value);
@@ -1433,6 +1462,7 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
   const source = soloOriginal && $('source-solo-clock').checked;
   const adaptive = source && supportsAdaptiveSoloClock && $('source-adaptive-clock').checked;
   begin(soloOriginal ? startingTempo(menuTempo()) : null, source, adaptive ? 30 : 0);
+  if(hotspots===1)toast('Ein Krisenherd wurde entdeckt!');
   if(originalTempo){
     const bytes=worldSaveBytes();
     if(bytes)restartPoint={bytes,cam:{...cam},...(sourceSoloClock ? {sourceSoloClock:true} : {}),
@@ -1615,6 +1645,7 @@ function advance(dt, now) {
   if (n) {
     const ev = f32(wasm.events_ptr(), n);
     for (let i = 0; i < n; i += 3) {
+      if(hercAttack?.ready(wasm.guided_herc_attack_shot_at(i/3)>>>0))continue;
       const shot=airFlightAudio||referenceMode ? wasm.air_audio_shot_at?.(i/3)>>>0 : 0;
       if(airFlightAudio&&shot&&sfx.airFlightAttackHandled(shot&0xffff,shot>>>16,wasm.air_audio_shot_duration(i/3)))continue;
       const kind = ev[i], x = ev[i + 1], y = ev[i + 2];
@@ -1653,10 +1684,12 @@ function advance(dt, now) {
   }
   if(impacts){
     const rows=f32(wasm.guided_herc_impact_ptr(),impacts*4);
+    const pipVP=guidedImpactFX&&fullmapPip.admissionProjection();
     for(let i=0;i<rows.length;i+=4){
       const x=rows[i],y=rows[i+1],z=rows[i+2];
       sfx.playGuidedImpact(x,y,z,view);
-      guidedImpactFX?.spawn(x,y,z);
+      if(guidedImpactFX&&(guidedImpactInside(view.vp,x,y,z)||guidedImpactInside(pipVP,x,y,z)))
+        guidedImpactFX.spawn(x,y,z);
     }
   }
   if(n||impacts)wasm.events_clear();
@@ -1975,6 +2008,7 @@ function frame(now) {
     running:!paused&&!document.hidden&&!(net&&net.ls.waiting)});
   if(airFlightAudio)sfx.frameAirFlightAudio({...readAirFlightAudio(wasm,alpha),world:wasm.render_meta_session(),view,
     running:!paused&&!document.hidden&&!(net&&net.ls.waiting)});
+  hercAttack?.update(wasm.sim_elapsed_seconds(),!paused&&!document.hidden);
   let mission=null;
   if(airMissionFlag){
     const draft=airMission?.active()?airMission.preview(mouse.inside&&document.elementFromPoint(mouse.x,mouse.y)===canvas?toWorld(mouse.x,mouse.y):null):null;
@@ -2083,6 +2117,8 @@ function frame(now) {
     canvas.dataset.rallyHeal=String(priestDraws.rallyDraws);
   }
   drawAirMissionFlags(view.vp,actorMetadata,mission);
+  const hotspotDraws=originalGround.drawHotspot({vp:view.vp,xy:hotspotXY()});
+  if(qaMode)canvas.dataset.hotspotDraws=String(hotspotDraws);
   carrierGarrisonFlag?.draw({vp:view.vp,actors:actorMetadata?.actors,epochs:renderEpochs,local:ui?.local});
 
   if (n) {
@@ -2173,10 +2209,25 @@ function updateUi(drawn, now) {
   kothStatus.textContent=kothStatus.hidden?'':formatKothStatus(hillPlayerName(hillHolder),wasm.koth_status(3),
     kothPresentation?.label('tx_ig_koth_status')??undefined);
   const showVictoryStatus=!ui.win&&!fullmap?.isOpen();
-  const crowns=showVictoryStatus?readCrownVictoryHud(wasm,ui.diplomacy?.players,ui.local):null;
-  crownVictoryRows.update(crowns);
-  $('crown-victory-hud').hidden=!crowns||typeof nativeHud.updateVictoryStatus==='function';
-  nativeHud.updateVictoryStatus?.(wasm.koth_status?.(0)===1&&showVictoryStatus,crowns?.caption??null);
+  const players=ui.diplomacy?.players;
+  const objective=showVictoryStatus?(readCapitolHud(wasm,players,ui.local,sole?.seconds)
+    ??readCrownVictoryHud(wasm,players,ui.local)):null;
+  crownVictoryRows.update(objective);
+  const objectiveFallback=$('crown-victory-hud');
+  objectiveFallback.hidden=!objective||typeof nativeHud.updateVictoryStatus==='function';
+  if(!objectiveFallback.hidden){
+    objectiveFallback.firstElementChild.textContent=objective.caption;
+    objectiveFallback.setAttribute('aria-label',objective.caption);
+  }
+  const hotspotRows=$('hotspot-status-rows'), hotspotStatus=showVictoryStatus&&!!hotspotXY();
+  hotspotRows.hidden=!hotspotStatus;
+  $('hotspot-status-hud').hidden=!hotspotStatus||typeof nativeHud.updateVictoryStatus==='function';
+  if(hotspotStatus){
+    const text=[`Entdeckte Krisenherde: ${wasm.hotspot_status(1,0)}/1`,...(ui.diplomacy?.players??[])
+      .map((player,seat)=>`${hillPlayerName(seat)}: ${wasm.hotspot_status(2,seat)}`)].join('\n');
+    if(hotspotRows.textContent!==text)hotspotRows.textContent=text;
+  }
+  nativeHud.updateVictoryStatus?.(wasm.koth_status?.(0)===1&&showVictoryStatus,objective?.caption??null,hotspotStatus);
   $('idle').textContent = `Freie Bürger: ${ui.idle}`;
   $('idle').style.visibility = ui.idle && !bench ? 'visible' : 'hidden';
   let status = `${Math.round(1000 / frameMs)} fps · worst ${worstMs.toFixed(0)} ms · sim ${simMs.toFixed(2)} ms/tick · ${ui.n} entities · ${drawn} drawn`;
@@ -2198,7 +2249,9 @@ function updateUi(drawn, now) {
   if (!s.n) info.innerHTML = bench ? '<h3>Stress test</h3><span class="dim">Two armies are kept at full strength and thrown at each other. Zoom and pan freely; you can still select and command the blue side.</span>'
     : `<span class="dim">Keine Einheit ausgewählt</span>${ui.techs.length ? '<div class="types">' + ui.techs.map(t => `<span>${t}</span>`).join('') + '</div>' : ''}`;
   else {
-    let h = `<h3>${s.n > 1 && s.types.length > 1 ? s.n + ' Einheiten' : escapeLabelHtml(label(s.name,s.def,s.n)) + (s.n > 1 ? ' ×' + s.n : '')}</h3>`;
+    const selectedCapitol=s.n===1&&s.def===0&&wasm.capitol_status?.(0,0)>0&&
+      [0,1,2,3].some(seat=>wasm.capitol_status(4,seat)===wasm.selected_actor_handle());
+    let h = `<h3>${s.n > 1 && s.types.length > 1 ? s.n + ' Einheiten' : escapeLabelHtml(label(s.name,s.def,s.n)+(selectedCapitol?' (Kapitol)':'')) + (s.n > 1 ? ' ×' + s.n : '')}</h3>`;
     if (s.n === 1) {
       h += `<div class="hp"><i style="width:${100 * s.hp / s.max}%"></i></div>${s.hp} / ${s.max} HP`;
       if (powerRead&&!bench&&!ui.win) {
@@ -2417,6 +2470,10 @@ function drawMini() {
   if(mini.width!==width||mini.height!==height){mini.width=width;mini.height=height;mini.style.objectFit=valleyWorld?'contain':'';}
   const pixels=valleyWorld?valleyMinimapSnapshot(wasm,valleyWorld):new Uint8ClampedArray(wasm.memory.buffer,wasm.minimap(),MAP*MAP*4);
   mctx.putImageData(new ImageData(pixels,width,height),0,0);
+  const hotspot=hotspotXY();
+  if(hotspot){
+    mctx.strokeStyle='#ffe389';mctx.lineWidth=2;mctx.beginPath();mctx.arc(hotspot[0],hotspot[1],4,0,2*Math.PI);mctx.stroke();
+  }
   const c = corners();
   mctx.strokeStyle = '#fff'; mctx.lineWidth = 1.5; mctx.beginPath();
   c.forEach((q, i) => i ? mctx.lineTo(q[0], q[1]) : mctx.moveTo(q[0], q[1]));
@@ -2911,6 +2968,8 @@ function toMenu() {
   nativeHud.updateVictoryStatus?.(false);
   crownVictoryRows.update(null);
   $('crown-victory-hud').hidden=true;
+  $('hotspot-status-hud').hidden=true;
+  $('hotspot-status-rows').hidden=true;
   playerFlare.reset(0);
   battleFlare?.reset(false);
   $('player-flare-button').hidden=true;

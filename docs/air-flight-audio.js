@@ -82,7 +82,7 @@ export function readAirFlightAudio(wasm,alpha){
 }
 
 // 005FDF10 folds the whole delta and submits at most the old tail and new head.
-function advanceText(clock,delta,period,mode,keys,emit){
+export function advanceText(clock,delta,period,mode,keys,emit){
   const next=Math.fround(clock+delta);
   const scan=(first,last)=>{
     for(const key of keys)if(first<=key.time&&key.time<last)emit(key);
@@ -271,5 +271,5 @@ export function createAirFlightPlayback({presentation,context,destination,mix,fe
     const keys=presentation.row(definition,epoch)?.states.attack1?.keys.filter(key=>key.type==='PLAY_SOUND');
     return !!keys?.length&&keys.every(key=>key.time<duration&&buffers.has(key.event));
   }
-  return {ready,frame,reset,hasEvent:name=>buffers.has(name),handlesAttack};
+  return {ready,frame,reset,hasEvent:name=>buffers.has(name),handlesAttack,oneShot};
 }

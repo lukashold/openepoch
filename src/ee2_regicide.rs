@@ -123,7 +123,7 @@ impl Game {
         let mut won = false;
         if allied {
             if rule.sole && survivors.count_ones() > 1 {
-                self.poll_sole_disband(&mut rule.state, candidates);
+                self.poll_sole_disband(&mut rule.state, candidates, crate::ai9_count::Precision53::NearestEven);
             } else {
                 won = true;
             }

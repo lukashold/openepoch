@@ -4,7 +4,7 @@ import { createOriginalAudio } from './original-audio.js?v=native65-herc';
 import {ORIGINAL_AUDIO_DEFAULTS,originalAudioLevel,originalAudioGain} from './original-audio-levels.js?v=native38audio';
 import {originalOneShotAudible,originalLoopAudible,originalSpatialMix} from './original-spatial-audio.js?v=native39audio';
 import {createPresentationRandom} from './source-music-controller.js?v=regional11';
-import {createAirFlightPlayback} from './air-flight-audio.js?v=native65-herc';
+import {createAirFlightPlayback} from './air-flight-audio.js?v=native66';
 import {takeoffSpatialMix} from './air-takeoff.js?v=native40clock';
 const presentationRandom = createPresentationRandom(1);
 const originals=createOriginalAudio({presentationRandom});
@@ -57,6 +57,12 @@ export function airFlightAttackHandled(definition,epoch,duration) {
   return airFlightPlayback?.handlesAttack(definition,epoch,duration)??false;
 }
 export function resetAirFlightAudio() { airFlightPlayback?.reset(); }
+export function airFlightEffectReady(name) {
+  return ctx?.state==='running'&&airFlightPlayback?.hasEvent(name)===true;
+}
+export function playAirFlightEffect(name,x,y,z,view) {
+  if(!muted)airFlightPlayback?.oneShot(name,originalSpatialMix(view,x,y,z));
+}
 export function configureGuidedImpact(enabled){ originals.bindGuidedImpact(enabled?GUIDED_HERC_IMPACT:null); }
 export function resetGuidedImpact(){ originals.resetGuidedImpact(); }
 export function playGuidedImpact(x,y,z,view){

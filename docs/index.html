@@ -31,6 +31,9 @@
   #bottom { position:fixed; left:0; right:0; bottom:0; height:170px; display:flex; gap:10px; padding:8px; background:var(--panel); border-top:1px solid var(--line); }
   #crown-victory-hud {position:absolute;left:0;top:0;transform:translateY(-100%);padding:6px 10px;border:1px solid var(--line);background:#202020e8;color:white;max-width:100vw;}
   #crown-victory-hud[hidden], #crown-victory-rows[hidden] {display:none;}
+  #hotspot-status-hud {position:absolute;left:8px;bottom:156px;padding:6px 10px;border:1px solid var(--line);background:#202020e8;color:white;}
+  #hotspot-status-hud[hidden],#hotspot-status-rows[hidden] {display:none;}
+  #hotspot-status-rows {padding:4px 0;min-width:185px;white-space:pre-line;}
   .crown-victory-row {display:flex;align-items:center;gap:8px;min-height:var(--crown-status-icon,32px);white-space:normal;}
   .crown-victory-row[data-local] {font-weight:bold;}
   .crown-victory-row .crown-victory-icon {flex:none;width:var(--crown-status-icon,32px);height:var(--crown-status-icon,32px);background:center/100% 100% no-repeat;text-align:center;}
@@ -233,6 +236,9 @@
   <section id="crown-victory-hud" aria-label="Kronen-Status" hidden>
     <div>Kronen-Status</div><div id="crown-victory-rows"></div>
   </section>
+  <section id="hotspot-status-hud" aria-label="Krisenherde-Status" hidden>
+    <div>Krisenherde-Status</div><div id="hotspot-status-rows"></div>
+  </section>
 </div>
 <dialog id="fullmap" aria-labelledby="fullmap-title">
   <canvas aria-label="Weltkarte"></canvas>
@@ -391,11 +397,13 @@
       </div>
       <section id="sk-game" class="skirmish-pane">
         <div id="sk-victory-options" hidden>
-          <div class="row"><label for="sk-victory-condition">Siegbedingung</label><select id="sk-victory-condition"><option value="conquest">Eroberung</option><option value="crowns-count" hidden disabled>Kronen (Anzahl)</option><option value="crowns-time" hidden disabled>Kronen (Zeit)</option><option value="koth" hidden disabled>Herr des Hügels</option><option value="regicide">Königsmord</option><option value="territory">Territorienkontrolle</option></select></div>
+          <div class="row"><label for="sk-victory-condition">Siegbedingung</label><select id="sk-victory-condition"><option value="conquest">Eroberung</option><option value="crowns-count" hidden disabled>Kronen (Anzahl)</option><option value="crowns-time" hidden disabled>Kronen (Zeit)</option><option value="koth" hidden disabled>Herr des Hügels</option><option value="capitols" hidden disabled>Kapitole</option><option value="allied-capitols" hidden disabled>Verb. Kapitole</option><option value="regicide">Königsmord</option><option value="hotspots" hidden disabled>Krisenherde</option><option value="territory">Territorienkontrolle</option></select></div>
           <div id="sk-sole-victory"><div class="row"><label for="sk-sole-survivor">Einziger Überlebender</label><input id="sk-sole-survivor" type="checkbox" checked></div></div>
           <div id="sk-crown-count-victory" hidden><div class="row"><label for="sk-crown-count">Anzahl Kronen:</label><select id="sk-crown-count" disabled><option value="2">2</option><option value="3" selected>3</option></select></div></div>
           <div id="sk-crown-time-victory" hidden><div class="row"><label for="sk-crown-time">Dauer (Minuten):</label><select id="sk-crown-time" disabled><option value="10" selected>10</option><option value="15">15</option><option value="20">20</option><option value="25">25</option><option value="30">30</option></select></div></div>
+          <div id="sk-capitols-victory" hidden><div class="row"><label for="sk-capitols-duration">Dauer (Minuten):</label><select id="sk-capitols-duration" disabled><option value="2">2</option><option value="5">5</option><option value="10" selected>10</option></select></div></div>
           <div id="sk-koth-victory" hidden><div class="row"><label for="sk-koth-duration">Dauer (Minuten):</label><select id="sk-koth-duration" disabled><option value="2">2</option><option value="5">5</option><option value="10" selected>10</option></select></div></div>
+          <div id="sk-hotspot-victory" hidden><div class="row"><label for="sk-hotspot-count">Anz. Krisenherde:</label><select id="sk-hotspot-count"><option value="1">1</option></select></div></div>
           <div id="sk-territory-victory" hidden><div class="row"><label for="sk-territory-percent">Zielanteil der Territorien</label><select id="sk-territory-percent"><option value="30">30 %</option><option value="40">40 %</option><option value="50" selected>50 %</option><option value="60">60 %</option><option value="70">70 %</option><option value="80">80 %</option><option value="90">90 %</option></select></div></div>
         </div>
         <div class="row"><label for="pop-limit">Bevölkerung</label><select id="pop-limit"><option value="250">250 pro Spieler</option><option value="500" selected>500 pro Spieler</option><option value="1000">1 000 pro Spieler</option></select></div>
@@ -574,6 +582,6 @@
 </aside>
 <div id="trade-route-caption" hidden role="status"></div>
 <div id="air-mission-caption" hidden role="status"></div>
-<script type="module" src="main.js?v=native65"></script>
+<script type="module" src="main.js?v=native66"></script>
 </body>
 </html>
