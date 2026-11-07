@@ -33,6 +33,8 @@ pub const C_PLACE_ROTATED:u8=16;
 #[cfg(feature="ee2-native13")]pub(crate) const C_SOLO_RESIGN:u8=21;
 #[cfg(feature="ee2-native13")]pub(crate) const C_NET_RESIGN:u8=22;
 #[cfg(feature="ee2-native13")]pub(crate) const C_BLESS:u8=23;
+#[cfg(feature="ee2-native13")]pub(crate) const C_GATHER_INTEL:u8=24;
+#[cfg(feature="ee2-native13")]pub(crate) const C_EXTRACTION:u8=25;
 #[cfg(feature="ee2-native13")]pub(crate) const SOLO_RESIGN_SAVE_FLAG:u32=1<<11;
 
 const HEAD: usize = 14; // kind, count, a, b, c
@@ -211,6 +213,16 @@ impl Game {
             }
             C_CANCEL => {
                 if let Some(&i) = ids.first() {
+                    #[cfg(feature = "ee2-native13")]
+                    if !self.net && c == crate::spy46_defs::SPY as i32 {
+                        if a == 0.0 && b == 0.0 && self.ents[i].def == UNIVERSITY {
+                            let host = &self.ents[i];
+                            if let Some(position) = host.q[..host.qn as usize].iter().rposition(|&job| job == c as QueueItem) {
+                                self.cancel_paid_job(i, position);
+                            }
+                        }
+                        return;
+                    }
                     self.cancel(i);
                 }
             }
@@ -231,12 +243,32 @@ impl Game {
                     if let Some(target) = self.get(c as u32) { self.order_bless(&ids, target); }
                 }
             }
+            #[cfg(feature = "ee2-native13")]
+            C_GATHER_INTEL => {
+                if !self.net && a == 0.0 && b == 0.0 {
+                    if let Some(target) = target.filter(|&target| self.spy_intel_target(team, target)) {
+                        self.order_spy_intel(&ids, target);
+                    }
+                }
+            }
+            #[cfg(feature = "ee2-native13")]
+            C_EXTRACTION => {
+                if !self.net && (c == 1 || c == 0 && a == 0.0 && b == 0.0) {
+                    for &index in &ids {
+                        self.order_spy_extraction(index, (c == 1).then_some((a, b)));
+                    }
+                }
+            }
             _ => {}
         }
         #[cfg(feature = "ee2-native13")]
         self.reconcile_capture_orders();
         #[cfg(feature = "ee2-native13")]
         self.reconcile_bless_casts();
+        #[cfg(feature = "ee2-native13")]
+        self.reconcile_spy_intel();
+        #[cfg(feature = "ee2-native13")]
+        self.reconcile_spy_extraction();
         #[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
         self.recount_paid_players();
     }

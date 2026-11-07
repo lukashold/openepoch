@@ -15,6 +15,15 @@ pub(crate) use capture25::split_capture_save;
 #[path = "bless42.rs"]
 pub(crate) mod bless42;
 #[cfg(feature = "ee2-native13")]
+#[path = "spy_intel46.rs"]
+pub(crate) mod spy_intel46;
+#[cfg(feature = "ee2-native13")]
+#[path = "spy_disguise46.rs"]
+mod spy_disguise46;
+#[cfg(feature = "ee2-native13")]
+#[path = "spy_extraction46.rs"]
+pub(crate) mod spy_extraction46;
+#[cfg(feature = "ee2-native13")]
 #[path = "trade30.rs"]
 pub(crate) mod trade30;
 #[cfg(all(test,feature="ee2-reference"))]
@@ -46,6 +55,8 @@ pub const O_CAPTURE: u8 = 8;
 pub(crate) const O_RENDEZVOUS: u8 = 9;
 #[cfg(feature = "ee2-native13")]
 pub(crate) const O_BLESS: u8 = 10;
+#[cfg(feature = "ee2-native13")]
+pub(crate) const O_GATHER_INTEL: u8 = 11;
 /// Marker in `Ent::stuck`: the unit walked onto a transport, remove it without an explosion.
 const BOARDED: u8 = 255;
 
@@ -328,6 +339,12 @@ pub struct Game {
     pub(crate) powers: Option<crate::power42::PowerState>,
     #[cfg(feature = "ee2-native13")]
     pub(crate) bless: bless42::BlessState,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) spy_intel: spy_intel46::IntelState,
+    #[cfg(feature = "ee2-native13")]
+    spy_disguise: spy_disguise46::SpyDisguise,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) spy_extraction: spy_extraction46::Extraction,
     // ---- not part of the deterministic simulation state ----
     /// Which player this client controls and sees through.
     pub local: u8,
@@ -490,6 +507,12 @@ impl Game {
             #[cfg(feature = "ee2-native13")]
             bless: bless42::BlessState::default(),
             #[cfg(feature = "ee2-native13")]
+            spy_intel: spy_intel46::IntelState::default(),
+            #[cfg(feature = "ee2-native13")]
+            spy_disguise: spy_disguise46::SpyDisguise::default(),
+            #[cfg(feature = "ee2-native13")]
+            spy_extraction: spy_extraction46::Extraction::default(),
+            #[cfg(feature = "ee2-native13")]
             priest_effects: Vec::new(),
             net: humans > 1,
             seed0: seed,
@@ -609,6 +632,8 @@ impl Game {
             if let Some(actor) = self.powers.as_ref().and_then(|powers| powers.actor(handle)) {
                 self.retire_bless_actor(handle, actor.serial);
             }
+            self.spy_disguise.retire(handle);
+            self.spy_extraction.retire(handle);
             self.powers.as_mut().unwrap().retire(handle);
         }
         #[cfg(feature = "ee2-native13")]
@@ -659,6 +684,8 @@ impl Game {
         self.free.push(i as u16);
         #[cfg(feature = "ee2-native13")]
         self.reconcile_bless_casts();
+        #[cfg(feature = "ee2-native13")]
+        self.reconcile_spy_intel();
         #[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
         self.recount_paid_players();
     }
@@ -666,6 +693,8 @@ impl Game {
     /// Detection is separate from terrain sight: even a revealed-map start
     /// does not expose undetected stealth units.
     pub fn detected(&self, team:u8, j:usize)->bool {
+        #[cfg(feature = "ee2-native13")]
+        if self.ents[j].team != team && self.spy_disguised(j) { return false; }
         let t=&self.ents[j];if t.team==team||!DEFS[t.def as usize].has(F_STEALTH)||t.reveal_t>0.0||t.revealed>>team&1==1{return true;}
         (0..self.nplayers).any(|p|self.shares_to(p as u8,team)&&(t.team==p as u8||t.revealed>>p&1==1))
     }
@@ -703,6 +732,8 @@ impl Game {
     pub(crate) fn unit_production_available(&self, team: u8, host: DefId, unit: DefId) -> bool {
         #[cfg(feature="ee2-native13")]
         if unit == crate::priest42_defs::PRIEST { return self.powers.is_some() && host == TEMPLE; }
+        #[cfg(feature="ee2-native13")]
+        if unit == crate::spy46_defs::SPY { return self.powers.is_some() && host == UNIVERSITY; }
         #[cfg(feature = "ee2-native13")]
         if !self.air_production_enabled(unit) { return false; }
         #[cfg(feature="ee2-native13")]
@@ -999,7 +1030,9 @@ impl Game {
         let unit_type = &DEFS[unit as usize];
         if unit_type.building || unit_type.dom != LAND { return false; }
         #[cfg(feature = "ee2-native13")]
-        if unit == crate::priest42_defs::PRIEST { return self.priest_can_garrison(unit, host); }
+        if matches!(unit, crate::priest42_defs::PRIEST | crate::spy46_defs::SPY) {
+            return self.power_unit_can_garrison(unit, host);
+        }
         let host_type = &DEFS[host as usize];
         let worker_job = host_type.has(F_RESEARCH|F_EXTRACT|F_DROPOFF);
         (worker_job || host_type.has(F_TRANSPORT|F_GARRISON)) && (!worker_job || unit_type.has(F_WORKER))
@@ -1180,6 +1213,10 @@ impl Game {
         if let Some(powers) = &self.powers { powers.hash(&mut mix); }
         #[cfg(feature = "ee2-native13")]
         self.bless.hash(&mut mix);
+        #[cfg(feature = "ee2-native13")]
+        self.spy_intel.hash(&mut mix);
+        #[cfg(feature = "ee2-native13")]
+        self.spy_extraction.hash(&mut mix);
         #[cfg(feature = "ee2-native13")]
         if self.infantry_roster_enabled { mix(u32::from_le_bytes(*b"INF1")); }
         #[cfg(feature = "ee2-native13")]
@@ -1393,6 +1430,8 @@ impl Game {
         self.tick_capture_state();
         self.map.budget = 4;
         self.build_grid();
+        #[cfg(feature = "ee2-native13")]
+        self.tick_spy_disguise();
         if self.bench==0{self.update_territory_diplomacy();}
         for i in 0..self.high {
             if self.ents[i].alive {
@@ -1400,11 +1439,11 @@ impl Game {
                 if self.trade_hidden(i, &self.ents[i]) || self.air_parked(i, &self.ents[i]) { continue; }
                 self.update_ent(i);
                 #[cfg(feature = "ee2-native13")]
-                self.tick_priest_reserve(i);
+                self.tick_unit_reserve(i);
             }
         }
         #[cfg(feature = "ee2-native13")]
-        self.tick_garrisoned_priest_reserves();
+        self.tick_garrisoned_reserves();
         self.separate();
         self.update_projs();
         let mut k = 0;
@@ -1439,7 +1478,11 @@ impl Game {
         while self.high > 0 && !self.ents[self.high - 1].alive {
             self.high -= 1;
         }
-        if self.tick % 4 == 0 && self.bench == 0 {
+        #[cfg(feature = "ee2-native13")]
+        let intel_changed = self.tick_spy_intel();
+        #[cfg(not(feature = "ee2-native13"))]
+        let intel_changed = false;
+        if (self.tick % 4 == 0 || intel_changed) && self.bench == 0 {
             self.update_fog();
         }
         if self.bench > 0 {
@@ -1475,6 +1518,10 @@ impl Game {
         self.reconcile_capture_orders();
         #[cfg(feature = "ee2-native13")]
         self.reconcile_bless_casts();
+        #[cfg(feature = "ee2-native13")]
+        self.reconcile_spy_intel();
+        #[cfg(feature = "ee2-native13")]
+        self.reconcile_spy_extraction();
     }
 
     #[cfg(feature = "ee2-native13")]
@@ -2358,6 +2405,8 @@ impl Game {
                             e.stuck = 0;
                         }
                     } else if dist < 0.25 {
+                        #[cfg(feature = "ee2-native13")]
+                        self.complete_spy_extraction(i, &mut e);
                         Self::set_idle(&mut e);
                     } else {
                         let (ox, oy) = (e.ox, e.oy);
@@ -2394,6 +2443,12 @@ impl Game {
                 #[cfg(feature = "ee2-native13")]
                 O_BLESS => {
                     let (direction, movement) = self.do_bless(i, &mut e, d);
+                    face = direction;
+                    if let Some(velocity) = movement { want = velocity; moving = true; }
+                }
+                #[cfg(feature = "ee2-native13")]
+                O_GATHER_INTEL => {
+                    let (direction, movement) = self.do_spy_intel(i, &mut e, d);
                     face = direction;
                     if let Some(velocity) = movement { want = velocity; moving = true; }
                 }
@@ -2705,6 +2760,21 @@ impl Game {
         }
     }
 
+    fn paint_unit_sight(visibility: &mut [u8], viewer: u8, unit: &Ent, range: f32) {
+        let (cx, cy) = (unit.x as i32, unit.y as i32);
+        let radius = range as i32;
+        let start = viewer as usize * NN;
+        for dy in -radius..=radius {
+            let y = cy + dy;
+            if y < 0 || y >= N as i32 { continue; }
+            let width = ((range * range - (dy * dy) as f32).max(0.0)).sqrt() as i32;
+            let x0 = (cx - width).max(0) as usize;
+            let x1 = (cx + width).min(N as i32 - 1) as usize;
+            let row = start + y as usize * N;
+            visibility[row + x0..=row + x1].fill(255);
+        }
+    }
+
     pub fn update_fog(&mut self) {
         if self.bench > 0 {
             return;
@@ -2720,23 +2790,11 @@ impl Game {
             }
             #[cfg(feature = "ee2-native13")]
             if self.trade_hidden(_index, e) || self.air_parked(_index, e) { continue; }
-            let r = self.modifiers[e.team as usize][e.def as usize][5];
-            let (cx, cy) = (e.x as i32, e.y as i32);
-            let ri = r as i32;
-            for dy in -ri..=ri {
-                let y = cy + dy;
-                if y < 0 || y >= N as i32 {
-                    continue;
-                }
-                let w = ((r * r - (dy * dy) as f32).max(0.0)).sqrt() as i32;
-                let x0 = (cx - w).max(0) as usize;
-                let x1 = (cx + w).min(N as i32 - 1) as usize;
-                let row = y as usize * N;
-                for v in &mut self.team_vis[e.team as usize*NN+row+x0..=e.team as usize*NN+row+x1] {
-                    *v = 255;
-                }
-            }
+            let range = self.modifiers[e.team as usize][e.def as usize][5];
+            Self::paint_unit_sight(&mut self.team_vis, e.team, e, range);
         }
+        #[cfg(feature = "ee2-native13")]
+        self.paint_spy_intel();
         // Shared exploration is remembered; current unit sight remains a
         // live treaty right and disappears when the agreement ends.
         for donor in 0..self.nplayers{for viewer in 0..self.nplayers{if self.shares_to(donor as u8,viewer as u8){for t in 0..NN{if self.team_vis[donor*NN+t]>0{let v=&mut self.team_vis[viewer*NN+t];*v=(*v).max(128);}}}}}

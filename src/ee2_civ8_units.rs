@@ -523,6 +523,8 @@ pub fn lookup(id:DefId,epoch:u8)->Option<&'static UnitRow>{
 pub fn lookup_class(id:DefId,epoch:u8)->Option<&'static UnitRow>{
  #[cfg(feature="ee2-native13")]
  if id == crate::priest42_defs::PRIEST { return crate::priest42_defs::lookup(epoch); }
+ #[cfg(feature = "ee2-native13")]
+ if id == crate::spy46_defs::SPY { return crate::spy46_defs::lookup(epoch); }
  #[cfg(feature="ee2-native13")]
  if id == crate::carrier36_defs::CARRIER { return crate::carrier36_defs::lookup(epoch); }
  #[cfg(feature="ee2-native13")]

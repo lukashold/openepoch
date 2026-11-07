@@ -163,7 +163,7 @@ impl Game {
         if f64::from(now) - f64::from(started) <= f64::from(CAST_TIME) { return (face, None); }
         let target_serial = self.powers.as_ref().and_then(|state| state.actor(caster.otgt)).map(|record| record.serial);
         if let Some(center) = target_serial {
-            self.spend_priest_reserve(handle, 1.0);
+            self.spend_unit_reserve(handle, 1.0);
             let expires = crate::power42_math::store_toward_zero(f64::from(now) + f64::from(BLESS_TIME));
             self.bless.groups.push(Group { owner: caster.team, center: Some(center), expires,
                 inside: BTreeSet::new(), children: BTreeMap::new() });

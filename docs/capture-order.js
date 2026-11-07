@@ -57,32 +57,36 @@ export function createCaptureOrder({canvas, canOrder, pickTarget, issue, origina
   function decorateButton(button, epoch) {
     const theme = nativeMetaEpoch(epoch);
     const suffix = theme === 1 ? '' : `_e${theme}`;
-    const art = button.ownerDocument.createElement('span');
     const pictures = appearance
       ? ['idle', 'hover', 'pressed'].map(state => appearance.button(theme, state))
       : originalArt && ['icon_unitact_captureBuilding', 'icon_unitact_captureBld_r', 'icon_unitact_captureBld_p']
         .map(name => imageUrl(`packed7/${name}${suffix}.png`));
-    const hasPictures = pictures && pictures.every(Boolean);
-    art.style.cssText = 'display:block;width:44px;height:44px;margin:auto;background:center/contain no-repeat;font-size:29px;line-height:44px';
-    if (!hasPictures) art.textContent = fallback;
-    art.setAttribute('aria-hidden', 'true');
-    button.setAttribute('aria-keyshortcuts', shortcut);
-    let hovered = false, pressed = false;
-    function paint() {
-      button.setAttribute('aria-pressed', String(armed));
-      if (hasPictures) art.style.backgroundImage = pictures[armed || pressed ? 2 : hovered ? 1 : 0];
-    }
-    button.addEventListener('pointerenter', () => { hovered = true; paint(); });
-    button.addEventListener('pointerleave', () => { hovered = pressed = false; paint(); });
-    button.addEventListener('pointerdown', event => {
-      if (event.button === 0) { pressed = true; paint(); }
-    });
-    button.addEventListener('pointerup', () => { pressed = false; paint(); });
-    button.addEventListener('pointercancel', () => { pressed = false; paint(); });
-    button.append(art);
-    paintButton = paint;
-    paint();
+    paintButton=decorateCommandButton(button,{pictures,shortcut,fallback,armed:()=>armed});
   }
 
   return Object.freeze({arm, cancel, active: () => armed, update, release, decorateButton});
+}
+
+export function decorateCommandButton(button,{pictures,shortcut,fallback,armed=()=>false}) {
+  const art = button.ownerDocument.createElement('span');
+  const hasPictures = pictures && pictures.every(Boolean);
+  art.style.cssText = 'display:block;width:44px;height:44px;margin:auto;background:center/contain no-repeat;font-size:29px;line-height:44px';
+  if (!hasPictures) art.textContent = fallback;
+  art.setAttribute('aria-hidden', 'true');
+  button.setAttribute('aria-keyshortcuts', shortcut);
+  let hovered = false, pressed = false;
+  function paint() {
+    button.setAttribute('aria-pressed', String(armed()));
+    if (hasPictures) art.style.backgroundImage = pictures[armed() || pressed ? 2 : hovered ? 1 : 0];
+  }
+  button.addEventListener('pointerenter', () => { hovered = true; paint(); });
+  button.addEventListener('pointerleave', () => { hovered = pressed = false; paint(); });
+  button.addEventListener('pointerdown', event => {
+    if (event.button === 0) { pressed = true; paint(); }
+  });
+  button.addEventListener('pointerup', () => { pressed = false; paint(); });
+  button.addEventListener('pointercancel', () => { pressed = false; paint(); });
+  button.append(art);
+  paint();
+  return paint;
 }

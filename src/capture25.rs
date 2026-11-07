@@ -420,7 +420,7 @@ impl Game {
             i32::from(self.players[actor.team as usize].epoch) - i32::from(self.players[victim.team as usize].epoch),
             count, attack.time_modifier, target_time, 1.0, 1.0, 1.0, attack.reload_seconds);
         let handle = (u32::from(actor.gen) << 16) | attacker_index as u32;
-        let delta = self.spend_priest_reserve(handle, delta);
+        let delta = self.spend_unit_reserve(handle, delta);
         if delta > 0.0 { self.attach_priest_effect(target_handle, crate::power42::FX_CONVERTED); }
         let target = self.capture.targets.get_mut(&target_handle).unwrap();
         let done = f64::from(target.progress) + f64::from(delta) >= f64::from(native::CAPTURE_COMPLETE);

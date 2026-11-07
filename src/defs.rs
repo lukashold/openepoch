@@ -181,11 +181,11 @@ pub const DEFS:&[Def]=&crate::roster6_defs::production(crate::ee2_profile::apply
 #[cfg(all(feature="ee2-civ8",not(feature="ee2-native13")))]
 pub const DEFS:&[Def]=&crate::civ8_defs::production(crate::ee2_profile::apply(crate::civ8_defs::initial(BASE_DEFS)));
 #[cfg(feature="ee2-native13")]
-pub const DEFS: &[Def] = &crate::priest42_defs::append(crate::carrier36_defs::append_carrier(crate::air31_defs::append_fighter_bomber(
+pub const DEFS: &[Def] = &crate::spy46_defs::append(crate::priest42_defs::append(crate::carrier36_defs::append_carrier(crate::air31_defs::append_fighter_bomber(
     crate::trade30_defs::append_traders(crate::ee2_regicide::append_king(
         crate::civ8_defs::production(crate::ee2_profile::apply(crate::civ8_defs::initial(BASE_DEFS))),
     )),
-)));
+))));
 // The match envelope extends the existing registry without changing legacy
 // embedded headers. A King is accepted only with the Regicide envelope.
 pub(crate) const SAVE_DEFINITION_COUNT: usize = if cfg!(feature="ee2-native13") { 80 } else { DEFS.len() };

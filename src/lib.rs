@@ -30,6 +30,8 @@ mod carrier36_defs;
 #[cfg(feature = "ee2-native13")]
 mod priest42_defs;
 #[cfg(feature = "ee2-native13")]
+mod spy46_defs;
+#[cfg(feature = "ee2-native13")]
 mod power42;
 #[cfg(feature = "ee2-native13")]
 mod power42_math;
@@ -1369,6 +1371,18 @@ pub extern "C" fn cmd_context(x: f32, y: f32, attack_move: u32) {
         g.submit(C_AMOVE, x, y, 0, &all);
         return;
     }
+    #[cfg(feature = "ee2-native13")]
+    if !g.net && g.powers.is_some() {
+        let mut extraction = Vec::new();
+        ids.retain(|&index| {
+            if g.spy_marker_at(index, x, y) {
+                extraction.push(g.h(index));
+                false
+            } else { true }
+        });
+        if !extraction.is_empty() { g.submit(C_EXTRACTION, x, y, 1, &extraction); }
+        if ids.is_empty() { return; }
+    }
     let j = pick(g, x, y, false);
     #[cfg(feature = "ee2-native13")]
     if j != NOIDX && g.air_missions_enabled && g.air_host_slots(&g.ents[j]) != 0 && g.ents[j].team == g.local &&
@@ -1542,6 +1556,20 @@ pub extern "C" fn cmd_cancel() {
     }
 }
 
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn cmd_cancel_spy() -> u32 {
+    let game = g();
+    if game.net || game.powers.is_none() { return 0; }
+    let Some(index) = selected(game).into_iter().find(|&index| {
+        let host = &game.ents[index];
+        host.def == UNIVERSITY && host.q[..host.qn as usize].contains(&(crate::spy46_defs::SPY as QueueItem))
+    }) else { return 0; };
+    let handle = game.h(index);
+    game.submit(C_CANCEL, 0.0, 0.0, crate::spy46_defs::SPY as i32, &[handle]);
+    1
+}
+
 #[no_mangle]
 pub extern "C" fn cmd_delete() {
     let g = g();
@@ -1614,7 +1642,7 @@ pub extern "C" fn cheat(code: u32) -> u32 {
         #[cfg(feature = "ee2-native13")]
         10 => if game.convert_last_clicked() { 1 } else { 5 },
         #[cfg(feature = "ee2-native13")]
-        11 => if game.recharge_selected_priests() { 1 } else { 0 },
+        11 => if game.recharge_selected_reserves() { 1 } else { 0 },
         _ => 0,
     }
 }
@@ -1632,6 +1660,22 @@ pub extern "C" fn priest_power(handle: u32) -> f32 {
     let Some(index) = game.get(handle) else { return -1.0; };
     if game.ents[index].def != crate::priest42_defs::PRIEST { return -1.0; }
     game.powers.as_ref().and_then(|state| state.actor(handle)).map_or(-1.0, |actor| actor.charge)
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn spy_power(handle: u32) -> f32 {
+    let game = g();
+    let Some(index) = game.get(handle) else { return -1.0; };
+    if game.ents[index].def != crate::spy46_defs::SPY { return -1.0; }
+    game.powers.as_ref().and_then(|state| state.actor(handle)).map_or(-1.0, |actor| actor.charge)
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn spy_disguised(handle: u32) -> u32 {
+    let game = g();
+    u32::from(game.get(handle).is_some_and(|index| game.visible(index) && game.spy_disguised(index)))
 }
 
 #[cfg(feature = "ee2-native13")]
@@ -1689,6 +1733,102 @@ pub extern "C" fn cmd_bless_at(x: f32, y: f32) -> u32 {
     let hs = handles(game, &ids);
     game.submit(C_BLESS, 0.0, 0.0, target as i32, &hs);
     hs.len() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn spy_selection_count() -> u32 {
+    let game = g();
+    if game.net || game.initial_ceasefire_active() { return 0; }
+    selected(game).iter().filter(|&&index| game.spy_ready(index)).count() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn spy_intel_target_at(x: f32, y: f32) -> u32 {
+    if !x.is_finite() || !y.is_finite() || spy_selection_count() == 0 { return 0; }
+    let game = g();
+    let target = pick(game, x, y, false);
+    u32::from(target != NOIDX && game.spy_intel_target(game.local, target))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn cmd_spy_intel_at(x: f32, y: f32) -> u32 {
+    if spy_intel_target_at(x, y) == 0 { return 0; }
+    let game = g();
+    let target = game.h(pick(game, x, y, false));
+    let ids: Vec<_> = selected(game).into_iter().filter(|&index| game.spy_ready(index)).collect();
+    let hs = handles(game, &ids);
+    game.submit(C_GATHER_INTEL, 0.0, 0.0, target as i32, &hs);
+    hs.len() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn spy_visual_state(handle: u32) -> u32 {
+    let game = g();
+    u32::from(game.get(handle).is_some_and(|index| game.visible(index))
+        && game.spy_intel_elapsed(handle, game.sim_elapsed()).is_some())
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn spy_visual_elapsed(handle: u32, render_time: f32) -> f32 {
+    let game = g();
+    if game.get(handle).is_some_and(|index| game.visible(index)) {
+        game.spy_intel_elapsed(handle, render_time).unwrap_or(-1.0)
+    } else { -1.0 }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn spy_crown_intel_seconds(owner: u32) -> f32 {
+    let game = g();
+    if (owner as usize) < game.nplayers { game.crown_intel_seconds(game.local, owner as u8) } else { 0.0 }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn spy_crown_intel_active(owner: u32) -> u32 {
+    let game = g();
+    u32::from((owner as usize) < game.nplayers && game.crown_intel_active(game.local, owner as u8))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn spy_extraction_selection_count() -> u32 {
+    let game = g();
+    if game.net { return 0; }
+    selected(game).iter().filter(|&&index| game.spy_extract_ready(index)).count() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn cmd_spy_extraction() -> u32 {
+    let game = g();
+    if game.net { return 0; }
+    let ids: Vec<_> = selected(game).into_iter().filter(|&index| game.spy_extract_ready(index)).collect();
+    let hs = handles(game, &ids);
+    if !hs.is_empty() { game.submit(C_EXTRACTION, 0.0, 0.0, 0, &hs); }
+    hs.len() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn spy_extraction_count() -> u32 {
+    let game = g();
+    game.spy_extraction.markers.keys().filter(|&&handle| {
+        game.get(handle).is_some_and(|index| game.ents[index].team == game.local)
+    }).count() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn spy_extraction_field(ordinal: u32, field: u32) -> f32 {
+    let game = g();
+    let Some((_, point, until)) = game.spy_marker_visual(ordinal as usize) else { return f32::NAN; };
+    match field { 0..=2 => point[field as usize], 3 => until, _ => f32::NAN }
 }
 
 #[cfg(feature = "ee2-native13")]

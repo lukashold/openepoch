@@ -4,11 +4,16 @@ use crate::defs::{DefId, DEFS, AIR, F_TRANSPORT, FORTRESS, SEA, TEMPLE};
 use crate::game::{Game, MAXE};
 use crate::power42_math::{accumulate_recharge_factor, update_power_reserve};
 use crate::priest42_defs::PRIEST;
+use crate::spy46_defs::SPY;
 use std::collections::BTreeMap;
 
 const SERIAL_MASK: u32 = 0x07ff_ffff;
 const MAGIC: u32 = u32::from_le_bytes(*b"PWR1");
 const HEADER: usize = 24;
+
+fn recharge_seconds(def: DefId) -> Option<f32> {
+    match def { PRIEST => Some(90.0), SPY => Some(60.0), _ => None }
+}
 
 #[repr(C)]
 pub(crate) struct PriestEffect {
@@ -125,8 +130,8 @@ impl Game {
         });
     }
 
-    pub(crate) fn priest_can_garrison(&self, unit: DefId, host: DefId) -> bool {
-        self.powers.is_some() && unit == PRIEST && (matches!(host, TEMPLE | FORTRESS) ||
+    pub(crate) fn power_unit_can_garrison(&self, unit: DefId, host: DefId) -> bool {
+        self.powers.is_some() && (host == FORTRESS || unit == PRIEST && host == TEMPLE ||
             (DEFS[host as usize].has(F_TRANSPORT) && matches!(DEFS[host as usize].dom, SEA | AIR)))
     }
 
@@ -140,20 +145,22 @@ impl Game {
         true
     }
 
-    pub(crate) fn tick_priest_reserve(&mut self, index: usize) {
+    pub(crate) fn tick_unit_reserve(&mut self, index: usize) {
         let actor = self.ents[index];
-        if actor.def != PRIEST || actor.hp <= 0.0 { return; }
+        let Some(seconds) = recharge_seconds(actor.def) else { return; };
+        if actor.hp <= 0.0 { return; }
         let handle = self.h(index);
         let Some(record) = self.powers.as_ref().and_then(|state| state.actor(handle)) else { return; };
         let id = (u32::from(actor.team) + 1) << 27 | record.serial;
         if !crate::capture_math25::capture_event_due(self.tick, id, self.sim_step()) { return; }
-        let factor = self.priest_recharge_factor(actor.team);
+        let factor = self.reserve_recharge_factor(actor.team);
         let blocked = (self.priest_conversion_active(handle) || self.priest_bless_elapsed(handle, self.sim_elapsed()).is_some()) as u32;
-        let updated = update_power_reserve(record.charge, 90.0, factor, 0x400, blocked);
-        self.powers.as_mut().expect("admitted reserve").live.get_mut(&handle).expect("live Priest").charge = updated;
+        let updated = update_power_reserve(record.charge, seconds, factor, 0x400, blocked);
+        self.powers.as_mut().expect("admitted reserve").live.get_mut(&handle).expect("live reserve owner").charge = updated;
+        if actor.def == SPY { self.tick_spy_extraction(handle); }
     }
 
-    fn priest_recharge_factor(&self, team: u8) -> f32 {
+    fn reserve_recharge_factor(&self, team: u8) -> f32 {
         let mut factor = if self.civilizations[team as usize] == 13 { 0.75 } else { 1.0 };
         for research in [56, 116, 176] {
             if self.has_research(team, research) { factor = accumulate_recharge_factor(factor, 0.85); }
@@ -161,32 +168,33 @@ impl Game {
         factor
     }
 
-    pub(crate) fn tick_garrisoned_priest_reserves(&mut self) {
+    pub(crate) fn tick_garrisoned_reserves(&mut self) {
         if self.powers.as_ref().is_none_or(|state| state.cargo.is_empty()) { return; }
-        let factors: [f32; 4] = core::array::from_fn(|seat| self.priest_recharge_factor(seat as u8));
+        let factors: [f32; 4] = core::array::from_fn(|seat| self.reserve_recharge_factor(seat as u8));
         let step = self.sim_step();
         let Some(state) = &mut self.powers else { return; };
         for (&(host, slot), reserve) in &mut state.cargo {
             let actor = self.ents[(host & 0xffff) as usize];
-            if !actor.alive || actor.hp <= 0.0 || actor.cargo[slot as usize] != PRIEST { continue; }
+            let Some(seconds) = recharge_seconds(actor.cargo[slot as usize]) else { continue; };
+            if !actor.alive || actor.hp <= 0.0 { continue; }
             let id = (u32::from(actor.team) + 1) << 27 | reserve.serial;
             if crate::capture_math25::capture_event_due(self.tick, id, step) {
-                reserve.charge = update_power_reserve(reserve.charge, 90.0, factors[actor.team as usize], 0x400, 0);
+                reserve.charge = update_power_reserve(reserve.charge, seconds, factors[actor.team as usize], 0x400, 0);
             }
         }
     }
 
-    pub(crate) fn spend_priest_reserve(&mut self, handle: u32, requested: f32) -> f32 {
-        let record = self.powers.as_mut().unwrap().live.get_mut(&handle).expect("active Priest reserve");
+    pub(crate) fn spend_unit_reserve(&mut self, handle: u32, requested: f32) -> f32 {
+        let record = self.powers.as_mut().unwrap().live.get_mut(&handle).expect("active special power reserve");
         let delta = requested.min(record.charge);
         record.charge = crate::power42_math::spend_conversion_reserve(record.charge, delta);
         delta
     }
 
-    pub(crate) fn recharge_selected_priests(&mut self) -> bool {
+    pub(crate) fn recharge_selected_reserves(&mut self) -> bool {
         if self.powers.is_none() { return false; }
         for (index, actor) in self.ents[..self.high].iter().enumerate() {
-            if actor.alive && actor.sel && actor.team == self.local && actor.def == PRIEST {
+            if actor.alive && actor.sel && actor.team == self.local && recharge_seconds(actor.def).is_some() {
                 let handle = self.h(index);
                 self.powers.as_mut().unwrap().recharge_selected(handle);
             }
@@ -233,7 +241,7 @@ fn read_actor(data: &[u8], at: usize, def: DefId) -> Option<PowerActor> {
     let serial = word(data, at)?;
     let charge = f32::from_bits(word(data, at + 4)?);
     if serial > SERIAL_MASK || !(0.0..=1.0).contains(&charge) || charge.is_sign_negative() ||
-        (def != PRIEST && charge != 0.0) { return None; }
+        (recharge_seconds(def).is_none() && charge != 0.0) { return None; }
     Some(PowerActor { serial, charge })
 }
 

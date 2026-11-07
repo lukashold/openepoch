@@ -270,6 +270,8 @@ pub fn normalize_input(input: &[u8], current_actor_defs: usize) -> Option<Vec<u8
                 if carrier && q == u32::from(crate::carrier36_defs::CARRIER) { return false; }
                 #[cfg(feature="ee2-native13")]
                 if actor_defs > crate::priest42_defs::PRIEST as usize && q == u32::from(crate::priest42_defs::PRIEST) { return false; }
+                #[cfg(feature="ee2-native13")]
+                if actor_defs > crate::spy46_defs::SPY as usize && q == u32::from(crate::spy46_defs::SPY) { return false; }
                 crate::ids::decode_job(q).is_some_and(|(kind,value)|kind==0&&value as usize>=input_defs)
             }) { return None; }
         }

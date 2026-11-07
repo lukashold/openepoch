@@ -145,6 +145,10 @@ impl Game {
         #[cfg(feature="ee2-native13")]
         { b = self.bless.wrap(b); }
         #[cfg(feature="ee2-native13")]
+        { b = self.spy_intel.wrap(b); }
+        #[cfg(feature="ee2-native13")]
+        { b = self.spy_extraction.wrap(b); }
+        #[cfg(feature="ee2-native13")]
         if let Some(powers) = &self.powers { b = powers.wrap(b); }
         if self.source_clock.is_some() { b = self.diplomacy.clock.wrap(b); }
         self.savebuf = crate::source_clock38::wrap(b, self.source_clock);
@@ -170,6 +174,10 @@ impl Game {
         if diplomacy_clock.is_some() && source_clock.is_none() { return None; }
         #[cfg(feature="ee2-native13")]
         let (buf, powers) = crate::power42::split(buf)?;
+        #[cfg(feature="ee2-native13")]
+        let (buf, extraction) = crate::game::spy_extraction46::split(buf)?;
+        #[cfg(feature="ee2-native13")]
+        let (buf, intel) = crate::game::spy_intel46::split(buf)?;
         #[cfg(feature="ee2-native13")]
         let (buf, blessings) = crate::game::bless42::split(buf)?;
         #[cfg(feature="ee2-native13")]
@@ -200,7 +208,7 @@ impl Game {
         #[cfg(feature="ee2-native13")]
         let actor_definition_count = if air.is_some() { crate::carrier36_defs::CARRIER as usize } else { actor_definition_count };
         #[cfg(feature="ee2-native13")]
-        let actor_definition_count = if powers.is_some() { crate::priest42_defs::PRIEST as usize + 1 } else { actor_definition_count };
+        let actor_definition_count = if powers.is_some() { crate::spy46_defs::SPY as usize + 1 } else { actor_definition_count };
         #[cfg(feature="ee2-native13")]
         let (buf, sole_survivor) = crate::ee2_sole_survivor::split(buf)?;
         #[cfg(feature="ee2-native13")]
@@ -410,6 +418,8 @@ impl Game {
                 if g.air_carrier_enabled && q == crate::carrier36_defs::CARRIER as _ { return e.def != DOCK; }
                 #[cfg(feature="ee2-native13")]
                 if powers.is_some() && q == crate::priest42_defs::PRIEST as _ { return e.def != TEMPLE; }
+                #[cfg(feature="ee2-native13")]
+                if powers.is_some() && q == crate::spy46_defs::SPY as _ { return e.def != UNIVERSITY; }
                 q != RESEARCH && !original_research(q) && q as usize >= SAVE_DEFINITION_COUNT &&
                     (q < TECH0 || (q - TECH0) as usize >= TECHS.len())
             }) { return None; }
@@ -524,6 +534,10 @@ impl Game {
         g.restore_priest_power(powers)?;
         #[cfg(feature="ee2-native13")]
         g.restore_blessings(blessings)?;
+        #[cfg(feature="ee2-native13")]
+        g.restore_spy_intel(intel)?;
+        #[cfg(feature="ee2-native13")]
+        g.restore_spy_extraction(extraction)?;
         #[cfg(feature="ee2-native13")]
         g.restore_capture_save(capture)?;
         #[cfg(feature="ee2-native13")]

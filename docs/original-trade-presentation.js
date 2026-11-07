@@ -10,6 +10,8 @@ const CARRIER = {folder:'aircraft-carrier',sha:'714d9458f53419acf3c1dfbcee5d6799
   format:'ee2-native-aircraft-carrier-presentation-v1',family:'AircraftCarrier',ids:{AircraftCarrier:84},starts:{AircraftCarrier:[10,13,15]}};
 const PRIEST = {folder:'priest',sha:'1289d04a019f5637f20937d2149101d353f4168ac302fe16b2a0e0b3e68a2543',
   format:'ee2-native-priest-presentation-v1',family:'Priest',ids:{Priest:85},starts:{Priest:[0,3,6,9,12,15]}};
+const SPY = {folder:'spy',sha:'9a284d54367bbb4cbee2b0f49582f1c5631897ea9574dea5df34aef8453726ac',
+  format:'ee2-native-spy-presentation-v1',family:'Spy',ids:{Spy:86},starts:{Spy:[0,3,6,9,12,15]}};
 const carrierLoop = {url:'local-original/audio/aircraft-carrier/fx_move_boat_4_15-pcm.wav',sha256:'442d1a24b43abe1e05102ad85022ef3eecb32bcdd56393618deaacc118b90be9',bytes:170710};
 const relative = (path, prefix) => typeof path === 'string' && path.startsWith(prefix) && /^[\w./-]+$/.test(path) && !path.split('/').includes('..');
 const hash = value => /^[a-f0-9]{64}$/.test(value || '');
@@ -34,7 +36,7 @@ async function loadPresentation(spec,{enabled, fetchFile = globalThis.fetch, bit
     const count=Object.values(spec.starts).reduce((total,epochs)=>total+epochs.length-1,0);
     const sourceMatches = spec.family ? catalog.family === spec.family : catalog.profile === 'up15-csv5';
     if (catalog.format !== spec.format || !sourceMatches || catalog.rows?.length !== count) throw Error('Unexpected original presentation catalog');
-    const rows = new Map(), seen = new Set(), regional = spec === PRIEST;
+    const rows = new Map(), seen = new Set(), regional = spec === PRIEST || spec === SPY;
     const modelRows = [];
     for (const row of catalog.rows) {
       const family = spec.family ?? row.family;
@@ -77,7 +79,7 @@ async function loadPresentation(spec,{enabled, fetchFile = globalThis.fetch, bit
         } catch {/* Existing procedural icons remain available. */}
       }),
     ]);
-    return Object.freeze({modelRows, teamManifest, sailManifest, audioManifest,
+    return Object.freeze({modelRows, audioModelRows:modelRows.filter(row=>row.regionalFallback), teamManifest, sailManifest, audioManifest,
       movementAudio: spec === CARRIER && audioManifest ? carrierMovementAudio(audioManifest, lookup, base) : null,
       garrisonFlag: spec === CARRIER ? {url:catalog.garrisonFlag,sha256:catalog.garrisonFlagSha256,carrierAt:epoch=>lookup(84,epoch)} : null,
       icon(id, epoch, civilization=0) {
@@ -117,6 +119,7 @@ export const loadFighterBomberPresentation = options => loadPresentation(FIGHTER
 export const loadCarrierPresentation = options => loadPresentation(CARRIER,options);
 
 export const loadPriestPresentation = options => loadPresentation(PRIEST,options);
+export const loadSpyPresentation = options => loadPresentation(SPY,options);
 
 export async function loadTradeRouteArt({enabled, fetchFile = globalThis.fetch, base = new URL('./', import.meta.url)} = {}) {
   if (!enabled) return null;

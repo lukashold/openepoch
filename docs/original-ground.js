@@ -74,7 +74,7 @@ void main(){
 }`;
 const FS=`#version 300 es
 precision highp float;
-uniform sampler2D uDiffuse,uDiffuseB,uFog;uniform float uSeasonMix,uGlowAlpha;uniform highp sampler2D uHeight;uniform mat4 uVP;
+uniform sampler2D uDiffuse,uDiffuseB,uFog;uniform float uSeasonMix,uGlowAlpha;uniform vec3 uTint;uniform highp sampler2D uHeight;uniform mat4 uVP;
 in vec2 vUV;in vec2 vWorld;out vec4 outColor;
 ${HEIGHT}
 void main(){
@@ -82,6 +82,9 @@ void main(){
  if(uGlowAlpha>=0.){
   vec4 color=texture(uDiffuse,vUV);
   outColor=vec4(color.rgb*(color.a*uGlowAlpha),0.);
+ }else if(uGlowAlpha< -1.5){
+  vec4 color=texture(uDiffuse,vUV);
+  outColor=vec4(color.rgb*uTint*color.a,color.a);
  }else{
   vec4 color=mix(texture(uDiffuse,vUV),texture(uDiffuseB,vUV),uSeasonMix);float fog=texture(uFog,vWorld/256.).r;
   if(color.a<.004||fog<.05)discard;
@@ -105,7 +108,7 @@ function createProgram(gl){
       gl.attachShader(p,s);gl.deleteShader(s);
     }
     gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(p));
-    const u={};for(const name of['uVP','uDiffuse','uDiffuseB','uSeasonMix','uGlowAlpha','uFog','uHeight'])u[name]=gl.getUniformLocation(p,name);
+    const u={};for(const name of['uVP','uDiffuse','uDiffuseB','uSeasonMix','uGlowAlpha','uTint','uFog','uHeight'])u[name]=gl.getUniformLocation(p,name);
     return {p,u};
   }catch(error){gl.deleteProgram(p);throw error;}
 }
@@ -134,12 +137,12 @@ function restore(gl,state){
 export async function loadOriginalGround(gl,enabled,options={}){
   const result={enabled:false,entries:new Map(),errors:[],manifest:null,
     policy:'native-epoch-slots; CityManager callback, explicit rural fallback when absent',metrics:{calls:0,instances:0},
-    seasonClimates:['Temperate'],climateErrors:[],updateTerrain(){},draw(){},drawCaptureGlow(){},drawBlessGlow(){},setSeasonClimate(){return false;},setSeasonPhase(){return false;}};
+    seasonClimates:['Temperate'],climateErrors:[],updateTerrain(){},draw(){},drawCaptureGlow(){},drawBlessGlow(){},drawExtraction(){},setSeasonClimate(){return false;},setSeasonPhase(){return false;}};
   if(!enabled)return result;
   let assetMapping;try{assetMapping=normalizeRenderAssetMapping(options.assetMapping);}catch(error){result.errors.push(error.message);return result;}
   result.assetMapping=assetMapping;
   const fetchFile=options.fetch||fetch,decode=options.decode||createImageBitmap;
-  const state=snapshot(gl),textures=new Map(),blessTextures=new Map();let shader,vao,instances,height,glowTexture;
+  const state=snapshot(gl),textures=new Map(),blessTextures=new Map();let shader,vao,instances,height,glowTexture,extractionTexture;
   const groundProfiles=Object.entries(options.climateProfiles||{}).filter(([name])=>name!=='Temperate');
   async function loadTexture(url){
     let texture=textures.get(url);
@@ -193,6 +196,10 @@ export async function loadOriginalGround(gl,enabled,options={}){
         try{blessTextures.set(kind,await loadTexture(`./local-original/priest-fx/glow_${kind}.png`));}
         catch(error){(result.blessGlowErrors??=[]).push(error.message);}
       }
+    }
+    if(options.extractionDecal){
+      try{extractionTexture=await loadTexture(options.extractionDecal);}
+      catch(error){result.extractionError=error.message;}
     }
     shader=createProgram(gl);vao=gl.createVertexArray();gl.bindVertexArray(vao);
     const vertices=new Float32Array((GRID+1)**2*2),indices=new Uint16Array(GRID*GRID*6);
@@ -271,7 +278,12 @@ export async function loadOriginalGround(gl,enabled,options={}){
     }
     if(groups.length)drawGroups(groups,vp,alpha);
   };
-  function drawGroups(groups,vp,glowAlpha){
+  result.drawExtraction=({vp,list,tint})=>{
+    if(!extractionTexture||!list.length)return 0;
+    drawGroups([{texture:extractionTexture,textureB:extractionTexture,blend:0,list}],vp,-2,tint);
+    return list.length/5;
+  };
+  function drawGroups(groups,vp,glowAlpha,tint){
     if(!groups.length)return;
     const state=snapshot(gl);
     try{
@@ -280,6 +292,7 @@ export async function loadOriginalGround(gl,enabled,options={}){
       else gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
       gl.useProgram(shader.p);gl.uniformMatrix4fv(shader.u.uVP,false,vp);gl.bindVertexArray(vao);
       gl.uniform1f(shader.u.uGlowAlpha,glowAlpha);
+      if(tint)gl.uniform3fv(shader.u.uTint,tint);
       gl.activeTexture(gl.TEXTURE6);gl.bindTexture(gl.TEXTURE_2D,height);
       for(const {texture,textureB,blend,list}of groups){
         gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture);
