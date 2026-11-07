@@ -11,16 +11,25 @@ export const TURN_TICKS = 2;   // one network turn = 2 simulation ticks = 100 ms
 export const DELAY = 2;        // commands run this many turns after they are issued
 export const PROTOCOL_VERSION = 17; // Host includes the resolved skirmish end epoch.
 
+import {validOriginalSpeed} from './original-game-tempo.js?v=native37';
+
 /** Turn-based command scheduler. `send(ArrayBuffer)` delivers to the peer. */
 export class Lockstep {
-  constructor(wasm, local, send) {
+  constructor(wasm, local, send, tempo = null) {
     this.wasm = wasm; this.local = local; this.peer = 1 - local; this.send = send;
     this.turn = 0; this.tickIn = 0; this.sent = DELAY - 1;
     this.cmds = [new Map(), new Map()];     // per seat: turn -> Uint8Array of commands
     this.myHash = new Map(); this.peerHash = new Map();
     this.desync = false; this.waiting = false; this.alone = false;
+    this.tempo = tempo ? {...tempo, pending: 0, turns: new Map()} : null;
     const empty = new Uint8Array(0);
     for (let t = 0; t < DELAY; t++) { this.cmds[0].set(t, empty); this.cmds[1].set(t, empty); }
+  }
+
+  setTempo(rate) {
+    if (this.local !== 0 || !this.tempo || this.tempo.locked || !validOriginalSpeed(rate)) return false;
+    this.tempo.pending = rate;
+    return true;
   }
 
   /** Advance one simulation tick if the peer's input for it has arrived. */
@@ -36,14 +45,26 @@ export class Lockstep {
         const hash = w.state_hash() >>> 0; // wasm hands back a signed i32, the wire carries unsigned
         this.cmds[this.local].set(at, bytes);
         this.checkHash(this.turn, hash, this.myHash, this.peerHash);
-        const msg = new Uint8Array(12 + n), dv = new DataView(msg.buffer);
+        const header = this.tempo ? 16 : 12;
+        const msg = new Uint8Array(header + n), dv = new DataView(msg.buffer);
         dv.setUint32(0, at, true); dv.setUint32(4, this.turn, true); dv.setUint32(8, hash, true);
-        msg.set(bytes, 12);
+        if (this.tempo && this.local === 0 && this.tempo.pending) {
+          const rate = this.tempo.pending;
+          this.tempo.pending = 0;
+          this.tempo.turns.set(at, rate);
+          dv.setFloat32(12, rate, true);
+        }
+        msg.set(bytes, header);
         if (!this.alone) this.send(msg.buffer);
         this.sent = at;
       }
       if (!this.alone && !this.cmds[this.peer].has(this.turn)) { this.waiting = true; return false; }
       this.waiting = false;
+      if (this.tempo?.turns.has(this.turn)) {
+        const rate = this.tempo.turns.get(this.turn);
+        this.tempo.turns.delete(this.turn);
+        this.tempo.apply(rate);
+      }
       // seat order, so both sides apply in the same sequence
       for (const seat of [0, 1]) {
         const bytes = this.cmds[seat].get(this.turn);
@@ -68,8 +89,18 @@ export class Lockstep {
 
   /** Feed a message received from the peer. */
   receive(buf) {
+    const header = this.tempo ? 16 : 12;
+    if (!(buf instanceof ArrayBuffer) || buf.byteLength < header) return;
     const dv = new DataView(buf);
-    this.cmds[this.peer].set(dv.getUint32(0, true), new Uint8Array(buf, 12).slice());
+    const at = dv.getUint32(0, true);
+    if (this.tempo) {
+      const rate = dv.getFloat32(12, true);
+      if (rate !== 0) {
+        if (this.peer !== 0 || this.tempo.locked || !validOriginalSpeed(rate) || at < this.turn) return;
+        this.tempo.turns.set(at, rate);
+      }
+    }
+    this.cmds[this.peer].set(at, new Uint8Array(buf, header).slice());
     this.checkHash(dv.getUint32(4, true), dv.getUint32(8, true), this.peerHash, this.myHash);
   }
 

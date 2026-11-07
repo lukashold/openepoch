@@ -1,6 +1,6 @@
 // The EE2 profile uses locally extracted original recordings when available.
 // Procedural sounds and local speech remain the fallback for the standalone game.
-import { createOriginalAudio } from './original-audio.js?v=native33';
+import { createOriginalAudio } from './original-audio.js?v=native37';
 import {createPresentationRandom} from './source-music-controller.js?v=regional11';
 import {createAirFlightPlayback} from './air-flight-audio.js?v=native36';
 import {takeoffSpatialMix} from './air-takeoff.js?v=native33';
@@ -105,6 +105,10 @@ export const stopStoneThrowerWheels = () => originals.stopStoneThrowerWheels();
 export const bindTakeoffEvents = events => originals.bindTakeoffEvents(events);
 export const playTakeoff = (name,volume,pan) => originals.playTakeoff(name,volume,pan);
 export const stopTakeoff = () => originals.stopTakeoff();
+export async function playInterfaceCue(event) {
+  if(muted||!ensure())return false;
+  return originals.playInterfaceCue(event);
+}
 export function spatialSound(dx,dy,zoom) {
   const range=26+700/zoom;
   const gain=Math.max(0,1-Math.hypot(dx,dy)/range);

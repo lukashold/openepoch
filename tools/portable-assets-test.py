@@ -316,6 +316,44 @@ class AssetAudit:
             for texture in [data['pole']['texture'],*data['textures'].values()]:
                 self.check_pinned_media(texture['url'],texture['sha256'],flag,'aircraft-carrier-garrison-texture',texture.get('bytes'))
 
+    def check_native_game_controls(self):
+        manifests=(('pause','original-game-options.js','manifestHash','ee2-native-pause-panel-v1'),
+                   ('settings','original-game-settings.js','digest','ee2-native-settings-panel-v1'))
+        for kind,loader,variable,format_name in manifests:
+            name=f'local-original/game-controls/{kind}-manifest.json'
+            if name not in self.files:
+                continue # The public game and older portable media use the same controls.
+            source=self.files.get(loader)
+            match=re.search(r"const "+variable+r"='([a-f0-9]{64})'",source.read_text(encoding='utf8')) if source else None
+            if not match:
+                self.error('game-controls-manifest-pin',loader,name);continue
+            if not self.check_pinned_media(name,match[1],loader,f'game-controls-{kind}-catalog') or self.digest(name)!=match[1]:
+                continue
+            catalog=self.read_json(name)
+            profiles=catalog.get('profiles',{})
+            if (catalog.get('format')!=format_name or catalog.get('preferred')!='packed7' or
+                    catalog.get('fallback')!='packed5' or set(profiles)!={'packed7','packed5'}):
+                self.error('game-controls-manifest-format',name);continue
+            for tier,profile in profiles.items():
+                sprites=profile['sprites']
+                for sprite,record in sprites.items():
+                    self.check_pinned_media(record['url'],record['sha256'],f'{name}.{tier}.{sprite}',
+                                            f'game-controls-{kind}-sprite',record['bytes'])
+                for style,frame in profile['frameSprites'].items():
+                    if len(frame)!=8 or any(sprite not in sprites for sprite in frame):
+                        self.error('game-controls-frame-binding',style,name)
+                for family,themes in profile['spriteStates'].items():
+                    for states in themes.values():
+                        if not states.get('idle') or any(sprite not in sprites for sprite in states.values()):
+                            self.error('game-controls-state-binding',family,name)
+            if kind=='pause':
+                sounds=catalog.get('sounds',{})
+                if set(sounds)!={'open','close'}:
+                    self.error('game-controls-sound-bindings',name)
+                for role,record in sounds.items():
+                    self.check_pinned_media(record['url'],record['sha256'],f'{name}.sounds.{role}',
+                                            'game-controls-pause-cue',record['bytes'])
+
     def check_air_mission_art(self):
         name='local-original/air-mission-ui/manifest.json'
         self.ref(name,'air-mission-order.js','air-mission-catalog')
@@ -959,6 +997,7 @@ class AssetAudit:
         if 'air-mission-order.js' in self.files:
             self.check_aircraft();self.check_air_mission_art()
         if 'local-original/aircraft-carrier/manifest.json' in self.files:self.check_aircraft_carrier()
+        self.check_native_game_controls()
         if 'air-mission-flag.js' in self.files:self.check_air_mission_flag()
         if 'air-takeoff.js' in self.files:self.check_air_takeoff()
         if 'air-flight-audio.js' in self.files:self.check_air_flight_audio()

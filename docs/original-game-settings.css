@@ -1,0 +1,64 @@
+#native-game-settings {
+  position: fixed;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  border: 0;
+  background: #171b19;
+  color: #f4efdd;
+  overflow: auto;
+  font: 1rem/1.2 Palatino, 'Palatino Linotype', Georgia, serif;
+}
+#native-game-settings [hidden] { display: none !important; }
+#native-game-settings::backdrop { background: #151817; }
+#native-game-settings video { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+#native-game-settings form { position: relative; margin: 4vh auto; padding: 1.4rem; max-width: min(68rem, 93vw); background: #403629ef; }
+#native-game-settings h2, #native-game-settings h3, #native-game-settings p { margin: .45rem 0; }
+#native-game-settings nav, #native-game-settings footer { display: flex; flex-wrap: wrap; gap: .45rem; margin: .8rem 0; }
+#native-game-settings [role='tabpanel'] { padding: 1rem .3rem; }
+#native-game-settings .native-settings-row, #native-game-settings .native-settings-extra { display: flex; align-items: center; gap: .6rem; min-height: 2rem; }
+#native-game-settings button, #native-game-settings select { font: inherit; }
+#native-game-settings button { padding: .4rem .7rem; border: 1px solid #a69970; background: #d9cdab; color: #29241a; cursor: pointer; }
+#native-game-settings button:disabled, #native-game-settings input:disabled, #native-game-settings select:disabled { opacity: .55; cursor: default; }
+#native-game-settings button[aria-selected='true'] { background-color: #fff2c8; }
+#native-game-settings :focus-visible { outline: 2px solid #fff1a0; outline-offset: 2px; }
+#native-game-settings .native-settings-keys { max-height: 40vh; overflow: auto; list-style: none; margin: .4rem 0; padding: .6rem .9rem; background: #e5d4ab; color: #2c261a; }
+#native-game-settings .native-settings-keys li { display: flex; justify-content: space-between; gap: .8rem; padding: .2rem 0; }
+#native-game-settings .native-settings-key-group { border-bottom: 1px solid #90774a; font-weight: bold; }
+#native-game-settings .native-settings-key-readonly, #native-game-settings .native-settings-graphics-info { padding: .45rem; background: #e5d4ab; color: #2c261a; }
+#native-game-settings.native-settings-source { overflow: hidden; }
+#native-game-settings.native-settings-source form { position: absolute; inset: 0; margin: 0; padding: 0; max-width: none; background: transparent; }
+.native-settings-source [data-settings-widget], .native-settings-source [data-settings-frame], .native-settings-source [data-settings-extra] {
+  position: absolute;
+  box-sizing: border-box;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+#native-game-settings.native-settings-source [data-settings-widget], #native-game-settings.native-settings-source [data-settings-extra] { margin: 0; }
+.native-settings-source .native-settings-panel-art { background-color: #695238; }
+.native-settings-source [data-settings-frame] {
+  display: grid;
+  pointer-events: none;
+  grid-template: var(--native-settings-frame) 1fr var(--native-settings-frame) / var(--native-settings-frame) 1fr var(--native-settings-frame);
+}
+.native-settings-source [data-settings-piece] { background-size: 100% 100%; }
+.native-settings-source [data-settings-piece='ul'] { grid-area: 1 / 1; }
+.native-settings-source [data-settings-piece='ur'] { grid-area: 1 / 3; }
+.native-settings-source [data-settings-piece='ll'] { grid-area: 3 / 1; }
+.native-settings-source [data-settings-piece='lr'] { grid-area: 3 / 3; }
+.native-settings-source [data-settings-piece='top'] { grid-area: 1 / 2; }
+.native-settings-source [data-settings-piece='left'] { grid-area: 2 / 1; }
+.native-settings-source [data-settings-piece='bottom'] { grid-area: 3 / 2; }
+.native-settings-source [data-settings-piece='right'] { grid-area: 2 / 3; }
+#native-game-settings.native-settings-source button[data-settings-widget] { border: 0; padding: 0; background-color: transparent; }
+#native-game-settings.native-settings-source button[data-settings-widget]:hover:not(:disabled) { background-image: var(--native-settings-rollover) !important; }
+#native-game-settings.native-settings-source button[data-settings-widget]:active:not(:disabled),
+#native-game-settings.native-settings-source button[data-settings-widget][aria-selected='true'] { background-image: var(--native-settings-pressed) !important; }
+#native-game-settings.native-settings-source input[type='checkbox'][data-settings-widget] { appearance: none; background-image: var(--native-settings-check-off); }
+#native-game-settings.native-settings-source input[type='checkbox'][data-settings-widget]:checked { background-image: var(--native-settings-check-on); }
+#native-game-settings.native-settings-source .native-settings-keys { max-height: none; }
+#native-game-settings.native-settings-source h3, #native-game-settings.native-settings-source label { align-content: center; }

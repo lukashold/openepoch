@@ -100,23 +100,32 @@ export function createOriginalAudio(options={}) {
     wheelLoops.clear();
     wheelSession=null;
   }
-  function loadTakeoff(event){
-    if(!ctx||!event||takeoffLoads.has(event.sha256))return;
+  function loadVerifiedEffect(event){
+    if(!ctx||!event)return Promise.resolve(null);
+    if(takeoffLoads.has(event.sha256))return takeoffLoads.get(event.sha256);
     const url=new URL(event.url);
     url.searchParams.set('v',event.sha256.slice(0,16));
     const load=fetchFile(url,{cache:'force-cache'}).then(response=>{
-      if(!response.ok)throw Error('Original takeoff audio unavailable');
+      if(!response.ok)throw Error('Original audio unavailable');
       return response.arrayBuffer();
     }).then(async bytes=>{
       const digest=new Uint8Array(await crypto.subtle.digest('SHA-256',bytes));
-      if(Array.from(digest,byte=>byte.toString(16).padStart(2,'0')).join('')!==event.sha256)throw Error('Takeoff audio checksum differs');
+      if(Array.from(digest,byte=>byte.toString(16).padStart(2,'0')).join('')!==event.sha256)throw Error('Original audio checksum differs');
       return ctx.decodeAudioData(bytes);
-    }).then(buffer=>takeoffBuffers.set(event.sha256,buffer)).catch(()=>{});
+    }).then(buffer=>{takeoffBuffers.set(event.sha256,buffer);return buffer;}).catch(()=>null);
     takeoffLoads.set(event.sha256,load);
+    return load;
   }
   function bindTakeoffEvents(events){
     takeoffEvents=events??new Map();
-    for(const event of takeoffEvents.values())loadTakeoff(event);
+    for(const event of takeoffEvents.values())loadVerifiedEffect(event);
+  }
+  async function playInterfaceCue(event){
+    if(!enabled||muted||!Number.isFinite(event?.gain))return false;
+    const buffer=await loadVerifiedEffect(event);
+    const played=!!start(buffer,event.gain);
+    if(played)stats.effectPlays++;
+    return played;
   }
   function stopTakeoff(){
     for(const source of [...live])if(source.originalGroup.startsWith('takeoff:'))stop(source);
@@ -217,7 +226,7 @@ export function createOriginalAudio(options={}) {
   async function prepare(context,destination) {
     if(!enabled||typeof context?.decodeAudioData!=='function')return false;
     ctx=context;master=destination;
-    for(const event of takeoffEvents.values())loadTakeoff(event);
+    for(const event of takeoffEvents.values())loadVerifiedEffect(event);
     if(loading)return loading;
     const readManifest=async file=>{
       const response=await fetchFile(new URL(file,base),{cache:'no-cache'});
@@ -318,7 +327,7 @@ export function createOriginalAudio(options={}) {
   }
   return {
     prepare,acknowledge,citizenDeath,effect,music,menuMusic,setDefinitionBindings,updateStoneThrowerWheels,stopStoneThrowerWheels,
-    bindTakeoffEvents,playTakeoff,stopTakeoff,
+    bindTakeoffEvents,playTakeoff,stopTakeoff,playInterfaceCue,
     role:(id,epoch)=>typed.role(id,epoch),
     resetRegionalMusic(){regionalMusic?.reset();},
     rebindRegionalMusic(){regionalMusic?.rebind();},

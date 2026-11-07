@@ -30,15 +30,22 @@ pub const C_PLACE_ROTATED:u8=16;
 #[cfg(feature="ee2-native13")]pub const C_CAPTURE:u8=18;
 #[cfg(feature="ee2-native13")]pub const C_TRADE_ROUTE:u8=19;
 #[cfg(feature="ee2-native13")]pub const C_AIR_MISSION:u8=20;
+#[cfg(feature="ee2-native13")]pub(crate) const C_SOLO_RESIGN:u8=21;
+#[cfg(feature="ee2-native13")]pub(crate) const SOLO_RESIGN_SAVE_FLAG:u32=1<<11;
 
 const HEAD: usize = 14; // kind, count, a, b, c
 
 impl Game {
     /// Issue a command as the local player. `hs` are entity handles.
     pub fn submit(&mut self, kind: u8, a: f32, b: f32, c: i32, hs: &[u32]) {
+        #[cfg(feature="ee2-native13")]
+        if self.solo_resigned { return; }
         #[cfg(feature="ee2-civ8")]
         if a.is_finite()&&b.is_finite()&&(1..=if cfg!(feature="ee2-pack8"){17}else{16}).contains(&kind){self.civ_setup_open=false;}
-        if !self.net {
+        let enqueue = self.net;
+        #[cfg(feature="ee2-native13")]
+        let enqueue = enqueue || self.solo_command_queue;
+        if !enqueue {
             let team = self.local;
             self.apply(team, kind, a, b, c, hs);
             return;
@@ -67,6 +74,20 @@ impl Game {
     /// Apply every command in `inbox` on behalf of `team`.
     pub fn net_apply(&mut self, team: u8) {
         let buf = std::mem::take(&mut self.inbox);
+        self.apply_commands(team, &buf);
+        self.inbox = buf;
+    }
+
+    #[cfg(feature="ee2-native13")]
+    pub(crate) fn apply_solo_commands(&mut self) {
+        if self.net || !self.solo_command_queue || self.outbox.is_empty() { return; }
+        let mut buf = std::mem::take(&mut self.outbox);
+        self.apply_commands(self.local, &buf);
+        buf.clear();
+        if self.outbox.is_empty() { self.outbox = buf; }
+    }
+
+    fn apply_commands(&mut self, team: u8, buf: &[u8]) {
         let mut o = 0;
         let mut hs: Vec<u32> = Vec::new();
         while o + HEAD <= buf.len() {
@@ -84,11 +105,22 @@ impl Game {
             o += n * 4;
             self.apply(team, kind, a, b, c, &hs);
         }
-        self.inbox = buf;
     }
 
     pub fn apply(&mut self, team: u8, kind: u8, a: f32, b: f32, c: i32, hs: &[u32]) {
         if !a.is_finite() || !b.is_finite() || team as usize >= self.nplayers {
+            return;
+        }
+        #[cfg(feature="ee2-native13")]
+        if self.solo_resigned { return; }
+        #[cfg(feature="ee2-native13")]
+        if kind == C_SOLO_RESIGN {
+            if !self.net && self.bench == 0 && self.solo_command_queue && self.winner == 0 &&
+                team == self.local && a == 0.0 && b == 0.0 && c == 0 && hs.is_empty() {
+                self.solo_resigned = true;
+                self.players[team as usize].alive = false;
+                self.winner = 2;
+            }
             return;
         }
         #[cfg(feature = "ee2-native13")]

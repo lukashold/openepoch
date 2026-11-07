@@ -9,7 +9,7 @@ import { diplomacyPanel } from './diplomacy.js?v=native17';
 import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native6';
 import {loadNativeFontUI} from './original-font-ui.js?v=native21names';
 import {territoryClaimMessage} from './territory-help.js?v=fortress1';
-import * as sfx from './audio.js?v=native36';
+import * as sfx from './audio.js?v=native37';
 import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=citizen9';
 import {mountOriginalShellVideo} from './original-shell-video.js?v=native12';
 import {mountSkirmishMenu} from './skirmish-menu.js?v=native13';
@@ -23,6 +23,9 @@ import {loadCityCenterIcons,loadHouseIcons,loadDockIcons,loadBarracksIcons,loadM
 import {loadSourceSailRuntime} from './source-sail-runtime.js?v=sails7';
 import {createRenderAssetMapping} from './original-render-namespace.js?v=native6';
 import {createFrontendNamespace} from './render-namespace.js?v=native36';
+import {ORIGINAL_SPEEDS, changeOriginalSpeed, checkOriginalTempo, loadOriginalTempo, originalStartingSpeed} from './original-game-tempo.js?v=native37';
+import {mountOriginalGameOptions} from './original-game-options.js?v=native37';
+import {mountOriginalGameSettings} from './original-game-settings.js?v=native37';
 import {createRenderActorMetadata} from './render-actor-metadata.js?v=pack8';
 import {createPackRenderMetadata} from './original-pack-states.js?v=pack8';
 import {createFullmapPipBridge} from './original-fullmap-pip-bridge.js';
@@ -34,9 +37,9 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=skirmish-climates';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native36';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native37';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
-import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=epoch13';
+import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native37';
 import {createFullscreenController} from './fullscreen.js?v=building2';
 import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native17';
 import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=fortress1';
@@ -602,6 +605,8 @@ const cam = { x: 128, y: 128, zoom: 28, heading:0 };
 const mouse = { x: 0, y: 0, down: false, sx: 0, sy: 0, drag: false, pan: false, inside: false };
 const keys = new Set();
 let running = false, paused = false, speed = 1, acc = 0, last = 0, bench = 0;
+const pauseReasons = new Set();
+let gameOptions = null;
 let worldMaterialPending = null;
 let initialMusicEpoch = 0, musicCivilization = 0;
 let net = null;          // { ls: Lockstep, ch: RTCDataChannel } in multiplayer
@@ -612,6 +617,23 @@ let lastWorkSound = 0;
 let ui = null, actSig = '', lastGroup = { n: -1, t: 0 }, lastClick = 0;
 let simMs = 0, frameMs = 16.7, worstMs = 0, fogTick = -1, lastUi = 0, lastMini = 0, lastAuto = 0, waitSince = 0;
 const SPEEDS = [0.5, 1, 2, 4];
+let originalTempo = null;
+let pendingTempo = 0;
+let restartPoint = null;
+const hasOriginalTempo = rulesProfile.id==='up15';
+$('original-tempo-options').hidden = !hasOriginalTempo;
+function menuTempo() {
+  return checkOriginalTempo({preset: +$('game-speed-preset').value, locked: $('game-speed-locked').checked});
+}
+
+function startingTempo(tempo) {
+  return {...tempo, requested: originalStartingSpeed(tempo)};
+}
+
+function showSpeed() {
+  $('speed').textContent = originalTempo ? `${speed.toLocaleString('de-DE',{maximumFractionDigits:2})}×` : `${speed}×`;
+  $('speed').disabled = originalTempo?.locked === true || (net!==null&&net.ls.local!==0);
+}
 const fullmapPip = createFullmapPipBridge({gl,canvas,available:()=>referenceMode&&originalTerrain.enabled&&running&&!bench,
   mainPose:()=>cam, setMainFocus(x,y){cam.x=x;cam.y=y;updateCamera();}, heightAt:groundAt,
   resolveUnit:handle=>wasm.entity_alive?.(handle)?{x:wasm.ent_x(handle),y:wasm.ent_y(handle)}:null,
@@ -716,12 +738,11 @@ function updatePlacement(now=performance.now()){
   if(qaMode)canvas.dataset.placement=JSON.stringify({id:ghost.id,turn:ghost.turn,tx,ty,error,size:footprintSize()});
 }
 
-let researchWasPaused=false;
 const sourceResearch=originalResearchActions(wasm);
 const sciencePanel=researchPanel({wasm,sourceResearch,
  onOrder(){sfx.play(20);lastUi=0;},
- onOpen(){researchWasPaused=paused;if(!net)paused=true;keys.clear();mouse.inside=false;},
- onClose(){paused=researchWasPaused;$('pause').textContent=paused?'Fortsetzen':'Pause';lastUi=0;}
+ onOpen(){setPauseHold('research',true);keys.clear();mouse.inside=false;},
+ onClose(){setPauseHold('research',false);lastUi=0;}
 });
 $('research-button').style.display=referenceMode?'':'none';
 $('research-button').onclick=()=>{if(running&&ui)sciencePanel.open(ui);};
@@ -839,7 +860,8 @@ function bindWorldTerrainMaterial() {
   });
 }
 
-function begin() {
+function begin(tempo = null) {
+  if(tempo&&!net&&!wasm.configure_solo_command_queue(1))throw Error('Befehlswarteschlange konnte nicht aktiviert werden');
   originalModels.clearResourcePicks();
   takeoffAudio?.reset();
   sfx.resetAirFlightAudio();
@@ -855,9 +877,16 @@ function begin() {
   fullmap?.warplans.reset();
   fullmap?.invalidate();
   saveSession=Date.now();
-  ghost = null; attackMode = false; paused = false; speed = 1; acc = 0; fogTick = -1; actSig = '@refresh'; worstMs = 0; ui = null;
-  $('speed').textContent = '1×'; $('pause').textContent = 'Pause';
-  for (const id of ['speed', 'pause', 'save']) $(id).style.display = net ? 'none' : '';
+  ghost = null; attackMode = false; paused = false; acc = 0; fogTick = -1; actSig = '@refresh'; worstMs = 0; ui = null;
+  pauseReasons.clear();
+  originalTempo = tempo;
+  speed = tempo?.requested ?? 1;
+  pendingTempo = 0;
+  showSpeed(); $('pause').textContent = 'Pause';
+  $('pause').title=hasOriginalTempo?'Pause (Umschalt+Pause)':'Pause (P)';
+  $('game-options-button').hidden=!hasOriginalTempo||!!bench;
+  for (const id of ['pause', 'save']) $(id).style.display = net ? 'none' : '';
+  $('speed').style.display = net&&!tempo ? 'none' : '';
   $('menu').style.display = 'none'; $('end').style.display = 'none';
   shellMovie(false);
   $('camera-tools').hidden=!referenceMode;
@@ -881,6 +910,7 @@ function resolvedSkirmishChoices(choices, players) {
   return {civilizations, ...range};
 }
 function start(nAi, seed, benchUnits, humans = 1, local = 0) {
+  restartPoint=null;
   bench = benchUnits;
   seasonSession.configure(menuSeasonSettings(),benchUnits?0:menuClimate());
   wasm.init(seed >>> 0, nAi, benchUnits, humans, local);
@@ -917,7 +947,11 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
   cam.x = benchUnits ? MAP / 2 : wasm.start_x(); cam.y = benchUnits ? MAP / 2 : wasm.start_y(); cam.zoom = benchUnits ? 11 : 28;
   cam.heading=0;
   if(referenceMode)cam.nativeFraction=benchUnits?originalFractionForZoom(11,innerWidth,innerHeight):.2;
-  begin();
+  begin(hasOriginalTempo&&!benchUnits&&humans===1 ? startingTempo(menuTempo()) : null);
+  if(originalTempo){
+    const bytes=worldSaveBytes();
+    if(bytes)restartPoint={bytes,cam:{...cam}};
+  }
 }
 
 const db = () => new Promise((res, rej) => {
@@ -927,13 +961,23 @@ const db = () => new Promise((res, rej) => {
 });
 const dbDo = async (mode, fn) => { const d = await db(); return new Promise((res, rej) => { const rq = fn(d.transaction('saves', mode).objectStore('saves')); rq.onsuccess = () => res(rq.result); rq.onerror = () => rej(rq.error); }); };
 let saveSession=Date.now();
+function worldSaveBytes() {
+  const ptr=wasm.save(), length=wasm.save_len();
+  return length ? u8(ptr,length).slice() : null;
+}
+function applyWorldSave(bytes) {
+  const ptr=wasm.load_alloc(bytes.length);
+  u8(ptr,bytes.length).set(bytes);
+  return wasm.load_apply();
+}
 async function saveGame(silent) {
   if (!running || bench || net) { if (!silent) toast('Saving is only available in single-player games'); return; }
-  const ptr = wasm.save(), length = wasm.save_len();
-  if (!length) { if (!silent) toast('Spielstand konnte nicht gespeichert werden'); return; }
-  const bytes = u8(ptr, length).slice();
+  const bytes=worldSaveBytes();
+  if (!bytes) { if (!silent) toast('Spielstand konnte nicht gespeichert werden'); return; }
   try {
     const record={bytes,cam:{...cam},when:Date.now(),epoch:ui?ui.ename:'',session:saveSession,seasons:seasonSession.settings,
+      ...(originalTempo?{gameTempo:{...originalTempo,requested:speed}}:{}),
+      ...(restartPoint?{restart:restartPoint}:{}),
       ...(seasonSession.climate?{climate:seasonSession.climate}:{}),rules:rulesProfile.ruleset,profile:rulesProfile.id};
     const d=await db();
     await new Promise((resolve,reject)=>{
@@ -949,17 +993,18 @@ async function loadGame(slot='slot1') {
   const s = await dbDo('readonly', st => st.get(slot)).catch(() => null);
   if (!s) return toast('No saved game found');
   if(!savedRulesProfileMatches(s,rulesProfile))return toast('Dieser Spielstand gehört zu einer anderen Regelversion. Wähle im Menü die passende Regelversion.');
-  let seasons,climate;
+  let seasons,climate,tempo=null;
   try{seasons=savedSeasonSettings(s);climate=savedClimate(s,climates);}
   catch{return toast('Die Jahreszeiten- oder Klimaeinstellungen des Spielstands sind ungültig.');}
-  const ptr = wasm.load_alloc(s.bytes.length);
-  u8(ptr, s.bytes.length).set(s.bytes);
-  if (!wasm.load_apply()) return toast('Dieser Spielstand ist mit dieser Regelversion nicht kompatibel.');
+  try{if(hasOriginalTempo)tempo=loadOriginalTempo(s.gameTempo);}
+  catch{return toast('Die Geschwindigkeit des Spielstands ist ungültig.');}
+  if (!applyWorldSave(s.bytes)) return toast('Dieser Spielstand ist mit dieser Regelversion nicht kompatibel.');
   net = null; bench = 0; Object.assign(cam, s.cam);
+  restartPoint=hasOriginalTempo&&s.restart?.bytes instanceof Uint8Array&&s.restart?.cam ? s.restart : null;
   cam.heading=normalizeOriginalHeading(s.cam?.heading??0);
   seasonSession.configure(seasons,climate);setSeasonControls(seasons);climateControl.value=climate;
   if(referenceMode)cam.nativeFraction=Number.isFinite(s.cam?.nativeFraction)?s.cam.nativeFraction:originalFractionForZoom(s.cam?.zoom??28,innerWidth,innerHeight);
-  begin(); toast('Spielstand geladen');
+  begin(tempo); toast('Spielstand geladen');
 }
 async function refreshContinue() {
   const s = await dbDo('readonly', st => st.get('slot1')).catch(() => null);
@@ -975,14 +1020,17 @@ refreshContinue();
 // ---------------------------------------------------------------- simulation stepping & sound
 function advance(dt, now) {
   if (net) {
-    acc = Math.min(acc + dt, TICK * 6);                 // allow a short catch-up burst, never a spiral
+    acc = Math.min(acc + dt * speed, TICK * 6);         // allow a short catch-up burst, never a spiral
     let steps = 0; const t0 = performance.now();
     while (acc >= TICK && steps < 8 && net.ls.step()) { acc -= TICK; steps++; }
     if (steps) { simMs += ((performance.now() - t0) / steps - simMs) * 0.1; waitSince = now; }
   } else if (!paused) {
     acc += dt * speed;
     let steps = 0; const t0 = performance.now();
-    while (acc >= TICK && steps < 8) { wasm.tick(); acc -= TICK; steps++; }
+    while (acc >= TICK && steps < 8) {
+      if(pendingTempo){applyRequestedSpeed(pendingTempo);pendingTempo=0;}
+      wasm.tick(); acc -= TICK; steps++;
+    }
     if (steps) simMs += ((performance.now() - t0) / steps - simMs) * 0.1;
     if (acc > TICK) acc = TICK;                          // drop time instead of stalling the frame
   }
@@ -1111,7 +1159,7 @@ function frame(now) {
   updateCamera();
 
   advance(dt, now);
-  if(captureGlow&&!paused&&!(net&&net.ls.waiting)&&wasm.has_active_capture_glow())captureGlow.advance(dt*(net?1:speed));
+  if(captureGlow&&!paused&&!(net&&net.ls.waiting)&&wasm.has_active_capture_glow())captureGlow.advance(dt*speed);
   const alpha = paused || (net && net.ls.waiting) ? 1 : Math.min(1, acc / TICK);
   if (!net && !bench && now - lastAuto > 180000) { lastAuto = now; saveGame(true); }
 
@@ -1152,7 +1200,7 @@ function frame(now) {
   // Own visual clock: once before every scene pass. Pause/wait freezes cloth;
   // solo speed scales the explicit delta. Native helpers apply their own cap.
   let actorMetadata=sourceSails?.advance({count:n,instances:f32(wasm.inst_ptr(),n*STRIDE),epochs:renderEpochs,
-    deltaSeconds:dt*(net?1:speed),runPhysics:!paused&&!(net&&net.ls.waiting)})??null;
+    deltaSeconds:dt*speed,runPhysics:!paused&&!(net&&net.ls.waiting)})??null;
   if(!actorMetadata&&packMetadata)actorMetadata=packMetadata.snapshot(packActorReader.snapshot({count:n,instances:f32(wasm.inst_ptr(),n*STRIDE),namespace:renderNamespace}));
   takeoffAudio?.update({...takeoffSample,session:actorMetadata?.session,actors:actorMetadata?.actors??[],epochs:renderEpochs,view,
     running:!paused&&!document.hidden&&!(net&&net.ls.waiting)});
@@ -1163,9 +1211,9 @@ function frame(now) {
     const draft=airMission?.active()?airMission.preview(mouse.inside&&document.elementFromPoint(mouse.x,mouse.y)===canvas?toWorld(mouse.x,mouse.y):null):null;
     const records=readAirMissionVisualRoutes(wasm).filter(route=>draft?draft.points.length||draft.target!==0xffffffff:
       route.points.length||route.target!==0xffffffff);
-    if(airMissionFlag.prepare(records,{deltaSeconds:dt*(net?1:speed),runPhysics:!paused&&!(net&&net.ls.waiting),lighting:originalModels.lighting}))mission={records,draft};
+    if(airMissionFlag.prepare(records,{deltaSeconds:dt*speed,runPhysics:!paused&&!(net&&net.ls.waiting),lighting:originalModels.lighting}))mission={records,draft};
   }
-  carrierGarrisonFlag?.begin({session:wasm.render_meta_session(),deltaSeconds:dt*(net?1:speed),
+  carrierGarrisonFlag?.begin({session:wasm.render_meta_session(),deltaSeconds:dt*speed,
     runPhysics:!paused&&!(net&&net.ls.waiting),lighting:originalModels.lighting,wind:airMissionFlag?.normalWind(),occupied:carrierOccupied});
   if(qaMode&&sourceSails)canvas.dataset.sourceSails=JSON.stringify(sourceSails.metrics);
   let reflection=null;
@@ -1485,10 +1533,42 @@ mini.addEventListener('contextmenu', e => e.preventDefault());
 
 // ---------------------------------------------------------------- input
 const box = $('box');
-const modalOpen=()=>$('cheat-dialog').open||$('research-dialog').open||diplomacy.isOpen()||fullmap?.isOpen();
+const modalOpen=()=>$('cheat-dialog').open||$('research-dialog').open||diplomacy.isOpen()||fullmap?.isOpen()||gameOptions?.active();
+gameOptions=await mountOriginalGameOptions({
+  enabled:hasOriginalTempo,originalArt:originalEnabled,
+  view:()=>({epoch:ui?.epoch??initialMusicEpoch,disabled:[...(!restartPoint||net?['restart']:[]),...(net?['save','load','resign']:[])]}),
+  onOpen(){
+    if(!running||bench||ui?.win||$('cheat-dialog').open||$('research-dialog').open||diplomacy.isOpen())return false;
+    setPauseHold('options',true);keys.clear();cancelMapGesture();mouse.inside=false;
+  },
+  onClose(){setPauseHold('options',false);keys.clear();lastUi=0;},
+  onAction:handleGameOption,
+  onCue:cue=>{void sfx.playInterfaceCue(cue);},
+});
 function cancelMapGesture(){captureOrder?.cancel();tradeRoute?.cancel();airMission?.cancel();tradePress=null;airPress=null;mouse.down=false;mouse.drag=false;mouse.pan=false;mouse.inside=false;mini.dragging=false;box.style.display='none';canvas.style.cursor='default';}
 const fullscreen=createFullscreenController({buttons:[$('fullscreen'),$('menu-fullscreen')],notify:toast,
   onChange(){keys.clear();cancelMapGesture();updateCamera();}});
+const gameSettings=await mountOriginalGameSettings({
+  enabled:hasOriginalTempo,originalArt:originalEnabled,
+  read:()=>({muted:sfx.isMuted(),music:sfx.isMusicEnabled(),voices:sfx.isSpeechEnabled(),resolution:$('quality').value,fullscreen:fullscreen.active}),
+  apply(settings){
+    sfx.setMuted(settings.muted);sfx.setMusicEnabled(settings.music);sfx.setSpeechEnabled(settings.voices);
+    updateAudioButtons();$('quality').value=settings.resolution;
+    if(fullscreen.active!==settings.fullscreen)void fullscreen.toggle();
+  },
+  hotkeys:()=>[
+    {group:'Spiel',label:'Optionen',keys:['Esc','Pause']},
+    {group:'Spiel',label:'Spiel anhalten oder fortsetzen',keys:'Umschalt+Pause'},
+    {group:'Spiel',label:'Spieltempo verringern',keys:'Minus'},
+    {group:'Spiel',label:'Spieltempo erhöhen',keys:'Gleich'},
+    {group:'Spiel',label:'Starttempo wiederherstellen',keys:'Rücktaste'},
+    {group:'Karte',label:'Übersichtskarte',keys:'Tab'},
+    {group:'Karte',label:'Kamera bewegen',keys:'Pfeiltasten'},
+    {group:'Karte',label:'Diplomatie',keys:'F4'},
+  ],
+  movie:video=>mountOriginalShellVideo(video,rulesProfile.id),
+  onClose(){keys.clear();mouse.inside=false;},
+});
 addEventListener('pointerdown', sfx.unlock, { once: false });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('mousedown', e => {
@@ -1611,9 +1691,38 @@ canvas.addEventListener('wheel', e => {
   cam.x += before[0] - after[0]; cam.y += before[1] - after[1]; updateCamera();
 }, { passive: false });
 
-function setSpeed(i) { if (net) return; speed = SPEEDS[Math.min(SPEEDS.length - 1, Math.max(0, i))]; $('speed').textContent = speed + '×'; }
-function togglePause() { if (net) return toast('No pausing in multiplayer'); paused = !paused; if(paused){sfx.stopStoneThrowerWheels();takeoffAudio?.reset();sfx.resetAirFlightAudio();tradeRoute?.cancel();airMission?.cancel();} $('pause').textContent = paused ? 'Fortsetzen' : 'Pause'; }
-document.addEventListener('visibilitychange',()=>{if(document.hidden){sfx.stopStoneThrowerWheels();takeoffAudio?.reset();sfx.resetAirFlightAudio();}});
+function setSpeed(i) { if (net) return; speed = SPEEDS[Math.min(SPEEDS.length - 1, Math.max(0, i))]; showSpeed(); }
+function applyRequestedSpeed(rate) { speed=rate;showSpeed(); }
+function queueRequestedSpeed(rate) {
+  if(originalTempo.locked)return;
+  if(net)net.ls.setTempo(rate);
+  else pendingTempo=rate;
+}
+function requestOriginalSpeed(factor) {
+  if (!originalTempo) return;
+  queueRequestedSpeed(factor==='default' ? originalStartingSpeed(originalTempo) : changeOriginalSpeed(speed,factor));
+}
+function setPauseHold(reason,hold) {
+  if(net)return;
+  if(hold)pauseReasons.add(reason);
+  else pauseReasons.delete(reason);
+  const wasPaused=paused;
+  paused=pauseReasons.size>0;
+  if(paused&&!wasPaused){sfx.stopStoneThrowerWheels();takeoffAudio?.reset();sfx.resetAirFlightAudio();tradeRoute?.cancel();airMission?.cancel();}
+  if(paused!==wasPaused)last=performance.now();
+  $('pause').textContent=paused?'Fortsetzen':'Pause';
+}
+function togglePause() {
+  if(!running||net||gameOptions?.active()||$('cheat-dialog').open||$('research-dialog').open||diplomacy.isOpen())return;
+  setPauseHold('manual',!pauseReasons.has('manual'));
+}
+function taskSwitch() {
+  if(originalTempo&&running)setPauseHold('task-switch',document.hidden||document.hasFocus?.()===false);
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){sfx.stopStoneThrowerWheels();takeoffAudio?.reset();sfx.resetAirFlightAudio();}
+  taskSwitch();
+});
 function jumpToSelection() { const x = wasm.sel_center(0); if (x >= 0) { cam.x = x; cam.y = wasm.sel_center(1); } }
 function focusNextBattle(pip) {
   if (pip && !fullmapPip.isOpen()) return false;
@@ -1626,24 +1735,27 @@ function focusNextBattle(pip) {
 }
 function goHome(){const territory=ui?.diplomacy?.territories?.find(area=>area.owner===ui.local);cam.x=territory?.x??wasm.start_x();cam.y=territory?.y??wasm.start_y();}
 function idleWorker() { const i = wasm.select_idle_worker(); if (i !== -1 && i >>> 0 !== 0xffffffff) { tradeRoute?.cancel();airMission?.cancel();cam.x = wasm.ent_x(i); cam.y = wasm.ent_y(i); lastUi = 0; selectedUnitVoice('select'); } }
-function toggleMute() { sfx.setMuted(!sfx.isMuted()); $('mute').textContent = sfx.isMuted() ? 'Ton aus' : 'Ton an'; }
+function updateAudioButtons() {
+  $('mute').textContent=sfx.isMuted()?'Ton aus':'Ton an';
+  $('music').textContent=sfx.isMusicEnabled()?'Musik an':'Musik aus';
+  $('voices').textContent=sfx.isSpeechEnabled()?'Stimmen an':'Stimmen aus';
+}
+function toggleMute() { sfx.setMuted(!sfx.isMuted());updateAudioButtons(); }
 function selectedUnitVoice(action) {
   const ptr = wasm.ui(); const state = JSON.parse(dec.decode(u8(ptr, wasm.ui_len()))),selected=state.sel;
   if (selected.n) return sfx.acknowledge(selected.def, action,state.epoch,selectedCitizenContext(wasm,state));
   return false;
 }
 
-let cheatWasPaused = false;
 function closeCheats() {
   if (!$('cheat-dialog').open) return;
-  $('cheat-dialog').close(); paused = cheatWasPaused;
-  $('pause').textContent = paused ? 'Fortsetzen' : 'Pause';
+  $('cheat-dialog').close();setPauseHold('cheat',false);
 }
 function openCheats() {
   if (!running) return;
   if (net) return toast('Cheats sind nur im Einzelspieler verfügbar.');
   if ($('cheat-dialog').open) return;
-  cheatWasPaused = paused; paused = true; keys.clear(); cancelMapGesture();
+  setPauseHold('cheat',true);keys.clear();cancelMapGesture();
   $('cheat-result').textContent = `Cheats ${wasm.cheat_status(0) ? 'aktiv' : 'inaktiv'} · Sofortbau ${wasm.cheat_status(1) ? 'an' : 'aus'} · Technologiepunkte: ${wasm.cheat_status(2)}`;
   $('cheat-dialog').showModal(); $('cheat-input').value = ''; $('cheat-input').focus();
 }
@@ -1662,6 +1774,16 @@ $('cheat-form').addEventListener('submit', e => {
 });
 addEventListener('keydown', e => {
   if(e.key==='F11'){e.preventDefault();if(!e.repeat)fullscreen.toggle();return;}
+  if(gameSettings.active())return;
+  if(gameOptions?.active()){
+    if(e.key==='Escape'||(e.key==='Pause'&&!e.shiftKey)){e.preventDefault();if(!e.repeat)gameOptions.close();}
+    return;
+  }
+  if(hasOriginalTempo&&running&&!bench&&e.key==='Pause'&&!e.ctrlKey&&!e.altKey&&!e.metaKey){
+    e.preventDefault();
+    if(!e.repeat){if(e.shiftKey)togglePause();else gameOptions?.open();}
+    return;
+  }
   if(fullmap?.isOpen()){
     if(fullmap.warplans.key(e))return;
     if(e.key===' '&&!e.ctrlKey&&!e.altKey&&!e.metaKey&&focusNextBattle(e.shiftKey)){
@@ -1682,6 +1804,10 @@ addEventListener('keydown', e => {
   keys.add(e.key);
   if (!running) return;
   const k = e.key.length === 1 ? e.key.toUpperCase() : e.key;
+  if(originalTempo&&!e.ctrlKey&&!e.altKey&&!e.metaKey&&!e.shiftKey&&['Minus','Equal','Backspace'].includes(e.code)){
+    const change=e.code==='Backspace'?'default':e.code==='Minus'?.9:1.11111;
+    e.preventDefault();requestOriginalSpeed(change);return;
+  }
   if(e.altKey&&!e.ctrlKey&&!e.metaKey&&k==='Y'&&rulesProfile.ruleset===2&&!bench&&!net){
     e.preventDefault();if(!e.repeat)armPlayerFlare();return;
   }
@@ -1726,32 +1852,63 @@ addEventListener('keydown', e => {
     case 'M': toggleMute(); break;
     case 'Delete': tradeRoute?.cancel();airMission?.cancel();wasm.cmd_delete(); break;
     case 'Backspace': wasm.cmd_cancel(); break;
-    case 'Escape': if (ghost || attackMode) { ghost = null; attackMode = false; canvas.style.cursor = 'default'; } else wasm.select_none(); lastUi = 0; break;
+    case 'Escape':
+      if (ghost || attackMode) { ghost = null; attackMode = false; canvas.style.cursor = 'default'; }
+      else if(hasOriginalTempo&&!bench)gameOptions?.open();
+      else wasm.select_none();
+      lastUi = 0; break;
     case 'F': idleWorker(); break;
     case 'F4': e.preventDefault();if(!bench)diplomacy.open();break;
     case 'H': goHome(); break;
     case ' ': if(!e.altKey&&!focusNextBattle(e.shiftKey)&&!e.shiftKey)jumpToSelection(); e.preventDefault(); break;
-    case 'P': togglePause(); break;
-    case '+': case '=': setSpeed(SPEEDS.indexOf(speed) + 1); break;
-    case '-': setSpeed(SPEEDS.indexOf(speed) - 1); break;
+    case 'P': if(!hasOriginalTempo)togglePause(); break;
+    case '+': case '=': if(!originalTempo)setSpeed(SPEEDS.indexOf(speed) + 1); break;
+    case '-': if(!originalTempo)setSpeed(SPEEDS.indexOf(speed) - 1); break;
     case 'F9': if (!net) { wasm.grant(1000); toast('+1000 resources (sandbox cheat)'); } break;
   }
 });
 addEventListener('keyup', e => keys.delete(e.key));
-addEventListener('blur', () => { keys.clear(); cancelMapGesture(); });
+addEventListener('blur', () => { keys.clear(); cancelMapGesture();taskSwitch(); });
+addEventListener('focus',taskSwitch);
 
 $('idle').onclick = idleWorker;
 $('camera-left').onclick=()=>rotateView(Math.PI/4);
 $('camera-right').onclick=()=>rotateView(-Math.PI/4);
 $('camera-north').onclick=()=>{if(referenceMode&&running){cam.heading=0;updateCamera();mouse.inside=false;}};
 $('pause').onclick = togglePause;
+$('game-options-button').onclick=()=>gameOptions?.toggle();
 $('mute').onclick = toggleMute;
-$('music').onclick = () => { sfx.setMusicEnabled(!sfx.isMusicEnabled()); $('music').textContent = sfx.isMusicEnabled() ? 'Musik an' : 'Musik aus'; };
-$('voices').onclick = () => { sfx.setSpeechEnabled(!sfx.isSpeechEnabled()); $('voices').textContent = sfx.isSpeechEnabled() ? 'Stimmen an' : 'Stimmen aus'; };
+$('music').onclick = () => {sfx.setMusicEnabled(!sfx.isMusicEnabled());updateAudioButtons();};
+$('voices').onclick = () => {sfx.setSpeechEnabled(!sfx.isSpeechEnabled());updateAudioButtons();};
 $('save').onclick = () => saveGame();
-$('speed').onclick = () => setSpeed((SPEEDS.indexOf(speed) + 1) % SPEEDS.length);
+$('speed').onclick = () => {
+  if(!originalTempo){setSpeed((SPEEDS.indexOf(speed) + 1) % SPEEDS.length);return;}
+  queueRequestedSpeed(ORIGINAL_SPEEDS.find(value=>value>speed)??ORIGINAL_SPEEDS[0]);
+};
+function handleGameOption(action) {
+  if(action==='save')void saveGame();
+  else if(action==='load'){gameOptions.close();void loadGame();}
+  else if(action==='settings')gameSettings.open();
+  else if(action==='resign'){
+    if(net||!window.confirm('Möchtest du aufgeben?')||!wasm.cmd_resign_solo())return;
+    gameOptions.close();setPauseHold('manual',false);
+  }
+  else if(action==='restart'){
+    if(net||!restartPoint||!window.confirm('Möchtest du das Spiel neu starten?'))return;
+    if(!applyWorldSave(restartPoint.bytes)){toast('Dieses Scharmützel konnte nicht neu gestartet werden.');return;}
+    Object.assign(cam,restartPoint.cam);
+    gameOptions.close();begin({...originalTempo,requested:speed});
+  }
+  else if(action==='exit'||action==='desktop'){
+    if(!window.confirm('Möchtest du das laufende Spiel beenden?'))return;
+    toMenu();
+    if(action==='desktop')window.close();
+  }
+}
 function toMenu() {
   cancelMapGesture();
+  gameSettings.close();
+  gameOptions?.close();
   takeoffAudio?.reset();
   sfx.resetAirFlightAudio();
   airMissionFlag?.reset();
@@ -1785,6 +1942,7 @@ function channel(local) {
   let ch = null, pc = null, rejected = false, remoteWarplans, remoteCapture = false, remoteCaptureAnimation = false;
   let remoteInfantryRoster = false, remoteProductionRoster = false, remoteTradeRoute = false, remoteAirMission = false, remoteAirRunway = false, remoteAirTakeoff = false, remoteAirLanding = false;
   let remoteAirCarrier = false;
+  let remoteOriginalTempo = false;
   const supportsCapture = typeof wasm.capture_configure_peer === 'function';
   const supportsCaptureAnimation = supportsCapture && typeof wasm.capture_animation_configure_peer === 'function';
   const supportsInfantryRoster = typeof wasm.infantry_roster_configure_peer === 'function';
@@ -1810,6 +1968,7 @@ function channel(local) {
         ...(supportsTakeoff?{airTakeoff:1}:{}),
         ...(supportsLanding?{airLanding:1}:{}),
         ...(supportsCarrier?{airCarrier:1}:{}),
+        ...(hasOriginalTempo?{originalTempo:1}:{}),
         ...(climates.length>1?{climates}:{})}));
       mpStatus('Verbunden – Spielversion wird geprüft …');
     },
@@ -1834,6 +1993,7 @@ function channel(local) {
           remoteAirTakeoff=remoteAirRunway&&m.airTakeoff===1;
           remoteAirLanding=remoteAirTakeoff&&m.airLanding===1;
           remoteAirCarrier=remoteAirLanding&&m.airCarrier===1;
+          remoteOriginalTempo=m.originalTempo===1;
           if (local === 0 && !net) {
             try{
               const ai=+$('mpai').value,players=2+ai,choices=civilizationSetup.choices();
@@ -1852,6 +2012,7 @@ function channel(local) {
                 ...(supportsTakeoff&&remoteAirTakeoff?{airTakeoff:1}:{}),
                 ...(supportsLanding&&remoteAirLanding?{airLanding:1}:{}),
                 ...(supportsCarrier&&remoteAirCarrier?{airCarrier:1}:{}),
+                ...(hasOriginalTempo&&remoteOriginalTempo?{gameTempo:menuTempo()}:{}),
                 ...resolved,popLimit:choices?+$('pop-limit').value:null,supplies:choices?+$('supplies').value:null};
               checkStart(cfg);ch.send(JSON.stringify(cfg));launch(cfg);
             }catch{return reject('Die Scharmützeleinstellungen konnten nicht übernommen werden.');}
@@ -1880,6 +2041,10 @@ function channel(local) {
     if(cfg.airTakeoff!==undefined&&(cfg.airTakeoff!==1||cfg.airRunway!==1||!supportsTakeoff||!remoteAirTakeoff))throw Error('Unsupported air takeoff');
     if(cfg.airLanding!==undefined&&(cfg.airLanding!==1||cfg.airTakeoff!==1||!supportsLanding||!remoteAirLanding))throw Error('Unsupported air landing');
     if(cfg.airCarrier!==undefined&&(cfg.airCarrier!==1||cfg.airLanding!==1||!supportsCarrier||!remoteAirCarrier))throw Error('Unsupported aircraft carrier');
+    if(cfg.gameTempo!==undefined){
+      if(!hasOriginalTempo||!remoteOriginalTempo)throw Error('Unsupported game speed settings');
+      checkOriginalTempo(cfg.gameTempo);
+    }
     if(civilizationSetup.enabled){
       checkedCivilizations(cfg.civilizations,2+cfg.ai);
       if(![250,500,1000].includes(cfg.popLimit)||![0,1,2].includes(cfg.supplies))throw Error('Invalid skirmish setup');
@@ -1903,7 +2068,8 @@ function channel(local) {
     if(cfg.airCarrier===1&&!wasm.air_carrier_configure_peer(1))throw Error('Aircraft carrier setup failed');
     seasonSession.configure(peerSeasonSettings(cfg.seasons),cfg.climate);setSeasonControls(seasonSession.settings);climateControl.value=seasonSession.climate;
     net = { ch, pc, ls: null };
-    net.ls = new Lockstep(wasm, local, buf => { if (ch.readyState === 'open') ch.send(buf); });
+    const tempo = cfg.gameTempo ? {locked:cfg.gameTempo.locked,apply:applyRequestedSpeed} : null;
+    net.ls = new Lockstep(wasm, local, buf => { if (ch.readyState === 'open') ch.send(buf); }, tempo);
     if(originalEnabled&&fullmap&&remoteWarplans===WARPLAN_PEER_VERSION)net.warplans=createWarplanPeer({
       local,peerVersion:remoteWarplans,end:MAP-1,recipientAvailable:()=>!!warplanRecipient(),
       post:packet=>{if(ch.readyState!=='open')return false;ch.send(JSON.stringify(packet));return true;},
@@ -1912,7 +2078,8 @@ function channel(local) {
     bench = 0; cam.x = wasm.start_x(); cam.y = wasm.start_y(); cam.zoom = 28;
     cam.heading=0;
     if(referenceMode)cam.nativeFraction=.2;
-    begin(); toast(local === 0 ? 'You are blue. Good luck!' : 'You are red. Good luck!');
+    begin(cfg.gameTempo ? startingTempo(cfg.gameTempo) : null);
+    toast(local === 0 ? 'You are blue. Good luck!' : 'You are red. Good luck!');
   }
 }
 $('mpopen').onclick = () => { $('mp').style.display = $('mp').style.display === 'block' ? 'none' : 'block'; };

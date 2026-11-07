@@ -182,7 +182,7 @@ pub(crate) fn wrap(payload: Vec<u8>, game: &Game) -> Vec<u8> {
     }
     let flags = u32::from(rule.state.eliminated) | if rule.sole { SOLE } else { 0 };
     let mut out = Vec::with_capacity(HEADER + payload.len() + 4);
-    for value in [MAGIC, rule.state.deadline.to_bits(), flags, game.winner.into(), payload.len() as u32] {
+    for value in [MAGIC, rule.state.deadline.to_bits(), flags, game.rule_save_outcome().into(), payload.len() as u32] {
         out.extend_from_slice(&value.to_le_bytes());
     }
     out.extend_from_slice(&payload);

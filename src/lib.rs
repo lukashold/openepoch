@@ -922,6 +922,24 @@ pub extern "C" fn air_carrier_configure_peer(enabled: u32) -> u32 {
     u32::from(enabled <= 1 && g().configure_peer_air_carrier(enabled != 0))
 }
 
+#[cfg(feature="ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_solo_command_queue(enabled: u32) -> u32 {
+    let game = g();
+    if enabled > 1 || game.net || game.bench != 0 || !game.outbox.is_empty() { return 0; }
+    game.solo_command_queue = enabled == 1;
+    1
+}
+
+#[cfg(feature="ee2-native13")]
+#[no_mangle]
+pub extern "C" fn cmd_resign_solo() -> u32 {
+    let game = g();
+    if game.net || game.bench != 0 || !game.solo_command_queue || game.winner != 0 { return 0; }
+    game.submit(C_SOLO_RESIGN, 0.0, 0.0, 0, &[]);
+    1
+}
+
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
 pub extern "C" fn air_landing_status(handle: u32, field: u32) -> u32 {

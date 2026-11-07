@@ -6,6 +6,8 @@
 <title>OpenEpoch — browser RTS in Rust + WebAssembly</title>
 <meta name="description" content="OpenEpoch: lokales Echtzeit-Strategiespiel mit Scharmützeln, Forschung und Epochen von der Steinzeit bis in die Zukunft.">
 <link rel="stylesheet" href="skirmish-menu.css?v=native13">
+<link rel="stylesheet" href="original-game-options.css?v=native37">
+<link rel="stylesheet" href="original-game-settings.css?v=native37">
 <link rel="stylesheet" href="fullmap.css?v=native20">
 <style>
   :root { --bg:#10151b; --panel:#1a222bee; --line:#33414f; --text:#e6edf3; --dim:#93a1b0; --acc:#4aa3ff; }
@@ -157,8 +159,9 @@
   <button id="mute" title="Toggle sound (M)">Ton an</button>
   <button id="cheats" title="Cheats eingeben (Enter)">Cheats</button>
   <button id="save" title="Save game (Ctrl+S). The game also saves itself every few minutes.">Speichern</button>
-  <button id="speed" title="Game speed (+ / -)">1×</button>
-  <button id="pause" title="Pause (P)">Pause</button>
+  <button id="speed" title="Spielgeschwindigkeit (Minus, Gleich, Rücktaste)">1×</button>
+  <button id="pause" title="Pause">Pause</button>
+  <button id="game-options-button" title="Optionen (Pause / Esc)" hidden>Optionen</button>
   <button id="fullscreen" title="Vollbild · F11" aria-pressed="false">Vollbild</button>
   <button id="fullmap-button" title="Weltkarte · Tab" aria-haspopup="dialog" aria-controls="fullmap" hidden>Karte</button>
   <button id="player-flare-button" title="Kartenmarkierung setzen · Alt+Y" aria-pressed="false" hidden>Markieren</button>
@@ -196,6 +199,89 @@
  <header><h2>Forschung</h2><button id="research-close">Schließen · Esc</button></header>
  <p id="research-status"></p><div id="research-epochs"></div><div id="research-nodes"></div>
  <p>Bürger mit Rechtsklick in eine Universität schicken. Sechs Technologien der aktuellen Epoche und die nötigen Technologiepunkte erlauben den Epochenwechsel im Stadtzentrum.</p>
+</dialog>
+<dialog id="native-game-pause" aria-labelledby="native-game-pause-title">
+  <h2 id="native-game-pause-title">Pausenfenster</h2>
+  <div class="native-pause-art" aria-hidden="true">
+    <span data-pause-layer="bkg_top"></span><span data-pause-layer="bkg_bot"></span><span data-pause-layer="glass"></span>
+    <span data-pause-layer="divider_1"></span><span data-pause-layer="divider_2"></span>
+  </div>
+  <div class="native-pause-frame" aria-hidden="true">
+    <span data-pause-piece="ul"></span><span data-pause-piece="ll"></span><span data-pause-piece="lr"></span><span data-pause-piece="ur"></span>
+    <span data-pause-piece="top"></span><span data-pause-piece="left"></span><span data-pause-piece="bottom"></span><span data-pause-piece="right"></span>
+  </div>
+  <button type="button" data-pause-action="resume" autofocus>ZURÜCK ZUM SPIEL</button>
+  <button type="button" data-pause-action="save">SPIEL SPEICHERN</button>
+  <button type="button" data-pause-action="load">SPIEL LADEN</button>
+  <button type="button" data-pause-action="restart">SPIEL NEU STARTEN</button>
+  <button type="button" data-pause-action="resign">AUFGEBEN</button>
+  <button type="button" data-pause-action="settings">EINSTELLUNGEN</button>
+  <button type="button" data-pause-action="record" hidden>SPIEL AUFZEICHNEN</button>
+  <button type="button" data-pause-action="exit">SPIEL BEENDEN</button>
+  <button type="button" data-pause-action="desktop">ZURÜCK ZUM DESKTOP</button>
+</dialog>
+<dialog id="native-game-settings" aria-labelledby="native-game-settings-title">
+  <video muted loop playsinline hidden></video>
+  <form>
+    <div class="native-settings-panel-art" data-settings-widget="options_panel" aria-hidden="true"></div>
+    <div class="native-settings-background" aria-hidden="true">
+      <span data-settings-widget="options_panel_bkg1"></span><span data-settings-widget="options_panel_bkg2"></span><span data-settings-widget="options_panel_bkg3"></span>
+      <span data-settings-widget="options_panel_bkg4"></span><span data-settings-widget="options_panel_bkg5"></span><span data-settings-widget="options_panel_bkg6"></span>
+      <span data-settings-widget="options_divider"></span>
+    </div>
+    <div data-settings-frame="options_root" aria-hidden="true"></div><div data-settings-frame="options_panel" aria-hidden="true"></div>
+    <h2 id="native-game-settings-title" data-settings-widget="options_root_title" data-source-label>Einstellungen</h2>
+    <nav aria-label="Einstellungsreiter" role="tablist">
+      <button type="button" role="tab" id="native-settings-tab-audio" aria-controls="native-settings-audio" data-settings-tab="audio" data-settings-widget="options_audio_tab" data-source-label>Audio</button>
+      <button type="button" role="tab" id="native-settings-tab-video" aria-controls="native-settings-video" data-settings-tab="video" data-settings-widget="options_video_tab" data-source-label>Grafik</button>
+      <button type="button" role="tab" id="native-settings-tab-general" aria-controls="native-settings-general" data-settings-tab="general" data-settings-widget="options_general_tab" data-source-label>Spiel</button>
+      <button type="button" role="tab" id="native-settings-tab-hotkeys" aria-controls="native-settings-hotkeys" data-settings-tab="hotkeys" data-settings-widget="options_hotkeys_tab" data-source-label>Schnelltasten</button>
+    </nav>
+    <section id="native-settings-audio" role="tabpanel" aria-labelledby="native-settings-tab-audio" data-settings-pane="audio">
+      <div class="native-settings-row"><input id="native-settings-music" type="checkbox" data-setting="music" data-settings-widget="options_audio_music_on"><label for="native-settings-music" data-settings-widget="options_audio_music_on_label" data-source-label>Musik Ein</label></div>
+      <div class="native-settings-row"><input id="native-settings-ambient" type="checkbox" disabled data-settings-widget="options_audio_amb_on"><label for="native-settings-ambient" data-settings-widget="options_audio_amb_on_label" data-source-label>Geräusche Ein</label></div>
+      <h3 data-settings-widget="options_audio_volume_label" data-source-label>Lautstärke:</h3>
+      <div class="native-settings-row"><label for="native-settings-music-volume" data-settings-widget="options_audio_musvol_label" data-source-label>Musik:</label><input id="native-settings-music-volume" type="range" disabled data-settings-widget="options_audio_musvol"></div>
+      <div class="native-settings-row"><label for="native-settings-sound-volume" data-settings-widget="options_audio_sndvol_label" data-source-label>Sound:</label><input id="native-settings-sound-volume" type="range" disabled data-settings-widget="options_audio_sndvol"></div>
+      <div class="native-settings-test-sounds" data-settings-widget="options_audio_test_choice" aria-hidden="true"></div>
+      <button type="button" disabled data-settings-widget="options_audio_test_sound" data-source-label>Lautstärke testen</button>
+      <label class="native-settings-extra" data-settings-extra="options_audio_pane" data-offset-x="790" data-offset-y="76"><input type="checkbox" data-setting="muted"> Ton stummschalten</label>
+      <label class="native-settings-extra" data-settings-extra="options_audio_pane" data-offset-x="790" data-offset-y="122"><input type="checkbox" data-setting="voices"> Einheitenstimmen</label>
+    </section>
+    <section id="native-settings-video" role="tabpanel" aria-labelledby="native-settings-tab-video" data-settings-pane="video" hidden>
+      <div class="native-settings-row"><label for="native-settings-resolution" data-settings-widget="options_video_txdisplaymode" data-source-label>Anzeige-Modus:</label><select id="native-settings-resolution" data-setting="resolution" data-settings-widget="options_video_displaymode"><option value="1">Standard · 1×</option><option value="1.5">Hoch · bis 1,5×</option><option value="2">Sehr hoch · bis 2×</option></select></div>
+      <div class="native-settings-row"><label for="native-settings-model" data-settings-widget="options_video_txmodeldetail" data-source-label>Modelldetails:</label><select id="native-settings-model" disabled data-settings-widget="options_video_model"><option>Nicht verfügbar</option></select></div>
+      <div class="native-settings-row"><label for="native-settings-animation" data-settings-widget="options_video_txanimdetail" data-source-label>Animationsdetails:</label><select id="native-settings-animation" disabled data-settings-widget="options_video_anim"><option>Nicht verfügbar</option></select></div>
+      <div class="native-settings-row"><label for="native-settings-texture" data-settings-widget="options_video_txtexturedetail" data-source-label>Texturdetails:</label><select id="native-settings-texture" disabled data-settings-widget="options_video_texture"><option>Nicht verfügbar</option></select></div>
+      <div class="native-settings-row"><label for="native-settings-effects" data-settings-widget="options_video_txfxdetail" data-source-label>Effektdetails:</label><select id="native-settings-effects" disabled data-settings-widget="options_video_fx"><option>Nicht verfügbar</option></select></div>
+      <div class="native-settings-row"><label for="native-settings-weather" data-settings-widget="options_video_txweatherdetail" data-source-label>Wetterdetails:</label><select id="native-settings-weather" disabled data-settings-widget="options_video_weather"><option>Nicht verfügbar</option></select></div>
+      <div class="native-settings-row"><label for="native-settings-water" data-settings-widget="options_video_waterdetail_label" data-source-label>Wasserdetails:</label><select id="native-settings-water" disabled data-settings-widget="options_video_water"><option>Nicht verfügbar</option></select></div>
+      <div class="native-settings-row"><label for="native-settings-terrain" data-settings-widget="options_video_txterraindetail" data-source-label>Terraindetails:</label><select id="native-settings-terrain" disabled data-settings-widget="options_video_terrain"><option>Nicht verfügbar</option></select></div>
+      <div class="native-settings-row"><label for="native-settings-shadow" data-settings-widget="options_video_txshadowdetail" data-source-label>Schattendetails:</label><select id="native-settings-shadow" disabled data-settings-widget="options_video_shadow"><option>Nicht verfügbar</option></select></div>
+      <p class="native-settings-graphics-info" data-settings-widget="options_video_info_text_bkg">Der Anzeigemodus bestimmt die Renderauflösung. Die einzelnen Detailstufen des Originals sind hier noch nicht separat einstellbar.</p>
+    </section>
+    <section id="native-settings-general" role="tabpanel" aria-labelledby="native-settings-tab-general" data-settings-pane="general" hidden>
+      <h3 data-settings-widget="options_gen_mouse_label" data-source-label>Mauseinstellungen:</h3>
+      <div class="native-settings-row"><input id="native-settings-swap-mouse" type="checkbox" disabled data-settings-widget="options_gen_lr_mouse"><label for="native-settings-swap-mouse" data-settings-widget="options_gen_lr_mouse_label" data-source-label>Maustasten umkehren</label></div>
+      <h3 data-settings-widget="options_gen_autosave_label" data-source-label>Einstellungen für autom. Speichern:</h3>
+      <div class="native-settings-row"><label for="native-settings-autosaves" data-settings-widget="options_gen_num_as_label" data-source-label>Anzahl:</label><input id="native-settings-autosaves" type="range" disabled data-settings-widget="options_gen_num_as"></div>
+      <div class="native-settings-row"><label for="native-settings-autosave-interval" data-settings-widget="options_gen_freq_as_label" data-source-label>Häufigkeit:</label><input id="native-settings-autosave-interval" type="range" disabled data-settings-widget="options_gen_freq_as"></div>
+      <h3 data-settings-widget="options_gen_misc_label" data-source-label>Sonstige Einstellungen:</h3>
+      <label class="native-settings-extra" data-settings-extra="options_gen_misc" data-offset-x="70" data-offset-y="85"><input type="checkbox" data-setting="fullscreen"> Vollbild</label>
+    </section>
+    <section id="native-settings-hotkeys" role="tabpanel" aria-labelledby="native-settings-tab-hotkeys" data-settings-pane="hotkeys" hidden>
+      <h3 data-settings-widget="option_HK_keys_label" data-source-label>Tastennamen:</h3>
+      <ul class="native-settings-keys" data-settings-widget="option_HK_keys_list" aria-label="Aktive Tastaturbelegung"></ul>
+      <p data-settings-widget="option_HK_currBind_label" data-source-label>Aktuelle Zuweisung:</p>
+      <p class="native-settings-key-readonly" data-settings-widget="option_HK_currBind">Die aktiven Schnelltasten werden angezeigt.</p>
+      <button type="button" disabled data-settings-widget="option_HK_edit" data-source-label>Bearbeiten</button>
+    </section>
+    <footer>
+      <button type="submit" data-settings-widget="options_accept" data-source-label>Annehmen</button>
+      <button type="button" data-settings-command="cancel" data-settings-widget="options_cancel" data-source-label>Abbrechen</button>
+      <button type="button" data-settings-command="defaults" data-settings-widget="options_default" data-source-label>Standard</button>
+    </footer>
+  </form>
 </dialog>
 <dialog id="cheat-dialog" style="background:#161d25;color:#e8edf2;border:1px solid #596c80;border-radius:10px;max-width:480px;padding:24px">
   <form id="cheat-form">
@@ -242,6 +328,10 @@
         <div class="row"><label for="supplies">Startvorräte</label><select id="supplies"><option value="0">Normal</option><option value="1" selected>Großzügig</option><option value="2">Sehr großzügig</option></select><span class="dim">Für alle Spieler gleich</span></div>
       </section>
       <section id="sk-advanced" class="skirmish-pane">
+        <div id="original-tempo-options" hidden>
+          <div class="row"><label for="game-speed-preset">Spielgeschwindigkeit</label><select id="game-speed-preset"><option value="0">Langsam</option><option value="1" selected>Normal</option><option value="2">Schnell</option><option value="3">Sehr schnell</option></select></div>
+          <div class="row"><label for="game-speed-locked">Geschwindigkeit sperren</label><input id="game-speed-locked" type="checkbox" checked></div>
+        </div>
         <div class="row"><label for="rules-profile">Regelversion</label><select id="rules-profile"><option value="up15">EE2 · installierte UP-Regeln</option><option value="base">EE2 · Basisdaten</option><option value="own">OpenEpoch-Regeln</option></select></div>
         <p class="dim" style="font-size:12px;margin:0 0 10px">Jede Regelversion hat eigene Spielstände. Für Multiplayer wählen beide dieselbe Version.</p>
         <div class="row"><label for="quality">Auflösung</label><select id="quality"><option value="1">Standard · 1×</option><option value="1.5">Hoch · bis 1,5×</option><option value="2" selected>Sehr hoch · bis 2×</option></select></div>
@@ -296,7 +386,7 @@
       <tr><td>F &nbsp; H &nbsp; Space</td><td>idle worker · home · jump to selection</td></tr>
       <tr><td>F4</td><td>Diplomatie · Frieden, Bündnisse, Sicht teilen und Rohstoffe schenken</td></tr>
       <tr><td>U</td><td>unload transport ships (or right-click a shore)</td></tr>
-      <tr><td>P &nbsp; + &nbsp; − &nbsp; M</td><td>pause · game speed · sound</td></tr>
+      <tr><td>Umschalt+Pause &nbsp; − &nbsp; = &nbsp; Rücktaste &nbsp; M</td><td>Pause · Tempo · Starttempo · Ton</td></tr>
       <tr><td>Ctrl+S</td><td>save (single player; also saved automatically)</td></tr>
     </table>
     <p><a href="reference.html">Basiswerte</a> · <a href="catalog.html">Basis-Technologiebaum</a> · <a href="?">OpenEpoch-Regeln</a></p>
@@ -313,6 +403,6 @@
 </aside>
 <div id="trade-route-caption" hidden role="status"></div>
 <div id="air-mission-caption" hidden role="status"></div>
-<script type="module" src="main.js?v=native36"></script>
+<script type="module" src="main.js?v=native37"></script>
 </body>
 </html>

@@ -239,6 +239,10 @@ pub struct Game {
     pub(crate) air_landing_enabled: bool,
     #[cfg(feature="ee2-native13")]
     pub(crate) air_carrier_enabled: bool,
+    #[cfg(feature="ee2-native13")]
+    pub(crate) solo_command_queue: bool,
+    #[cfg(feature="ee2-native13")]
+    pub(crate) solo_resigned: bool,
     #[cfg(feature = "ee2-native13")]
     pub(crate) landing: crate::landing34::State,
     #[cfg(feature = "ee2-native13")]
@@ -376,6 +380,10 @@ impl Game {
             air_landing_enabled: humans == 1 && bench == 0,
             #[cfg(feature="ee2-native13")]
             air_carrier_enabled: humans == 1 && bench == 0,
+            #[cfg(feature="ee2-native13")]
+            solo_command_queue: false,
+            #[cfg(feature="ee2-native13")]
+            solo_resigned: false,
             #[cfg(feature = "ee2-native13")]
             landing: crate::landing34::State::default(),
             #[cfg(feature = "ee2-native13")]
@@ -1080,6 +1088,8 @@ impl Game {
         if self.air_landing_enabled { self.landing.hash(&mut mix); }
         #[cfg(feature="ee2-native13")]
         if self.air_carrier_enabled { mix(crate::carrier36_defs::HASH_TAG); }
+        #[cfg(feature="ee2-native13")]
+        if self.solo_resigned { mix(u32::from_le_bytes(*b"RSG1")); }
         #[cfg(feature="ee2-civ8")]
         if self.civilizations.iter().any(|&c|c!=crate::civ8_runtime::LEGACY_NEUTRAL){
             mix(0x38564943);for c in self.civilizations{mix(c as u32);}
@@ -1171,6 +1181,10 @@ impl Game {
     // ------------------------------------------------------------------ tick
 
     pub fn tick(&mut self) {
+        #[cfg(feature="ee2-native13")]
+        self.apply_solo_commands();
+        #[cfg(feature="ee2-native13")]
+        if self.solo_resigned { return; }
         // Reset resource work slots once, before either old or newly trained
         // citizens run. Resetting inside a building update lets later IDs bypass it.
         for e in &mut self.ents[..self.high]{if e.alive&&e.def==FARM{e.carry=0.0;}}
@@ -1270,7 +1284,7 @@ impl Game {
         if !self.net && self.bench == 0 {
             let mut living = crate::ee2_conquest::living_seats(self);
             for (seat, alive) in living.iter_mut().enumerate() {
-                *alive &= !self.eliminated_by_victory(seat);
+                *alive &= !self.eliminated_by_victory(seat) && !(self.solo_resigned && seat == self.local as usize);
             }
             for (player, alive) in self.players[..self.nplayers].iter_mut().zip(living) {
                 player.alive = alive;
@@ -1280,6 +1294,11 @@ impl Game {
         for player in &mut self.players[..self.nplayers] {
             player.alive = player.buildings > 0;
         }
+    }
+
+    #[cfg(feature="ee2-native13")]
+    pub(crate) fn rule_save_outcome(&self) -> u8 {
+        if self.solo_resigned { 0 } else { self.winner }
     }
 
     fn match_has_winner(&self, local: usize) -> bool {
