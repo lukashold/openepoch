@@ -11,6 +11,10 @@ const VERSION=2;
 const integer=(value,min,max)=>Number.isInteger(value)&&value>=min&&value<=max;
 const roomToken=/^[0-9a-f-]{36}$/;
 
+export function requiresCapitolRoster(mode,humanSeats,ai) {
+  return mode!==5||humanSeats!==2||ai!==0;
+}
+
 function packCode(kind,room,seat,sdp) {
   return PREFIX+btoa(JSON.stringify({kind,room:room.id,seats:room.seats,seat,sdp}));
 }
@@ -115,11 +119,12 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
       return 'Alle Mitspieler benötigen eine Spielversion mit Gruppen-Koop-Spielständen.';
     if(!room.sharedOwner&&!room.groupedOwners&&(!validateArchive||guests.some(guest=>!guest.checkpoints)))
       return 'Alle Mitspieler benötigen eine Spielversion mit Mehrspieler-Spielständen.';
-    const {climate,features,crownVictory,capitolVictory}=room.archive.settings;
+    const {climate,features,crownVictory,capitolVictory,humanSeats,ai}=room.archive.settings;
     if(crownVictory&&guests.some(guest=>!guest.crownVictory))
       return 'Alle Mitspieler benötigen eine Spielversion mit Kronen-Siegbedingungen.';
-    if(capitolVictory&&guests.some(guest=>!guest.capitolVictory))
-      return 'Beide Spieler benötigen eine Spielversion mit Kapitol-Siegbedingungen.';
+    if(capitolVictory&&guests.some(guest=>!guest.capitolVictory||
+      (requiresCapitolRoster(capitolVictory.mode,humanSeats,ai)&&!guest.capitolRoster)))
+      return 'Alle Mitspieler benötigen eine Spielversion mit diesen Kapitol-Siegbedingungen.';
     if(guests.some(guest=>!guest.climates.includes(climate)||features.some(key=>!guest.features.includes(key))))
       return 'Einem Mitspieler fehlen Regeln oder Grafiken für diesen Spielstand.';
     return '';

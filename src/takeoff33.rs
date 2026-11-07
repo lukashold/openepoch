@@ -124,11 +124,12 @@ impl Game {
         }
     }
 
-    pub(crate) fn begin_takeoff(&mut self, index: usize, airport: &Ent) {
+    pub(crate) fn begin_takeoff(&mut self, index: usize, airport: &Ent, deck_height: Option<f32>) {
         if !self.air_takeoff_enabled { return; }
         let handle = self.h(index);
         // 008741E0 rounds the scaled Z before adding the Airport's world Z.
-        let height = if airport.def == crate::carrier36_defs::CARRIER {
+        let height = if let Some(height) = deck_height { height }
+        else if airport.def == crate::carrier36_defs::CARRIER {
             self.carrier_deck_offset(airport, 0)
         } else { ground(&self.map, airport.x, airport.y) + (TAG_Z * TAG_SCALE) as f32 };
         let actor = &mut self.ents[index];

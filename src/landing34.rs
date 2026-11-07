@@ -174,10 +174,19 @@ impl Game {
             self.landing.clear(handle);
             return false;
         };
-        let host = &self.ents[self.get(home).expect("returning plane has a live host")];
-        let [first, second] = self.air_host_markers(host).map(source_xy);
+        let host_index = self.get(home).expect("returning plane has a live host");
+        let host = &self.ents[host_index];
         let carrier = host.def == CARRIER;
-        let deck_offset = if carrier { self.carrier_deck_offset(host, 1) } else { 0.0 };
+        let (markers, deck_offset) = if carrier {
+            // Actor updates run in slot order. Sample the deck clock of the
+            // same host pose whose XY and heading the returning plane sees.
+            let elapsed = if host_index < index { self.sim_elapsed() } else { self.sim_previous_elapsed() };
+            self.carrier_deck(host_index, elapsed).map_or_else(
+                || (self.air_host_markers(host), self.carrier_deck_offset(host, 1)),
+                |deck| (deck.markers(), deck.landing_clearance()),
+            )
+        } else { (self.air_host_markers(host), 0.0) };
+        let [first, second] = markers.map(source_xy);
         let moving_deck = carrier && (host.vx != 0.0 || host.vy != 0.0 || host.rot != host.prot);
         let runway = Runway { first, second };
         let pose = Aircraft { position: source_xy([actor.x, actor.y]), velocity: source_xy([actor.vx, actor.vy]),

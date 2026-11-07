@@ -1010,14 +1010,17 @@ impl State {
             let spawn = |value: f32| value.clamp(1.0, N as f32 - 1.0);
             let point = [spawn(building.x + jitter), spawn(building.y + jitter)];
             if game.air_runway_enabled {
-                let pose = if building.def == CARRIER {
-                    crate::runway32::departure_at(game.air_host_markers(&building))
-                } else { crate::runway32::departure(&building) };
+                let (pose, deck_height) = if let Some(deck) = game.carrier_deck(host, game.sim_elapsed()) {
+                    let (pose, height) = deck.departure();
+                    (pose, Some(height))
+                } else if building.def == CARRIER {
+                    (crate::runway32::departure_at(game.air_host_markers(&building)), None)
+                } else { (crate::runway32::departure(&building), None) };
                 let aircraft = &mut game.ents[index];
                 (aircraft.x, aircraft.y) = (pose.x, pose.y);
                 (aircraft.px, aircraft.py) = (pose.x, pose.y);
                 (aircraft.rot, aircraft.prot) = (pose.heading, pose.heading);
-                game.begin_takeoff(index, &building);
+                game.begin_takeoff(index, &building, deck_height);
             }
             frame.waypoints.push_back(point);
             if frame.mission {

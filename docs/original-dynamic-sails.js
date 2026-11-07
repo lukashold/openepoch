@@ -1,4 +1,5 @@
 import {nativeMotionWorldForces,nativeInverseTagRotation,nativeLocalForces} from './source-cloth-kernel.js';
+import {CHOP53,NEAREST53} from './source-cloth-arithmetic.js';
 
 // Source grids, tag transforms and parent normalization remain separate. The
 // renderer never substitutes the rigid NIF mesh for a cloth grid.
@@ -34,8 +35,22 @@ export function dynamicSailVertices(plane,shading,normalization){
  if(!finite(packed))throw Error('Dynamic sail GPU vertex overflow');return packed;
 }
 
+// The uploaded body basis is column-major in X/Z/-Y. Convert it back to the
+// native Z-up rows, then compose the authored model-space tag rotation.
+export function nativeSailTagRotation(tag,basis,rounding){
+ const [a,b,c,d,e,f,g,h,i]=basis;
+ const parent=[a,-g,d,-c,i,-f,b,-h,e];
+ const order=[[1,0,2],[2,0,1],[2,0,1],[2,1,0],[2,1,0],[2,1,0],[2,1,0],[0,2,1],[0,2,1]];
+ const {store32,add}=rounding==='chop53'?CHOP53:NEAREST53;
+ return order.map(([first,second,last],index)=>{
+  const row=Math.floor(index/3)*3,col=index%3;
+  const term=k=>parent[row+k]*tag[k][col];
+  return store32(add(add(term(first),term(second)),term(last)));
+ });
+}
+
 // Own-world motion adapter. Native helpers receive original Z-up XY and the
-// transpose of actorRz(-totalYaw)*tagR9. No inverse scale/translation is used.
+// inverse of the current world tag rotation. Scale and translation stay out.
 // First appearance has zero delta; moving means a nonzero exported velocity.
 export function dynamicSailForces(actor,source,planeIndex,life={},options={}){
  const plane=source.planes[planeIndex];if(!plane)throw Error('Dynamic sail force plane is missing');
@@ -45,7 +60,8 @@ export function dynamicSailForces(actor,source,planeIndex,life={},options={}){
  const moving=!!(actor.velocityX||actor.velocityY),rounding=options.rounding||'chop53';
  const world=nativeMotionWorldForces(delta,{moving,windDamping:options.windDamping??0,suppressWind:!!life.dead,rounding});
  const c=Math.cos(-yaw),s=Math.sin(-yaw),m=plane.tag;
- const rotation=[...m[0].slice(0,3).map((v,i)=>Math.fround(c*v-s*m[1][i])),...m[0].slice(0,3).map((v,i)=>Math.fround(s*v+c*m[1][i])),...m[2].slice(0,3).map(Math.fround)];
+ const rotation=options.bodyBasis?nativeSailTagRotation(m,options.bodyBasis,rounding):
+  [...m[0].slice(0,3).map((v,i)=>Math.fround(c*v-s*m[1][i])),...m[0].slice(0,3).map((v,i)=>Math.fround(s*v+c*m[1][i])),...m[2].slice(0,3).map(Math.fround)];
  return nativeLocalForces(world,nativeInverseTagRotation(rotation),{rounding});
 }
 
@@ -92,18 +108,28 @@ export function createDynamicSailGPU(gl,instanceBuffer){
    gl.bindVertexArray(previousVAO&&retiredVAOs.has(previousVAO)?null:previousVAO);gl.bindBuffer(gl.ARRAY_BUFFER,previousBuffer&&retiredBuffers.has(previousBuffer)?null:previousBuffer);
   }
  }
- function get(actor,metadata,key){
-  if(disposed||!actor||metadata?.session!==session||metadata.frame!==frame||metadata.forHandle?.(actor.handle)!==actor)return null;
-  const owner=owners.get(actor.handle);return owner?.frame===frame&&owner.actor===actor&&owner.sourceKey===key?owner:null;
+ function get(actor,metadata,key,prepared=metadata){
+  if(disposed||!actor||metadata?.session!==session||metadata.forHandle?.(actor.handle)!==actor||
+     prepared?.session!==session||prepared.frame!==frame)return null;
+  const owner=owners.get(actor.handle),source=prepared.forHandle?.(actor.handle);
+  if(owner?.frame!==frame||owner.actor!==source||owner.sourceKey!==key)return null;
+  if(source!==actor&&['def','team','hpRatio','renderTime','renderX','renderY','renderAltitude','renderYaw']
+     .some(field=>source[field]!==actor[field]))return null;
+  return owner;
  }
- function ownerBounds(handle,variant){
+ function ownerBounds(handle,variant,basisForActor){
   const owner=owners.get(handle);if(!owner||!variant)return null;
   const {actor,localBounds:b}=owner;
   // Without the verified native scale, metadata has no generic instance-size
   // channel. Keep useful local bounds but do not invent a world-sized box.
   if(!Number.isFinite(variant.nativeScale))return {local:b,world:null,session:owner.session,frame:owner.frame,policy:'World bounds unavailable without verified native scale; own instance-size is not present in actor metadata.'};
   const scale=variant.nativeScale,o=variant.originOffset,yaw=actor.renderYaw+variant.yawOffset,c=Math.cos(yaw),s=Math.sin(yaw),points=[];
-  for(const x of [b.min[0],b.max[0]])for(const y of [b.min[1],b.max[1]])for(const z of [b.min[2],b.max[2]]){const px=(x+o[0])*scale,pz=(z+o[2])*scale;points.push(actor.renderX+px*c-pz*s,actor.renderAltitude+(y+o[1]+variant.yOffset)*scale,actor.renderY+px*s+pz*c);}
+  const basis=basisForActor?.(actor)??[c,0,s,0,1,0,-s,0,c];
+  for(const x of [b.min[0],b.max[0]])for(const y of [b.min[1],b.max[1]])for(const z of [b.min[2],b.max[2]]){
+   const px=(x+o[0])*scale,py=(y+o[1]+variant.yOffset)*scale,pz=(z+o[2])*scale;
+   points.push(actor.renderX+basis[0]*px+basis[3]*py+basis[6]*pz,
+    actor.renderAltitude+basis[1]*px+basis[4]*py+basis[7]*pz,actor.renderY+basis[2]*px+basis[5]*py+basis[8]*pz);
+  }
   return {local:b,world:bounds(points),session:owner.session,frame:owner.frame,policy:'Conservative own AABB of immutable body plus deformed local source grids; does not replace simulation visibility/culling.'};
  }
  return Object.freeze({prepare,get,bounds:ownerBounds,sourceKey:handle=>owners.get(handle)?.sourceKey??null,status:()=>Object.freeze({session,frame,...stats,disposed,colorUpload:'unclamped binary32 RGBA attribute; native packed vertex format remains unproven'}),dispose(){reset();session=null;frame=null;disposed=true;}});

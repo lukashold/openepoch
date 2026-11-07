@@ -319,6 +319,8 @@ pub struct Game {
     pub(crate) air_landing_enabled: bool,
     #[cfg(feature="ee2-native13")]
     pub(crate) air_carrier_enabled: bool,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) carrier_surface_pose_enabled: bool,
     #[cfg(feature="ee2-native13")]
     pub(crate) solo_command_queue: bool,
     #[cfg(feature="ee2-native13")]
@@ -559,6 +561,8 @@ impl Game {
             air_landing_enabled: !net && bench == 0,
             #[cfg(feature="ee2-native13")]
             air_carrier_enabled: !net && bench == 0,
+            #[cfg(feature = "ee2-native13")]
+            carrier_surface_pose_enabled: false,
             #[cfg(feature="ee2-native13")]
             solo_command_queue: false,
             #[cfg(feature="ee2-native13")]
@@ -1521,6 +1525,8 @@ impl Game {
         if self.air_landing_enabled { self.landing.hash(&mut mix); }
         #[cfg(feature="ee2-native13")]
         if self.air_carrier_enabled { mix(crate::carrier36_defs::HASH_TAG); }
+        #[cfg(feature = "ee2-native13")]
+        if self.carrier_surface_pose_enabled { mix(crate::runway32::CARRIER_POSE_HASH_TAG); }
         #[cfg(feature="ee2-native13")]
         if self.solo_resigned { mix(u32::from_le_bytes(*b"RSG1")); }
         #[cfg(feature="ee2-native13")]

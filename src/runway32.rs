@@ -2,9 +2,12 @@
 
 use crate::carrier36_defs::CARRIER;
 use crate::game::{Ent, Game};
+use crate::naval_heave72::{add, store};
 
 pub(crate) const SAVE_FLAG: u32 = 1 << 7;
 pub(crate) const HASH_TAG: u32 = u32::from_le_bytes(*b"RWY1");
+pub(crate) const CARRIER_POSE_SAVE_FLAG: u32 = 1 << 16;
+pub(crate) const CARRIER_POSE_HASH_TAG: u32 = u32::from_le_bytes(*b"CDK1");
 const SCALE: f64 = f32::from_bits(0x3ce7b46a) as f64;
 // Convert the source NIF X,Y plane to the renderer's X,-Y ground plane.
 const START: [f32; 2] = [f32::from_bits(0xc247a497), -f32::from_bits(0x42c823f0)];
@@ -20,6 +23,47 @@ pub(crate) struct Departure {
     pub x: f32,
     pub y: f32,
     pub heading: f32,
+}
+
+pub(crate) struct CarrierDeck {
+    points: [[f32; 3]; 2],
+    hull_height: f32,
+}
+
+impl CarrierDeck {
+    pub(crate) fn markers(&self) -> [[f32; 2]; 2] {
+        self.points.map(|[x, y, _]| [x, y])
+    }
+
+    pub(crate) fn departure(&self) -> (Departure, f32) {
+        let [[x, y, z], [end_x, end_y, _]] = self.points;
+        let dx = f64::from(store(add(f64::from(end_x), -f64::from(x))));
+        let dy = f64::from(store(add(f64::from(end_y), -f64::from(y))));
+        // 00A1DD10 wraps source atan2 before the caller stores it. Reflect
+        // native Y and return to the engine's signed heading convention.
+        let turn = f64::from(std::f32::consts::TAU);
+        let yaw = (-dy).atan2(dx);
+        let yaw = store(if yaw < 0.0 { add(yaw, turn) } else { yaw });
+        let heading = if yaw > std::f32::consts::PI { store(add(turn, -f64::from(yaw))) } else { -yaw };
+        (Departure { x, y, heading }, z)
+    }
+
+    pub(crate) fn landing_clearance(&self) -> f32 {
+        store(add(f64::from(self.points[1][2]), -f64::from(self.hull_height)))
+    }
+}
+
+fn deck_point(host: &Ent, height: f32, basis: [f32; 9], [x, y, z]: [f32; 3]) -> [f32; 3] {
+    let [a, b, c, d, e, f, g, h, i] = basis.map(f64::from);
+    let [x, y, z] = [f64::from(x), -f64::from(y), f64::from(z)];
+    // 008E6970 stores the rotated vector. 008741E0 then scales and translates
+    // it, with an extra f32 store on scaled native Y and Z before translation.
+    let rx = f64::from(store(add(add(d * z, g * y), a * x))) * DECK_SCALE;
+    let ry = store(f64::from(store(add(add(f * z, c * x), i * y))) * DECK_SCALE);
+    let rz = store(f64::from(store(add(add(e * z, b * x), h * y))) * DECK_SCALE);
+    [store(add(rx, f64::from(host.x))),
+     store(add(f64::from(ry), f64::from(host.y))),
+     store(add(f64::from(rz), f64::from(height)))]
 }
 
 fn world_point(host: &Ent, [x, y]: [f32; 2], rotation: f32, scale: f64) -> [f32; 2] {
@@ -51,6 +95,26 @@ pub(crate) fn markers(airport: &Ent) -> [[f32; 2]; 2] {
 }
 
 impl Game {
+    pub(crate) fn carrier_surface_pose_allowed(&self) -> bool {
+        !self.net && self.bench == 0 && self.air_carrier_enabled &&
+            self.production_roster_enabled && self.powers.is_some()
+    }
+
+    pub(crate) fn configure_carrier_surface_pose(&mut self) -> bool {
+        if self.tick != 0 || !self.carrier_surface_pose_allowed() { return false; }
+        self.carrier_surface_pose_enabled = true;
+        true
+    }
+
+    pub(crate) fn carrier_deck(&self, index: usize, elapsed: f32) -> Option<CarrierDeck> {
+        let host = &self.ents[index];
+        if host.def != CARRIER || !self.carrier_surface_pose_enabled { return None; }
+        let (id, hull_height) = self.naval_surface_pose_at(index, elapsed)?;
+        let basis = crate::naval_tilt73::naval_surface_basis(id, hull_height, host.rot)?;
+        let points = self.carrier_tags(host).map(|point| deck_point(host, hull_height, basis, point));
+        Some(CarrierDeck { points, hull_height })
+    }
+
     fn carrier_tags(&self, host: &Ent) -> [[f32; 3]; 2] {
         let upgraded = self.players[host.team as usize].epoch >= 13;
         DECK_MARKERS[usize::from(upgraded)].map(|point| point.map(f32::from_bits))

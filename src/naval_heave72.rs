@@ -74,13 +74,19 @@ pub(crate) fn surface_heave(packed_actor_id: u32, elapsed: f32) -> f32 {
 
 impl crate::game::Game {
     pub(crate) fn naval_surface_pose(&self, index: usize) -> Option<(u32, f32)> {
+        self.naval_surface_pose_at(index, self.sim_elapsed())
+    }
+
+    pub(crate) fn naval_surface_pose_at(&self, index: usize, elapsed: f32) -> Option<(u32, f32)> {
         let actor = &self.ents[index];
         // The hull keeps its NavalMove class after its training line retires.
-        // WarGalley, Destroyer and both Battleship aliases use the zero-depth
-        // surface NavalMove descriptor through their active source upgrades.
-        if !matches!(actor.def, 29 | 32 | 33 | 35) || actor.hp <= 0.0 || !self.production_roster_enabled { return None; }
+        // WarGalley, Destroyer, Battleship and FightingSail retain zero-depth
+        // surface NavalMove through their active source upgrades.
+        let carrier = actor.def == crate::carrier36_defs::CARRIER && self.carrier_surface_pose_enabled;
+        if !(matches!(actor.def, 29 | 32 | 33 | 35 | 58) || carrier) ||
+            actor.hp <= 0.0 || !self.production_roster_enabled { return None; }
         let serial = self.powers.as_ref()?.actor(self.h(index))?.serial;
         let id = (u32::from(actor.team) + 1) << 27 | serial;
-        Some((id, surface_heave(id, self.sim_elapsed())))
+        Some((id, surface_heave(id, elapsed)))
     }
 }

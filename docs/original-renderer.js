@@ -8,7 +8,7 @@ import {nativeModelTransform} from './original-scale.js?v=native1';
 import {modelYearPhase,modelSeasonFrames,modelSeasonBinding} from './original-model-seasons.js?v=modelseason1';
 import {createNativeLightingContext,nativeModelPipeline} from './original-lighting.js?v=lighting6';
 import {appendInitialSailParts,nativeInitialSailDiffuse} from './original-sail-composite.js?v=initialsail7';
-import {createDynamicSailBinding,createDynamicSailGPU,dynamicSailForces} from './original-dynamic-sails.js?v=clothgpu7';
+import {createDynamicSailBinding,createDynamicSailGPU,dynamicSailForces} from './original-dynamic-sails.js?v=native75-sails';
 import {appendNativePackAnimations,nativePackPose} from './original-pack-states.js?v=pack8';
 import {captureAnimationBindings,captureOverlayMatches,loadCaptureAnimationOverlay,nativeCapturePose,regionalCaptureBindings,loadRegionalCaptureAsset} from './original-capture-animations.js?v=native26';
 import {nativeTakeoffPose} from './air-takeoff.js?v=native33';
@@ -33,8 +33,19 @@ const navalPoseModels=new Map([
   '32299c3438ca7aa2ebc8cb682bf1b1fc1b4e0c35db688f59e5fb5c08c4fa0ded',
   '8c010579b6a9551c3658940ab6db0df5588b1be9ab71be0292cf787797fc80f7',
  ])],
+ [58, new Set([
+  'f3c70a79746d5f01f8749ab63d72d64525290736a1c998f444247d10ed012a39',
+  '5af9ace81bc7c2d174c90673f2ffcc998653cb8c688cd76c4e304482e81fe1eb',
+  'abf0a61d4e22df75118ed2637fc44c5d02ecaa98fdcc489fb4951fac8b358d1b',
+ ])],
+ [84, new Set([
+  'a51621715027d57f06086861bd7670b8b1a151d5f988c0cf67e70c06fc6bfad6',
+  'ebd48fc1a75cb938135e4a78ba1303347906028e021825942820de63c8466b15',
+ ])],
 ]);
 const navalBasisModel=(model,id)=>model.normalization?.axis==='x,z,-y'&&navalPoseModels.get(id)?.has(model.source?.sha256);
+const nativeNavalYaw=variant=>variant.yawOffset===-Math.PI/2||
+ (variant.sourceId===84&&variant.yawOffset===Math.fround(-Math.PI/2));
 const VS=`#version 300 es
 layout(location=0) in vec3 aPosition;layout(location=1) in vec3 aNormal;layout(location=2) in vec2 aUV;
 layout(location=3) in vec4 iA;layout(location=4) in vec4 iB;layout(location=5) in vec4 iC;
@@ -471,6 +482,13 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
  try{shader=program(gl);}catch(e){result.errors.push(e.message);console.warn('Originalmodell-Renderer:',e);return result;}
  const instances=gl.createBuffer(),textures=new Map();
  const dynamicGPU=options.dynamicSails?createDynamicSailGPU(gl,instances):null,dynamicSourceVariants=new Map();
+ const navalMatrices=new WeakMap();
+ const carrierHullBases=new WeakMap();
+ result.carrierHullBasis=actor=>carrierHullBases.get(actor);
+ const navalBasisForActor=actor=>{
+  if(!navalMatrices.has(actor))navalMatrices.set(actor,options.navalBasisForActor?.(actor)??null);
+  return navalMatrices.get(actor);
+ };
  result.dynamicSails={enabled:!!dynamicGPU,state:()=>dynamicGPU?.status()??null};
  const actorVariant=(actor,epochs)=>{
   if(!actor||!epochs||!Number.isInteger(actor.def)||!Number.isInteger(actor.team))return null;
@@ -478,9 +496,11 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   return selected;
  };
  result.resolveSailSource=(actor,epochs)=>dynamicGPU?actorVariant(actor,epochs)?.dynamicSailBinding??null:null;
- result.resolveSailForces=(actor,source,planeIndex,life)=>dynamicSailForces(actor,source,planeIndex,life,{rounding:options.dynamicSailRounding||'chop53',windDamping:options.dynamicSailWindDamping??0});
+ result.resolveSailForces=(actor,source,planeIndex,life)=>dynamicSailForces(actor,source,planeIndex,life,{
+  rounding:options.dynamicSailRounding||'chop53',windDamping:options.dynamicSailWindDamping??0,
+  bodyBasis:source.nativeHullBasis?navalBasisForActor(actor):null});
  result.prepareDynamicSails=inputs=>dynamicGPU?dynamicGPU.prepare(inputs):false;
- result.dynamicSailBounds=handle=>{const key=dynamicGPU?.sourceKey(handle);if(!key)return null;for(const variants of result.models.values())for(const variant of variants)if(variant.dynamicSailBinding?.key===key)return dynamicGPU.bounds(handle,variant);return null;};
+ result.dynamicSailBounds=handle=>{const key=dynamicGPU?.sourceKey(handle);if(!key)return null;for(const variants of result.models.values())for(const variant of variants)if(variant.dynamicSailBinding?.key===key)return dynamicGPU.bounds(handle,variant,variant.navalBasis?navalBasisForActor:null);return null;};
  result.disposeDynamicSails=()=>dynamicGPU?.dispose();
  let terrainMaterial = null;
  if (options.terrainFallbackManifestURL) {
@@ -704,7 +724,10 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     variant.selectHouseLod=bindHouseLodParts(houseBinding,levelParts);
     houseLodStatus.models++;houseLodStatus.groups+=houseBinding.groups.length;
    }catch(error){houseLodError(error);}}
-   if(dynamicBindings.has(model)){variant.dynamicSailBinding=dynamicBindings.get(model);const list=dynamicSourceVariants.get(id)||[];list.push(variant);dynamicSourceVariants.set(id,list);}
+   if(dynamicBindings.has(model)){
+    variant.dynamicSailBinding=Object.freeze({...dynamicBindings.get(model),nativeHullBasis:variant.navalBasis&&variant.yawOffset===-Math.PI/2});
+    const list=dynamicSourceVariants.get(id)||[];list.push(variant);dynamicSourceVariants.set(id,list);
+   }
    if(entry.sourceIdentity!==undefined)result.citizenModels.loaded++;else if(entry.regionalCivilizations)result.regionalModels.loaded++;
    if(model.nativeSailComposite){variant.sailComposite=model.nativeSailComposite;sailStatus.models++;}
    for(const {renderId}of bindings){const variants=result.models.get(renderId)||[];variants.push(variant);result.models.set(renderId,variants);result.available.add(renderId);if(assetKind===1)result.resourceRenderIds.add(renderId);}
@@ -825,12 +848,16 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   }
   return hit;
  };
- result.draw=({data,ranges,vp,epochs,zoom=80,shadow=false,eye=[0,200,0],lighting=defaultLighting,clipPlane=null,capture=false,actorMetadata=null,civilizations=visualCivilizations,stoneThrowerWheels=null,hercBeamMuzzles=null})=>{
+ result.draw=({data,ranges,vp,epochs,zoom=80,shadow=false,eye=[0,200,0],lighting=defaultLighting,clipPlane=null,capture=false,actorMetadata=null,preparedSailMetadata=actorMetadata,civilizations=visualCivilizations,stoneThrowerWheels=null,hercBeamMuzzles=null})=>{
   const started=performance.now();let calls=0,triangles=0,querying=false;
   const scaffoldDraws=[];
   const fenceDraws=[];
   let guidedRocketDraws=0;
   const collectActorPresentation=(actorVisuals||actorSourceScales)&&!shadow&&!clipPlane;
+  const collectCarrierBasis=!shadow&&!clipPlane;
+  if(collectCarrierBasis)for(const actor of actorMetadata?.actors??[]){
+   if(actor.def===84)carrierHullBases.delete(actor);
+  }
   if(collectActorPresentation)for(const actor of actorMetadata?.actors??[]){
    actorVisuals?.delete(actor);actorSourceScales?.delete(actor);
   }
@@ -916,8 +943,9 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     const shimmer=variant.spyClips&&matchingActorPose&&actor.team===rowTeam?options.spyShimmerForActor?.(actor):
      variant.diversionVisual&&matchingActor&&actor.team===rowTeam?options.diversionShimmerForActor?.(actor,variant.diversionVisual):null;
     if(shimmer?.opacity===0)continue;
-    const navalBasis=matchingActor&&variant.navalBasis&&variant.yawOffset===-Math.PI/2
-     ?options.navalBasisForActor?.(actor):null;
+    const navalBasis=matchingActor&&variant.navalBasis&&nativeNavalYaw(variant)
+     ?navalBasisForActor(actor):null;
+    if(collectCarrierBasis&&navalBasis&&variant.sourceId===84)carrierHullBases.set(actor,navalBasis);
     if(collectActorPresentation&&matchingActor){
      if(variant.sourceVisual)actorVisuals?.set(actor,variant.sourceVisual);
      if(variant.sourceScale>0)actorSourceScales?.set(actor,variant.sourceScale);
@@ -1004,7 +1032,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
      const actor=actorMetadata?.forInstance?.(index),at=j*12;
      // A sidecar from another render call/stream must never deform this row.
      if(!actor||actor.def!==variant.sourceId||actor.team!==team||actor.renderX!==list[at]||actor.renderY!==list[at+1]||actor.renderAltitude!==list[at+2]||actor.renderYaw!==data[index*12+3])return null;
-     return dynamicGPU.get(actor,actorMetadata,variant.dynamicSailBinding.key);
+     return dynamicGPU.get(actor,actorMetadata,variant.dynamicSailBinding.key,navalBasis?preparedSailMetadata:actorMetadata);
     }):null;
     for(const part of variant.parts){
      if(hiddenParts?.includes(part)||part.activities&&!part.activities.includes(activity))continue;

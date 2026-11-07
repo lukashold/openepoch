@@ -169,16 +169,21 @@ impl Game {
     }
 
     fn supports_network_capitols(&self) -> bool {
-        self.net && self.humans == 2 && self.nplayers == 2 && self.grouped_coop.is_none() && self.bench == 0
+        self.net && (2..=4).contains(&self.humans) && (self.humans as usize..=4).contains(&self.nplayers)
+            && self.grouped_coop.is_none() && self.bench == 0
     }
 
     pub(crate) fn configure_network_capitols(&mut self, minutes: u32, sole: u32) -> bool {
+        self.humans == 2 && self.nplayers == 2 && self.configure_network_capitols_roster(5, minutes, sole)
+    }
+
+    pub(crate) fn configure_network_capitols_roster(&mut self, mode: u32, minutes: u32, sole: u32) -> bool {
         if !self.supports_network_capitols() || self.net_resignation.is_none() || self.civ_setup_open
             || !self.capture_enabled || !self.capture_animation_enabled || self.tick != 0
             || self.crown_victory.is_some() || self.capitols.is_some() || !self.outbox.is_empty() || !self.inbox.is_empty() {
             return false;
         }
-        let Some(rule) = self.new_capitols(5, minutes, sole) else { return false; };
+        let Some(rule) = self.new_capitols(mode, minutes, sole) else { return false; };
         self.capitols = Some(rule);
         true
     }
@@ -229,7 +234,8 @@ impl Game {
         let available = rule.state.active(self.nplayers);
         let presence = self.players[..self.nplayers].iter().enumerate()
             .filter(|(_, player)| player.alive).fold(0, |mask, (seat, _)| mask | (1 << seat));
-        let mut survivors = rule.eligible(presence, available, |a, b| self.allied(a, b));
+        let can_return = available & !self.net_resignation.map_or(0, |state| state.defeated_mask());
+        let mut survivors = rule.eligible(presence, can_return, |a, b| self.allied(a, b));
         let allied = (0..self.nplayers as u8).all(|seat| survivors & (1 << seat) == 0
             || (0..seat).all(|other| survivors & (1 << other) == 0 || self.allied(seat, other)));
         let mut won = false;
@@ -290,7 +296,7 @@ impl Game {
         let seats = (1u8 << self.nplayers) - 1;
         let max_deadline = capitol_deadline(now, rule.minutes);
         if self.net {
-            if !network_departure_state || !self.supports_network_capitols() || rule.mode != 5 || outcome != 0 { return None; }
+            if !network_departure_state || !self.supports_network_capitols() || outcome != 0 { return None; }
         } else if self.humans != 1 || self.nplayers < 2 || self.bench != 0 || state.eliminated(0) != (outcome == 2) {
             return None;
         }
@@ -331,6 +337,44 @@ impl Game {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn an_allied_capitol_does_not_restore_a_departed_network_controller() {
+        let mut game = Game::new_network_roster(7, 0, 3, 0).unwrap();
+        assert!(game.configure_match_epoch_range(0xe281, 500, 2, 0, 14));
+        assert!(game.configure_network_resignation(1));
+        assert!(game.configure_peer_capture(true));
+        assert!(game.configure_peer_capture_animation(true));
+        assert!(!game.configure_network_capitols(2, 0));
+        assert!(!game.configure_network_capitols_roster(6, 2, 1));
+        assert!(game.configure_network_capitols_roster(6, 2, 0));
+        let [_, allied_city, enemy_city, unused] = game.capitols.unwrap().city;
+        assert_eq!(unused, NONE);
+        assert!(game.apply_diplomacy(0, 1, 0, 0, 0.0));
+        assert!(game.apply_diplomacy(1, 0, 3, 0, 0.0));
+        for step in 0..101 {
+            assert_eq!(game.tick_with_network_source_slot(30, 30, 1.5, step == 0), 1);
+        }
+        assert!(game.apply_diplomacy(0, 1, 1, 1, 0.0));
+        assert!(game.apply_diplomacy(1, 0, 3, 0, 0.0));
+        assert!(game.allied(0, 1));
+        assert_eq!(game.capitol_capture_owner(allied_city, 0), 1);
+        assert_eq!(game.capitol_capture_owner(enemy_city, 0), 0);
+
+        game.save_network_resume();
+        let mut restored = Game::load_network_resume(&game.savebuf, 3, 1, game.tick, 30, 1.5).unwrap();
+        assert_eq!(restored.network_capitol_config(), 6 | (2 << 8));
+        assert_eq!(restored.state_hash(), game.state_hash());
+        for world in [&mut game, &mut restored] {
+            world.apply_network_departure(1);
+            assert!(world.get(allied_city).is_some());
+            assert!(!world.finish_network_match());
+            assert!(world.network_observer(1));
+            assert!(!world.players[1].alive);
+            assert_eq!(world.capitol_capture_owner(allied_city, 0), 0);
+        }
+        assert_eq!(restored.state_hash(), game.state_hash());
+    }
 
     #[test]
     fn network_capitol_deadline_and_empty_capture_state_survive_authenticated_resume() {

@@ -1,6 +1,7 @@
 import {createNativeCloth,nativeInverseTagRotation,nativeLocalForces,nativeRotateForce} from './source-cloth-kernel.js';
 import {nativeClothVertexColors} from './source-cloth-lighting.js';
-import {dynamicSailVertices} from './original-dynamic-sails.js';
+import {dynamicSailVertices,nativeSailTagRotation} from './original-dynamic-sails.js';
+import {add,store32} from './source-cloth-arithmetic.js';
 
 const none=0xffffffff, stride=56, limit=8192;
 const directory='local-original/air-mission-flag/';
@@ -294,14 +295,26 @@ function createAirMissionFlagRenderer(gl,manifest,textures,cursor){
 
 // 007E7B00 copies the socket's raw translation. The GarrisonShip child keeps
 // local scale 1 and inherits the hull basis and scale in 00609403.
-function carrierFlagPose(actor,row){
-  const scale=row.model.nativeScaleBinding.sourceScale, yaw=Math.fround(actor.renderYaw+row.model.yawOffset);
+function carrierFlagPose(actor,row,basis){
+  const scale=row.model.nativeScaleBinding.sourceScale;
+  const [x,y,z]=row.bodyEvidence.markers.tag_garrison_pole.point;
+  if(basis){
+    const [a,b,c,d,e,f,g,h,i]=basis;
+    const rotate=(x,y,z)=>[a*x+d*y+g*z,b*x+e*y+h*z,c*x+f*y+i*z];
+    // 00609444 rotates the socket before 005F9C00 scales and stores all
+    // three components. 005F7850 then adds the parent world translation.
+    const local=[add(add(d*z,-g*y),a*x),add(add(e*z,b*x),-h*y),add(add(f*z,c*x),-i*y)];
+    const parent=[actor.renderX,actor.renderAltitude,actor.renderY];
+    const origin=local.map((value,axis)=>store32(add(parent[axis],store32(store32(value)*scale))));
+    return {origin,scale,rotate};
+  }
+  const yaw=Math.fround(actor.renderYaw+row.model.yawOffset);
   const c=Math.cos(yaw),s=Math.sin(yaw);
-  const [x,z,up]=row.bodyEvidence.markers.tag_garrison_pole.point;
-  return {origin:[actor.renderX+(x*c+z*s)*scale,actor.renderAltitude+up*scale,actor.renderY+(x*s-z*c)*scale],scale,c,s};
+  const rotate=(x,y,z)=>[x*c-z*s,y,x*s+z*c];
+  return {origin:[actor.renderX+(x*c+y*s)*scale,actor.renderAltitude+z*scale,actor.renderY+(x*s-y*c)*scale],scale,rotate,c,s};
 }
 
-export async function loadCarrierGarrisonFlag(gl,{source,fetchFile=globalThis.fetch,decode=globalThis.createImageBitmap,
+export async function loadCarrierGarrisonFlag(gl,{source,navalBasisForActor,fetchFile=globalThis.fetch,decode=globalThis.createImageBitmap,
   base=new URL('./',import.meta.url)}={}){
   if(!source)return null;
   const {read,image}=flagMedia(base,fetchFile,decode);
@@ -312,7 +325,7 @@ export async function loadCarrierGarrisonFlag(gl,{source,fetchFile=globalThis.fe
     const images=await Promise.all(records.map(image)),restore=state(gl);
     try{
       const textures=images.map(bitmap=>uploadTexture(gl,bitmap,false));
-      return createCarrierGarrisonRenderer(gl,data,textures,source.carrierAt);
+      return createCarrierGarrisonRenderer(gl,data,textures,source.carrierAt,navalBasisForActor);
     }finally{
       for(const bitmap of images)bitmap.close();
       restore();
@@ -320,7 +333,7 @@ export async function loadCarrierGarrisonFlag(gl,{source,fetchFile=globalThis.fe
   }catch{return null;}
 }
 
-function createCarrierGarrisonRenderer(gl,{pole,cloth:grid,flagTag},[poleTexture,base,dark],carrierAt){
+function createCarrierGarrisonRenderer(gl,{pole,cloth:grid,flagTag},[poleTexture,base,dark],carrierAt,navalBasisForActor){
   const cloth={...grid,tag:flagTag.matrix};
   const shader=program(gl),poleMesh=createMesh(gl,pole.indices),clothMesh=createMesh(gl,cloth.indices);
   const owners=new Map(), fallbackWind=nativeNormalFlagWind(Math.floor(Date.now()/1000));
@@ -331,10 +344,9 @@ function createCarrierGarrisonRenderer(gl,{pole,cloth:grid,flagTag},[poleTexture
     settings=next;
     for(const handle of owners.keys())if(!next.occupied(handle))owners.delete(handle);
   }
-  function geometry(actor,row,owner){
-    const {scale,c,s}=carrierFlagPose(actor,row), {lighting,runPhysics,deltaSeconds,wind=fallbackWind}=settings;
-    const rotate=(x,y,z)=>[x*c-z*s,y,x*s+z*c];
-    const m=cloth.tag, rotation=[...m[0].slice(0,3).map((v,i)=>Math.fround(c*v+s*m[1][i])),
+  function geometry({scale,rotate,c,s},basis,owner){
+    const {lighting,runPhysics,deltaSeconds,wind=fallbackWind}=settings;
+    const m=cloth.tag, rotation=basis?nativeSailTagRotation(m,basis,'chop53'):[...m[0].slice(0,3).map((v,i)=>Math.fround(c*v+s*m[1][i])),
       ...m[0].slice(0,3).map((v,i)=>Math.fround(-s*v+c*m[1][i])),...m[2].slice(0,3).map(Math.fround)];
     const inverse=nativeInverseTagRotation(rotation), direction=lighting.direction??[0,1,0];
     const low=[Math.fround(wind[0]*200),Math.fround(wind[1]*200),0];
@@ -368,8 +380,10 @@ function createCarrierGarrisonRenderer(gl,{pole,cloth:grid,flagTag},[poleTexture
         owner={cloth:createNativeCloth(cloth),pole:new Float32Array(pole.positions.length*3),flag:new Float32Array(cloth.nx*cloth.ny*9)};
         owners.set(actor.handle,owner);
       }
-      if(owner.frame!==frame)geometry(actor,row,owner);
-      projected.push({owner,origin:carrierFlagPose(actor,row).origin});
+      const basis=navalBasisForActor?.(actor);
+      const pose=carrierFlagPose(actor,row,basis);
+      if(owner.frame!==frame)geometry(pose,basis,owner);
+      projected.push({owner,origin:pose.origin});
     }
     if(projected.length)drawFlagMeshes(gl,shader,vp,dark,mesh=>{
       gl.depthMask(true);

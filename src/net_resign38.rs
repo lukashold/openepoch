@@ -19,6 +19,7 @@ impl Resignation {
     pub(crate) fn observer(self, team: u8) -> bool { self.departed & (1 << team) != 0 }
 
     pub(crate) fn defeated(self, team: usize) -> bool { self.defeated & (1 << team) != 0 }
+    pub(crate) fn defeated_mask(self) -> u8 { self.defeated }
 
     fn humans(self, game: &Game) -> usize {
         (0..game.humans as usize).filter(|&seat| game.players[seat].alive &&

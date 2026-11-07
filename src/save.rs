@@ -130,6 +130,8 @@ impl Game {
         #[cfg(feature="ee2-native13")]
         let options = options | if self.air_carrier_enabled { crate::carrier36_defs::SAVE_FLAG } else { 0 };
         #[cfg(feature="ee2-native13")]
+        let options = options | if self.carrier_surface_pose_enabled { crate::runway32::CARRIER_POSE_SAVE_FLAG } else { 0 };
+        #[cfg(feature="ee2-native13")]
         let options = options | if self.solo_resigned { crate::cmd::SOLO_RESIGN_SAVE_FLAG } else { 0 };
         #[cfg(feature="ee2-native13")]
         let options = options | crate::initial_ceasefire::save_option(self.initial_ceasefire);
@@ -530,7 +532,8 @@ impl Game {
             let allowed = allowed | crate::infantry_roster27::SAVE_FLAG | crate::production_roster29::SAVE_FLAG |
                 crate::game::trade30::SAVE_FLAG | crate::air31::SAVE_FLAG | crate::runway32::SAVE_FLAG |
                 crate::takeoff33::SAVE_FLAG | crate::landing34::SAVE_FLAG | crate::carrier36_defs::SAVE_FLAG |
-                crate::cmd::SOLO_RESIGN_SAVE_FLAG | crate::initial_ceasefire::SAVE_MASK;
+                crate::cmd::SOLO_RESIGN_SAVE_FLAG | crate::initial_ceasefire::SAVE_MASK |
+                crate::runway32::CARRIER_POSE_SAVE_FLAG;
             let flags = v(0);
             if flags & !allowed != 0 || v(4) > 1 { return None; }
             g.cheats_enabled = flags & 1 != 0;
@@ -546,6 +549,7 @@ impl Game {
                 g.air_takeoff_enabled = flags & crate::takeoff33::SAVE_FLAG != 0;
                 g.air_landing_enabled = flags & crate::landing34::SAVE_FLAG != 0;
                 g.air_carrier_enabled = flags & crate::carrier36_defs::SAVE_FLAG != 0;
+                g.carrier_surface_pose_enabled = flags & crate::runway32::CARRIER_POSE_SAVE_FLAG != 0;
                 g.solo_resigned = flags & crate::cmd::SOLO_RESIGN_SAVE_FLAG != 0;
                 g.initial_ceasefire = crate::initial_ceasefire::read_option(flags)?;
                 if g.air_runway_enabled && !g.air_missions_enabled { return None; }
@@ -853,6 +857,8 @@ impl Game {
         }
         #[cfg(feature="ee2-native13")]
         g.restore_priest_power(powers, military_leader_powers.is_some())?;
+        #[cfg(feature="ee2-native13")]
+        if g.carrier_surface_pose_enabled && !g.carrier_surface_pose_allowed() { return None; }
         #[cfg(feature="ee2-native13")]
         g.restore_blessings(blessings)?;
         #[cfg(feature="ee2-native13")]

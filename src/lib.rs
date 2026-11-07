@@ -1916,6 +1916,12 @@ pub extern "C" fn configure_priest_skirmish() -> u32 {
 
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
+pub extern "C" fn configure_carrier_surface_pose() -> u32 {
+    g().configure_carrier_surface_pose() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
 pub extern "C" fn configure_heavy_mounted3() -> u32 {
     u32::from(g().configure_heavy_mounted3())
 }
@@ -2900,6 +2906,12 @@ pub extern "C" fn crown_victory_status(field: u32, seat: u32) -> i32 {
 #[no_mangle]
 pub extern "C" fn configure_network_capitols(minutes: u32, sole: u32) -> u32 {
     g().configure_network_capitols(minutes, sole) as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_network_capitols_roster(mode: u32, minutes: u32, sole: u32) -> u32 {
+    g().configure_network_capitols_roster(mode, minutes, sole) as u32
 }
 
 #[cfg(feature = "ee2-native13")]
