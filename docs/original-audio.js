@@ -162,10 +162,10 @@ export function createOriginalAudio(options={}) {
     if(source){source.originalEffect=kind;source.originalStartedAt=now;stats.effectPlays++;}
     return !!source;
   }
-  async function playInterfaceCue(event){
+  async function playInterfaceCue(event,pan=0){
     if(!enabled||muted||!Number.isFinite(event?.gain))return false;
     const buffer=await loadVerifiedEffect(event);
-    const played=!!start(buffer,event.gain);
+    const played=!!start(buffer,event.gain,pan);
     if(played)stats.effectPlays++;
     return played;
   }

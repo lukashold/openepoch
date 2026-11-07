@@ -115,6 +115,7 @@ pub(crate) fn capture_target(def_id: DefId) -> Option<CaptureTarget> {
             };
         }
         definition if crate::wonders61::is_wonder(definition) => target.time_modifier = 300.0,
+        crate::koth64::HILL => target.time_modifier = 300.0,
         _ => return None,
     }
     Some(target)

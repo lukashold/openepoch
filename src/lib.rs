@@ -40,6 +40,10 @@ mod wonders61;
 #[cfg(feature = "ee2-native13")]
 mod heavy_mounted3_61;
 #[cfg(feature = "ee2-native13")]
+mod koth64;
+#[cfg(feature = "ee2-native13")]
+mod rocket_herc;
+#[cfg(feature = "ee2-native13")]
 mod wonder_open_sides61;
 #[cfg(feature = "ee2-native13")]
 mod diversion61_defs;
@@ -1835,6 +1839,12 @@ pub extern "C" fn heavy_mounted3_definition() -> u32 {
 
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
+pub extern "C" fn configure_guided_herc_rocket() -> u32 {
+    u32::from(g().configure_guided_herc_rocket())
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
 pub extern "C" fn priest_power(handle: u32) -> f32 {
     let game = g();
     let Some(index) = game.get(handle) else { return -1.0; };
@@ -2746,6 +2756,33 @@ pub extern "C" fn configure_match_territory_victory(
 ) -> u32 {
     unsafe { (&mut *addr_of_mut!(GAME)).as_mut().map_or(0, |game|
         game.configure_match_territory_victory(packed_civs, pop, supplies, start, end, percent) as u32) }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn init_hill_world(seed: u32, n_ai: u32) -> u32 {
+    if !(1..=3).contains(&n_ai) { return 0; }
+    install_game(Game::new_hill_world(seed, n_ai));
+    1
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_match_koth(
+    packed_civs: u32, pop: u32, supplies: u32, start: u32, end: u32, minutes: i32,
+) -> u32 {
+    unsafe { (&mut *addr_of_mut!(GAME)).as_mut().map_or(0, |game|
+        game.configure_match_koth(packed_civs, pop, supplies, start, end, minutes) as u32) }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn koth_definition() -> u32 { u32::from(crate::koth64::HILL) }
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn koth_status(field: u32) -> i32 {
+    unsafe { (&*addr_of_mut!(GAME)).as_ref().map_or(if field == 0 { 0 } else { -1 }, |game| game.koth_status(field)) }
 }
 
 #[cfg(feature = "ee2-native13")]

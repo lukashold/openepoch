@@ -5,12 +5,16 @@ use crate::{game::*,defs::*,map::N};
 pub const MAGIC:u32=0x314a5250; // PRJ1
 pub const END:u32=0x454a5250; // PRJE
 pub const HEADER:usize=32;pub const RECORD:usize=64;pub const MAX:usize=4000;
+#[cfg(feature = "ee2-native13")]
+const GUIDED: usize = RECORD + 4;
 fn u(b:&[u8],p:usize)->Option<u32>{Some(u32::from_le_bytes(b.get(p..p+4)?.try_into().ok()?))}
 fn put(b:&mut Vec<u8>,v:u32){b.extend_from_slice(&v.to_le_bytes());}
 fn record_length(version: u32) -> Option<usize> {
     match version {
         1 => Some(RECORD),
         2 if cfg!(feature = "ee2-native13") => Some(RECORD + 4),
+        #[cfg(feature = "ee2-native13")]
+        3 => Some(GUIDED + 4 + 8 * 4),
         _ => None,
     }
 }
@@ -25,13 +29,20 @@ impl Game{
  pub(crate) fn append_projectiles(&self,b:&mut Vec<u8>){
   let source=cfg!(feature="ee2-native13")&&self.source_clock.is_some();
   let version=if source{2}else{1};
-  let record=if source{RECORD+4}else{RECORD};
+  #[cfg(feature = "ee2-native13")]
+  let version = if self.guided_herc_rocket { 3 } else { version };
+  let record=record_length(version).expect("supported projectile archive version");
   let size=HEADER+self.projs.len()*record+4;
   for v in[MAGIC,version,size as u32,self.projs.len()as u32,record as u32,self.projectile_history_unknown as u32,HEADER as u32,MAX as u32]{put(b,v);}
   for p in &self.projs{
    for v in words(p){put(b,v);}
    #[cfg(feature="ee2-native13")]
-   if source{put(b,p.attack_source);}
+   if version >= 2 {put(b,p.attack_source);}
+   #[cfg(feature = "ee2-native13")]
+   if version == 3 {
+    put(b,u32::from(p.guided.is_some()));
+    for word in p.guided.map_or([0;8], crate::rocket_herc::Flight::words) {put(b,word);}
+   }
   }
   put(b,END);
  }
@@ -40,11 +51,20 @@ impl Game{
   if framed_len(b)?!=b.len(){return None;}
   let version=u(b,4)?;
   if version==2&&self.source_clock.is_none(){return None;}
+  #[cfg(feature = "ee2-native13")]
+  if version==3&&(self.net||!self.guided_herc_ordinary_map()){return None;}
   let record=record_length(version)?;
   let mut projs=Vec::with_capacity(u(b,12)?as usize);
   for r in b[HEADER..b.len()-4].chunks_exact(record){
    let w:Vec<u32>=(0..16).map(|k|u(r,k*4).unwrap()).collect();let f=|k|f32::from_bits(w[k]);
-   if [0,1,2,3,4,5,7,8,11,14,15].iter().any(|&i|!f(i).is_finite())||[0,1,2,3,4,5].iter().any(|&i|f(i)<0.0||f(i)>N as f32)||[7,8,11,14].iter().any(|&i|f(i)<0.0)||f(15)<=0.0{return None;}
+   #[cfg(feature="ee2-native13")]
+   let aim_margin = if version == 3 && u(r,GUIDED)? == 1 { 8.0 } else { 0.0 };
+   #[cfg(not(feature="ee2-native13"))]
+   let aim_margin = 0.0;
+   if [0,1,2,3,4,5,7,8,11,14,15].iter().any(|&i|!f(i).is_finite())
+    || [0,1,2,3].iter().any(|&i|f(i)<0.0||f(i)>N as f32)
+    || [4,5].iter().any(|&i|f(i) < -aim_margin||f(i)>N as f32+aim_margin)
+    || [7,8,11,14].iter().any(|&i|f(i)<0.0)||f(15)<=0.0{return None;}
    let profile=w[13];
    let allowed=profile==crate::ee2_combat::UNKNOWN_PROFILE as u32||(profile as usize)<crate::ee2_combat::PROFILES.len();
    #[cfg(feature="ee2-native13")]
@@ -54,22 +74,49 @@ impl Game{
     && profile == u32::from(crate::ee2_combat::profile(crate::heavy_mounted3_61::ID, crate::heavy_mounted3_61::START)));
    if (w[6]!=NONE&&(w[6]&65535)as usize>=MAXE)||w[9]>W_BOMB as u32||w[10]as usize>=self.nplayers||w[12]&!15!=0||!allowed{return None;}
    #[cfg(feature="ee2-native13")]
-   let attack_source=if version==2{u(r,RECORD)?}else{NONE};
+   let attack_source=if version>=2{u(r,RECORD)?}else{NONE};
    #[cfg(feature="ee2-native13")]
    if attack_source!=NONE&&(attack_source&65535)as usize>=MAXE{return None;}
+   #[cfg(feature = "ee2-native13")]
+   let guided = if version == 3 {
+    let mut flight = [0;8];
+    for (index, word) in flight.iter_mut().enumerate() { *word = u(r, GUIDED + 4 + 4 * index)?; }
+    match u(r,GUIDED)? {
+     0 if flight == [0;8] => None,
+     1 if w[9] == u32::from(W_MISSILE) && f(7) == crate::rocket_herc::SPEED && attack_source != NONE => {
+      let artemis = (13..15).any(|epoch| profile == u32::from(crate::ee2_combat::profile(43, epoch)));
+      let minotaurus = self.heavy_mounted3 && profile == u32::from(crate::ee2_combat::profile(
+        crate::heavy_mounted3_61::ID, crate::heavy_mounted3_61::START));
+      if !artemis && !minotaurus { return None; }
+      Some(crate::rocket_herc::Flight::read(flight, self.sim_elapsed())?)
+     },
+     _ => return None,
+    }
+   } else { None };
    projs.push(Proj{x:f(0),y:f(1),px:f(2),py:f(3),tx:f(4),ty:f(5),tgt:w[6],speed:f(7),dmg:f(8),kind:w[9]as u8,team:w[10]as u8,splash:f(11),targets:w[12]as u8,attacker_profile:w[13]as u16,friendly_ratio:f(14),d0:f(15),
     #[cfg(feature = "ee2-native13")]
     attack_source,
+    #[cfg(feature = "ee2-native13")]
+    guided,
    });
   }
+  #[cfg(feature = "ee2-native13")]
+  { self.guided_herc_rocket = version == 3; }
   self.projs=projs;self.projectile_history_unknown=u(b,20)?!=0;Some(())
  }
  pub(crate) fn hash_projectiles(&self,mut mix:impl FnMut(u32)){
   mix(MAGIC);mix(self.projectile_history_unknown as u32);mix(self.projs.len()as u32);
+  #[cfg(feature = "ee2-native13")]
+  if self.guided_herc_rocket { mix(3); }
   for p in &self.projs{
    for v in words(p){mix(v);}
    #[cfg(feature="ee2-native13")]
-   if self.source_clock.is_some(){mix(p.attack_source);}
+   if self.source_clock.is_some() || self.guided_herc_rocket {mix(p.attack_source);}
+   #[cfg(feature = "ee2-native13")]
+   if self.guided_herc_rocket {
+    mix(u32::from(p.guided.is_some()));
+    if let Some(flight) = p.guided { for word in flight.words() {mix(word);} }
+   }
   }
  }
 }

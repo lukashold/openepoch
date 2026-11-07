@@ -15,7 +15,7 @@ pub(crate) struct State(BTreeMap<u32, Shield>);
 
 fn building(actor: &Ent, owner: u8) -> bool {
     actor.alive && actor.hp > 0.0 && actor.built == 1.0 && actor.team == owner
-        && DEFS[actor.def as usize].building
+        && actor.def != crate::koth64::HILL && DEFS[actor.def as usize].building
 }
 
 impl State {

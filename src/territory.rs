@@ -69,6 +69,10 @@ impl Game {
     pub(crate) fn valid_territory_anchor(&self, e: &Ent, territory: usize) -> bool {
         if e.hp <= 0.0 || self.map.terr[tile_of(e.x, e.y)] as usize != territory { return false; }
         #[cfg(feature = "ee2-native13")]
+        if self.koth_territory().is_some_and(|(id, _)| id == territory) {
+            return e.def == crate::koth64::HILL && e.team < self.nplayers as u8 && Self::territory_control_ready(e);
+        }
+        #[cfg(feature = "ee2-native13")]
         if e.def == BARRACKS && e.built >= 1.0 {
             return self.owns_completed_wonder(e.team, crate::wonders61::PARTHENON)
                 && self.has_colonization_mill(e.team, territory);
@@ -92,6 +96,8 @@ impl Game {
     }
     pub fn territory_claim_status(&self,team:u8,id:usize)->u32 {
         if self.towner[id]==team {return 1;}
+        #[cfg(feature = "ee2-native13")]
+        if self.koth_territory().is_some_and(|(territory, _)| territory == id) { return 5; }
         let c=self.territory_control_counts(team,id);
         if c[0]==0 {return 0;}
         if c[2]==0 {return 2;}
@@ -115,6 +121,8 @@ impl Game {
     /// A live city handle anchors the claim. Transfer changes its owner, and a
     /// destroyed/reused handle cannot restore the former owner's border next tick.
     pub fn rebuild_territories(&mut self) {
+        #[cfg(feature = "ee2-native13")]
+        let hill = self.koth_territory();
         let mut first = [NONE; 32];
         for i in 0..self.high {
             let e = &self.ents[i];
@@ -127,6 +135,17 @@ impl Game {
         }
         let mut owner = [TERR_NONE; 32];
         for k in 0..self.map.tseeds.len() {
+            #[cfg(feature = "ee2-native13")]
+            if let Some((_, index)) = hill.filter(|&(id, _)| id == k) {
+                first[k] = NONE;
+                let e = self.ents[index];
+                self.territory.claims[k] = NONE;
+                if self.valid_territory_anchor(&e, k) {
+                    self.territory.claims[k] = self.h(index);
+                    owner[k] = e.team;
+                }
+                continue;
+            }
             let claim = self.territory.claims[k];
             let valid = self.get(claim).filter(|&i| self.valid_territory_anchor(&self.ents[i], k));
             let mut h = if valid.is_some() { claim } else if cfg!(feature="ee2-reference") {NONE} else { first[k] };
@@ -181,6 +200,8 @@ impl Game {
                     }
                 }
                 for k in 0..self.map.tseeds.len() {
+                    #[cfg(feature = "ee2-native13")]
+                    if hill.is_some_and(|(id, _)| id == k) { continue; }
                     if owner[k]!=TERR_NONE {continue;}
                     if let Some(i)=self.get(first[k]) {
                         let team=self.ents[i].team;
@@ -247,6 +268,8 @@ impl Game {
                 .any(|e| e.alive && e.hp > 0.0 && e.team == team && DEFS[e.def as usize].building)
     }
     fn territory_owned(&self, team: u8, id: u32) -> bool {
+        #[cfg(feature = "ee2-native13")]
+        if self.koth_territory().is_some_and(|(territory, _)| territory == id as usize) { return false; }
         id < self.map.tseeds.len() as u32
             && self.towner[id as usize] == team
             && self
@@ -646,8 +669,14 @@ impl Game {
                 && actual != TERR_NONE
                 && self.territory_living(actual)
                 && self.territory_owned(actual, id as u32);
+            #[cfg(feature = "ee2-native13")]
+            let hill = self.koth_territory().is_some_and(|(territory, _)| territory == id);
+            #[cfg(not(feature = "ee2-native13"))]
+            let hill = false;
             let reason = if !seen {
                 "Gebiet noch nicht erkundet"
+            } else if hill {
+                "Der Hügel kann nur erobert werden"
             } else if actual == TERR_NONE {
                 "Kein Besitzer"
             } else if !transferable {

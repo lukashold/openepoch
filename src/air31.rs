@@ -175,7 +175,7 @@ impl Game {
         match field {
             0 => 2,
             1 => frame.ordnance.into(),
-            2 => capacity(actor.def, self.players[actor.team as usize].epoch).unwrap_or(0).into(),
+            2 => actor_capacity(self, &actor).unwrap_or(0).into(),
             3 => frame.mission.into(),
             5 => u32::from(frame.phase != Phase::Stationed && self.air_host(frame.home, actor.team).is_some()),
             _ => 0,
@@ -253,8 +253,7 @@ impl Game {
     pub(crate) fn air_register(&mut self, index: usize) {
         if !self.air_missions_enabled { return; }
         let actor = self.ents[index];
-        let epoch = self.players[actor.team as usize].epoch;
-        let Some(ordnance) = capacity(actor.def, epoch) else { return; };
+        let Some(ordnance) = actor_capacity(self, &actor) else { return; };
         self.aircraft.aircraft.insert(self.h(index), Aircraft {
             home: NONE, ordnance, phase: Phase::Flying, waypoints: VecDeque::new(), mission: false,
             return_pending: false, rendezvous_pending: false,
@@ -472,11 +471,15 @@ impl Game {
             if !self.air_missions_enabled { return None; }
             self.aircraft = State::decode(self, fields)?;
         } else if self.air_missions_enabled && self.ents[..self.high].iter().any(|actor| actor.alive &&
-            capacity(actor.def, self.players[actor.team as usize].epoch).is_some()) {
+            actor_capacity(self, actor).is_some()) {
             return None;
         }
         Some(())
     }
+}
+
+fn actor_capacity(game: &Game, actor: &Ent) -> Option<u16> {
+    capacity(actor.def, game.players.get(actor.team as usize)?.epoch)
 }
 
 pub(crate) fn split_air_save(bytes: &[u8]) -> Option<(&[u8], Option<&[u8]>)> {
@@ -640,7 +643,7 @@ impl State {
                 (aircraft.mission && !state.airports.get(&aircraft.home).is_some_and(|a| a.mission.is_some())) { return None; }
         }
         if game.ents[..game.high].iter().enumerate().any(|(index, unit)| {
-            unit.alive && capacity(unit.def, game.players[unit.team as usize].epoch).is_some() &&
+            unit.alive && actor_capacity(game, unit).is_some() &&
                 !state.aircraft.contains_key(&game.h(index))
         }) { return None; }
         Some(state)

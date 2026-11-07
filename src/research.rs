@@ -26,6 +26,8 @@ impl Game {
         if cfg!(feature="ee2-roster6")&&def>=57 {value*player_factor}else{weapon_base*player_factor*value}
     }
     pub fn max_hp(&self, team: u8, def:DefId) -> f32 {
+        #[cfg(feature = "ee2-native13")]
+        if def == crate::koth64::HILL && team == crate::koth64::NATURE { return DEFS[def as usize].hp; }
         let hp = self.modifiers[team as usize][def as usize][0];
         #[cfg(feature="ee2-ai9-game-bridge")]
         let hp = crate::ai9_rank::hp(self, team, def, hp, self.source_unit_rank(team, def));

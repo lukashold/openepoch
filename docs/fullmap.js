@@ -1,4 +1,4 @@
-import {fullmapActorCatalog,fullmapActorSize,readFullmapActors} from './fullmap-actors.js';
+import {fullmapActorCatalog,fullmapActorSize,readFullmapActors} from './fullmap-actors.js?v=native64-koth';
 import {paintFullmapLayers} from './fullmap-layers.js?v=native22';
 import {composeFullmapTerritories} from './fullmap-territories.js?v=native22';
 import {fullmapScreenPoint,fullmapWorldPoint} from './fullmap-pointer.js';
@@ -31,7 +31,7 @@ function rect(node, geometry) {
   Object.assign(node.style,{left:`${x}px`,top:`${y}px`,width:`${width}px`,height:`${height}px`});
 }
 
-export function createFullmap({dialog,wasm,metadata,size,teams,originalArt,territoryNameCatalog,cityNameCatalog,bitmapFonts,
+export function createFullmap({dialog,wasm,metadata,size,teams,originalArt,territoryNameCatalog,cityNameCatalog,bitmapFonts,hillDefinition,
   onAccept,onToggle,onPreview,pip,drawFlares,drawBattleFlares,warplanCue,
   warplanPeer,warplanRecipient,warplanClock}) {
   const canvas = dialog.querySelector('canvas');
@@ -243,7 +243,7 @@ export function createFullmap({dialog,wasm,metadata,size,teams,originalArt,terri
     }
     if (catalog) {
       const actors = readFullmapActors(wasm,metadata,catalog,{width:size,height:size,
-        showUnits:options.units,showBuildings:options.buildings});
+        showUnits:options.units,showBuildings:options.buildings,hillDefinition});
       for (const actor of actors) {
         const [x,y] = project(actor.x,actor.y);
         const sprite = art?.sprite(actor.overlay.sprite), icon = image(sprite);

@@ -47,7 +47,7 @@ export function createFrontendNamespace(wasm,{referenceMode=false,assetMapping=n
   // resources use the generic ore fallback; their exact NIF bindings remain
   // source IDs100..110 in original-renderer, never projectile/flag templates.
   if(row.kind===1)return row.sourceId<=103?row.sourceId:102;
-  if(row.kind===2)return 103+row.sourceId;
+  if(row.kind===2)return row.sourceId===7?108:103+row.sourceId;
   return row.sourceId;
  }
  let fallbackBuffer=new Float32Array(0);

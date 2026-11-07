@@ -102,6 +102,7 @@ pub fn job_kind(job: QueueItem) -> u32 {
     }
 }
 pub const UNIT_RENDER_BASE: RenderId = 256;
+pub const GUIDED_HERC_RENDER: RenderId = 23;
 pub fn unit_render(id: DefId) -> f32 {
     if cfg!(feature = "ee2-roster6") {
         UNIT_RENDER_BASE as f32 + id as f32
@@ -133,7 +134,7 @@ pub fn render_kind(id: RenderId) -> u32 {
         0
     } else if id <= 10 {
         1
-    } else if (16..=22).contains(&id) {
+    } else if (16..=22).contains(&id) || cfg!(feature = "ee2-native13") && id == GUIDED_HERC_RENDER {
         2
     } else if (40..=43).contains(&id) {
         3

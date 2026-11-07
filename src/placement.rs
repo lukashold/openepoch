@@ -47,6 +47,11 @@ impl Game {
     }
     pub fn building_bounds(e: &Ent) -> (i32, i32, i32, i32) {
         #[cfg(feature = "ee2-native13")]
+        if e.def == crate::koth64::HILL {
+            let side = crate::koth64::COLLISION_SIDE;
+            return Self::rect_bounds(e, [side, side]);
+        }
+        #[cfg(feature = "ee2-native13")]
         if let Some(size) = crate::wonders61::shape(e.def, false) {
             return Self::rect_bounds(e, size);
         }
@@ -58,6 +63,17 @@ impl Game {
         let y1 = (e.y + span * 0.5 - 0.0001).ceil() as i32;
         let side = (x1 - x0).max(y1 - y0);
         (x0, y0, side, side)
+    }
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn building_blocks_tile(e: &Ent, x: i32, y: i32) -> bool {
+        if e.def == crate::koth64::HILL {
+            // The fixed 45-degree Mode-1 rectangle is a diamond. The tile
+            // blocks if any of its four original half-cells hits that diamond.
+            let gap = |center: f32, tile: i32| (center - (tile as f32 + 0.5)).abs().max(0.5) - 0.5;
+            let extent = (crate::koth64::COLLISION_SIDE * 0.5 - 0.01) * core::f32::consts::SQRT_2;
+            return gap(e.x, x) + gap(e.y, y) < extent;
+        }
+        true
     }
     #[cfg(feature = "ee2-native13")]
     fn rect_bounds(e: &Ent, [width, height]: [f32; 2]) -> (i32, i32, i32, i32) {
@@ -79,6 +95,8 @@ impl Game {
         dx <= width as f32 * 0.5 + padding && dy <= height as f32 * 0.5 + padding
     }
     pub fn construction_available(&self, team: u8, def: DefId) -> bool {
+        #[cfg(feature = "ee2-native13")]
+        if def == crate::koth64::HILL { return false; }
         let Some(definition) = DEFS.get(def as usize) else { return false; };
         if team as usize >= self.nplayers || !definition.building
             || definition.epoch > self.players[team as usize].epoch { return false; }

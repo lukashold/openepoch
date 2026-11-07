@@ -240,6 +240,8 @@ pub struct Proj {
     pub friendly_ratio:f32,
     #[cfg(feature = "ee2-native13")]
     pub(crate) attack_source: u32,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) guided: Option<crate::rocket_herc::Flight>,
     /// Distance at launch, so the renderer can draw an arc.
     pub d0: f32,
 }
@@ -299,6 +301,8 @@ pub struct Game {
     pub(crate) production_roster_enabled: bool,
     #[cfg(feature="ee2-native13")]
     pub(crate) heavy_mounted3: bool,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) guided_herc_rocket: bool,
     #[cfg(feature="ee2-native13")]
     pub(crate) trade_enabled: bool,
     #[cfg(feature = "ee2-native13")]
@@ -426,6 +430,8 @@ pub struct Game {
     #[cfg(feature = "ee2-native13")]
     pub(crate) imperialism: imperialism63::State,
     #[cfg(feature = "ee2-native13")]
+    pub(crate) koth: Option<crate::koth64::Hold>,
+    #[cfg(feature = "ee2-native13")]
     pub(crate) city_heal: Option<city_heal58::State>,
     #[cfg(feature = "ee2-native13")]
     pub(crate) dock_garrison: Option<dock_garrison59::State>,
@@ -494,6 +500,15 @@ impl Game {
         g
     }
 
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn new_hill_world(seed: u32, n_ai: u32) -> Self {
+        let nplayers = (n_ai as usize + 1).clamp(2, 4);
+        let map = Map::new_for_hill(seed.max(1), nplayers);
+        let mut game = Self::blank(map, seed, n_ai, 0, 1, 0, nplayers, false);
+        game.procedural_start(0, 1);
+        game
+    }
+
     pub(crate) fn blank(map: Map, seed: u32, n_ai: u32, bench: u32, humans: u32, local: u32, nplayers: usize, net: bool) -> Game {
         Game {
             map,
@@ -516,6 +531,8 @@ impl Game {
             production_roster_enabled: !net && bench == 0,
             #[cfg(feature="ee2-native13")]
             heavy_mounted3: false,
+            #[cfg(feature = "ee2-native13")]
+            guided_herc_rocket: false,
             #[cfg(feature="ee2-native13")]
             trade_enabled: !net && bench == 0,
             #[cfg(feature = "ee2-native13")]
@@ -636,6 +653,8 @@ impl Game {
             economic_leader_effects: None,
             #[cfg(feature = "ee2-native13")]
             imperialism: imperialism63::State::default(),
+            #[cfg(feature = "ee2-native13")]
+            koth: None,
             #[cfg(feature = "ee2-native13")]
             city_heal: None,
             #[cfg(feature = "ee2-native13")]
@@ -763,6 +782,8 @@ impl Game {
         let mask = self.valley_start_city_mask(i);
         for ty in ty0.max(0)..(ty0+height).min(N as i32) {
             for tx in tx0.max(0)..(tx0+width).min(N as i32) {
+                #[cfg(feature = "ee2-native13")]
+                if !Self::building_blocks_tile(e, tx, ty) { continue; }
                 #[cfg(feature = "ee2-valley74-city-footprint")]
                 if mask.is_some_and(|footprint| !footprint.blocks(tx, ty)) { continue; }
                 let t = ty as usize * N + tx as usize;
@@ -1405,6 +1426,8 @@ impl Game {
             mix(self.winner.into());
         }
         #[cfg(feature = "ee2-native13")]
+        if let Some(rule) = self.koth { rule.hash(&mut mix); mix(u32::from(self.rule_save_outcome())); }
+        #[cfg(feature = "ee2-native13")]
         if let Some(names) = &self.territory_names {
             mix(crate::territory_names21::MAGIC);
             mix(crate::territory_name_catalog21::VERSION);
@@ -1756,7 +1779,7 @@ impl Game {
             let poll_result = self.source_clock.is_some() || self.tick % 20 == 0;
             #[cfg(feature = "ee2-native13")]
             let poll_result = poll_result
-                || ((self.sole_survivor.is_some() || self.regicide.is_some()) && self.winner == 0);
+                || ((self.sole_survivor.is_some() || self.regicide.is_some() || self.koth.is_some()) && self.winner == 0);
             if poll_result && (self.winner == 0 || cfg!(all(feature="ee2-pack8",feature="ee2-civ8"))) {
                 self.refresh_match_alive();
                 if self.winner == 0 {
@@ -1823,6 +1846,11 @@ impl Game {
     fn poll_match_outcome(&mut self) {
         #[cfg(feature="ee2-native13")]
         if self.net_resignation.is_some() { return; }
+        #[cfg(feature="ee2-native13")]
+        if let Some(rule) = self.koth {
+            self.poll_koth_outcome(rule);
+            return;
+        }
         #[cfg(feature = "ee2-native13")]
         if let Some(rule) = self.regicide {
             self.poll_regicide_outcome(rule);
@@ -1873,11 +1901,12 @@ impl Game {
                 n += 1;
                 g.start[cell_of(e.x, e.y) + 1] += 1;
             }
-            let d = &DEFS[e.def as usize];
             let t = e.team as usize;
-            pop[t] += crate::economy::population(e.def,self.players[t].epoch);
+            let Some(player) = self.players.get(t) else { continue; };
+            let d = &DEFS[e.def as usize];
+            pop[t] += crate::economy::population(e.def,player.epoch);
             for &c in &e.cargo[..e.ncargo as usize] {
-                pop[t] += crate::economy::population(c,self.players[t].epoch);
+                pop[t] += crate::economy::population(c,player.epoch);
             }
             if d.building {
                 bld[t] += 1;
@@ -1888,7 +1917,7 @@ impl Game {
                 }
                 for &q in &e.q[..e.qn as usize] {
                     if (q as usize) < DEFS.len() {
-                        pop[t] += crate::economy::population(q as DefId,self.players[t].epoch);
+                        pop[t] += crate::economy::population(q as DefId,player.epoch);
                     }
                 }
             }
@@ -2101,10 +2130,20 @@ impl Game {
             self.damage(tj, dmg, w.kind);
             return;
         }
-        let t = &self.ents[tj];
+        let t = self.ents[tj];
         let d0 = ((t.x - e.x).powi(2) + (t.y - e.y).powi(2)).sqrt().max(0.1);
+        #[cfg(feature = "ee2-native13")]
+        let guided = self.launch_guided_herc_rocket(e, &t, w.kind);
+        #[cfg(feature = "ee2-native13")]
+        let [x, y] = guided.as_ref().map_or([e.x, e.y], |launch| launch.position);
+        #[cfg(feature = "ee2-native13")]
+        let [tx, ty, _] = guided.as_ref().map_or([t.x, t.y, 0.0], |launch| launch.aim);
+        #[cfg(not(feature = "ee2-native13"))]
+        let [x, y] = [e.x, e.y];
+        #[cfg(not(feature = "ee2-native13"))]
+        let [tx, ty] = [t.x, t.y];
         const SPEED: [f32; 7] = [0.0, 14.0, 34.0, 15.0, 6.5, 13.0, 7.0];
-        self.projs.push(Proj { x: e.x, y: e.y, px: e.x, py: e.y, tx: t.x, ty: t.y, tgt: self.h(tj), speed: {
+        self.projs.push(Proj { x, y, px: x, py: y, tx, ty, tgt: self.h(tj), speed: {
             #[cfg(feature="ee2-up15")] {attack.and_then(|a|a.projectile_speed).filter(|v|*v>0.0).unwrap_or(SPEED[w.kind as usize])}
             #[cfg(not(feature="ee2-up15"))] {SPEED[w.kind as usize]}
         }, dmg, kind: w.kind, team: e.team, splash: w.splash, targets: w.targets,
@@ -2114,6 +2153,8 @@ impl Game {
             friendly_ratio:attack.map_or(0.0,|a|a.friendly),
             #[cfg(feature = "ee2-native13")]
             attack_source: self.h(_source_index),
+            #[cfg(feature = "ee2-native13")]
+            guided: guided.map(|launch| launch.flight),
             d0 });
     }
 
@@ -2125,6 +2166,8 @@ impl Game {
 
     #[inline]
     fn damage(&mut self, j: usize, dmg: f32, kind: u8) {
+        #[cfg(feature = "ee2-native13")]
+        if self.ents[j].def == crate::koth64::HILL { return; }
         let (team, td) = (self.ents[j].team, &DEFS[self.ents[j].def as usize]);
         let m = MULT[kind as usize][td.armor as usize] * self.players[team as usize].dfn[class_of(td)];
         let protected = self.god_mode_for(team);
@@ -2141,6 +2184,8 @@ impl Game {
     #[inline]
     fn damage_from(&mut self,j:usize,dmg:f32,kind:u8,attacker_profile:u16){
         let (team,def)=(self.ents[j].team,self.ents[j].def);
+        #[cfg(feature = "ee2-native13")]
+        if def == crate::koth64::HILL { return; }
         let td=&DEFS[def as usize];
         let native=crate::ee2_combat::multiplier_from_profile(attacker_profile,def,self.players[team as usize].epoch);
         let m=native.unwrap_or(MULT[kind as usize][td.armor as usize])*self.players[team as usize].dfn[class_of(td)];
@@ -2206,6 +2251,20 @@ impl Game {
             let mut p = self.projs[k];
             p.px = p.x;
             p.py = p.y;
+            #[cfg(feature = "ee2-native13")]
+            if let Some(flight) = p.guided {
+                if self.advance_guided_herc_rocket(&mut p, flight, dt) {
+                    self.projs[k] = p;
+                    k += 1;
+                    continue;
+                }
+                self.projs.swap_remove(k);
+                let origin = self.get(p.attack_source).filter(|&index| self.ents[index].team == p.team)
+                    .map(|index| crate::battle_signals::Actor::new(index, &self.ents[index]));
+                self.native_attack_impact(p.team, p.tgt, p.x, p.y, p.dmg, p.kind, p.targets, p.splash,
+                    p.friendly_ratio, p.attacker_profile, origin);
+                continue;
+            }
             if p.kind != W_SHELL && p.kind != W_BOMB {
                 if let Some(j) = self.get(p.tgt) {
                     if self.combat_hostile(p.team,self.ents[j].team)&&self.can_see(p.team,j){p.tx = self.ents[j].x;
@@ -2581,6 +2640,8 @@ impl Game {
 
     fn update_ent(&mut self, i: usize) {
         let mut e = self.ents[i];
+        #[cfg(feature = "ee2-native13")]
+        if e.def == crate::koth64::HILL { return; }
         let dt = self.sim_step();
         #[cfg(feature="ee2-pack8")] self.pack_tick_actor(i,&e);
         let d = &DEFS[e.def as usize];
@@ -3161,6 +3222,8 @@ impl Game {
                 continue;
             }
             #[cfg(feature = "ee2-native13")]
+            if e.team == crate::koth64::NATURE { continue; }
+            #[cfg(feature = "ee2-native13")]
             if self.trade_hidden(_index, e) || self.air_parked(_index, e) { continue; }
             let range = self.modifiers[e.team as usize][e.def as usize][5];
             #[cfg(feature = "ee2-native13")]
@@ -3263,6 +3326,8 @@ mod diplomacy_combat_tests {
             friendly_ratio:0.0,
             #[cfg(feature = "ee2-native13")]
             attack_source: NONE,
+            #[cfg(feature = "ee2-native13")]
+            guided: None,
             d0:1.0}
     }
     #[test]

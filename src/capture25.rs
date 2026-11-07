@@ -165,15 +165,26 @@ impl Game {
 
     pub(crate) fn capture_allowed(&self, owner: u8, target: usize) -> bool {
         let actor = self.ents[target];
+        let hill = actor.def == crate::koth64::HILL;
         if !self.capture_match_enabled() || !actor.alive || actor.built != 1.0 || actor.hp <= 0.0
-            || !self.combat_hostile(owner, actor.team) || !self.can_see(owner, target) || self.conversion_target_profile(actor.def).is_none() {
+            || !self.capture_relation_allowed(owner, target) || !self.can_see(owner, target)
+            || self.conversion_target_profile(actor.def).is_none() {
             return false;
         }
         if self.imperialism_active(target) { return false; }
-        if native::capture_target(actor.def).is_some()
+        if !hill && native::capture_target(actor.def).is_some()
             && self.owns_completed_wonder(actor.team, crate::wonders61::SPHINX) { return false; }
         let state = self.capture.targets.get(&self.h(target)).copied().unwrap_or_default();
         native::can_join_capture(actor.hp, state.count, Some(state.owner).filter(|&seat| seat != NO_OWNER), owner)
+    }
+
+    fn capture_relation_allowed(&self, owner: u8, target: usize) -> bool {
+        let actor = self.ents[target];
+        if actor.def == crate::koth64::HILL {
+            if self.koth.is_none_or(|rule| rule.actor != self.h(target)) { return false; }
+            if actor.team == crate::koth64::NATURE { return !self.initial_ceasefire_active(); }
+        }
+        self.combat_hostile(owner, actor.team)
     }
 
     pub(crate) fn capture_progress(&self, index: usize) -> Option<f32> {
@@ -286,7 +297,8 @@ impl Game {
             // OpenEpoch uses generation handles. Adapt the original seat bits
             // and retain the one-second stagger over this map's slot IDs.
             let serial = powers.and_then(|state| state.actor(handle)).map_or(handle & 0xffff, |actor| actor.serial);
-            let phase = (u32::from(actor.team) + 1) << 27 | serial;
+            let native_owner = if actor.team == crate::koth64::NATURE { 0 } else { u32::from(actor.team) + 1 };
+            let phase = native_owner << 27 | serial;
             if target.count == 0 && native::capture_event_due(tick, phase, dt) {
                 target.progress = if native::capture_target(actor.def).is_some() {
                     native::decay_capture_progress(target.progress)
@@ -373,9 +385,14 @@ impl Game {
         }
         let building = self.ents[index];
         let mut profile = native::capture_target(building.def).expect("Admitted capture target");
-        let research = [5, 65, 125].iter().filter(|&&id| self.has_research(building.team, id)).count() as f32 * 10.0;
-        let regional = crate::civ8_traits::projected_starting_percent(self.civilizations[building.team as usize] as i8,
-            building.def, "CaptureResistance").unwrap_or(0.0);
+        let (target_epoch, research, regional) = if building.team == crate::koth64::NATURE {
+            (0, 0.0, 0.0)
+        } else {
+            let research = [5, 65, 125].iter().filter(|&&id| self.has_research(building.team, id)).count() as f32 * 10.0;
+            let regional = crate::civ8_traits::projected_starting_percent(self.civilizations[building.team as usize] as i8,
+                building.def, "CaptureResistance").unwrap_or(0.0);
+            (self.players[building.team as usize].epoch, research, regional)
+        };
         if research + regional != 0.0 {
             profile.time_modifier = (f64::from(profile.time_modifier) * f64::from(100.0 + research + regional)
                 * f64::from(0.01_f32)) as f32;
@@ -404,7 +421,7 @@ impl Game {
         let target_effect = if self.crown_city_protected(&building) { target_effect * 1.3 } else { target_effect };
         let target = self.capture.targets.get_mut(&actor.otgt).expect("Admitted capture round");
         let factors = CaptureFactors {
-            epoch_gap: i32::from(self.players[actor.team as usize].epoch) - i32::from(self.players[building.team as usize].epoch),
+            epoch_gap: i32::from(self.players[actor.team as usize].epoch) - i32::from(target_epoch),
             contributors: target.count,
             garrison_count: occupants,
             player_factor: 1.0,
@@ -524,7 +541,14 @@ impl Game {
     fn complete_capture(&mut self, index: usize, owner: u8, profile: CaptureTarget) -> bool {
         let old = self.ents[index];
         if !self.replace_converted_actor(index, owner, profile.tribute) { return false; }
-        if old.team == self.local || owner == self.local { self.ev(30.0, old.x, old.y); }
+        if old.def == crate::koth64::HILL && old.team != owner {
+            if self.events.len() < 3 * 64 {
+                let event = 128 + 4 * old.team + owner;
+                self.events.extend_from_slice(&[f32::from(event), old.x, old.y]);
+            }
+        } else if old.team == self.local || owner == self.local {
+            self.ev(30.0, old.x, old.y);
+        }
         self.wonder_notice(crate::wonders61::Notice::Captured, old.def, owner);
         true
     }
@@ -562,6 +586,7 @@ impl Game {
         let citizen = if old.def == WORKER { self.source_identity(old_handle) } else { None };
         let new = self.spawn_oriented(old.def, owner, old.x, old.y, old.rot);
         let new_handle = self.h(new);
+        if old.def == crate::koth64::HILL { self.koth_owner_replaced(old_handle, new_handle, owner); }
         self.ents[new].hp *= health;
         self.ents[new].built = old.built;
         if let Some(identity) = citizen {
@@ -630,7 +655,7 @@ impl Game {
                 || native::capture_attacker(source.def).is_none() || !self.has_conversion_reserve(source.def, handle)
                 || !self.capture_compatible(source_index, target_index)
                 || self.conversion_target_profile(victim.def).is_none()
-                || victim.hp <= 0.0 || victim.built != 1.0 || !self.combat_hostile(team, victim.team)
+                || victim.hp <= 0.0 || victim.built != 1.0 || !self.capture_relation_allowed(team, target_index)
                 || !next.is_finite() || next < 0.0 || flags & !0x87 != 0
                 || (flags == 0 && next != 0.0) || (flags != 0 && flags & 0x80 == 0)
                 || (flags & 1 != 0 && flags & 4 == 0)
@@ -781,6 +806,52 @@ mod tests {
     fn issue(game: &mut Game, attacker: usize, building: usize) {
         game.apply(0, C_CAPTURE, 0.0, 0.0, game.h(building) as i32, &[game.h(attacker)]);
         assert_eq!(game.ents[attacker].order, O_CAPTURE);
+    }
+
+    #[test]
+    fn koth_nature_capture_uses_a_normal_impact_and_restarts_the_timer() {
+        let mut game = Game::new_hill_world(7, 1);
+        assert!(game.configure_crowns(false));
+        assert!(game.configure_priest_skirmish());
+        game.battle_signals = Some(crate::battle_signals::BattleSignals::default());
+        let hill = game.place_koth(128.0, 128.0).unwrap();
+        let target = game.get(hill).unwrap();
+        let soldier = game.spawn(10, 0, 132.0, 128.0);
+        game.build_grid();
+        game.update_fog();
+        assert!(game.capture_allowed(0, target));
+        issue(&mut game, soldier, target);
+        for _ in 0..20 {
+            game.tick();
+            if game.capture_progress(target).is_some() { break; }
+        }
+        game.capture.targets.get_mut(&hill).expect("Hill capture registration").progress = 0.989;
+        game.save();
+        let mut game = Game::load(&game.savebuf).expect("registered Hill capture archive");
+        for _ in 0..60 {
+            game.tick();
+            if game.get(hill).is_none() { break; }
+        }
+        let rule = game.koth.expect("same match rule after capture");
+        assert_ne!(rule.actor, hill);
+        let actor = game.ents[game.get(rule.actor).unwrap()];
+        assert_eq!((actor.team, actor.hp), (0, 1000.0));
+        assert_eq!(rule.holder, 0);
+        assert!(rule.acquired_at > 0.0);
+        let (territory, actor_index) = game.koth_territory().unwrap();
+        assert_eq!(game.towner[territory], 0);
+        assert_eq!(game.territory.claims[territory], game.h(actor_index));
+        assert!(!game.territory_valid(0, 1, 0, territory as u32, NONE));
+        game.apply(0, crate::cmd::C_DELETE, 0.0, 0.0, 0, &[rule.actor]);
+        assert!(game.get(rule.actor).is_some());
+        assert_eq!(game.winner, 0);
+        game.tick += 12002;
+        game.tick();
+        assert_eq!(game.winner, 1);
+        game.save();
+        let restored = Game::load(&game.savebuf).expect("finished Hill match archive");
+        assert_eq!(game.state_hash(), restored.state_hash());
+        assert_eq!(restored.winner, 1);
     }
 
     #[test]

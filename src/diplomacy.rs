@@ -160,6 +160,8 @@ impl Game {
 
     #[inline]
     pub fn relation(&self, from: u8, to: u8) -> u8 {
+        #[cfg(feature = "ee2-native13")]
+        if from == crate::koth64::NATURE || to == crate::koth64::NATURE { return NEUTRAL; }
         self.diplomacy.relation[from as usize * 4 + to as usize]
     }
 

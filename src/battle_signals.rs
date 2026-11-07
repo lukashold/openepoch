@@ -164,6 +164,8 @@ impl BattleSignals {
     }
 
     fn record(&mut self, local: u8, victim: Actor, origin: Option<Actor>, killed: bool, kind: u32) -> bool {
+        if victim.seat >= SEATS { return false; }
+        let origin = origin.filter(|actor| actor.seat < SEATS);
         let (group, first) = self.observe(victim, true, kind);
         if killed {
             self.groups[group].seats[victim.seat].members.retain(|member| member.handle != victim.handle);

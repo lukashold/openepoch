@@ -51,6 +51,15 @@ export async function loadNativeHud(assets,enabled,options={}){
  #native-hud-options:not([open]) #native-hud-options-content{display:none}
  #native-hud-options-content button{height:auto;min-height:25px;font-size:12px}
  #native-hud-options-content #perf{max-width:300px;font-size:10px}
+ #native-koth-status{position:fixed;z-index:1;transform:translateY(-100%);max-width:100vw;padding:0 calc(var(--native-sx)*5px) 0 calc(var(--native-sx)*15px);box-sizing:border-box;background:#202020e8 center/100% 100%;border:1px solid #a0a0a0c0;color:white;white-space:nowrap;font-size:var(--native-font);pointer-events:auto}
+ #native-koth-status>header,#native-koth-status #koth-victory-status{display:flex;align-items:center;min-height:calc(var(--native-sy)*35px)}
+ #native-koth-status>header{gap:calc(var(--native-sx)*10px)}
+ #native-koth-status[hidden],#native-koth-status #koth-victory-status[hidden],#native-koth-status.is-minimized #koth-victory-status{display:none}
+ #native-koth-status.is-minimized{min-width:min(100vw,calc(var(--native-sx)*270px))}
+ #native-koth-status-toggle{width:calc(var(--native-sx)*30px);height:calc(var(--native-sy)*30px);min-width:18px;min-height:18px;margin:0 0 0 auto;padding:0;flex:none;border:0;background:transparent center/100% 100% no-repeat;color:inherit;cursor:pointer}
+ #native-koth-status-toggle.has-art{font-size:0;background-image:var(--koth-status-idle)}
+ #native-koth-status-toggle.has-art:hover{background-image:var(--koth-status-rollover)}
+ #native-koth-status-toggle.has-art:active,#native-koth-status.is-minimized #native-koth-status-toggle.has-art{background-image:var(--koth-status-pressed)}
  #native-hud-resources{position:fixed;pointer-events:auto;display:flex;flex-direction:column;gap:0;padding:0;color:#171a12;font-size:var(--native-font);font-variant-numeric:tabular-nums}
  #native-hud-resources>.native-resource-row{height:calc(var(--native-sy)*33px);min-height:0;position:relative;display:flex;align-items:center;justify-content:flex-end;gap:0;padding:0 calc(var(--native-sx)*6px) 0 calc(var(--native-sx)*8px);border:0;background:center/100% 100% no-repeat;white-space:nowrap;flex:none}
  #native-hud-resources>.native-resource-row[hidden]{display:none}
@@ -77,6 +86,33 @@ export async function loadNativeHud(assets,enabled,options={}){
  const content=doc.createElement('div');content.id='native-hud-options-content';details.append(content);
  const controls=top.querySelector('.ee2-economy-controls');
  if(controls)while(controls.firstChild)content.append(controls.firstChild);
+ const hillStatus=content.querySelector('#koth-victory-status')||get('koth-victory-status');
+ let hillPanel=null,updateKothStatus;
+ if(hillStatus&&manifest.widgets.game_bottom_bkg_1_cont){
+  hillPanel=doc.createElement('section');hillPanel.id='native-koth-status';hillPanel.hidden=true;
+  hillPanel.style.backgroundImage=`url("${new URL('../fullmap-native/packed7/spr_dropdown_menu_bkg.png',base).href}")`;
+  const caption=doc.createElement('span');caption.textContent="Herr des Hügels'-Status";
+  const heading=doc.createElement('header');
+  const toggle=doc.createElement('button');toggle.id='native-koth-status-toggle';toggle.type='button';
+  toggle.setAttribute('aria-controls',hillStatus.id);
+  const idleArt=doc.createElement('img');
+  idleArt.onload=()=>toggle.classList.add('has-art');
+  const buttonArt=state=>new URL(`../koth-hud/minimize-${state}.png`,base).href;
+  for(const state of ['idle','rollover','pressed']){
+   toggle.style.setProperty(`--koth-status-${state}`,`url("${buttonArt(state)}")`);
+  }
+  let minimized=false;
+  const syncToggle=()=>{
+   hillPanel.classList.toggle('is-minimized',minimized);
+   toggle.textContent=minimized?'▴':'▾';
+   toggle.title=minimized?'Hügelstatus ausklappen':'Hügelstatus einklappen';
+   toggle.setAttribute('aria-label',toggle.title);
+   toggle.setAttribute('aria-expanded',String(!minimized));
+  };
+  updateKothStatus=active=>{if(active&&!idleArt.src)idleArt.src=buttonArt('idle');hillPanel.hidden=!active;};
+  toggle.onclick=()=>{minimized=!minimized;syncToggle();};
+  heading.append(caption,toggle);hillPanel.append(heading,hillStatus);bottom.append(hillPanel);syncToggle();
+ }
  const resourceList=doc.createElement('div');resourceList.id='native-hud-resources';bottom.append(resourceList);
  const rows=[];
  function special(id,key,label){
@@ -135,11 +171,12 @@ export async function loadNativeHud(assets,enabled,options={}){
   for(const [widget,button]of buttons)placeButton(button,widget);
   placeButton(summary,'game_button_options');
   const optionsRect=layout.get('game_button_options');Object.assign(content.style,{left:Math.min(optionsRect.x,Math.max(8,width-660))+'px',top:(optionsRect.y+optionsRect.height+8)+'px'});
+  if(hillPanel){const anchor=layout.get('game_bottom_bkg_1_cont');hillPanel.style.left=anchor.x+'px';hillPanel.style.top=anchor.y+'px';}
   for(const [id,widget]of Object.entries(PANEL_WIDGETS))place(get(id),layout.get(widget));
   place(resourceList,layout.get('game_resources'));place(name,layout.get('game_playerinfo_name'));place(mode,layout.get('game_playerinfo_civ'));place(epoch,layout.get('game_playerinfo_epoch'));
   place(clock,layout.get('game_top_clock'));place(calendar,layout.get('game_calendar'));
  }
- const api={enabled:true,resize,fontBindings(){
+ const api={enabled:true,resize,updateKothStatus,fontBindings(){
   const labels=[{element:name,widget:'game_playerinfo_name'},{element:mode,widget:'game_playerinfo_civ'},{element:epoch,widget:'game_playerinfo_epoch'},{element:clock,widget:'game_top_clock'},
    {element:calendar,widget:'game_top_clock',role:'calendar-label-adapter'}];
   const resources=['pop','science',...Array.from({length:9},(_,slot)=>'r'+slot)].map(id=>{const element=get(id),row=element?.closest('.native-resource-row');return row?.parentElement===resourceList?{element,row}:null;}).filter(Boolean);

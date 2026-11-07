@@ -5,6 +5,86 @@ use crate::game::*;
 use crate::map::*;
 
 impl Game {
+    #[cfg(feature = "ee2-native13")]
+    fn hill_combat_strength(&self, team: u8, def: DefId, hp: f32) -> f32 {
+        let weapon = DEFS[def as usize].w[0];
+        let epoch = self.players[team as usize].epoch;
+        let row = crate::ee2_units::lookup_class(def, epoch);
+        let damage = if def == WORKER { row.and_then(|unit| unit.damage).unwrap_or(0.0) }
+            else { self.effective_weapon_damage(team, def, weapon.dmg) };
+        let reload = row.and_then(|unit| unit.reload).unwrap_or(weapon.cd);
+        let reload = if reload == 0.0 { 0.0001 } else { reload };
+        ((f64::from(damage) / f64::from(reload) + f64::from(0.1_f32)) as f32 * hp).max(10.0)
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    fn ai_contest_hill(&mut self, team: u8, army: &[usize]) -> bool {
+        let Some(hold) = self.koth else { return false; };
+        if self.net || self.humans != 1 || self.bench != 0 || !self.capture_match_enabled()
+            || self.initial_ceasefire_active() { return false; }
+        #[cfg(feature = "ee2-authored-valley37")]
+        if self.map.source_world.is_some() { return false; }
+        let Some(target) = self.get(hold.actor) else { return false; };
+        let hill = self.ents[target];
+        let neutral = hill.team == crate::koth64::NATURE;
+        if !neutral && !self.combat_hostile(team, hill.team) { return false; }
+
+        let visible = self.can_see(team, target);
+        let can_capture = visible && self.capture_allowed(team, target);
+        let path = self.key_for(LAND, hill.x, hill.y);
+        let mut cohort = Vec::new();
+        let mut available = 0.0;
+        let mut committed = false;
+        for &index in army {
+            let actor = self.ents[index];
+            let capturing = actor.order == O_CAPTURE && actor.otgt == hold.actor;
+            if !actor.alive || actor.team != team
+                || !capturing && !matches!(actor.order, O_IDLE | O_MOVE | O_AMOVE)
+                || DEFS[actor.def as usize].dom != LAND || !self.capture_actor_ready(index)
+                || !self.capture_compatible(index, target) { continue; }
+            available += self.hill_combat_strength(team, actor.def, actor.hp);
+            let approaching = actor.order == O_MOVE && actor.fkey == path;
+            committed |= approaching || capturing;
+            cohort.push((index, approaching, capturing));
+        }
+
+        // The portable opponent has no strategic strength raster. Its local
+        // observation consists of the hostile forces it can currently see.
+        let mut local_force = 0.0;
+        if visible {
+            for (index, actor) in self.ents[..self.high].iter().enumerate() {
+                if actor.alive && actor.hp > 0.0 && DEFS[actor.def as usize].armed()
+                    && self.combat_hostile(team, actor.team)
+                    && (actor.x - hill.x).powi(2) + (actor.y - hill.y).powi(2) <= 8.0 * 8.0
+                    && self.can_see(team, index) {
+                    local_force += self.hill_combat_strength(actor.team, actor.def, actor.hp);
+                }
+            }
+        }
+        // 004C13AA / 004C15AD. The ordinary strategic roster row here is
+        // the default Expand policy. The native neutral minimum is always four.
+        let (minimum_count, minimum_strength) = if neutral {
+            let baseline = self.hill_combat_strength(team, WORKER, self.max_hp(team, WORKER)) * 12.0;
+            (4, if local_force > 0.0 { (baseline + local_force) * 0.5 } else { baseline })
+        } else {
+            (8, local_force * 0.25)
+        };
+        if !committed && (cohort.len() < minimum_count || f64::from(available) < f64::from(minimum_strength) * f64::from(1.1_f32)) {
+            return false;
+        }
+        if can_capture {
+            let fresh: Vec<_> = cohort.iter().filter_map(|&(index, _, capturing)| (!capturing).then_some(index)).collect();
+            self.order_capture(&fresh, target);
+        } else if !visible {
+            let fresh: Vec<_> = cohort.iter().filter_map(|&(index, approaching, capturing)|
+                (!approaching && !capturing).then_some(index)).collect();
+            self.order_move(&fresh, hill.x, hill.y, false);
+        }
+        // A Hill group stays on its objective through the ordinary wave
+        // opportunity, including when a different seat is already capturing it.
+        true
+    }
+
     /// Find a free site near `(bx, by)` and start construction with a few workers.
     fn ai_build(&mut self, team: u8, def:DefId, bx: i32, by: i32, builders: &[usize]) -> bool {
         let d = &DEFS[def as usize];
@@ -341,6 +421,8 @@ impl Game {
         }
 
         // ---- attack waves
+        #[cfg(feature = "ee2-native13")]
+        if self.ai_contest_hill(team, &army) { return; }
         if army.len() >= wave && self.tick >= self.players[ti].ai_next_attack {
             let mut best = NOIDX;
             let mut bd = f32::MAX;
@@ -379,6 +461,99 @@ impl Game {
                 }
             }
         }
+    }
+}
+
+#[cfg(all(test, feature = "ee2-native13"))]
+mod koth_ai_tests {
+    use super::*;
+
+    fn match_hill() -> (Game, usize) {
+        let mut game = Game::new_hill_world(7, 1);
+        assert!(game.configure_match_koth(0xee10, 250, 0, 0, 0, 2));
+        assert!(game.configure_crowns(false));
+        assert!(game.configure_priest_skirmish());
+        let index = game.get(game.koth.unwrap().actor).unwrap();
+        (game, index)
+    }
+
+    fn site(game: &Game, hill: usize, distance: f32) -> (f32, f32) {
+        let e = game.ents[hill];
+        let at = game.map.snap(e.x + distance, e.y, 0);
+        ((at % N) as f32 + 0.5, (at / N) as f32 + 0.5)
+    }
+
+    #[test]
+    fn koth_ai_obeys_mode_ceasefire_count_strength_and_own_hill() {
+        let (mut game, hill) = match_hill();
+        let (x, y) = site(&game, hill, 17.0);
+        let army: Vec<_> = (0..8).map(|i| game.spawn(9, 1, x + i as f32 * 0.1, y)).collect();
+        game.update_fog();
+        assert!(!game.can_see(1, hill));
+        assert!(!game.ai_contest_hill(1, &army[..3]));
+        let original_hp = game.ents[army[0]].hp;
+        for &i in &army { game.ents[i].hp = 1.0; }
+        assert!(!game.ai_contest_hill(1, &army));
+        for &i in &army { game.ents[i].hp = original_hp; }
+        assert!(game.configure_initial_ceasefire(1));
+        assert!(!game.ai_contest_hill(1, &army));
+        assert!(game.configure_initial_ceasefire(0));
+        game.net = true;
+        assert!(!game.ai_contest_hill(1, &army));
+        game.net = false;
+        game.ents[hill].team = 1;
+        assert!(!game.ai_contest_hill(1, &army));
+        game.ents[hill].team = 0;
+        assert!(!game.ai_contest_hill(1, &army[..7]));
+        assert!(game.ai_contest_hill(1, &army));
+        assert!(army.iter().all(|&i| game.ents[i].order == O_MOVE && game.ents[i].otgt == NONE));
+        let mut ordinary = Game::new(7, 1, 0, 1, 0);
+        let before = ordinary.state_hash();
+        assert!(!ordinary.ai_contest_hill(1, &[]));
+        assert_eq!(ordinary.state_hash(), before);
+    }
+
+    #[test]
+    fn koth_ai_paid_units_walk_through_fog_and_capture_after_reload() {
+        let (mut game, hill) = match_hill();
+        let (x, y) = site(&game, hill, 17.0);
+        let barracks = game.spawn(BARRACKS, 1, x, y);
+        game.ents[barracks].built = 1.0;
+        for slot in 0..9 { game.add_resource(1, slot, 1000.0); }
+        let cost = game.unit_cost(1, 9);
+        let initial_food = game.resource(1, 0);
+        for _ in 0..4 { assert!(game.train(barracks, 9)); }
+        assert_eq!(game.resource(1, 0), initial_food - f32::from(cost[0]) * 4.0);
+        assert!(!game.can_see(1, hill));
+        let first_order = (0..4000).find(|_| {
+            game.tick();
+            let e = game.ents[hill];
+            let path = game.key_for(LAND, e.x, e.y);
+            game.ents[..game.high].iter().any(|a| a.alive && a.team == 1 && a.def == 9
+                && a.order == O_MOVE && a.fkey == path)
+        });
+        assert!(first_order.is_some(), "paid AI army never approached the Hill");
+        assert!(!game.can_see(1, hill));
+        game.save();
+        let mut restored = Game::load(&game.savebuf).expect("marching Hill army archive");
+        assert_eq!(game.state_hash(), restored.state_hash());
+        let mut saw_capture = false;
+        let mut greatest_progress = 0.0_f32;
+        for _ in 0..12000 {
+            game.tick();
+            restored.tick();
+            assert_eq!(game.state_hash(), restored.state_hash());
+            saw_capture |= game.ents[..game.high].iter().any(|a| a.alive && a.team == 1
+                && a.def == 9 && a.order == O_CAPTURE);
+            greatest_progress = greatest_progress.max(game.capture_progress(hill).unwrap_or(0.0));
+            if game.koth.unwrap().holder == 1 { break; }
+        }
+        assert!(saw_capture);
+        let positions: Vec<_> = game.ents[..game.high].iter().filter(|a| a.alive && a.team == 1 && a.def == 9)
+            .map(|a| (a.x, a.y, a.order)).collect();
+        assert!(greatest_progress > 0.5, "Hill progress {greatest_progress}, army positions {positions:?}");
+        assert_eq!(game.koth.unwrap().holder, 1, "Hill progress {greatest_progress}, army positions {positions:?}");
+        assert_eq!(restored.koth.unwrap().holder, 1);
     }
 }
 

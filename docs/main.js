@@ -10,8 +10,8 @@ import { originalResearchActions, researchCost, researchState } from './original
 import { diplomacyPanel } from './diplomacy.js?v=native17';
 import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native6';
 import {loadNativeFontUI} from './original-font-ui.js?v=native21names';
-import {territoryClaimMessage} from './territory-help.js?v=fortress1';
-import * as sfx from './audio.js?v=native62';
+import {territoryClaimMessage} from './territory-help.js?v=native64-koth';
+import * as sfx from './audio.js?v=native64-koth';
 import {generatedAmbientCoverage,loadOriginalAmbient,originalAmbientPriorities} from './original-ambient.js?v=ambient39';
 import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=citizen9';
 import {mountOriginalShellVideo} from './original-shell-video.js?v=native12';
@@ -19,8 +19,9 @@ import {mountSkirmishMenu} from './skirmish-menu.js?v=native13';
 import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regional10';
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
-import {loadNativeHud} from './original-hud.js?v=native6';
-import {loadOriginalModels} from './original-renderer.js?v=native63';
+import {loadNativeHud} from './original-hud.js?v=native64-koth-status';
+import {loadOriginalModels} from './original-renderer.js?v=native64';
+import {loadKingOfTheHillPresentation} from './original-koth.js?v=native64-koth';
 import {loadWonderPresentation} from './original-wonders.js?v=native63';
 import {loadWonderScaffold} from './original-wonder-scaffold.js?v=native63';
 import {loadWonderFence} from './original-wonder-fence.js?v=native63';
@@ -36,7 +37,7 @@ import {ownMapTerrainOrigin} from './original-citycenter-terrain.js?v=regional10
 import {loadCityCenterIcons,loadHouseIcons,loadDockIcons,loadBarracksIcons,loadMillIcons,loadTempleIcons,loadLightArtilleryIcons,loadWarehouseIcons,loadStableIcons,loadKingIcons} from './original-citycenter-icons.js?v=native17';
 import {loadSourceSailRuntime} from './source-sail-runtime.js?v=sails7';
 import {createRenderAssetMapping} from './original-render-namespace.js?v=native6';
-import {createFrontendNamespace} from './render-namespace.js?v=native36';
+import {createFrontendNamespace} from './render-namespace.js?v=native64';
 import {ORIGINAL_SPEEDS, changeOriginalSpeed, checkOriginalTempo, loadOriginalTempo, originalStartingSpeed} from './original-game-tempo.js?v=native37';
 import {advanceAdaptiveSourceFrame, advanceSourceSoloFrame, createAdaptiveSourceClock, sampleSourceRenderFps, SOURCE_SOLO_INTERVAL, sourceRenderSeconds, sourceStepDelta, sourceWallInterval} from './source-solo-clock.js?v=native44';
 import {mountOriginalGameOptions} from './original-game-options.js?v=native37';
@@ -45,14 +46,14 @@ import {createRenderActorMetadata} from './render-actor-metadata.js?v=pack8';
 import {createPackRenderMetadata} from './original-pack-states.js?v=pack8';
 import {createFullmapPipBridge} from './original-fullmap-pip-bridge.js';
 import {loadOriginalGround,sampleGroundHeight} from './original-ground.js?v=native61';
-import {createCaptureGlow} from './capture-glow.js?v=native-spy-powers';
+import {createCaptureGlow} from './capture-glow.js?v=native64-koth';
 import {loadOriginalTerrain} from './original-terrain.js?v=skirmish-climates';
 import {loadOriginalWater} from './original-water.js?v=water-farm3';
 import {createOriginalReflection} from './original-reflection.js?v=visual-seasons2';
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=clock38';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native63';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native64';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
@@ -60,11 +61,12 @@ import {createSourceRoundCarrier, selectedRoundTripMilliseconds} from './source-
 import {mountSourceRosterLobby} from './source-network-lobby.js?v=native58';
 import {applyNetworkCheckpoint} from './source-network-resume.js?v=native58';
 import {createFullscreenController} from './fullscreen.js?v=building2';
-import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native17';
+import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native64-koth';
+import {bindKothMenu,formatKothStatus} from './koth-menu.js?v=native64-koth';
 import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=native61';
 import {updateOriginalCamera,originalCameraRay,originalFractionForZoom,normalizeOriginalHeading,rotateOriginalCameraHeading} from './original-camera.js?v=heading2';
 import {updateAuthoredCamera} from './authored-camera-axis.js';
-import {createFullmap} from './fullmap.js?v=native24';
+import {createFullmap} from './fullmap.js?v=native64-koth';
 import {createPlayerFlare} from './player-flare.js?v=native24';
 import {createBattleFlare} from './battle-flare.js?v=native25';
 import {createCaptureOrder,captureOrderText,decorateCommandButton} from './capture-order.js?v=native-spy';
@@ -150,7 +152,7 @@ const valleyRequested=rulesProfile.id==='up15'&&(!!valleyManifest||['1','archive
 try{
   if(valleyRequested){
     const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley75_commit','valley71_force_attack_at','valley71_neutral_opening']:rulesProfile.requiredExports;
-    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native63-valley'};
+    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native64-valley'};
     try{wasm=await loadRulesWasm(previewRules,import.meta.url);}catch{/* The ordinary ruleset remains available. */}
   }
   wasm??=await loadRulesWasm(rulesProfile,import.meta.url);
@@ -553,12 +555,17 @@ mountSkirmishMenu($('menu'), {enabled:rulesProfile.ruleset===2, originalArt:orig
 const victoryOptions=$('sk-victory-options');
 victoryOptions.hidden=rulesProfile.id!=='up15';
 const victoryCondition=$('sk-victory-condition');
+const kothDefinition=rulesProfile.id==='up15'?wasm.koth_definition?.():undefined;
+const kothMenu=bindKothMenu({victoryCondition,durationRow:$('sk-koth-victory'),duration:$('sk-koth-duration'),
+  enabled:kothDefinition!==undefined&&typeof wasm.configure_match_koth==='function'&&typeof wasm.init_hill_world==='function'});
 function updateVictoryOptions(){
+  const koth=kothMenu.update();
   $('sk-territory-victory').hidden=victoryOptions.hidden||victoryCondition.value!=='territory';
-  $('sk-sole-victory').hidden=victoryOptions.hidden||victoryCondition.value==='territory';
+  $('sk-sole-victory').hidden=victoryOptions.hidden||victoryCondition.value==='territory'||koth;
 }
 victoryCondition.addEventListener('change',updateVictoryOptions);
 updateVictoryOptions();
+const kothPresentation=await loadKingOfTheHillPresentation({enabled:originalEnabled,definition:kothDefinition});
 const originalAssets=await loadOriginalAssets(gl,originalEnabled);
 const citizenPresentation=await loadCitizenPresentation({enabled:originalEnabled&&rulesProfile.sourceIdentityVersion===1});
 const tradeAvailable=rulesProfile.ruleset===2&&supportsTradeRoute(wasm);
@@ -652,7 +659,7 @@ const [wonderScaffold,wonderFence]=await Promise.all([
 ]);
 const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,total)=>{
   $('play').textContent=`Originalgrafiken laden · ${Math.round(loaded/total*100)} %`;
-},{assetMapping,climateProfiles,capturePoseForActor,tradePresentation,fighterBomberPresentation,carrierPresentation,priestPresentation,priestPoseForActor,spyPresentation,spyPoseForActor,leaderPresentation,wonderPresentation,wonderScaffold,wonderFence,diversionPresentation,heavyMounted3Presentation,
+},{assetMapping,climateProfiles,capturePoseForActor,tradePresentation,fighterBomberPresentation,carrierPresentation,priestPresentation,priestPoseForActor,spyPresentation,spyPoseForActor,leaderPresentation,wonderPresentation,wonderScaffold,wonderFence,diversionPresentation,heavyMounted3Presentation,kothPresentation,
   spyShimmerForActor:spyShimmer?actor=>spyShimmer.sample(actor,wasm.spy_disguised(actor.handle)===1):null,
   diversionShimmerForActor:diversionShimmer?(actor,visual)=>diversionShimmer.sample(actor,visual,wasm.leader_diversion_visual(actor.handle)===1):null,
   sourceVisualForModel:blessGround?.modelVisual,priestParticleScales:!!priestParticles,rallyTargetTags:airMissionFlag?.targetTags,
@@ -669,7 +676,8 @@ const sourceSails=await loadSourceSailRuntime({wasm,namespace:renderNamespace,mo
 if(sourceSails?.metrics.error)console.warn('Source sails:',sourceSails.metrics.error);
 const unitPresentations=[tradePresentation,fighterBomberPresentation,carrierPresentation,priestPresentation,spyPresentation,leaderPresentation,diversionPresentation,heavyMounted3Presentation].filter(Boolean);
 sfx.configureOriginalDefinitions({wasm,bindings:[...(originalModels.manifest?.models||[]),...(originalModels.additionalRegionalAudio||[]),...unitPresentations.flatMap(source=>source.audioModelRows)],additionalFamilyManifest:unitPresentations.map(source=>source.audioManifest),citizenPresentation,regionalMusic:rulesProfile.ruleset===2,...(rulesProfile.ruleset===2?{familyManifestURL:'native-families-civ8-regicide.json',playbackManifestURL:'manifest-stone-thrower-up.json'}:{})});
-const captureGlow = originalEnabled && typeof wasm.active_capture_glow === 'function' ? createCaptureGlow() : null;
+const captureGlow = originalEnabled && typeof wasm.active_capture_glow === 'function'
+  ? createCaptureGlow({kothDefinition:kothPresentation?kothDefinition:undefined}) : null;
 const originalGround=await loadOriginalGround(gl,originalEnabled,{assetMapping,captureGlow:!!captureGlow,blessGlow:!!blessGround,wonderPresentation,
   extractionDecal:spyArt?.extractionVisuals.decal.url,mixedGlow:spyAdvancedArt?.mixedGlow,...(rulesProfile.ruleset===2
   ?{manifestURL:'./local-original/regional-temple/ground-decals.json'}:{})});
@@ -729,6 +737,7 @@ if(valleyNormal&&valleyPreview?.authoredAvailable){
   $('valley-archive-qa-note').textContent += ' Wähle im Test mit Umschalt+A den Angriff. Klicke mit Alt+Linksklick auf den sichtbaren gegnerischen Bürger.';
 }
 const valleyFixedControls=new Map();
+let valleyPreviousKothDuration=null;
 const valleyPresetValues={nai:'1','pop-limit':'250',supplies:'0','start-epoch':'0','end-epoch':String(wasm.epoch_count()-1),
   'map-climate':'0','season-start':'6','season-length':'5','initial-ceasefire':'0','sk-victory-condition':'conquest',
   'civilization-0':'4','civilization-1':'8'};
@@ -738,6 +747,7 @@ valleyMapChoice.onchange=()=>{
   $('valley-fixed-settings').hidden=!selected;
   $('valley-archive-qa-note').hidden=valleyMapChoice.value!=='valley-archive-qa';
   if(selected&&!valleyFixedControls.size){
+    valleyPreviousKothDuration=kothMenu.readMinutes();
     const ids=['seed','nai','pop-limit','supplies','start-epoch','end-epoch','map-climate','season-cycle','season-start',
       'season-length','sk-victory-condition','sk-sole-survivor','sk-territory-percent',
       'disable-crowns','initial-ceasefire','source-solo-clock','source-adaptive-clock','mpopen'];
@@ -758,6 +768,11 @@ valleyMapChoice.onchange=()=>{
       }
     }
     valleyFixedControls.clear();
+  }
+  updateVictoryOptions();
+  if(!selected&&valleyPreviousKothDuration!==null){
+    $('sk-koth-duration').value=String(valleyPreviousKothDuration);
+    valleyPreviousKothDuration=null;
   }
   if(valleyNormal&&window.openepoch)void refreshContinue();
 };
@@ -1197,7 +1212,7 @@ function warplanRecipient(){
   return player?{relation:player.relation,name:`Spieler ${player.team+1}`}:null;
 }
 const fullmap = rulesProfile.ruleset===2&&packActorReader ? createFullmap({
-  dialog:$('fullmap'),wasm,metadata:packActorReader,size:MAP,teams:TEAM,originalArt:originalEnabled,
+  dialog:$('fullmap'),wasm,metadata:packActorReader,size:MAP,teams:TEAM,originalArt:originalEnabled,hillDefinition:kothDefinition,
   territoryNameCatalog,cityNameCatalog,bitmapFonts:nativeBitmapFonts.bitmapFonts,
   warplanPeer:()=>net?.warplans,warplanRecipient,warplanClock:()=>wasm.game_tick()*TICK,
   warplanCue:sfx.playWarplanCue,
@@ -1304,24 +1319,31 @@ function resolvedSkirmishChoices(choices, players) {
   return {civilizations, ...range};
 }
 function start(nAi, seed, benchUnits, humans = 1, local = 0) {
+  const originalSkirmish=!benchUnits&&humans===1&&rulesProfile.id==='up15';
+  const victoryMode=victoryCondition.value;
+  const kothMinutes=originalSkirmish&&victoryMode==='koth'?kothMenu.readMinutes():undefined;
+  if(kothMinutes===null){toast('Wähle 2, 5 oder 10 Minuten für Herr des Hügels.');return;}
   restartPoint=null;
   bench = benchUnits;
   seasonSession.configure(menuSeasonSettings(),benchUnits?0:menuClimate());
-  wasm.init(seed >>> 0, nAi, benchUnits, humans, local);
+  if(kothMinutes===undefined)wasm.init(seed >>> 0, nAi, benchUnits, humans, local);
+  else if(!wasm.init_hill_world(seed >>> 0,nAi)){toast('Die Karte für Herr des Hügels konnte nicht erzeugt werden.');return;}
   if(!benchUnits&&humans===1&&heavyMounted3Id!==undefined&&!wasm.configure_heavy_mounted3()){
     toast('Der Minotaurus-HERC konnte nicht für dieses Scharmützel eingerichtet werden.');
     return;
   }
+  if(originalSkirmish&&!wasm.configure_guided_herc_rocket()){
+    toast('Die HERC-Lenkflugkörper konnten nicht für dieses Scharmützel eingerichtet werden.');
+    return;
+  }
   if(!benchUnits&&civilizationSetup.enabled){
     const players=Math.max(2,Math.min(4,nAi+humans));
-    const originalSkirmish=humans===1&&rulesProfile.id==='up15';
-    const victoryMode=$('sk-victory-condition').value;
     const territoryPercent=originalSkirmish&&victoryMode==='territory'
       ? +$('sk-territory-percent').value : undefined;
     const regicide=originalSkirmish&&victoryMode==='regicide';
     const soleSurvivor=originalSkirmish&&(victoryMode==='conquest'||regicide)&&$('sk-sole-survivor').checked;
     applyMatchSettings(wasm,{...resolvedSkirmishChoices(civilizationSetup.choices(),players),
-      popLimit:+$('pop-limit').value,supplies:+$('supplies').value,territoryPercent,regicide,soleSurvivor},players);
+      popLimit:+$('pop-limit').value,supplies:+$('supplies').value,territoryPercent,regicide,soleSurvivor,kothMinutes},players);
   }else if(!benchUnits&&humans===1){
     wasm.skirmish_setup(+$('pop-limit').value, +$('supplies').value);
     if(referenceMode)wasm.skirmish_epoch(+$('start-epoch').value);
@@ -1510,6 +1532,18 @@ $('previous-save').onclick=()=>{rosterLobby?.reset();loadGame('previous');};
 refreshContinue();
 
 // ---------------------------------------------------------------- simulation stepping & sound
+const hillPlayerName=seat=>`Spieler ${seat+1}`;
+function playHillCapture(kind,x,y) {
+  const code=kind-128, previous=code>>2, holder=code&3, local=ui?.local??0;
+  const audience=holder===local?'self':previous===local?'other':'others';
+  const cue=kothPresentation?.capture(audience,{fromWorld:previous===4});
+  toast(cue?.message.replace('%PLAYER%',hillPlayerName(audience==='self'?previous:holder))??
+    (holder===local?'Du hast den Hügel erobert.':`${hillPlayerName(holder)} hat den Hügel erobert.`));
+  if(!cue){sfx.play(sfx.CAPTURE_COMPLETE_CUE,1,0);return;}
+  const event={...cue.sound,url:new URL(cue.sound.url,import.meta.url),gain:cue.sound.volume};
+  if(cue.sound.spatial)void sfx.playVerifiedWorldCue(event,x,y,groundAt(x,y),view);
+  else void sfx.playInterfaceCue(event);
+}
 function advance(dt, now) {
   let visualSeconds = dt * speed;
   if (net?.sourceRounds) {
@@ -1577,6 +1611,7 @@ function advance(dt, now) {
           `${name} wurde zerstört.`,`${player} übernimmt ${name}.`][kind-36]);
         continue;
       }
+      if(kind>=128&&kind<148){playHillCapture(kind,x,y);continue;}
       const citizen = decodeCitizenDeathCue(kind);
       if (kind >= 12 && !citizen && kind !== sfx.STONE_THROWER_LAUNCH_CUE && kind !== sfx.CAPTURE_COMPLETE_CUE &&
           kind !== sfx.CONVERT_CUE && kind !== sfx.PRIEST_CONVERT_COMPLETE_CUE && kind !== sfx.PRIEST_CONVERT_CAST_CUE) {
@@ -1982,6 +2017,7 @@ function frame(now) {
     if(qaMode){
       canvas.dataset.wonderScaffolds=JSON.stringify(originalModels.metrics.wonderScaffolds??[]);
       canvas.dataset.wonderFences=JSON.stringify(originalModels.metrics.wonderFences??[]);
+      canvas.dataset.guidedRocketDraws=String(originalModels.metrics.guidedRocketDraws??0);
     }
   }
   if(rulesProfile.ruleset===2)sfx.updateStoneThrowerWheels(actorMetadata?.session,stoneThrowerWheels,cam,referenceMode?view:undefined);
@@ -2038,7 +2074,7 @@ function frame(now) {
 
 // ---------------------------------------------------------------- HUD
 const HOT = ['Q', 'W', 'E', 'R', 'T', 'Z', 'X', 'C', 'V', 'B'];
-const unitPresentation=id=>id===43?artemisPresentation:id===heavyMounted3Id?heavyMounted3Presentation:id>=102&&id<=105?diversionPresentation:id>=87&&id<=89?leaderPresentation:id===86?spyPresentation:id===85?priestPresentation:id===84?carrierPresentation:id===83?fighterBomberPresentation:tradePresentation;
+const unitPresentation=id=>id===kothDefinition?kothPresentation:id===43?artemisPresentation:id===heavyMounted3Id?heavyMounted3Presentation:id>=102&&id<=105?diversionPresentation:id>=87&&id<=89?leaderPresentation:id===86?spyPresentation:id===85?priestPresentation:id===84?carrierPresentation:id===83?fighterBomberPresentation:tradePresentation;
 function icon(id, px,context=undefined) {
   const wonderUrl=wonderPresentation.iconFor(id);
   if(wonderUrl){
@@ -2096,6 +2132,11 @@ function updateUi(drawn, now) {
     : sole.players===2 ? 'Einziger Überlebender · zwei Spieler übrig' : `Einziger Überlebender · ${sole.players} Spieler übrig`;
   const regicideText=regicide ? (regicide.kingAlive ? 'Königsmord · König lebt' : 'Königsmord · König gefallen') : '';
   soleStatus.textContent=[regicideText,soleText].filter(Boolean).join(' · ');
+  const kothStatus=$('koth-victory-status'), hillHolder=wasm.koth_status?.(2);
+  kothStatus.hidden=!(hillHolder>=0&&hillHolder<4)||!!ui.win;
+  kothStatus.textContent=kothStatus.hidden?'':formatKothStatus(hillPlayerName(hillHolder),wasm.koth_status(3),
+    kothPresentation?.label('tx_ig_koth_status')??undefined);
+  nativeHud.updateKothStatus?.(wasm.koth_status?.(0)===1&&!ui.win&&!fullmap?.isOpen());
   $('idle').textContent = `Freie Bürger: ${ui.idle}`;
   $('idle').style.visibility = ui.idle && !bench ? 'visible' : 'hidden';
   let status = `${Math.round(1000 / frameMs)} fps · worst ${worstMs.toFixed(0)} ms · sim ${simMs.toFixed(2)} ms/tick · ${ui.n} entities · ${drawn} drawn`;
@@ -2826,6 +2867,7 @@ function toMenu() {
   sfx.resetAirFlightAudio();
   airMissionFlag?.reset();
   tradeWaitStatus.update(false);
+  nativeHud.updateKothStatus?.(false);
   playerFlare.reset(0);
   battleFlare?.reset(false);
   $('player-flare-button').hidden=true;

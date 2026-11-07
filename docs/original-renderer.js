@@ -18,7 +18,7 @@ const VS=`#version 300 es
 layout(location=0) in vec3 aPosition;layout(location=1) in vec3 aNormal;layout(location=2) in vec2 aUV;
 layout(location=3) in vec4 iA;layout(location=4) in vec4 iB;layout(location=5) in vec4 iC;
 layout(location=6) in vec4 aColor;
-uniform mat4 uVP;uniform highp int uShadow;uniform bool uAnimated;uniform float uYOffset;uniform vec3 uOriginOffset;
+uniform mat4 uVP;uniform highp int uShadow;uniform bool uAnimated;uniform bool uGuidedRocket;uniform float uYOffset;uniform vec3 uOriginOffset;
 uniform highp sampler2DArray uFrames;uniform int uFrameWidth;uniform int uFrameCount;uniform bool uAnimationOnce;
 uniform highp sampler2D uTerrain;uniform int uTerrainSize;uniform bool uTerrainEnabled;uniform vec3 uSunDirection;
 uniform bool uFarmPlotConform;uniform vec3 uFarmPlotCenter;
@@ -48,6 +48,14 @@ void main(){
  float constructionY=local.y;local+=uOriginOffset;
  float c=cos(iA.w),s=sin(iA.w);vec3 p=local*iC.x;
  vec3 world=vec3(iA.x+p.x*c-p.z*s,iA.z+p.y,iA.y+p.x*s+p.z*c);
+ vec3 worldNormal=vec3(normal.x*c-normal.z*s,normal.y,normal.x*s+normal.z*c);
+ if(uGuidedRocket){
+  float pitch=iC.z,cp=cos(pitch);
+  vec3 right=vec3(s,0.,-c),forward=vec3(c*cp,sin(pitch),s*cp);
+  mat3 basis=mat3(right,cross(forward,right),forward);
+  world=vec3(iA.x,iA.z,iA.y)+basis*p;
+  worldNormal=basis*normal;
+ }
  if(uFarmPlotConform && uTerrainEnabled && uTerrainSize>1){
   vec3 center=(uFarmPlotCenter+uOriginOffset)*iC.x;
   vec2 at=vec2(iA.x+center.x*c-center.z*s,iA.y+center.x*s+center.z*c);
@@ -63,7 +71,7 @@ void main(){
    world.y=terrainAt(world.xz)+.035;
   }else{world.xz-=direction*max(p.y,0.);world.y=iA.z+.035;}
  }
- vNormal=vec3(normal.x*c-normal.z*s,normal.y,normal.x*s+normal.z*c);
+ vNormal=worldNormal;
  // IndexPal20_High/Low.vsh: signed normal dot or constant .5, then the
  // vertex diffuse register is clamped before raster interpolation.
  float lightDot=uNativeShader==2?.5:dot(normalize(vNormal),normalize(uSunDirection));
@@ -184,6 +192,7 @@ function program(gl,fragment=FS,extraUniforms=[]){
  const u={};for(const name of ['uVP','uShadow','uAnimated','uAnimationOnce','uYOffset','uOriginOffset','uDiffuse','uDiffuseNext','uModelSeasonBlend','uFog','uColor','uHasAlpha','uCutoff','uModelHeight','uTeam','uFrames','uFrameWidth','uFrameCount','uTerrain','uTerrainSize','uTerrainEnabled','uSunDirection','uAmbientMaterial','uSpecularMaterial','uEmissiveMaterial','uGlossiness','uSpecularEnabled','uVertexMode','uLightingMode','uAmbientLight','uSunColor','uSpecularLight','uNativeShader','uTextureScale','uNativeLighting','uEye','uAlphaFunction','uClipEnabled','uClipPlane','uFarmPlotConform','uFarmPlotCenter'])u[name]=gl.getUniformLocation(p,name);
  u.uSpyEmissive=gl.getUniformLocation(p,'uSpyEmissive');
  u.uWonderConstructionPlane=gl.getUniformLocation(p,'uWonderConstructionPlane');
+ u.uGuidedRocket=gl.getUniformLocation(p,'uGuidedRocket');
  for(const name of extraUniforms)u[name]=gl.getUniformLocation(p,name);
  return {p,u};
 }
@@ -370,7 +379,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    productionStatus.manifestAvailable=true;
   }catch(error){productionStatus.errors.push(error.message);}}
  }
- const presentationEntries=[options.tradePresentation,options.fighterBomberPresentation,options.carrierPresentation,options.priestPresentation,options.spyPresentation,options.leaderPresentation,options.wonderPresentation,options.diversionPresentation,options.heavyMounted3Presentation].filter(Boolean)
+ const presentationEntries=[options.tradePresentation,options.fighterBomberPresentation,options.carrierPresentation,options.priestPresentation,options.spyPresentation,options.leaderPresentation,options.wonderPresentation,options.diversionPresentation,options.heavyMounted3Presentation,options.kothPresentation].filter(Boolean)
   .flatMap(presentation=>presentation.modelRows.map(row=>({...row,presentation})));
  const sailStatus={enabled:options.initialSails!==false,manifestAvailable:false,models:0,parts:0,errors:[]},sailErrors=new Set(),sailComposites=new Map();let sailManifest=null,sailShader=null,dynamicSailShader=null;const dynamicBindings=new WeakMap();
  result.initialSails=sailStatus;
@@ -623,10 +632,10 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
        ||entry.nativeScaleBinding.sourceSha256!==houseBinding.sourceSha256)throw new Error('House LOD scale differs');
     body=await readHouseLodModel(houseBinding,houseBinding.levels[0],import.meta.url);
    }catch(error){houseBinding=null;houseLodError(error);}}
-   const model=await augmentModel(body??await (entry.presentation?verifiedModelJSON(modelUrl,entry.sha256,'Original unit model'):json(modelUrl)),{...entry,id}),parts=await loadParts(model,assetKind===1,modelUrl,entry.presentation?.teamManifest);
+   const model=await augmentModel(body??await (entry.presentation?verifiedModelJSON(modelUrl,entry.sha256,'Original unit model'):json(modelUrl)),{...entry,id}),parts=await loadParts(model,assetKind===1,modelUrl,entry.presentation?.teamManifest,entry.presentation?.textureHashes);
    if(!parts.length)continue;
    const scaleKey=(entry.assetKind===undefined?'':assetKind+':')+id+':'+(entry.epoch??0),sea=assetKind===0&&((id>=29&&id<=36)||id===42||id===45);
-   const scaleBinding=entry.regionalCivilizations||entry.wonderFamily?entry.nativeScaleBinding:scales.variants?.[scaleKey];
+   const scaleBinding=entry.regionalCivilizations||entry.wonderFamily||entry.kothObjective?entry.nativeScaleBinding:scales.variants?.[scaleKey];
    const transform=nativeModelTransform(model,scaleBinding);
    const yOffset=!transform.native&&sea?-(model.normalization?.offset?.[1]||0)*(model.normalization?.scale||1):0;
    const variant={sourceId:id,assetKind,scaleKey,epoch:entry.epoch??0,until:entry.until,regionalCivilizations:entry.regionalCivilizations,regionalFallback:entry.regionalFallback===true,sourceIdentity:entry.sourceIdentity,region:entry.region,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),nativeAttackClock:entry.nativeAttackClock===true,yOffset,originOffset:transform.originOffset,nativeScale:transform.native?transform.scale:null,yawOffset:entry.yawOffset??model.yawOffset??0,farUrl:entry.lodFarUrl,far:null,farRequested:false,pickBounds:resourceBounds(parts),rallyTag:rallyTag(model),nativeTakeoff:model.nativeTakeoff};
@@ -681,6 +690,23 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    if(result.models.get(renderId)?.filter(variant=>variant.presentationEntry).length===count)continue;
    result.models.delete(renderId);result.available.delete(renderId);
   }
+ }
+ const rocket=options.heavyMounted3Presentation?.projectile;
+ const guidedBindings=assetMapping&&sourceRenderBindings(assetMapping,2,7);
+ if(rocket?.name==='ProjectileRocketHerc'&&guidedBindings?.length===1){
+  try{
+   const {url,sha256}=rocket.model;
+   const model=await verifiedModelJSON(url,sha256,'Original HERC rocket');
+   const transform=nativeModelTransform(model,{verified:true,sourceScale:rocket.sourceScale,sourceSha256:rocket.mesh.sha256});
+   if(model.format!=='ee2-original-mesh-v1'||model.databaseVisualBinding?.visualDefinition!==rocket.name||
+      !transform.native||model.parts.length!==1||model.parts[0].indices.length!==144)throw Error('Original HERC rocket differs');
+   const textures=new Map(rocket.textureDependencies.map(row=>[row.url,row.sha256]));
+   const parts=await loadParts(model,false,url,null,textures);
+   const {renderId}=guidedBindings[0];
+   result.models.set(renderId,[{sourceId:7,assetKind:2,epoch:0,parts,guidedRocket:true,yOffset:0,
+    originOffset:transform.originOffset,nativeScale:transform.scale,yawOffset:0}]);
+   result.available.add(renderId);
+  }catch(error){result.errors.push(error.message);}
  }
  for(const list of result.models.values())list.sort((a,b)=>a.epoch-b.epoch);
  for(const [renderId,variants] of result.models){
@@ -774,6 +800,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   const started=performance.now();let calls=0,triangles=0,querying=false;
   const scaffoldDraws=[];
   const fenceDraws=[];
+  let guidedRocketDraws=0;
   const collectActorPresentation=(actorVisuals||actorSourceScales)&&!shadow&&!clipPlane;
   if(collectActorPresentation)for(const actor of actorMetadata?.actors??[]){
    actorVisuals?.delete(actor);actorSourceScales?.delete(actor);
@@ -808,6 +835,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   };
   for(const [id,variants] of result.models){
    const count=ranges[id*2+1];if(!count)continue;
+   if(shadow&&variants[0].guidedRocket)continue;
    const first=ranges[id*2],groups=new Map();
    for(let i=first;i<first+count;i++){
     const rowTeam=Math.round(data[i*12+5]),team=Math.min(3,rowTeam),epoch=epochs[team]||0;
@@ -954,6 +982,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
      const deformed=job.owner?.parts[part.sailIndex],gpu=deformed||part;
      if(job.record){gl.bindBuffer(gl.ARRAY_BUFFER,instances);gl.bufferData(gl.ARRAY_BUFFER,job.record,gl.STREAM_DRAW);}
      selectShader(deformed?dynamicSailShader:part.nativeSail?sailShader:shader);const u=activeShader.u;
+     gl.uniform1i(u.uGuidedRocket,variant.guidedRocket?1:0);
      if(part.nativeSail){gl.uniform1f(u.uYOffset,variant.yOffset);gl.uniform3fv(u.uOriginOffset,variant.originOffset);}
      gl.uniform1i(u.uFarmPlotConform,part.farmPlotOffset?1:0);gl.uniform3fv(u.uFarmPlotCenter,part.farmPlotOffset||[0,0,0]);
      const pose=part.pose(clip);gl.uniform1i(u.uAnimated,pose?1:0);
@@ -981,6 +1010,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
       gl.disable(gl.CULL_FACE);gl.enable(gl.DEPTH_TEST);gl.depthMask(true);gl.depthFunc(gl.LEQUAL);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.blendEquation(gl.FUNC_ADD);
      }else applyDrawState(gl,part,shadow,preview,shimmerBlend);
      gl.drawElementsInstanced(gl.TRIANGLES,gpu.count,gl.UNSIGNED_INT,0,job.instances);
+     if(variant.guidedRocket)guidedRocketDraws+=job.instances;
      if(sailState){if(sailState.cull)gl.enable(gl.CULL_FACE);else gl.disable(gl.CULL_FACE);gl.blendEquationSeparate(sailState.equationRGB,sailState.equationAlpha);}
      calls++;triangles+=gpu.count/3*job.instances;
      }
@@ -996,6 +1026,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   else{
    result.metrics.colorMs=performance.now()-started;result.metrics.calls=calls;result.metrics.triangles=triangles;
    result.metrics.wonderScaffolds=scaffoldDraws;result.metrics.wonderFences=fenceDraws;
+   result.metrics.guidedRocketDraws=guidedRocketDraws;
   }
  };
  return result;

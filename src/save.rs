@@ -224,6 +224,8 @@ impl Game {
             b = crate::wonders61::wrap_save(b);
         }
         #[cfg(feature="ee2-native13")]
+        if let Some(rule) = self.koth { b = rule.wrap(b, self.rule_save_outcome()); }
+        #[cfg(feature="ee2-native13")]
         { b = self.factory_clocks.wrap(b); }
         #[cfg(feature="ee2-native13")]
         if self.heavy_mounted3 { b = crate::heavy_mounted3_61::wrap(b); }
@@ -298,6 +300,8 @@ impl Game {
         #[cfg(feature="ee2-native13")]
         let (buf, factory_clocks) = crate::game::wonder_automation62::FactoryClocks::split(buf)?;
         #[cfg(feature="ee2-native13")]
+        let (buf, koth) = crate::koth64::split(buf)?;
+        #[cfg(feature="ee2-native13")]
         let (buf, wonders) = crate::wonders61::split_save(buf)?;
         #[cfg(feature="ee2-native13")]
         if wonders && (powers.is_none() || roster.is_some()) { return None; }
@@ -369,6 +373,8 @@ impl Game {
         #[cfg(feature="ee2-native13")]
         let actor_definition_count = if heavy_mounted3 { crate::heavy_mounted3_61::ID as usize + 1 } else { actor_definition_count };
         #[cfg(feature="ee2-native13")]
+        let actor_definition_count = if koth.is_some() { crate::koth64::HILL as usize + 1 } else { actor_definition_count };
+        #[cfg(feature="ee2-native13")]
         let (buf, sole_survivor) = crate::ee2_sole_survivor::split(buf)?;
         #[cfg(feature="ee2-native13")]
         let (buf, territory_victory) = crate::ee2_territory_victory::split(buf)?;
@@ -433,6 +439,7 @@ impl Game {
             Some(ArchiveRoster::SharedOwner) => Game::new_shared_owner_network(u(4)),
             Some(ArchiveRoster::Grouped { grouping, .. }) => Game::new_grouped_world(u(4), u(5), humans, grouping, local)?,
             _ if humans > 2 => Game::new_network_roster(u(4), u(5), humans, local)?,
+            None if koth.is_some() && humans == 1 && (1..=3).contains(&u(5)) => Game::new_hill_world(u(4), u(5)),
             _ => Game::new(u(4), u(5), 0, humans, local),
         });
         #[cfg(not(feature="ee2-native13"))]
@@ -587,6 +594,7 @@ impl Game {
         for p in &g.players[..g.nplayers] {if p.epoch>g.match_final_epoch() {return None;}}
         #[cfg(feature="ee2-native13")]
         let valid_definition = |id: DefId| {
+            if id == crate::koth64::HILL { return koth.is_some(); }
             if id == crate::heavy_mounted3_61::ID { return heavy_mounted3; }
             if id == crate::carrier36_defs::CARRIER { return g.air_carrier_enabled; }
             if crate::leader58_defs::branch(id).is_some() { return crown_leaders; }
@@ -618,7 +626,13 @@ impl Game {
         }
         for e in &g.ents[..high] {
             if !e.alive {continue;}
-            if !valid_definition(e.def) || e.team as usize>=g.nplayers || e.qn>5 || e.ncargo as usize>CARGO_MAX {return None;}
+            #[cfg(feature="ee2-native13")]
+            let neutral_hill = e.team == crate::koth64::NATURE && e.def == crate::koth64::HILL && koth.is_some();
+            #[cfg(not(feature="ee2-native13"))]
+            let neutral_hill = false;
+            if !valid_definition(e.def) || (e.team as usize>=g.nplayers && !neutral_hill) || e.qn>5 || e.ncargo as usize>CARGO_MAX {return None;}
+            #[cfg(feature="ee2-native13")]
+            if e.def == crate::koth64::HILL && (e.qn != 0 || e.ncargo != 0 || e.order != O_IDLE) { return None; }
             #[cfg(feature="ee2-native13")]
             if e.order == O_RENDEZVOUS && e.def != crate::carrier36_defs::CARRIER { return None; }
             #[cfg(feature="ee2-native13")]
@@ -661,6 +675,8 @@ impl Game {
             }
             if e.cargo[..e.ncargo as usize].iter().any(|&c| !valid_definition(c)) {return None;}
             #[cfg(feature="ee2-native13")]
+            if e.cargo[..e.ncargo as usize].contains(&crate::koth64::HILL) { return None; }
+            #[cfg(feature="ee2-native13")]
             if e.cargo[..e.ncargo as usize].iter().copied().any(crate::wonders61::is_wonder) { return None; }
             #[cfg(feature="ee2-native13")]
             if e.cargo[..e.ncargo as usize].contains(&crate::heavy_mounted3_61::ID)
@@ -689,7 +705,7 @@ impl Game {
             }) { return None; }
             #[cfg(feature="ee2-epoch-range13")]
             if g.final_epoch < MAX_EPOCH && DEFS[e.def as usize].building &&
-                g.players[e.team as usize].epoch == g.final_epoch && e.q[..e.qn as usize].contains(&RESEARCH) {
+                e.q[..e.qn as usize].contains(&RESEARCH) && g.players[e.team as usize].epoch == g.final_epoch {
                 return None;
             }
         }
@@ -712,6 +728,12 @@ impl Game {
             }
         }
         g.high = high;
+        #[cfg(feature="ee2-native13")]
+        if let Some((rule, outcome)) = koth {
+            if territory_victory.is_some() || sole_survivor.is_some() || regicide.is_some() { return None; }
+            if g.ents[..high].iter().filter(|actor| actor.alive && actor.def == crate::koth64::HILL).count() != 1 { return None; }
+            g.restore_koth(rule, outcome)?;
+        }
         #[cfg(feature="ee2-reference")]
         g.read_city_ground(city_chunk)?;
         #[cfg(feature="ee2-up15")]
@@ -738,6 +760,8 @@ impl Game {
                 let mask = g.valley_start_city_mask(i);
                 for ty in ty0..ty0+height {
                     for tx in tx0..tx0+width {
+                        #[cfg(feature = "ee2-native13")]
+                        if !Game::building_blocks_tile(&g.ents[i], tx, ty) { continue; }
                         #[cfg(feature = "ee2-valley74-city-footprint")]
                         if mask.is_some_and(|footprint| !footprint.blocks(tx, ty)) { continue; }
                         g.map.blocked[ty as usize * N + tx as usize] = true;

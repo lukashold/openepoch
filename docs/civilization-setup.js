@@ -61,13 +61,16 @@ export function resolveEpochRange(start, end, count, word15) {
 }
 export function applyMatchSettings(wasm,settings,nplayers){
  const values=checkedCivilizations(settings?.civilizations,nplayers);
- if(![250,500,1000].includes(settings.popLimit)||![0,1,2].includes(settings.supplies))throw Error('Ungültige Scharmützeleinstellungen.');
+ if(![250,500,1000].includes(settings.popLimit)||![0,1,2,3,4].includes(settings.supplies))throw Error('Ungültige Scharmützeleinstellungen.');
  const count = wasm.epoch_count(), end = settings.finalEpoch ?? count - 1;
  checkedEpochRange(settings.epoch, end, count);
  if(typeof wasm.configure_match_settings!=='function')throw Error('Die Spieldatei unterstützt diese Scharmützeleinstellungen noch nicht.');
  const packed=values.reduce((n,v,i)=>n|(v<<(i*4)),0);
  let result;
- if (settings.territoryPercent !== undefined) {
+ if (settings.kothMinutes !== undefined) {
+  if(typeof wasm.configure_match_koth!=='function')throw Error('Die Spieldatei unterstützt Herr des Hügels noch nicht.');
+  result=wasm.configure_match_koth(packed,settings.popLimit,settings.supplies,settings.epoch,end,settings.kothMinutes);
+ } else if (settings.territoryPercent !== undefined) {
   if (!Number.isInteger(settings.territoryPercent)) throw Error('Ungültiger Zielanteil der Territorien.');
   if(typeof wasm.configure_match_territory_victory!=='function')throw Error('Die Spieldatei unterstützt keine Territorienkontrolle.');
   result=wasm.configure_match_territory_victory(packed,settings.popLimit,settings.supplies,settings.epoch,end,settings.territoryPercent);

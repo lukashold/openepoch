@@ -1,6 +1,6 @@
 // The EE2 profile uses locally extracted original recordings when available.
 // Procedural sounds and local speech remain the fallback for the standalone game.
-import { createOriginalAudio } from './original-audio.js?v=native62';
+import { createOriginalAudio } from './original-audio.js?v=native64-koth';
 import {ORIGINAL_AUDIO_DEFAULTS,originalAudioLevel,originalAudioGain} from './original-audio-levels.js?v=native38audio';
 import {originalOneShotAudible,originalLoopAudible,originalSpatialMix} from './original-spatial-audio.js?v=native39audio';
 import {createPresentationRandom} from './source-music-controller.js?v=regional11';
@@ -149,6 +149,11 @@ export const stopTakeoff = () => originals.stopTakeoff();
 export async function playInterfaceCue(event) {
   if(muted||!ensure())return false;
   return originals.playInterfaceCue(event);
+}
+export async function playVerifiedWorldCue(event, x, y, altitude, view) {
+  const {volume,pan}=originalSpatialMix(view,x,y,altitude);
+  if(muted||!originalOneShotAudible(volume)||!ensure())return false;
+  return originals.playInterfaceCue({...event,gain:event.gain*volume},pan);
 }
 export function spatialSound(dx,dy,zoom) {
   const range=26+700/zoom;

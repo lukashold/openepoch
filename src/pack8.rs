@@ -16,7 +16,7 @@ pub fn interrupt(state:&mut State){state.phase=NONE;state.started=false;state.st
 impl Game{
  pub(crate) fn pack_now(&self)->f32{self.sim_elapsed()}
  pub(crate) fn pack_reset(&mut self,index:usize){self.pack_states[index]=State::fresh(self.h(index));}
- pub(crate) fn pack_spec(&self,e:&Ent)->Option<pack8_defs::Spec>{pack8_defs::lookup(e.def,self.players[e.team as usize].epoch)}
+ pub(crate) fn pack_spec(&self,e:&Ent)->Option<pack8_defs::Spec>{pack8_defs::lookup(e.def,self.players.get(e.team as usize)?.epoch)}
  fn pack_sync(&mut self,index:usize,e:&Ent){let handle=(e.gen as u32)<<16|index as u32;if self.pack_states[index].handle!=handle{self.pack_states[index]=State::fresh(handle);}}
  ///00840220 changes logical flags immediately. Acceptance is supplied by the
  ///actual host order lifecycle; successful own allocation is the normal domain.

@@ -261,7 +261,7 @@ impl Game {
                 let mut city=false;
                 for &i in &ids {
                     #[cfg(feature = "ee2-native13")]
-                    if crate::diversion61_defs::slot(self.ents[i].def).is_some() { continue; }
+                    if self.ents[i].def == crate::koth64::HILL || crate::diversion61_defs::slot(self.ents[i].def).is_some() { continue; }
                     city |= self.ents[i].def == TC;
                     #[cfg(feature = "ee2-native13")]
                     if self.ents[i].def == DOCK { self.retire_dock_garrison(i); }

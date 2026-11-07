@@ -5,7 +5,7 @@ use crate::game::Game;
 
 include!("ee2_conquest_rows.rs");
 const _: [(); SAVE_DEFINITION_COUNT] = [(); CONQUEST_CAPABLE.len()];
-const _: [(); DEFS.len()] = [(); crate::heavy_mounted3_61::ID as usize + 1];
+const _: [(); DEFS.len()] = [(); crate::koth64::HILL as usize + 1];
 
 fn capable(def: crate::ids::DefId) -> bool {
     matches!(def, crate::ee2_regicide::KING | crate::air31_defs::FIGHTER_BOMBER | crate::carrier36_defs::CARRIER |
@@ -19,11 +19,11 @@ pub(crate) fn living_seats(game: &Game) -> [bool; 4] {
         if !actor.alive || !(actor.hp > 0.0) || actor.built < 1.0 {
             continue;
         }
-        let owner = actor.team as usize;
-        if living[owner] {
+        let Some(owner) = living.get_mut(actor.team as usize) else { continue; };
+        if *owner {
             continue;
         }
-        living[owner] = capable(actor.def)
+        *owner = capable(actor.def)
             || (0..actor.ncargo as usize).any(|slot| {
                 actor.cargo_hp[slot] > 0 && capable(actor.cargo[slot])
             });

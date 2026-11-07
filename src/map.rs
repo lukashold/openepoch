@@ -162,16 +162,34 @@ impl Map {
     }
 
     pub fn new(seed: u32, players: usize) -> Map {
+        Self::generate(seed, players, false)
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn new_for_hill(seed: u32, players: usize) -> Map {
+        Self::generate(seed, players, true)
+    }
+
+    fn generate(seed: u32, players: usize, hill: bool) -> Map {
         let mut m = Self::blank(seed);
         let mut seed = seed;
         for attempt in 0..24 {
             m.gen_terrain(seed, players);
-            if m.connected(players) {
+            if m.connected(players, hill) {
                 break;
             }
             seed = seed.wrapping_mul(31).wrapping_add(7);
             if attempt == 23 {
                 m.carve(players);
+                if hill {
+                    m.carve_to((N / 2, N / 2));
+                    for y in N / 2 - 3..N / 2 + 3 {
+                        for x in N / 2 - 3..N / 2 + 3 {
+                            let tile = y * N + x;
+                            if !m.land(tile) { m.ter[tile] = T_SAND; }
+                        }
+                    }
+                }
             }
         }
         m.seed = seed;
@@ -324,7 +342,7 @@ impl Map {
         self.ter[i] >= T_SAND && self.ter[i] != T_ROCK
     }
 
-    fn connected(&mut self, players: usize) -> bool {
+    pub(crate) fn connected(&mut self, players: usize, hill: bool) -> bool {
         let mut seen = vec![false; NN];
         let (sx, sy) = self.starts[0];
         self.queue.clear();
@@ -348,22 +366,27 @@ impl Map {
             }
         }
         (1..players).all(|p| seen[self.starts[p].1 * N + self.starts[p].0])
+            && (!hill || (N / 2 - 3..N / 2 + 3).all(|y| (N / 2 - 3..N / 2 + 3).all(|x| seen[y * N + x])))
     }
 
     /// Last resort: cut a land bridge between starts.
     fn carve(&mut self, players: usize) {
         for p in 1..players {
-            let (ax, ay) = (self.starts[0].0 as f32, self.starts[0].1 as f32);
-            let (bx, by) = (self.starts[p].0 as f32, self.starts[p].1 as f32);
-            for k in 0..=400 {
-                let t = k as f32 / 400.0;
-                let (x, y) = ((ax + (bx - ax) * t) as i32, (ay + (by - ay) * t) as i32);
-                for oy in -2..=2 {
-                    for ox in -2..=2 {
-                        let i = tile_of((x + ox) as f32, (y + oy) as f32);
-                        if !self.land(i) {
-                            self.ter[i] = T_SAND;
-                        }
+            self.carve_to(self.starts[p]);
+        }
+    }
+
+    fn carve_to(&mut self, end: (usize, usize)) {
+        let (ax, ay) = (self.starts[0].0 as f32, self.starts[0].1 as f32);
+        let (bx, by) = (end.0 as f32, end.1 as f32);
+        for k in 0..=400 {
+            let t = k as f32 / 400.0;
+            let (x, y) = ((ax + (bx - ax) * t) as i32, (ay + (by - ay) * t) as i32);
+            for oy in -2..=2 {
+                for ox in -2..=2 {
+                    let i = tile_of((x + ox) as f32, (y + oy) as f32);
+                    if !self.land(i) {
+                        self.ter[i] = T_SAND;
                     }
                 }
             }

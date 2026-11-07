@@ -61,6 +61,8 @@ impl Game {
     pub(crate) fn recount_paid_players(&mut self){
         let mut pop=[0_u32;4];let mut cap=[0_u32;4];let mut buildings=[0_u32;4];
         for e in &self.ents[..self.high]{
+            #[cfg(feature = "ee2-native13")]
+            if e.team == crate::koth64::NATURE { continue; }
             if !e.alive{continue;}let t=e.team as usize;let epoch=self.players[t].epoch;let d=&DEFS[e.def as usize];
             pop[t]+=crate::economy::population(e.def,epoch);
             for &def in &e.cargo[..e.ncargo as usize]{pop[t]+=crate::economy::population(def,epoch);}

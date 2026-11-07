@@ -163,6 +163,18 @@ impl Game {
             if !inview(x, y) || self.vis[tile_of(x, y)] != 255 {
                 continue;
             }
+            #[cfg(feature = "ee2-native13")]
+            if let Some(flight) = p.guided {
+                let z = flight.previous_z + (flight.z - flight.previous_z) * alpha;
+                let yaw = flight.velocity[1].atan2(flight.velocity[0]);
+                let pitch = flight.velocity[2].atan2(flight.velocity[0].hypot(flight.velocity[1]));
+                let first = o.len();
+                put(&mut o, x, y, z, yaw, crate::ids::GUIDED_HERC_RENDER as f32, p.team as f32, 0.0, 0.0, 1.0);
+                if let Some(slot) = o.get_mut(first + 10) {
+                    *slot = pitch;
+                }
+                continue;
+            }
             // 0 at launch, 1 at impact
             let t = (1.0 - ((p.tx - x).powi(2) + (p.ty - y).powi(2)).sqrt() / p.d0).clamp(0.0, 1.0);
             let ground = self.map.height(x, y).max(0.0);
@@ -357,7 +369,7 @@ impl Game {
                 continue;
             }
             let d = &DEFS[e.def as usize];
-            let c = TEAM[e.team as usize & 3];
+            let Some(c) = TEAM.get(e.team as usize) else { continue; };
             let s = if d.building { d.size as i32 } else { 2 };
             let (x0, y0) = ((e.x - s as f32 * 0.5) as i32, (e.y - s as f32 * 0.5) as i32);
             for y in y0.max(0)..(y0 + s).min(N as i32) {

@@ -6,6 +6,7 @@ export function territoryClaimMessage(area,{building=false}={}){
     case 2:return 'Das Stadtzentrum wird noch gebaut.';
     case 3:return 'Abgelegenes Gebiet: Zusätzlich zum Stadtzentrum ist eine eigene Festung erforderlich.';
     case 4:return 'Die Festung wird noch gebaut; der Gebietsanspruch wartet.';
+    case 5:return 'Erobere den Hügel, um dieses Gebiet zu übernehmen.';
   }
   if(area.owner!==255)return 'Dieses Gebiet gehört einem anderen Spieler.';
   if(area.adjacent)return 'Angrenzendes freies Gebiet: Ein eigenes Stadtzentrum genügt für den Gebietsanspruch.';
