@@ -241,8 +241,22 @@ fn g() -> &'static mut Game {
 /// `humans` = 2 starts a lockstep multiplayer game; `local` is the seat this client plays.
 #[no_mangle]
 pub extern "C" fn init(seed: u32, n_ai: u32, bench: u32, humans: u32, local: u32) {
+    install_game(Game::new(seed, n_ai, bench, humans, local));
+}
+
+/// Opt-in UP startup for three or four distinct human world seats. The
+/// legacy entry keeps its original clamping, including fixed multiplayer.
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn init_network_roster(seed: u32, n_ai: u32, humans: u32, local: u32) -> u32 {
+    let Some(game) = Game::new_network_roster(seed, n_ai, humans, local) else { return 0; };
+    install_game(game);
+    1
+}
+
+fn install_game(game: Game) {
     unsafe {
-        *addr_of_mut!(GAME) = Some(Box::new(Game::new(seed, n_ai, bench, humans, local)));
+        *addr_of_mut!(GAME) = Some(Box::new(game));
         #[cfg(feature="ee2-render-meta7")]
         render_meta7::reset_session();
     }
@@ -678,7 +692,9 @@ pub extern "C" fn inbox_alloc(len: u32) -> *mut u8 {
 /// Apply the commands in the inbox for player `team`.
 #[no_mangle]
 pub extern "C" fn net_apply(team: u32) {
-    let game=g();if team<game.nplayers as u32{game.net_apply(team as u8);}
+    let game = g();
+    let limit = if game.humans > 2 { game.humans } else { game.nplayers as u32 };
+    if team < limit { game.net_apply(team as u8); }
 }
 #[no_mangle]
 pub extern "C" fn state_hash() -> u32 {
@@ -1072,7 +1088,21 @@ pub extern "C" fn cmd_resign_network() -> u32 {
 #[no_mangle]
 pub extern "C" fn network_peer_disconnected() {
     let game = g();
-    if let Some(peer) = 1u8.checked_sub(game.local) { game.apply_network_departure(peer); }
+    if game.humans == 2 {
+        if let Some(peer) = 1u8.checked_sub(game.local) { game.apply_network_departure(peer); }
+    }
+}
+
+/// Apply the host's ordered loss record at the shared source-round boundary.
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn network_roster_peer_disconnected(seat: u32) -> u32 {
+    let game = g();
+    if game.humans < 3 || seat == 0 || seat >= game.humans || game.net_resignation.is_none() {
+        return 0;
+    }
+    game.apply_network_departure(seat as u8);
+    1
 }
 
 #[cfg(feature = "ee2-native13")]

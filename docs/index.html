@@ -79,6 +79,9 @@
   #mp { display:none; border:1px solid var(--line); border-radius:8px; padding:4px 14px 8px; margin:8px 0; }
   #mp textarea { width:100%; background:#0b0f13; color:var(--text); border:1px solid var(--line); border-radius:6px; padding:6px; font:11px ui-monospace, monospace; resize:vertical; word-break:break-all; }
   #mpstatus { color:var(--dim); font-size:13px; margin:6px 0; }
+  #mp-roster { border-top:1px solid var(--line); margin:8px 0; padding:8px 0 0; }
+  #mp-roster fieldset { border:1px solid var(--line); border-radius:6px; margin:6px 0; padding:8px; }
+  #mp-roster summary { cursor:pointer; }
   #menu button.alt { padding:8px 14px; font-size:14px; }
   #camera-tools {position:fixed;top:45px;right:12px;display:flex;gap:3px;z-index:3;}
   #camera-tools[hidden]{display:none;}
@@ -390,6 +393,45 @@
       <div class="row"><button id="mpgo" class="alt">Connect</button></div>
       <textarea id="mpout" rows="3" readonly placeholder="Your code will appear here" spellcheck="false"></textarea>
       <div class="row"><button id="mpcopy" class="alt">Copy code</button></div>
+      <details id="mp-roster" hidden>
+        <summary>Mehrspieler für 3 oder 4 Personen</summary>
+        <p class="dim">Jeder Gast erhält einen eigenen Einladungscode. Der Host startet, sobald alle Plätze bereit sind.</p>
+        <div class="row">
+          <label for="mp-roster-count">Menschliche Spieler</label>
+          <select id="mp-roster-count"><option value="3">3</option><option value="4">4</option></select>
+          <label for="mp-roster-ai">KI-Spieler</label>
+          <select id="mp-roster-ai"><option value="0">0</option><option value="1">1</option></select>
+        </div>
+        <div class="row">
+          <button id="mp-roster-host" type="button" class="alt">Raum eröffnen</button>
+          <button id="mp-roster-join" type="button" class="alt">Raum beitreten</button>
+          <button id="mp-roster-close" type="button" class="alt" hidden>Raum schließen</button>
+        </div>
+        <p id="mp-roster-status" role="status" class="dim">3 oder 4 Personen mit installiertem UP-Regelprofil.</p>
+        <div id="mp-roster-host-room" hidden>
+          <div id="mp-roster-players"></div>
+          <button id="mp-roster-start" type="button" disabled>Partie starten</button>
+        </div>
+        <div id="mp-roster-guest-room" hidden>
+          <label for="mp-roster-invite">Einladung vom Host</label>
+          <textarea id="mp-roster-invite" rows="2" spellcheck="false"></textarea>
+          <button id="mp-roster-reply" type="button" class="alt">Antwort erzeugen</button>
+          <label for="mp-roster-answer">Antwort an den Host</label>
+          <textarea id="mp-roster-answer" rows="2" readonly spellcheck="false"></textarea>
+        </div>
+        <template id="mp-roster-player-template">
+          <fieldset>
+            <legend></legend>
+            <div class="row">
+              <button type="button" class="alt" data-roster-invite>Einladung erzeugen</button>
+              <span data-roster-state class="dim"></span>
+            </div>
+            <label>Einladung an den Gast<textarea rows="2" data-roster-offer readonly spellcheck="false"></textarea></label>
+            <label>Antwort des Gasts<textarea rows="2" data-roster-answer spellcheck="false"></textarea></label>
+            <button type="button" class="alt" data-roster-connect disabled>Verbinden</button>
+          </fieldset>
+        </template>
+      </details>
     </div>
     <details class="extra-options"><summary>Steuerung und weitere Optionen</summary>
     <div class="row"><label>Leistungstest</label>
@@ -426,6 +468,6 @@
 </aside>
 <div id="trade-route-caption" hidden role="status"></div>
 <div id="air-mission-caption" hidden role="status"></div>
-<script type="module" src="main.js?v=native45"></script>
+<script type="module" src="main.js?v=native46"></script>
 </body>
 </html>

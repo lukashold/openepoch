@@ -65,12 +65,13 @@ function validCommands(bytes) {
   return at === bytes.length;
 }
 
-function validRecord(record) {
+function validRecord(record, humanSeats) {
   if (!record) return false;
   if (record.type === 'requested') return validSpeed(record.value);
   if (record.type === 'simRate') return validSimRate(record.rate, record.scale);
   if (record.type === 'roundLength') return integerIn(record.length, 1, MAX_LENGTH);
-  return record.type === 'commands' && integerIn(record.seat, 0, 1) && validCommands(record.bytes);
+  if (record.type === 'departure') return humanSeats > 2 && integerIn(record.seat, 1, humanSeats - 1);
+  return record.type === 'commands' && integerIn(record.seat, 0, humanSeats - 1) && validCommands(record.bytes);
 }
 
 function validSample(sample) {
@@ -83,17 +84,22 @@ function copyRecord(record) {
 }
 
 const openRound = round => ({round,records:[],bytes:9});
-const framedLength = record => 5+(record.type==='commands'?record.bytes.length+1:record.type==='simRate'?8:4);
+const framedLength = record => 5+(record.type==='commands'?record.bytes.length+1:
+  record.type==='simRate'?8:record.type==='departure'?1:4);
 
-/** An original-style two-seat scheduler over an ordered session carrier. */
+/** An original-style host scheduler over one authenticated link per remote seat. */
 export class SourceRoundPeer {
-  constructor(wasm, seat, send, {renderFps, linkMs, nowSeconds, onRequested, requested = 1, locked = true}) {
-    if (!integerIn(seat, 0, 1) || !validSpeed(requested) || typeof locked !== 'boolean' ||
+  constructor(wasm, seat, send, {renderFps, linkMs, nowSeconds, onRequested, requested = 1, locked = true, humanSeats = 2}) {
+    if (!integerIn(humanSeats, 2, 4) || !integerIn(seat, 0, humanSeats - 1) ||
+        (humanSeats > 2 && (typeof wasm.init_network_roster !== 'function' ||
+          typeof wasm.network_roster_peer_disconnected !== 'function')) ||
+        !validSpeed(requested) || typeof locked !== 'boolean' ||
         typeof wasm.tick_with_network_source_slot !== 'function' || wasm.game_tick() !== 0) {
       throw new Error('Invalid source-round startup');
     }
     this.wasm = wasm;
     this.local = seat;
+    this.humanSeats = humanSeats;
     this.send = send;
     this.renderFps = renderFps;
     this.linkMs = linkMs;
@@ -110,7 +116,9 @@ export class SourceRoundPeer {
     this.ring = new Array(3);
     this.pending = [];
     this.open = openRound(1);
-    this.guestAck = -3;
+    this.links = new Map();
+    const others = seat===0 ? Array.from({length:humanSeats-1},(_,index)=>index+1) : [0];
+    for (const other of others) this.links.set(other,{ack:-3,sample:null,localHashes:new Map(),remoteHashes:new Map()});
     this.cpuSeconds = 0;
     this.waiting = true;
     this.transportAvailable = true;
@@ -118,8 +126,6 @@ export class SourceRoundPeer {
     this.terminal = false;
     this.desync = false;
     this.failure = '';
-    this.localHashes = new Map();
-    this.remoteHashes = new Map();
   }
 
   transmit(kind, fields) {
@@ -127,8 +133,13 @@ export class SourceRoundPeer {
   }
 
   receive(sender, message) {
-    if (sender !== 1 - this.local || !message || this.alone) return false;
+    const link = this.links.get(sender);
+    if (!link || !message || this.alone) return false;
     if (message.kind === 'abort') {
+      if (this.humanSeats > 2 && this.local === 0) {
+        this.abort(`Mitspieler ${sender + 1} hat die Synchronisierung beendet.`);
+        return true;
+      }
       this.desync = true;
       this.waiting = false;
       return true;
@@ -136,27 +147,27 @@ export class SourceRoundPeer {
     if (this.desync || this.terminal) return true;
     if (message.kind === 'round' && sender === 0) {
       if (!this.stage(message)) return false;
-      this.checkRoundHash(message.round - 2, message.hash, false);
+      this.checkRoundHash(link, message.round - 2, message.hash, false);
       return true;
     }
-    if (message.kind === 'ack' && sender === 1) {
+    if (message.kind === 'ack' && this.local === 0) {
       const sample = {...message.sample, ping:0};
-      if (!integerIn(message.round, this.guestAck + 1, this.round) || !validSample(sample)) return false;
-      this.guestAck = message.round;
-      this.guestSample = sample;
-      this.checkRoundHash(message.round, message.hash, false);
+      if (!integerIn(message.round, link.ack + 1, this.round) || !validSample(sample)) return false;
+      link.ack = message.round;
+      link.sample = sample;
+      this.checkRoundHash(link, message.round, message.hash, false);
       if (this.round === -1 && !this.desync) this.activate();
       return true;
     }
-    if (message.kind === 'commands' && sender === 1 && validCommands(message.bytes)) {
-      return this.appendOpen([{type:'commands',seat:1,bytes:message.bytes.slice()}]);
+    if (message.kind === 'commands' && this.local === 0 && validCommands(message.bytes)) {
+      return this.appendOpen([{type:'commands',seat:sender,bytes:message.bytes.slice()}]);
     }
     return false;
   }
 
-  checkRoundHash(round, hash, local) {
-    const own = local ? this.localHashes : this.remoteHashes;
-    const other = local ? this.remoteHashes : this.localHashes;
+  checkRoundHash(link, round, hash, local) {
+    const own = local ? link.localHashes : link.remoteHashes;
+    const other = local ? link.remoteHashes : link.localHashes;
     if (other.has(round)) {
       if (other.get(round) !== hash) this.abort(`Runde ${round}: Prüfsummen stimmen nicht überein (${other.get(round)} / ${hash}).`);
       other.delete(round);
@@ -176,7 +187,7 @@ export class SourceRoundPeer {
 
   stage({round, records}) {
     if (!integerIn(round, this.round + 1, this.round + 2) || !Array.isArray(records) ||
-        records.length > MAX_RECORDS || !records.every(validRecord)) return false;
+        records.length > MAX_RECORDS || !records.every(record=>validRecord(record,this.humanSeats))) return false;
     const slot = round % 3;
     if (this.ring[slot]?.round === round) return false;
     this.ring[slot] = {round, records: records.map(copyRecord)};
@@ -185,7 +196,7 @@ export class SourceRoundPeer {
 
   /** Native virtual +4 activates round zero before the first world slot. */
   activate() {
-    if (this.round !== -1 || (this.local === 0 && this.guestAck < -1)) return false;
+    if (this.round !== -1 || !this.acknowledgementsReady(0)) return false;
     this.round = 0;
     this.enterRound();
     this.waiting = false;
@@ -194,8 +205,10 @@ export class SourceRoundPeer {
 
   enterRound() {
     const hash = this.wasm.state_hash() >>> 0;
-    this.checkRoundHash(this.round - 1, hash, true);
-    if (this.desync) return;
+    for (const link of this.links.values()) {
+      this.checkRoundHash(link, this.round - 1, hash, true);
+      if (this.desync) return;
+    }
     const fps = this.renderFps();
     const render = fps > 0 ? Math.max(1, Math.trunc(1000 / fps)) : 100;
     const sample = {ping:0, render:Math.min(10000,render), cpu:storeF32(this.cpuSeconds)};
@@ -210,6 +223,12 @@ export class SourceRoundPeer {
       if (this.round === 0) sample.render = 100;
       this.transmit('ack', {round:this.round - 1, hash, sample});
     }
+  }
+
+  acknowledgementsReady(round) {
+    if (this.local !== 0) return true;
+    for (const {ack} of this.links.values()) if (ack < round - 1) return false;
+    return true;
   }
 
   setTempo(value) {
@@ -258,6 +277,8 @@ export class SourceRoundPeer {
         this.effective = record.scale;
       } else if (record.type === 'roundLength') {
         this.length = record.length;
+      } else if (record.type === 'departure') {
+        if (w.network_roster_peer_disconnected(record.seat)!==1) throw new Error('Invalid roster departure');
       } else {
         const pointer = w.inbox_alloc(record.bytes.length);
         new Uint8Array(w.memory.buffer, pointer, record.bytes.length).set(record.bytes);
@@ -266,8 +287,19 @@ export class SourceRoundPeer {
     }
   }
 
+  detachPeer(seat) {
+    if (this.humanSeats <= 2 || this.local !== 0 || this.terminal || this.desync || !this.links.has(seat)) return false;
+    if (!this.appendOpen([{type:'departure',seat}])) {
+      this.abort('Netzwerk-Runde konnte den Verbindungsabbruch nicht aufnehmen.');
+      return false;
+    }
+    this.links.delete(seat);
+    if (this.round < 0) this.activate();
+    return true;
+  }
+
   dropPeer() {
-    if (this.alone || this.terminal || this.desync) return false;
+    if (this.humanSeats !== 2 || this.alone || this.terminal || this.desync) return false;
     this.alone = true;
     this.waiting = false;
     this.remainder = 0;
@@ -313,7 +345,7 @@ export class SourceRoundPeer {
       const nextRound = this.round + 1;
       const packet = this.ring[nextRound % 3];
       if (!this.alone && boundary && (packet?.round !== nextRound ||
-          (this.local === 0 && this.guestAck < this.round - 1))) {
+          !this.acknowledgementsReady(this.round))) {
         this.waiting = true;
         this.remainder = 0;
         return {steps,gameSeconds};
@@ -334,8 +366,8 @@ export class SourceRoundPeer {
         if (bytes) this.dispatch([{type:'commands', seat:this.local, bytes}]);
       } else if (this.local === 0 && this.within === this.length) {
         this.collectHostCommands();
-        const peer = {...this.guestSample, ping:this.linkMs()};
-        this.pending.push(...hostDecision(this.rate, this.length, this.requested, [this.hostSample, peer]));
+        const peers = [...this.links].map(([seat,{sample}])=>({...sample,ping:this.linkMs(seat)}));
+        this.pending.push(...hostDecision(this.rate, this.length, this.requested, [this.hostSample,...peers]));
       }
       if (!this.alone) this.flush();
       const before = this.nowSeconds();

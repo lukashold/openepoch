@@ -360,7 +360,18 @@ pub struct Game {
 
 impl Game {
     pub fn new(seed: u32, n_ai: u32, bench: u32, humans: u32, local: u32) -> Game {
-        let humans = humans.clamp(1, 2);
+        Self::new_with_humans(seed, n_ai, bench, humans.clamp(1, 2), local)
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn new_network_roster(seed: u32, n_ai: u32, humans: u32, local: u32) -> Option<Self> {
+        if !(3..=4).contains(&humans) || local >= humans || n_ai > 4 - humans {
+            return None;
+        }
+        Some(Self::new_with_humans(seed, n_ai, 0, humans, local))
+    }
+
+    fn new_with_humans(seed: u32, n_ai: u32, bench: u32, humans: u32, local: u32) -> Game {
         let nplayers = ((humans + n_ai) as usize).clamp(2, 4);
         let map = Map::new(seed.max(1), nplayers);
         let mut g = Game {

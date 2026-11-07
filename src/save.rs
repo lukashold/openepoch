@@ -32,6 +32,11 @@ fn fill<T: Copy>(dst: &mut [T], src: &[u8]) {
 
 impl Game {
     pub fn save(&mut self) {
+        // A larger roster has no resumable multiplayer archive format yet.
+        if self.humans > 2 {
+            self.savebuf.clear();
+            return;
+        }
         let mut b = std::mem::take(&mut self.savebuf);
         b.clear();
         let head = [MAGIC, size_of::<Ent>() as u32, size_of::<Player>() as u32, SAVE_DEFINITION_COUNT as u32, self.seed0, self.n_ai, self.tick, self.rng.0, self.high as u32];

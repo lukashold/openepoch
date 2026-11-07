@@ -1,13 +1,14 @@
 // Browser carrier for the negotiated source-round mode. DTLS supplies the peer
 // identity and SCTP supplies reliable ordering. All sizes and record types are
 // local to this adapter.
-import {MAX_ROUND_PACKET_BYTES as MAX_PACKET} from './source-network-round.js?v=native44';
+import {MAX_ROUND_PACKET_BYTES as MAX_PACKET} from './source-network-round.js?v=native46';
 
 const MAGIC = 0x314e5253; // SRN1, carrier version 1
+const ROSTER_MAGIC = 0x324e5253; // SRN2, isolated three/four-seat carrier
 const HEADER = 16;
 const FRAGMENT = 0x4000;
 const KINDS = {ack:1, commands:2, round:3, abort:4};
-const RECORDS = {requested:1, simRate:2, roundLength:3, commands:4};
+const RECORDS = {requested:1, simRate:2, roundLength:3, commands:4, departure:5};
 
 function view(bytes) {
   return new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
@@ -16,10 +17,11 @@ function view(bytes) {
 function recordLength(record) {
   if (record.type === 'commands') return record.bytes.length + 1;
   if (record.type === 'simRate') return 8;
+  if (record.type === 'departure') return 1;
   return 4;
 }
 
-function encode(message) {
+function encode(message, roster) {
   let bytes;
   if (message.kind === 'round') {
     const length = message.records.reduce((total,record)=>total+5+recordLength(record),9);
@@ -39,6 +41,7 @@ function encode(message) {
         d.setUint32(at,record.rate,true);
         d.setFloat32(at+4,record.scale,true);
       } else if (record.type === 'roundLength') d.setUint32(at,record.length,true);
+      else if (roster && record.type === 'departure') bytes[at]=record.seat;
       else {
         bytes[at] = record.seat;
         bytes.set(record.bytes,at+1);
@@ -62,7 +65,7 @@ function encode(message) {
   return bytes;
 }
 
-function decode(bytes) {
+function decode(bytes, roster) {
   const d = view(bytes);
   switch (bytes[0]) {
     case KINDS.abort: return bytes.length === 1 ? {kind:'abort'} : null;
@@ -85,6 +88,7 @@ function decode(bytes) {
     else if (tag === RECORDS.simRate && length === 8) records.push({type:'simRate',rate:d.getUint32(at,true),scale:d.getFloat32(at+4,true)});
     else if (tag === RECORDS.roundLength && length === 4) records.push({type:'roundLength',length:d.getUint32(at,true)});
     else if (tag === RECORDS.commands && length > 1) records.push({type:'commands',seat:bytes[at],bytes:bytes.subarray(at+1,end)});
+    else if (roster && tag === RECORDS.departure && length === 1) records.push({type:'departure',seat:bytes[at]});
     else return null;
     at = end;
   }
@@ -92,15 +96,24 @@ function decode(bytes) {
 }
 
 export function createSourceRoundCarrier(send, dispatch) {
+  return createCarrier(send,dispatch,MAGIC);
+}
+
+export function createSourceRosterCarrier(send, dispatch) {
+  return createCarrier(send,dispatch,ROSTER_MAGIC);
+}
+
+function createCarrier(send, dispatch, magic) {
+  const roster=magic===ROSTER_MAGIC;
   let nextSend = 0, nextReceive = 0, pending = null, received = 0;
   return {
     send(message) {
-      const bytes = encode(message);
+      const bytes = encode(message,roster);
       if (bytes.length > MAX_PACKET) throw new Error('Source round exceeds carrier limit');
       for (let at = 0; at < bytes.length; at += FRAGMENT) {
         const payload = bytes.subarray(at,at+FRAGMENT);
         const packet = new Uint8Array(HEADER+payload.length), d = view(packet);
-        d.setUint32(0,MAGIC,true);
+        d.setUint32(0,magic,true);
         d.setUint32(4,nextSend,true);
         d.setUint32(8,bytes.length,true);
         d.setUint32(12,at,true);
@@ -112,7 +125,7 @@ export function createSourceRoundCarrier(send, dispatch) {
     receive(packet) {
       if (!(packet instanceof ArrayBuffer) || packet.byteLength <= HEADER || packet.byteLength > HEADER+FRAGMENT) return false;
       const bytes = new Uint8Array(packet), d = view(bytes);
-      if (d.getUint32(0,true) !== MAGIC || d.getUint32(4,true) !== nextReceive || d.getUint32(12,true) !== received) return false;
+      if (d.getUint32(0,true) !== magic || d.getUint32(4,true) !== nextReceive || d.getUint32(12,true) !== received) return false;
       const total = d.getUint32(8,true), length = bytes.length-HEADER;
       if (total < 1 || total > MAX_PACKET || length !== Math.min(FRAGMENT,total-received)) return false;
       if (!pending) pending = new Uint8Array(total);
@@ -120,7 +133,7 @@ export function createSourceRoundCarrier(send, dispatch) {
       pending.set(bytes.subarray(HEADER),received);
       received += length;
       if (received < total) return true;
-      const message = decode(pending);
+      const message = decode(pending,roster);
       pending = null;
       received = 0;
       nextReceive = (nextReceive+1)>>>0;

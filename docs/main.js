@@ -39,11 +39,12 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=clock38';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native45';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native46';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native44';
-import {SourceRoundPeer, SOURCE_ROUND_VERSION} from './source-network-round.js?v=native44';
-import {createSourceRoundCarrier, selectedRoundTripMilliseconds} from './source-network-wire.js?v=native44';
+import {SourceRoundPeer, SOURCE_ROUND_VERSION} from './source-network-round.js?v=native46';
+import {createSourceRoundCarrier, selectedRoundTripMilliseconds} from './source-network-wire.js?v=native46';
+import {mountSourceRosterLobby} from './source-network-lobby.js?v=native46';
 import {createFullscreenController} from './fullscreen.js?v=building2';
 import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native17';
 import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=native39ceasefire';
@@ -902,7 +903,7 @@ function armPlayerFlare(){
 $('player-flare-button').onclick=armPlayerFlare;
 
 function warplanRecipient(){
-  if(!net||net.ls?.alone||!ui||ui.observer)return null;
+  if(!net||net.roster||net.ls?.alone||!ui||ui.observer)return null;
   const player=ui.diplomacy?.players?.find(row=>row.team===1-ui.local&&row.alive&&!row.ai);
   return player?{relation:player.relation,name:`Spieler ${player.team+1}`}:null;
 }
@@ -1127,7 +1128,7 @@ async function refreshContinue() {
   $('previous-save').style.display=savedRulesProfileMatches(previous,rulesProfile)?'':'none';
   if(previous)$('previous-save').textContent=`Vorheriger Spielstand (${previous.epoch||'Scharmützel'})`;
 }
-$('previous-save').onclick=()=>loadGame('previous');
+$('previous-save').onclick=()=>{rosterLobby?.reset();loadGame('previous');};
 refreshContinue();
 
 // ---------------------------------------------------------------- simulation stepping & sound
@@ -1776,7 +1777,7 @@ const modalOpen=()=>$('cheat-dialog').open||$('research-dialog').open||diplomacy
 gameOptions=await mountOriginalGameOptions({
   enabled:hasOriginalTempo,originalArt:originalEnabled,
   view:()=>({epoch:ui?.epoch??initialMusicEpoch,disabled:[...(!restartPoint||net?['restart']:[]),...(net?['save','load']:[]),
-    ...(net&&(!net.resignation||ui?.observer)?['resign']:[])]}),
+    ...(net&&(!net.resignation||net.ls.hostLost||ui?.observer)?['resign']:[])]}),
   onOpen(){
     if(!running||bench||ui?.win||$('cheat-dialog').open||$('research-dialog').open||diplomacy.isOpen())return false;
     setPauseHold('options',true);keys.clear();cancelMapGesture();mouse.inside=false;
@@ -2143,6 +2144,7 @@ function handleGameOption(action) {
   else if(action==='load'){gameOptions.close();void loadGame();}
   else if(action==='settings')gameSettings.open();
   else if(action==='resign'){
+    if(net?.ls.hostLost)return;
     if(!window.confirm(net?'Möchtest du aufgeben und als Beobachter weiterspielen?':'Möchtest du aufgeben?'))return;
     if(!(net?net.resignation&&wasm.cmd_resign_network():wasm.cmd_resign_solo()))return;
     gameOptions.close();setPauseHold('manual',false);
@@ -2177,7 +2179,9 @@ function toMenu() {
   cancelBuilding();
   diplomacy.close();
   if (running && !net && !bench) saveGame(true);
-  if (net) { try { net.ch.close(); net.pc.close(); } catch { /* already gone */ } net = null; }
+  if(net?.roster)rosterLobby.reset();
+  else if(net){try{net.ch.close();net.pc.close();}catch{/* already gone */}}
+  net=null;
   worldMaterialPending = null;
   originalModels.bindNativeTerrainMaterial?.(null);
   running = false; $('menu').style.display = 'flex'; $('end').style.display = 'none'; $('mp').style.display = 'none';
@@ -2187,8 +2191,8 @@ function toMenu() {
 }
 $('quit').onclick = toMenu; $('again').onclick = toMenu;
 const seedOf = () => { const v = parseInt($('seed').value, 10); return Number.isFinite(v) && v > 0 ? v : (Math.random() * 2 ** 31) | 0 || 1; };
-$('play').onclick = () => { net = null; start(+$('nai').value, seedOf(), 0); };
-$('continue').onclick = () => loadGame();
+$('play').onclick = () => { rosterLobby?.reset(); net = null; start(+$('nai').value, seedOf(), 0); };
+$('continue').onclick = () => { rosterLobby?.reset(); loadGame(); };
 for (const b of document.querySelectorAll('[data-bench]')) b.onclick = () => { net = null; start(1, seedOf(), +b.dataset.bench); };
 
 // ---------------------------------------------------------------- multiplayer lobby
@@ -2197,8 +2201,11 @@ let pending = null;
 function sourceRoundStatus(peer) {
   if(peer.desync)return 'Mehrspieler · Synchronisation verloren';
   if(peer.terminal)return 'Mehrspieler · Partie beendet';
+  if(peer.hostLost)return 'Hostverbindung verloren · Partie angehalten';
+  if(peer.humanSeats>2&&!peer.transportAvailable)return 'Verbindung zum Host unterbrochen · warte';
   const label=peer.alone?'Nach Verbindungsabbruch lokal':peer.waiting?'Warte auf Mitspieler':'Originaler Rundentakt';
-  return peer.round<0?label:`${label} · Runde ${peer.round+1} · ${peer.rate} Hz · ${peer.length} Schritte/Runde`;
+  const roster=peer.rosterConnected===undefined?'':` · ${peer.rosterConnected}/${peer.humanSeats} Plätze verbunden`;
+  return peer.round<0?label+roster:`${label}${roster} · Runde ${peer.round+1} · ${peer.rate} Hz · ${peer.length} Schritte/Runde`;
 }
 
 function channel(local) {
@@ -2414,6 +2421,7 @@ function channel(local) {
 }
 $('mpopen').onclick = () => { $('mp').style.display = $('mp').style.display === 'block' ? 'none' : 'block'; };
 $('mphost').onclick = async () => {
+  rosterLobby?.reset();
   mpStatus('Creating invite…');
   try {
     const on = channel(0); pending = await rtcHost(on); on.setPc(pending.pc);
@@ -2423,6 +2431,7 @@ $('mphost').onclick = async () => {
   } catch (e) { mpStatus('WebRTC is not available: ' + e.message); }
 };
 $('mpjoin').onclick = () => {
+  rosterLobby?.reset();
   $('mpout').value = ''; $('mpin').value = ''; $('mpin').placeholder = 'Paste the invite code from the host here'; $('mpgo').textContent = 'Create reply code';
   mpStatus('Paste the host’s invite code, then press “Create reply code”.');
   $('mpgo').onclick = async () => {
@@ -2433,6 +2442,101 @@ $('mpjoin').onclick = () => {
   };
 };
 $('mpcopy').onclick = () => { $('mpout').select(); navigator.clipboard?.writeText($('mpout').value).then(() => mpStatus('Copied to the clipboard.'), () => {}); };
+
+const rosterFeatures=Object.freeze(Object.fromEntries([
+  ['capture','capture_configure_peer'],['captureAnimation','capture_animation_configure_peer'],
+  ['infantryRoster','infantry_roster_configure_peer'],['productionRoster','production_roster_configure_peer'],
+  ...(tradeAvailable?[['tradeRoute','trade_route_configure_peer']]:[]),
+  ...(airMissionAvailable?[['airMission','air_mission_configure_peer'],['airRunway','air_runway_configure_peer'],
+    ['airTakeoff','air_takeoff_configure_peer'],['airLanding','air_landing_configure_peer'],['airCarrier','air_carrier_configure_peer']]:[]),
+].filter(([,name])=>typeof wasm[name]==='function')));
+const supportedRosterFeatures=Object.keys(rosterFeatures);
+
+function checkRosterSettings(cfg,humanSeats) {
+  if(!cfg||cfg.humanSeats!==humanSeats||![3,4].includes(humanSeats)||!Number.isInteger(cfg.ai)||cfg.ai<0||cfg.ai>4-humanSeats||
+    !Number.isInteger(cfg.seed)||cfg.seed<1||cfg.seed>0xffffffff||![0,1,2].includes(cfg.visibility)||
+    ![250,500,1000].includes(cfg.popLimit)||![0,1,2].includes(cfg.supplies)||!Number.isInteger(cfg.resignationPolicy)||
+    cfg.resignationPolicy<0||cfg.resignationPolicy>7||!Number.isInteger(cfg.ceasefire)||cfg.ceasefire<0||cfg.ceasefire>10||
+    (cfg.ceasefire>0&&!hasInitialCeasefire))throw Error('Ungültige Scharmützeleinstellungen für diesen Raum.');
+  const features=cfg.features;
+  if(!Array.isArray(features)||new Set(features).size!==features.length||features.some(key=>!Object.hasOwn(rosterFeatures,key)))
+    throw Error('Der Raum verwendet nicht verfügbare Spielbefehle.');
+  const featureDeps={captureAnimation:'capture',airRunway:'airMission',airTakeoff:'airRunway',airLanding:'airTakeoff',airCarrier:'airLanding'};
+  for(const [key,parent] of Object.entries(featureDeps))if(features.includes(key)&&!features.includes(parent))
+    throw Error('Unvollständige Spielbefehle für diesen Raum.');
+  checkedEpochRange(cfg.epoch,cfg.finalEpoch,wasm.epoch_count());
+  return {humanSeats,ai:cfg.ai,seed:cfg.seed,visibility:cfg.visibility,popLimit:cfg.popLimit,supplies:cfg.supplies,
+    resignationPolicy:cfg.resignationPolicy,ceasefire:cfg.ceasefire,epoch:cfg.epoch,finalEpoch:cfg.finalEpoch,
+    civilizations:checkedCivilizations(cfg.civilizations,humanSeats+cfg.ai),
+    climate:checkedClimate(cfg.climate,climates),seasons:peerSeasonSettings(cfg.seasons),
+    gameTempo:checkOriginalTempo(cfg.gameTempo),features:supportedRosterFeatures.filter(key=>features.includes(key))};
+}
+
+function startRosterGame(cfg,seat,send,links) {
+  if(wasm.init_network_roster(cfg.seed,cfg.ai,cfg.humanSeats,seat)!==1)throw Error('Dieser Spielerplatz konnte nicht gestartet werden.');
+  applyMatchSettings(wasm,cfg,cfg.humanSeats+cfg.ai);
+  wasm.skirmish_visibility(cfg.visibility);
+  if(!wasm.configure_network_resignation(cfg.resignationPolicy)||
+    (cfg.ceasefire&&!wasm.configure_initial_ceasefire(cfg.ceasefire)))throw Error('Die Regeln für diesen Raum konnten nicht aktiviert werden.');
+  for(const name of cfg.features)if(wasm[rosterFeatures[name]](1)!==1)throw Error('Ein Spielbefehl konnte nicht aktiviert werden.');
+  seasonSession.configure(cfg.seasons,cfg.climate);setSeasonControls(seasonSession.settings);climateControl.value=seasonSession.climate;
+  const roundTrip=new Map();
+  let nextStats=0;
+  const peer=new SourceRoundPeer(wasm,seat,send,{humanSeats:cfg.humanSeats,
+    requested:originalStartingSpeed(cfg.gameTempo),locked:cfg.gameTempo.locked,
+    renderFps:()=>adaptiveRenderSample.fps,linkMs:other=>roundTrip.get(other)??0,
+    nowSeconds:()=>performance.now()/1000,onRequested:applyRequestedSpeed});
+  const session={roster:true,sourceRounds:true,ls:peer,resignation:true};
+  if(seat===0)session.refreshLink=now=>{
+    if(peer.terminal||peer.desync||now<nextStats)return;
+    nextStats=now+1000;
+    for(const link of links())link.pc?.getStats().then(stats=>{
+      const ms=selectedRoundTripMilliseconds(stats);
+      if(net===session&&ms!==null)roundTrip.set(link.seat,ms);
+    }).catch(()=>{});
+  };
+  net=session;
+  bench=0;cam.x=wasm.start_x();cam.y=wasm.start_y();cam.zoom=28;cam.heading=0;
+  if(referenceMode)cam.nativeFraction=.2;
+  peer.rosterConnected=cfg.humanSeats;
+  begin(startingTempo(cfg.gameTempo));
+  toast(`Mehrspieler · Platz ${seat+1}`);
+  return {peer,connected:count=>{peer.rosterConnected=count;}};
+}
+
+const supportsSourceRoster=supportsSourceNetworkClock&&civilizationSetup.enabled&&
+  typeof wasm.init_network_roster==='function'&&typeof wasm.network_roster_peer_disconnected==='function';
+const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
+  rtcHost,rtcJoin,
+  localHello:()=>({protocol:PROTOCOL_VERSION,profile:rulesProfile.wasm,rules:wasm.ruleset(),
+    civilization:civilizationSetup.choice(0),climates,features:supportedRosterFeatures}),
+  checkHello(hello){
+    if(hello?.protocol!==PROTOCOL_VERSION||hello.profile!==rulesProfile.wasm||hello.rules!==wasm.ruleset()||
+      !Array.isArray(hello.features)||hello.features.length>11||hello.features.some(key=>typeof key!=='string'))
+      throw Error('Alle Teilnehmer brauchen dieselbe UP-Spielversion.');
+    return {civilization:civilizationChoice(hello.civilization),climates:peerClimates(hello.climates),features:hello.features};
+  },
+  makeSettings(humanSeats,ai,guests){
+    const choices=civilizationSetup.choices(),climate=menuClimate();
+    if(!guests.every(guest=>guest.climates.includes(climate)))throw Error('Einem Mitspieler fehlen die Grafiken für dieses Klima.');
+    for(const [index,guest] of guests.entries())choices[index+1]=guest.civilization;
+    return {humanSeats,ai,seed:(seedOf()>>>0)||1,visibility:+$('map-visibility').value,
+      popLimit:+$('pop-limit').value,supplies:+$('supplies').value,resignationPolicy:+$('mp-resign-policy').value,
+      ceasefire:+$('initial-ceasefire').value,climate,seasons:menuSeasonSettings(),gameTempo:menuTempo(),
+      features:supportedRosterFeatures.filter(key=>guests.every(guest=>guest.features.includes(key))),
+      ...resolvedSkirmishChoices(choices,humanSeats+ai)};
+  },
+  checkSettings:checkRosterSettings,
+  launch:startRosterGame,
+  onOpen(){pending?.pc.close();pending=null;},
+  onDeparture(seat){toast(`Verbindung zu Spieler ${seat+1} wurde getrennt.`);},
+  onHostLoss({peer}){
+    if(peer.terminal)return;
+    peer.hostLost=true;
+    peer.setTransportAvailable(false);
+    toast('Hostverbindung verloren. Die Partie wurde angehalten.');
+  },
+}):null;
 
 // ?bench=2000 or ?seed=42 start immediately (handy for profiling and screenshots)
 const qs = new URLSearchParams(location.search);

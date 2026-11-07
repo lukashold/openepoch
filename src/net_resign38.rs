@@ -37,7 +37,7 @@ impl Resignation {
 
 impl Game {
     pub(crate) fn configure_network_resignation(&mut self, policy: u32) -> bool {
-        if !self.net || self.humans != 2 || self.bench != 0 || self.tick != 0 || policy >= 8 ||
+        if !self.net || !(2..=4).contains(&self.humans) || self.bench != 0 || self.tick != 0 || policy >= 8 ||
             self.net_resignation.is_some() || !self.outbox.is_empty() || !self.inbox.is_empty() { return false; }
         self.net_resignation = Some(Resignation { policy: policy as u8, departed: 0, defeated: 0, finished: false });
         true
