@@ -254,8 +254,12 @@ impl Game {
                 let speed = ((e.x-e.px).powi(2)+(e.y-e.py).powi(2)).sqrt() / self.sim_step();
                 let (activity, facing) = self.render_activity(e, d, speed);
                 let pose_rot = if (8..=17).contains(&e.def) && activity >= ACT_WOOD { facing } else { rot };
+                #[cfg(feature = "ee2-native13")]
+                let body_altitude = self.naval_surface_pose(i).map_or(a, |(_, altitude)| altitude);
+                #[cfg(not(feature = "ee2-native13"))]
+                let body_altitude = a;
                 let before = o.len();
-                put(&mut o, x, y, a, pose_rot, crate::ids::unit_render(e.def), team, 0.0, fl, d.size * k);
+                put(&mut o, x, y, body_altitude, pose_rot, crate::ids::unit_render(e.def), team, 0.0, fl, d.size * k);
                 if o.len() > before {
                     // Stable visual animation phase; independent of movement and simulation state.
                     o[before + 6] = (i as f32 * 0.75487766 + e.gen as f32 * 0.38196602).fract();

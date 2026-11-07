@@ -118,7 +118,7 @@ impl Game {
     pub(crate) fn capture_match_enabled(&self) -> bool { self.capture_enabled && self.winner == 0 }
 
     pub(crate) fn configure_peer_capture(&mut self, enabled: bool) -> bool {
-        if !self.net || self.bench != 0 || self.tick != 0 || !self.capture.empty() { return false; }
+        if !self.net || self.bench != 0 || self.tick != 0 || !self.capture.empty() || (!enabled && self.capitols.is_some()) { return false; }
         self.capture_enabled = enabled;
         if !enabled { self.capture_animation_enabled = false; }
         true
@@ -126,7 +126,7 @@ impl Game {
 
     pub(crate) fn configure_peer_capture_animation(&mut self, enabled: bool) -> bool {
         if !self.net || self.bench != 0 || self.tick != 0 || !self.capture.empty()
-            || (enabled && !self.capture_enabled) { return false; }
+            || (enabled && !self.capture_enabled) || (!enabled && self.capitols.is_some()) { return false; }
         self.capture_animation_enabled = enabled;
         true
     }

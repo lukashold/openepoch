@@ -20,7 +20,7 @@ import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regi
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native66';
-import {loadOriginalModels} from './original-renderer.js?v=native67';
+import {loadOriginalModels} from './original-renderer.js?v=native74-naval';
 import {loadKingOfTheHillPresentation} from './original-koth.js?v=native64-koth';
 import {loadWonderPresentation} from './original-wonders.js?v=native63';
 import {loadWonderScaffold} from './original-wonder-scaffold.js?v=native63';
@@ -54,12 +54,12 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=clock38';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native70';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native71';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
 import {createSourceRoundCarrier, selectedRoundTripMilliseconds} from './source-network-wire.js?v=native54';
-import {mountSourceRosterLobby} from './source-network-lobby.js?v=network-crowns1';
+import {mountSourceRosterLobby} from './source-network-lobby.js?v=network-capitols1';
 import {applyNetworkCheckpoint} from './source-network-resume.js?v=native58';
 import {createFullscreenController} from './fullscreen.js?v=building2';
 import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native67';
@@ -81,7 +81,7 @@ import {createSpyShimmerFrames} from './original-spy-shimmer.js?v=native-spy';
 import {createSpyExtractionTimer} from './spy-extraction-renderer.js?v=native-spy';
 import {loadPriestEffects} from './original-priest-fx.js?v=native45';
 import {guidedImpactInside,loadGuidedImpactEffects} from './guided-herc-impact.js?v=native66';
-import {loadGuidedHercBeam} from './guided-herc-beam.js?v=native70';
+import {loadGuidedHercBeam} from './guided-herc-beam.js?v=native71';
 import {loadOriginalPriestParticles} from './original-priest-particles.js?v=native47';
 import {loadBlessGroundGlow} from './priest-ground-glow.js?v=native58';
 import {loadAirCrownGlow} from './crown-air-glow.js?v=native58';
@@ -158,7 +158,7 @@ const valleyRequested=rulesProfile.id==='up15'&&(!!valleyManifest||['1','archive
 try{
   if(valleyRequested){
     const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley75_commit','valley71_force_attack_at','valley71_neutral_opening']:rulesProfile.requiredExports;
-    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native70-valley'};
+    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native71-valley'};
     try{wasm=await loadRulesWasm(previewRules,import.meta.url);}catch{/* The ordinary ruleset remains available. */}
   }
   wasm??=await loadRulesWasm(rulesProfile,import.meta.url);
@@ -701,6 +701,10 @@ const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,to
   diversionShimmerForActor:diversionShimmer?(actor,visual)=>diversionShimmer.sample(actor,visual,wasm.leader_diversion_visual(actor.handle)===1):null,
   sourceVisualForModel:blessGround?.modelVisual,priestParticleScales:!!priestParticles,rallyTargetTags:airMissionFlag?.targetTags,
   hercAttack,hercBeam,
+  navalBasisForActor:typeof wasm.render_naval_basis==='function'?actor=>{
+    const at=wasm.render_naval_basis(actor.handle,actor.renderYaw);
+    return at?new Float32Array(wasm.memory.buffer,at,9).slice():null;
+  }:null,
   airTakeoff,takeoffElapsedForActor:airTakeoff?actor=>{
     if(takeoffSample.now===null)return takeoffElapsed(takeoffSample.tick,takeoffSample.alpha,takeoffStartTick(actor.handle));
     const start=takeoffStartSeconds(actor.handle);
@@ -1055,6 +1059,7 @@ const priestEnabled=rulesProfile.ruleset===2&&typeof wasm.configure_priest_skirm
 const crownSupported=rulesProfile.ruleset===2&&typeof wasm.configure_crowns==='function';
 const supportsPeerCrowns=crownSupported&&typeof wasm.configure_crowns_peer==='function';
 const supportsNetworkCrownVictory=supportsPeerCrowns&&typeof wasm.configure_network_crown_victory==='function';
+const supportsNetworkCapitols=rulesProfile.id==='up15'&&typeof wasm.configure_network_capitols==='function';
 const crownArt=await loadCrownArt(crownSupported&&originalEnabled);
 const crownVictoryRows=mountCrownVictoryRows($('crown-victory-rows'),crownArt);
 const crownStatusArt=await loadCrownStatusArt({enabled:crownSupported&&originalEnabled});
@@ -3329,6 +3334,14 @@ function checkRosterSettings(cfg,humanSeats,resuming=false) {
       throw Error('Kronen-Siegbedingungen benötigen einzelne Spielerplätze und eine passende UP-Spielversion.');
     crownVictory=checkCrownVictorySettings(cfg.crownVictory);
   }
+  let capitolVictory;
+  if(cfg.capitolVictory!==undefined){
+    const {mode,minutes,sole}=cfg.capitolVictory??{};
+    if(!supportsNetworkCapitols||crownVictory||mode!==5||![2,5,10].includes(minutes)||typeof sole!=='boolean'||
+      sharedOwner||cfg.groupedOwners||humanSeats!==2||cfg.ai!==0||!features.includes('captureAnimation'))
+      throw Error('Kapitole benötigen zwei einzelne Spielerplätze und die aktuelle Eroberungsregel.');
+    capitolVictory={mode,minutes,sole};
+  }
   const featureDeps={captureAnimation:'capture',airRunway:'airMission',airTakeoff:'airRunway',airLanding:'airTakeoff',airCarrier:'airLanding'};
   for(const [key,parent] of Object.entries(featureDeps))if(features.includes(key)&&!features.includes(parent))
     throw Error('Unvollständige Spielbefehle für diesen Raum.');
@@ -3340,14 +3353,17 @@ function checkRosterSettings(cfg,humanSeats,resuming=false) {
     gameTempo:checkOriginalTempo(cfg.gameTempo),features:supportedRosterFeatures.filter(key=>features.includes(key)),
     ...(features.includes('crowns')?{crownsDisabled:cfg.crownsDisabled}:{}),
     ...(crownVictory?{crownVictory}:{}),
+    ...(capitolVictory?{capitolVictory}:{}),
     ...(sharedOwner?{sharedOwner:true}:cfg.groupedOwners?{groupedOwners:cfg.groupedOwners.slice(),
       ...(resuming?{groupedWorldHumans:worldHumans}:{})}:{})};
 }
 
 function checkpointCrownRules(cfg){
   const rules=cfg.crownsDisabled===undefined?0:cfg.crownsDisabled?2:1;
-  const victory=cfg.crownVictory;
-  return victory?rules|(victory.mode<<8)|(victory.target<<16):rules;
+  const crown=cfg.crownVictory, capitol=cfg.capitolVictory;
+  if(crown)return rules|(crown.mode<<8)|(crown.target<<16);
+  if(capitol)return rules|(capitol.mode<<8)|(capitol.minutes<<16)|(Number(capitol.sole)<<24);
+  return rules;
 }
 
 function startRosterGame(cfg,seat,send,links,{archive,onCheckpoint}) {
@@ -3356,7 +3372,7 @@ function startRosterGame(cfg,seat,send,links,{archive,onCheckpoint}) {
   const worldHumans=sharedOwner?1:groupedOwners?Math.max(...groupedOwners)+1:cfg.humanSeats;
   if(archive)applyNetworkCheckpoint(wasm,archive.decoded,seat,cfg.humanSeats,false,checkpointCrownRules(cfg));
   else{
-    const {crownVictory,...matchSettings}=cfg;
+    const {crownVictory,capitolVictory,...matchSettings}=cfg;
     if(sharedOwner){
       if(wasm.init_network_shared_owner(cfg.seed,seat)!==1)throw Error('Der Koop-Controller konnte nicht gestartet werden.');
     }else if(groupedOwners){
@@ -3375,6 +3391,8 @@ function startRosterGame(cfg,seat,send,links,{archive,onCheckpoint}) {
     }
     if(crownVictory&&wasm.configure_network_crown_victory(crownVictory.mode,crownVictory.target)!==1)
       throw Error('Die Kronen-Siegbedingung konnte nicht aktiviert werden.');
+    if(capitolVictory&&wasm.configure_network_capitols(capitolVictory.minutes,Number(capitolVictory.sole))!==1)
+      throw Error('Die Kapitol-Siegbedingung konnte nicht aktiviert werden.');
   }
   seasonSession.configure(cfg.seasons,cfg.climate);setSeasonControls(seasonSession.settings);climateControl.value=seasonSession.climate;
   const roundTrip=new Map();
@@ -3444,6 +3462,7 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
   localHello:()=>({protocol:PROTOCOL_VERSION,profile:rosterProfile,rules:wasm.ruleset(),
     civilization:civilizationSetup.choice(0),climates,features:supportedRosterFeatures,
     ...(supportsNetworkCrownVictory?{crownVictory:true}:{}),
+    ...(supportsNetworkCapitols?{capitolVictory:true}:{}),
     checkpoints:supportsNetworkCheckpoint,sharedOwner:supportsSharedOwner,sharedOwnerCheckpoint:supportsSharedCheckpoint,
     groupedCoop:supportsGroupedCoop,groupedCheckpoint:supportsGroupedCheckpoint}),
   checkHello(hello){
@@ -3452,6 +3471,7 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
       throw Error('Alle Teilnehmer brauchen dieselbe UP-Spielversion.');
     return {civilization:civilizationChoice(hello.civilization),climates:peerClimates(hello.climates),features:hello.features,
       crownVictory:hello.crownVictory===true,
+      capitolVictory:hello.capitolVictory===true,
       checkpoints:hello.checkpoints===true,sharedOwner:hello.sharedOwner===true,
       sharedOwnerCheckpoint:hello.sharedOwner===true&&hello.sharedOwnerCheckpoint===true,groupedCoop:hello.groupedCoop===true,
       groupedCheckpoint:hello.groupedCoop===true&&hello.groupedCheckpoint===true};
@@ -3469,11 +3489,18 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
     if(crownVictory&&(!supportsNetworkCrownVictory||!features.includes('crowns')||sharedOwner||groupedOwners||
       guests.some(guest=>!guest.crownVictory)))
       throw Error('Kronen-Siegbedingungen benötigen einzelne Spielerplätze und eine passende UP-Spielversion.');
+    const capitol=capitolsMenu.read();
+    if(capitol===null)throw Error('Ungültige Dauer für die Kapitol-Rückeroberung.');
+    if(capitol&&(!supportsNetworkCapitols||capitol.mode!==5||humanSeats!==2||ai!==0||sharedOwner||groupedOwners||
+      !features.includes('captureAnimation')||guests.some(guest=>!guest.capitolVictory)))
+      throw Error('Kapitole benötigen zwei einzelne Spielerplätze und die aktuelle Eroberungsregel.');
+    const capitolVictory=capitol?{...capitol,sole:$('sk-sole-survivor').checked}:undefined;
     return {humanSeats,ai,seed:(seedOf()>>>0)||1,visibility:+$('map-visibility').value,
       popLimit:+$('pop-limit').value,supplies:+$('supplies').value,resignationPolicy:+$('mp-resign-policy').value,
       ceasefire:+$('initial-ceasefire').value,climate,seasons:menuSeasonSettings(),gameTempo:menuTempo(),
       features,...(features.includes('crowns')?{crownsDisabled:$('disable-crowns').checked}:{}),
       ...(crownVictory?{crownVictory}:{}),
+      ...(capitolVictory?{capitolVictory}:{}),
       ...resolvedSkirmishChoices(choices,worldHumans+ai),
       ...(sharedOwner?{sharedOwner:true}:groupedOwners?{groupedOwners}:{})};
   },

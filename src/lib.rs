@@ -118,6 +118,10 @@ mod cmd;
 mod defs;
 mod economy;
 mod source_clock38;
+#[cfg(feature = "ee2-native13")]
+mod naval_heave72;
+#[cfg(feature = "ee2-native13")]
+mod naval_tilt73;
 #[cfg(all(feature="ee2-up15",not(feature="ee2-roster6")))]
 mod ee2_up15_economy;
 #[cfg(all(feature="ee2-roster6",not(feature="ee2-civ8")))]
@@ -529,6 +533,23 @@ pub extern "C" fn render_rotated(alpha:f32,x0:f32,y0:f32,x1:f32,y1:f32,ghost:i32
     unsafe{(&*addr_of_mut!(GAME)).as_ref().and_then(|game|game.stone_thrower_attack_elapsed(handle,render_time)).unwrap_or(-1.0)}
 }
 
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn render_naval_basis(handle: u32, render_yaw: f32) -> *const f32 {
+    static mut BASIS: [f32; 9] = [0.0; 9];
+    let basis = (|| {
+        let game = unsafe { (&*addr_of_mut!(GAME)).as_ref()? };
+        let index = game.get(handle)?;
+        if !game.visible(index) { return None; }
+        let (id, altitude) = game.naval_surface_pose(index)?;
+        naval_tilt73::naval_surface_basis(id, altitude, render_yaw)
+    })();
+    let Some(basis) = basis else { return core::ptr::null(); };
+    let out = addr_of_mut!(BASIS);
+    unsafe { out.write(basis); }
+    out.cast()
+}
+
 #[no_mangle]
 pub extern "C" fn inst_ptr() -> *const f32 {
     g().inst.as_ptr()
@@ -878,7 +899,8 @@ pub extern "C" fn validate_grouped_resume(layout: u32, controller: u32, tick: u3
 fn crown_resume_matches(game: &Game, encoded: u32) -> bool {
     let rules = encoded & 255;
     let victory = encoded >> 8;
-    (rules == 0 && victory == 0 || rules == game.crown_rules() + 1) && victory == game.crown_victory_config()
+    (rules == 0 && victory == 0 || rules == game.crown_rules() + 1)
+        && victory == (game.crown_victory_config() | game.network_capitol_config())
 }
 
 #[cfg(feature = "ee2-native13")]
@@ -2872,6 +2894,12 @@ pub extern "C" fn configure_match_crown_victory(
 pub extern "C" fn crown_victory_status(field: u32, seat: u32) -> i32 {
     unsafe { (&*addr_of_mut!(GAME)).as_ref().map_or(if field == 0 { 0 } else { -1 }, |game|
         game.crown_victory_status(field, seat as usize)) }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_network_capitols(minutes: u32, sole: u32) -> u32 {
+    g().configure_network_capitols(minutes, sole) as u32
 }
 
 #[cfg(feature = "ee2-native13")]

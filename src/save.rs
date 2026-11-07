@@ -874,7 +874,7 @@ impl Game {
         if let Some((rule, outcome)) = capitols {
             if koth.is_some() || crown_victory.is_some() || territory_victory.is_some()
                 || sole_survivor.is_some() || regicide.is_some() { return None; }
-            g.restore_capitols(rule, outcome)?;
+            g.restore_capitols(rule, outcome, net_resignation.is_some())?;
         }
         #[cfg(feature="ee2-native13")]
         if let Some((rule, outcome)) = crown_victory {
@@ -911,6 +911,8 @@ impl Game {
         g.restore_spy_extraction(extraction)?;
         #[cfg(feature="ee2-native13")]
         g.restore_capture_save(capture)?;
+        #[cfg(feature="ee2-native13")]
+        if g.net && g.capitols.is_some() && !g.capture_animation_enabled { return None; }
         #[cfg(feature="ee2-native13")]
         if g.solo_resigned {
             if g.net || g.winner != 0 || g.players[g.local as usize].alive { return None; }

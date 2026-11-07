@@ -140,28 +140,51 @@ pub(crate) fn split(bytes: &[u8]) -> Option<(&[u8], Option<(Capitols, u8)>)> {
 }
 
 impl Game {
+    fn new_capitols(&self, mode: u32, minutes: u32, sole: u32) -> Option<Capitols> {
+        if !Capitols::valid_settings(mode, minutes, sole) { return None; }
+        let mut city = [NONE; 4];
+        for (seat, slot) in city[..self.nplayers].iter_mut().enumerate() {
+            let (x, y) = self.map.starts[seat];
+            let territory = self.map.terr[tile_of(x as f32, y as f32)] as usize;
+            let handle = self.territory.claims[territory];
+            let actor = &self.ents[self.get(handle)?];
+            if actor.def != TC || actor.team as usize != seat || actor.built < 1.0 { return None; }
+            *slot = handle;
+        }
+        Some(Capitols { mode: mode as u8, minutes: minutes as u8, sole: sole == 1,
+            state: SoleSurvivor { eliminated: 0, deadline: IDLE }, city, deadline: [IDLE; 4], score: [0; 4] })
+    }
+
     pub(crate) fn configure_match_capitols(
         &mut self, civs: u32, pop: u32, supplies: u32, start: u32, end: u32,
         mode: u32, minutes: u32, sole: u32,
     ) -> bool {
         #[cfg(feature = "ee2-authored-valley37")]
         if self.valley_fixture.is_some() { return false; }
-        if self.net || self.humans != 1 || self.local != 0 || self.nplayers < 2
-            || !Capitols::valid_settings(mode, minutes, sole) { return false; }
-        let mut city = [NONE; 4];
-        for (seat, slot) in city[..self.nplayers].iter_mut().enumerate() {
-            let (x, y) = self.map.starts[seat];
-            let territory = self.map.terr[tile_of(x as f32, y as f32)] as usize;
-            let handle = self.territory.claims[territory];
-            let Some(index) = self.get(handle) else { return false; };
-            let actor = &self.ents[index];
-            if actor.def != TC || actor.team as usize != seat || actor.built < 1.0 { return false; }
-            *slot = handle;
-        }
+        if self.net || self.humans != 1 || self.local != 0 || self.nplayers < 2 { return false; }
+        let Some(rule) = self.new_capitols(mode, minutes, sole) else { return false; };
         if !self.configure_match_epoch_range(civs, pop, supplies, start, end) { return false; }
-        self.capitols = Some(Capitols { mode: mode as u8, minutes: minutes as u8, sole: sole == 1,
-            state: SoleSurvivor { eliminated: 0, deadline: IDLE }, city, deadline: [IDLE; 4], score: [0; 4] });
+        self.capitols = Some(rule);
         true
+    }
+
+    fn supports_network_capitols(&self) -> bool {
+        self.net && self.humans == 2 && self.nplayers == 2 && self.grouped_coop.is_none() && self.bench == 0
+    }
+
+    pub(crate) fn configure_network_capitols(&mut self, minutes: u32, sole: u32) -> bool {
+        if !self.supports_network_capitols() || self.net_resignation.is_none() || self.civ_setup_open
+            || !self.capture_enabled || !self.capture_animation_enabled || self.tick != 0
+            || self.crown_victory.is_some() || self.capitols.is_some() || !self.outbox.is_empty() || !self.inbox.is_empty() {
+            return false;
+        }
+        let Some(rule) = self.new_capitols(5, minutes, sole) else { return false; };
+        self.capitols = Some(rule);
+        true
+    }
+
+    pub(crate) fn network_capitol_config(&self) -> u32 {
+        self.capitols.map_or(0, |rule| u32::from(rule.mode) | (u32::from(rule.minutes) << 8) | (u32::from(rule.sole) << 16))
     }
 
     pub(crate) fn capitol_capture_owner(&self, handle: u32, capturer: u8) -> u8 {
@@ -202,7 +225,7 @@ impl Game {
             .map(|index| self.ents[index].team)
     }
 
-    pub(crate) fn poll_capitol_outcome(&mut self, mut rule: Capitols) {
+    fn advance_capitols(&mut self, mut rule: Capitols) -> (u8, bool) {
         let available = rule.state.active(self.nplayers);
         let presence = self.players[..self.nplayers].iter().enumerate()
             .filter(|(_, player)| player.alive).fold(0, |mask, (seat, _)| mask | (1 << seat));
@@ -233,9 +256,18 @@ impl Game {
         for (seat, player) in self.players[..self.nplayers].iter_mut().enumerate() {
             player.alive = survivors & (1 << seat) != 0;
         }
+        self.capitols = Some(rule);
+        (survivors, won)
+    }
+
+    pub(crate) fn poll_capitol_outcome(&mut self, rule: Capitols) {
+        let (survivors, won) = self.advance_capitols(rule);
         if survivors & (1 << self.local) == 0 { self.winner = 2; }
         else if won { self.winner = 1; }
-        self.capitols = Some(rule);
+    }
+
+    pub(crate) fn poll_network_capitols(&mut self, rule: Capitols) -> bool {
+        self.advance_capitols(rule).1
     }
 
     pub(crate) fn capitol_status(&self, field: u32, seat: usize) -> i32 {
@@ -252,16 +284,19 @@ impl Game {
         }
     }
 
-    pub(crate) fn restore_capitols(&mut self, rule: Capitols, outcome: u8) -> Option<()> {
+    pub(crate) fn restore_capitols(&mut self, rule: Capitols, outcome: u8, network_departure_state: bool) -> Option<()> {
         let now = self.sim_elapsed();
         let state = rule.state;
         let seats = (1u8 << self.nplayers) - 1;
         let max_deadline = capitol_deadline(now, rule.minutes);
-        if self.net || self.humans != 1 || self.nplayers < 2 || self.bench != 0
-            || state.eliminated & !seats != 0
+        if self.net {
+            if !network_departure_state || !self.supports_network_capitols() || rule.mode != 5 || outcome != 0 { return None; }
+        } else if self.humans != 1 || self.nplayers < 2 || self.bench != 0 || state.eliminated(0) != (outcome == 2) {
+            return None;
+        }
+        if state.eliminated & !seats != 0
             || state.deadline != IDLE && (!rule.sole || !(10.0..=now + 10.0).contains(&state.deadline))
             || self.tick == 0 && (outcome != 0 || state.eliminated != 0 || state.deadline != IDLE || rule.score != [0; 4])
-            || state.eliminated(0) != (outcome == 2)
             || outcome == 1 && rule.sole && state.active(self.nplayers) != 1
         { return None; }
         for seat in 0..4 {
@@ -285,6 +320,10 @@ impl Game {
         }
         self.capitols = Some(rule);
         self.winner = outcome;
+        if self.net {
+            self.capture_enabled = true;
+            self.capture_animation_enabled = true;
+        }
         Some(())
     }
 }
@@ -292,6 +331,48 @@ impl Game {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn network_capitol_deadline_and_empty_capture_state_survive_authenticated_resume() {
+        let mut peers = [Game::new(7, 0, 0, 2, 0), Game::new(7, 0, 0, 2, 1)];
+        for game in &mut peers {
+            assert!(game.configure_match_epoch_range(0xee81, 500, 2, 0, 14));
+            assert!(game.configure_network_resignation(0));
+            assert!(!game.configure_network_capitols(2, 0));
+            assert!(game.configure_peer_capture(true));
+            assert!(game.configure_peer_capture_animation(true));
+            assert!(game.configure_network_capitols(2, 0));
+            let city = game.get(game.capitols.unwrap().city[1]).unwrap();
+            game.ents[city].team = 0;
+            game.rebuild_territories();
+            assert_eq!(game.tick_with_network_source_slot(30, 30, 1.5, true), 1);
+            assert_eq!(game.capitols.unwrap().deadline[1], 120.0);
+            assert!(game.players[1].alive);
+            game.save_network_resume();
+            assert!(!game.savebuf.is_empty());
+        }
+        assert!(peers[0].savebuf == peers[1].savebuf, "canonical network archives differ");
+        let mut restored = Game::load_network_resume(&peers[0].savebuf, 2, 1, 1, 30, 1.5).expect("resumed Capitol match");
+        assert!(restored.capture_enabled && restored.capture_animation_enabled);
+        assert_eq!(restored.state_hash(), peers[1].state_hash());
+        let mut expired = false;
+        for _ in 0..2600 {
+            let before = peers[0].sim_elapsed();
+            let outcomes = peers.each_mut().map(|game| game.tick_with_network_source_slot(30, 30, 1.5, false));
+            assert_eq!(outcomes[0], outcomes[1]);
+            assert_eq!(outcomes[0], restored.tick_with_network_source_slot(30, 30, 1.5, false));
+            assert_eq!(peers[0].state_hash(), peers[1].state_hash());
+            assert_eq!(peers[1].state_hash(), restored.state_hash());
+            if !expired && !peers[0].players[1].alive {
+                assert!(before > 120.0);
+                assert_eq!(outcomes[0], 1);
+                expired = true;
+            }
+            if outcomes[0] == 2 { break; }
+        }
+        assert!(expired);
+        assert_eq!([peers[0].winner, peers[1].winner, restored.winner], [1, 2, 2]);
+    }
 
     fn skirmish(mode: u32, ai: u32) -> Game {
         let mut game = Game::new(7, ai, 0, 1, 0);

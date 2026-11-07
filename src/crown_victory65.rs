@@ -120,7 +120,8 @@ impl Game {
     pub(crate) fn configure_network_crown_victory(&mut self, mode: u32, target: u32) -> bool {
         let Some(objective) = Objective::parse(mode, target) else { return false; };
         if !self.supports_network_crown_victory() || self.net_resignation.is_none() || self.civ_setup_open
-            || self.tick != 0 || self.crown_victory.is_some() || !self.outbox.is_empty() || !self.inbox.is_empty() {
+            || self.tick != 0 || self.crown_victory.is_some() || self.capitols.is_some()
+            || !self.outbox.is_empty() || !self.inbox.is_empty() {
             return false;
         }
         self.crown_victory = Some(Rule::new(objective));

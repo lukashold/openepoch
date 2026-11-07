@@ -14,11 +14,33 @@ import {captureAnimationBindings,captureOverlayMatches,loadCaptureAnimationOverl
 import {nativeTakeoffPose} from './air-takeoff.js?v=native33';
 import {scaffoldInstanceKey,wonderScaffoldStage} from './original-wonder-scaffold.js?v=native63';
 import {wonderFenceAtSite} from './original-wonder-fence.js?v=native63';
+const navalPoseModels=new Map([
+ [29, new Set([
+  '41964f675e164306c5e14ad98d75e09d9e76b657b289aa04314873b726ed6655',
+  '8da0386f6c4a34b90cafcb317557ad076805c9030affc251997b25a03c96a6af',
+  'dd512fc27fb5c5c24fdbd28497d4063bc60e17360252dfa443f23d06c7f08ce5',
+ ])],
+ [32, new Set([
+  '68f5ffb2ba40047adf09c5fd1179440d16e104d13a971e663259847b1ff889fb',
+  'e6c137a050e8b99c7e10f5c0cecaa2f615ed644ba632cd82fa2c55af127cb153',
+  '0f0d2d9d6384e897abe7b54e8ef0886324b74559dbe97761c09be2d2046d9b7a',
+ ])],
+ [33, new Set([
+  'eeabc0d7548f60a63aa22959fd054781e8ff9e3f56d9dee494fccde56f57037b',
+  '32299c3438ca7aa2ebc8cb682bf1b1fc1b4e0c35db688f59e5fb5c08c4fa0ded',
+ ])],
+ [35, new Set([
+  '32299c3438ca7aa2ebc8cb682bf1b1fc1b4e0c35db688f59e5fb5c08c4fa0ded',
+  '8c010579b6a9551c3658940ab6db0df5588b1be9ab71be0292cf787797fc80f7',
+ ])],
+]);
+const navalBasisModel=(model,id)=>model.normalization?.axis==='x,z,-y'&&navalPoseModels.get(id)?.has(model.source?.sha256);
 const VS=`#version 300 es
 layout(location=0) in vec3 aPosition;layout(location=1) in vec3 aNormal;layout(location=2) in vec2 aUV;
 layout(location=3) in vec4 iA;layout(location=4) in vec4 iB;layout(location=5) in vec4 iC;
 layout(location=6) in vec4 aColor;
 uniform mat4 uVP;uniform highp int uShadow;uniform bool uAnimated;uniform bool uGuidedRocket;uniform float uYOffset;uniform vec3 uOriginOffset;
+uniform bool uNaval;uniform mat3 uNavalBasis;
 uniform highp sampler2DArray uFrames;uniform int uFrameWidth;uniform int uFrameCount;uniform bool uAnimationOnce;
 uniform highp sampler2D uTerrain;uniform int uTerrainSize;uniform bool uTerrainEnabled;uniform vec3 uSunDirection;
 uniform bool uFarmPlotConform;uniform vec3 uFarmPlotCenter;
@@ -55,6 +77,9 @@ void main(){
   mat3 basis=mat3(right,cross(forward,right),forward);
   world=vec3(iA.x,iA.z,iA.y)+basis*p;
   worldNormal=basis*normal;
+ }else if(uNaval){
+  world=vec3(iA.x,iA.z,iA.y)+uNavalBasis*p;
+  worldNormal=uNavalBasis*normal;
  }
  if(uFarmPlotConform && uTerrainEnabled && uTerrainSize>1){
   vec3 center=(uFarmPlotCenter+uOriginOffset)*iC.x;
@@ -193,6 +218,7 @@ function program(gl,fragment=FS,extraUniforms=[]){
  u.uSpyEmissive=gl.getUniformLocation(p,'uSpyEmissive');
  u.uWonderConstructionPlane=gl.getUniformLocation(p,'uWonderConstructionPlane');
  u.uGuidedRocket=gl.getUniformLocation(p,'uGuidedRocket');
+ u.uNaval=gl.getUniformLocation(p,'uNaval');u.uNavalBasis=gl.getUniformLocation(p,'uNavalBasis');
  for(const name of extraUniforms)u[name]=gl.getUniformLocation(p,name);
  return {p,u};
 }
@@ -589,7 +615,8 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     record.variant={sourceId:entry.id,assetKind:0,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),sourceVisual:sourceVisual(model,url),
      sourceScale:transform.native?entry.nativeScaleBinding.sourceScale:null,
      nativeScale:transform.scale,originOffset:transform.originOffset,yOffset:0,farRequested:lod==='far',
-     yawOffset:entry.yawOffset??model.yawOffset??0,rallyTag:rallyTag(model),nativeTakeoff:model.nativeTakeoff};
+     yawOffset:entry.yawOffset??model.yawOffset??0,rallyTag:rallyTag(model),nativeTakeoff:model.nativeTakeoff,
+     navalBasis:navalBasisModel(model,entry.id)};
     productionStatus[lod]++;
    }).catch(error=>{productionStatus.errors.push(`${url}: ${error.message}`);});
   }
@@ -640,6 +667,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    const yOffset=!transform.native&&sea?-(model.normalization?.offset?.[1]||0)*(model.normalization?.scale||1):0;
    const variant={sourceId:id,assetKind,scaleKey,epoch:entry.epoch??0,until:entry.until,regionalCivilizations:entry.regionalCivilizations,regionalFallback:entry.regionalFallback===true,sourceIdentity:entry.sourceIdentity,region:entry.region,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),nativeAttackClock:entry.nativeAttackClock===true,yOffset,originOffset:transform.originOffset,nativeScale:transform.native?transform.scale:null,yawOffset:entry.yawOffset??model.yawOffset??0,farUrl:entry.lodFarUrl,far:null,farRequested:false,pickBounds:resourceBounds(parts),rallyTag:rallyTag(model),nativeTakeoff:model.nativeTakeoff};
    variant.nativeCapture=model.nativeCapture;
+   variant.navalBasis=transform.native&&navalBasisModel(model,id);
    variant.hercAttack=options.hercAttack?.acceptsModel(id,model)??false;
    variant.sourceVisual=sourceVisual(model,modelUrl);
    variant.sourceScale=transform.native?scaleBinding.sourceScale:null;
@@ -881,13 +909,15 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
       variant.farRequested=true;const near=variant;
       const presentation=near.presentationEntry;
       const request=presentation?verifiedModelJSON(near.farUrl,presentation.lodFarSha256,'Original Far unit model'):json(near.farUrl);
-      request.then(model=>augmentModel(model,presentation||{id:near.sourceId,assetKind:near.assetKind,epoch:near.epoch},'far')).then(async model=>({model,parts:await loadParts(model,near.assetKind===1,near.farUrl,presentation?.presentation?.teamManifest)})).then(({model,parts})=>{near.far={...near,parts,sourceVisual:sourceVisual(model,near.farUrl),pickBounds:resourceBounds(parts),sailComposite:model.nativeSailComposite,dynamicSailBinding:null,nativeCapture:model.nativeCapture,rallyTag:rallyTag(model),nativeTakeoff:model.nativeTakeoff,hercAttack:options.hercAttack?.acceptsModel(near.sourceId,model)??false};}).catch(e=>{result.errors.push(e.message);console.warn('Original-Fernmodell:',e);});
+      request.then(model=>augmentModel(model,presentation||{id:near.sourceId,assetKind:near.assetKind,epoch:near.epoch},'far')).then(async model=>({model,parts:await loadParts(model,near.assetKind===1,near.farUrl,presentation?.presentation?.teamManifest)})).then(({model,parts})=>{near.far={...near,parts,sourceVisual:sourceVisual(model,near.farUrl),pickBounds:resourceBounds(parts),sailComposite:model.nativeSailComposite,dynamicSailBinding:null,nativeCapture:model.nativeCapture,rallyTag:rallyTag(model),nativeTakeoff:model.nativeTakeoff,navalBasis:near.navalBasis&&navalBasisModel(model,near.sourceId),hercAttack:options.hercAttack?.acceptsModel(near.sourceId,model)??false};}).catch(e=>{result.errors.push(e.message);console.warn('Original-Fernmodell:',e);});
      }
      if(variant.far)variant=variant.far;
     }
     const shimmer=variant.spyClips&&matchingActorPose&&actor.team===rowTeam?options.spyShimmerForActor?.(actor):
      variant.diversionVisual&&matchingActor&&actor.team===rowTeam?options.diversionShimmerForActor?.(actor,variant.diversionVisual):null;
     if(shimmer?.opacity===0)continue;
+    const navalBasis=matchingActor&&variant.navalBasis&&variant.yawOffset===-Math.PI/2
+     ?options.navalBasisForActor?.(actor):null;
     if(collectActorPresentation&&matchingActor){
      if(variant.sourceVisual)actorVisuals?.set(actor,variant.sourceVisual);
      if(variant.sourceScale>0)actorSourceScales?.set(actor,variant.sourceScale);
@@ -939,11 +969,12 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     }):null;
     const visibilityKey=hiddenParts?.length?':hidden:'+hiddenParts.map(part=>variant.parts.indexOf(part)).join(','):'';
     const shimmerKey=shimmer&&(shimmer.opacity!==1||shimmer.emissive!==0)?':shimmer:'+shimmer.opacity+':'+shimmer.emissive:'';
-    const preview=!!previewFlags,key=variantIndex+':'+team+':'+activity+':'+(far&&variant.farRequested?1:0)+':'+previewFlags+':'+clip+':'+once+(variant.houseLodKey===undefined?'':':house:'+variant.houseLodKey)+visibilityKey+shimmerKey;
+    const navalKey=navalBasis?':naval:'+actor.handle:'';
+    const preview=!!previewFlags,key=variantIndex+':'+team+':'+activity+':'+(far&&variant.farRequested?1:0)+':'+previewFlags+':'+clip+':'+once+(variant.houseLodKey===undefined?'':':house:'+variant.houseLodKey)+visibilityKey+shimmerKey+navalKey;
     if(collectStoneThrowerWheels&&!preview&&actor?.def===22&&epoch<2&&variant.stoneThrowerWheelClips?.has(clip)){
      stoneThrowerWheels.push({handle:actor.handle,clip,x:actor.renderX,y:actor.renderY,altitude:actor.renderAltitude});
     }
-    const group=groups.get(key)||{variant,team,activity,clip,once,preview,hiddenParts,shimmer:shimmerKey?shimmer:null,list:[],instanceIndices:[]};
+    const group=groups.get(key)||{variant,team,activity,clip,once,preview,hiddenParts,shimmer:shimmerKey?shimmer:null,navalBasis,list:[],instanceIndices:[]};
     group.instanceIndices.push(i);
     const offset=group.list.length;for(let k=0;k<12;k++)group.list.push(data[i*12+k]);
     group.list[offset+3]+=variant.yawOffset;group.list[offset+9]=phase;
@@ -962,7 +993,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
      }
     }
    }
-   for(const {variant,team,list,activity,clip,once,preview,hiddenParts,shimmer,instanceIndices} of groups.values()){
+   for(const {variant,team,list,activity,clip,once,preview,hiddenParts,shimmer,navalBasis,instanceIndices} of groups.values()){
     if(rememberPicks&&variant.assetKind===1&&variant.pickBounds)rememberResources(data,instanceIndices,variant,activity);
     selectShader(shader);gl.uniform1f(shader.u.uYOffset,variant.yOffset);
     gl.uniform3fv(shader.u.uOriginOffset,variant.originOffset);
@@ -986,6 +1017,8 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
      if(job.record){gl.bindBuffer(gl.ARRAY_BUFFER,instances);gl.bufferData(gl.ARRAY_BUFFER,job.record,gl.STREAM_DRAW);}
      selectShader(deformed?dynamicSailShader:part.nativeSail?sailShader:shader);const u=activeShader.u;
      gl.uniform1i(u.uGuidedRocket,variant.guidedRocket?1:0);
+     gl.uniform1i(u.uNaval,navalBasis?1:0);
+     if(navalBasis)gl.uniformMatrix3fv(u.uNavalBasis,false,navalBasis);
      if(part.nativeSail){gl.uniform1f(u.uYOffset,variant.yOffset);gl.uniform3fv(u.uOriginOffset,variant.originOffset);}
      gl.uniform1i(u.uFarmPlotConform,part.farmPlotOffset?1:0);gl.uniform3fv(u.uFarmPlotCenter,part.farmPlotOffset||[0,0,0]);
      const pose=part.pose(clip);gl.uniform1i(u.uAnimated,pose?1:0);

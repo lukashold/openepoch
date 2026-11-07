@@ -67,7 +67,8 @@ impl Game {
     }
 
     pub(crate) fn network_observer(&self, team: u8) -> bool {
-        self.net_resignation.is_some_and(|state| state.observer(team))
+        self.net_resignation.is_some_and(|state| state.observer(team)) ||
+            self.net && self.capitols.is_some_and(|rule| rule.state.eliminated(team as usize))
     }
 
     pub(crate) fn network_match_finished(&self) -> bool {
@@ -116,7 +117,12 @@ impl Game {
         if state.finished { return true; }
         self.refresh_match_alive();
         let crown_winner = self.network_crown_winning_seat();
-        if crown_winner.is_none() && state.humans(self) != 0 && !crate::ee2_conquest::survivors_are_allied(self) { return false; }
+        let resolved = if let Some(rule) = self.capitols {
+            self.poll_network_capitols(rule)
+        } else {
+            crown_winner.is_some() || crate::ee2_conquest::survivors_are_allied(self)
+        };
+        if !resolved && state.humans(self) != 0 { return false; }
         state.finished = true;
         self.net_resignation = Some(state);
         self.winner = self.project_network_outcome(state, crown_winner);
