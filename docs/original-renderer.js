@@ -520,7 +520,9 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
  const rallyAttachments=new WeakMap();
  result.rallyAttachment=actor=>rallyAttachments.get(actor);
  const actorVisuals=options.sourceVisualForModel?new WeakMap():null;
+ const actorSourceScales=options.priestParticleScales?new WeakMap():null;
  result.sourceVisualForActor=actor=>actorVisuals?.get(actor);
+ result.sourceScaleForActor=actor=>actorSourceScales?.get(actor);
  const sourceVisual=(model,url)=>options.sourceVisualForModel?.(model,url);
  function rallyTag(model){
   const point=options.rallyTargetTags?.[model.source?.sha256]?.point, n=model.normalization;
@@ -539,6 +541,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     if(!transform.native)throw new Error('Regional capture model has no exact source scale');
     const gpu=await loadParts({...model,parts},false,url,regionalCaptureTeam);
     record.variant={assetKind:0,parts:gpu,hasClipVisibility:gpu.some(part=>part.clipVisibility),sourceVisual:sourceVisual(model,url),
+     sourceScale:transform.native?entry.nativeScaleBinding.sourceScale:null,
      nativeCapture:{clips},nativeScale:transform.scale,originOffset:transform.originOffset,yOffset:0,
      yawOffset:entry.yawOffset??model.yawOffset??0,rallyTag:rallyTag(model)};
     regionalCaptureStatus[lod]++;
@@ -559,6 +562,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     const parts=await loadParts(model,false,url,productionTeam);
     if(!parts.length)throw new Error('Production model has no renderable parts');
     record.variant={sourceId:entry.id,assetKind:0,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),sourceVisual:sourceVisual(model,url),
+     sourceScale:transform.native?entry.nativeScaleBinding.sourceScale:null,
      nativeScale:transform.scale,originOffset:transform.originOffset,yOffset:0,farRequested:lod==='far',
      yawOffset:entry.yawOffset??model.yawOffset??0,rallyTag:rallyTag(model),nativeTakeoff:model.nativeTakeoff};
     productionStatus[lod]++;
@@ -582,11 +586,14 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    }catch(error){houseBinding=null;houseLodError(error);}}
    const model=await augmentModel(body??await (entry.presentation?verifiedModelJSON(modelUrl,entry.sha256,'Original unit model'):json(modelUrl)),{...entry,id}),parts=await loadParts(model,assetKind===1,modelUrl,entry.presentation?.teamManifest);
    if(!parts.length)continue;
-   const scaleKey=(entry.assetKind===undefined?'':assetKind+':')+id+':'+(entry.epoch??0),sea=assetKind===0&&((id>=29&&id<=36)||id===42||id===45),transform=nativeModelTransform(model,entry.regionalCivilizations?entry.nativeScaleBinding:scales.variants?.[scaleKey]);
+   const scaleKey=(entry.assetKind===undefined?'':assetKind+':')+id+':'+(entry.epoch??0),sea=assetKind===0&&((id>=29&&id<=36)||id===42||id===45);
+   const scaleBinding=entry.regionalCivilizations?entry.nativeScaleBinding:scales.variants?.[scaleKey];
+   const transform=nativeModelTransform(model,scaleBinding);
    const yOffset=!transform.native&&sea?-(model.normalization?.offset?.[1]||0)*(model.normalization?.scale||1):0;
    const variant={sourceId:id,assetKind,scaleKey,epoch:entry.epoch??0,until:entry.until,regionalCivilizations:entry.regionalCivilizations,regionalFallback:entry.regionalFallback===true,sourceIdentity:entry.sourceIdentity,region:entry.region,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),nativeAttackClock:entry.nativeAttackClock===true,yOffset,originOffset:transform.originOffset,nativeScale:transform.native?transform.scale:null,yawOffset:entry.yawOffset??model.yawOffset??0,farUrl:entry.lodFarUrl,far:null,farRequested:false,pickBounds:resourceBounds(parts),rallyTag:rallyTag(model),nativeTakeoff:model.nativeTakeoff};
    variant.nativeCapture=model.nativeCapture;
    variant.sourceVisual=sourceVisual(model,modelUrl);
+   variant.sourceScale=transform.native?scaleBinding.sourceScale:null;
    if(entry.presentation)variant.presentationEntry=entry;
    if(entry.priestClips)variant.priestClips=entry.priestClips;
    if(assetKind===0&&id===22&&entry.verified&&model.databaseVisualBinding?.visualDefinition==='LightArtillery1_01'
@@ -693,8 +700,10 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
  };
  result.draw=({data,ranges,vp,epochs,zoom=80,shadow=false,eye=[0,200,0],lighting=defaultLighting,clipPlane=null,capture=false,actorMetadata=null,civilizations=visualCivilizations,stoneThrowerWheels=null})=>{
   const started=performance.now();let calls=0,triangles=0,querying=false;
-  const collectActorVisuals=actorVisuals&&!shadow&&!clipPlane;
-  if(collectActorVisuals)for(const actor of actorMetadata?.actors??[])actorVisuals.delete(actor);
+  const collectActorPresentation=(actorVisuals||actorSourceScales)&&!shadow&&!clipPlane;
+  if(collectActorPresentation)for(const actor of actorMetadata?.actors??[]){
+   actorVisuals?.delete(actor);actorSourceScales?.delete(actor);
+  }
   const previousState=drawState(gl);
   const rememberPicks=!shadow&&!capture;
   if(rememberPicks)result.clearResourcePicks();
@@ -757,7 +766,10 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
      }
      if(variant.far)variant=variant.far;
     }
-    if(collectActorVisuals&&matchingActor&&variant.sourceVisual)actorVisuals.set(actor,variant.sourceVisual);
+    if(collectActorPresentation&&matchingActor){
+     if(variant.sourceVisual)actorVisuals?.set(actor,variant.sourceVisual);
+     if(variant.sourceScale>0)actorSourceScales?.set(actor,variant.sourceScale);
+    }
     if(variant.rallyTag&&actor&&!shadow&&!clipPlane){
      const scale=variant.nativeScale??data[i*12+8], yaw=actor.renderYaw+variant.yawOffset;
      const [x,y,z]=variant.rallyTag.map((value,index)=>(value+variant.originOffset[index])*scale);

@@ -18,7 +18,7 @@ import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regi
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native6';
-import {loadOriginalModels} from './original-renderer.js?v=native45';
+import {loadOriginalModels} from './original-renderer.js?v=native47';
 import {ownMapTerrainOrigin} from './original-citycenter-terrain.js?v=regional10';
 import {loadCityCenterIcons,loadHouseIcons,loadDockIcons,loadBarracksIcons,loadMillIcons,loadTempleIcons,loadLightArtilleryIcons,loadWarehouseIcons,loadStableIcons,loadKingIcons} from './original-citycenter-icons.js?v=native17';
 import {loadSourceSailRuntime} from './source-sail-runtime.js?v=sails7';
@@ -55,6 +55,7 @@ import {createBattleFlare} from './battle-flare.js?v=native25';
 import {createCaptureOrder,captureOrderText} from './capture-order.js?v=native45';
 import {loadPriestCommandArt} from './original-priest-command-art.js?v=native45';
 import {loadPriestEffects} from './original-priest-fx.js?v=native45';
+import {loadOriginalPriestParticles} from './original-priest-particles.js?v=native47';
 import {loadBlessGroundGlow} from './priest-ground-glow.js?v=native45';
 import {createTradeRoute,supportsTradeRoute,tradeRouteText} from './trade-route.js?v=native30';
 import {loadCarrierPresentation,loadFighterBomberPresentation,loadPriestPresentation,loadTradePresentation,loadTradeRouteArt} from './original-trade-presentation.js?v=native42';
@@ -566,8 +567,10 @@ const priestPoseForActor=priestPresentation&&typeof wasm.priest_visual_state==='
     if(state!==1&&state!==2)return null;
     return {state,elapsed:wasm.priest_visual_elapsed(actor.handle,actor.renderTime),once:state===2,duration:state===2?4:0};
   }:null;
-const priestEffects=await loadPriestEffects(gl,{enabled:originalEnabled&&!!priestPresentation&&
-  typeof wasm.priest_effect_count==='function'});
+const priestEffectOptions={enabled:originalEnabled&&!!priestPresentation&&typeof wasm.priest_effect_count==='function'};
+const [priestEffects,priestParticles]=await Promise.all([
+  loadPriestEffects(gl,priestEffectOptions),loadOriginalPriestParticles(gl,priestEffectOptions)
+]);
 const blessGround=await loadBlessGroundGlow({enabled:originalEnabled&&typeof wasm.bless_glow_active==='function'});
 let previousPriestViews=[],currentPriestViews=[],priestFrameEffects=null;
 const priestAttachments=new Map();
@@ -575,7 +578,7 @@ let blessPreview=null;
 const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,total)=>{
   $('play').textContent=`Originalgrafiken laden · ${Math.round(loaded/total*100)} %`;
 },{assetMapping,climateProfiles,capturePoseForActor,tradePresentation,fighterBomberPresentation,carrierPresentation,priestPresentation,priestPoseForActor,
-  sourceVisualForModel:blessGround?.modelVisual,rallyTargetTags:airMissionFlag?.targetTags,
+  sourceVisualForModel:blessGround?.modelVisual,priestParticleScales:!!priestParticles,rallyTargetTags:airMissionFlag?.targetTags,
   airTakeoff,takeoffElapsedForActor:airTakeoff?actor=>{
     if(takeoffSample.now===null)return takeoffElapsed(takeoffSample.tick,takeoffSample.alpha,takeoffStartTick(actor.handle));
     const start=takeoffStartSeconds(actor.handle);
@@ -960,6 +963,7 @@ function begin(tempo = null, useSourceClock = wasm.sim_clock_active?.() === 1, a
   airMission?.cancel();airPress=null;
   activeTargetOrder()?.cancel();
   previousPriestViews=[];currentPriestViews=[];priestFrameEffects=null;priestAttachments.clear();
+  priestParticles?.reset();
   blessPreview=null;
   blessGround?.reset();
   playerFlare.reset(wasm.game_tick()>>>0);
@@ -1237,39 +1241,49 @@ function drawBlessGround(vp,actorMetadata,previewFrame=null){
   if(qaMode&&previewFrame)canvas.dataset.blessGround=`${layer.good.length/5}:${layer.neutral.length/5}`;
 }
 
-function drawPriestEffects(currentView,actorMetadata){
-  if(!priestEffects)return 0;
-  if(actorMetadata)currentPriestViews.push(actorMetadata);
-  if(!priestFrameEffects){
-    const count=wasm.priest_effect_count()>>>0,names=['','convert','bless','converted'];
-    const records=new DataView(wasm.memory.buffer,wasm.priest_effect_ptr()>>>0,count*12);
-    priestFrameEffects=Array.from({length:count},(_,index)=>{
-      const at=index*12,handle=records.getUint32(at,true),kind=names[records.getUint32(at+4,true)];
-      const started=records.getFloat32(at+8,true);
-      return {handle,kind,started,key:`${handle}:${kind}:${started}`};
-    });
-  }
-  const effects=[],converted=new Map();
-  for(const {handle,kind,started,key} of priestFrameEffects){
-    const actor=actorMetadata?.forHandle(handle);
-    if(!priestAttachments.has(key)&&(kind!=='converted'||started-(converted.get(handle)??-Infinity)>=2)&&
-      previousPriestViews.some(snapshot=>snapshot.forHandle(handle)))priestAttachments.set(key,true);
+function preparePriestEffectsFrame(renderTime){
+  const count=wasm.priest_effect_count()>>>0,names=['','convert','bless','converted'];
+  const records=new DataView(wasm.memory.buffer,wasm.priest_effect_ptr()>>>0,count*12);
+  const keys=new Set(),effects=[],converted=new Map();
+  for(let index=0;index<count;index++){
+    const at=index*12,handle=records.getUint32(at,true),kind=names[records.getUint32(at+4,true)];
+    const started=records.getFloat32(at+8,true),key=`${handle}:${kind}:${started}`;
+    if(!kind||keys.has(key))continue;
+    keys.add(key);
+    if(!priestAttachments.has(key)){
+      const repeated=kind==='converted'&&started-(converted.get(handle)??-Infinity)<2;
+      priestAttachments.set(key,!repeated&&previousPriestViews.some(snapshot=>snapshot.forHandle(handle)));
+    }
     if(priestAttachments.get(key)!==true)continue;
-    if(kind==='converted'){converted.set(handle,started);continue;}
-    if(!actor||actor.hpRatio<=0)continue;
-    const elapsed=actor.renderTime-started;
-    if(!kind||elapsed<0)continue;
-    effects.push({kind,elapsed,visible:true,yaw:actor.renderYaw,scale:.13435028493404388,
-      position:[actor.renderX,actor.renderAltitude,actor.renderY]});
+    if(kind==='converted')converted.set(handle,started);
+    effects.push({handle,kind,started,key,elapsed:renderTime-started});
   }
-  return priestEffects.draw({...currentView,effects});
+  priestParticles?.advance(effects.filter(effect=>effect.kind!=='bless'&&effect.elapsed>=0));
+  return {keys,effects};
+}
+
+function drawPriestEffects(currentView,actorMetadata,renderTime){
+  if(!priestEffects&&!priestParticles)return null;
+  if(actorMetadata)currentPriestViews.push(actorMetadata);
+  priestFrameEffects??=preparePriestEffectsFrame(renderTime);
+  const meshes=[],particles=[];
+  for(const {handle,kind,started,key,elapsed} of priestFrameEffects.effects){
+    const actor=actorMetadata?.forHandle(handle);
+    if(!actor||actor.hpRatio<=0||elapsed<0)continue;
+    const scale=originalModels.sourceScaleForActor?.(actor)??(kind==='converted'?null:.13435028493404388);
+    const row={key,kind,visible:true,yaw:actor.renderYaw,scale,
+      position:[actor.renderX,actor.renderAltitude,actor.renderY]};
+    if(kind!=='converted'&&actor.renderTime>=started)meshes.push({...row,elapsed:actor.renderTime-started});
+    if(kind!=='bless'&&scale>0)particles.push(row);
+  }
+  return {meshDraws:priestEffects?.draw({...currentView,effects:meshes})??0,
+    particleQuads:priestParticles?.draw({...currentView,effects:particles})??0,
+    particleTargets:qaMode?particles.filter(effect=>effect.kind==='converted').length:0};
 }
 
 function finishPriestEffectsFrame(){
-  if(!priestEffects)return;
-  const current=new Set(priestFrameEffects?.map(record=>record.key));
-  for(const key of priestAttachments.keys())if(!current.has(key))priestAttachments.delete(key);
-  for(const key of current)if(!priestAttachments.has(key))priestAttachments.set(key,false);
+  if(!priestEffects&&!priestParticles)return;
+  for(const key of priestAttachments.keys())if(!priestFrameEffects?.keys.has(key))priestAttachments.delete(key);
   previousPriestViews=currentPriestViews;currentPriestViews=[];priestFrameEffects=null;
 }
 
@@ -1318,7 +1332,8 @@ function drawFullmapPipScene(pipView, alpha, renderEpochs, now, mission) {
   }
   drawCaptureGlow(vp,actorMetadata);
   drawBlessGround(vp,actorMetadata);
-  drawPriestEffects(pipView,actorMetadata);
+  const priestDraws=drawPriestEffects(pipView,actorMetadata,wasm.sim_render_seconds?.(alpha));
+  if(qaMode&&priestDraws)canvas.dataset.priestPipParticles=`${priestDraws.particleQuads}:${priestDraws.particleTargets}`;
   drawAirMissionFlags(vp,actorMetadata,mission);
   carrierGarrisonFlag?.draw({vp,actors:actorMetadata?.actors,epochs:renderEpochs,local:ui?.local});
 }
@@ -1507,8 +1522,11 @@ function frame(now) {
   }
   drawCaptureGlow(view.vp,actorMetadata);
   drawBlessGround(view.vp,actorMetadata,{visualSeconds});
-  const priestEffectDraws=drawPriestEffects(view,actorMetadata);
-  if(qaMode&&priestEffects)canvas.dataset.priestEffects=String(priestEffectDraws);
+  const priestDraws=drawPriestEffects(view,actorMetadata,wasm.sim_render_seconds?.(alpha));
+  if(qaMode&&priestDraws){
+    canvas.dataset.priestEffects=String(priestDraws.meshDraws);
+    canvas.dataset.priestParticles=`${priestDraws.particleQuads}:${priestDraws.particleTargets}`;
+  }
   drawAirMissionFlags(view.vp,actorMetadata,mission);
   carrierGarrisonFlag?.draw({vp:view.vp,actors:actorMetadata?.actors,epochs:renderEpochs,local:ui?.local});
 
