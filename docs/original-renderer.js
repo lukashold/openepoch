@@ -10,6 +10,7 @@ import {createNativeLightingContext,nativeModelPipeline} from './original-lighti
 import {appendInitialSailParts,nativeInitialSailDiffuse} from './original-sail-composite.js?v=initialsail7';
 import {createDynamicSailBinding,createDynamicSailGPU,dynamicSailForces} from './original-dynamic-sails.js?v=native75-sails';
 import {appendNativePackAnimations,nativePackPose} from './original-pack-states.js?v=pack8';
+import {createNativePackBlendHistory,hasSourcePackBlend} from './original-pack-blend.js?v=pack-blend126';
 import {captureAnimationBindings,captureOverlayMatches,loadCaptureAnimationOverlay,nativeCapturePose,regionalCaptureBindings,loadRegionalCaptureAsset} from './original-capture-animations.js?v=native26';
 import {nativeTakeoffPose} from './air-takeoff.js?v=native33';
 import {scaffoldInstanceKey,wonderScaffoldStage} from './original-wonder-scaffold.js?v=native63';
@@ -89,6 +90,10 @@ layout(location=6) in vec4 aColor;
 uniform mat4 uVP;uniform highp int uShadow;uniform bool uAnimated;uniform bool uGuidedRocket;uniform float uYOffset;uniform vec3 uOriginOffset;
 uniform bool uNaval;uniform mat3 uNavalBasis;
 uniform highp sampler2DArray uFrames;uniform int uFrameWidth;uniform int uFrameCount;uniform bool uAnimationOnce;
+#ifdef PACK_BLEND
+uniform highp sampler2DArray uPackOutgoingFrames;uniform int uPackOutgoingCount;uniform bool uPackOutgoingOnce;
+uniform bool uPackBlendActive;uniform float uPackOutgoingPhase,uPackIncomingPhase,uPackBlendWeight;
+#endif
 uniform highp sampler2D uTerrain;uniform int uTerrainSize;uniform bool uTerrainEnabled;uniform vec3 uSunDirection;
 uniform bool uFarmPlotConform;uniform vec3 uFarmPlotCenter;
 uniform highp int uNativeShader;uniform vec3 uAmbientLight;uniform vec3 uSunColor;uniform vec4 uColor;uniform float uSpyEmissive;
@@ -104,14 +109,26 @@ float plotGround(vec2 p){
  float c=texelFetch(uTerrain,i+ivec2(0,1),0).r,d=texelFetch(uTerrain,i+ivec2(1,1),0).r;
  return f.x+f.y<=1.?a+(b-a)*f.x+(c-a)*f.y:d+(c-d)*(1.-f.x)+(b-d)*(1.-f.y);
 }
+void animationPose(highp sampler2DArray frames,int count,bool once,float at,out vec3 local,out vec3 normal){
+ float phase=once?clamp(at,0.,1.)*float(count-1):fract(at)*float(count);
+ int frame=int(floor(phase)),next=once?min(frame+1,count-1):(frame+1)%count;
+ int pixel=gl_VertexID*2;ivec2 uv=ivec2(pixel%uFrameWidth,pixel/uFrameWidth);
+ vec3 p0=texelFetch(frames,ivec3(uv,frame),0).xyz,p1=texelFetch(frames,ivec3(uv,next),0).xyz;
+ uv.x+=1;vec3 n0=texelFetch(frames,ivec3(uv,frame),0).xyz,n1=texelFetch(frames,ivec3(uv,next),0).xyz;
+ local=mix(p0,p1,fract(phase));normal=mix(n0,n1,fract(phase));
+}
 void main(){
  vec3 local=aPosition,normal=aNormal;
  if(uAnimated){
-  float phase=uAnimationOnce?clamp(iC.y,0.,1.)*float(uFrameCount-1):fract(iC.y)*float(uFrameCount);int frame=int(floor(phase));int next=uAnimationOnce?min(frame+1,uFrameCount-1):(frame+1)%uFrameCount;
-  int pixel=gl_VertexID*2;ivec2 uv=ivec2(pixel%uFrameWidth,pixel/uFrameWidth);
-  vec3 p0=texelFetch(uFrames,ivec3(uv,frame),0).xyz,p1=texelFetch(uFrames,ivec3(uv,next),0).xyz;
-  uv.x+=1;vec3 n0=texelFetch(uFrames,ivec3(uv,frame),0).xyz,n1=texelFetch(uFrames,ivec3(uv,next),0).xyz;
-  local=mix(p0,p1,fract(phase));normal=mix(n0,n1,fract(phase));
+#ifdef PACK_BLEND
+  if(uPackBlendActive){
+   vec3 outgoing,oldNormal;
+   animationPose(uFrames,uFrameCount,uAnimationOnce,uPackIncomingPhase,local,normal);
+   animationPose(uPackOutgoingFrames,uPackOutgoingCount,uPackOutgoingOnce,uPackOutgoingPhase,outgoing,oldNormal);
+   local=mix(outgoing,local,uPackBlendWeight);normal=mix(oldNormal,normal,uPackBlendWeight);
+  }else
+#endif
+  animationPose(uFrames,uFrameCount,uAnimationOnce,iC.y,local,normal);
  }
  local.y+=uYOffset;
  float constructionY=local.y;local+=uOriginOffset;
@@ -253,15 +270,17 @@ function applyDrawState(gl,part,shadow,preview,shimmerBlend){
   gl.blendFunc(factors[a.source]??gl.SRC_ALPHA,factors[a.destination]??gl.ONE_MINUS_SRC_ALPHA);
  }
 }
-function program(gl,fragment=FS,extraUniforms=[]){
+function program(gl,fragment=FS,extraUniforms=[],packBlend=false){
  const p=gl.createProgram();
- for(const [type,source] of [[gl.VERTEX_SHADER,VS],[gl.FRAGMENT_SHADER,fragment]]){
+ const vertex=packBlend?VS.replace('#version 300 es\n','#version 300 es\n#define PACK_BLEND\n'):VS;
+ for(const [type,source] of [[gl.VERTEX_SHADER,vertex],[gl.FRAGMENT_SHADER,fragment]]){
   const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);
   if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));
   gl.attachShader(p,s);gl.deleteShader(s);
  }
  gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));
  const u={};for(const name of ['uVP','uShadow','uAnimated','uAnimationOnce','uYOffset','uOriginOffset','uDiffuse','uDiffuseNext','uModelSeasonBlend','uFog','uColor','uHasAlpha','uCutoff','uModelHeight','uTeam','uFrames','uFrameWidth','uFrameCount','uTerrain','uTerrainSize','uTerrainEnabled','uSunDirection','uAmbientMaterial','uSpecularMaterial','uEmissiveMaterial','uGlossiness','uSpecularEnabled','uVertexMode','uLightingMode','uAmbientLight','uSunColor','uSpecularLight','uNativeShader','uTextureScale','uNativeLighting','uEye','uAlphaFunction','uClipEnabled','uClipPlane','uFarmPlotConform','uFarmPlotCenter'])u[name]=gl.getUniformLocation(p,name);
+ if(packBlend)for(const name of ['uPackOutgoingFrames','uPackOutgoingCount','uPackOutgoingOnce','uPackBlendActive','uPackOutgoingPhase','uPackIncomingPhase','uPackBlendWeight'])u[name]=gl.getUniformLocation(p,name);
  u.uSpyEmissive=gl.getUniformLocation(p,'uSpyEmissive');
  u.uWonderConstructionPlane=gl.getUniformLocation(p,'uWonderConstructionPlane');
  u.uGuidedRocket=gl.getUniformLocation(p,'uGuidedRocket');
@@ -518,7 +537,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   seasonClimate=climate;return true;
  };
  let shader;
- try{shader=program(gl);}catch(e){result.errors.push(e.message);console.warn('Originalmodell-Renderer:',e);return result;}
+ try{shader=program(gl,FS,[],packStatus.enabled);}catch(e){result.errors.push(e.message);console.warn('Originalmodell-Renderer:',e);return result;}
  const instances=gl.createBuffer(),textures=new Map();
  const dynamicGPU=options.dynamicSails?createDynamicSailGPU(gl,instances):null,dynamicSourceVariants=new Map();
  const navalMatrices=new WeakMap();
@@ -728,6 +747,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    const yOffset=!transform.native&&sea?-(model.normalization?.offset?.[1]||0)*(model.normalization?.scale||1):0;
    const variant={sourceId:id,assetKind,scaleKey,epoch:entry.epoch??0,until:entry.until,regionalCivilizations:entry.regionalCivilizations,regionalFallback:entry.regionalFallback===true,sourceIdentity:entry.sourceIdentity,region:entry.region,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),nativeAttackClock:entry.nativeAttackClock===true,yOffset,originOffset:transform.originOffset,nativeScale:transform.native?transform.scale:null,yawOffset:entry.yawOffset??model.yawOffset??0,farUrl:entry.lodFarUrl,far:null,farRequested:false,pickBounds:resourceBounds(parts),rallyTag:rallyTag(model),nativeTakeoff:model.nativeTakeoff};
    variant.nativeCapture=model.nativeCapture;
+   variant.nativePackBlend=options.packAnimations&&assetKind===0&&hasSourcePackBlend(id,model);
    variant.navalBasis=transform.native&&navalBasisModel(model,id);
    if(variant.navalBasis)variant.wakeSource={sha256:model.source.sha256,scale:scaleBinding.sourceScale};
    if(id===29&&variant.navalBasis&&model.source.sha256===options.boatWakeBodySha)result.boatWakeHull=true;
@@ -847,6 +867,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   }
  }
  gl.useProgram(shader.p);gl.uniform1i(shader.u.uDiffuse,0);gl.uniform1i(shader.u.uDiffuseNext,7);gl.uniform1i(shader.u.uFog,2);gl.uniform1i(shader.u.uFrames,5);gl.uniform1i(shader.u.uTerrain,6);gl.uniform3fv(shader.u.uTeam,new Float32Array(teams.flat()));
+ if(packStatus.enabled)gl.uniform1i(shader.u.uPackOutgoingFrames,8);
  const heightTexture=gl.createTexture();let heightSize=1,heightReady=false;
  const uploadHeights=(values,size)=>{
   gl.activeTexture(gl.TEXTURE0+6);gl.bindTexture(gl.TEXTURE_2D,heightTexture);
@@ -906,8 +927,12 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   }
   return hit;
  };
+ const packBlendHistory=packStatus.enabled?createNativePackBlendHistory():null;
  result.draw=({data,ranges,vp,epochs,zoom=80,shadow=false,eye=[0,200,0],lighting=defaultLighting,clipPlane=null,capture=false,actorMetadata=null,preparedSailMetadata=actorMetadata,civilizations=visualCivilizations,stoneThrowerWheels=null,hercBeamMuzzles=null})=>{
   const started=performance.now();let calls=0,triangles=0,querying=false;
+  // Reflection uses the main snapshot. Only the independent picture-in-picture
+  // capture must leave the main animation history alone.
+  const packBlendReady=packBlendHistory?.begin(actorMetadata,capture&&!clipPlane);
   const scaffoldDraws=[];
   const fenceDraws=[];
   let guidedRocketDraws=0;
@@ -934,6 +959,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   gl.uniform3fv(shader.u.uEye,eye);gl.uniform3fv(shader.u.uAmbientLight,lighting.ambient||DEFAULT_MODEL_LIGHTING.ambient);
   gl.uniform3fv(shader.u.uSunColor,lighting.sun||DEFAULT_MODEL_LIGHTING.sun);gl.uniform3fv(shader.u.uSunDirection,lighting.direction||DEFAULT_MODEL_LIGHTING.direction);
   gl.uniform3fv(shader.u.uSpecularLight,lighting.specular||lighting.sun||DEFAULT_MODEL_LIGHTING.sun);gl.uniform1i(shader.u.uNativeLighting,lighting.native?1:0);
+  if(packBlendHistory){gl.activeTexture(gl.TEXTURE0+8);gl.bindTexture(gl.TEXTURE_2D_ARRAY,emptyFrames);}
   gl.activeTexture(gl.TEXTURE0+6);gl.bindTexture(gl.TEXTURE_2D,heightTexture);gl.uniform1i(shader.u.uTerrainSize,heightSize);gl.uniform1i(shader.u.uTerrainEnabled,heightReady?1:0);
   let activeShader=shader,sailDiffuse=null;
   const collectStoneThrowerWheels=stoneThrowerWheels&&!shadow&&!capture&&!clipPlane;
@@ -993,7 +1019,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
       variant.farRequested=true;const near=variant;
       const presentation=near.presentationEntry;
       const request=presentation?verifiedModelJSON(near.farUrl,presentation.lodFarSha256,'Original Far unit model'):json(near.farUrl);
-      request.then(model=>augmentModel(model,presentation||{id:near.sourceId,assetKind:near.assetKind,epoch:near.epoch},'far')).then(async model=>({model,parts:await loadParts(model,near.assetKind===1,near.farUrl,presentation?.presentation?.teamManifest)})).then(({model,parts})=>{near.far={...near,parts,sourceVisual:sourceVisual(model,near.farUrl),pickBounds:resourceBounds(parts),sailComposite:model.nativeSailComposite,dynamicSailBinding:null,nativeCapture:model.nativeCapture,rallyTag:rallyTag(model),nativeTakeoff:model.nativeTakeoff,navalBasis:near.navalBasis&&navalBasisModel(model,near.sourceId),hercAttack:options.hercAttack?.acceptsModel(near.sourceId,model)??false};}).catch(e=>{result.errors.push(e.message);console.warn('Original-Fernmodell:',e);});
+      request.then(model=>augmentModel(model,presentation||{id:near.sourceId,assetKind:near.assetKind,epoch:near.epoch},'far')).then(async model=>({model,parts:await loadParts(model,near.assetKind===1,near.farUrl,presentation?.presentation?.teamManifest)})).then(({model,parts})=>{near.far={...near,parts,nativePackBlend:false,sourceVisual:sourceVisual(model,near.farUrl),pickBounds:resourceBounds(parts),sailComposite:model.nativeSailComposite,dynamicSailBinding:null,nativeCapture:model.nativeCapture,rallyTag:rallyTag(model),nativeTakeoff:model.nativeTakeoff,navalBasis:near.navalBasis&&navalBasisModel(model,near.sourceId),hercAttack:options.hercAttack?.acceptsModel(near.sourceId,model)??false};}).catch(e=>{result.errors.push(e.message);console.warn('Original-Fernmodell:',e);});
      }
      if(variant.far)variant=variant.far;
     }
@@ -1041,6 +1067,9 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     const animation=variant.parts.find(p=>p.animations?.[clip])?.animations?.[clip];
     const duration=animation?.duration||1;
     const phase=dedicatedPose?.phase??(timedAttack&&attackElapsed>=0?Math.min(1,attackElapsed/duration):((time/duration+seed)%1+1)%1);
+    const blend=packBlendReady&&matchingActor&&variant.nativePackBlend&&actor.pack&&animation
+      ? packBlendHistory.pose(actor,variant,{clip,once,phase,period:packPose?.once?actor.pack.duration:duration,span:duration,packPose})
+      : null;
     if(hercBeamMuzzles&&matchingActor&&variant.hercAttack)options.hercBeam?.capture(hercBeamMuzzles,actor,clip,phase);
     // Parts with authored visibility events batch only with actors in the same visible state.
     const hiddenParts=variant.hasClipVisibility?variant.parts.filter(part=>{
@@ -1055,11 +1084,12 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     const visibilityKey=hiddenParts?.length?':hidden:'+hiddenParts.map(part=>variant.parts.indexOf(part)).join(','):'';
     const shimmerKey=shimmer&&(shimmer.opacity!==1||shimmer.emissive!==0)?':shimmer:'+shimmer.opacity+':'+shimmer.emissive:'';
     const navalKey=navalBasis?':naval:'+actor.handle:'';
-    const preview=!!previewFlags,key=variantIndex+':'+team+':'+activity+':'+(far&&variant.farRequested?1:0)+':'+previewFlags+':'+clip+':'+once+(variant.houseLodKey===undefined?'':':house:'+variant.houseLodKey)+visibilityKey+shimmerKey+navalKey;
+    const blendKey=blend?':pack-blend:'+actor.handle:'';
+    const preview=!!previewFlags,key=variantIndex+':'+team+':'+activity+':'+(far&&variant.farRequested?1:0)+':'+previewFlags+':'+clip+':'+once+(variant.houseLodKey===undefined?'':':house:'+variant.houseLodKey)+visibilityKey+shimmerKey+navalKey+blendKey;
     if(collectStoneThrowerWheels&&!preview&&actor?.def===22&&epoch<2&&variant.stoneThrowerWheelClips?.has(clip)){
      stoneThrowerWheels.push({handle:actor.handle,clip,x:actor.renderX,y:actor.renderY,altitude:actor.renderAltitude});
     }
-    const group=groups.get(key)||{variant,team,activity,clip,once,preview,hiddenParts,shimmer:shimmerKey?shimmer:null,navalBasis,list:[],instanceIndices:[]};
+    const group=groups.get(key)||{variant,team,activity,clip,once,blend,preview,hiddenParts,shimmer:shimmerKey?shimmer:null,navalBasis,list:[],instanceIndices:[]};
     group.instanceIndices.push(i);
     const offset=group.list.length;for(let k=0;k<12;k++)group.list.push(data[i*12+k]);
     group.list[offset+3]+=variant.yawOffset;group.list[offset+9]=phase;
@@ -1078,7 +1108,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
      }
     }
    }
-   for(const {variant,team,list,activity,clip,once,preview,hiddenParts,shimmer,navalBasis,instanceIndices} of groups.values()){
+   for(const {variant,team,list,activity,clip,once,blend,preview,hiddenParts,shimmer,navalBasis,instanceIndices} of groups.values()){
     if(rememberPicks&&variant.assetKind===1&&variant.pickBounds)rememberResources(data,instanceIndices,variant,activity);
     selectShader(shader);gl.uniform1f(shader.u.uYOffset,variant.yOffset);
     gl.uniform3fv(shader.u.uOriginOffset,variant.originOffset);
@@ -1108,6 +1138,17 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
      gl.uniform1i(u.uFarmPlotConform,part.farmPlotOffset?1:0);gl.uniform3fv(u.uFarmPlotCenter,part.farmPlotOffset||[0,0,0]);
      const pose=part.pose(clip);gl.uniform1i(u.uAnimated,pose?1:0);
      const samples=part.animations?.[clip];
+     if(packBlendHistory&&activeShader===shader){
+      const outgoingSamples=blend&&part.animations?.[blend.outgoing.clip];
+      const outgoingPose=pose&&samples&&outgoingSamples?part.pose(blend.outgoing.clip):null;
+      const blendPart=outgoingPose&&outgoingPose.width===pose.width;
+      gl.uniform1i(u.uPackBlendActive,blendPart?1:0);
+      if(blendPart){
+       gl.activeTexture(gl.TEXTURE0+8);gl.bindTexture(gl.TEXTURE_2D_ARRAY,outgoingPose.texture);
+       gl.uniform1i(u.uPackOutgoingCount,outgoingPose.count);gl.uniform1i(u.uPackOutgoingOnce,blend.outgoing.once||outgoingSamples.loopIncludesEnd?1:0);
+       gl.uniform1f(u.uPackOutgoingPhase,blend.outgoing.phase);gl.uniform1f(u.uPackIncomingPhase,blend.incomingPhase);gl.uniform1f(u.uPackBlendWeight,blend.weight);
+      }
+     }
      gl.uniform1i(u.uAnimationOnce,samples&&(once||samples.loopIncludesEnd||(variant.priestClips||variant.spyClips)&&samples.endpointIncluded)?1:0);
      gl.activeTexture(gl.TEXTURE5);gl.bindTexture(gl.TEXTURE_2D_ARRAY,pose?.texture||emptyFrames);
      gl.uniform1i(u.uFrameWidth,pose?.width||1);gl.uniform1i(u.uFrameCount,pose?.count||1);
