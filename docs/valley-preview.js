@@ -1,5 +1,5 @@
 import {activeValleyGeometry} from './authored-view.js';
-import {loadAuthoredValleyTerrain} from './authored-terrain.js';
+import {loadAuthoredValleyTerrain} from './authored-terrain.js?v=valley-lightmap148';
 import {archiveForestBindings, archiveForestFrame} from './archive-forest.js';
 import {bindValleyWorld0,valleyWorld0Frame} from './archive-world0.js';
 import {loadOriginalModels} from './original-renderer.js?v=native36';
@@ -46,7 +46,7 @@ function supply(wasm, bytes, allocate) {
 }
 
 export async function loadValleyPreview({requested, authoredRequested, neutralRequested = false, requireAuthored = false,
-  manifest = null, wasm, gl, teams, read = readLocal, onUnavailable = () => {}}) {
+  manifest = null, wasm, gl, teams, lighting = null, read = readLocal, onUnavailable = () => {}}) {
   if (!requested || typeof wasm.valley39_commit !== 'function' || !globalThis.crypto?.subtle) return null;
   const checked = row => checkedAsset(read, row);
   const json = bytes => JSON.parse(new TextDecoder().decode(bytes));
@@ -75,7 +75,7 @@ export async function loadValleyPreview({requested, authoredRequested, neutralRe
       const bitmap = await createImageBitmap(new Blob([bytes], {type: 'image/png'}), {premultiplyAlpha: 'none', colorSpaceConversion: 'none'});
       return {bytes, bitmap};
     };
-    const ground = await loadAuthoredValleyTerrain(gl, geometry, terrain, readTexture);
+    const ground = await loadAuthoredValleyTerrain(gl, geometry, terrain, readTexture, lighting);
     const trees = await loadOriginalModels(gl, true, teams, undefined,
       {assetMapping, manifestURL: index.forest.url, initialSails: false, nativeLighting: false});
     if (trees.errors.length || trees.models.size !== forest.models.length) throw new Error('Valley-Waldgrafiken konnten nicht geladen werden.');

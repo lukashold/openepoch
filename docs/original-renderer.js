@@ -6,7 +6,7 @@ export {createRenderAssetMapping} from './original-render-namespace.js';
 import {DEFAULT_MODEL_LIGHTING,modelMaterial,alphaState,depthState} from './original-material.js?v=material1';
 import {nativeModelTransform} from './original-scale.js?v=native1';
 import {modelYearPhase,modelSeasonFrames,modelSeasonBinding} from './original-model-seasons.js?v=modelseason1';
-import {createNativeLightingContext,nativeModelPipeline} from './original-lighting.js?v=lighting6';
+import {createNativeLightingContext,nativeModelPipeline} from './original-lighting.js?v=valley-lightmap148';
 import {appendInitialSailParts,nativeInitialSailDiffuse} from './original-sail-composite.js?v=initialsail7';
 import {createDynamicSailBinding,createDynamicSailGPU,dynamicSailForces} from './original-dynamic-sails.js?v=native75-sails';
 import {appendNativePackAnimations,nativePackPose} from './original-pack-states.js?v=pack8';

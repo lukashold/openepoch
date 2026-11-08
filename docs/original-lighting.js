@@ -19,6 +19,7 @@ export function createNativeLightingContext(data,settings={}){
   // 006CD700/006CD6D0 return NiLight +E8/+F4 without the +E4 dimmer.
   // 006CD670 returns the normalized source ray, before our Y-up adapter.
   sourceAmbient:sourceRgb(row.sourceRGBA.ambient),sourceDiffuse:sourceRgb(row.sourceRGBA.diffuse),sourceDirection:sourceRay,
+  sourceTerrainDirection:unit(tod.sunDirectionSource.map(f)),
   terrain:data.terrain,fog:{rgba:row.sourceRGBA.fog.map(x=>f(x*factor)),start:row.fogStart,on:row.fogOn,intensity:row.fogIntensity}});
 }
 export function nativeModelPipeline(part,lighting){

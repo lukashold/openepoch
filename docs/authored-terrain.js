@@ -1,5 +1,7 @@
 import {authoredTerrainMesh} from './authored-view.js';
 import {authoredValleyBoundary} from './authored-boundary.js';
+import {buildAuthoredTerrainLightmap, SHADOW_BLOCK_SPAN, SHADOW_RESOLUTION} from './authored-terrain-shadow.js';
+import {nativeTerrainCoefficients} from './native-terrain-lighting.js';
 
 // Compact corner palette, exact source geometry and original terrain pixels.
 // This browser shader uses triangle interpolation for material edges. The
@@ -18,6 +20,10 @@ uniform highp sampler2DArray uMaterials;
 uniform sampler2D uCorners;
 uniform sampler2D uFog;
 uniform bool uBoundary;
+uniform bool uNativeLighting;
+uniform highp sampler2DArray uLightmap;
+uniform float uLightmapBlocksX;
+uniform vec3 uLightmapDiffuse, uLightmapAmbient;
 in vec3 vWorld;
 in vec3 vNormal;
 out vec4 outColor;
@@ -36,10 +42,19 @@ void main(){
  vec3 a=colour(cell,uv),d=colour(cell+ivec2(1,1),uv),land;
  if(pos.y>=pos.x){land=a*(1.0-pos.y)+colour(cell+ivec2(0,1),uv)*(pos.y-pos.x)+d*pos.x;}
  else{land=a*(1.0-pos.x)+colour(cell+ivec2(1,0),uv)*(pos.x-pos.y)+d*pos.y;}
- vec3 sun=normalize(vec3(.42,.82,.39));
- vec3 light=vec3(.55,.57,.59)+vec3(.53,.50,.43)*max(dot(normalize(vNormal),sun),0.0);
+ if(uNativeLighting){
+  vec2 block=floor(xy/${SHADOW_BLOCK_SPAN}.0);
+  vec2 blockUV=(xy-block*${SHADOW_BLOCK_SPAN}.0)*((1.-1./${SHADOW_RESOLUTION}.0)/${SHADOW_BLOCK_SPAN}.0)+vec2(.5/${SHADOW_RESOLUTION}.0);
+  float mask=texture(uLightmap,vec3(blockUV,block.x+block.y*uLightmapBlocksX)).r;
+  vec3 stage0=clamp(2.*mask*uLightmapDiffuse,0.,1.);
+  vec3 stage1=clamp(stage0+uLightmapAmbient,0.,1.);
+  land=clamp(2.*land*stage1,0.,1.);
+ }else{
+  vec3 sun=normalize(vec3(.42,.82,.39));
+  land*=vec3(.55,.57,.59)+vec3(.53,.50,.43)*max(dot(normalize(vNormal),sun),0.0);
+ }
  float reveal=smoothstep(.02,.45,fog)*mix(.5,1.0,smoothstep(.55,.95,fog));
- outColor=vec4(land*light*reveal,1.0);
+ outColor=vec4(land*reveal,1.0);
 }
 `;
 
@@ -84,7 +99,7 @@ function program(gl) {
 
 const hex = bytes => Array.from(new Uint8Array(bytes), n => n.toString(16).padStart(2, '0')).join('');
 
-export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readTexture) {
+export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readTexture, lighting = null) {
   const corners = valleyTerrainCornerTexture(geometry, manifest);
   const {vertices, indices} = authoredTerrainMesh(geometry);
   const boundary = authoredValleyBoundary(geometry);
@@ -96,7 +111,9 @@ export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readText
   }));
   const shader = program(gl);
   const uniform = name => gl.getUniformLocation(shader, name);
-  const uniforms = [uniform('uVP'), uniform('uMaterials'), uniform('uCorners'), uniform('uFog')];
+  const uniforms = [uniform('uVP'), uniform('uMaterials'), uniform('uCorners'), uniform('uFog'), uniform('uLightmap')];
+  const uNativeLighting = uniform('uNativeLighting'), uBlocksX = uniform('uLightmapBlocksX');
+  const uDiffuse = uniform('uLightmapDiffuse'), uAmbient = uniform('uLightmapAmbient');
   const uBoundary = uniform('uBoundary');
   const vao = gl.createVertexArray();
   gl.bindVertexArray(vao);
@@ -136,13 +153,34 @@ export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readText
   for (const axis of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, axis, gl.CLAMP_TO_EDGE);
   for (const mode of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, mode, gl.NEAREST);
 
+  const lightmap = lighting?.native && lighting.climate === 'Temperate' && lighting.sourceTerrainDirection
+    ? buildAuthoredTerrainLightmap(geometry, lighting.sourceTerrainDirection) : null;
+  const coefficients = lightmap && nativeTerrainCoefficients(lighting);
+  const lightmapTexture = lightmap ? gl.createTexture() : layerTexture;
+  if (lightmap) {
+    gl.activeTexture(gl.TEXTURE0 + 3);
+    gl.bindTexture(gl.TEXTURE_2D_ARRAY, lightmapTexture);
+    gl.texImage3D(gl.TEXTURE_2D_ARRAY, 0, gl.R8, SHADOW_RESOLUTION, SHADOW_RESOLUTION, lightmap.layers,
+      0, gl.RED, gl.UNSIGNED_BYTE, lightmap.data);
+    for (const axis of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D_ARRAY, axis, gl.CLAMP_TO_EDGE);
+    for (const mode of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D_ARRAY, mode, gl.LINEAR);
+  }
+  const diffuse = coefficients?.diffuseBytes.map(value => value / 255);
+  const ambient = coefficients?.ambientBytes.map(value => value / 255);
   return {
     indexCount: indices.length,
     draw(vp, fogTexture) {
       gl.useProgram(shader);
       gl.uniform1i(uBoundary, 0);
+      gl.uniform1i(uNativeLighting, lightmap ? 1 : 0);
+      if (lightmap) {
+        gl.uniform1f(uBlocksX, lightmap.blocksX);
+        gl.uniform3fv(uDiffuse, diffuse);
+        gl.uniform3fv(uAmbient, ambient);
+      }
       gl.uniformMatrix4fv(uniforms[0], false, vp);
-      for (const [unit, target, texture] of [[0, gl.TEXTURE_2D_ARRAY, layerTexture], [1, gl.TEXTURE_2D, cornerTexture], [2, gl.TEXTURE_2D, fogTexture]]) {
+      for (const [unit, target, texture] of [[0, gl.TEXTURE_2D_ARRAY, layerTexture], [1, gl.TEXTURE_2D, cornerTexture],
+        [2, gl.TEXTURE_2D, fogTexture], [3, gl.TEXTURE_2D_ARRAY, lightmapTexture]]) {
         gl.activeTexture(gl.TEXTURE0 + unit);
         gl.bindTexture(target, texture);
         gl.uniform1i(uniforms[unit + 1], unit);

@@ -22,7 +22,7 @@ import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regi
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native66';
-import {loadOriginalModels} from './original-renderer.js?v=pack-clock131';
+import {loadOriginalModels} from './original-renderer.js?v=valley-lightmap148';
 import {loadOriginalBoatWake,readNavalWakeActors} from './original-boat-wake.js?v=native78-wake83';
 import {loadKingOfTheHillPresentation} from './original-koth.js?v=native64-koth';
 import {loadWonderPresentation} from './original-wonders.js?v=native63';
@@ -103,7 +103,7 @@ import {addCarrierFlightAudio,loadAirFlightAudio,readAirFlightAudio,submarineMov
 import {loadFullmapCityNameCatalog,loadFullmapTerritoryNameCatalog} from './fullmap-territory-names.js?v=native22';
 import {createWarplanPeer,WARPLAN_PEER_VERSION} from './original-warplan-peer.js';
 import {activeValleyGeometry,initialValleyViews,pickValleyGround,valleyMinimapPoint,valleyMinimapSnapshot} from './authored-view.js';
-import {installedValleyManifest,loadValleyPreview,valleySaveLocator} from './valley-preview.js?v=clearance136';
+import {installedValleyManifest,loadValleyPreview,valleySaveLocator} from './valley-preview.js?v=valley-lightmap148';
 
 const $ = id => document.getElementById(id);
 const canvas = $('gl');
@@ -819,7 +819,7 @@ if(originalEnabled&&(!originalAssets.enabled||originalModels.available.size<67))
 }
 const valleyPreview=await loadValleyPreview({requested:valleyRequested&&originalEnabled,
   authoredRequested:valleyMode==='archive-qa'||valleyNeutralRequested,neutralRequested:valleyNeutralRequested,
-  requireAuthored:valleyNormal,manifest:valleyManifest,wasm,gl,teams:TEAM,
+  requireAuthored:valleyNormal,manifest:valleyManifest,wasm,gl,teams:TEAM,lighting:originalModels.lighting,
   onUnavailable:error=>console.warn('Valley-Vorschau:',error.message)});
 $('valley-preview-menu').hidden=!valleyPreview;
 const valleyMapChoice=$('valley-map-choice');
