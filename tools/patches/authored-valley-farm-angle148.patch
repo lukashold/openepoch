@@ -1,0 +1,79 @@
+diff --git a/src/lib.rs b/src/lib.rs
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -2038,6 +2038,18 @@
+ }
+ #[cfg(feature = "ee2-valley74-city-footprint")]
+ #[no_mangle]
++pub extern "C" fn valley_farm_cursor_force_rotation(step: f32) -> u32 {
++    if valley_farm_cursor_available() == 0 || !(-8.0..=8.0).contains(&step) { return 1; }
++    g().valley_farm_cursor_force_rotation(step)
++}
++#[cfg(feature = "ee2-valley74-city-footprint")]
++#[no_mangle]
++pub extern "C" fn valley_farm_cursor_validation_revision() -> u32 {
++    if valley_farm_cursor_available() == 0 { return 0; }
++    g().valley_farm_cursor_validation_revision()
++}
++#[cfg(feature = "ee2-valley74-city-footprint")]
++#[no_mangle]
+ pub extern "C" fn valley_farm_cursor_component(field: u32) -> f32 {
+     if valley_farm_cursor_available() == 0 { return f32::NAN; }
+     g().valley_farm_cursor_component(field)
+diff --git a/src/native_valley37/farm_cursor147.rs b/src/native_valley37/farm_cursor147.rs
+--- a/src/native_valley37/farm_cursor147.rs
++++ b/src/native_valley37/farm_cursor147.rs
+@@ -37,11 +37,12 @@
+     yaw: f32,
+     requested: Option<[f32; 3]>,
+     resolved: Option<FarmPose>,
++    validation_revision: u32,
+ }
+ 
+ impl Default for FarmCursor {
+     fn default() -> Self {
+-        Self { yaw: INITIAL, requested: None, resolved: None }
++        Self { yaw: INITIAL, requested: None, resolved: None, validation_revision: 0 }
+     }
+ }
+ 
+@@ -123,6 +124,10 @@
+         }
+     }
+ 
++    pub(crate) fn valley_farm_cursor_validation_revision(&self) -> u32 {
++        self.valley_farm_cursor.validation_revision
++    }
++
+     fn valley_farm_resolve(&mut self, origin: [f32; 2]) {
+         let Some(world) = self.map.source_world.as_ref() else { return; };
+         let yaw = self.valley_farm_cursor.yaw;
+@@ -138,6 +143,10 @@
+             let dy = f64::from(p[1]) - f64::from(y);
+             dx*dx + dy*dy < 0.5
+         }).unwrap_or(next);
++        let cursor = &mut self.valley_farm_cursor;
++        if cursor.requested != Some(requested) || cursor.resolved.is_none_or(|pose| pose.yaw != yaw) {
++            cursor.validation_revision = cursor.validation_revision.wrapping_add(1);
++        }
+         self.valley_farm_cursor.requested = Some(requested);
+         let direct = FarmPose { xyz: requested, yaw };
+         let mut resolved = direct;
+@@ -166,11 +175,15 @@
+     }
+ 
+     pub(crate) fn valley_farm_cursor_rotate(&mut self, direction: i32, mode: u32) -> u32 {
+-        let Some(pose) = self.valley_farm_cursor_pose() else { return 1; };
+         let Some(&step) = STEPS.get(mode as usize) else { return 1; };
+         if !matches!(direction, -1 | 1) { return 1; }
++        self.valley_farm_cursor_force_rotation(-(direction as f32) * step)
++    }
++
++    pub(crate) fn valley_farm_cursor_force_rotation(&mut self, step: f32) -> u32 {
++        let Some(pose) = self.valley_farm_cursor_pose() else { return 1; };
+         let period = f64::from(PERIOD);
+-        let yaw = f64::from(pose.yaw) + f64::from(direction) * f64::from(step);
++        let yaw = f64::from(pose.yaw) - f64::from(step);
+         self.valley_farm_cursor.yaw = yaw.rem_euclid(period) as f32;
+         self.valley_farm_resolve([pose.xyz[0],pose.xyz[1]]);
+         self.valley_farm_cursor_error()

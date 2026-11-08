@@ -73,6 +73,7 @@ import {bindCapitolsMenu,readCapitolHud} from './capitols-menu.js?v=native66';
 import {capitolFeedback,loadCapitolFeedback} from './capitol-feedback.js?v=native67';
 import {bindKothMenu,formatKothStatus} from './koth-menu.js?v=native64-koth';
 import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=farm-cursor147';
+import {createFarmAngleMemory,FARM_INITIAL_YAW} from './farm-angle-memory.js?v=farm-angle148';
 import {updateOriginalCamera,originalCameraRay,originalFractionForZoom,normalizeOriginalHeading,rotateOriginalCameraHeading} from './original-camera.js?v=heading2';
 import {updateAuthoredCamera} from './authored-camera-axis.js';
 import {createFullmap} from './fullmap.js?v=native77';
@@ -188,7 +189,7 @@ const valleyRequested=rulesProfile.id==='up15'&&(!!valleyManifest||['1','archive
 try{
   if(valleyRequested){
     const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley76_commit','valley71_force_attack_at','valley71_neutral_opening','configure_late_population']:rulesProfile.requiredExports;
-    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=farm-cursor147-valley'};
+    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=farm-angle148-valley'};
     try{wasm=await loadRulesWasm(previewRules,import.meta.url);}catch{/* The ordinary ruleset remains available. */}
   }
   wasm??=await loadRulesWasm(rulesProfile,import.meta.url);
@@ -1019,10 +1020,10 @@ function viewRect() {
 
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.style.opacity = 1; clearTimeout(toast.h); toast.h = setTimeout(() => t.style.opacity = 0, 2200); }
 const buildingControls=createBuildingControls({rotate:rotateBuilding,cancel:cancelBuilding,automatic(){if(ghost){ghost.manual=false;placementKey='';updatePlacement();}}});
-function cancelBuilding(){ghost=null;placementKey='';buildingControls.hide();delete canvas.dataset.placement;canvas.style.cursor='default';}
-const FARM_INITIAL_YAW=-0.7853981852531433;
+const farmAngleMemory=createFarmAngleMemory();
+function cancelBuilding(){farmAngleMemory.close();ghost=null;placementKey='';buildingControls.hide();delete canvas.dataset.placement;canvas.style.cursor='default';}
 
-function farmCursorPose(overMap=mouse.inside&&document.elementFromPoint(mouse.x,mouse.y)===canvas){
+function farmCursorPose(overMap=mouse.inside&&document.elementFromPoint(mouse.x,mouse.y)===canvas,now=performance.now()){
   if(!overMap)return null;
   const raw=toWorld(mouse.x,mouse.y);
   if(!raw)return null;
@@ -1031,7 +1032,10 @@ function farmCursorPose(overMap=mouse.inside&&document.elementFromPoint(mouse.x,
     ghost.pick=[x,y];
     wasm.valley_farm_cursor_pointer(x,y);
   }
-  return [0,1,2,3].map(field=>wasm.valley_farm_cursor_component(field));
+  const pose=[0,1,2,3].map(field=>wasm.valley_farm_cursor_component(field));
+  if(wasm.valley_farm_cursor_validation_revision)
+    farmAngleMemory.observe(pose[3],wasm.valley_farm_cursor_validation_revision(),wasm.sim_elapsed_seconds(),now);
+  return pose;
 }
 
 function rotateBuilding(direction,fine=false){
@@ -1439,6 +1443,7 @@ function begin(tempo = null, useSourceClock = wasm.sim_clock_active?.() === 1, a
   fullmap?.warplans.reset();
   fullmap?.invalidate();
   saveSession=Date.now();
+  farmAngleMemory.reset();
   ghost = null; attackMode = false; paused = false; acc = 0; fogTick = -1; actSig = '@refresh'; worstMs = 0; ui = null;
   crownProgress?.close();
   pauseReasons.clear();
@@ -2176,7 +2181,14 @@ function frame(now) {
 
   const [x0, y0, x1, y1] = viewRect();
   let gid = -1, gx = 0, gy = 0;
-  const farmPose=ghost?.nativeFarm?farmCursorPose():null;
+  let farmPose=ghost?.nativeFarm?farmCursorPose(undefined,now):null;
+  if(farmPose&&wasm.valley_farm_cursor_force_rotation){
+    const step=farmAngleMemory.input(keys.has('Control'),now);
+    if(step!==null){
+      wasm.valley_farm_cursor_force_rotation(step);
+      farmPose=farmCursorPose(undefined,now);
+    }
+  }
   const ghostAt=ghost&&!ghost.nativeFarm?ghostTile():null;
   if (ghostAt) { gid = ghost.id; [gx, gy] = ghostAt; }
   updatePlacement(now,farmPose);
@@ -2662,7 +2674,10 @@ function doAct(i, count=1) {
     activeTargetOrder()?.cancel();
     const nativeFarm=a.id===2&&wasm.valley_farm_cursor_available?.()===1;
     ghost={id:a.id,size:a.size,name:label(a.name,a.id),turn:0,manual:false,nativeFarm};
-    if(nativeFarm)wasm.valley_farm_cursor_reset(FARM_INITIAL_YAW);
+    if(nativeFarm){
+      farmAngleMemory.open(a.id);
+      wasm.valley_farm_cursor_reset(FARM_INITIAL_YAW);
+    }else farmAngleMemory.close();
     placementKey='';attackMode=false;sfx.play(20);updatePlacement();return;
   }
   if (a.k === 'u') { wasm.cmd_unload(); sfx.play(22); return; }
@@ -3063,6 +3078,7 @@ addEventListener('keydown', e => {
     if(!e.repeat){
       const direction=e.code==='Comma'||(ghost.nativeFarm&&e.key==='Control')?-1:1;
       const fine=ghost.nativeFarm&&e.key==='Control'?e.altKey:e.shiftKey;
+      if(ghost.nativeFarm&&e.key==='Control')farmAngleMemory.controlPressed();
       rotateBuilding(direction,fine);
     }
     return;
