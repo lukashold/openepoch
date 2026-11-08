@@ -194,6 +194,14 @@ impl Game {
         self.capitols.map_or(0, |rule| u32::from(rule.mode) | (u32::from(rule.minutes) << 8) | (u32::from(rule.sole) << 16))
     }
 
+    pub(crate) fn territory_capitol_protected(&self, territory: u32) -> bool {
+        // 0071B650 resolves each registered Capitol's current territory, even after capture.
+        self.capitols.is_some_and(|rule| rule.city.iter().filter_map(|&handle| self.get(handle)).any(|index| {
+            let city = &self.ents[index];
+            u32::from(self.map.terr[tile_of(city.x, city.y)]) == territory
+        }))
+    }
+
     pub(crate) fn capitol_capture_owner(&self, handle: u32, capturer: u8) -> u8 {
         let Some(seat) = self.capitols.filter(|rule| rule.mode == 6)
             .and_then(|rule| rule.claimed_seat(handle)) else { return capturer; };

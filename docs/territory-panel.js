@@ -81,7 +81,7 @@ export function territoryPanel({wasm,referenceMode=false,onOrder,onRefresh,onFoc
  giveFocus.onclick=()=>{const territory=selectedGive();if(territory)onFocus(territory);};wantFocus.onclick=()=>{const territory=selectedWant();if(territory)onFocus(territory);};
  give.onchange=want.onchange=()=>{clearReview();status.textContent='';dirty=true;refresh(ui,target);};
  canvas.onclick=event=>{if(!data())return;const rect=canvas.getBoundingClientRect(),x=(event.clientX-rect.left)/rect.width*SIZE,y=(event.clientY-rect.top)/rect.height*SIZE,id=wasm.territory_at(x,y),territory=area(id);if(!territory?.known){status.textContent='Erkunde dieses Gebiet zuerst.';return;}
-  inspectSelect.value=String(id);if(territory.owner===data().local)give.value=String(id);else if(territory.owner===target)want.value=String(id);clearReview();status.textContent='';dirty=true;refresh(ui,target);
+  inspectSelect.value=String(id);if(!territory.capitolProtected){if(territory.owner===data().local)give.value=String(id);else if(territory.owner===target)want.value=String(id);}clearReview();status.textContent=territory.capitolProtected?territory.reason:'';dirty=true;refresh(ui,target);
  };
  function draw(){
   if(pane.hidden||!data()||!ctx)return;const now=performance.now();if(!dirty&&now-lastMap<400)return;lastMap=now;dirty=false;
@@ -94,7 +94,7 @@ export function territoryPanel({wasm,referenceMode=false,onOrder,onRefresh,onFoc
  function refresh(next,nextTarget){
   ui=next;const d=data();if(!d?.territories)return;const p=d.players.find(player=>player.team===nextTarget);
   if(target!==nextTarget){target=nextTarget;selectionKey='';clearReview();status.textContent='';dirty=true;}
-  const own=d.territories.filter(territory=>territory.owner===d.local),theirs=d.territories.filter(territory=>territory.owner===target),key=JSON.stringify([own,theirs].map(list=>list.map(territory=>[territory.id,territory.name,territory.buildings,territory.countsComplete])));
+  const own=d.territories.filter(territory=>territory.owner===d.local&&!territory.capitolProtected),theirs=d.territories.filter(territory=>territory.owner===target&&!territory.capitolProtected),protectedOwn=d.territories.find(territory=>territory.owner===d.local&&territory.capitolProtected),key=JSON.stringify([own,theirs].map(list=>list.map(territory=>[territory.id,territory.name,territory.buildings,territory.countsComplete])));
   if(selectionKey!==key){selectionKey=key;replaceOptions(give,own);replaceOptions(want,theirs);dirty=true;}
   const a=selectedGive(),b=selectedWant();
   const known=d.territories.filter(territory=>territory.known),inspected=inspectSelect.value;
@@ -104,15 +104,16 @@ export function territoryPanel({wasm,referenceMode=false,onOrder,onRefresh,onFoc
   }
   const inspectedArea=area(+inspectSelect.value);inspectFocus.disabled=!inspectedArea?.known;
   inspectText.textContent=referenceMode?territoryClaimMessage(inspectedArea):!inspectedArea?.known?'Erkunde dieses Gebiet zuerst.':inspectedArea.owner===d.local?'Dieses Gebiet gehört dir.':inspectedArea.owner===255?'Freies Gebiet: Ein eigenes Stadtzentrum beansprucht es.':`Dieses Gebiet gehört Spieler ${inspectedArea.owner+1}.`;
+  if(inspectedArea?.capitolProtected)inspectText.textContent+=` ${inspectedArea.reason}.`;
   inspectCounts.hidden=!referenceMode||!inspectedArea?.known||!(inspectedArea.townCenters||inspectedArea.fortresses);
   inspectCounts.textContent=`Eigene Stadtzentren: ${inspectedArea?.townCenters||0} · Eigene Festungen: ${inspectedArea?.fortresses||0} / 2`;
   if(reviewed&&(!p?.alive||!a?.canGive||reviewed.id!==a.id||reviewed.target!==target))clearReview();
   if(reviewed)renderReview(a);
   const hostile=p?.relation===0||p?.theirRelation===0;
-  gift.disabled=!p?.alive||!a?.canGive;trade.disabled=!p?.alive||hostile||!a||!b||a.transferable===false||b.transferable===false||!!p.territoryOutgoing||p.territoryCooldown>0;accept.disabled=!p?.alive||hostile;
+  gift.disabled=!p?.alive||!a?.canGive;trade.disabled=!p?.alive||hostile||!a||!b||a.transferable===false||b.transferable===false||!!p.territoryOutgoing||p.territoryCooldown>0;accept.disabled=!p?.alive||hostile||!!p.territoryIncoming?.capitolProtected;
   giveFocus.disabled=!a;wantFocus.disabled=!b;
   wantSummary.textContent=b?`${b.countsComplete===false?'Sichtbare Mitgabe':'Mitgabe'}: ${tributeSummary(b)}.${b.countsComplete===false?' Weitere Objekte können noch unbekannt sein.':''}`:'';
-  counts.textContent=a?`${a.name} · Mitgabe: ${tributeSummary(a)}.`:'Du besitzt derzeit kein Territorium.';
+  counts.textContent=a?`${a.name} · Mitgabe: ${tributeSummary(a)}.`:protectedOwn?protectedOwn.reason:'Du besitzt derzeit kein Territorium.';
   policy.textContent=d.territoryPolicy||'Die eigenen Gebäude im Gebiet gehören zur Übergabe.';
   reason.textContent=a?.reason||(hostile?'Für einen Tausch zuerst gegenseitigen Frieden schließen.':!b?'Kein bekanntes Gebiet dieses Spielers für einen Tausch. Erkunde seine Gebiete zuerst.':p?.territoryCooldown>0?`Neues Tauschangebot in ${Math.ceil(p.territoryCooldown)} Sek.`:'Beide Seiten stimmen einem Tausch zu, bevor sich der Besitzer ändert.');
   const risks=[];if(a?.lastTerritory)risks.push('Beim Verschenken deines letzten Gebiets enden Bündnisse; ohne eigene Gebäude verlierst du.');if(p?.alive&&(p.relation===0||p.theirRelation===0))risks.push('Ein Geschenk an diesen Feind ist sofort wirksam.');warning.hidden=!risks.length;warning.textContent=risks.join(' ');

@@ -291,6 +291,18 @@ impl Game {
                     e.team == team && self.valid_territory_anchor(e, id as usize)
                 })
     }
+    #[cfg(not(feature = "ee2-native13"))]
+    fn territory_capitol_protected(&self, _id: u32) -> bool { false }
+
+    fn territory_transferable(&self, team: u8, id: u32) -> bool {
+        self.territory_owned(team, id) && !self.territory_capitol_protected(id)
+    }
+
+    fn territory_offer_protected(&self, offer: TerritoryOffer) -> bool {
+        self.territory_capitol_protected(u32::from(offer.give))
+            || self.territory_capitol_protected(u32::from(offer.want))
+    }
+
     pub fn territory_counts(&self, id: usize, owner: u8) -> [u32; 3] {
         self.territory_count_sets(id, owner, false).0
     }
@@ -358,20 +370,21 @@ impl Game {
         let i = from as usize * 4 + to as usize;
         let j = to as usize * 4 + from as usize;
         match action {
-            0 => want == NONE && self.territory_owned(from, give),
+            0 => want == NONE && self.territory_transferable(from, give),
             1 => {
                 !self.territory.offers[i].active
                     && self.diplomacy_cooldown_seconds(self.territory.offers[i].cooldown, self.diplomacy.clock.territory[i]) == 0.0
                     && !self.hostile(from, to)
                     && !self.hostile(to, from)
                     && give != want
-                    && self.territory_owned(from, give)
-                    && self.territory_owned(to, want)
+                    && self.territory_transferable(from, give)
+                    && self.territory_transferable(to, want)
             }
             2 => {
                 give == NONE
                     && want == NONE
                     && self.territory_offer_valid(to, from, self.territory.offers[j])
+                    && !self.territory_offer_protected(self.territory.offers[j])
             }
             3 => give == NONE && want == NONE && self.territory.offers[j].active,
             4 => give == NONE && want == NONE && self.territory.offers[i].active,
@@ -569,7 +582,7 @@ impl Game {
                 } else {
                     0
                 };
-                if reason != 0 {
+                if reason != 0 || self.territory_offer_protected(o) {
                     self.territory.offers[i].active = false;
                     self.territory_event(
                         a as u8,
@@ -646,10 +659,11 @@ impl Game {
                 let expires = self.diplomacy_proposal_seconds(o.tick, self.diplomacy.clock.territory[i]);
                 let _ = write!(
                     s,
-                    "{{\"give\":{},\"want\":{},\"expires\":{:.1}}}",
+                    "{{\"give\":{},\"want\":{},\"expires\":{:.1}{}}}",
                     o.give,
                     o.want,
-                    expires
+                    expires,
+                    if self.territory_offer_protected(o) { ",\"capitolProtected\":true" } else { "" }
                 );
             } else {
                 s.push_str("null");
@@ -694,7 +708,8 @@ impl Game {
             let transferable = seen
                 && actual != TERR_NONE
                 && self.territory_living(actual)
-                && self.territory_owned(actual, id as u32);
+                && self.territory_transferable(actual, id as u32);
+            let capitol = seen && self.territory_capitol_protected(id as u32);
             #[cfg(feature = "ee2-native13")]
             let hill = self.koth_territory().is_some_and(|(territory, _)| territory == id);
             #[cfg(not(feature = "ee2-native13"))]
@@ -703,6 +718,8 @@ impl Game {
                 "Gebiet noch nicht erkundet"
             } else if hill {
                 "Der Hügel kann nur erobert werden"
+            } else if capitol {
+                "Ein Kapitolgebiet kann nur erobert werden"
             } else if actual == TERR_NONE {
                 "Kein Besitzer"
             } else if !transferable {
@@ -714,7 +731,7 @@ impl Game {
             let control=if seen {self.territory_control_counts(self.local,id)}else{[0;4]};
             let claim_status=if seen {self.territory_claim_status(self.local,id)}else{0};
             let adjacent=seen&&self.territory_adjacent_owned(self.local,id);
-            let _=write!(s,"{}{{\"id\":{},\"name\":\"Territorium {}\",\"owner\":{},\"x\":{:.2},\"y\":{:.2},\"known\":{},\"canGive\":{},\"transferable\":{},\"reason\":\"{}\",\"buildings\":{},\"units\":{},\"garrison\":{},\"tributeBuildings\":{},\"tributeUnits\":{},\"tributeGarrison\":{},\"countsComplete\":{},\"lastTerritory\":{},\"claimStatus\":{},\"adjacent\":{},\"townCenters\":{},\"fortresses\":{},\"eligibleTownCenters\":{},\"eligibleFortresses\":{}}}",if id>0{","}else{""},id,id+1,owner,x,y,seen,transferable&&actual==self.local,transferable,reason,counts[0],counts[1],counts[2],tribute[0],tribute[1],tribute[2],complete,seen&&actual!=TERR_NONE&&self.players.get(actual as usize).map_or(false,|p|p.terr<=1),claim_status,adjacent,control[0],control[1],control[2],control[3]);
+            let _=write!(s,"{}{{\"id\":{},\"name\":\"Territorium {}\",\"owner\":{},\"x\":{:.2},\"y\":{:.2},\"known\":{},\"canGive\":{},\"transferable\":{},\"reason\":\"{}\",\"buildings\":{},\"units\":{},\"garrison\":{},\"tributeBuildings\":{},\"tributeUnits\":{},\"tributeGarrison\":{},\"countsComplete\":{},\"lastTerritory\":{},\"claimStatus\":{},\"adjacent\":{},\"townCenters\":{},\"fortresses\":{},\"eligibleTownCenters\":{},\"eligibleFortresses\":{}{}}}",if id>0{","}else{""},id,id+1,owner,x,y,seen,transferable&&actual==self.local,transferable,reason,counts[0],counts[1],counts[2],tribute[0],tribute[1],tribute[2],complete,seen&&actual!=TERR_NONE&&self.players.get(actual as usize).map_or(false,|p|p.terr<=1),claim_status,adjacent,control[0],control[1],control[2],control[3],if capitol { ",\"capitolProtected\":true" } else { "" });
         }
         s.push(']');
     }
@@ -941,6 +958,59 @@ mod tests {
         assert!(g.apply_diplomacy(0, 1, 0, 0, 0.0));
         assert!(g.apply_diplomacy(1, 0, 3, 0, 0.0));
     }
+
+    #[cfg(feature = "ee2-native13")]
+    #[test]
+    fn registered_capitol_territory_is_excluded_from_both_tribute_legs() {
+        for mode in [5, 6] {
+            let mut game = Game::new(7, 1, 0, 1, 0);
+            assert!(game.configure_match_capitols(0xee81, 500, 2, 0, 0, mode, 2, 0));
+            game.players[1].ai = false;
+            let home = [region(&game, 0), region(&game, 1)].map(u32::from);
+            let mut expansion = [0; 2];
+            for seat in 0..2 {
+                let (id, &(x, y)) = game.map.tseeds.iter().enumerate()
+                    .find(|&(id, _)| game.towner[id] == TERR_NONE).unwrap();
+                game.spawn(TC, seat, x, y);
+                game.spawn(FORTRESS, seat, x + 2.0, y);
+                game.build_grid();
+                assert!(game.territory_transferable(seat, id as u32));
+                expansion[usize::from(seat)] = id as u32;
+            }
+            peace(&mut game);
+            let mut ui = String::new();
+            game.append_territory_ui(&mut ui);
+            assert!(ui.contains("\"capitolProtected\":true"));
+            let before = game.state_hash();
+            assert!(!game.apply_territory(0, 1, 0, home[0], NONE));
+            assert!(!game.apply_territory(0, 1, 1, home[0], expansion[1]));
+            assert!(!game.apply_territory(0, 1, 1, expansion[0], home[1]));
+            assert_eq!(game.state_hash(), before);
+
+            // An offer produced by the older rules can still be restored byte for byte.
+            game.territory.offers[1] = TerritoryOffer {
+                active: true, give: expansion[0] as u8, want: home[1] as u8,
+                tick: game.tick, cooldown: game.tick.saturating_add(100),
+            };
+            game.save();
+            let mut restored = Game::load(&game.savebuf).expect("older active Capitol offer");
+            restored.save();
+            assert_eq!(game.savebuf, restored.savebuf);
+            assert!(!restored.apply_territory(1, 0, 2, NONE, NONE));
+            restored.prune_territory_offers();
+            assert!(!restored.territory.offers[1].active);
+            assert_eq!(restored.towner[home[1] as usize], 1);
+
+            game.territory.offers[1] = TerritoryOffer::default();
+            assert!(game.apply_territory(0, 1, 1, expansion[0], expansion[1]));
+            assert!(game.apply_territory(1, 0, 2, NONE, NONE));
+            assert_eq!(game.towner[expansion[0] as usize], 1);
+            assert_eq!(game.towner[expansion[1] as usize], 0);
+            assert_eq!(game.capitol_status(3, 0), 0);
+            assert_eq!(game.capitol_status(3, 1), 1);
+        }
+    }
+
     #[test]
     fn gift_is_permanent_transfers_only_owner_objects_and_cancels_paid_queues() {
         let mut g = humans();
