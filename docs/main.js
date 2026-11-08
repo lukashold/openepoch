@@ -11,7 +11,7 @@ import { diplomacyPanel } from './diplomacy.js?v=border107';
 import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=border107';
 import {loadNativeFontUI} from './original-font-ui.js?v=native21names';
 import {territoryClaimMessage} from './territory-help.js?v=native64-koth';
-import * as sfx from './audio.js?v=native106';
+import * as sfx from './audio.js?v=native112voice';
 import {liveGeneratedAmbientCoverage,loadOriginalAmbient,originalAmbientPriorities} from './original-ambient.js?v=native106';
 import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=citizen9';
 import {mountOriginalShellVideo} from './original-shell-video.js?v=native12';
@@ -57,7 +57,7 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {NATIVE_SEASON_CHOICE,normalizeSeasonChoice,resolveSeasonChoice} from './original-seasons.js?v=native108';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=native108';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native81';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native82';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
@@ -186,7 +186,7 @@ const valleyRequested=rulesProfile.id==='up15'&&(!!valleyManifest||['1','archive
 try{
   if(valleyRequested){
     const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley75_commit','valley71_force_attack_at','valley71_neutral_opening']:rulesProfile.requiredExports;
-    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native81-valley'};
+    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native82-valley'};
     try{wasm=await loadRulesWasm(previewRules,import.meta.url);}catch{/* The ordinary ruleset remains available. */}
   }
   wasm??=await loadRulesWasm(rulesProfile,import.meta.url);
@@ -2617,7 +2617,7 @@ mini.addEventListener('mousedown', e => {
   if(e.button===2&&(tradeRoute?.cancel()||activeTargetOrder()?.cancel()))return;
   const point=miniWorld(e);if(!point)return;
   const [x,y]=point;
-  if (e.button === 2) { wasm.cmd_context(x, y, 0); if (!selectedUnitVoice('order')) sfx.play(22); } else { cam.x = x; cam.y = y; mini.dragging = true; }
+  if (e.button === 2) { const attack=submitContextOrder(x,y); if (!selectedUnitVoice('order',attack)) sfx.play(22); } else { cam.x = x; cam.y = y; mini.dragging = true; }
 });
 addEventListener('mousemove',e=>{if(!modalOpen()&&mini.dragging){const point=miniWorld(e);if(point)[cam.x,cam.y]=point;}});
 addEventListener('mouseup', () => mini.dragging = false);
@@ -2712,8 +2712,8 @@ canvas.addEventListener('mousedown', e => {
         else if(kind===8||kind===9){toast(kind===8?'Öl benötigt einen Bohrturm mit einquartierten Bürgern.':'Uran benötigt eine Uranmine mit einquartierten Bürgern.');return;}
       }
     }
-    wasm.cmd_context(target?.[0]??wx, target?.[1]??wy, 0);
-    if (!selectedUnitVoice('order') && ui && ui.sel.n) sfx.play(22);
+    const attack=submitContextOrder(target?.[0]??wx,target?.[1]??wy);
+    if (!selectedUnitVoice('order',attack) && ui && ui.sel.n) sfx.play(22);
     return;
   }
   if (ghost) {
@@ -2869,12 +2869,19 @@ function updateAudioButtons() {
   $('voices').textContent=sfx.isSpeechEnabled()?'Stimmen an':'Stimmen aus';
 }
 function toggleMute() { sfx.setMuted(!sfx.isMuted());updateAudioButtons(); }
-function selectedUnitVoice(action) {
+function submitContextOrder(x,y) {
+  if(wasm.cmd_context_attack_reply)return wasm.cmd_context_attack_reply(x,y)===1;
+  wasm.cmd_context(x,y,0);
+  return false;
+}
+function selectedUnitVoice(action,contextAttack=false) {
   const ptr = wasm.ui(); const state = JSON.parse(dec.decode(u8(ptr, wasm.ui_len()))),selected=state.sel;
   if (selected.n&&diversionPresentation?.hasVoices(selected.def,state.epoch)===false) return true;
   if (selected.n) {
     const context=selectedCitizenContext(wasm,state);
-    const replyScope=context&&rulesProfile.id==='up15'?{owner:state.local,world:wasm.render_meta_session()>>>0}:undefined;
+    const submarine=originalEnabled&&rulesProfile.id==='up15'&&selected.def===36&&(state.epoch===12||state.epoch===13);
+    if(submarine&&contextAttack)action='attack';
+    const replyScope=(context||submarine)&&rulesProfile.id==='up15'?{owner:state.local,world:wasm.render_meta_session()>>>0}:undefined;
     return sfx.acknowledge(selected.def,action,state.epoch,context,replyScope);
   }
   return false;

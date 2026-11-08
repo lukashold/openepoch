@@ -1757,29 +1757,40 @@ pub extern "C" fn valley71_force_attack_at(x: f32, y: f32, flags: u32) -> u32 {
 /// Right click: attack / gather / build / board / unload / move / set rally.
 #[no_mangle]
 pub extern "C" fn cmd_context(x: f32, y: f32, attack_move: u32) {
+    submit_context_order(x, y, attack_move);
+}
+
+/// Issue a normal context order and report whether it targeted a visible hostile.
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn cmd_context_attack_reply(x: f32, y: f32) -> u32 {
+    u32::from(submit_context_order(x, y, 0))
+}
+
+fn submit_context_order(x: f32, y: f32, attack_move: u32) -> bool {
     let g = g();
     #[cfg(feature = "ee2-authored-valley37")]
     if let Some(world) = &g.map.source_world {
-        if !(0.0..world.width as f32).contains(&x) || !(0.0..world.height as f32).contains(&y) { return; }
+        if !(0.0..world.width as f32).contains(&x) || !(0.0..world.height as f32).contains(&y) { return false; }
     }
     let ids = selected(g);
     #[cfg(feature = "ee2-native13")]
     let mut ids = ids;
     if ids.is_empty() {
-        return;
+        return false;
     }
     if DEFS[g.ents[ids[0]].def as usize].building {
         #[cfg(feature = "ee2-native13")]
         if g.air_missions_enabled { ids.retain(|&i| g.ents[i].def != AIRFIELD); }
-        if ids.is_empty() { return; }
+        if ids.is_empty() { return false; }
         let all = handles(g, &ids);
         g.submit(C_RALLY, x, y, 0, &all);
-        return;
+        return false;
     }
     if attack_move != 0 {
         let all = handles(g, &ids);
         g.submit(C_AMOVE, x, y, 0, &all);
-        return;
+        return false;
     }
     #[cfg(feature = "ee2-native13")]
     if !g.net && g.powers.is_some() {
@@ -1791,7 +1802,7 @@ pub extern "C" fn cmd_context(x: f32, y: f32, attack_move: u32) {
             } else { true }
         });
         if !extraction.is_empty() { g.submit(C_EXTRACTION, x, y, 1, &extraction); }
-        if ids.is_empty() { return; }
+        if ids.is_empty() { return false; }
     }
     let j = pick(g, x, y, false);
     #[cfg(feature = "ee2-native13")]
@@ -1804,7 +1815,7 @@ pub extern "C" fn cmd_context(x: f32, y: f32, attack_move: u32) {
             false
         });
         if !aircraft.is_empty() { g.submit(C_BOARD, x, y, g.h(j) as i32, &aircraft); }
-        if ids.is_empty() { return; }
+        if ids.is_empty() { return false; }
     }
     #[cfg(feature = "ee2-native13")]
     if j != NOIDX && matches!(g.ents[j].def, MARKET | DOCK) {
@@ -1814,7 +1825,7 @@ pub extern "C" fn cmd_context(x: f32, y: f32, attack_move: u32) {
             let hs: Vec<_> = chosen.iter().map(|&(index, _)| g.h(index)).collect();
             g.submit(C_TRADE_ROUTE, 65535.0, 65535.0, target as i32, &hs);
             ids.retain(|index| chosen.binary_search_by_key(index, |&(actor, _)| actor).is_err());
-            if ids.is_empty() { return; }
+            if ids.is_empty() { return false; }
         }
     }
     let all = handles(g, &ids);
@@ -1826,14 +1837,22 @@ pub extern "C" fn cmd_context(x: f32, y: f32, attack_move: u32) {
         let td = &DEFS[t.def as usize];
         let th = g.h(j) as i32;
         if t.team != g.local {
-            if g.combat_hostile(g.local,t.team){if g.can_see(g.local,j){g.submit(C_ATTACK,x,y,th,&all);}else{g.submit(C_AMOVE,x,y,0,&all);}}
-            else{g.submit(C_MOVE,x,y,0,&all);}return;
+            if g.combat_hostile(g.local, t.team) {
+                if g.can_see(g.local, j) {
+                    g.submit(C_ATTACK, x, y, th, &all);
+                    return true;
+                }
+                g.submit(C_AMOVE, x, y, 0, &all);
+            } else {
+                g.submit(C_MOVE, x, y, 0, &all);
+            }
+            return false;
         }
         if td.has(F_TRANSPORT) || t.built >= 1.0 {
             let land = part(g, &|actor, _| g.can_garrison(actor.def, t.def));
             if !land.is_empty() {
                 g.submit(C_BOARD, x, y, th, &land);
-                return;
+                return false;
             }
         }
         if td.building && (t.built < 1.0 || t.def == FARM) && !workers.is_empty() {
@@ -1841,7 +1860,7 @@ pub extern "C" fn cmd_context(x: f32, y: f32, attack_move: u32) {
             if !others.is_empty() {
                 g.submit(C_MOVE, x, y, 0, &others);
             }
-            return;
+            return false;
         }
     }
     let tile = tile_of(x, y);
@@ -1852,16 +1871,16 @@ pub extern "C" fn cmd_context(x: f32, y: f32, attack_move: u32) {
             g.submit(C_GATHER, x, y, tile as i32, &fishers);
             let rest = part(g, &|actor, _| actor.def != fishing81::FISHING_SHIP);
             if !rest.is_empty() { g.submit(C_MOVE, x, y, 0, &rest); }
-            return;
+            return false;
         }
     }
     if g.map.res[tile] != R_NONE && g.real_fog(g.local,tile) > 0 && !workers.is_empty() {
-        if !g.citizen_can_gather(g.local,g.map.res[tile]){return;}
+        if !g.citizen_can_gather(g.local,g.map.res[tile]){return false;}
         g.submit(C_GATHER, x, y, tile as i32, &workers);
         if !others.is_empty() {
             g.submit(C_MOVE, x, y, 0, &others);
         }
-        return;
+        return false;
     }
     // loaded transports sent onto land put their passengers ashore there
     let loaded = part(g, &|e, d| d.has(F_TRANSPORT) && e.ncargo > 0);
@@ -1871,9 +1890,10 @@ pub extern "C" fn cmd_context(x: f32, y: f32, attack_move: u32) {
         if !rest.is_empty() {
             g.submit(C_MOVE, x, y, 0, &rest);
         }
-        return;
+        return false;
     }
     g.submit(C_MOVE, x, y, 0, &all);
+    false
 }
 
 #[no_mangle]

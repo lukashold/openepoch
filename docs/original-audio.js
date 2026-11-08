@@ -1,4 +1,4 @@
-import {createCitizenReplyPicker} from './original-citizen-replies.js?v=native104';
+import {createUnitReplyPicker} from './original-citizen-replies.js?v=native112voice';
 import {createTypedAudioBindings} from './original-audio-bindings.js?v=native8';
 import {createRegionalMusicPlayback} from './original-regional-music.js?v=regional12';
 import {originalOneShotAudible} from './original-spatial-audio.js?v=native39audio';
@@ -20,8 +20,8 @@ export function createOriginalAudio(options={}) {
   const base=options.base || DEFAULT_BASE;
   let ctx=null,soundBus=null,musicBus=null,manifest=null,loading=null,muted=false,speech=true,musicEnabled=true,ambienceEnabled=true,active=false;
   const buffers=new Map(),pending=new Map(),failed=new Set(),live=new Set(),counters=new Map();
-  const pickCitizenReply=options.citizenReplySeconds&&options.presentationRandom?
-    createCitizenReplyPicker(options.presentationRandom,options.citizenReplySeconds):null;
+  const pickUnitReply=options.citizenReplySeconds&&options.presentationRandom?
+    createUnitReplyPicker(options.presentationRandom,options.citizenReplySeconds):null;
   const takeoffBuffers=new Map(),takeoffLoads=new Map();
   let takeoffEvents=new Map();
   let priestCues=false;
@@ -236,8 +236,9 @@ export function createOriginalAudio(options={}) {
       };
     }
   }
-  function stopVoices(includeCitizen=false) {
-    for(const source of [...live])if(source.originalGroup==='voice'||includeCitizen&&source.originalGroup==='citizen-reply')stop(source);
+  function stopVoices(includeUnitReplies=false) {
+    for(const source of [...live])if(source.originalGroup==='voice'||
+      includeUnitReplies&&['citizen-reply','submarine-reply'].includes(source.originalGroup))stop(source);
   }
   function stopMusic(preserve=true) {
     musicGeneration++;
@@ -340,18 +341,30 @@ export function createOriginalAudio(options={}) {
     else stats.effectPlays++;
     return true;
   }
-  function playCitizenReply(def,action,epoch,context,scope) {
-    if(!pickCitizenReply||!scope||!manifest||muted||!speech||ctx?.state!=='running'||
-       !['select','order'].includes(action)||!citizenPresentation?.isSourceContext(def,context))return false;
-    const plan=citizenPresentation.resolveAudio(def,action,epoch,context);
-    if(!plan?.records.length)return false;
+  function playUnitReply(plan,scope,group) {
+    if(!pickUnitReply||!scope||!manifest||muted||!speech||ctx?.state!=='running'||!plan?.records.length)return false;
     const missing=plan.records.filter(record=>!buffers.has(record.file));
     if(missing.length){for(const record of missing)load(record.file);return false;}
-    const selected=pickCitizenReply(plan,scope);
+    const selected=pickUnitReply(plan,scope);
     if(selected===null)return true;
-    if(!selected||!start(buffers.get(selected.file),plan.gain*selected.volume,0,'citizen-reply'))return false;
+    if(!selected||!start(buffers.get(selected.file),plan.gain*selected.volume,0,group))return false;
     stats.voicePlays++;
     return true;
+  }
+  function playCitizenReply(def,action,epoch,context,scope) {
+    if(!['select','order'].includes(action)||!citizenPresentation?.isSourceContext(def,context))return false;
+    const plan=citizenPresentation.resolveAudio(def,action,epoch,context);
+    return playUnitReply(plan,scope,'citizen-reply');
+  }
+  function playSubmarineReply(def,action,epoch,scope) {
+    if(!scope||def!==36||(epoch!==12&&epoch!==13))return false;
+    if(!['select','order','attack'].includes(action))return true;
+    const voice=manifest?.voices['36'];
+    const files=voice?.source_visual==='Submarine_13'?voice[action]:null;
+    if(!files?.length)return false;
+    const records=files.map(file=>({file,volume:manifest.assets?.[file.toLowerCase()]?.sound_records?.[0]?.volume}));
+    if(records.some(record=>record.volume!==1))return false;
+    return playUnitReply({sourceIdentity:36,action,records,gain:1},scope,'submarine-reply');
   }
   function citizenDeath(context, volume, pan) {
     if (!manifest || muted || ctx?.state !== 'running') return false;
@@ -433,7 +446,7 @@ export function createOriginalAudio(options={}) {
     return !musicEnabled||!!tracks?.some(file=>!failed.has(file));
   }
   return {
-    prepare,acknowledge,playCitizenReply,citizenDeath,effect,stoneThrowerLaunch,music,menuMusic,setDefinitionBindings,updateStoneThrowerWheels,stopStoneThrowerWheels,
+    prepare,acknowledge,playCitizenReply,playSubmarineReply,citizenDeath,effect,stoneThrowerLaunch,music,menuMusic,setDefinitionBindings,updateStoneThrowerWheels,stopStoneThrowerWheels,
     bindPriestCues,playPriestCue,bindGuidedImpact,playGuidedImpact,resetGuidedImpact,
     bindTakeoffEvents,playTakeoff,stopTakeoff,playInterfaceCue,frameAmbient,resetWorldAmbience,
     setAmbientPresentation(presentation){resetWorldAmbience();nativeAmbient=null;ambientPresentation=presentation;},
@@ -444,6 +457,6 @@ export function createOriginalAudio(options={}) {
     setSpeechEnabled(value){speech=value;if(!value)stopVoices(true);},
     setMusicEnabled(value){musicEnabled=value;if(!value){regionalMusic?.suspend();stopMusic();}},
     setAmbienceEnabled(value){ambienceEnabled=value;if(!value){stopLegacyAmbient();resetWorldAmbience();}},
-    status(){const regional=regionalMusic?.status()??null;return {typedAudio:typed.status(),citizens:citizenPresentation?.status()||null,enabled,ready:!!manifest,buffers:buffers.size,failed:[...failed],activeVoices:[...live].filter(x=>x.originalGroup==='voice'||x.originalGroup==='citizen-reply').length,music:!!musicSource||!!regional?.active,regionalMusic:regional,ambient:!!ambientSource,worldAmbience:nativeAmbient?.status()??null,...stats};}
+    status(){const regional=regionalMusic?.status()??null;return {typedAudio:typed.status(),citizens:citizenPresentation?.status()||null,enabled,ready:!!manifest,buffers:buffers.size,failed:[...failed],activeVoices:[...live].filter(x=>['voice','citizen-reply','submarine-reply'].includes(x.originalGroup)).length,music:!!musicSource||!!regional?.active,regionalMusic:regional,ambient:!!ambientSource,worldAmbience:nativeAmbient?.status()??null,...stats};}
   };
 }

@@ -19,15 +19,16 @@ export function buildOwnTerrainNormals(heights,size){
  }
  return normals;
 }
-export function ownTriangleHeight(heights,size,x,z){
+export function ownTriangleHeight(heights,size,x,z,sourceDiagonal=false){
  x=Math.max(0,Math.min(size-1e-6,x));z=Math.max(0,Math.min(size-1e-6,z));
  const ix=Math.floor(x),iz=Math.floor(z),u=x-ix,v=z-iz,i=iz*(size+1)+ix;
  const a=heights[i],b=heights[i+1],c=heights[i+size+1],d=heights[i+size+2];
+ if(sourceDiagonal)return u<=v?a+(d-c)*u+(c-a)*v:a+(b-a)*u+(d-b)*v;
  return u+v<=1?a+(b-a)*u+(c-a)*v:d+(c-d)*(1-u)+(b-d)*(1-v);
 }
-export function ownTerrainOccluded(heights,size,x,z,direction,maximum){
+export function ownTerrainOccluded(heights,size,x,z,direction,maximum,sourceDiagonal=false){
  if(x<0||z<0||x>=size||z>=size)return false;
- const [dx,dy,dz]=direction,y=Math.max(0,ownTriangleHeight(heights,size,x,z))+f(.01);
+ const [dx,dy,dz]=direction,y=Math.max(0,ownTriangleHeight(heights,size,x,z,sourceDiagonal))+f(.01);
  if(Math.abs(dx)+Math.abs(dz)<1e-14)return dy<0;
  let cx=Math.floor(x),cz=Math.floor(z),entered=0,steps=0;
  const sx=dx>0?1:-1,sz=dz>0?1:-1,dtx=dx?1/Math.abs(dx):Infinity,dtz=dz?1/Math.abs(dz):Infinity;
@@ -36,9 +37,11 @@ export function ownTerrainOccluded(heights,size,x,z,direction,maximum){
   if(dy>0&&y+dy*entered>maximum+.00001)return false;
   const end=Math.min(1024,tx,tz),i=cz*(size+1)+cx,a=heights[i],b=heights[i+1],c=heights[i+size+1],d=heights[i+size+2];
   for(let upper=0;upper<2;upper++){
-   const px=upper?d-c:b-a,pz=upper?d-b:c-a,origin=upper?b+c-d:a,denominator=dy-px*dx-pz*dz;
+   const px=sourceDiagonal?(upper?b-a:d-c):(upper?d-c:b-a);
+   const pz=upper?d-b:c-a,origin=upper&&!sourceDiagonal?b+c-d:a,denominator=dy-px*dx-pz*dz;
    const t=Math.abs(denominator)>1e-12?(origin+px*(x-cx)+pz*(z-cz)-y)/denominator:Infinity;
-   const u=x+dx*t-cx,v=z+dz*t-cz,half=upper?u+v>=1-1e-7:u+v<=1+1e-7;
+   const u=x+dx*t-cx,v=z+dz*t-cz;
+   const half=sourceDiagonal?(upper?u>=v-1e-7:u<=v+1e-7):(upper?u+v>=1-1e-7:u+v<=1+1e-7);
    if(t>=entered-1e-7&&t<=end+1e-7&&t>0&&half&&u>=-1e-7&&v>=-1e-7&&u<=1+1e-7&&v<=1+1e-7)return true;
   }
   const crossX=tx<=tz,crossZ=tz<=tx;entered=Math.min(tx,tz);
@@ -55,7 +58,7 @@ export function sampleNativeNormal(normals,size,x,z,out=[0,0,0]){
  if(length>0)for(let k=0;k<3;k++)out[k]=f(out[k]/length);
  return out;
 }
-export function buildNativeTerrainLightmap({heights,size=256,normals=null,direction}){
+export function buildNativeTerrainLightmap({heights,size=256,normals=null,direction,sourceDiagonal=false}){
  if(!Number.isInteger(size)||size<1||size>1024||!heights||heights.length!==(size+1)**2||!Array.from(heights).every(Number.isFinite))throw new RangeError('Invalid native lightmap heightfield');
  if(!finite3(direction)||Math.abs(Math.hypot(...direction)-1)>1e-4)throw new RangeError('Invalid native lightmap direction');
  if(normals&&(!ArrayBuffer.isView(normals)||normals.length!==heights.length*3||!Array.from(normals).every(Number.isFinite)))throw new RangeError('Invalid native lightmap normals');
@@ -69,7 +72,7 @@ export function buildNativeTerrainLightmap({heights,size=256,normals=null,direct
  const bits=new Uint8Array(RES*RES),normal=[0,0,0];
  for(let bz=0;bz<blocks;bz++)for(let bx=0;bx<blocks;bx++){
   for(let z=0;z<RES;z++)for(let x=0;x<RES;x++){
-   const blocked=ownTerrainOccluded(heights,size,f(positions[x]+f(bx*SPAN)),f(positions[z]+f(bz*SPAN)),direction,maximum);
+   const blocked=ownTerrainOccluded(heights,size,f(positions[x]+f(bx*SPAN)),f(positions[z]+f(bz*SPAN)),direction,maximum,sourceDiagonal);
    bits[z*RES+x]=blocked?1:0;if(blocked)occludedSamples++;
   }
   const offset=(bz*blocks+bx)*RES*RES;
