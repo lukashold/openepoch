@@ -1557,6 +1557,8 @@ impl Game {
         if self.god_mode { mix(u32::from_le_bytes(*b"GOD1")); }
         if self.fog_inverted { mix(u32::from_le_bytes(*b"FOG1")); }
         mix(self.diplomacy.visibility as u32);
+        #[cfg(feature = "ee2-native13")]
+        if let Some(teams) = self.diplomacy.fixed_teams { mix(teams.visibility_word(0)); }
         for a in [&self.diplomacy.relation,&self.diplomacy.offers,&self.diplomacy.offer_vision,&self.diplomacy.sharing]{for &v in a{mix(v as u32);}}
         for a in [&self.diplomacy.offer_tick,&self.diplomacy.cooldown,&self.diplomacy.gifts,&self.diplomacy.neutral_since,&self.diplomacy.war_tick]{for &v in a{mix(v);}}
         for h in self.territory.claims{mix(h);}

@@ -234,6 +234,8 @@ impl Game {
     /// The original localized message explicitly voids existing alliances
     /// when the last territory is lost. Run after the entire atomic operation.
     pub fn void_landless_alliances(&mut self) {
+        #[cfg(feature = "ee2-native13")]
+        if self.diplomacy.fixed_teams.is_some() { return; }
         for a in 0..self.nplayers {
             if self.players[a].terr != 0 {
                 continue;

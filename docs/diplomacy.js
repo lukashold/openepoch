@@ -131,18 +131,19 @@ export function diplomacyPanel({wasm,referenceMode,onOrder=()=>{},onOpen=()=>{},
   const p=current();detail.hidden=!p;
   if(p){
    const allianceAllowed=ui.soleSurvivor?.allianceAllowed!==false;
+   const locked=p.fixedTeam!==undefined;
    name.textContent=p.name||`Spieler ${p.team+1}${p.ai?' · KI':''}`;relation.textContent=p.alive?RELATIONS[p.relation]||'Neutral':'Ausgeschieden';
    theirRelation.hidden=!p.alive||p.theirRelation===undefined||p.theirRelation===p.relation;theirRelation.textContent=`Haltung zu dir: ${RELATIONS[p.theirRelation]||'Neutral'}`;
-   rights.textContent=p.relation===2?(p.sharedVision?'Ihr teilt eure Sicht miteinander.':'Bündnis ohne gemeinsame Sicht.')
+   rights.textContent=locked?`Feste Teams · Team ${p.fixedTeam}`:p.relation===2?(p.sharedVision?'Ihr teilt eure Sicht miteinander.':'Bündnis ohne gemeinsame Sicht.')
     :allianceAllowed?'Frieden und Bündnisse benötigen die Zustimmung des anderen Spielers.':'Die letzten beiden Spieler kämpfen einzeln um den Sieg.';
    const offerName=(kind,full)=>kind===2?(full?'Bündnis mit gemeinsamer Sicht':'Bündnis ohne gemeinsame Sicht'):kind===3?'Gemeinsame Sicht':kind===4?'Gemeinsame Sicht beenden':'Frieden';
    offer.hidden=!p.alive||!p.incoming;offerText.textContent=offerName(p.incoming,p.incomingAllianceVision)+' · Angebot erhalten';
    outgoing.hidden=!p.alive||!p.outgoing;outgoingText.textContent=offerName(p.outgoing,p.outgoingAllianceVision)+' · Antwort ausstehend';
    const waiting=p.cooldown>0;cooldown.hidden=!p.alive||!waiting||!!p.outgoing;cooldown.textContent=`Neues Angebot in ${Math.ceil(p.cooldown||0)} Sek.`;
-   peace.disabled=!p.alive||(p.relation!==0&&p.theirRelation!==0)||!!p.outgoing||waiting;alliance.disabled=!allianceAllowed||!p.alive||p.relation!==1||(p.theirRelation!==undefined&&p.theirRelation!==1)||!!p.outgoing||waiting;war.disabled=!p.alive||p.relation===0;
-   accept.disabled=!allianceAllowed&&p.incoming===2;
+   peace.disabled=locked||!p.alive||(p.relation!==0&&p.theirRelation!==0)||!!p.outgoing||waiting;alliance.disabled=locked||!allianceAllowed||!p.alive||p.relation!==1||(p.theirRelation!==undefined&&p.theirRelation!==1)||!!p.outgoing||waiting;war.disabled=locked||!p.alive||p.relation===0;
+   accept.disabled=locked||!allianceAllowed&&p.incoming===2;
    visionLabel.hidden=!p.alive||p.relation!==1;vision.disabled=alliance.disabled;
-   visionChange.hidden=!p.alive||p.relation!==2;visionChange.disabled=!!p.outgoing||waiting;visionChange.textContent=p.sharedVision?'Gemeinsame Sicht beenden':'Gemeinsame Sicht anbieten';
+   visionChange.hidden=!p.alive||p.relation!==2;visionChange.disabled=locked||!!p.outgoing||waiting;visionChange.textContent=p.sharedVision?'Gemeinsame Sicht beenden':'Gemeinsame Sicht anbieten';
    giftLabel.hidden=!p.alive;gift.hidden=!p.alive;funds.hidden=!p.alive;
   }
   const slots=(referenceMode?[0,1,3,4,5,2,6,7,8]:[0,1,2]).filter(slot=>!referenceMode||ui.resourceActive?.[slot]!==false);

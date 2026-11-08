@@ -98,8 +98,12 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         if def == crate::koth64::HILL { return false; }
         let Some(definition) = DEFS.get(def as usize) else { return false; };
+        #[cfg(feature = "ee2-native13")]
+        let required_epoch = if def == DOCK && self.first_dock_policy() { 0 } else { definition.epoch };
+        #[cfg(not(feature = "ee2-native13"))]
+        let required_epoch = definition.epoch;
         if team as usize >= self.nplayers || !definition.building
-            || definition.epoch > self.players[team as usize].epoch { return false; }
+            || required_epoch > self.players[team as usize].epoch { return false; }
         #[cfg(feature = "ee2-native13")]
         if crate::wonders61::is_wonder(def) {
             return !self.net && self.bench == 0 && self.powers.is_some()

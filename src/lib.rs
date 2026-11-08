@@ -136,6 +136,8 @@ mod ee2_up15_attack;
 mod native_attack_clock;
 mod diplomacy;
 #[cfg(feature = "ee2-native13")]
+mod fixed_teams;
+#[cfg(feature = "ee2-native13")]
 mod ee2_conquest;
 #[cfg(feature = "ee2-native13")]
 mod ee2_territory_victory;
@@ -2713,6 +2715,11 @@ pub extern "C" fn stat(team: u32, what: u32) -> f32 {
 /// Start display setting; deterministic shared map config is allowed in MP.
 #[no_mangle]
 pub extern "C" fn skirmish_visibility(mode:u32)->u32 {let game=g();if mode>2||game.tick!=0||game.bench>0{return 0;}game.diplomacy.visibility=mode as u8;game.refresh_display_fog();1}
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_skirmish_teams(groups: u32, lock: u32) -> u32 {
+    u32::from(lock <= 1 && g().configure_skirmish_teams(groups, lock == 1))
+}
 #[no_mangle]
 pub extern "C" fn cmd_diplomacy(target:u32,action:u32,resource:u32,amount:f32)->u32 {
  let game=g();if !game.diplomacy_valid(game.local,target,action,resource,amount){return 0;}

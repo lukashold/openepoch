@@ -1,9 +1,10 @@
-import {add,store32} from './source-cloth-arithmetic.js';
+import {add,div,mul,store32,sub} from './source-cloth-arithmetic.js';
 import {guidedImpactInside} from './guided-herc-impact.js?v=native78-wake';
 import {saveSceneGLState,restoreSceneGLState} from './original-reflection.js';
 
 const manifestPath='./local-original/boat-wake/manifest.json';
 const manifestSha256='0ea3fa84c35d5672245f3c1e90a7924ba81175726c4a77df61d099755315ff30';
+const highManifestSha256='74ae41c04153c1f58130a47a814370be059039210b30071418246871bec39945';
 const stride=52;
 const finite=(values,length)=>values?.length===length&&Array.prototype.every.call(values,Number.isFinite);
 
@@ -25,11 +26,20 @@ export function readNavalWakeActors(wasm,alpha){
 export function wakeTrack({method,keys},seconds){
  if(seconds<=keys[0][0])return keys[0][1];
  for(let i=1;i<keys.length;i++){
-  const [end,value]=keys[i];
+  const [end,value,incoming]=keys[i];
   if(seconds>end)continue;
-  const [start,prior]=keys[i-1];
+  const [start,prior,,outgoing]=keys[i-1];
+  if(method===2&&incoming!==undefined&&outgoing!==undefined){
+   // Float-key callback 00971570 uses the previous key's second tangent
+   // and the next key's first. 00976AC0 evaluates the cubic in this order.
+   const t=store32(div(sub(seconds,start),sub(end,start)));
+   const change=sub(value,prior);
+   const cubic=sub(add(outgoing,incoming),add(change,change));
+   const quadratic=sub(mul(change,3),add(add(outgoing,outgoing),incoming));
+   return store32(add(mul(add(mul(add(mul(cubic,t),quadratic),t),outgoing),t),prior));
+  }
   const t=(seconds-start)/(end-start);
-  // In this bound L2 asset all authored Bezier tangents are zero.
+  // The inherited compact tracks have zero tangents.
   const mix=method===2?t*t*(3-2*t):t;
   return Math.fround(prior+(value-prior)*mix);
  }
@@ -48,8 +58,16 @@ export function wakeTagXY(actor,{point},scale){
 
 export function createBoatWakeFrames({hull,descriptor,models},{seed=()=>Math.floor(Date.now()/1000)}={}){
  let session,random=0,owners=new Map(),waiting=[],ready=[],active=[];
- const interval=store32(descriptor.movedTimer*Math.fround(1.2));
- const stats={owners:0,waiting:0,ready:0,moving:0,idle:0};
+ let detail=1,interval;
+ const detailFactors=[Math.fround(1.3),Math.fround(1.2),Math.fround(1.1),.8];
+ const supportsDetail=value=>Number.isInteger(value)&&value>=0&&value<=(models.crest?3:1);
+ function setDetail(value){
+  detail=supportsDetail(value)?value:1;
+  interval=store32(mul(descriptor.movedTimer,detailFactors[detail]));
+  return detail;
+ }
+ setDetail(detail);
+ const stats={owners:0,waiting:0,ready:0,moving:0,idle:0,crest:0};
  function reset(next){
   session=next;random=seed()>>>0;owners.clear();waiting=[];ready=[];active=[];
  }
@@ -91,20 +109,27 @@ export function createBoatWakeFrames({hull,descriptor,models},{seed=()=>Math.flo
    owner.counter=store32(add(owner.counter,delta));
    if(owner.counter<(owner.moving?interval:descriptor.idleTimer))continue;
    owner.counter=0;
+   if(detail===0)continue;
    const yaw=store32(Math.atan2(-actor.basis[6],actor.basis[0]));
    const emit=(kind,x,y)=>{
     const effect={kind,x,y,yaw,age:0};
     (admissible(effect)?ready:waiting).push(effect);
    };
    if(owner.moving){
-    for(const tag of hull.tags)emit('moving',...wakeTagXY(actor,tag,hull.scale));
+    for(const tag of hull.tags){
+     const point=wakeTagXY(actor,tag,hull.scale);
+     // The source's tagged branch calls both models at 00639867/006398BB.
+     // Only the tagless branch tests the high-detail L1 flag.
+     if(models.crest)emit('crest',...point);
+     emit('moving',...point);
+    }
    }else emit('idle',actor.x,actor.y);
   }
   for(const handle of owners.keys())if(!current.has(handle))owners.delete(handle);
-  Object.assign(stats,{owners:owners.size,waiting:waiting.length,ready:ready.length,moving:0,idle:0});
+  Object.assign(stats,{owners:owners.size,waiting:waiting.length,ready:ready.length,moving:0,idle:0,crest:0});
   for(const effect of active)stats[effect.kind]++;
  }
- return {advance,stats,sample:visible=>active.filter(effect=>visible(effect.x,effect.y))};
+ return {advance,stats,setDetail,supportsDetail,detail:()=>detail,sample:visible=>active.filter(effect=>visible(effect.x,effect.y))};
 }
 
 const vertex=`#version 300 es
@@ -168,12 +193,19 @@ export async function loadOriginalBoatWake(gl,{enabled,fetchFile=globalThis.fetc
  try{
   const data=JSON.parse(new TextDecoder().decode(await read(manifestURL,manifestSha256)));
   if(data.format!=='ee2-native-boat-wake-v1'||data.detail!==1)return null;
-  const media=await Promise.all(Object.entries(data.models).map(async ([kind,model])=>{
+  const readModel=async (kind,model)=>{
    const {texture}=model;
    const bytes=await read(new URL(texture.url,manifestURL),texture.sha256);
    if(bytes.byteLength!==texture.bytes)throw Error('Boat wake pixel length differs');
    return [kind,model,bytes];
-  }));
+  };
+  const media=await Promise.all(Object.entries(data.models).map(([kind,model])=>readModel(kind,model)));
+  try{
+   const high=JSON.parse(new TextDecoder().decode(await read(new URL('high.json',manifestURL),highManifestSha256)));
+   if(high.format!=='ee2-native-boat-wake-high-v1'||high.baseSha256!==manifestSha256)throw Error('Boat wake high profile differs');
+   media.push(await readModel('crest',high.model));
+   data.models.crest=high.model;
+  }catch{/* Earlier private media can still provide the Medium profile. */}
   const before=saveSceneGLState(gl);
   const cleanup=[];
   try{

@@ -7,8 +7,8 @@ import { researchPanel } from './research.js?v=rank-families';
 import {loadCrownArt,mountCrownProgress,mountCrownVictoryRows} from './crown-progress.js?v=native65';
 import {loadCrownStatusArt,readCrownActorVisuals,crownStatusSlots} from './crown-visuals.js?v=native58';
 import { originalResearchActions, researchCost, researchState } from './original-research-actions.js?v=rank-families';
-import { diplomacyPanel } from './diplomacy.js?v=native17';
-import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native6';
+import { diplomacyPanel } from './diplomacy.js?v=native74';
+import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native74';
 import {loadNativeFontUI} from './original-font-ui.js?v=native21names';
 import {territoryClaimMessage} from './territory-help.js?v=native64-koth';
 import * as sfx from './audio.js?v=native66';
@@ -16,12 +16,13 @@ import {generatedAmbientCoverage,loadOriginalAmbient,originalAmbientPriorities} 
 import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=citizen9';
 import {mountOriginalShellVideo} from './original-shell-video.js?v=native12';
 import {mountSkirmishMenu} from './skirmish-menu.js?v=native13';
+import {mountSkirmishTeams} from './skirmish-teams.js?v=native74-teams';
 import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regional10';
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native66';
 import {loadOriginalModels} from './original-renderer.js?v=native78-wake';
-import {loadOriginalBoatWake,readNavalWakeActors} from './original-boat-wake.js?v=native78-wake';
+import {loadOriginalBoatWake,readNavalWakeActors} from './original-boat-wake.js?v=native79-wake';
 import {loadKingOfTheHillPresentation} from './original-koth.js?v=native64-koth';
 import {loadWonderPresentation} from './original-wonders.js?v=native63';
 import {loadWonderScaffold} from './original-wonder-scaffold.js?v=native63';
@@ -43,7 +44,7 @@ import {createFrontendNamespace} from './render-namespace.js?v=native64';
 import {ORIGINAL_SPEEDS, changeOriginalSpeed, checkOriginalTempo, loadOriginalTempo, originalStartingSpeed} from './original-game-tempo.js?v=native37';
 import {advanceAdaptiveSourceFrame, advanceSourceSoloFrame, createAdaptiveSourceClock, sampleSourceRenderFps, SOURCE_SOLO_INTERVAL, sourceRenderSeconds, sourceStepDelta, sourceWallInterval} from './source-solo-clock.js?v=native44';
 import {mountOriginalGameOptions} from './original-game-options.js?v=native37';
-import {mountOriginalGameSettings} from './original-game-settings.js?v=native38audio';
+import {mountOriginalGameSettings} from './original-game-settings.js?v=native79-wake';
 import {createRenderActorMetadata} from './render-actor-metadata.js?v=pack8';
 import {createPackRenderMetadata} from './original-pack-states.js?v=pack8';
 import {createFullmapPipBridge} from './original-fullmap-pip-bridge.js?v=native66';
@@ -55,7 +56,7 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=clock38';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native73';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native74';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
@@ -159,7 +160,7 @@ const valleyRequested=rulesProfile.id==='up15'&&(!!valleyManifest||['1','archive
 try{
   if(valleyRequested){
     const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley75_commit','valley71_force_attack_at','valley71_neutral_opening']:rulesProfile.requiredExports;
-    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native73-valley'};
+    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native74-valley'};
     try{wasm=await loadRulesWasm(previewRules,import.meta.url);}catch{/* The ordinary ruleset remains available. */}
   }
   wasm??=await loadRulesWasm(rulesProfile,import.meta.url);
@@ -562,6 +563,8 @@ mountSkirmishMenu($('menu'), {enabled:rulesProfile.ruleset===2, originalArt:orig
 const victoryOptions=$('sk-victory-options');
 victoryOptions.hidden=rulesProfile.id!=='up15';
 const victoryCondition=$('sk-victory-condition');
+const skirmishTeams=mountSkirmishTeams({wasm:rulesProfile.id==='up15'?wasm:{},document,
+  opponents:$('nai'),victory:victoryCondition,soleSurvivor:$('sk-sole-survivor')});
 const hotspotAvailable=rulesProfile.id==='up15'&&typeof wasm.configure_match_hotspots==='function'&&typeof wasm.hotspot_point==='function';
 const hotspotOption=victoryCondition.querySelector('option[value="hotspots"]');
 hotspotOption.hidden=hotspotOption.disabled=!hotspotAvailable;
@@ -588,6 +591,7 @@ function updateVictoryOptions(){
   hotspotRow.hidden=!hotspots;
   const capitols=capitolsMenu.update({locked:victoryCondition.disabled});
   $('sk-sole-victory').hidden=victoryOptions.hidden||victoryCondition.value==='territory'||koth||crowns||hotspots||capitols===6;
+  skirmishTeams.update();
 }
 victoryCondition.addEventListener('change',updateVictoryOptions);
 updateVictoryOptions();
@@ -1418,6 +1422,7 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
     try {
       applyMatchSettings(wasm,{...resolvedSkirmishChoices(civilizationSetup.choices(),players),
         popLimit:+$('pop-limit').value,supplies:+$('supplies').value,territoryPercent,regicide,soleSurvivor,kothMinutes,crownVictory,capitols,hotspots},players);
+      if(originalSkirmish&&!skirmishTeams.apply(players))throw Error('Die Startteams konnten nicht eingerichtet werden.');
     } catch(error) { toast(error.message); return; }
   }else if(!benchUnits&&humans===1){
     wasm.skirmish_setup(+$('pop-limit').value, +$('supplies').value);
@@ -2574,13 +2579,24 @@ gameOptions=await mountOriginalGameOptions({
 function cancelMapGesture(){activeTargetOrder()?.cancel();tradeRoute?.cancel();airMission?.cancel();tradePress=null;airPress=null;mouse.down=false;mouse.drag=false;mouse.pan=false;mouse.inside=false;mini.dragging=false;box.style.display='none';canvas.style.cursor='default';}
 const fullscreen=createFullscreenController({buttons:[$('fullscreen'),$('menu-fullscreen')],notify:toast,
   onChange(){keys.clear();cancelMapGesture();updateCamera();}});
+const wakeDetailSelect=$('native-settings-effects'),wakeDetailKey='openepoch-effect-detail';
+if(boatWake&&originalModels.boatWakeHull){
+  wakeDetailSelect.disabled=false;
+  for(const option of wakeDetailSelect.options)option.disabled=!boatWake.supportsDetail(Number(option.value));
+  try{boatWake.setDetail(Number(localStorage.getItem(wakeDetailKey)??'1'));}catch{/* optional local setting storage */}
+}
 const gameSettings=await mountOriginalGameSettings({
   enabled:hasOriginalTempo,originalArt:originalEnabled,
-  read:()=>({...sfx.originalAudioSettings(),muted:sfx.isMuted(),voices:sfx.isSpeechEnabled(),resolution:$('quality').value,fullscreen:fullscreen.active}),
+  read:()=>({...sfx.originalAudioSettings(),muted:sfx.isMuted(),voices:sfx.isSpeechEnabled(),
+    resolution:$('quality').value,effectDetail:String(boatWake?.detail()??1),fullscreen:fullscreen.active}),
   previewAudio(settings){sfx.setOriginalAudioSettings(settings);updateAudioButtons();},
   apply(settings){
     sfx.setMuted(settings.muted);sfx.commitOriginalAudioSettings(settings);sfx.setSpeechEnabled(settings.voices);
     updateAudioButtons();$('quality').value=settings.resolution;
+    if(!wakeDetailSelect.disabled){
+      const detail=boatWake.setDetail(Number(settings.effectDetail));
+      try{localStorage.setItem(wakeDetailKey,String(detail));}catch{/* optional local setting storage */}
+    }
     if(fullscreen.active!==settings.fullscreen)void fullscreen.toggle();
   },
   hotkeys:()=>[

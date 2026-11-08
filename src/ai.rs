@@ -2,6 +2,9 @@
 
 use crate::defs::*;
 use crate::game::*;
+#[cfg(feature = "ee2-native13")]
+#[path = "ai_first_dock80.rs"]
+mod ai_first_dock80;
 use crate::map::*;
 
 #[cfg(feature = "ee2-native13")]
@@ -295,6 +298,16 @@ impl Game {
             #[cfg(not(feature = "ee2-native13"))]
             let supporting_hotspot = false;
             let c = |d: DefId| count[d as usize];
+            #[cfg(feature = "ee2-native13")]
+            let source_dock_policy = self.first_dock_policy();
+            #[cfg(not(feature = "ee2-native13"))]
+            let source_dock_policy = false;
+            #[cfg(feature = "ee2-native13")]
+            let first_dock = source_dock_policy && tc != NOIDX && c(DOCK) == 0
+                && c(BARRACKS) > 0 && c(WAREHOUSE) > 0 && c(UNIVERSITY) > 0
+                && self.ai_post_first_dock(team, [bxi, byi], &crew);
+            #[cfg(not(feature = "ee2-native13"))]
+            let first_dock = false;
             let farm_slots = farms.iter().filter(|f| f.1 < if cfg!(feature="ee2-reference"){1}else{4}).count();
             let pending_fort=if cfg!(feature="ee2-reference") {finished.iter().copied().find(|&b| {
                 let e=self.ents[b];let id=self.map.terr[tile_of(e.x,e.y)] as usize;
@@ -346,7 +359,7 @@ impl Game {
             } else {
                 None
             };
-            if let Some(def) = choice.filter(|_| !supporting_hotspot) {
+            if let Some(def) = choice.filter(|_| !supporting_hotspot && !first_dock) {
                 // a new town center goes into the nearest unclaimed territory
                 let mut at = (bxi, byi);
                 if def==FORTRESS {if let Some(b)=pending_fort {at=(self.ents[b].x as i32,self.ents[b].y as i32);}}

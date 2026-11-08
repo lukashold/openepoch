@@ -52,6 +52,8 @@ pub struct Diplomacy {
     pub neutral_since: [u32; 16],
     pub war_tick: [u32; 16],
     pub(crate) clock: DiplomacyClock,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fixed_teams: Option<crate::fixed_teams::FixedTeams>,
 
     pub visibility: u8,
     pub log: Vec<DipEvent>,
@@ -74,6 +76,8 @@ impl Default for Diplomacy {
             neutral_since: [0; 16],
             war_tick: [0; 16],
             clock: DiplomacyClock::default(),
+            #[cfg(feature = "ee2-native13")]
+            fixed_teams: None,
             visibility: 0,
             log: Vec::with_capacity(DIP_LOGS),
         }
@@ -289,6 +293,11 @@ impl Game {
         let to = to as u8;
         let i = from as usize * 4 + to as usize;
         let j = to as usize * 4 + from as usize;
+
+        #[cfg(feature = "ee2-native13")]
+        if self.diplomacy.fixed_teams.is_some() && matches!(action, 0 | 1 | 2 | 3 | 7) {
+            return false;
+        }
 
         if action != 5 && action != 1 && resource != 0 {
             return false;
@@ -639,6 +648,10 @@ impl Game {
             let cooldown=self.diplomacy_cooldown_seconds(self.diplomacy.cooldown[i],self.diplomacy.clock.offer[i]);
             let _=write!(s,"{}{{\"team\":{},\"alive\":{},\"ai\":{},\"relation\":{},\"theirRelation\":{},\"incoming\":{},\"outgoing\":{},\"incomingAllianceVision\":{},\"outgoingAllianceVision\":{},\"sharedVision\":{},\"sharingVision\":{},\"cooldown\":{:.1}}}",if p>0{","}else{""},p,self.players[p].alive,self.players[p].ai,self.diplomacy.relation[i],self.diplomacy.relation[j],self.diplomacy.offers[j],self.diplomacy.offers[i],self.diplomacy.offer_vision[j]!=0,self.diplomacy.offer_vision[i]!=0,self.shares_to(p as u8,me),self.shares_to(me,p as u8),cooldown);
             s.pop();
+            #[cfg(feature = "ee2-native13")]
+            if let Some(team) = self.fixed_team(p) {
+                let _ = write!(s, ",\"fixedTeam\":{}", team + 1);
+            }
             self.append_territory_player_ui(s, me, p as u8);
             s.push('}');
         }
@@ -732,12 +745,17 @@ impl Game {
     }
 
     pub fn write_diplomacy(&self, b: &mut Vec<u8>) {
+        let visibility = u32::from(self.diplomacy.visibility);
+        #[cfg(feature = "ee2-native13")]
+        let visibility = self.diplomacy.fixed_teams.map_or(visibility, |teams| {
+            teams.visibility_word(self.diplomacy.visibility)
+        });
         for v in [
             DIP_MAGIC,
             DIP_VERSION,
             self.humans,
             self.nplayers as u32,
-            self.diplomacy.visibility as u32,
+            visibility,
         ] {
             b.extend_from_slice(&v.to_le_bytes());
         }
@@ -786,12 +804,23 @@ impl Game {
             || u(4) != DIP_VERSION
             || u(8) != self.humans
             || u(12) != self.nplayers as u32
-            || u(16) > 2
         {
             return None;
         }
 
-        self.diplomacy.visibility = u(16) as u8;
+        let visibility = u(16);
+        #[cfg(feature = "ee2-native13")]
+        {
+            let (visibility, teams) = crate::fixed_teams::FixedTeams::read_visibility_word(visibility, self.nplayers)?;
+            if teams.is_some() && (self.net || self.humans != 1) { return None; }
+            self.diplomacy.fixed_teams = teams;
+            self.diplomacy.visibility = visibility;
+        }
+        #[cfg(not(feature = "ee2-native13"))]
+        {
+            if visibility > 2 { return None; }
+            self.diplomacy.visibility = visibility as u8;
+        }
 
         self.diplomacy.relation.copy_from_slice(&b[20..36]);
         self.diplomacy.offers.copy_from_slice(&b[36..52]);
@@ -799,6 +828,10 @@ impl Game {
         self.diplomacy.sharing.copy_from_slice(&b[68..84]);
 
         let d = &mut self.diplomacy;
+        #[cfg(feature = "ee2-native13")]
+        if d.fixed_teams.is_some_and(|teams| !teams.valid_relations(self.nplayers, &d.relation, &d.offers)) {
+            return None;
+        }
         let mut o = 84;
         for a in [
             &mut d.offer_tick,

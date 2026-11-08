@@ -40,6 +40,10 @@
 #menu.skirmish-layout #civilization-options .row { margin: 4px 0; }
 #menu.skirmish-layout #civilization-options label { width: auto; min-width: 66px; }
 #menu.skirmish-layout #civilization-options select { max-width: 100%; }
+#sk-teams { margin: 8px 0; }
+#sk-teams .row { margin: 4px 0; }
+#sk-teams .row[hidden] { display: none; }
+#sk-teams p { margin: 6px 0 2px; font-size: .9em; }
 #menu.skirmish-layout #skirmish-overview { display: none; }
 
 #menu.skirmish-original-art .skirmish-players,

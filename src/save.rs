@@ -895,6 +895,8 @@ impl Game {
             if g.crown_victory.is_some() || koth.is_some() || territory_victory.is_some() || sole_survivor.is_some() || regicide.is_some() { return None; }
             g.restore_hotspots(mode, outcome)?;
         }
+        #[cfg(feature = "ee2-native13")]
+        if g.diplomacy.fixed_teams.is_some() && !g.supports_skirmish_teams() { return None; }
         #[cfg(feature="ee2-native13")]
         if let Some(payload) = military_leader_powers {
             g.military_leader_powers = Some(crate::game::military_leader59::State::read(&g, payload)?);

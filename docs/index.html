@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>OpenEpoch — browser RTS in Rust + WebAssembly</title>
 <meta name="description" content="OpenEpoch: lokales Echtzeit-Strategiespiel mit Scharmützeln, Forschung und Epochen von der Steinzeit bis in die Zukunft.">
-<link rel="stylesheet" href="skirmish-menu.css?v=native13">
+<link rel="stylesheet" href="skirmish-menu.css?v=native74">
 <link rel="stylesheet" href="original-game-options.css?v=native37">
 <link rel="stylesheet" href="original-game-settings.css?v=native38audio">
 <link rel="stylesheet" href="fullmap.css?v=native20">
@@ -330,12 +330,12 @@
       <div class="native-settings-row"><label for="native-settings-model" data-settings-widget="options_video_txmodeldetail" data-source-label>Modelldetails:</label><select id="native-settings-model" disabled data-settings-widget="options_video_model"><option>Nicht verfügbar</option></select></div>
       <div class="native-settings-row"><label for="native-settings-animation" data-settings-widget="options_video_txanimdetail" data-source-label>Animationsdetails:</label><select id="native-settings-animation" disabled data-settings-widget="options_video_anim"><option>Nicht verfügbar</option></select></div>
       <div class="native-settings-row"><label for="native-settings-texture" data-settings-widget="options_video_txtexturedetail" data-source-label>Texturdetails:</label><select id="native-settings-texture" disabled data-settings-widget="options_video_texture"><option>Nicht verfügbar</option></select></div>
-      <div class="native-settings-row"><label for="native-settings-effects" data-settings-widget="options_video_txfxdetail" data-source-label>Effektdetails:</label><select id="native-settings-effects" disabled data-settings-widget="options_video_fx"><option>Nicht verfügbar</option></select></div>
+      <div class="native-settings-row"><label for="native-settings-effects" data-settings-widget="options_video_txfxdetail" data-source-label>Effektdetails:</label><select id="native-settings-effects" disabled data-setting="effectDetail" data-settings-widget="options_video_fx" aria-describedby="native-settings-graphics-info"><option value="0">Niedrig</option><option value="1" selected>Mittel</option><option value="2">Hoch</option><option value="3">Extrem</option></select></div>
       <div class="native-settings-row"><label for="native-settings-weather" data-settings-widget="options_video_txweatherdetail" data-source-label>Wetterdetails:</label><select id="native-settings-weather" disabled data-settings-widget="options_video_weather"><option>Nicht verfügbar</option></select></div>
       <div class="native-settings-row"><label for="native-settings-water" data-settings-widget="options_video_waterdetail_label" data-source-label>Wasserdetails:</label><select id="native-settings-water" disabled data-settings-widget="options_video_water"><option>Nicht verfügbar</option></select></div>
       <div class="native-settings-row"><label for="native-settings-terrain" data-settings-widget="options_video_txterraindetail" data-source-label>Terraindetails:</label><select id="native-settings-terrain" disabled data-settings-widget="options_video_terrain"><option>Nicht verfügbar</option></select></div>
       <div class="native-settings-row"><label for="native-settings-shadow" data-settings-widget="options_video_txshadowdetail" data-source-label>Schattendetails:</label><select id="native-settings-shadow" disabled data-settings-widget="options_video_shadow"><option>Nicht verfügbar</option></select></div>
-      <p class="native-settings-graphics-info" data-settings-widget="options_video_info_text_bkg">Der Anzeigemodus bestimmt die Renderauflösung. Die einzelnen Detailstufen des Originals sind hier noch nicht separat einstellbar.</p>
+      <p id="native-settings-graphics-info" class="native-settings-graphics-info" data-settings-widget="options_video_info_text_bkg">Der Anzeigemodus bestimmt die Renderauflösung. Effektdetails steuern derzeit das originale Kielwasser.</p>
     </section>
     <section id="native-settings-general" role="tabpanel" aria-labelledby="native-settings-tab-general" data-settings-pane="general" hidden>
       <h3 data-settings-widget="options_gen_mouse_label" data-source-label>Mauseinstellungen:</h3>
@@ -582,6 +582,6 @@
 </aside>
 <div id="trade-route-caption" hidden role="status"></div>
 <div id="air-mission-caption" hidden role="status"></div>
-<script type="module" src="main.js?v=native73"></script>
+<script type="module" src="main.js?v=native74"></script>
 </body>
 </html>

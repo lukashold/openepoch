@@ -1,0 +1,165 @@
+//! Initial alliances and fixed-team diplomacy in ordinary skirmishes.
+
+use crate::diplomacy::{ALLIED, WAR};
+use crate::game::Game;
+
+const UNUSED_SEAT: u8 = 15;
+const MAX_GROUP: u8 = 10;
+const SAVE_TAG: u32 = 1 << 20;
+
+#[derive(Clone, Copy)]
+pub(crate) struct FixedTeams([u8; 4]);
+
+impl FixedTeams {
+    fn group(self, seat: usize) -> u8 { self.0[seat] }
+
+    pub(crate) fn visibility_word(self, visibility: u8) -> u32 {
+        self.0.iter().enumerate().fold(SAVE_TAG | u32::from(visibility), |word, (seat, &group)| {
+            word | (u32::from(group) << (4 + seat * 4))
+        })
+    }
+
+    pub(crate) fn read_visibility_word(word: u32, players: usize) -> Option<(u8, Option<Self>)> {
+        if word <= 2 { return Some((word as u8, None)); }
+        let visibility = (word & 15) as u8;
+        if visibility > 2 || word >> 20 != 1 { return None; }
+        let groups = core::array::from_fn(|seat| ((word >> (4 + seat * 4)) & 15) as u8);
+        (groups[..players].iter().all(|&group| group <= MAX_GROUP)
+            && groups[players..].iter().all(|&group| group == UNUSED_SEAT))
+            .then_some((visibility, Some(Self(groups))))
+    }
+
+    pub(crate) fn valid_relations(self, players: usize, relations: &[u8; 16], offers: &[u8; 16]) -> bool {
+        (0..players).all(|from| (0..players).all(|to| {
+            let expected = if self.group(from) == self.group(to) { ALLIED } else { WAR };
+            relations[from * 4 + to] == expected && offers[from * 4 + to] == 0
+        }))
+    }
+}
+
+impl Game {
+    pub(crate) fn supports_skirmish_teams(&self) -> bool {
+        !self.net && self.humans == 1 && self.bench == 0 && self.sole_rules().is_none()
+            && self.territory_victory.is_none() && self.regicide.is_none() && self.crown_victory.is_none()
+            && self.koth.is_none() && self.capitols.is_none() && self.hotspots.is_none()
+    }
+
+    pub(crate) fn configure_skirmish_teams(&mut self, packed: u32, lock: bool) -> bool {
+        if self.tick != 0 || packed > 0xffff || !self.supports_skirmish_teams()
+            || self.diplomacy.fixed_teams.is_some()
+            || (0..self.nplayers).any(|from| (from + 1..self.nplayers).any(|to| self.allied(from as u8, to as u8)))
+        {
+            return false;
+        }
+
+        // Values 1–11 encode original setup group IDs 0–10. Zero is unassigned.
+        let choices: [u8; 4] = core::array::from_fn(|seat| ((packed >> (seat * 4)) & 15) as u8);
+        if choices[..self.nplayers].iter().any(|&choice| choice > MAX_GROUP + 1)
+            || choices[self.nplayers..].iter().any(|&choice| choice != 0)
+        {
+            return false;
+        }
+
+        let mut groups = choices.map(|choice| choice.checked_sub(1).unwrap_or(UNUSED_SEAT));
+        if lock {
+            // 00546860 assigns each remaining seat to the first empty group.
+            for seat in 0..self.nplayers {
+                if groups[seat] == UNUSED_SEAT {
+                    groups[seat] = (0..=MAX_GROUP).find(|group| !groups.contains(group)).unwrap();
+                }
+            }
+            self.diplomacy.fixed_teams = Some(FixedTeams(groups));
+        }
+
+        // 00546690 establishes each initial alliance before enabling its lock.
+        // 005499FA writes Allied in both directions. Zero terms use full sight.
+        for from in 0..self.nplayers {
+            for to in from + 1..self.nplayers {
+                let allied = groups[from] != UNUSED_SEAT && groups[from] == groups[to];
+                for index in [from * 4 + to, to * 4 + from] {
+                    if allied {
+                        self.diplomacy.relation[index] = ALLIED;
+                        self.diplomacy.sharing[index] = 1;
+                    } else if lock {
+                        self.diplomacy.relation[index] = WAR;
+                    }
+                }
+            }
+        }
+        self.refresh_display_fog();
+        true
+    }
+
+    pub(crate) fn fixed_team(&self, seat: usize) -> Option<u8> {
+        self.diplomacy.fixed_teams.map(|teams| teams.group(seat))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::game::NONE;
+
+    fn match_with_teams(locked: bool) -> Game {
+        let mut game = Game::new(7, 2, 0, 1, 0);
+        // Seats 0 and 1 share original group 3. Seat 2 has no assignment.
+        assert!(game.configure_skirmish_teams(0x44, locked));
+        game
+    }
+
+    #[test]
+    fn starts_mutual_alliance_full_sight_and_applies_lock_to_normal_commands() {
+        let mut game = match_with_teams(true);
+        assert_eq!(game.fixed_team(0), Some(3));
+        assert_eq!(game.fixed_team(1), Some(3));
+        assert_eq!(game.fixed_team(2), Some(0));
+        assert!(game.allied(0, 1) && game.shares_to(0, 1) && game.shares_to(1, 0));
+        assert!(game.hostile(0, 2) && game.hostile(2, 0));
+        assert!(!game.apply_diplomacy(0, 1, 2, 0, 0.0));
+        assert!(!game.apply_diplomacy(0, 2, 0, 0, 0.0));
+        assert!(!game.apply_diplomacy(0, 1, 7, 0, 0.0));
+        let wood = game.resource(1, 1);
+        assert!(game.apply_diplomacy(0, 1, 5, 1, 1.0));
+        assert_eq!(game.resource(1, 1), wood + 1.0);
+        game.save();
+        let mut loaded = Game::load(&game.savebuf).unwrap();
+        assert_eq!(game.state_hash(), loaded.state_hash());
+        assert_eq!(loaded.fixed_team(2), Some(0));
+        assert!(!loaded.apply_diplomacy(0, 1, 2, 0, 0.0));
+        loaded.save();
+        assert_eq!(game.savebuf, loaded.savebuf);
+    }
+
+    #[test]
+    fn unlocked_starting_alliance_can_be_changed() {
+        let mut game = match_with_teams(false);
+        assert_eq!(game.fixed_team(0), None);
+        assert!(game.allied(0, 1));
+        assert!(game.apply_diplomacy(0, 1, 2, 0, 0.0));
+        assert!(game.hostile(0, 1));
+    }
+
+    #[test]
+    fn giving_away_the_last_territory_preserves_fixed_relations_and_archive() {
+        let mut game = match_with_teams(true);
+        let region = game.towner.iter().position(|&owner| owner == 0).unwrap() as u32;
+        assert!(game.apply_territory(0, 1, 0, region, NONE));
+        assert_eq!(game.players[0].terr, 0);
+        assert!(game.allied(0, 1));
+        game.save();
+        let loaded = Game::load(&game.savebuf).unwrap();
+        assert_eq!(game.state_hash(), loaded.state_hash());
+    }
+
+    #[test]
+    fn invalid_rosters_and_archive_lock_words_are_rejected() {
+        let mut game = Game::new(7, 2, 0, 1, 0);
+        let old_hash = game.state_hash();
+        assert!(!game.configure_skirmish_teams(0xc, true));
+        assert!(!game.configure_skirmish_teams(0x1000, true));
+        assert_eq!(game.state_hash(), old_hash);
+        assert!(FixedTeams::read_visibility_word(SAVE_TAG | 1, 3).is_none());
+        assert!(FixedTeams::read_visibility_word(SAVE_TAG | 0x000f_0003, 3).is_none());
+        assert!(FixedTeams::read_visibility_word(SAVE_TAG | 0x000f_0002, 3).is_some());
+    }
+}
