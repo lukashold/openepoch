@@ -228,14 +228,19 @@ impl Game {
             self.terr_dirty = true;
         }
         for t in 0..self.nplayers {
-            self.players[t].terr = owner.iter().filter(|&&o| o as usize == t).count() as u32;
+            let count = owner.iter().filter(|&&o| o as usize == t).count() as u32;
+            #[cfg(feature = "ee2-native13")]
+            if let Some(borders) = &mut self.diplomacy.borders {
+                borders.territory_count_changed(t, self.players[t].terr, count);
+            }
+            self.players[t].terr = count;
         }
     }
     /// The original localized message explicitly voids existing alliances
     /// when the last territory is lost. Run after the entire atomic operation.
     pub fn void_landless_alliances(&mut self) {
         #[cfg(feature = "ee2-native13")]
-        if self.diplomacy.fixed_teams.is_some() { return; }
+        if self.diplomacy.fixed_teams.is_some() || self.diplomacy.borders.is_some() { return; }
         for a in 0..self.nplayers {
             if self.players[a].terr != 0 {
                 continue;

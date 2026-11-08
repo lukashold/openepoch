@@ -73,6 +73,12 @@ pub(crate) fn surface_heave(packed_actor_id: u32, elapsed: f32) -> f32 {
 }
 
 impl crate::game::Game {
+    pub(crate) fn naval_actor_id(&self, index: usize) -> Option<u32> {
+        let actor = &self.ents[index];
+        let serial = self.powers.as_ref()?.actor(self.h(index))?.serial;
+        Some((u32::from(actor.team) + 1) << 27 | serial)
+    }
+
     pub(crate) fn naval_surface_pose(&self, index: usize) -> Option<(u32, f32)> {
         self.naval_surface_pose_at(index, self.sim_elapsed())
     }
@@ -87,8 +93,7 @@ impl crate::game::Game {
         let fishing = actor.def == crate::fishing81::FISHING_SHIP && self.fishing_enabled;
         if !(matches!(actor.def, 29..=33 | 35 | 42 | 58 | 82) || carrier || fishing) ||
             actor.hp <= 0.0 || !self.production_roster_enabled { return None; }
-        let serial = self.powers.as_ref()?.actor(self.h(index))?.serial;
-        let id = (u32::from(actor.team) + 1) << 27 | serial;
+        let id = self.naval_actor_id(index)?;
         Some((id, surface_heave(id, elapsed)))
     }
 }

@@ -9,6 +9,8 @@ use crate::{defs::*, game::*, map::*};
 use core::fmt::Write;
 #[cfg(feature = "ee2-native13")]
 use crate::timed_treaties::TimedTreaties;
+#[cfg(feature = "ee2-native13")]
+use crate::border_treaties::BorderTreaties;
 
 pub const WAR: u8 = 0;
 pub const NEUTRAL: u8 = 1;
@@ -64,6 +66,8 @@ pub struct Diplomacy {
     pub(crate) fixed_teams: Option<crate::fixed_teams::FixedTeams>,
     #[cfg(feature = "ee2-native13")]
     pub(crate) timed: Option<TimedTreaties>,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) borders: Option<BorderTreaties>,
     pub(crate) sight_terms: bool,
 
     pub visibility: u8,
@@ -91,6 +95,8 @@ impl Default for Diplomacy {
             fixed_teams: None,
             #[cfg(feature = "ee2-native13")]
             timed: None,
+            #[cfg(feature = "ee2-native13")]
+            borders: None,
             sight_terms: false,
             visibility: 0,
             log: Vec::with_capacity(DIP_LOGS),
@@ -107,6 +113,17 @@ impl Diplomacy {
         self.offers[slot] = 0;
         #[cfg(feature = "ee2-native13")]
         if let Some(timed) = &mut self.timed { timed.set_offer(slot, 0); }
+        #[cfg(feature = "ee2-native13")]
+        if let Some(borders) = &mut self.borders { borders.set_offer(slot, 0); }
+    }
+
+    fn alliance_offer_terms_valid(&self, terms: u32) -> bool {
+        let max_sight = u32::from(self.max_sight_term());
+        #[cfg(feature = "ee2-native13")]
+        if self.borders.is_some() {
+            return terms <= 15 && (terms & 3) <= max_sight;
+        }
+        terms <= max_sight
     }
 
     fn alliance_offer_minutes_valid(&self, minutes: f32) -> bool {
@@ -263,6 +280,15 @@ impl Game {
     }
 
     #[cfg(feature = "ee2-native13")]
+    pub(crate) fn configure_border_treaties(&mut self) -> bool {
+        if self.tick != 0 || self.diplomacy.timed.is_none() || self.diplomacy.borders.is_some() {
+            return false;
+        }
+        self.diplomacy.borders = Some(BorderTreaties::default());
+        true
+    }
+
+    #[cfg(feature = "ee2-native13")]
     fn timed_war_blocked(&self, from: u8, to: u8) -> bool {
         self.diplomacy.timed.as_ref().is_some_and(|treaties| treaties.unbreakable
             && treaties.deadline(from as usize, to as usize) > self.sim_elapsed())
@@ -394,7 +420,7 @@ impl Game {
                     && if action == 0 {
                         self.relation(from, to) == WAR || self.relation(to, from) == WAR
                     } else {
-                        alliance_allowed && resource <= u32::from(self.diplomacy.max_sight_term())
+                        alliance_allowed && self.diplomacy.alliance_offer_terms_valid(resource)
                             && self.diplomacy.alliance_offer_minutes_valid(amount)
                             && self.relation(from, to) == NEUTRAL
                             && self.relation(to, from) == NEUTRAL
@@ -496,6 +522,8 @@ impl Game {
         self.diplomacy.clear_offer(j);
         #[cfg(feature = "ee2-native13")]
         if let Some(timed) = &mut self.diplomacy.timed { timed.clear(from as usize, to as usize); }
+        #[cfg(feature = "ee2-native13")]
+        if let Some(borders) = &mut self.diplomacy.borders { borders.set_term(from as usize, to as usize, 0); }
         self.diplomacy.sharing[i] = 0;
         self.diplomacy.sharing[j] = 0;
         self.diplomacy.gifts[i] = 0;
@@ -546,10 +574,14 @@ impl Game {
         match action {
             0 | 1 => {
                 self.diplomacy.offers[i] = action as u8 + 1;
-                self.diplomacy.offer_vision[i] = if action == 1 { resource as u8 } else { 0 };
+                self.diplomacy.offer_vision[i] = if action == 1 { resource as u8 & 3 } else { 0 };
                 #[cfg(feature = "ee2-native13")]
                 if let Some(timed) = &mut self.diplomacy.timed {
                     timed.set_offer(i, amount as u8);
+                }
+                #[cfg(feature = "ee2-native13")]
+                if let Some(borders) = &mut self.diplomacy.borders {
+                    borders.set_offer(i, (resource >> 2) as u8);
                 }
                 self.diplomacy.offer_tick[i] = self.tick;
                 self.diplomacy.cooldown[i] = self.tick.saturating_add(100);
@@ -577,6 +609,10 @@ impl Game {
                     #[cfg(feature = "ee2-native13")]
                     if let Some(timed) = &mut self.diplomacy.timed {
                         timed.start(from as usize, to as usize, timed.offered_minutes(j), now);
+                    }
+                    #[cfg(feature = "ee2-native13")]
+                    if let Some(borders) = &mut self.diplomacy.borders {
+                        borders.set_term(from as usize, to as usize, borders.offer(j));
                     }
                     let sharing = if offer == 2 {
                         self.diplomacy.offer_vision[j]
@@ -636,6 +672,8 @@ impl Game {
         self.prune_territory_offers();
         self.cancel_nonhostile_orders();
         self.refresh_display_fog();
+        #[cfg(feature = "ee2-native13")]
+        if action == 3 { self.reconcile_border_positions(); }
         true
     }
 
@@ -650,6 +688,7 @@ impl Game {
                 let deadline = timed.deadline(from, to);
                 if deadline == 0.0 || deadline > now { continue; }
                 timed.clear(from, to);
+                if let Some(borders) = &mut self.diplomacy.borders { borders.set_term(from, to, 0); }
                 for slot in [from * 4 + to, to * 4 + from] {
                     self.diplomacy.relation[slot] = NEUTRAL;
                     self.diplomacy.sharing[slot] = SIGHT_NONE;
@@ -776,6 +815,8 @@ impl Game {
         if self.diplomacy.sight_terms { s.push_str(",\"sightTerms\":true"); }
         #[cfg(feature = "ee2-native13")]
         if self.diplomacy.timed.is_some() { s.push_str(",\"timedTreaties\":true"); }
+        #[cfg(feature = "ee2-native13")]
+        if self.diplomacy.borders.is_some() { s.push_str(",\"borderTreaties\":true"); }
         s.push_str(",\"players\":[");
 
         for p in 0..self.nplayers {
@@ -795,6 +836,10 @@ impl Game {
                     let _ = write!(s, ",\"treatySeconds\":{},\"treatyUnbreakable\":{},\"incomingMinutes\":{},\"outgoingMinutes\":{}",
                         timed.remaining(me as usize, p, now), timed.unbreakable && timed.deadline(me as usize, p) > now,
                         timed.offered_minutes(j), timed.offered_minutes(i));
+                }
+                if let Some(borders) = &self.diplomacy.borders {
+                    let _ = write!(s, ",\"borderTerm\":{},\"incomingBorderTerm\":{},\"outgoingBorderTerm\":{}",
+                        borders.term(me as usize, p), borders.offer(j), borders.offer(i));
                 }
             }
             #[cfg(feature = "ee2-native13")]

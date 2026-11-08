@@ -139,6 +139,8 @@ impl Game {
         let options = options | crate::initial_ceasefire::save_option(self.initial_ceasefire);
         #[cfg(feature="ee2-native13")]
         let options = options | if self.fishing_enabled { crate::fishing81::SAVE_FLAG } else { 0 };
+        #[cfg(feature="ee2-native13")]
+        let options = options | if self.submarine_depth_enabled { crate::submarine82::SAVE_FLAG } else { 0 };
         for v in [options, self.instant_build as u32, self.tech_points] {
             b.extend_from_slice(&v.to_le_bytes());
         }
@@ -249,6 +251,8 @@ impl Game {
         if let Some(powers) = &self.powers { b = powers.wrap(b); }
         #[cfg(feature = "ee2-native13")]
         if let Some(timed) = &self.diplomacy.timed { b = timed.wrap(b); }
+        #[cfg(feature = "ee2-native13")]
+        if let Some(borders) = &self.diplomacy.borders { b = borders.wrap(b); }
         if self.source_clock.is_some() { b = self.diplomacy.clock.wrap(b); }
         let b = crate::source_clock38::wrap(b, self.source_clock);
         #[cfg(feature = "ee2-authored-valley37")]
@@ -305,6 +309,8 @@ impl Game {
         let (buf, source_clock) = crate::source_clock38::split(buf)?;
         let (buf, diplomacy_clock) = crate::diplomacy::DiplomacyClock::split(buf)?;
         if diplomacy_clock.is_some() && source_clock.is_none() { return None; }
+        #[cfg(feature = "ee2-native13")]
+        let (buf, border_treaties) = crate::border_treaties::BorderTreaties::split(buf)?;
         #[cfg(feature = "ee2-native13")]
         let (buf, timed_treaties) = crate::timed_treaties::TimedTreaties::split(buf)?;
         #[cfg(feature="ee2-native13")]
@@ -541,7 +547,8 @@ impl Game {
                 crate::game::trade30::SAVE_FLAG | crate::air31::SAVE_FLAG | crate::runway32::SAVE_FLAG |
                 crate::takeoff33::SAVE_FLAG | crate::landing34::SAVE_FLAG | crate::carrier36_defs::SAVE_FLAG |
                 crate::cmd::SOLO_RESIGN_SAVE_FLAG | crate::initial_ceasefire::SAVE_MASK |
-                crate::runway32::CARRIER_POSE_SAVE_FLAG | CAPTURE_CHECKPOINT_SAVE_MASK | crate::fishing81::SAVE_FLAG;
+                crate::runway32::CARRIER_POSE_SAVE_FLAG | CAPTURE_CHECKPOINT_SAVE_MASK |
+                crate::fishing81::SAVE_FLAG | crate::submarine82::SAVE_FLAG;
             let flags = v(0);
             if flags & !allowed != 0 || v(4) > 1 { return None; }
             g.cheats_enabled = flags & 1 != 0;
@@ -562,6 +569,7 @@ impl Game {
                 g.solo_resigned = flags & crate::cmd::SOLO_RESIGN_SAVE_FLAG != 0;
                 g.initial_ceasefire = crate::initial_ceasefire::read_option(flags)?;
                 g.fishing_enabled = flags & crate::fishing81::SAVE_FLAG != 0;
+                g.submarine_depth_enabled = flags & crate::submarine82::SAVE_FLAG != 0;
                 if g.air_runway_enabled && !g.air_missions_enabled { return None; }
                 if g.air_takeoff_enabled && !g.air_runway_enabled { return None; }
                 if g.air_landing_enabled && !g.air_takeoff_enabled { return None; }
@@ -680,6 +688,9 @@ impl Game {
             if !valid_definition(e.def) || (e.team as usize>=g.nplayers && !neutral_hill) || e.qn>5 || e.ncargo as usize>CARGO_MAX {return None;}
             #[cfg(feature="ee2-native13")]
             if e.def == crate::koth64::HILL && (e.qn != 0 || e.ncargo != 0 || e.order != O_IDLE) { return None; }
+            #[cfg(feature="ee2-native13")]
+            if g.submarine_depth_enabled && crate::submarine82::is_submarine(e.def)
+                && !crate::submarine82::valid_depth(e) { return None; }
             #[cfg(feature="ee2-native13")]
             if e.def == crate::fishing81::FISHING_SHIP && (e.qn != 0 || e.ncargo != 0 ||
                 !(0.0..=crate::fishing81::CARRY_LIMIT).contains(&e.carry) ||
@@ -851,6 +862,12 @@ impl Game {
         }
         g.build_grid();
         if has_territory&&!g.validate_territory_state(){return None;}
+        #[cfg(feature = "ee2-native13")]
+        if let Some(borders) = border_treaties {
+            let counts = core::array::from_fn::<_, 4, _>(|seat| g.players[seat].terr);
+            if g.diplomacy.timed.is_none() || !borders.valid(&g.diplomacy, &counts[..g.nplayers]) { return None; }
+            g.diplomacy.borders = Some(borders);
+        }
         if !has_diplomacy {
             g.team_vis.fill(0);
             g.team_vis[..NN].copy_from_slice(&g.vis);
@@ -892,6 +909,8 @@ impl Game {
         if g.carrier_surface_pose_enabled && !g.carrier_surface_pose_allowed() { return None; }
         #[cfg(feature="ee2-native13")]
         if g.fishing_enabled && !g.fishing_allowed() { return None; }
+        #[cfg(feature="ee2-native13")]
+        if g.submarine_depth_enabled && !g.submarine_depth_allowed() { return None; }
         #[cfg(feature="ee2-native13")]
         g.restore_blessings(blessings)?;
         #[cfg(feature="ee2-native13")]

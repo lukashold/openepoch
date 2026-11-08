@@ -6,6 +6,7 @@ pub const MAGIC:u32=0x3143564e; // NVC1
 pub const END:u32=0x4543564e; // NVCE
 pub const HEADER:usize=48;
 pub const FIELD_HEADER:usize=16;
+const BORDER_FIELD_HEADER:usize=20;
 pub const ACTOR:usize=8;
 pub const FIELD_COUNT:usize=96;
 fn u(b:&[u8],p:usize)->Option<u32>{Some(u32::from_le_bytes(b.get(p..p+4)?.try_into().ok()?))}
@@ -14,8 +15,9 @@ fn put(b:&mut Vec<u8>,v:u32){b.extend_from_slice(&v.to_le_bytes());}
 /// Header-only bound, before any allocation. The caller separately verifies
 /// the exact outer footer/checksum; read_navigation validates every record.
 pub fn framed_len(b:&[u8])->Option<usize>{
- if b.len()<HEADER+4||u(b,0)?!=MAGIC||u(b,4)?!=1||u(b,12)?as usize!=FIELD_COUNT||u(b,16)?as usize!=map::NN||u(b,24)?>4||u(b,28)?as usize>MAXE||u(b,32)?>1||u(b,36)?as usize!=ACTOR||u(b,40)?as usize!=FIELD_HEADER||u(b,44)?as usize!=HEADER{return None;}
- let n=u(b,8)?as usize;let min=HEADER+FIELD_COUNT*FIELD_HEADER+u(b,28)?as usize*ACTOR+4;
+ let field_header=match u(b,4)?{1=>FIELD_HEADER,2=>BORDER_FIELD_HEADER,_=>return None};
+ if b.len()<HEADER+4||u(b,0)?!=MAGIC||u(b,12)?as usize!=FIELD_COUNT||u(b,16)?as usize!=map::NN||u(b,24)?>4||u(b,28)?as usize>MAXE||u(b,32)?>1||u(b,36)?as usize!=ACTOR||u(b,40)?as usize!=field_header||u(b,44)?as usize!=HEADER{return None;}
+ let n=u(b,8)?as usize;let min=HEADER+FIELD_COUNT*field_header+u(b,28)?as usize*ACTOR+4;
  if n<min||n>min+FIELD_COUNT*map::NN||n>b.len()||u(b,n-4)?!=END{return None;}Some(n)
 }
 
@@ -23,7 +25,7 @@ pub fn framed_len(b:&[u8])->Option<usize>{
  use super::*;use crate::defs::*;
  fn fixture()->Game{
   let mut g=Game::new(7,0,0,1,0);g.tick=40;
-  for (slot,key)in[123u32,456].into_iter().enumerate(){g.map.fields[slot]=Field{key,ver:g.map.nav_ver,used:39+slot as u32,dir:vec![255;map::NN]};g.map.fields[slot].dir[key as usize]=8;}
+  for (slot,key)in[123u32,456].into_iter().enumerate(){g.map.fields[slot]=Field{key,denied_territories:0,ver:g.map.nav_ver,used:39+slot as u32,dir:vec![255;map::NN]};g.map.fields[slot].dir[key as usize]=8;}
   let ids:Vec<_>=(0..g.high).filter(|&i|g.ents[i].alive).take(2).collect();for(slot,&i)in ids.iter().enumerate(){g.ents[i].fslot=slot as u16;}
   g.map.budget=2;g
  }
@@ -62,24 +64,38 @@ pub fn framed_len(b:&[u8])->Option<usize>{
 impl Game{
  pub(crate) fn append_navigation(&self,b:&mut Vec<u8>){
   let count=self.ents[..self.high].iter().filter(|e|e.alive).count();
-  let bytes=HEADER+FIELD_COUNT*FIELD_HEADER+self.map.fields.iter().map(|f|f.dir.len()).sum::<usize>()+count*ACTOR+4;
-  for v in[MAGIC,1,bytes as u32,FIELD_COUNT as u32,map::NN as u32,self.map.nav_ver,self.map.budget,count as u32,self.navigation_history_unknown as u32,ACTOR as u32,FIELD_HEADER as u32,HEADER as u32]{put(b,v);}
-  for f in &self.map.fields{for v in[f.key,f.ver,f.used,f.dir.len()as u32]{put(b,v);}b.extend_from_slice(&f.dir);}
+  let borders=self.map.fields.iter().any(|f|f.denied_territories!=0);
+  let field_header=if borders{BORDER_FIELD_HEADER}else{FIELD_HEADER};
+  let bytes=HEADER+FIELD_COUNT*field_header+self.map.fields.iter().map(|f|f.dir.len()).sum::<usize>()+count*ACTOR+4;
+  for v in[MAGIC,1+u32::from(borders),bytes as u32,FIELD_COUNT as u32,map::NN as u32,self.map.nav_ver,self.map.budget,count as u32,self.navigation_history_unknown as u32,ACTOR as u32,field_header as u32,HEADER as u32]{put(b,v);}
+  for f in &self.map.fields{
+   for v in[f.key,f.ver,f.used,f.dir.len()as u32]{put(b,v);}
+   if borders{put(b,f.denied_territories);}
+   b.extend_from_slice(&f.dir);
+  }
   for i in 0..self.high{if self.ents[i].alive{put(b,self.h(i));put(b,self.ents[i].fslot as u32);}}
   put(b,END);
  }
  pub(crate) fn read_navigation(&mut self,b:Option<&[u8]>)->Option<()>{
   let Some(b)=b else{self.navigation_history_unknown=true;return Some(());};
   if framed_len(b)?!=b.len()||u(b,28)?as usize!=self.ents[..self.high].iter().filter(|e|e.alive).count(){return None;}
+  let field_header=u(b,40)?as usize;
+  let borders=field_header==BORDER_FIELD_HEADER;
+  #[cfg(feature="ee2-native13")]
+  if borders&&self.diplomacy.borders.is_none(){return None;}
+  #[cfg(not(feature="ee2-native13"))]
+  if borders{return None;}
   let mut fields=Vec::with_capacity(FIELD_COUNT);let mut keys=Vec::with_capacity(FIELD_COUNT);let mut p=HEADER;
   for _ in 0..FIELD_COUNT{
-   let key=u(b,p)?;let ver=u(b,p+4)?;let used=u(b,p+8)?;let n=u(b,p+12)?as usize;p=p.checked_add(FIELD_HEADER)?;
+   let key=u(b,p)?;let ver=u(b,p+4)?;let used=u(b,p+8)?;let n=u(b,p+12)?as usize;
+   let denied_territories=if borders{u(b,p+16)?}else{0};p=p.checked_add(field_header)?;
    if used>self.tick{return None;}
-   if key==u32::MAX{if n!=0||ver!=0||used!=0{return None;}}
-   else{if key>>16>1||n!=map::NN||keys.contains(&key){return None;}keys.push(key);}
+   if denied_territories.checked_shr(self.map.tseeds.len()as u32).unwrap_or(0)!=0{return None;}
+   if key==u32::MAX{if n!=0||ver!=0||used!=0||denied_territories!=0{return None;}}
+   else{if key>>16>1||n!=map::NN||keys.contains(&(key,denied_territories)){return None;}keys.push((key,denied_territories));}
    let dir=b.get(p..p.checked_add(n)?)?;p+=n;
    if dir.iter().any(|&v|v>8&&v!=255){return None;}
-   fields.push(Field{key,ver,used,dir:dir.to_vec()});
+   fields.push(Field{key,denied_territories,ver,used,dir:dir.to_vec()});
   }
   let mut slots=Vec::new();
   for i in 0..self.high{if self.ents[i].alive{
@@ -94,9 +110,12 @@ impl Game{
  }
  pub(crate) fn hash_navigation(&self,mut mix:impl FnMut(u32)){
   mix(MAGIC);mix(self.map.nav_ver);mix(self.map.budget);mix(self.navigation_history_unknown as u32);
+  let borders=self.map.fields.iter().any(|f|f.denied_territories!=0);
+  if borders{mix(u32::from_le_bytes(*b"BRNV"));}
   mix(self.map.fields.len()as u32);
   for f in &self.map.fields{
    mix(f.key);mix(f.ver);mix(f.used);mix(f.dir.len()as u32);
+   if borders{mix(f.denied_territories);}
    for b in f.dir.chunks_exact(4){mix(u32::from_le_bytes(b.try_into().unwrap()));}
   }
   for i in 0..self.high{if self.ents[i].alive{mix(self.h(i));mix(self.ents[i].fslot as u32);}}

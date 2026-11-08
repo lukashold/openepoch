@@ -7,12 +7,12 @@ import { researchPanel } from './research.js?v=rank-families';
 import {loadCrownArt,mountCrownProgress,mountCrownVictoryRows} from './crown-progress.js?v=native65';
 import {loadCrownStatusArt,readCrownActorVisuals,crownStatusSlots} from './crown-visuals.js?v=native58';
 import { originalResearchActions, researchCost, researchState } from './original-research-actions.js?v=rank-families';
-import { diplomacyPanel } from './diplomacy.js?v=native77';
-import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native77';
+import { diplomacyPanel } from './diplomacy.js?v=border107';
+import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=border107';
 import {loadNativeFontUI} from './original-font-ui.js?v=native21names';
 import {territoryClaimMessage} from './territory-help.js?v=native64-koth';
-import * as sfx from './audio.js?v=native104';
-import {generatedAmbientCoverage,loadOriginalAmbient,originalAmbientPriorities} from './original-ambient.js?v=ambient39';
+import * as sfx from './audio.js?v=native106';
+import {liveGeneratedAmbientCoverage,loadOriginalAmbient,originalAmbientPriorities} from './original-ambient.js?v=native106';
 import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=citizen9';
 import {mountOriginalShellVideo} from './original-shell-video.js?v=native12';
 import {mountSkirmishMenu} from './skirmish-menu.js?v=native13';
@@ -22,7 +22,7 @@ import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regi
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native66';
-import {loadOriginalModels} from './original-renderer.js?v=native77';
+import {loadOriginalModels} from './original-renderer.js?v=submarine82';
 import {loadOriginalBoatWake,readNavalWakeActors} from './original-boat-wake.js?v=native77';
 import {loadKingOfTheHillPresentation} from './original-koth.js?v=native64-koth';
 import {loadWonderPresentation} from './original-wonders.js?v=native63';
@@ -57,12 +57,12 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=clock38';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native77';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native78';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
 import {createSourceRoundCarrier, selectedRoundTripMilliseconds} from './source-network-wire.js?v=native54';
-import {mountSourceRosterLobby,requiresCapitolRoster} from './source-network-lobby.js?v=native77';
+import {mountSourceRosterLobby,requiresCapitolRoster} from './source-network-lobby.js?v=border107';
 import {applyNetworkCheckpoint} from './source-network-resume.js?v=native75-teams';
 import {createFullscreenController} from './fullscreen.js?v=building2';
 import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native67';
@@ -162,7 +162,7 @@ const valleyRequested=rulesProfile.id==='up15'&&(!!valleyManifest||['1','archive
 try{
   if(valleyRequested){
     const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley75_commit','valley71_force_attack_at','valley71_neutral_opening']:rulesProfile.requiredExports;
-    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native77-valley'};
+    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native78-valley'};
     try{wasm=await loadRulesWasm(previewRules,import.meta.url);}catch{/* The ordinary ruleset remains available. */}
   }
   wasm??=await loadRulesWasm(rulesProfile,import.meta.url);
@@ -1338,7 +1338,7 @@ function begin(tempo = null, useSourceClock = wasm.sim_clock_active?.() === 1, a
   hercBeam?.reset(wasm.sim_elapsed_seconds());
   sfx.resetWorldAmbience();
   ambientCoverage=ambientPresentation&&!bench&&wasm.terrain_types_len?.()===MAP*MAP
-    ? generatedAmbientCoverage(u8(wasm.terrain_types_ptr(),MAP*MAP),MAP,MAP,wasm.resource_kind) : null;
+    ? liveGeneratedAmbientCoverage(()=>u8(wasm.terrain_types_ptr(),MAP*MAP),MAP,MAP,wasm.resource_kind,performance.now()/1000) : null;
   airMissionFlag?.reset();
   tradeWaitStatus.update(false);
   tradeRoute?.cancel();tradePress=null;
@@ -1443,6 +1443,9 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
   if(originalSkirmish&&typeof wasm.configure_timed_treaties==='function'&&wasm.configure_timed_treaties(0)!==1){
     toast('Die Bündnisdauer konnte nicht eingerichtet werden.');return;
   }
+  if(originalSkirmish&&typeof wasm.configure_border_treaties==='function'&&wasm.configure_border_treaties()!==1){
+    toast('Die Grenzregeln konnten nicht eingerichtet werden.');return;
+  }
   if(originalSkirmish&&Number.isInteger(fishingId)&&!wasm.configure_fishing_skirmish()){
     toast('Die Fischgründe konnten für dieses Scharmützel nicht eingerichtet werden.');
     return;
@@ -1472,6 +1475,10 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
   }
   if(!benchUnits&&humans===1&&priestEnabled&&typeof wasm.configure_carrier_surface_pose==='function'){
     wasm.configure_carrier_surface_pose();
+  }
+  if(originalSkirmish&&typeof wasm.configure_submarine_depth==='function'&&!wasm.configure_submarine_depth()){
+    toast('Die Tauchtiefe der U-Boote konnte nicht eingerichtet werden.');
+    return;
   }
   if(!benchUnits&&humans===1&&priestEnabled&&typeof wasm.configure_dock_garrison==='function'
     &&!wasm.configure_dock_garrison()){
@@ -2015,7 +2022,8 @@ function frame(now) {
   if(ambientCoverage){
     const audible=!paused&&!gameSettings.active()&&!document.hidden;
     sfx.frameOriginalAmbience({world:wasm.render_meta_session(),climate:seasonSession.climate,now:now/1000,
-      weather:'Normal',running:audible,priorities:audible?originalAmbientPriorities(ambientCoverage,view,u8(wasm.fog_ptr(),MAP*MAP)):null});
+      weather:'Normal',running:audible,refreshForest:ambientCoverage.refreshForest,
+      priorities:audible?originalAmbientPriorities(ambientCoverage,view,u8(wasm.fog_ptr(),MAP*MAP)):null});
   }
   if(captureGlow&&!paused&&!(net&&net.ls.waiting)&&wasm.has_active_capture_glow())captureGlow.advance(visualSeconds);
   blessGround?.advance(visualSeconds);
@@ -3421,6 +3429,8 @@ function checkRosterSettings(cfg,humanSeats,resuming=false) {
     throw Error('Die Sichtregeln benötigen getrennte Spielerplätze und eine passende Spielversion.');
   if(cfg.timedTreaties!==undefined&&(cfg.timedTreaties!==true||!supportsNetworkTimedTreaties||!cfg.sightTerms))
     throw Error('Befristete Bündnisse benötigen eine passende Spielversion.');
+  if(cfg.borderTreaties!==undefined&&(cfg.borderTreaties!==true||!supportsNetworkBorderTreaties||!cfg.timedTreaties))
+    throw Error('Bündnisgrenzen benötigen eine passende Spielversion.');
   checkedEpochRange(cfg.epoch,cfg.finalEpoch,wasm.epoch_count());
   return {humanSeats,ai:cfg.ai,seed:cfg.seed,visibility:cfg.visibility,popLimit:cfg.popLimit,supplies:cfg.supplies,
     resignationPolicy:cfg.resignationPolicy,ceasefire:cfg.ceasefire,epoch:cfg.epoch,finalEpoch:cfg.finalEpoch,
@@ -3434,6 +3444,7 @@ function checkRosterSettings(cfg,humanSeats,resuming=false) {
     ...(startingTeams?{startingTeams}:{}),
     ...(cfg.sightTerms?{sightTerms:true}:{}),
     ...(cfg.timedTreaties?{timedTreaties:true}:{}),
+    ...(cfg.borderTreaties?{borderTreaties:true}:{}),
     ...(sharedOwner?{sharedOwner:true}:cfg.groupedOwners?{groupedOwners:cfg.groupedOwners.slice(),
       ...(resuming?{groupedWorldHumans:worldHumans}:{})}:{})};
 }
@@ -3441,7 +3452,7 @@ function checkRosterSettings(cfg,humanSeats,resuming=false) {
 function checkpointRules(cfg){
   const crowns=cfg.crownsDisabled===undefined?0:cfg.crownsDisabled?2:1;
   const capture=cfg.captureCheckpoint?1+Number(cfg.features.includes('captureAnimation')):0;
-  const rules=crowns|(capture<<25)|(Number(cfg.sightTerms===true)<<27)|(Number(cfg.timedTreaties===true)<<28);
+  const rules=crowns|(capture<<25)|(Number(cfg.sightTerms===true)<<27)|(Number(cfg.timedTreaties===true)<<28)|(Number(cfg.borderTreaties===true)<<29);
   const crown=cfg.crownVictory, capitol=cfg.capitolVictory;
   if(crown)return rules|(crown.mode<<8)|(crown.target<<16);
   if(capitol)return rules|(capitol.mode<<8)|(capitol.minutes<<16)|(Number(capitol.sole)<<24);
@@ -3471,6 +3482,8 @@ function startRosterGame(cfg,seat,send,links,{archive,onCheckpoint}) {
       throw Error('Die Sichtregeln konnten nicht eingerichtet werden.');
     if(cfg.timedTreaties&&wasm.configure_timed_treaties(1)!==1)
       throw Error('Die Bündnisdauer konnte nicht eingerichtet werden.');
+    if(cfg.borderTreaties&&wasm.configure_border_treaties()!==1)
+      throw Error('Die Grenzregeln konnten nicht eingerichtet werden.');
     if((!sharedOwner&&!wasm.configure_network_resignation(cfg.resignationPolicy))||
       (cfg.ceasefire&&!wasm.configure_initial_ceasefire(cfg.ceasefire)))throw Error('Die Regeln für diesen Raum konnten nicht aktiviert werden.');
     for(const name of cfg.features){
@@ -3531,6 +3544,7 @@ const supportsNetworkTeams=supportsNetworkCheckpoint&&
   ['configure_network_starting_teams','load_network_resume_with_teams','validate_network_resume_with_teams'].every(name=>typeof wasm[name]==='function');
 const supportsNetworkSightTerms=supportsNetworkCheckpoint&&typeof wasm.configure_sight_terms==='function';
 const supportsNetworkTimedTreaties=supportsNetworkSightTerms&&typeof wasm.configure_timed_treaties==='function';
+const supportsNetworkBorderTreaties=supportsNetworkTimedTreaties&&typeof wasm.configure_border_treaties==='function';
 const supportsSharedOwner=supportsSourceRoster&&typeof wasm.init_network_shared_owner==='function'&&typeof wasm.network_shared_owner==='function';
 const supportsSharedCheckpoint=supportsSharedOwner&&supportsNetworkCheckpoint&&
   ['save_shared_owner_resume','load_shared_owner_resume','validate_shared_owner_resume'].every(name=>typeof wasm[name]==='function');
@@ -3568,6 +3582,7 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
     ...(supportsNetworkTeams?{startingTeams:true}:{}),
     ...(supportsNetworkSightTerms?{sightTerms:true}:{}),
     ...(supportsNetworkTimedTreaties?{timedTreaties:true}:{}),
+    ...(supportsNetworkBorderTreaties?{borderTreaties:true}:{}),
     checkpoints:supportsNetworkCheckpoint,sharedOwner:supportsSharedOwner,sharedOwnerCheckpoint:supportsSharedCheckpoint,
     groupedCoop:supportsGroupedCoop,groupedCheckpoint:supportsGroupedCheckpoint}),
   checkHello(hello){
@@ -3582,6 +3597,7 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
       startingTeams:hello.startingTeams===true,
       sightTerms:hello.sightTerms===true,
       timedTreaties:hello.timedTreaties===true,
+      borderTreaties:hello.borderTreaties===true,
       checkpoints:hello.checkpoints===true,sharedOwner:hello.sharedOwner===true,
       sharedOwnerCheckpoint:hello.sharedOwner===true&&hello.sharedOwnerCheckpoint===true,groupedCoop:hello.groupedCoop===true,
       groupedCheckpoint:hello.groupedCoop===true&&hello.groupedCheckpoint===true};
@@ -3614,6 +3630,7 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
     if(startingTeams&&guests.some(guest=>!guest.startingTeams))throw Error('Alle Mitspieler benötigen eine Spielversion mit Startteams.');
     const sightTerms=supportsNetworkSightTerms&&!sharedOwner&&!groupedOwners&&guests.every(guest=>guest.sightTerms);
     const timedTreaties=sightTerms&&supportsNetworkTimedTreaties&&guests.every(guest=>guest.timedTreaties);
+    const borderTreaties=timedTreaties&&supportsNetworkBorderTreaties&&guests.every(guest=>guest.borderTreaties);
     return {humanSeats,ai,seed:(seedOf()>>>0)||1,visibility:+$('map-visibility').value,
       popLimit:+$('pop-limit').value,supplies:+$('supplies').value,resignationPolicy:+$('mp-resign-policy').value,
       ceasefire:+$('initial-ceasefire').value,climate,seasons:menuSeasonSettings(),gameTempo:menuTempo(),
@@ -3624,6 +3641,7 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
       ...(startingTeams?{startingTeams}:{}),
       ...(sightTerms?{sightTerms:true}:{}),
       ...(timedTreaties?{timedTreaties:true}:{}),
+      ...(borderTreaties?{borderTreaties:true}:{}),
       ...resolvedSkirmishChoices(choices,worldHumans+ai),
       ...(sharedOwner?{sharedOwner:true}:groupedOwners?{groupedOwners}:{})};
   },

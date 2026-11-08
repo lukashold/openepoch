@@ -313,6 +313,8 @@ pub struct Game {
     #[cfg(feature="ee2-native13")]
     pub(crate) fishing_enabled: bool,
     #[cfg(feature = "ee2-native13")]
+    pub(crate) submarine_depth_enabled: bool,
+    #[cfg(feature = "ee2-native13")]
     pub(crate) trade: trade30::State,
     #[cfg(feature = "ee2-native13")]
     pub(crate) air_missions_enabled: bool,
@@ -558,6 +560,8 @@ impl Game {
             trade_enabled: !net && bench == 0,
             #[cfg(feature="ee2-native13")]
             fishing_enabled: false,
+            #[cfg(feature = "ee2-native13")]
+            submarine_depth_enabled: false,
             #[cfg(feature = "ee2-native13")]
             trade: trade30::State::default(),
             #[cfg(feature = "ee2-native13")]
@@ -1131,6 +1135,19 @@ impl Game {
             #[cfg(feature = "ee2-native13")]
             if self.air_parked(i, &self.ents[i]) || self.leader_immobilized(i) { continue; }
             #[cfg(feature = "ee2-native13")]
+            let denied = self.denied_border_territories(&self.ents[i]);
+            #[cfg(feature = "ee2-native13")]
+            if !self.map.permits_territory(tile_of(x, y), denied) { continue; }
+            let dom = DEFS[self.ents[i].def as usize].dom;
+            let key = if dom == LAND { kl } else { ks };
+            #[cfg(feature = "ee2-native13")]
+            let key = if dom != AIR && !self.map.permits_territory((key & 0xffff) as usize, denied) {
+                let dc = usize::from(dom != LAND);
+                let tile = self.map.snap_permitted(x, y, dc, denied);
+                if !self.map.pass[dc][tile] { continue; }
+                tile as u32 | ((dc as u32) << 16)
+            } else { key };
+            #[cfg(feature = "ee2-native13")]
             { self.trade_interrupt(i); self.air_interrupt(i); }
             let e = &mut self.ents[i];
             let d = &DEFS[e.def as usize];
@@ -1142,15 +1159,20 @@ impl Game {
             let r = 0.85 * k.sqrt() * d.size.max(1.0);
             let a = k * 2.399_96;
             let (mut tx, mut ty) = (x + r * a.cos(), y + r * a.sin());
-            let key = if d.dom == LAND { kl } else { ks };
             if d.dom != AIR {
                 let dc = if d.dom == LAND { 0 } else { 1 };
-                if !self.map.pass[dc][tile_of(tx, ty)] {
+                let slot = tile_of(tx, ty);
+                let passable = self.map.pass[dc][slot];
+                #[cfg(feature = "ee2-native13")]
+                let passable = passable && self.map.permits_territory(slot, denied);
+                if !passable {
                     let t = (key & 0xffff) as usize;
                     tx = (t % N) as f32 + 0.5;
                     ty = (t / N) as f32 + 0.5;
                 }
             }
+            #[cfg(feature = "ee2-native13")]
+            if d.dom == AIR && !self.map.permits_territory(tile_of(tx, ty), denied) { tx = x; ty = y; }
             e.order = if attack { O_AMOVE } else { O_MOVE };
             e.ox = tx;
             e.oy = ty;
@@ -1550,6 +1572,8 @@ impl Game {
             }
         }
         #[cfg(feature = "ee2-native13")]
+        if self.submarine_depth_enabled { mix(u32::from_le_bytes(*b"SUB1")); }
+        #[cfg(feature = "ee2-native13")]
         if self.air_missions_enabled { self.aircraft.hash(&mut mix); }
         #[cfg(feature = "ee2-native13")]
         if self.air_runway_enabled { mix(crate::runway32::HASH_TAG); }
@@ -1588,6 +1612,8 @@ impl Game {
         if self.diplomacy.sight_terms { mix(crate::diplomacy::SIGHT_TERMS_SAVE_TAG); }
         #[cfg(feature = "ee2-native13")]
         if let Some(timed) = &self.diplomacy.timed { timed.hash(&mut mix); }
+        #[cfg(feature = "ee2-native13")]
+        if let Some(borders) = &self.diplomacy.borders { borders.hash(&mut mix); }
         for a in [&self.diplomacy.relation,&self.diplomacy.offers,&self.diplomacy.offer_vision,&self.diplomacy.sharing]{for &v in a{mix(v as u32);}}
         for a in [&self.diplomacy.offer_tick,&self.diplomacy.cooldown,&self.diplomacy.gifts,&self.diplomacy.neutral_since,&self.diplomacy.war_tick]{for &v in a{mix(v);}}
         for h in self.territory.claims{mix(h);}
@@ -1628,6 +1654,8 @@ impl Game {
                     mix(e.q[1]);
                     mix(e.q[3]);
                 }
+                #[cfg(feature = "ee2-native13")]
+                if self.submarine_depth_enabled && crate::submarine82::is_submarine(e.def) { mix(e.q[3]); }
                 for k in 0..e.ncargo as usize {if cfg!(feature="ee2-roster6"){mix(e.cargo[k]as u32);mix(e.cargo_hp[k]as u32);}else{mix(e.cargo[k] as u32 | (e.cargo_hp[k] as u32)<<8);}}
             }
         }
@@ -1769,6 +1797,8 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         if let Some(signals) = &mut self.battle_signals { signals.update_groups(DT, &self.ents); }
         if self.bench==0{self.update_diplomacy();}
+        #[cfg(feature = "ee2-native13")]
+        if self.tick % 4 == 0 { self.reconcile_border_positions(); }
         #[cfg(feature = "ee2-native13")]
         self.tick_capture_state();
         self.map.budget = 4;
@@ -2465,7 +2495,11 @@ impl Game {
         if off > 0.8 && off < 30.0 && ((e.x - fx).powi(2) + (e.y - fy).powi(2)).sqrt() < off + 2.5 {
             return direct;
         }
-        let k = self.map.flow(&mut e.fslot, e.fkey, tile, self.tick) as usize;
+        #[cfg(feature = "ee2-native13")]
+        let denied_territories = self.border_egress_mask(e);
+        #[cfg(not(feature = "ee2-native13"))]
+        let denied_territories = 0;
+        let k = self.map.flow(&mut e.fslot, e.fkey, tile, self.tick, denied_territories) as usize;
         if k < 8 {
             let l = if k >= 4 { core::f32::consts::FRAC_1_SQRT_2 } else { 1.0 };
             (DIRS[k].0 as f32 * l, DIRS[k].1 as f32 * l)
@@ -2477,24 +2511,30 @@ impl Game {
     fn try_move(&self, e: &mut Ent, d: &Def, nx: f32, ny: f32) {
         let nx = nx.clamp(0.6, N as f32 - 0.6);
         let ny = ny.clamp(0.6, N as f32 - 0.6);
+        #[cfg(feature = "ee2-native13")]
+        let denied_territories = self.border_egress_mask(e);
+        #[cfg(not(feature = "ee2-native13"))]
+        let denied_territories = 0;
         if d.dom == AIR {
-            e.x = nx;
-            e.y = ny;
+            if self.map.permits_territory(tile_of(nx, ny), denied_territories) {
+                e.x = nx;
+                e.y = ny;
+            }
             return;
         }
         let pass = &self.map.pass[if d.dom == LAND { 0 } else { 1 }];
-        if !pass[tile_of(e.x, e.y)] {
+        if !pass[tile_of(e.x, e.y)] && self.map.permits_territory(tile_of(nx, ny), denied_territories) {
             // standing somewhere illegal (e.g. a building was placed on us): walk out freely
             e.x = nx;
             e.y = ny;
             return;
         }
-        if pass[tile_of(nx, e.y)] {
+        if pass[tile_of(nx, e.y)] && self.map.permits_territory(tile_of(nx, e.y), denied_territories) {
             e.x = nx;
         } else {
             e.vx = 0.0;
         }
-        if pass[tile_of(e.x, ny)] {
+        if pass[tile_of(e.x, ny)] && self.map.permits_territory(tile_of(e.x, ny), denied_territories) {
             e.y = ny;
         } else {
             e.vy = 0.0;
@@ -3076,6 +3116,8 @@ impl Game {
             if !moving && e.x == e.px && e.y == e.py { (e.vx, e.vy) = (0.0, 0.0); }
             self.observe_carrier_motion_audio(i, &e);
         }
+        #[cfg(feature = "ee2-native13")]
+        self.update_submarine_depth(&mut e, dt);
         #[cfg(feature="ee2-pack8")] self.pack_finish_actor(i,&e,engaged||e.order!=O_IDLE,moving);
         #[cfg(feature = "ee2-native13")]
         if self.guided_herc_rocket && crate::herc_attack66::is_herc(e.def) &&

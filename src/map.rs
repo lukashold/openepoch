@@ -88,6 +88,7 @@ fn fbm(x: f32, y: f32, s: u32, oct: u32) -> f32 {
 
 pub struct Field {
     pub key: u32,
+    pub(crate) denied_territories: u32,
     pub dir: Vec<u8>,
     pub ver: u32,
     pub used: u32,
@@ -141,7 +142,7 @@ impl Map {
             pass: [vec![false; NN], vec![false; NN]],
             rgba: vec![0; NN * 4],
             dirty: true,
-            fields: (0..FIELD_SLOTS).map(|_| Field { key: u32::MAX, dir: Vec::new(), ver: 0, used: 0 }).collect(),
+            fields: (0..FIELD_SLOTS).map(|_| Field { key: u32::MAX, denied_territories: 0, dir: Vec::new(), ver: 0, used: 0 }).collect(),
             nav_ver: 1,
             budget: 4,
             queue: Vec::with_capacity(NN),
@@ -519,8 +520,12 @@ impl Map {
 
     /// Nearest tile passable for domain class `dc` (0 land, 1 sea).
     pub fn snap(&self, x: f32, y: f32, dc: usize) -> usize {
+        self.snap_permitted(x, y, dc, 0)
+    }
+
+    pub(crate) fn snap_permitted(&self, x: f32, y: f32, dc: usize, denied_territories: u32) -> usize {
         let t = tile_of(x, y);
-        if self.pass[dc][t] {
+        if self.pass[dc][t] && self.permits_territory(t, denied_territories) {
             return t;
         }
         let (cx, cy) = ((t % N) as i32, (t / N) as i32);
@@ -534,7 +539,7 @@ impl Map {
                     }
                     let ni = ny as usize * N + nx as usize;
                     let d = (nx - cx).pow(2) + (ny - cy).pow(2);
-                    if self.pass[dc][ni] && d < bd {
+                    if self.pass[dc][ni] && d < bd && self.permits_territory(ni, denied_territories) {
                         bd = d;
                         best = ni;
                     }
@@ -576,17 +581,25 @@ impl Map {
         None
     }
 
-    fn build_field(&mut self, slot: usize, key: u32) {
+    pub(crate) fn permits_territory(&self, tile: usize, denied_territories: u32) -> bool {
+        denied_territories.checked_shr(u32::from(self.terr[tile])).unwrap_or(0) & 1 == 0
+    }
+
+    fn build_field(&mut self, slot: usize, key: u32, denied_territories: u32) {
         let goal = (key & 0xffff) as usize;
         let dc = (key >> 16) as usize & 1;
         let mut dir = std::mem::take(&mut self.fields[slot].dir);
         dir.clear();
         dir.resize(NN, 255);
         let pass = &self.pass[dc];
+        let regions = &self.terr;
+        let allowed = |tile: usize| denied_territories.checked_shr(u32::from(regions[tile])).unwrap_or(0) & 1 == 0;
         let q = &mut self.queue;
         q.clear();
-        q.push(goal as u32);
-        dir[goal] = 8;
+        if allowed(goal) {
+            q.push(goal as u32);
+            dir[goal] = 8;
+        }
         let mut head = 0;
         while head < q.len() {
             let c = q[head] as usize;
@@ -599,11 +612,15 @@ impl Map {
                     continue;
                 }
                 let ni = ny as usize * N + nx as usize;
-                if dir[ni] != 255 || !pass[ni] {
+                if dir[ni] != 255 || !pass[ni] || !allowed(ni) {
                     continue;
                 }
-                if k >= 4 && !(pass[cy as usize * N + nx as usize] && pass[ny as usize * N + cx as usize]) {
-                    continue; // no cutting corners
+                if k >= 4 {
+                    let x_side = cy as usize * N + nx as usize;
+                    let y_side = ny as usize * N + cx as usize;
+                    if !(pass[x_side] && pass[y_side] && allowed(x_side) && allowed(y_side)) {
+                        continue;
+                    }
                 }
                 // store the direction that leads from `ni` back toward the goal
                 dir[ni] = if k < 4 { (k as u8 + 2) % 4 } else { 4 + (k as u8 - 4 + 2) % 4 };
@@ -613,19 +630,20 @@ impl Map {
         let f = &mut self.fields[slot];
         f.dir = dir;
         f.key = key;
+        f.denied_territories = denied_territories;
         f.ver = self.nav_ver;
     }
 
     /// Direction index (0..8) to walk from `tile` toward the goal encoded in `key`,
     /// 8 at the goal, 255 if unknown/unreachable. `slot` caches the field location.
-    pub fn flow(&mut self, slot: &mut u16, key: u32, tile: usize, tick: u32) -> u8 {
+    pub fn flow(&mut self, slot: &mut u16, key: u32, tile: usize, tick: u32, denied_territories: u32) -> u8 {
         let mut s = *slot as usize;
-        if s >= FIELD_SLOTS || self.fields[s].key != key {
+        if s >= FIELD_SLOTS || self.fields[s].key != key || self.fields[s].denied_territories != denied_territories {
             s = usize::MAX;
             let mut lru = 0;
             let mut oldest = u32::MAX;
             for (k, f) in self.fields.iter().enumerate() {
-                if f.key == key {
+                if f.key == key && f.denied_territories == denied_territories {
                     s = k;
                     break;
                 }
@@ -639,14 +657,14 @@ impl Map {
                     return 255; // over budget this tick: caller steers directly
                 }
                 self.budget -= 1;
-                self.build_field(lru, key);
+                self.build_field(lru, key, denied_territories);
                 s = lru;
             }
             *slot = s as u16;
         }
         if self.fields[s].ver != self.nav_ver && self.budget > 0 {
             self.budget -= 1;
-            self.build_field(s, key);
+            self.build_field(s, key, denied_territories);
         }
         self.fields[s].used = tick;
         self.fields[s].dir[tile]

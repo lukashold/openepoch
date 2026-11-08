@@ -121,6 +121,8 @@ mod source_clock38;
 #[cfg(feature = "ee2-native13")]
 mod naval_heave72;
 #[cfg(feature = "ee2-native13")]
+mod submarine82;
+#[cfg(feature = "ee2-native13")]
 mod naval_tilt73;
 #[cfg(feature = "ee2-native13")]
 use game::fishing81;
@@ -141,6 +143,8 @@ mod diplomacy;
 mod fixed_teams;
 #[cfg(feature = "ee2-native13")]
 mod timed_treaties;
+#[cfg(feature = "ee2-native13")]
+mod border_treaties;
 #[cfg(feature = "ee2-native13")]
 mod ee2_conquest;
 #[cfg(feature = "ee2-native13")]
@@ -547,8 +551,8 @@ pub extern "C" fn render_naval_basis(handle: u32, render_yaw: f32) -> *const f32
         let game = unsafe { (&*addr_of_mut!(GAME)).as_ref()? };
         let index = game.get(handle)?;
         if !game.visible(index) { return None; }
-        let (id, altitude) = game.naval_surface_pose(index)?;
-        naval_tilt73::naval_surface_basis(id, altitude, render_yaw)
+        let (id, _, tilt_delta) = game.naval_body_pose(index)?;
+        naval_tilt73::naval_surface_basis(id, tilt_delta, render_yaw)
     })();
     let Some(basis) = basis else { return core::ptr::null(); };
     let out = addr_of_mut!(BASIS);
@@ -1010,13 +1014,15 @@ fn crown_resume_matches(game: &Game, encoded: u32) -> bool {
     let victory = (encoded >> 8) & 0x1ffff;
     let capture = (encoded >> 25) & 3;
     let sight = (encoded >> 27) & 1;
-    let timed = encoded >> 28;
+    let timed = (encoded >> 28) & 1;
+    let borders = encoded >> 29;
     (rules == 0 && victory == 0 && capture == 0 || rules == game.crown_rules() + 1)
         && victory == (game.crown_victory_config() | game.network_capitol_config())
         && capture == u32::from(game.capture_checkpoint_mode)
         && sight == u32::from(game.diplomacy.sight_terms)
         && timed == u32::from(game.diplomacy.timed.as_ref().is_some_and(|rule| rule.unbreakable))
         && (timed != 0 || game.diplomacy.timed.is_none())
+        && borders == u32::from(game.diplomacy.borders.is_some())
 }
 
 #[cfg(feature = "ee2-native13")]
@@ -2083,6 +2089,12 @@ pub extern "C" fn configure_carrier_surface_pose() -> u32 {
 
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
+pub extern "C" fn configure_submarine_depth() -> u32 {
+    u32::from(g().configure_submarine_depth())
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
 pub extern "C" fn configure_heavy_mounted3() -> u32 {
     u32::from(g().configure_heavy_mounted3())
 }
@@ -2829,6 +2841,12 @@ pub extern "C" fn configure_sight_terms() -> u32 {
 #[no_mangle]
 pub extern "C" fn configure_timed_treaties(unbreakable: u32) -> u32 {
     u32::from(unbreakable <= 1 && g().configure_timed_treaties(unbreakable == 1))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_border_treaties() -> u32 {
+    u32::from(g().configure_border_treaties())
 }
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]

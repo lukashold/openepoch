@@ -262,7 +262,7 @@ impl Game {
                 let (activity, facing) = self.render_activity(e, d, speed);
                 let pose_rot = if (8..=17).contains(&e.def) && activity >= ACT_WOOD { facing } else { rot };
                 #[cfg(feature = "ee2-native13")]
-                let body_altitude = self.naval_surface_pose(i).map_or(a, |(_, altitude)| altitude);
+                let body_altitude = self.naval_body_pose(i).map_or(a, |(_, altitude, _)| altitude);
                 #[cfg(not(feature = "ee2-native13"))]
                 let body_altitude = a;
                 let before = o.len();

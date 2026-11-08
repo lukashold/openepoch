@@ -37,7 +37,8 @@ export async function loadOriginalAmbient({enabled, base = import.meta.url, fetc
 // For generated OpenEpoch maps, adapt existing tile classes and actual wood tiles.
 export function generatedAmbientCoverage(types, width, height, resourceKind) {
   if (types?.length !== width * height || width <= 0 || height <= 0) return null;
-  const tileFlags = [2, 3, 1, 1, 4, 1];
+  // The forest plane is independent of the ground movement category.
+  const tileFlags = [2, 3, 1, 1, 5, 1];
   const cols = Math.ceil(width / 4), rows = Math.ceil(height / 4);
   const coverage = new Uint8Array(cols * rows);
   for (let y = 0; y < height; y++) {
@@ -50,6 +51,36 @@ export function generatedAmbientCoverage(types, width, height, resourceKind) {
     }
   }
   return {width, height, cols, rows, coverage};
+}
+
+// The forest group's 0050CAE0 callback refreshes its current 4x4 mask every
+// 600 wall-clock seconds. Ground and water retain their initial sensor maps.
+export function liveGeneratedAmbientCoverage(readTypes, width, height, resourceKind, now) {
+  const map = generatedAmbientCoverage(readTypes(), width, height, resourceKind);
+  if (!map) return null;
+  const {cols, rows, coverage} = map;
+  let scannedAt = f32(now);
+  map.refreshForest = seconds => {
+    if (!(seconds >= scannedAt + 600)) return false;
+    const types = readTypes();
+    if (types?.length !== width * height) return false;
+    for (let by = 0; by < rows; by++) {
+      for (let bx = 0; bx < cols; bx++) {
+        let hasForest = false;
+        for (let y = by * 4; !hasForest && y < Math.min(height, by * 4 + 4); y++) {
+          for (let x = bx * 4; x < Math.min(width, bx * 4 + 4); x++) {
+            const tile = y * width + x;
+            if (types[tile] === 4 || resourceKind?.(tile) === 2) { hasForest = true; break; }
+          }
+        }
+        const area = by * cols + bx;
+        coverage[area] = (coverage[area] & 3) | (hasForest ? 4 : 0);
+      }
+    }
+    scannedAt = f32(seconds);
+    return true;
+  };
+  return map;
 }
 
 function sourceCell(value) {
@@ -180,7 +211,7 @@ export function createOriginalAmbientPlayback({presentation, context, destinatio
     channels.clear();states.clear();session = null;last = null;ready = false;
   }
 
-  function frame({world, climate:climateId, now, priorities, weather = 'Normal', running, soundContext = 0}) {
+  function frame({world, climate:climateId, now, priorities, weather = 'Normal', running, soundContext = 0, refreshForest}) {
     const nextClimate = climates[climateId];
     if (world !== session || nextClimate !== climate || last !== null && now < last) {
       reset();session = world;
@@ -210,6 +241,8 @@ export function createOriginalAmbientPlayback({presentation, context, destinatio
         state = {delay:0, loop:null, cue:null, shotAt:originalAmbientOneShotAt(now, set.frequency, random)};
         states.set(name, state);
       }
+      // The source priority query precedes this active sensor callback.
+      if (name === profile.forest) refreshForest?.(now);
       const mix = f32(minimum + (priority - cutoff) / (1 - cutoff) * (1 - minimum));
       if (state.loop && state.mix !== mix) {
         const channel = state.loop;

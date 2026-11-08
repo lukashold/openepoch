@@ -2,7 +2,7 @@ import {createCitizenReplyPicker} from './original-citizen-replies.js?v=native10
 import {createTypedAudioBindings} from './original-audio-bindings.js?v=native8';
 import {createRegionalMusicPlayback} from './original-regional-music.js?v=regional12';
 import {originalOneShotAudible} from './original-spatial-audio.js?v=native39audio';
-import {createOriginalAmbientPlayback} from './original-ambient.js?v=ambient39';
+import {createOriginalAmbientPlayback} from './original-ambient.js?v=native106';
 import {playbackRate} from './air-flight-audio.js?v=native65-herc';
 // Playback of original assets extracted from the user's local EE2 installation.
 // Metadata and byte-for-byte source hashes live beside those assets. This module
