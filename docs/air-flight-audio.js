@@ -134,10 +134,11 @@ export function createAirFlightPlayback({presentation,context,destination,mix,fe
   const buffers=new Map(), poses=new Map(), loops=new Set(), oneShots=new Map();
   const events=presentation.events;
   let session=null,lastTime=null,pitchSeed=audioSeed>>>0;
-  const ready=Promise.all([...events].map(async([name,event])=>{
+  const pending=new Map([...events].map(([name,event])=>[name,(async()=>{
     try{buffers.set(name,await context.decodeAudioData(await verifiedBytes(new URL(event.url),event.sha256,fetchFile)));}
     catch{/* Keep the existing fallback when a local optional sample is absent. */}
-  }));
+  })()]));
+  const ready=Promise.all(pending.values());
   function stopVoice(voice){
     try{voice.source.stop();}catch{}
     voice.source.disconnect();voice.gain.disconnect();voice.panner?.disconnect();
@@ -293,5 +294,5 @@ export function createAirFlightPlayback({presentation,context,destination,mix,fe
     const keys=presentation.row(definition,epoch)?.states.attack1?.keys.filter(key=>key.type==='PLAY_SOUND');
     return !!keys?.length&&keys.every(key=>key.time<duration&&buffers.has(key.event));
   }
-  return {ready,frame,reset,hasEvent:name=>buffers.has(name),handlesAttack,oneShot};
+  return {ready,readyFor:name=>pending.get(name),frame,reset,hasEvent:name=>buffers.has(name),handlesAttack,oneShot};
 }

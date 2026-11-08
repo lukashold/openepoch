@@ -2,7 +2,7 @@ import {lanInviteCode,lanRequest} from './lan-signaling.js?v=lan125';
 
 const wait=()=>new Promise(done=>setTimeout(done,750));
 const ignore=promise=>void promise.catch(()=>{});
-const modeNames={ordinary:'Scharmützel',shared:'Gemeinsame Zivilisation',grouped:'Gruppen-Koop','pangea-huge10':'Pangea · Eroberung'};
+const modeNames={ordinary:'Scharmützel',shared:'Gemeinsame Zivilisation',grouped:'Gruppen-Koop','pangea-huge10':'Pangea · Eroberung','pangea-huge10-naval':'Pangea · Marineeinsatz'};
 const climateNames=['Gemäßigt','Trocken','Tropisch','Tundra'];
 
 export function mountLanRoomList(get,{details,approve,join,epochName,profile=null}) {

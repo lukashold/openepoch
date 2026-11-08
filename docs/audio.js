@@ -4,7 +4,7 @@ import { createOriginalAudio } from './original-audio.js?v=native112voice';
 import {ORIGINAL_AUDIO_DEFAULTS,originalAudioLevel,originalAudioGain} from './original-audio-levels.js?v=native38audio';
 import {originalOneShotAudible,originalLoopAudible,originalSpatialMix} from './original-spatial-audio.js?v=native39audio';
 import {createPresentationRandom} from './source-music-controller.js?v=regional11';
-import {createAirFlightPlayback} from './air-flight-audio.js?v=native66';
+import {createAirFlightPlayback} from './air-flight-audio.js?v=attack-resume131';
 import {takeoffSpatialMix} from './air-takeoff.js?v=native40clock';
 const presentationRandom = createPresentationRandom(1);
 const originals=createOriginalAudio({presentationRandom,citizenReplySeconds:()=>performance.now()/1000});
@@ -47,12 +47,13 @@ export function configureAirFlightAudio(presentation) {
   airFlightPlayback?.reset();
   airFlightPlayback=null;
 }
-export function frameAirFlightAudio(frame) {
-  if(!ctx||!airFlightPresentation)return;
-  airFlightPlayback??=createAirFlightPlayback({presentation:airFlightPresentation,
+function flightPlayback() {
+  if(!ctx||!airFlightPresentation)return null;
+  return airFlightPlayback??=createAirFlightPlayback({presentation:airFlightPresentation,
     context:ctx,destination:soundBus,mix:takeoffSpatialMix});
-  airFlightPlayback.frame(frame);
 }
+export function prepareAirFlightEffect(name) { return flightPlayback()?.readyFor(name); }
+export function frameAirFlightAudio(frame) { flightPlayback()?.frame(frame); }
 export function airFlightAttackHandled(definition,epoch,duration) {
   return airFlightPlayback?.handlesAttack(definition,epoch,duration)??false;
 }
