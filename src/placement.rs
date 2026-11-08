@@ -159,12 +159,19 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         {
             let native_foreign_site = foreign && (owner as usize) < self.nplayers
-                && self.diplomacy.borders.is_some() && matches!(def, HOUSE | BARRACKS | DOCK);
-            if native_foreign_site && def == HOUSE && self.ents[..self.high].iter().filter(|e| {
-                e.alive && e.hp > 0.0 && e.def == HOUSE && (e.built >= 1.0 || e.team == team)
+                && self.diplomacy.borders.is_some()
+                && matches!(def, HOUSE | BARRACKS | DOCK | FARM | MILL | STABLE |
+                    MARKET | TEMPLE | UNIVERSITY | WAREHOUSE);
+            let capacity = match def {
+                HOUSE => 6,
+                MARKET | TEMPLE | UNIVERSITY => 1,
+                _ => 0,
+            };
+            if native_foreign_site && capacity != 0 && self.ents[..self.high].iter().filter(|e| {
+                e.alive && e.hp > 0.0 && e.def == def && (e.built >= 1.0 || e.team == team)
                     && self.map.terr[tile_of(e.x, e.y)] == territory
-            }).count() >= 6 {
-                return 13;
+            }).count() >= capacity {
+                return if def == HOUSE { 13 } else { 14 };
             }
             if owner != team && (owner != 255 || matches!(def, TOWER | FORTRESS)) && self.initial_ceasefire_active() {
                 return 11;
@@ -643,6 +650,51 @@ mod tests {
         g.ents[own_site].alive = false;
         g.ents[foreign_site].built = 1.0;
         assert_eq!(g.placement_geometry_error(0, HOUSE, x, y, 0), 13);
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    #[test]
+    fn foreign_economy_uses_the_civilian_border_filter() {
+        let mut game = flat();
+        let (x, y) = site(&game, HOUSE, 0);
+        game.map.terr.fill(1);
+        game.towner[1] = 1;
+        assert!(game.configure_sight_terms() && game.configure_timed_treaties(false)
+            && game.configure_border_treaties());
+        for (term, expected) in [(0, 0), (1, 0), (2, 2), (3, 2)] {
+            game.diplomacy.borders.as_mut().unwrap().set_term(0, 1, term);
+            for def in [FARM, MILL, STABLE, MARKET, TEMPLE, UNIVERSITY, WAREHOUSE] {
+                assert_eq!(game.placement_geometry_error(0, def, x, y, 0), expected, "def {def}");
+            }
+            for def in [TC, TOWER, FORTRESS, WORKSHOP] {
+                assert_eq!(game.placement_geometry_error(0, def, x, y, 0), 2, "def {def}");
+            }
+        }
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    #[test]
+    fn foreign_economy_one_per_type_counts_completed_and_own_foundations() {
+        let mut game = flat();
+        let (x, y) = site(&game, HOUSE, 0);
+        game.map.terr.fill(1);
+        game.towner[1] = 1;
+        assert!(game.configure_sight_terms() && game.configure_timed_treaties(false)
+            && game.configure_border_treaties());
+        for (offset, def) in [MARKET, TEMPLE, UNIVERSITY].into_iter().enumerate() {
+            let coord = 20.0 + 6.0 * offset as f32;
+            let other = game.spawn(def, 1, coord, 20.0);
+            assert_ne!(other, NOIDX);
+            game.ents[other].built = 0.25;
+            assert_eq!(game.placement_geometry_error(0, def, x, y, 0), 0);
+            let own = game.spawn(def, 0, coord, 26.0);
+            assert_ne!(own, NOIDX);
+            game.ents[own].built = 0.25;
+            assert_eq!(game.placement_geometry_error(0, def, x, y, 0), 14);
+            game.ents[own].alive = false;
+            game.ents[other].built = 1.0;
+            assert_eq!(game.placement_geometry_error(0, def, x, y, 0), 14);
+        }
     }
 
     #[test]

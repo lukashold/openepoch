@@ -3672,10 +3672,46 @@ mod territory_cargo_tests{
 #[cfg(test)]
 mod territory_construction_tests{
  use super::*;
- #[test]fn gifted_construction_keeps_progress_and_health_fraction_and_changes_build_rights(){
-  let mut g=Game::new(7,0,0,2,0);let id=g.map.terr[tile_of(g.ents[0].x,g.ents[0].y)];let base=g.ents[0];let house=g.spawn(HOUSE,0,base.x+7.0,base.y);g.ents[house].built=0.4;g.ents[house].hp=g.max_hp(0,HOUSE)*0.37;g.modifiers[1][HOUSE as usize][0]=1000.0;
-  let mut at=None;for y in 4..N as i32-8{for x in 4..N as i32-8{if g.map.terr[tile_of(x as f32+1.0,y as f32+1.0)]==id&&g.can_place(HOUSE,x,y,0){at=Some((x,y));break;}}if at.is_some(){break;}}
-  let(x,y)=at.unwrap();assert!(!g.can_place(HOUSE,x,y,1));assert!(g.apply_territory(0,1,0,id as u32,NONE));assert!(!g.can_place(HOUSE,x,y,0));assert!(g.can_place(HOUSE,x,y,1));assert_eq!(g.ents[house].built,0.4);assert!((g.ents[house].hp-370.0).abs()<0.001);
+ #[test]
+ fn gifted_territory_preserves_construction_state_and_changes_build_rights() {
+    let mut game = Game::new(7, 0, 0, 2, 0);
+    let city = game.ents[0];
+    let territory = game.map.terr[tile_of(city.x, city.y)];
+    let site = game.spawn(HOUSE, 0, city.x + 7.0, city.y);
+    let finished = game.spawn(HOUSE, 0, city.x, city.y + 7.0);
+    let original_hp = game.max_hp(0, HOUSE) * 0.37;
+    game.ents[site].built = 0.4;
+    game.ents[site].hp = original_hp;
+    game.ents[finished].hp = original_hp;
+    game.modifiers[1][HOUSE as usize][0] = 1000.0;
+    for index in [site, finished] {
+        let house = game.ents[index];
+        assert_eq!(game.map.terr[tile_of(house.x, house.y)], territory);
+    }
+    let plot = (4..N as i32 - 8).find_map(|y| {
+        (4..N as i32 - 8).find(|&x| {
+            game.map.terr[tile_of(x as f32 + 1.0, y as f32 + 1.0)] == territory
+                && game.can_place(HOUSE, x, y, 0)
+        }).map(|x| (x, y))
+    }).expect("valid home plot");
+    let (x, y) = plot;
+    assert!(!game.can_place(HOUSE, x, y, 1));
+    assert!(game.apply_territory(0, 1, 0, u32::from(territory), NONE));
+    assert_eq!(game.towner[territory as usize], 1);
+    assert!(!game.can_place(HOUSE, x, y, 0));
+    assert!(game.can_place(HOUSE, x, y, 1));
+    assert_eq!(game.ents[finished].team, 1);
+    assert_eq!(game.ents[finished].built, 1.0);
+    assert!((game.ents[finished].hp - 370.0).abs() < 0.001);
+    assert_eq!(game.ents[site].built, 0.4);
+    if cfg!(feature = "ee2-reference") {
+        assert_eq!(game.ents[site].team, 0);
+        assert_eq!(game.ents[site].hp, original_hp);
+        assert_eq!(game.construction_multiplier(&game.ents[site]), 3.0);
+    } else {
+        assert_eq!(game.ents[site].team, 1);
+        assert!((game.ents[site].hp - 370.0).abs() < 0.001);
+    }
  }
 }
 

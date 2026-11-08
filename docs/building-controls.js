@@ -12,7 +12,8 @@ export const PLACEMENT_ERRORS=Object.freeze([
   'In einem Gebiet sind höchstens zwei Festungen möglich.',
   'Der anfängliche Waffenstillstand verbietet den Bau an dieser Stelle.',
   'Am Krisenherd darf nur eine Festung direkt am Marker gebaut werden.',
-  'In einem Gebiet sind höchstens sechs Häuser möglich.'
+  'In einem Gebiet sind höchstens sechs Häuser möglich.',
+  'In einem Gebiet ist nur ein Gebäude dieses Typs möglich.'
 ]);
 
 export function placementMessage(error,id){
