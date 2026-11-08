@@ -20,6 +20,10 @@ const HOUSE_CONSTRUCTION_NEUTRAL_VERSION: u32 = 6;
 const HOUSE_MOVEMENT_VERSION: u32 = 7;
 #[cfg(feature = "ee2-valley74-city-footprint")]
 const HOUSE_MOVEMENT_NEUTRAL_VERSION: u32 = 8;
+#[cfg(feature = "ee2-valley74-city-footprint")]
+const HOUSE_ASSIGNED_CLEARANCE_VERSION: u32 = 9;
+#[cfg(feature = "ee2-valley74-city-footprint")]
+const HOUSE_ASSIGNED_CLEARANCE_NEUTRAL_VERSION: u32 = 10;
 
 pub(crate) struct Locator {
     pub(super) map: [u8; 32],
@@ -32,9 +36,15 @@ pub(crate) struct Locator {
     pub(super) native_house_construction: bool,
     #[cfg(feature = "ee2-valley74-city-footprint")]
     pub(super) native_house_movement: bool,
+    #[cfg(feature = "ee2-valley74-city-footprint")]
+    pub(super) native_house_assigned_clearance: bool,
 }
 
 pub(super) fn version(_fixture: &FixtureState) -> u32 {
+    #[cfg(feature = "ee2-valley74-city-footprint")]
+    if _fixture.native_house_assigned_clearance {
+        return if _fixture.neutral_opening { HOUSE_ASSIGNED_CLEARANCE_NEUTRAL_VERSION } else { HOUSE_ASSIGNED_CLEARANCE_VERSION };
+    }
     #[cfg(feature = "ee2-valley74-city-footprint")]
     if _fixture.native_house_movement {
         return if _fixture.neutral_opening { HOUSE_MOVEMENT_NEUTRAL_VERSION } else { HOUSE_MOVEMENT_VERSION };
@@ -78,7 +88,8 @@ pub(crate) fn split_save(wire: &[u8]) -> Option<(&[u8], Option<Locator>)> {
         NEUTRAL_OPENING_VERSION => (),
         #[cfg(feature = "ee2-valley74-city-footprint")]
         CITY_MASK_VERSION | CITY_MASK_NEUTRAL_VERSION | HOUSE_CONSTRUCTION_VERSION | HOUSE_CONSTRUCTION_NEUTRAL_VERSION |
-        HOUSE_MOVEMENT_VERSION | HOUSE_MOVEMENT_NEUTRAL_VERSION => (),
+        HOUSE_MOVEMENT_VERSION | HOUSE_MOVEMENT_NEUTRAL_VERSION |
+        HOUSE_ASSIGNED_CLEARANCE_VERSION | HOUSE_ASSIGNED_CLEARANCE_NEUTRAL_VERSION => (),
         _ => return None,
     }
     let size = u32::from_le_bytes(wire[8..12].try_into().ok()?) as usize;
@@ -87,9 +98,12 @@ pub(crate) fn split_save(wire: &[u8]) -> Option<(&[u8], Option<Locator>)> {
     #[cfg(feature = "ee2-valley71-neutral-qa")]
     let neutral_opening = version == NEUTRAL_OPENING_VERSION;
     #[cfg(feature = "ee2-valley74-city-footprint")]
-    let neutral_opening = neutral_opening || matches!(version, CITY_MASK_NEUTRAL_VERSION | HOUSE_CONSTRUCTION_NEUTRAL_VERSION | HOUSE_MOVEMENT_NEUTRAL_VERSION);
+    let neutral_opening = neutral_opening || matches!(version, CITY_MASK_NEUTRAL_VERSION | HOUSE_CONSTRUCTION_NEUTRAL_VERSION |
+        HOUSE_MOVEMENT_NEUTRAL_VERSION | HOUSE_ASSIGNED_CLEARANCE_NEUTRAL_VERSION);
     #[cfg(feature = "ee2-valley74-city-footprint")]
-    let native_house_movement = matches!(version, HOUSE_MOVEMENT_VERSION | HOUSE_MOVEMENT_NEUTRAL_VERSION);
+    let native_house_assigned_clearance = matches!(version, HOUSE_ASSIGNED_CLEARANCE_VERSION | HOUSE_ASSIGNED_CLEARANCE_NEUTRAL_VERSION);
+    #[cfg(feature = "ee2-valley74-city-footprint")]
+    let native_house_movement = native_house_assigned_clearance || matches!(version, HOUSE_MOVEMENT_VERSION | HOUSE_MOVEMENT_NEUTRAL_VERSION);
     #[cfg(feature = "ee2-valley74-city-footprint")]
     let native_house_construction = native_house_movement || matches!(version, HOUSE_CONSTRUCTION_VERSION | HOUSE_CONSTRUCTION_NEUTRAL_VERSION);
     let locator = Locator {map: wire[12..44].try_into().ok()?, fixture: wire[44..76].try_into().ok()?,
@@ -101,6 +115,8 @@ pub(crate) fn split_save(wire: &[u8]) -> Option<(&[u8], Option<Locator>)> {
         native_house_construction,
         #[cfg(feature = "ee2-valley74-city-footprint")]
         native_house_movement,
+        #[cfg(feature = "ee2-valley74-city-footprint")]
+        native_house_assigned_clearance,
     };
     Some((&wire[HEADER..end], Some(locator)))
 }

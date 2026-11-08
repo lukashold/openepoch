@@ -146,6 +146,8 @@ pub(crate) fn restore_private_map(locator: save_wire::Locator, seed: u32, n_ai: 
         if locator.native_house_construction { game.enable_valley_house_construction()?; }
         #[cfg(feature = "ee2-valley74-city-footprint")]
         if locator.native_house_movement { game.enable_valley_house_movement()?; }
+        #[cfg(feature = "ee2-valley74-city-footprint")]
+        if locator.native_house_assigned_clearance { game.enable_valley_house_assigned_clearance()?; }
         Some(game)
     })
 }
@@ -263,17 +265,23 @@ pub extern "C" fn valley39_commit(visibility: u32) -> u32 {
 #[cfg(feature = "ee2-valley71-neutral-qa")]
 #[no_mangle]
 pub extern "C" fn valley71_commit(visibility: u32) -> u32 {
-    commit_neutral_valley(visibility, false)
+    commit_neutral_valley(visibility, false, false)
 }
 
 #[cfg(feature = "ee2-valley74-city-footprint")]
 #[no_mangle]
 pub extern "C" fn valley75_commit(visibility: u32) -> u32 {
-    commit_neutral_valley(visibility, true)
+    commit_neutral_valley(visibility, true, false)
+}
+
+#[cfg(feature = "ee2-valley74-city-footprint")]
+#[no_mangle]
+pub extern "C" fn valley76_commit(visibility: u32) -> u32 {
+    commit_neutral_valley(visibility, true, true)
 }
 
 #[cfg(feature = "ee2-valley71-neutral-qa")]
-fn commit_neutral_valley(visibility: u32, _current_solo: bool) -> u32 {
+fn commit_neutral_valley(visibility: u32, _current_solo: bool, _assigned_clearance: bool) -> u32 {
     if visibility > 2 { return 0; }
     let prepared = STAGE.with(|stage| {
         let mut stage = stage.borrow_mut();
@@ -287,6 +295,11 @@ fn commit_neutral_valley(visibility: u32, _current_solo: bool) -> u32 {
         #[cfg(feature = "ee2-valley74-city-footprint")]
         if _current_solo && (!configure_current_solo(game) ||
             game.enable_valley_house_construction().and_then(|()| game.enable_valley_house_movement()).is_none()) {
+            stage.game = None;
+            return false;
+        }
+        #[cfg(feature = "ee2-valley74-city-footprint")]
+        if _assigned_clearance && game.enable_valley_house_assigned_clearance().is_none() {
             stage.game = None;
             return false;
         }

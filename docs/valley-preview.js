@@ -56,7 +56,7 @@ export async function loadValleyPreview({requested, authoredRequested, neutralRe
         index.start.join(',') !== '0,0' || index.fixtures.length !== 4) throw new Error('Ungültige Valley-Vorschau.');
     const [map, terrainManifest, forestManifest, world0Manifest, ...packets] = await Promise.all(
       [index.map, index.terrain, index.forest, index.world0, ...index.fixtures].map(checked));
-    const neutralCommit = requireAuthored ? wasm.valley75_commit : wasm.valley71_commit;
+    const neutralCommit = requireAuthored ? wasm.valley76_commit : wasm.valley71_commit;
     const neutralSupported = !neutralRequested || typeof neutralCommit === 'function';
     const authored = authoredRequested && neutralSupported ? await checked(authoredTest).catch(() => null) : null;
     if (requireAuthored && !authored) return null;

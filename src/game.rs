@@ -3344,7 +3344,7 @@ impl Game {
         #[cfg(feature = "ee2-valley74-city-footprint")]
         let pending_house = self.valley_house_reserves_placement_only(&b);
         #[cfg(feature = "ee2-valley74-city-footprint")]
-        if pending_house && !self.valley_house_footprint_clear(&b) { return; }
+        if pending_house && !self.valley_house_labor_clear(&b, e.otgt) { return; }
         let t = &mut self.ents[j];
         #[cfg(feature = "ee2-valley74-city-footprint")]
         if native_house { Self::advance_valley_house_health(t, maxhp, seconds, duration); }

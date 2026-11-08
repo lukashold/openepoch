@@ -1,6 +1,6 @@
 //! Paid House health in the authenticated private Valley skirmish.
 use crate::defs::{DefId, DEFS, HOUSE, LAND};
-use crate::game::{Ent, Game, BOARDED};
+use crate::game::{Ent, Game, BOARDED, O_BUILD};
 use crate::source_clock38::{add_positive_f64, divide_positive_f32_as_f64, store_positive_f32};
 
 impl Game {
@@ -30,6 +30,13 @@ impl Game {
         def == HOUSE && self.valley_fixture.as_ref().is_some_and(|fixture| fixture.native_house_movement)
     }
 
+    pub(super) fn enable_valley_house_assigned_clearance(&mut self) -> Option<()> {
+        let fixture = self.valley_fixture.as_mut()?;
+        if !fixture.native_house_movement { return None; }
+        fixture.native_house_assigned_clearance = true;
+        Some(())
+    }
+
     pub(crate) fn valley_house_reserves_placement_only(&self, site: &Ent) -> bool {
         site.built == 0.0 && self.uses_valley_house_movement(site.def)
     }
@@ -45,10 +52,23 @@ impl Game {
     }
 
     pub(crate) fn valley_house_footprint_clear(&self, site: &Ent) -> bool {
+        self.valley_house_clear_except_builders(site, None)
+    }
+
+    pub(crate) fn valley_house_labor_clear(&self, site: &Ent, handle: u32) -> bool {
+        let assigned_clearance = self.valley_fixture.as_ref()
+            .is_some_and(|fixture| fixture.native_house_assigned_clearance);
+        self.valley_house_clear_except_builders(site, assigned_clearance.then_some(handle))
+    }
+
+    fn valley_house_clear_except_builders(&self, site: &Ent, assigned_site: Option<u32>) -> bool {
         let (x, y, width, height) = Self::building_bounds(site);
         !self.ents[..self.high].iter().any(|actor| {
             let definition = &DEFS[actor.def as usize];
+            // Native 007E0E3E exempts a movable actor with a Build goal for this site.
+            let assigned = actor.team == site.team && actor.order == O_BUILD && assigned_site == Some(actor.otgt);
             actor.alive && actor.hp > 0.0 && actor.stuck != BOARDED && !definition.building && definition.dom == LAND
+                && !assigned
                 && (x as f32..(x + width) as f32).contains(&actor.x)
                 && (y as f32..(y + height) as f32).contains(&actor.y)
         })

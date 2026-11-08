@@ -49,6 +49,7 @@ import {mountOriginalGameSettings} from './original-game-settings.js?v=native79-
 import {createRenderActorMetadata} from './render-actor-metadata.js?v=pack8';
 import {createPackRenderMetadata} from './original-pack-states.js?v=pack-frame123';
 import {createNativePackSceneClock} from './original-pack-scene.js?v=pack-offscreen132';
+import {createMrlsPackAudio,mrlsPackAudioCatalog} from './mrls-pack-audio.js?v=mrls-pack133';
 import {createFullmapPipBridge} from './original-fullmap-pip-bridge.js?v=native66';
 import {loadOriginalGround,sampleGroundHeight} from './original-ground.js?v=native67';
 import {createCaptureGlow} from './capture-glow.js?v=native64-koth';
@@ -101,7 +102,7 @@ import {addCarrierFlightAudio,loadAirFlightAudio,readAirFlightAudio,submarineMov
 import {loadFullmapCityNameCatalog,loadFullmapTerritoryNameCatalog} from './fullmap-territory-names.js?v=native22';
 import {createWarplanPeer,WARPLAN_PEER_VERSION} from './original-warplan-peer.js';
 import {activeValleyGeometry,initialValleyViews,pickValleyGround,valleyMinimapPoint,valleyMinimapSnapshot} from './authored-view.js';
-import {installedValleyManifest,loadValleyPreview,valleySaveLocator} from './valley-preview.js';
+import {installedValleyManifest,loadValleyPreview,valleySaveLocator} from './valley-preview.js?v=clearance136';
 
 const $ = id => document.getElementById(id);
 const canvas = $('gl');
@@ -186,8 +187,8 @@ const valleyNeutralRequested=valleyMode==='neutral-qa'||valleyNormal;
 const valleyRequested=rulesProfile.id==='up15'&&(!!valleyManifest||['1','archive-qa','neutral-qa'].includes(valleyMode));
 try{
   if(valleyRequested){
-    const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley75_commit','valley71_force_attack_at','valley71_neutral_opening','configure_late_population']:rulesProfile.requiredExports;
-    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=occupancy135-valley'};
+    const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley76_commit','valley71_force_attack_at','valley71_neutral_opening','configure_late_population']:rulesProfile.requiredExports;
+    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=clearance136-valley'};
     try{wasm=await loadRulesWasm(previewRules,import.meta.url);}catch{/* The ordinary ruleset remains available. */}
   }
   wasm??=await loadRulesWasm(rulesProfile,import.meta.url);
@@ -670,7 +671,11 @@ const takeoffStartSeconds=handle=>wasm.air_takeoff_start_seconds?.(handle)??-1;
 const takeoffAudio=airTakeoff?createTakeoffAudioClock({presentation:airTakeoff,startTick:takeoffStartTick,
   startSeconds:takeoffStartSeconds,play:sfx.playTakeoff,stop:sfx.stopTakeoff}):null;
 sfx.bindTakeoffEvents(airTakeoff?.events);
-sfx.configureAirFlightAudio(airFlightAudio);
+const mrlsPack=packScene&&packMetadata?createMrlsPackAudio({
+  revisionFor:wasm.pack_visual_revision,isAlive:wasm.entity_alive,groundAt,play:sfx.playAirFlightEffect,
+}):null;
+const animationAudio=addCarrierFlightAudio(airFlightAudio,mrlsPack?mrlsPackAudioCatalog:null);
+sfx.configureAirFlightAudio(animationAudio);
 const hasGuidedImpacts=typeof wasm.guided_herc_impact_prepare==='function'&&typeof wasm.guided_herc_impact_ptr==='function';
 sfx.configureGuidedImpact(originalEnabled&&hasGuidedImpacts);
 const guidedImpactFX=await loadGuidedImpactEffects(gl,originalEnabled&&hasGuidedImpacts&&
@@ -1361,6 +1366,7 @@ function begin(tempo = null, useSourceClock = wasm.sim_clock_active?.() === 1, a
     : null;
   valleyWorld=valleyPreview?activeValleyGeometry(wasm):null;
   packScene?.reset(wasm.sim_elapsed_seconds());
+  mrlsPack?.reset(wasm.sim_elapsed_seconds());
   originalModels.clearResourcePicks();
   takeoffAudio?.reset();
   sfx.resetAirFlightAudio();
@@ -1753,6 +1759,7 @@ function advance(dt, now) {
       for(let i=0;i<steps;i++)packSeconds=storeF32(addF64(packSeconds,step));
     }
     packScene.advance(packSeconds,wasm.sim_elapsed_seconds());
+    mrlsPack?.advance(packSeconds,wasm.sim_elapsed_seconds());
   }
   // sound cues the simulation queued up
   const n = wasm.events_len();
@@ -2151,7 +2158,9 @@ function frame(now) {
   if(!actorMetadata&&packMetadata)actorMetadata=packMetadata.snapshot(packActorReader.snapshot({count:n,instances:f32(wasm.inst_ptr(),n*STRIDE),namespace:renderNamespace}));
   takeoffAudio?.update({...takeoffSample,session:actorMetadata?.session,actors:actorMetadata?.actors??[],epochs:renderEpochs,view,
     running:!paused&&!document.hidden&&!(net&&net.ls.waiting)});
-  if(airFlightAudio)sfx.frameAirFlightAudio({...readAirFlightAudio(wasm,alpha),world:wasm.render_meta_session(),view,
+  if(animationAudio)sfx.frameAirFlightAudio({...readAirFlightAudio(wasm,alpha),world:wasm.render_meta_session(),view,
+    running:!paused&&!document.hidden&&!(net&&net.ls.waiting)});
+  mrlsPack?.frame({actors:actorMetadata?.actors??[],epochs:renderEpochs,view,
     running:!paused&&!document.hidden&&!(net&&net.ls.waiting)});
   hercAttack?.update(wasm.sim_elapsed_seconds(),!paused&&!document.hidden);
   let mission=null;
