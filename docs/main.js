@@ -57,7 +57,7 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {NATIVE_SEASON_CHOICE,normalizeSeasonChoice,resolveSeasonChoice} from './original-seasons.js?v=native108';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=native108';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native80';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native81';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
@@ -124,6 +124,20 @@ let rulesProfile;
 try{rulesProfile=resolveRulesProfile(location.href);}catch(error){rulesLoadFailure(error);throw error;}
 profileSelect.value=rulesProfile.id;
 const referenceMode=rulesProfile.reference,qaMode=rulesProfile.qa;
+const privateMapLinks=$('local-private-maps');
+if(privateMapLinks&&referenceMode&&['127.0.0.1','localhost','[::1]'].includes(location.hostname)&&
+  !location.pathname.endsWith('-private.html')&&new URL(location.href).searchParams.get('assets')!=='procedural'){
+  for(const link of privateMapLinks.querySelectorAll('a[data-carrier]')){
+    Promise.all([link.href,new URL(link.dataset.carrier,location.href)].map(url=>fetch(url,{method:'HEAD'})))
+      .then(([page,carrier])=>{
+        if(page.ok&&page.headers.get('content-type')?.includes('text/html')&&
+          carrier.ok&&carrier.headers.get('content-type')?.includes('application/wasm')){
+          link.hidden=false;
+          privateMapLinks.hidden=false;
+        }
+      }).catch(()=>{});
+  }
+}
 const immigrationCue={url:new URL('local-original/audio/fx_feedback_citizen_created.mp3',import.meta.url),
   sha256:'e123f7873b3ac1481a62519ff0d6c2f138212c4ce61c83dca9183797ebaf821d',gain:1};
 try { const preference=localStorage.getItem('openepoch-map-visibility');if(['0','1','2'].includes(preference))$('map-visibility').value=preference; } catch { /* preferences are optional */ }
@@ -172,7 +186,7 @@ const valleyRequested=rulesProfile.id==='up15'&&(!!valleyManifest||['1','archive
 try{
   if(valleyRequested){
     const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley75_commit','valley71_force_attack_at','valley71_neutral_opening']:rulesProfile.requiredExports;
-    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native80-valley'};
+    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native81-valley'};
     try{wasm=await loadRulesWasm(previewRules,import.meta.url);}catch{/* The ordinary ruleset remains available. */}
   }
   wasm??=await loadRulesWasm(rulesProfile,import.meta.url);

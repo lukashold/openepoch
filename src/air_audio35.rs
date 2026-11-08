@@ -262,9 +262,10 @@ impl Game {
                 // The next variable step is unknown until its scheduler admits it.
                 if source_clock && self.takeoff.rolling(handle) && start == NONE { continue; }
                 let epoch = self.players[actor.team as usize].epoch;
+                let submarine_sonar = self.submarine_sonar(actor);
                 let cue = self.air_audio.live.get(&handle).copied().filter(|cue| cue.epoch == epoch).unwrap_or_else(|| {
                     let (kind, at) = if actor.def == CARRIER { (ship_sound(actor), self.tick) }
-                    else if self.submarine_sonar(actor) { (IDLE, self.tick) }
+                    else if submarine_sonar { (IDLE, self.tick) }
                     else if start != NONE { (TAKEOFF, start) }
                     else if self.takeoff.rolling(handle) { (TAKEOFF, self.tick + 1) }
                     else { (WALK, self.tick) };
@@ -273,11 +274,18 @@ impl Game {
                     } else { at as f32 * DT };
                     self.air_audio_cue(i, actor, kind, at, 0.0)
                 });
-                let x = actor.px + (actor.x - actor.px) * alpha;
-                let y = actor.py + (actor.y - actor.py) * alpha;
-                let z = if actor.def == CARRIER { 0.0 }
-                    else if self.submarine_sonar(actor) { self.naval_body_pose(i).map_or(0.0, |(_, z, _)| z) }
-                    else { self.aircraft_height(handle, alpha, self.map.height(x, y).max(0.0)) };
+                let (x, y, z) = if submarine_sonar {
+                    // 0086822C uses committed XYZ. 00875255/6A set local Z bounds
+                    // to [0, UnitHeight], which defaults to 1 for Submarine/NavalDeep.
+                    let body_z = self.naval_body_pose(i).map_or(0.0, |(_, z, _)| z);
+                    (actor.x, actor.y, body_z + 0.5)
+                } else {
+                    let x = actor.px + (actor.x - actor.px) * alpha;
+                    let y = actor.py + (actor.y - actor.py) * alpha;
+                    let z = if actor.def == CARRIER { 0.0 }
+                        else { self.aircraft_height(handle, alpha, self.map.height(x, y).max(0.0)) };
+                    (x, y, z)
+                };
                 let hp_ratio = (actor.hp / self.max_hp(actor.team, actor.def)).clamp(0.0, 1.0);
                 current.push(Current { handle, definition: actor.def, team: actor.team, epoch,
                     kind: cue.kind, mode: cue.mode(), reserved: 0, revision: cue.revision,

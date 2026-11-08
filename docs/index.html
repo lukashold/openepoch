@@ -438,6 +438,11 @@
         <div class="row"><label for="quality">Auflösung</label><select id="quality"><option value="1">Standard · 1×</option><option value="1.5">Hoch · bis 1,5×</option><option value="2" selected>Sehr hoch · bis 2×</option></select></div>
       </section>
       <section id="sk-map" class="skirmish-pane">
+        <p id="local-private-maps" class="dim" hidden>
+          Private Karten ·
+          <a href="pangea-private.html?rules=ee2" data-carrier="local-original/pangea-art110/openepoch-ee2-pangea-private.wasm" hidden>Tropisches Pangea</a>
+          <a href="islands-private.html?rules=ee2" data-carrier="local-original/islands110/openepoch-ee2-islands-private.wasm" hidden>Inseln und Kontinente</a>
+        </p>
         <div id="valley-preview-menu" hidden>
           <div class="row"><label for="valley-map-choice">Karte</label><select id="valley-map-choice"><option value="own">Zufallskarte</option><option id="valley-preview-map-option" value="valley">Valley · private Vorschau</option><option id="valley-archive-qa-option" value="valley-archive-qa" hidden disabled>Valley · Archivstart (Test)</option></select></div>
           <p id="valley-fixed-settings" class="dim" hidden>Steinzeit, Griechen gegen ägyptische KI, 250 Bevölkerung. Kartenaufdeckung und Tempo bleiben wählbar.</p>
@@ -586,6 +591,6 @@
 </aside>
 <div id="trade-route-caption" hidden role="status"></div>
 <div id="air-mission-caption" hidden role="status"></div>
-<script type="module" src="main.js?v=native80"></script>
+<script type="module" src="main.js?v=native81"></script>
 </body>
 </html>
