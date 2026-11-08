@@ -291,6 +291,11 @@ impl Game {
         }
     }
 
+    pub(crate) fn foreign_construction_is_restricted(&self, builder: u8, owner: u8) -> bool {
+        self.diplomacy.borders.as_ref().map_or(true, |rules|
+            rules.restricts(builder as usize, owner as usize, 2))
+    }
+
     pub(crate) fn denied_border_territories(&self, actor: &Ent) -> u32 {
         self.denied_border_territories_for(actor.team, purpose(actor.def))
     }

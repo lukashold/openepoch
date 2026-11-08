@@ -59,7 +59,7 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {NATIVE_SEASON_CHOICE,normalizeSeasonChoice,resolveSeasonChoice} from './original-seasons.js?v=native108';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=native108';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=capital139';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=foreign-build141';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION as BASE_PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
@@ -72,7 +72,7 @@ import {bindCrownVictoryMenu,checkCrownVictorySettings,readCrownVictoryHud,CROWN
 import {bindCapitolsMenu,readCapitolHud} from './capitols-menu.js?v=native66';
 import {capitolFeedback,loadCapitolFeedback} from './capitol-feedback.js?v=native67';
 import {bindKothMenu,formatKothStatus} from './koth-menu.js?v=native64-koth';
-import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=native66';
+import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=foreign-build141';
 import {updateOriginalCamera,originalCameraRay,originalFractionForZoom,normalizeOriginalHeading,rotateOriginalCameraHeading} from './original-camera.js?v=heading2';
 import {updateAuthoredCamera} from './authored-camera-axis.js';
 import {createFullmap} from './fullmap.js?v=native77';
@@ -188,13 +188,13 @@ const valleyRequested=rulesProfile.id==='up15'&&(!!valleyManifest||['1','archive
 try{
   if(valleyRequested){
     const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley76_commit','valley71_force_attack_at','valley71_neutral_opening','configure_late_population']:rulesProfile.requiredExports;
-    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=capital139-valley'};
+    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=foreign-build141-valley'};
     try{wasm=await loadRulesWasm(previewRules,import.meta.url);}catch{/* The ordinary ruleset remains available. */}
   }
   wasm??=await loadRulesWasm(rulesProfile,import.meta.url);
 }catch(error){rulesLoadFailure(error);throw error;}
 // Capitol transfer eligibility changes lockstep behavior in the installed UP profile.
-const PROTOCOL_VERSION=rulesProfile.id==='up15'?BASE_PROTOCOL_VERSION+3:
+const PROTOCOL_VERSION=rulesProfile.id==='up15'?BASE_PROTOCOL_VERSION+(wasm.foreign_construction_version?.()===1?4:3):
   wasm.early_artillery_pack_version?.()===1?BASE_PROTOCOL_VERSION+1:BASE_PROTOCOL_VERSION;
 // Always take the pointer BEFORE touching memory.buffer: the call may grow (and detach) the memory.
 const u8 = (ptr, len) => new Uint8Array(wasm.memory.buffer, ptr, len);
@@ -1064,6 +1064,8 @@ function updatePlacement(now=performance.now()){
   const area=wasm.territory_at(tx+width/2,ty+height/2),owner=wasm.territory_owner(area);
   const notes=[];
   if(error===0&&ghost.id!==0&&owner===255)notes.push('Neutrales Land: doppelte Bauzeit');
+  if(error===0&&wasm.foreign_construction_version?.()===1&&
+    wasm.placement_time_multiplier(ghost.id,tx,ty,ghost.turn)===3)notes.push('Fremdes Gebiet: dreifache Bauzeit');
   if(referenceMode&&error===0&&(ghost.id===0||ghost.id===56)&&owner===255){
     const info=ui?.diplomacy?.territories?.find(territory=>territory.id===area);
     if(info)notes.push(territoryClaimMessage(info,{building:true}));

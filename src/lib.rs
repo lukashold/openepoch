@@ -1994,6 +1994,9 @@ pub extern "C" fn wonder_footprint(def: u32, turn: u32) -> u32 {
 }
 #[no_mangle]
 pub extern "C" fn dock_orientation(tx:i32,ty:i32)->u32{g().dock_auto_turn(tx,ty)}
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn foreign_construction_version() -> u32 { 1 }
 #[no_mangle]
 pub extern "C" fn placement_time_multiplier(def:u32,tx:i32,ty:i32,turn:u32)->f32{
     if def>=DEFS.len()as u32{return 0.0;}let (width,height)=Game::footprint_axes(def as DefId,turn);if width==0||tx<0||ty<0||tx>N as i32-width||ty>N as i32-height{return 0.0;}let game=g();if def==TC as u32{return 1.0;}let owner=game.towner[game.map.terr[(ty+height/2)as usize*N+(tx+width/2)as usize]as usize];if owner==game.local{1.0}else if owner==255{2.0}else{3.0}

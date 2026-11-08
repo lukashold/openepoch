@@ -155,11 +155,26 @@ impl Game {
         }
         let territory = self.map.terr[center];
         let owner = self.towner[territory as usize];
-        #[cfg(feature="ee2-native13")]
-        if owner != team && (owner != 255 || matches!(def, TOWER | FORTRESS)) && self.initial_ceasefire_active() {
-            return 11;
+        let foreign = owner != team && owner != 255;
+        #[cfg(feature = "ee2-native13")]
+        {
+            let native_foreign_site = foreign && (owner as usize) < self.nplayers
+                && self.diplomacy.borders.is_some() && matches!(def, HOUSE | BARRACKS | DOCK);
+            if native_foreign_site && def == HOUSE && self.ents[..self.high].iter().filter(|e| {
+                e.alive && e.hp > 0.0 && e.def == HOUSE && (e.built >= 1.0 || e.team == team)
+                    && self.map.terr[tile_of(e.x, e.y)] == territory
+            }).count() >= 6 {
+                return 13;
+            }
+            if owner != team && (owner != 255 || matches!(def, TOWER | FORTRESS)) && self.initial_ceasefire_active() {
+                return 11;
+            }
+            if foreign && (!native_foreign_site || self.foreign_construction_is_restricted(team, owner)) {
+                return 2;
+            }
         }
-        if owner != team && owner != 255 {
+        #[cfg(not(feature = "ee2-native13"))]
+        if foreign {
             return 2;
         }
         if def == TC
@@ -581,6 +596,55 @@ mod tests {
         g.build_grid();
         g.update_fog();
     }
+    #[cfg(feature = "ee2-native13")]
+    #[test]
+    fn foreign_build_uses_citizen_border_terms_not_relation() {
+        let mut g = flat();
+        let (x, y) = site(&g, HOUSE, 0);
+        let territory = g.map.terr[tile_of(x as f32 + 1.5, y as f32 + 1.5)] as usize;
+        g.towner[territory] = 1;
+        assert_eq!(g.placement_geometry_error(0, HOUSE, x, y, 0), 2);
+        assert!(g.configure_sight_terms() && g.configure_timed_treaties(false) && g.configure_border_treaties());
+        for relation in [crate::diplomacy::WAR, crate::diplomacy::NEUTRAL, crate::diplomacy::ALLIED] {
+            g.diplomacy.relation[1] = relation;
+            g.diplomacy.relation[4] = relation;
+            assert_eq!(g.placement_geometry_error(0, HOUSE, x, y, 0), 0);
+        }
+        for (term, error) in [(1, 0), (2, 2), (3, 2)] {
+            g.diplomacy.borders.as_mut().unwrap().set_term(0, 1, term);
+            assert_eq!(g.placement_geometry_error(0, HOUSE, x, y, 0), error);
+        }
+        g.diplomacy.borders.as_mut().unwrap().territory_count_changed(0, 1, 0);
+        assert_eq!(g.placement_geometry_error(0, HOUSE, x, y, 0), 0);
+        assert_eq!(g.placement_geometry_error(0, TC, x, y, 0), 2);
+        assert!(g.configure_initial_ceasefire(1));
+        assert_eq!(g.placement_geometry_error(0, HOUSE, x, y, 0), 11);
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    #[test]
+    fn foreign_house_limit_counts_completed_buildings_and_own_foundations() {
+        let mut g = flat();
+        let (x, y) = site(&g, HOUSE, 0);
+        g.map.terr.fill(1);
+        g.towner[1] = 1;
+        assert!(g.configure_sight_terms() && g.configure_timed_treaties(false) && g.configure_border_treaties());
+        for n in 0..5 {
+            assert_ne!(g.spawn(HOUSE, 1, 20.0 + 5.0 * n as f32, 20.0), NOIDX);
+        }
+        let foreign_site = g.spawn(HOUSE, 1, 20.0, 25.0);
+        assert_ne!(foreign_site, NOIDX);
+        g.ents[foreign_site].built = 0.25;
+        assert_eq!(g.placement_geometry_error(0, HOUSE, x, y, 0), 0);
+        let own_site = g.spawn(HOUSE, 0, 25.0, 25.0);
+        assert_ne!(own_site, NOIDX);
+        g.ents[own_site].built = 0.25;
+        assert_eq!(g.placement_geometry_error(0, HOUSE, x, y, 0), 13);
+        g.ents[own_site].alive = false;
+        g.ents[foreign_site].built = 1.0;
+        assert_eq!(g.placement_geometry_error(0, HOUSE, x, y, 0), 13);
+    }
+
     #[test]
     fn neutral_city_known_maps_workers_and_one_per_territory() {
         let mut g = flat();
