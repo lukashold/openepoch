@@ -23,7 +23,7 @@ pub(crate) struct State {
 }
 
 fn naval_family(def: DefId) -> bool {
-    matches!(def, 29..=36 | 42 | 45 | 58 | 82 | 84)
+    matches!(def, 29..=36 | 42 | 45 | 58 | 82 | 84 | crate::fishing81::FISHING_SHIP)
 }
 
 fn seats(actor: &Ent, epoch: u8, aircraft: u32) -> u32 {
@@ -134,7 +134,7 @@ impl Game {
         self.dock_garrison.as_ref().map_or(0, |state| state.used(self.h(index)))
     }
 
-    fn dock_point(&self, index: usize, definition: DefId) -> Option<(f32, f32)> {
+    pub(super) fn dock_point(&self, index: usize, definition: DefId) -> Option<(f32, f32)> {
         let mut dock = self.ents[index];
         dock.rx = -1.0;
         let point = self.spawn_point(&dock, &DEFS[DOCK as usize], &DEFS[definition as usize]);

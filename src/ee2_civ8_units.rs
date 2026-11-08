@@ -517,10 +517,14 @@ pub const CLASS_ROWS:&[UnitRow]=&[
 ];
 /// Original epoch indices are 0..14; until is exclusive, at most 15.
 pub fn lookup(id:DefId,epoch:u8)->Option<&'static UnitRow>{
+ #[cfg(feature = "ee2-native13")]
+ if id == crate::fishing81::FISHING_SHIP { return crate::fishing81::lookup(id, epoch); }
  ROWS.iter().find(|row|row.id==id && epoch>=row.epoch && epoch<row.until)
 }
 /// Complete declared progression of the bound source class, not a claim of visual equivalence.
 pub fn lookup_class(id:DefId,epoch:u8)->Option<&'static UnitRow>{
+ #[cfg(feature = "ee2-native13")]
+ if id == crate::fishing81::FISHING_SHIP { return crate::fishing81::lookup(id, epoch); }
  #[cfg(feature = "ee2-native13")]
  if id == crate::heavy_mounted3_61::ID { return crate::heavy_mounted3_61::row(epoch); }
  #[cfg(feature = "ee2-native13")]

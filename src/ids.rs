@@ -132,7 +132,7 @@ pub fn render_capacity() -> usize {
 pub fn render_kind(id: RenderId) -> u32 {
     if id >= UNIT_RENDER_BASE && id < UNIT_RENDER_BASE + crate::defs::DEFS.len() as u32 {
         0
-    } else if id <= 10 {
+    } else if id <= 10 || cfg!(feature = "ee2-native13") && id == 12 {
         1
     } else if (16..=22).contains(&id) || cfg!(feature = "ee2-native13") && id == GUIDED_HERC_RENDER {
         2

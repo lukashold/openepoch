@@ -137,6 +137,8 @@ impl Game {
         let options = options | if self.solo_resigned { crate::cmd::SOLO_RESIGN_SAVE_FLAG } else { 0 };
         #[cfg(feature="ee2-native13")]
         let options = options | crate::initial_ceasefire::save_option(self.initial_ceasefire);
+        #[cfg(feature="ee2-native13")]
+        let options = options | if self.fishing_enabled { crate::fishing81::SAVE_FLAG } else { 0 };
         for v in [options, self.instant_build as u32, self.tech_points] {
             b.extend_from_slice(&v.to_le_bytes());
         }
@@ -245,6 +247,8 @@ impl Game {
         { b = self.market.wrap(b); }
         #[cfg(feature="ee2-native13")]
         if let Some(powers) = &self.powers { b = powers.wrap(b); }
+        #[cfg(feature = "ee2-native13")]
+        if let Some(timed) = &self.diplomacy.timed { b = timed.wrap(b); }
         if self.source_clock.is_some() { b = self.diplomacy.clock.wrap(b); }
         let b = crate::source_clock38::wrap(b, self.source_clock);
         #[cfg(feature = "ee2-authored-valley37")]
@@ -301,6 +305,8 @@ impl Game {
         let (buf, source_clock) = crate::source_clock38::split(buf)?;
         let (buf, diplomacy_clock) = crate::diplomacy::DiplomacyClock::split(buf)?;
         if diplomacy_clock.is_some() && source_clock.is_none() { return None; }
+        #[cfg(feature = "ee2-native13")]
+        let (buf, timed_treaties) = crate::timed_treaties::TimedTreaties::split(buf)?;
         #[cfg(feature="ee2-native13")]
         let (buf, powers) = crate::power42::split(buf)?;
         #[cfg(feature="ee2-native13")]
@@ -535,7 +541,7 @@ impl Game {
                 crate::game::trade30::SAVE_FLAG | crate::air31::SAVE_FLAG | crate::runway32::SAVE_FLAG |
                 crate::takeoff33::SAVE_FLAG | crate::landing34::SAVE_FLAG | crate::carrier36_defs::SAVE_FLAG |
                 crate::cmd::SOLO_RESIGN_SAVE_FLAG | crate::initial_ceasefire::SAVE_MASK |
-                crate::runway32::CARRIER_POSE_SAVE_FLAG | CAPTURE_CHECKPOINT_SAVE_MASK;
+                crate::runway32::CARRIER_POSE_SAVE_FLAG | CAPTURE_CHECKPOINT_SAVE_MASK | crate::fishing81::SAVE_FLAG;
             let flags = v(0);
             if flags & !allowed != 0 || v(4) > 1 { return None; }
             g.cheats_enabled = flags & 1 != 0;
@@ -555,6 +561,7 @@ impl Game {
                 g.read_capture_checkpoint_flags(flags)?;
                 g.solo_resigned = flags & crate::cmd::SOLO_RESIGN_SAVE_FLAG != 0;
                 g.initial_ceasefire = crate::initial_ceasefire::read_option(flags)?;
+                g.fishing_enabled = flags & crate::fishing81::SAVE_FLAG != 0;
                 if g.air_runway_enabled && !g.air_missions_enabled { return None; }
                 if g.air_takeoff_enabled && !g.air_runway_enabled { return None; }
                 if g.air_landing_enabled && !g.air_takeoff_enabled { return None; }
@@ -575,7 +582,13 @@ impl Game {
             if u32::from_le_bytes(ext[..4].try_into().ok()?)!=0x314f_4345 || u32::from_le_bytes(ext[4..8].try_into().ok()?)!=1{return None;}
             fill(&mut g.extra_resources,&ext[8..104]);
         }
+        #[cfg(feature = "ee2-native13")]
+        { g.diplomacy.timed = timed_treaties; }
         if has_diplomacy{g.read_diplomacy(&buf[end+trailer..end+trailer+crate::diplomacy::DIP_BYTES])?;}
+        #[cfg(feature = "ee2-native13")]
+        if let Some(timed) = &g.diplomacy.timed {
+            if !g.diplomacy.sight_terms || !timed.valid(&g.diplomacy, g.nplayers, g.sim_elapsed()) { return None; }
+        }
         #[cfg(feature = "ee2-valley71-neutral-qa")]
         if g.valley_neutral_opening() && (!has_diplomacy || !g.valid_valley_neutral_opening()) { return None; }
         if (g.god_mode || g.fog_inverted) && (g.humans != 1 || g.net) { return None; }
@@ -585,7 +598,13 @@ impl Game {
             g.diplomacy.clock = clock;
         }
         if g.extra_resources.iter().flatten().any(|v|!v.is_finite()||*v<0.0)||g.players.iter().flat_map(|p|p.res).any(|v|!v.is_finite()||v<0.0){return None;}
-        if g.map.res.iter().any(|&v|v as usize>crate::economy::RESOURCE_COUNT){return None;}
+        if g.map.res.iter().enumerate().any(|(_tile, &kind)| {
+            #[cfg(feature="ee2-native13")]
+            if kind == R_FISH && g.fishing_enabled {
+                return g.map.ter[_tile] != T_DEEP || !(1..=crate::fishing81::FISH_AMOUNT).contains(&g.map.amt[_tile]);
+            }
+            kind as usize > crate::economy::RESOURCE_COUNT
+        }) { return None; }
         #[cfg(feature = "ee2-reference")]
         if u(3)==47 {
             // Preserve the cultural age of saves made by the former eight-epoch ruleset.
@@ -621,6 +640,7 @@ impl Game {
         for p in &g.players[..g.nplayers] {if p.epoch>g.match_final_epoch() {return None;}}
         #[cfg(feature="ee2-native13")]
         let valid_definition = |id: DefId| {
+            if id == crate::fishing81::FISHING_SHIP { return g.fishing_enabled; }
             if id == crate::koth64::HILL { return koth.is_some(); }
             if id == crate::heavy_mounted3_61::ID { return heavy_mounted3; }
             if id == crate::carrier36_defs::CARRIER { return g.air_carrier_enabled; }
@@ -660,6 +680,12 @@ impl Game {
             if !valid_definition(e.def) || (e.team as usize>=g.nplayers && !neutral_hill) || e.qn>5 || e.ncargo as usize>CARGO_MAX {return None;}
             #[cfg(feature="ee2-native13")]
             if e.def == crate::koth64::HILL && (e.qn != 0 || e.ncargo != 0 || e.order != O_IDLE) { return None; }
+            #[cfg(feature="ee2-native13")]
+            if e.def == crate::fishing81::FISHING_SHIP && (e.qn != 0 || e.ncargo != 0 ||
+                !(0.0..=crate::fishing81::CARRY_LIMIT).contains(&e.carry) ||
+                e.order == O_GATHER && (e.otile as usize >= NN || e.q[0] != u32::from(R_FISH) ||
+                    e.q[1] > 1 || ![0, u32::from(R_FOOD)].contains(&e.q[2]) ||
+                    !f32::from_bits(e.q[3]).is_finite() || f32::from_bits(e.q[3]) < 0.0)) { return None; }
             #[cfg(feature="ee2-native13")]
             if e.order == O_RENDEZVOUS && e.def != crate::carrier36_defs::CARRIER { return None; }
             #[cfg(feature="ee2-native13")]
@@ -719,6 +745,8 @@ impl Game {
                 if air.is_some() && q as DefId == crate::air31_defs::FIGHTER_BOMBER { return false; }
                 #[cfg(feature="ee2-native13")]
                 if g.air_carrier_enabled && q == crate::carrier36_defs::CARRIER as _ { return e.def != DOCK; }
+                #[cfg(feature="ee2-native13")]
+                if q == u32::from(crate::fishing81::FISHING_SHIP) { return !g.fishing_enabled || e.def != DOCK || e.built < 1.0; }
                 #[cfg(feature="ee2-native13")]
                 if powers.is_some() && q == crate::priest42_defs::PRIEST as _ { return e.def != TEMPLE; }
                 #[cfg(feature="ee2-native13")]
@@ -862,6 +890,8 @@ impl Game {
         g.restore_priest_power(powers, military_leader_powers.is_some())?;
         #[cfg(feature="ee2-native13")]
         if g.carrier_surface_pose_enabled && !g.carrier_surface_pose_allowed() { return None; }
+        #[cfg(feature="ee2-native13")]
+        if g.fishing_enabled && !g.fishing_allowed() { return None; }
         #[cfg(feature="ee2-native13")]
         g.restore_blessings(blessings)?;
         #[cfg(feature="ee2-native13")]

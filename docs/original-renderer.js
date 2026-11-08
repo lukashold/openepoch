@@ -61,6 +61,11 @@ const navalPoseModels=new Map([
   'a51621715027d57f06086861bd7670b8b1a151d5f988c0cf67e70c06fc6bfad6',
   'ebd48fc1a75cb938135e4a78ba1303347906028e021825942820de63c8466b15',
  ])],
+ [108, new Set([
+  '42e55eda1853536ce412b6581adbe8fa964b64e7be0fec2f3ab2d1e86d9dc3e7',
+  '90a530709f876705c6655bcdf1ad88710bcb585b7d3a24213c154744b45b4204',
+  'a3a59d5e3bf5f1f3ca1fd57079780438839ae9fa49b142b2beb0782b25b697c5',
+ ])],
 ]);
 const navalBasisModel=(model,id)=>model.normalization?.axis==='x,z,-y'&&navalPoseModels.get(id)?.has(model.source?.sha256);
 const nativeNavalYaw=variant=>variant.yawOffset===-Math.PI/2||
@@ -436,7 +441,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    productionStatus.manifestAvailable=true;
   }catch(error){productionStatus.errors.push(error.message);}}
  }
- const presentationEntries=[options.tradePresentation,options.fighterBomberPresentation,options.carrierPresentation,options.priestPresentation,options.spyPresentation,options.leaderPresentation,options.wonderPresentation,options.diversionPresentation,options.heavyMounted3Presentation,options.kothPresentation].filter(Boolean)
+ const presentationEntries=[options.tradePresentation,options.fighterBomberPresentation,options.carrierPresentation,options.priestPresentation,options.spyPresentation,options.leaderPresentation,options.wonderPresentation,options.diversionPresentation,options.heavyMounted3Presentation,options.kothPresentation,options.fishingPresentation].filter(Boolean)
   .flatMap(presentation=>presentation.modelRows.map(row=>({...row,presentation})));
  const sailStatus={enabled:options.initialSails!==false,manifestAvailable:false,models:0,parts:0,errors:[]},sailErrors=new Set(),sailComposites=new Map();let sailManifest=null,sailShader=null,dynamicSailShader=null;const dynamicBindings=new WeakMap();
  result.initialSails=sailStatus;
@@ -474,7 +479,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    const composite=await sailComposites.get(row.url);
    if(composite.assetKind!==manifestAssetKind(entry)||(tradeSails?composite.family!==entry.sourceFamily:composite.id!==entry.id)||composite.epoch!==(entry.epoch??0))return model;
    const augmented=appendInitialSailParts(model,composite);
-   if(options.dynamicSails&&!tradeSails){try{dynamicBindings.set(augmented,createDynamicSailBinding(model,composite,sourceSails,entry.yawOffset??model.yawOffset??0));}catch(e){sailError(e.message);}}
+   if(options.dynamicSails&&(!tradeSails||entry.fishingAsset)){try{dynamicBindings.set(augmented,createDynamicSailBinding(model,composite,sourceSails,entry.yawOffset??model.yawOffset??0));}catch(e){sailError(e.message);}}
    return augmented;
   }catch(e){sailError(e.message);return model;}
  };
@@ -706,7 +711,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    const model=await augmentModel(body??await (entry.presentation?verifiedModelJSON(modelUrl,entry.sha256,'Original unit model'):json(modelUrl)),{...entry,id}),parts=await loadParts(model,assetKind===1,modelUrl,entry.presentation?.teamManifest,entry.presentation?.textureHashes);
    if(!parts.length)continue;
    const scaleKey=(entry.assetKind===undefined?'':assetKind+':')+id+':'+(entry.epoch??0),sea=assetKind===0&&((id>=29&&id<=36)||id===42||id===45);
-   const scaleBinding=entry.regionalCivilizations||entry.wonderFamily||entry.kothObjective?entry.nativeScaleBinding:scales.variants?.[scaleKey];
+   const scaleBinding=entry.regionalCivilizations||entry.wonderFamily||entry.kothObjective||entry.fishingAsset?entry.nativeScaleBinding:scales.variants?.[scaleKey];
    const transform=nativeModelTransform(model,scaleBinding);
    const yOffset=!transform.native&&sea?-(model.normalization?.offset?.[1]||0)*(model.normalization?.scale||1):0;
    const variant={sourceId:id,assetKind,scaleKey,epoch:entry.epoch??0,until:entry.until,regionalCivilizations:entry.regionalCivilizations,regionalFallback:entry.regionalFallback===true,sourceIdentity:entry.sourceIdentity,region:entry.region,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),nativeAttackClock:entry.nativeAttackClock===true,yOffset,originOffset:transform.originOffset,nativeScale:transform.native?transform.scale:null,yawOffset:entry.yawOffset??model.yawOffset??0,farUrl:entry.lodFarUrl,far:null,farRequested:false,pickBounds:resourceBounds(parts),rallyTag:rallyTag(model),nativeTakeoff:model.nativeTakeoff};

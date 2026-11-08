@@ -1,13 +1,13 @@
 // The EE2 profile uses locally extracted original recordings when available.
 // Procedural sounds and local speech remain the fallback for the standalone game.
-import { createOriginalAudio } from './original-audio.js?v=native65-herc';
+import { createOriginalAudio } from './original-audio.js?v=native104';
 import {ORIGINAL_AUDIO_DEFAULTS,originalAudioLevel,originalAudioGain} from './original-audio-levels.js?v=native38audio';
 import {originalOneShotAudible,originalLoopAudible,originalSpatialMix} from './original-spatial-audio.js?v=native39audio';
 import {createPresentationRandom} from './source-music-controller.js?v=regional11';
 import {createAirFlightPlayback} from './air-flight-audio.js?v=native66';
 import {takeoffSpatialMix} from './air-takeoff.js?v=native40clock';
 const presentationRandom = createPresentationRandom(1);
-const originals=createOriginalAudio({presentationRandom});
+const originals=createOriginalAudio({presentationRandom,citizenReplySeconds:()=>performance.now()/1000});
 const GUIDED_HERC_IMPACT=Object.freeze({
   url:new URL('./local-original/audio/fx_exp_01.mp3',import.meta.url),
   sha256:'5a7a74a82cfefee46ff2b3a85ef6734f1e934ffa9c343789b50d09cd7597d4ff',
@@ -135,13 +135,14 @@ const RESPONSE = {
 };
 // Use a local German system voice if one is available. Browsers without speech
 // synthesis retain the existing synthesized confirmation sound.
-export function acknowledge(def, action, epoch=0,context=undefined) {
+export function acknowledge(def, action, epoch=0,context=undefined,replyScope=undefined) {
   if (muted || def < 0) return false;
   // Buildings use their original selection effect independently of the voice toggle.
   const role=originals.role(def,epoch);if(!role)return false;
   if(role.building)return originals.acknowledge(def,action,epoch,context);
   if(!role.mobile)return false;
   if(!speechEnabled)return false;
+  if(originals.playCitizenReply(def,action,epoch,context,replyScope)){window.speechSynthesis?.cancel();return true;}
   const now = performance.now(); if (now - lastSpeech < 900) return false;
   if(originals.acknowledge(def,action,epoch,context)){window.speechSynthesis?.cancel();lastSpeech=now;return true;}
   if(!soundVolume||!window.speechSynthesis||!window.SpeechSynthesisUtterance)return false;

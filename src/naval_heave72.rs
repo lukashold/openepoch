@@ -84,7 +84,8 @@ impl crate::game::Game {
         // their active source upgrades. Aircraft carrier deck geometry has a
         // separate saved capability because it also affects simulation.
         let carrier = actor.def == crate::carrier36_defs::CARRIER && self.carrier_surface_pose_enabled;
-        if !(matches!(actor.def, 29..=33 | 35 | 42 | 58 | 82) || carrier) ||
+        let fishing = actor.def == crate::fishing81::FISHING_SHIP && self.fishing_enabled;
+        if !(matches!(actor.def, 29..=33 | 35 | 42 | 58 | 82) || carrier || fishing) ||
             actor.hp <= 0.0 || !self.production_roster_enabled { return None; }
         let serial = self.powers.as_ref()?.actor(self.h(index))?.serial;
         let id = (u32::from(actor.team) + 1) << 27 | serial;

@@ -68,6 +68,9 @@ pub(crate) mod market57;
 #[cfg(feature = "ee2-native13")]
 #[path = "trade30.rs"]
 pub(crate) mod trade30;
+#[cfg(feature = "ee2-native13")]
+#[path = "fishing81.rs"]
+pub(crate) mod fishing81;
 #[cfg(all(test,feature="ee2-reference"))]
 #[path="fortress_tests.rs"]
 mod fortress_tests;
@@ -307,6 +310,8 @@ pub struct Game {
     pub(crate) guided_herc_rocket: bool,
     #[cfg(feature="ee2-native13")]
     pub(crate) trade_enabled: bool,
+    #[cfg(feature="ee2-native13")]
+    pub(crate) fishing_enabled: bool,
     #[cfg(feature = "ee2-native13")]
     pub(crate) trade: trade30::State,
     #[cfg(feature = "ee2-native13")]
@@ -551,6 +556,8 @@ impl Game {
             guided_herc_rocket: false,
             #[cfg(feature="ee2-native13")]
             trade_enabled: !net && bench == 0,
+            #[cfg(feature="ee2-native13")]
+            fishing_enabled: false,
             #[cfg(feature = "ee2-native13")]
             trade: trade30::State::default(),
             #[cfg(feature = "ee2-native13")]
@@ -962,6 +969,8 @@ impl Game {
     /// Would `train(b, def)` succeed right now?
     pub(crate) fn unit_production_available(&self, team: u8, host: DefId, unit: DefId) -> bool {
         #[cfg(feature="ee2-native13")]
+        if unit == crate::fishing81::FISHING_SHIP { return self.fishing_enabled && host == DOCK; }
+        #[cfg(feature="ee2-native13")]
         if unit == crate::heavy_mounted3_61::ID { return self.heavy_mounted3_offer(team, host); }
         #[cfg(feature="ee2-native13")]
         if unit == crate::priest42_defs::PRIEST { return self.powers.is_some() && host == TEMPLE; }
@@ -1205,6 +1214,8 @@ impl Game {
 
     pub fn order_gather(&mut self, ids: &[usize], tile: usize) {
         let kind = self.map.res[tile];
+        #[cfg(feature = "ee2-native13")]
+        if kind == R_FISH { self.order_fishing(ids, tile); return; }
         if kind==R_NONE{return;}
         let ids:Vec<usize>=ids.iter().copied().filter(|&i|self.citizen_can_gather(self.ents[i].team,kind)).collect();
         let (cx, cy) = ((tile % N) as f32 + 0.5, (tile / N) as f32 + 0.5);
@@ -1528,6 +1539,16 @@ impl Game {
         self.factory_clocks.hash(&mut mix);
         #[cfg(feature = "ee2-native13")]
         if self.trade_enabled { self.trade.hash(&mut mix); }
+        #[cfg(feature="ee2-native13")]
+        if self.fishing_enabled {
+            mix(u32::from_le_bytes(*b"FSH1"));
+            for (tile, &kind) in self.map.res.iter().enumerate() {
+                if kind == R_FISH {
+                    mix(tile as u32);
+                    mix(u32::from(self.map.amt[tile]));
+                }
+            }
+        }
         #[cfg(feature = "ee2-native13")]
         if self.air_missions_enabled { self.aircraft.hash(&mut mix); }
         #[cfg(feature = "ee2-native13")]
@@ -1565,6 +1586,8 @@ impl Game {
         if let Some(teams) = self.diplomacy.fixed_teams { mix(teams.visibility_word(0)); }
         #[cfg(feature = "ee2-native13")]
         if self.diplomacy.sight_terms { mix(crate::diplomacy::SIGHT_TERMS_SAVE_TAG); }
+        #[cfg(feature = "ee2-native13")]
+        if let Some(timed) = &self.diplomacy.timed { timed.hash(&mut mix); }
         for a in [&self.diplomacy.relation,&self.diplomacy.offers,&self.diplomacy.offer_vision,&self.diplomacy.sharing]{for &v in a{mix(v as u32);}}
         for a in [&self.diplomacy.offer_tick,&self.diplomacy.cooldown,&self.diplomacy.gifts,&self.diplomacy.neutral_since,&self.diplomacy.war_tick]{for &v in a{mix(v);}}
         for h in self.territory.claims{mix(h);}
@@ -1598,6 +1621,13 @@ impl Game {
 
                 mix(e.qn as u32);
                 if DEFS[e.def as usize].building {for q in &e.q[..e.qn as usize] {mix(*q as u32);}}
+                #[cfg(feature="ee2-native13")]
+                if e.def == crate::fishing81::FISHING_SHIP && e.order == O_GATHER {
+                    mix(e.otile);
+                    mix(e.otgt);
+                    mix(e.q[1]);
+                    mix(e.q[3]);
+                }
                 for k in 0..e.ncargo as usize {if cfg!(feature="ee2-roster6"){mix(e.cargo[k]as u32);mix(e.cargo_hp[k]as u32);}else{mix(e.cargo[k] as u32 | (e.cargo_hp[k] as u32)<<8);}}
             }
         }
@@ -2626,7 +2656,11 @@ impl Game {
                     let stationed = false;
                     if u != NOIDX && e.rx >= 0.0 && !stationed {
                         let rt = tile_of(e.rx, e.ry);
-                        if ud.has(F_WORKER) && self.map.res[rt] != R_NONE {
+                        #[cfg(feature = "ee2-native13")]
+                        let fishing = self.fishing_enabled && item == crate::fishing81::FISHING_SHIP as QueueItem && self.map.res[rt] == R_FISH;
+                        #[cfg(not(feature = "ee2-native13"))]
+                        let fishing = false;
+                        if fishing || ud.has(F_WORKER) && self.map.res[rt] != R_NONE {
                             self.order_gather(&[u], rt);
                         } else {
                             self.order_move(&[u], e.rx, e.ry, false);
@@ -3052,6 +3086,8 @@ impl Game {
     }
 
     fn do_gather(&mut self, index:usize,e: &mut Ent, d: &Def, want: &mut (f32, f32), moving: &mut bool) {
+        #[cfg(feature = "ee2-native13")]
+        if e.def == crate::fishing81::FISHING_SHIP { self.do_fishing(index, e, d, want, moving); return; }
         let kind=e.q[0] as u8;
         if cfg!(feature="ee2-reference")&&e.carry>0.0&&e.q[2]>0&&e.q[2]!=kind as QueueItem {e.q[1]=1;}
         if cfg!(feature="ee2-reference")&&e.q[1]==1{self.return_cargo(e,d,want,moving);return;}

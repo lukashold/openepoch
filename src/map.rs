@@ -24,6 +24,7 @@ pub const R_TIN:u8=6;
 pub const R_SALTPETER:u8=7;
 pub const R_OIL:u8=8;
 pub const R_URANIUM:u8=9;
+pub const R_FISH:u8=10;
 
 /// Cardinals first so BFS prefers straight moves; index 8 means "at goal".
 pub const DIRS: [(i32, i32); 8] = [(1, 0), (0, 1), (-1, 0), (0, -1), (1, 1), (-1, 1), (-1, -1), (1, -1)];

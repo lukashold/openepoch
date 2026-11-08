@@ -248,6 +248,9 @@ pub fn normalize_input(input: &[u8], current_actor_defs: usize) -> Option<Vec<u8
     #[cfg(feature="ee2-native13")]
     let carrier = !legacy && input_defs == SAVE_DEFINITION_COUNT &&
         u32v(b, rest + crate::map::NN * 5)? & crate::carrier36_defs::SAVE_FLAG != 0;
+    #[cfg(feature="ee2-native13")]
+    let fishing = !legacy && input_defs == SAVE_DEFINITION_COUNT &&
+        u32v(b, rest + crate::map::NN * 5)? & crate::fishing81::SAVE_FLAG != 0;
     for i in 0..4 {
         validate_player(&b[36 + i * PLAYER..36 + (i + 1) * PLAYER])?;
     }
@@ -257,7 +260,8 @@ pub fn normalize_input(input: &[u8], current_actor_defs: usize) -> Option<Vec<u8
         if e.alive {
             let valid_actor = (e.def as usize) < actor_defs;
             #[cfg(feature="ee2-native13")]
-            let valid_actor = valid_actor || (carrier && e.def == crate::carrier36_defs::CARRIER);
+            let valid_actor = valid_actor || (carrier && e.def == crate::carrier36_defs::CARRIER)
+                || (fishing && e.def == crate::fishing81::FISHING_SHIP);
             if !valid_actor || e.cargo[..e.ncargo as usize].iter().any(|&id|id as usize>=actor_defs){return None;}
             if DEFS[e.def as usize].building && e.q[..e.qn as usize].iter().any(|&q| {
                 #[cfg(feature="ee2-native13")]
@@ -268,6 +272,8 @@ pub fn normalize_input(input: &[u8], current_actor_defs: usize) -> Option<Vec<u8
                     q as DefId == crate::air31_defs::FIGHTER_BOMBER { return false; }
                 #[cfg(feature="ee2-native13")]
                 if carrier && q == u32::from(crate::carrier36_defs::CARRIER) { return false; }
+                #[cfg(feature="ee2-native13")]
+                if fishing && q == u32::from(crate::fishing81::FISHING_SHIP) { return e.def != DOCK; }
                 #[cfg(feature="ee2-native13")]
                 if actor_defs > crate::priest42_defs::PRIEST as usize && q == u32::from(crate::priest42_defs::PRIEST) { return false; }
                 #[cfg(feature="ee2-native13")]

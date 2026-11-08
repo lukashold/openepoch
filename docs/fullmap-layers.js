@@ -17,7 +17,7 @@ export function paintFullmapLayers(wasm, size, terrain, options, rgba) {
         rgba[o] = 23; rgba[o+1] = 64; rgba[o+2] = 32; rgba[o+3] = Math.max(rgba[o+3],114);
       } else {
         const kind = wasm.resource_kind(tile);
-        if (kind && usable[kind-1]) resources.push({kind,x:tile%size+.5,y:Math.floor(tile/size)+.5});
+        if (kind && (kind===10 || usable[kind-1])) resources.push({kind,x:tile%size+.5,y:Math.floor(tile/size)+.5});
       }
     }
     if (visibility !== 255) {

@@ -122,6 +122,8 @@ mod source_clock38;
 mod naval_heave72;
 #[cfg(feature = "ee2-native13")]
 mod naval_tilt73;
+#[cfg(feature = "ee2-native13")]
+use game::fishing81;
 #[cfg(all(feature="ee2-up15",not(feature="ee2-roster6")))]
 mod ee2_up15_economy;
 #[cfg(all(feature="ee2-roster6",not(feature="ee2-civ8")))]
@@ -137,6 +139,8 @@ mod native_attack_clock;
 mod diplomacy;
 #[cfg(feature = "ee2-native13")]
 mod fixed_teams;
+#[cfg(feature = "ee2-native13")]
+mod timed_treaties;
 #[cfg(feature = "ee2-native13")]
 mod ee2_conquest;
 #[cfg(feature = "ee2-native13")]
@@ -1005,11 +1009,14 @@ fn crown_resume_matches(game: &Game, encoded: u32) -> bool {
     let rules = encoded & 255;
     let victory = (encoded >> 8) & 0x1ffff;
     let capture = (encoded >> 25) & 3;
-    let sight = encoded >> 27;
+    let sight = (encoded >> 27) & 1;
+    let timed = encoded >> 28;
     (rules == 0 && victory == 0 && capture == 0 || rules == game.crown_rules() + 1)
         && victory == (game.crown_victory_config() | game.network_capitol_config())
         && capture == u32::from(game.capture_checkpoint_mode)
         && sight == u32::from(game.diplomacy.sight_terms)
+        && timed == u32::from(game.diplomacy.timed.as_ref().is_some_and(|rule| rule.unbreakable))
+        && (timed != 0 || game.diplomacy.timed.is_none())
 }
 
 #[cfg(feature = "ee2-native13")]
@@ -1798,6 +1805,16 @@ pub extern "C" fn cmd_context(x: f32, y: f32, attack_move: u32) {
         }
     }
     let tile = tile_of(x, y);
+    #[cfg(feature = "ee2-native13")]
+    if g.fishing_enabled && g.map.res[tile] == R_FISH && g.real_fog(g.local, tile) > 0 {
+        let fishers = part(g, &|actor, _| actor.def == fishing81::FISHING_SHIP);
+        if !fishers.is_empty() {
+            g.submit(C_GATHER, x, y, tile as i32, &fishers);
+            let rest = part(g, &|actor, _| actor.def != fishing81::FISHING_SHIP);
+            if !rest.is_empty() { g.submit(C_MOVE, x, y, 0, &rest); }
+            return;
+        }
+    }
     if g.map.res[tile] != R_NONE && g.real_fog(g.local,tile) > 0 && !workers.is_empty() {
         if !g.citizen_can_gather(g.local,g.map.res[tile]){return;}
         g.submit(C_GATHER, x, y, tile as i32, &workers);
@@ -2027,6 +2044,35 @@ pub extern "C" fn cheat(code: u32) -> u32 {
 #[no_mangle]
 pub extern "C" fn configure_priest_skirmish() -> u32 {
     g().configure_priest_skirmish() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_fishing_skirmish() -> u32 {
+    u32::from(g().configure_fishing())
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn fishing_definition() -> u32 {
+    u32::from(fishing81::FISHING_SHIP)
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn fish_stock(tile: u32) -> u32 {
+    let game = g();
+    let tile = tile as usize;
+    if game.map.res.get(tile) != Some(&R_FISH) || game.vis[tile] == 0 { return 0; }
+    u32::from(game.map.amt[tile])
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn fishing_cargo(handle: u32) -> f32 {
+    let game = g();
+    game.get(handle).filter(|&index| game.ents[index].def == fishing81::FISHING_SHIP &&
+        game.ents[index].team == game.local).map_or(-1.0, |index| game.ents[index].carry)
 }
 
 #[cfg(feature = "ee2-native13")]
@@ -2777,6 +2823,12 @@ pub extern "C" fn skirmish_visibility(mode:u32)->u32 {let game=g();if mode>2||ga
 #[no_mangle]
 pub extern "C" fn configure_sight_terms() -> u32 {
     u32::from(g().configure_sight_terms())
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_timed_treaties(unbreakable: u32) -> u32 {
+    u32::from(unbreakable <= 1 && g().configure_timed_treaties(unbreakable == 1))
 }
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]

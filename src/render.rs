@@ -144,6 +144,13 @@ impl Game {
                 let (cx, cy) = self.valley_fixture.as_ref().and_then(|fixture| fixture.resource_xy(i, r)).unwrap_or((cx, cy));
                 let alt = self.map.height(cx, cy).max(0.0);
                 let rot = (h >> 16) as f32 * 0.001;
+                #[cfg(feature = "ee2-native13")]
+                if r == R_FISH {
+                    let before = o.len();
+                    put(&mut o, tx as f32 + 0.5, ty as f32 + 0.5, 0.0, rot, crate::ids::resource_render(112), 0.0, 0.0, 0.0, 1.0);
+                    if o.len() > before { o[before + 10] = self.render_elapsed(alpha); }
+                    continue;
+                }
                 let hidden=cfg!(feature="ee2-reference")&&self.players[self.local as usize].epoch<crate::economy::REVEAL_EPOCH[r as usize-1];
                 if hidden{put(&mut o,cx,cy,alt,rot,crate::ids::resource_render(110),0.0,0.0,0.0,1.0);continue;}
                 match r {
@@ -349,8 +356,8 @@ impl Game {
             };
             let o = i * 4;
             let (mut r, mut g, mut b) = (self.map.rgba[o] as u32, self.map.rgba[o + 1] as u32, self.map.rgba[o + 2] as u32);
-            match self.map.res[i] {R_METAL=>(r,g,b)=(150,150,165),R_STONE=>(r,g,b)=(180,180,170),R_GOLD=>(r,g,b)=(230,195,55),R_TIN=>(r,g,b)=(160,180,190),R_SALTPETER=>(r,g,b)=(210,195,170),R_OIL=>(r,g,b)=(70,60,52),R_URANIUM=>(r,g,b)=(135,180,60),_=>{}}
-            let kind=self.map.res[i];if cfg!(feature="ee2-reference")&&kind>0&&self.players[self.local as usize].epoch<crate::economy::REVEAL_EPOCH[kind as usize-1]{(r,g,b)=(150,150,150);}
+            match self.map.res[i] {R_METAL=>(r,g,b)=(150,150,165),R_STONE=>(r,g,b)=(180,180,170),R_GOLD=>(r,g,b)=(230,195,55),R_TIN=>(r,g,b)=(160,180,190),R_SALTPETER=>(r,g,b)=(210,195,170),R_OIL=>(r,g,b)=(70,60,52),R_URANIUM=>(r,g,b)=(135,180,60),R_FISH=>(r,g,b)=(224,224,224),_=>{}}
+            let kind=self.map.res[i];if cfg!(feature="ee2-reference")&&kind>0&&crate::economy::REVEAL_EPOCH.get(kind as usize-1).is_some_and(|&epoch|self.players[self.local as usize].epoch<epoch){(r,g,b)=(150,150,150);}
             // owned territories get a wash of their owner's colour, borders a stronger one
             let t = self.map.terr[i];
             let owner = self.towner[t as usize];

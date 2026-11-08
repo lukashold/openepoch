@@ -30,6 +30,7 @@ export function createFrontendNamespace(wasm,{referenceMode=false,assetMapping=n
   if(referenceMode&&id===82)return 42;
   if(referenceMode&&id===83)return 38;
   if(referenceMode&&id===84)return 33;
+  if(referenceMode&&id===108)return 29;
   const flags=wasm.definition_flags(id)>>>0;
   return flags&1?0:flags&4?8:15;
  }
@@ -46,7 +47,7 @@ export function createFrontendNamespace(wasm,{referenceMode=false,assetMapping=n
   // The procedural atlas has two trees, iron ore and berries. Other native
   // resources use the generic ore fallback; their exact NIF bindings remain
   // source IDs100..110 in original-renderer, never projectile/flag templates.
-  if(row.kind===1)return row.sourceId<=103?row.sourceId:102;
+  if(row.kind===1)return row.sourceId<=103||row.sourceId===112?row.sourceId:102;
   if(row.kind===2)return row.sourceId===7?108:103+row.sourceId;
   return row.sourceId;
  }

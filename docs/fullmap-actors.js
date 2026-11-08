@@ -31,7 +31,7 @@ export function fullmapActorSize(overlay, width, height, worldWidth, worldHeight
 }
 
 export function readFullmapActors(wasm, metadata, catalog, {
-  width, height, showUnits=true, showBuildings=true, hillDefinition,
+  width, height, showUnits=true, showBuildings=true, hillDefinition, fishingId,
 }) {
   if (!showUnits && !showBuildings) return [];
   const count = wasm.render(1,0,0,width,height,-1,0,0);
@@ -39,13 +39,14 @@ export function readFullmapActors(wasm, metadata, catalog, {
   const {actors} = metadata.snapshot({count,instances});
   const epochs = [0,1,2,3].map(seat=>wasm.stat(seat,0));
   const hillOverlay = {sprite:'spr_fullmap_building',axes:[Math.fround(2*Math.SQRT2),Math.fround(2*Math.SQRT2)]};
+  const fishingOverlay = {sprite:'spr_fullmap_boat',axes:[.75,.5]};
   const overlays = [];
   for (const actor of actors) {
     const hill = actor.def===hillDefinition;
     if (actor.hpRatio<=0 || (!hill&&actor.team>=epochs.length)) continue;
     const building = !!(wasm.definition_flags(actor.def) & 1);
     if (!(building ? showBuildings : showUnits)) continue;
-    const overlay = hill ? hillOverlay : catalog.binding(actor.def,epochs[actor.team]);
+    const overlay = hill ? hillOverlay : actor.def===fishingId ? fishingOverlay : catalog.binding(actor.def,epochs[actor.team]);
     if (!overlay) continue;
     overlays.push({handle:actor.handle,owner:actor.team,building,def:actor.def,x:actor.simX,y:actor.simY,
       yaw:actor.renderYaw,built:actor.built,overlay});

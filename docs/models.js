@@ -266,6 +266,13 @@ function berry() {
   crown(-.09,.16,0,.24,.16,.26,0x46632d,1); crown(.14,.19,.04,.23,.18,.24,0x557137,3);
   for (const [x, z] of [[-0.16, -0.1], [0.12, -0.14], [0.18, 0.08], [-0.05, 0.16], [0.02, -0.02], [-0.2, 0.1]]) box(x, 0.2, z, 0.07, 0.08, 0.07, 0xd6263d);
 }
+function fishSchool() {
+  for (const [x,z,length] of [[-.25,-.20,.32],[.19,-.16,.25],[.30,.20,.31],[-.14,.23,.21]]) {
+    const back=x-length*.35, front=x+length*.65, width=length*.17, level=.05;
+    slab([[back,z],[x,z-width],[front,z],[x,z+width]],level,level+.05,0x9bd4d6,.7);
+    slab([[back,z],[x-length*.68,z-width],[x-length*.59,z],[x-length*.68,z+width]],level,level+.02,0x70b0bc);
+  }
+}
 const P = {
   arrow() { box(0, 0, 0, 0.5, 0.025, 0.025, 0xd8c9a0); box(0.26, -0.01, 0, 0.08, 0.05, 0.05, 0xe9ecef, 0.2); },
   bullet() { box(0, 0, 0, 0.34, 0.03, 0.03, 0xfff3c4); },
@@ -368,6 +375,7 @@ const MODELS = {
     box(0,.04,.39,.18,.23,.06,0x382b20);
   },
   100: () => tree(false), 101: () => tree(true), 102: ore, 103: berry,
+  112: fishSchool,
   104: P.arrow, 105: P.bullet, 106: P.shell, 107: P.torp, 108: P.missile, 109: P.bomb, 110: flag,
   111: () => {
     for(const side of [-.53,.53]){

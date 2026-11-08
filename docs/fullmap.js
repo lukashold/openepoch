@@ -1,5 +1,5 @@
-import {fullmapActorCatalog,fullmapActorSize,readFullmapActors} from './fullmap-actors.js?v=native64-koth';
-import {paintFullmapLayers} from './fullmap-layers.js?v=native22';
+import {fullmapActorCatalog,fullmapActorSize,readFullmapActors} from './fullmap-actors.js?v=fishing81';
+import {paintFullmapLayers} from './fullmap-layers.js?v=fishing81';
 import {composeFullmapTerritories} from './fullmap-territories.js?v=native22';
 import {fullmapScreenPoint,fullmapWorldPoint} from './fullmap-pointer.js';
 import {composeFullmapTerrain,loadFullmapTerrainArt,sampleFullmapTiles} from './fullmap-terrain.js';
@@ -13,7 +13,7 @@ const FILTERS = {units:'Einheiten', buildings:'Gebäude und Mauern', resources:'
 const PREFS = 'openepoch-fullmap-options-v1';
 const RASTER = 512;
 const DOUBLE_PRESS_MS = 250;
-const RESOURCE = ['#c8b47b','#466331','#a3a1a7','#dbcfb4','#e9b844','#a0b6c1','#d7c1a6','#53462c','#94cb51'];
+const RESOURCE = ['#c8b47b','#466331','#a3a1a7','#dbcfb4','#e9b844','#a0b6c1','#d7c1a6','#53462c','#94cb51','#e0e0e0'];
 const FRAME_CELLS = {corner_ul:'1 / 1',edge_top:'1 / 2',corner_ur:'1 / 3',edge_left:'2 / 1',edge_right:'2 / 3',
   corner_ll:'3 / 1',edge_bottom:'3 / 2',corner_lr:'3 / 3'};
 
@@ -31,7 +31,7 @@ function rect(node, geometry) {
   Object.assign(node.style,{left:`${x}px`,top:`${y}px`,width:`${width}px`,height:`${height}px`});
 }
 
-export function createFullmap({dialog,wasm,metadata,size,teams,originalArt,territoryNameCatalog,cityNameCatalog,bitmapFonts,hillDefinition,
+export function createFullmap({dialog,wasm,metadata,size,teams,originalArt,territoryNameCatalog,cityNameCatalog,bitmapFonts,hillDefinition,fishingId,
   onAccept,onToggle,onPreview,pip,drawFlares,drawBattleFlares,warplanCue,
   warplanPeer,warplanRecipient,warplanClock}) {
   const canvas = dialog.querySelector('canvas');
@@ -238,12 +238,17 @@ export function createFullmap({dialog,wasm,metadata,size,teams,originalArt,terri
     draw.imageSmoothingEnabled = true;
     for (const {kind,x,y} of resources) {
       const [px,py] = project(x,y);
+      const fish = kind===10 ? image(art?.sprite('spr_fullmap_fish')) : null;
+      if (fish) {
+        draw.drawImage(fish,px-6,py-6,12,12);
+        continue;
+      }
       draw.fillStyle = RESOURCE[kind-1];
       draw.fillRect(px-2,py-2,4,4);
     }
     if (catalog) {
       const actors = readFullmapActors(wasm,metadata,catalog,{width:size,height:size,
-        showUnits:options.units,showBuildings:options.buildings,hillDefinition});
+        showUnits:options.units,showBuildings:options.buildings,hillDefinition,fishingId});
       for (const actor of actors) {
         const [x,y] = project(actor.x,actor.y);
         const sprite = art?.sprite(actor.overlay.sprite), icon = image(sprite);

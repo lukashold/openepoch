@@ -255,8 +255,10 @@ impl Game {
                 }
                 self.diplomacy.sharing[i] = 0;
                 self.diplomacy.sharing[j] = 0;
-                self.diplomacy.offers[i] = 0;
-                self.diplomacy.offers[j] = 0;
+                self.diplomacy.clear_offer(i);
+                self.diplomacy.clear_offer(j);
+                #[cfg(feature = "ee2-native13")]
+                if let Some(timed) = &mut self.diplomacy.timed { timed.clear(a, b); }
             }
         }
         self.cancel_nonhostile_orders();

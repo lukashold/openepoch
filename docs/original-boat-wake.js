@@ -195,7 +195,7 @@ function wakeVertices(model,effects,z){
  return new Float32Array(vertices);
 }
 
-export async function loadOriginalBoatWake(gl,{enabled,fleet=false,fetchFile=globalThis.fetch}={}){
+export async function loadOriginalBoatWake(gl,{enabled,fleet=false,additionalHulls,fetchFile=globalThis.fetch}={}){
  if(!enabled)return null;
  const manifestURL=new URL(manifestPath,import.meta.url);
  async function read(url,sha256){
@@ -235,6 +235,9 @@ export async function loadOriginalBoatWake(gl,{enabled,fleet=false,fetchFile=glo
    const added=await Promise.all(Object.entries(idle.models).map(([kind,model])=>readModel(kind,model)));
    media.push(...added);Object.assign(data.models,idle.models);
    profiles=hulls.profiles;
+   for(const [digest,row] of Object.entries(additionalHulls||{})){
+    if(!Object.hasOwn(profiles,digest)&&Object.hasOwn(data.models,row.idleModel))profiles[digest]=row;
+   }
   }catch{/* Keep the early galley path for previously installed media. */}}
   const before=saveSceneGLState(gl);
   const cleanup=[];

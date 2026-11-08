@@ -1,17 +1,17 @@
 // OpenEpoch front end: input, camera, WebGL2 drawing, HUD, sound, saves, networking.
 // The simulation lives in openepoch.wasm (Rust); this file never touches game rules.
 import { buildAtlas, tintAtlas, CELL } from './atlas.js?v=fortress1';
-import { buildModels } from './models.js?v=fortress1';
+import { buildModels } from './models.js?v=native77';
 import { parseCheat } from './cheats.js?v=native45';
 import { researchPanel } from './research.js?v=rank-families';
 import {loadCrownArt,mountCrownProgress,mountCrownVictoryRows} from './crown-progress.js?v=native65';
 import {loadCrownStatusArt,readCrownActorVisuals,crownStatusSlots} from './crown-visuals.js?v=native58';
 import { originalResearchActions, researchCost, researchState } from './original-research-actions.js?v=rank-families';
-import { diplomacyPanel } from './diplomacy.js?v=native76';
-import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native76';
+import { diplomacyPanel } from './diplomacy.js?v=native77';
+import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native77';
 import {loadNativeFontUI} from './original-font-ui.js?v=native21names';
 import {territoryClaimMessage} from './territory-help.js?v=native64-koth';
-import * as sfx from './audio.js?v=native66';
+import * as sfx from './audio.js?v=native104';
 import {generatedAmbientCoverage,loadOriginalAmbient,originalAmbientPriorities} from './original-ambient.js?v=ambient39';
 import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=citizen9';
 import {mountOriginalShellVideo} from './original-shell-video.js?v=native12';
@@ -22,8 +22,8 @@ import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regi
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native66';
-import {loadOriginalModels} from './original-renderer.js?v=native103';
-import {loadOriginalBoatWake,readNavalWakeActors} from './original-boat-wake.js?v=native80-wake';
+import {loadOriginalModels} from './original-renderer.js?v=native77';
+import {loadOriginalBoatWake,readNavalWakeActors} from './original-boat-wake.js?v=native77';
 import {loadKingOfTheHillPresentation} from './original-koth.js?v=native64-koth';
 import {loadWonderPresentation} from './original-wonders.js?v=native63';
 import {loadWonderScaffold} from './original-wonder-scaffold.js?v=native63';
@@ -41,7 +41,7 @@ import {ownMapTerrainOrigin} from './original-citycenter-terrain.js?v=regional10
 import {loadCityCenterIcons,loadHouseIcons,loadDockIcons,loadBarracksIcons,loadMillIcons,loadTempleIcons,loadLightArtilleryIcons,loadWarehouseIcons,loadStableIcons,loadKingIcons} from './original-citycenter-icons.js?v=native17';
 import {loadSourceSailRuntime} from './source-sail-runtime.js?v=sails7';
 import {createRenderAssetMapping} from './original-render-namespace.js?v=native6';
-import {createFrontendNamespace} from './render-namespace.js?v=native64';
+import {createFrontendNamespace} from './render-namespace.js?v=native77';
 import {ORIGINAL_SPEEDS, changeOriginalSpeed, checkOriginalTempo, loadOriginalTempo, originalStartingSpeed} from './original-game-tempo.js?v=native37';
 import {advanceAdaptiveSourceFrame, advanceSourceSoloFrame, createAdaptiveSourceClock, sampleSourceRenderFps, SOURCE_SOLO_INTERVAL, sourceRenderSeconds, sourceStepDelta, sourceWallInterval} from './source-solo-clock.js?v=native44';
 import {mountOriginalGameOptions} from './original-game-options.js?v=native37';
@@ -57,12 +57,12 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=clock38';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native76';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native77';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
 import {createSourceRoundCarrier, selectedRoundTripMilliseconds} from './source-network-wire.js?v=native54';
-import {mountSourceRosterLobby,requiresCapitolRoster} from './source-network-lobby.js?v=native76';
+import {mountSourceRosterLobby,requiresCapitolRoster} from './source-network-lobby.js?v=native77';
 import {applyNetworkCheckpoint} from './source-network-resume.js?v=native75-teams';
 import {createFullscreenController} from './fullscreen.js?v=building2';
 import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native67';
@@ -73,7 +73,7 @@ import {bindKothMenu,formatKothStatus} from './koth-menu.js?v=native64-koth';
 import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=native66';
 import {updateOriginalCamera,originalCameraRay,originalFractionForZoom,normalizeOriginalHeading,rotateOriginalCameraHeading} from './original-camera.js?v=heading2';
 import {updateAuthoredCamera} from './authored-camera-axis.js';
-import {createFullmap} from './fullmap.js?v=native64-koth';
+import {createFullmap} from './fullmap.js?v=native77';
 import {createPlayerFlare} from './player-flare.js?v=native24';
 import {createBattleFlare} from './battle-flare.js?v=native25';
 import {createCaptureOrder,captureOrderText,decorateCommandButton} from './capture-order.js?v=native-spy';
@@ -91,6 +91,7 @@ import {loadAirCrownGlow} from './crown-air-glow.js?v=native58';
 import {createTradeRoute,supportsTradeRoute,tradeRouteText} from './trade-route.js?v=native30';
 import {loadMarketArt,marketOrders,marketOrderButton,marketOrderHotkey} from './market-orders.js?v=native58';
 import {loadCarrierPresentation,loadFighterBomberPresentation,loadPriestPresentation,loadSpyPresentation,loadTradePresentation,loadTradeRouteArt} from './original-trade-presentation.js?v=native-spy-powers';
+import {loadFishingPresentation} from './original-fishing.js?v=native77';
 import {createTradeWaitStatus,loadTradeWaitArt,selectedTradeWait} from './trade-wait-status.js?v=native31';
 import {airActions,airMissionActions,airMissionSelection,airMissionTrainingKey,createAirMissionOrder,decorateAirMissionButton,loadAirMissionArt,supportsAirMission} from './air-mission-order.js?v=native32';
 import {loadAirMissionFlag,loadCarrierGarrisonFlag,projectAirMissionFlags,readAirMissionVisualRoutes} from './air-mission-flag.js?v=native76-carrier';
@@ -161,7 +162,7 @@ const valleyRequested=rulesProfile.id==='up15'&&(!!valleyManifest||['1','archive
 try{
   if(valleyRequested){
     const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley75_commit','valley71_force_attack_at','valley71_neutral_opening']:rulesProfile.requiredExports;
-    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native76-valley'};
+    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native77-valley'};
     try{wasm=await loadRulesWasm(previewRules,import.meta.url);}catch{/* The ordinary ruleset remains available. */}
   }
   wasm??=await loadRulesWasm(rulesProfile,import.meta.url);
@@ -604,10 +605,11 @@ const airMissionAvailable=rulesProfile.ruleset===2&&supportsAirMission(wasm);
 const hasTakeoffState=typeof wasm.air_takeoff_start_tick==='function';
 const diversionSupported=rulesProfile.ruleset===2&&typeof wasm.configure_leader_diversion==='function';
 const heavyMounted3Id=rulesProfile.ruleset===2?wasm.heavy_mounted3_definition?.():undefined;
+const fishingId=rulesProfile.ruleset===2?wasm.fishing_definition?.():undefined;
 const leaderPresentation=await loadCrownLeaderPresentation({
   enabled:originalEnabled&&rulesProfile.ruleset===2&&typeof wasm.configure_crown_leaders==='function',
 });
-const [tradePresentation,tradeRouteArt,tradeWaitArt,fighterBomberPresentation,carrierPresentation,priestPresentation,spyPresentation,airMissionArt,airMissionFlag,airTakeoff,aircraftFlightAudio,wonderPresentation,diversionPresentation,heavyMounted3Presentation,artemisPresentation]=await Promise.all([
+const [tradePresentation,tradeRouteArt,tradeWaitArt,fighterBomberPresentation,carrierPresentation,priestPresentation,spyPresentation,airMissionArt,airMissionFlag,airTakeoff,aircraftFlightAudio,wonderPresentation,diversionPresentation,heavyMounted3Presentation,artemisPresentation,fishingPresentation]=await Promise.all([
   loadTradePresentation({enabled:originalEnabled&&rulesProfile.ruleset===2&&renderNamespace.definitionCount>82}),
   loadTradeRouteArt({enabled:originalEnabled&&tradeAvailable}),
   loadTradeWaitArt({enabled:originalEnabled&&tradeAvailable&&typeof wasm.trade_wait_active==='function'}),
@@ -623,6 +625,7 @@ const [tradePresentation,tradeRouteArt,tradeWaitArt,fighterBomberPresentation,ca
   loadDiversionPresentation({enabled:originalEnabled&&diversionSupported,firstDefinition:102}),
   loadHeavyMounted3Presentation({enabled:originalEnabled,definition:heavyMounted3Id}),
   loadArtemisPresentation({enabled:originalEnabled&&rulesProfile.ruleset===2}),
+  loadFishingPresentation({enabled:originalEnabled,definition:fishingId}),
 ]);
 const hercAttack=originalEnabled&&Number.isInteger(heavyMounted3Id)&&
   ['guided_herc_attack_prepare','guided_herc_attack_ptr','guided_herc_attack_shot_at'].every(name=>typeof wasm[name]==='function')
@@ -706,10 +709,11 @@ const navalBasisForActor=typeof wasm.render_naval_basis==='function'?actor=>{
 }:null;
 const boatWake=await loadOriginalBoatWake(gl,{enabled:originalEnabled&&rulesProfile.ruleset===2&&
   typeof wasm.render_naval_wakes==='function'&&typeof wasm.render_naval_wakes_ptr==='function',
-  fleet:typeof wasm.render_naval_wake_fleet==='function'&&typeof wasm.render_naval_wake_fleet_ptr==='function'});
+  fleet:typeof wasm.render_naval_wake_fleet==='function'&&typeof wasm.render_naval_wake_fleet_ptr==='function',
+  additionalHulls:fishingPresentation?.wakeProfiles});
 const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,total)=>{
   $('play').textContent=`Originalgrafiken laden · ${Math.round(loaded/total*100)} %`;
-},{assetMapping,climateProfiles,capturePoseForActor,tradePresentation,fighterBomberPresentation,carrierPresentation,priestPresentation,priestPoseForActor,spyPresentation,spyPoseForActor,leaderPresentation,wonderPresentation,wonderScaffold,wonderFence,diversionPresentation,heavyMounted3Presentation,kothPresentation,
+},{assetMapping,climateProfiles,capturePoseForActor,tradePresentation,fighterBomberPresentation,carrierPresentation,priestPresentation,priestPoseForActor,spyPresentation,spyPoseForActor,leaderPresentation,wonderPresentation,wonderScaffold,wonderFence,diversionPresentation,heavyMounted3Presentation,kothPresentation,fishingPresentation,
   spyShimmerForActor:spyShimmer?actor=>spyShimmer.sample(actor,wasm.spy_disguised(actor.handle)===1):null,
   diversionShimmerForActor:diversionShimmer?(actor,visual)=>diversionShimmer.sample(actor,visual,wasm.leader_diversion_visual(actor.handle)===1):null,
   sourceVisualForModel:blessGround?.modelVisual,priestParticleScales:!!priestParticles,rallyTargetTags:airMissionFlag?.targetTags,
@@ -729,7 +733,7 @@ const wakeEnabled=boatWake&&(boatWake.fleet?originalModels.hasBoatWakeSources:or
 const carrierOccupied=handle=>wasm.air_mission_status(handle,1)>0;
 const sourceSails=await loadSourceSailRuntime({wasm,namespace:renderNamespace,models:originalModels,enabled:originalEnabled&&rulesProfile.ruleset===2,decorateMetadata:metadata=>packMetadata?packMetadata.snapshot(metadata):metadata});
 if(sourceSails?.metrics.error)console.warn('Source sails:',sourceSails.metrics.error);
-const unitPresentations=[tradePresentation,fighterBomberPresentation,carrierPresentation,priestPresentation,spyPresentation,leaderPresentation,diversionPresentation,heavyMounted3Presentation].filter(Boolean);
+const unitPresentations=[tradePresentation,fighterBomberPresentation,carrierPresentation,priestPresentation,spyPresentation,leaderPresentation,diversionPresentation,heavyMounted3Presentation,fishingPresentation].filter(Boolean);
 sfx.configureOriginalDefinitions({wasm,bindings:[...(originalModels.manifest?.models||[]),...(originalModels.additionalRegionalAudio||[]),...unitPresentations.flatMap(source=>source.audioModelRows)],additionalFamilyManifest:unitPresentations.map(source=>source.audioManifest),citizenPresentation,regionalMusic:rulesProfile.ruleset===2,...(rulesProfile.ruleset===2?{familyManifestURL:'native-families-civ8-regicide.json',playbackManifestURL:'manifest-stone-thrower-up.json'}:{})});
 const captureGlow = originalEnabled && typeof wasm.active_capture_glow === 'function'
   ? createCaptureGlow({kothDefinition:kothPresentation?kothDefinition:undefined}) : null;
@@ -1283,7 +1287,7 @@ function warplanRecipient(){
   return player?{relation:player.relation,name:`Spieler ${player.team+1}`}:null;
 }
 const fullmap = rulesProfile.ruleset===2&&packActorReader ? createFullmap({
-  dialog:$('fullmap'),wasm,metadata:packActorReader,size:MAP,teams:TEAM,originalArt:originalEnabled,hillDefinition:kothDefinition,
+  dialog:$('fullmap'),wasm,metadata:packActorReader,size:MAP,teams:TEAM,originalArt:originalEnabled,hillDefinition:kothDefinition,fishingId,
   territoryNameCatalog,cityNameCatalog,bitmapFonts:nativeBitmapFonts.bitmapFonts,
   warplanPeer:()=>net?.warplans,warplanRecipient,warplanClock:()=>wasm.game_tick()*TICK,
   warplanCue:sfx.playWarplanCue,
@@ -1435,6 +1439,13 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
   if(!benchUnits)wasm.skirmish_visibility(+$('map-visibility').value);
   if(originalSkirmish&&typeof wasm.configure_sight_terms==='function'&&wasm.configure_sight_terms()!==1){
     toast('Die Sichtregeln konnten nicht eingerichtet werden.');return;
+  }
+  if(originalSkirmish&&typeof wasm.configure_timed_treaties==='function'&&wasm.configure_timed_treaties(0)!==1){
+    toast('Die Bündnisdauer konnte nicht eingerichtet werden.');return;
+  }
+  if(originalSkirmish&&Number.isInteger(fishingId)&&!wasm.configure_fishing_skirmish()){
+    toast('Die Fischgründe konnten für dieses Scharmützel nicht eingerichtet werden.');
+    return;
   }
   if(!benchUnits&&hasInitialCeasefire&&!wasm.configure_initial_ceasefire(+$('initial-ceasefire').value)) {
     toast('Der anfängliche Waffenstillstand konnte nicht gestartet werden.');
@@ -2219,7 +2230,7 @@ function frame(now) {
 
 // ---------------------------------------------------------------- HUD
 const HOT = ['Q', 'W', 'E', 'R', 'T', 'Z', 'X', 'C', 'V', 'B'];
-const unitPresentation=id=>id===kothDefinition?kothPresentation:id===43?artemisPresentation:id===heavyMounted3Id?heavyMounted3Presentation:id>=102&&id<=105?diversionPresentation:id>=87&&id<=89?leaderPresentation:id===86?spyPresentation:id===85?priestPresentation:id===84?carrierPresentation:id===83?fighterBomberPresentation:tradePresentation;
+const unitPresentation=id=>id===kothDefinition?kothPresentation:id===43?artemisPresentation:id===heavyMounted3Id?heavyMounted3Presentation:id===fishingId?fishingPresentation:id>=102&&id<=105?diversionPresentation:id>=87&&id<=89?leaderPresentation:id===86?spyPresentation:id===85?priestPresentation:id===84?carrierPresentation:id===83?fighterBomberPresentation:tradePresentation;
 function icon(id, px,context=undefined) {
   const wonderUrl=wonderPresentation.iconFor(id);
   if(wonderUrl){
@@ -2650,14 +2661,17 @@ canvas.addEventListener('mousedown', e => {
     const point=toWorld(e.clientX,e.clientY);if(!point)return;
     const [wx,wy]=point;
     const workers=ui?.sel?.def===8||ui?.sel?.types?.some(type=>type[0]===8);
+    const fishing=Number.isInteger(fishingId)&&(ui?.sel?.def===fishingId||ui?.sel?.def===5||
+      ui?.sel?.types?.some(type=>type[0]===fishingId));
     let target=null;
-    if(workers){
+    if(workers||fishing){
       const direction=ray(e.clientX,e.clientY),groundDistance=(groundAt(wx,wy)-view.eye[1])/direction[1];
       target=originalModels.pickResource(view.eye,direction,groundDistance+.02);
       if(referenceMode&&target){
         const kind=wasm.resource_kind(Math.floor(target[1])*MAP+Math.floor(target[0]));
-        if(kind&&!wasm.resource_active(ui.local,kind-1)){toast('Dieses Vorkommen ist in dieser Epoche nicht nutzbar.');return;}
-        if(kind===8||kind===9){toast(kind===8?'Öl benötigt einen Bohrturm mit einquartierten Bürgern.':'Uran benötigt eine Uranmine mit einquartierten Bürgern.');return;}
+        if(kind===10?!fishing:!workers)target=null;
+        else if(kind!==10&&kind&&!wasm.resource_active(ui.local,kind-1)){toast('Dieses Vorkommen ist in dieser Epoche nicht nutzbar.');return;}
+        else if(kind===8||kind===9){toast(kind===8?'Öl benötigt einen Bohrturm mit einquartierten Bürgern.':'Uran benötigt eine Uranmine mit einquartierten Bürgern.');return;}
       }
     }
     wasm.cmd_context(target?.[0]??wx, target?.[1]??wy, 0);
@@ -2820,7 +2834,11 @@ function toggleMute() { sfx.setMuted(!sfx.isMuted());updateAudioButtons(); }
 function selectedUnitVoice(action) {
   const ptr = wasm.ui(); const state = JSON.parse(dec.decode(u8(ptr, wasm.ui_len()))),selected=state.sel;
   if (selected.n&&diversionPresentation?.hasVoices(selected.def,state.epoch)===false) return true;
-  if (selected.n) return sfx.acknowledge(selected.def, action,state.epoch,selectedCitizenContext(wasm,state));
+  if (selected.n) {
+    const context=selectedCitizenContext(wasm,state);
+    const replyScope=context&&rulesProfile.id==='up15'?{owner:state.local,world:wasm.render_meta_session()>>>0}:undefined;
+    return sfx.acknowledge(selected.def,action,state.epoch,context,replyScope);
+  }
   return false;
 }
 
@@ -3401,6 +3419,8 @@ function checkRosterSettings(cfg,humanSeats,resuming=false) {
     throw Error('Startteams benötigen getrennte Spielerplätze in Eroberung.');
   if(cfg.sightTerms!==undefined&&(cfg.sightTerms!==true||!supportsNetworkSightTerms||sharedOwner||cfg.groupedOwners))
     throw Error('Die Sichtregeln benötigen getrennte Spielerplätze und eine passende Spielversion.');
+  if(cfg.timedTreaties!==undefined&&(cfg.timedTreaties!==true||!supportsNetworkTimedTreaties||!cfg.sightTerms))
+    throw Error('Befristete Bündnisse benötigen eine passende Spielversion.');
   checkedEpochRange(cfg.epoch,cfg.finalEpoch,wasm.epoch_count());
   return {humanSeats,ai:cfg.ai,seed:cfg.seed,visibility:cfg.visibility,popLimit:cfg.popLimit,supplies:cfg.supplies,
     resignationPolicy:cfg.resignationPolicy,ceasefire:cfg.ceasefire,epoch:cfg.epoch,finalEpoch:cfg.finalEpoch,
@@ -3413,6 +3433,7 @@ function checkRosterSettings(cfg,humanSeats,resuming=false) {
     ...(captureCheckpoint?{captureCheckpoint:true}:{}),
     ...(startingTeams?{startingTeams}:{}),
     ...(cfg.sightTerms?{sightTerms:true}:{}),
+    ...(cfg.timedTreaties?{timedTreaties:true}:{}),
     ...(sharedOwner?{sharedOwner:true}:cfg.groupedOwners?{groupedOwners:cfg.groupedOwners.slice(),
       ...(resuming?{groupedWorldHumans:worldHumans}:{})}:{})};
 }
@@ -3420,7 +3441,7 @@ function checkRosterSettings(cfg,humanSeats,resuming=false) {
 function checkpointRules(cfg){
   const crowns=cfg.crownsDisabled===undefined?0:cfg.crownsDisabled?2:1;
   const capture=cfg.captureCheckpoint?1+Number(cfg.features.includes('captureAnimation')):0;
-  const rules=crowns|(capture<<25)|(Number(cfg.sightTerms===true)<<27);
+  const rules=crowns|(capture<<25)|(Number(cfg.sightTerms===true)<<27)|(Number(cfg.timedTreaties===true)<<28);
   const crown=cfg.crownVictory, capitol=cfg.capitolVictory;
   if(crown)return rules|(crown.mode<<8)|(crown.target<<16);
   if(capitol)return rules|(capitol.mode<<8)|(capitol.minutes<<16)|(Number(capitol.sole)<<24);
@@ -3448,6 +3469,8 @@ function startRosterGame(cfg,seat,send,links,{archive,onCheckpoint}) {
     wasm.skirmish_visibility(cfg.visibility);
     if(cfg.sightTerms&&wasm.configure_sight_terms()!==1)
       throw Error('Die Sichtregeln konnten nicht eingerichtet werden.');
+    if(cfg.timedTreaties&&wasm.configure_timed_treaties(1)!==1)
+      throw Error('Die Bündnisdauer konnte nicht eingerichtet werden.');
     if((!sharedOwner&&!wasm.configure_network_resignation(cfg.resignationPolicy))||
       (cfg.ceasefire&&!wasm.configure_initial_ceasefire(cfg.ceasefire)))throw Error('Die Regeln für diesen Raum konnten nicht aktiviert werden.');
     for(const name of cfg.features){
@@ -3507,6 +3530,7 @@ const supportsNetworkCheckpoint=supportsSourceRoster&&!!globalThis.crypto?.subtl
 const supportsNetworkTeams=supportsNetworkCheckpoint&&
   ['configure_network_starting_teams','load_network_resume_with_teams','validate_network_resume_with_teams'].every(name=>typeof wasm[name]==='function');
 const supportsNetworkSightTerms=supportsNetworkCheckpoint&&typeof wasm.configure_sight_terms==='function';
+const supportsNetworkTimedTreaties=supportsNetworkSightTerms&&typeof wasm.configure_timed_treaties==='function';
 const supportsSharedOwner=supportsSourceRoster&&typeof wasm.init_network_shared_owner==='function'&&typeof wasm.network_shared_owner==='function';
 const supportsSharedCheckpoint=supportsSharedOwner&&supportsNetworkCheckpoint&&
   ['save_shared_owner_resume','load_shared_owner_resume','validate_shared_owner_resume'].every(name=>typeof wasm[name]==='function');
@@ -3543,6 +3567,7 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
     ...(supportsCaptureCheckpoint?{captureCheckpoint:true}:{}),
     ...(supportsNetworkTeams?{startingTeams:true}:{}),
     ...(supportsNetworkSightTerms?{sightTerms:true}:{}),
+    ...(supportsNetworkTimedTreaties?{timedTreaties:true}:{}),
     checkpoints:supportsNetworkCheckpoint,sharedOwner:supportsSharedOwner,sharedOwnerCheckpoint:supportsSharedCheckpoint,
     groupedCoop:supportsGroupedCoop,groupedCheckpoint:supportsGroupedCheckpoint}),
   checkHello(hello){
@@ -3556,6 +3581,7 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
       captureCheckpoint:hello.captureCheckpoint===true,
       startingTeams:hello.startingTeams===true,
       sightTerms:hello.sightTerms===true,
+      timedTreaties:hello.timedTreaties===true,
       checkpoints:hello.checkpoints===true,sharedOwner:hello.sharedOwner===true,
       sharedOwnerCheckpoint:hello.sharedOwner===true&&hello.sharedOwnerCheckpoint===true,groupedCoop:hello.groupedCoop===true,
       groupedCheckpoint:hello.groupedCoop===true&&hello.groupedCheckpoint===true};
@@ -3587,6 +3613,7 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
     const startingTeams=networkTeamPicker.read();
     if(startingTeams&&guests.some(guest=>!guest.startingTeams))throw Error('Alle Mitspieler benötigen eine Spielversion mit Startteams.');
     const sightTerms=supportsNetworkSightTerms&&!sharedOwner&&!groupedOwners&&guests.every(guest=>guest.sightTerms);
+    const timedTreaties=sightTerms&&supportsNetworkTimedTreaties&&guests.every(guest=>guest.timedTreaties);
     return {humanSeats,ai,seed:(seedOf()>>>0)||1,visibility:+$('map-visibility').value,
       popLimit:+$('pop-limit').value,supplies:+$('supplies').value,resignationPolicy:+$('mp-resign-policy').value,
       ceasefire:+$('initial-ceasefire').value,climate,seasons:menuSeasonSettings(),gameTempo:menuTempo(),
@@ -3596,6 +3623,7 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
       ...(captureCheckpoint?{captureCheckpoint:true}:{}),
       ...(startingTeams?{startingTeams}:{}),
       ...(sightTerms?{sightTerms:true}:{}),
+      ...(timedTreaties?{timedTreaties:true}:{}),
       ...resolvedSkirmishChoices(choices,worldHumans+ai),
       ...(sharedOwner?{sharedOwner:true}:groupedOwners?{groupedOwners}:{})};
   },

@@ -7,6 +7,8 @@
 use crate::{defs::*, game::*, map::*};
 
 use core::fmt::Write;
+#[cfg(feature = "ee2-native13")]
+use crate::timed_treaties::TimedTreaties;
 
 pub const WAR: u8 = 0;
 pub const NEUTRAL: u8 = 1;
@@ -60,6 +62,8 @@ pub struct Diplomacy {
     pub(crate) clock: DiplomacyClock,
     #[cfg(feature = "ee2-native13")]
     pub(crate) fixed_teams: Option<crate::fixed_teams::FixedTeams>,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) timed: Option<TimedTreaties>,
     pub(crate) sight_terms: bool,
 
     pub visibility: u8,
@@ -85,6 +89,8 @@ impl Default for Diplomacy {
             clock: DiplomacyClock::default(),
             #[cfg(feature = "ee2-native13")]
             fixed_teams: None,
+            #[cfg(feature = "ee2-native13")]
+            timed: None,
             sight_terms: false,
             visibility: 0,
             log: Vec::with_capacity(DIP_LOGS),
@@ -95,6 +101,20 @@ impl Default for Diplomacy {
 impl Diplomacy {
     fn max_sight_term(&self) -> u8 {
         if self.sight_terms { SIGHT_MOBILE } else { SIGHT_FULL }
+    }
+
+    pub(crate) fn clear_offer(&mut self, slot: usize) {
+        self.offers[slot] = 0;
+        #[cfg(feature = "ee2-native13")]
+        if let Some(timed) = &mut self.timed { timed.set_offer(slot, 0); }
+    }
+
+    fn alliance_offer_minutes_valid(&self, minutes: f32) -> bool {
+        #[cfg(feature = "ee2-native13")]
+        if self.timed.is_some() {
+            return minutes <= 30.0 && TimedTreaties::valid_minutes(minutes as u8);
+        }
+        minutes == 0.0
     }
 }
 
@@ -231,6 +251,23 @@ impl Game {
         true
     }
 
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn configure_timed_treaties(&mut self, unbreakable: bool) -> bool {
+        if self.tick != 0 || self.bench > 0 || !self.diplomacy.sight_terms || self.diplomacy.timed.is_some()
+            || (self.net && (self.humans < 2 || self.grouped_coop.is_some()))
+        {
+            return false;
+        }
+        self.diplomacy.timed = Some(TimedTreaties::new(unbreakable));
+        true
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    fn timed_war_blocked(&self, from: u8, to: u8) -> bool {
+        self.diplomacy.timed.as_ref().is_some_and(|treaties| treaties.unbreakable
+            && treaties.deadline(from as usize, to as usize) > self.sim_elapsed())
+    }
+
     pub fn real_fog(&self, team: u8, tile: usize) -> u8 {
         if self.bench > 0 {
             return 255;
@@ -342,7 +379,7 @@ impl Game {
             return false;
         }
 
-        if action != 5 && action != 7 && amount != 0.0 {
+        if !matches!(action, 1 | 5 | 7) && amount != 0.0 {
             return false;
         }
 
@@ -358,12 +395,17 @@ impl Game {
                         self.relation(from, to) == WAR || self.relation(to, from) == WAR
                     } else {
                         alliance_allowed && resource <= u32::from(self.diplomacy.max_sight_term())
+                            && self.diplomacy.alliance_offer_minutes_valid(amount)
                             && self.relation(from, to) == NEUTRAL
                             && self.relation(to, from) == NEUTRAL
                     }
             }
 
-            2 => self.relation(from, to) != WAR,
+            2 => {
+                #[cfg(feature = "ee2-native13")]
+                if self.timed_war_blocked(from, to) { return false; }
+                self.relation(from, to) != WAR
+            }
 
             3 | 4 => {
                 self.diplomacy.offers[j] != 0
@@ -450,8 +492,10 @@ impl Game {
         self.diplomacy.relation[i] = WAR;
         self.diplomacy.war_tick[i] = self.tick;
         self.diplomacy.clock.war[i] = self.sim_elapsed();
-        self.diplomacy.offers[i] = 0;
-        self.diplomacy.offers[j] = 0;
+        self.diplomacy.clear_offer(i);
+        self.diplomacy.clear_offer(j);
+        #[cfg(feature = "ee2-native13")]
+        if let Some(timed) = &mut self.diplomacy.timed { timed.clear(from as usize, to as usize); }
         self.diplomacy.sharing[i] = 0;
         self.diplomacy.sharing[j] = 0;
         self.diplomacy.gifts[i] = 0;
@@ -461,7 +505,7 @@ impl Game {
 
     #[cfg(feature = "ee2-native13")]
     pub(crate) fn clear_sole_diplomacy_offers(&mut self) {
-        self.diplomacy.offers.fill(0);
+        for slot in 0..self.diplomacy.offers.len() { self.diplomacy.clear_offer(slot); }
         self.diplomacy.offer_vision.fill(0);
         self.diplomacy.offer_tick.fill(0);
     }
@@ -503,6 +547,10 @@ impl Game {
             0 | 1 => {
                 self.diplomacy.offers[i] = action as u8 + 1;
                 self.diplomacy.offer_vision[i] = if action == 1 { resource as u8 } else { 0 };
+                #[cfg(feature = "ee2-native13")]
+                if let Some(timed) = &mut self.diplomacy.timed {
+                    timed.set_offer(i, amount as u8);
+                }
                 self.diplomacy.offer_tick[i] = self.tick;
                 self.diplomacy.cooldown[i] = self.tick.saturating_add(100);
                 self.diplomacy.clock.offer[i] = self.sim_elapsed();
@@ -526,6 +574,10 @@ impl Game {
                     let now = self.sim_elapsed();
                     self.diplomacy.clock.neutral[i] = now;
                     self.diplomacy.clock.neutral[j] = now;
+                    #[cfg(feature = "ee2-native13")]
+                    if let Some(timed) = &mut self.diplomacy.timed {
+                        timed.start(from as usize, to as usize, timed.offered_minutes(j), now);
+                    }
                     let sharing = if offer == 2 {
                         self.diplomacy.offer_vision[j]
                     } else {
@@ -544,13 +596,13 @@ impl Game {
                     self.diplomacy.sharing[i] = sharing;
                     self.diplomacy.sharing[j] = sharing;
                 }
-                self.diplomacy.offers[i] = 0;
-                self.diplomacy.offers[j] = 0;
+                self.diplomacy.clear_offer(i);
+                self.diplomacy.clear_offer(j);
                 self.dip_event(from, to, 3, offer, 0, 0);
             }
 
             4 => {
-                self.diplomacy.offers[j] = 0;
+                self.diplomacy.clear_offer(j);
                 self.dip_event(from, to, 4, 0, 0, 0);
             }
 
@@ -562,7 +614,7 @@ impl Game {
             }
 
             6 => {
-                self.diplomacy.offers[i] = 0;
+                self.diplomacy.clear_offer(i);
                 self.dip_event(from, to, 6, 0, 0, 0);
             }
 
@@ -587,7 +639,38 @@ impl Game {
         true
     }
 
+    #[cfg(feature = "ee2-native13")]
+    fn expire_timed_treaties(&mut self) {
+        if self.diplomacy.timed.is_none() { return; }
+        let now = self.sim_elapsed();
+        let mut changed = false;
+        for from in 0..self.nplayers {
+            for to in from + 1..self.nplayers {
+                let timed = self.diplomacy.timed.as_mut().unwrap();
+                let deadline = timed.deadline(from, to);
+                if deadline == 0.0 || deadline > now { continue; }
+                timed.clear(from, to);
+                for slot in [from * 4 + to, to * 4 + from] {
+                    self.diplomacy.relation[slot] = NEUTRAL;
+                    self.diplomacy.sharing[slot] = SIGHT_NONE;
+                    self.diplomacy.neutral_since[slot] = self.tick;
+                    self.diplomacy.clock.neutral[slot] = now;
+                    self.diplomacy.clear_offer(slot);
+                }
+                self.dip_event(from as u8, to as u8, 9, 0, 0, 0);
+                changed = true;
+            }
+        }
+        if changed {
+            self.prune_territory_offers();
+            self.cancel_nonhostile_orders();
+            self.refresh_display_fog();
+        }
+    }
+
     pub fn update_diplomacy(&mut self) {
+        #[cfg(feature = "ee2-native13")]
+        self.expire_timed_treaties();
         // Fixed iteration order, timestamps and team IDs; no RNG or local-seat input.
 
         for from in 0..self.nplayers {
@@ -603,7 +686,7 @@ impl Game {
                         || !self.players[to].alive
                         || self.diplomacy_proposal_expired(self.diplomacy.offer_tick[i], self.diplomacy.clock.offer[i])
                     {
-                        self.diplomacy.offers[i] = 0;
+                        self.diplomacy.clear_offer(i);
                         self.dip_event(from as u8, to as u8, 8, 0, 0, 0);
                         continue;
                     }
@@ -662,7 +745,7 @@ impl Game {
                         if reason == 0 {
                             self.apply_diplomacy(to as u8, from as u32, 3, 0, 0.0);
                         } else {
-                            self.diplomacy.offers[i] = 0;
+                            self.diplomacy.clear_offer(i);
                             self.dip_event(to as u8, from as u8, 4, reason, 0, 0);
                         }
                     }
@@ -691,6 +774,8 @@ impl Game {
             me, self.display_visibility()
         );
         if self.diplomacy.sight_terms { s.push_str(",\"sightTerms\":true"); }
+        #[cfg(feature = "ee2-native13")]
+        if self.diplomacy.timed.is_some() { s.push_str(",\"timedTreaties\":true"); }
         s.push_str(",\"players\":[");
 
         for p in 0..self.nplayers {
@@ -702,6 +787,15 @@ impl Game {
             if self.diplomacy.sight_terms {
                 let _ = write!(s, ",\"sightTerm\":{},\"incomingSightTerm\":{},\"outgoingSightTerm\":{}",
                     self.diplomacy.sharing[j], self.diplomacy.offer_vision[j], self.diplomacy.offer_vision[i]);
+            }
+            #[cfg(feature = "ee2-native13")]
+            if p != me as usize {
+                if let Some(timed) = &self.diplomacy.timed {
+                    let now = self.sim_elapsed();
+                    let _ = write!(s, ",\"treatySeconds\":{},\"treatyUnbreakable\":{},\"incomingMinutes\":{},\"outgoingMinutes\":{}",
+                        timed.remaining(me as usize, p, now), timed.unbreakable && timed.deadline(me as usize, p) > now,
+                        timed.offered_minutes(j), timed.offered_minutes(i));
+                }
             }
             #[cfg(feature = "ee2-native13")]
             if let Some(team) = self.fixed_team(p) {
@@ -765,6 +859,7 @@ impl Game {
                 SIGHT_MOBILE => "bietet die Sicht mobiler Einheiten an",
                 _ => "bietet Sichttrennung an",
             },
+            9 => "Bündnis abgelaufen",
             _ => "Angebot abgelaufen",
         };
 
@@ -914,6 +1009,10 @@ impl Game {
         }
         d.log.clear();
 
+        #[cfg(feature = "ee2-native13")]
+        let max_kind = if d.timed.is_some() { 9 } else { 8 };
+        #[cfg(not(feature = "ee2-native13"))]
+        let max_kind = 8;
         for k in 0..DIP_LOGS {
             let e = DipEvent {
                 tick: u(o),
@@ -929,7 +1028,7 @@ impl Game {
                 if e.tick > self.tick
                     || e.from as usize >= self.nplayers
                     || e.to as usize >= self.nplayers
-                    || e.kind > 8
+                    || e.kind > max_kind
                     || e.reason > 6
                     || e.resource as usize >= crate::economy::RESOURCE_COUNT
                 {
@@ -1114,6 +1213,57 @@ mod tests {
         g.ents[foundation].built = 1.0;
         g.update_fog();
         assert_eq!(tiles.map(|tile| g.real_fog(0, tile)), [255, 0]);
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    #[test]
+    fn timed_alliance_expires_at_the_source_deadline_and_restores_both_neutral_stances() {
+        let mut game = humans();
+        assert!(game.configure_sight_terms());
+        assert!(game.configure_timed_treaties(true));
+        peace(&mut game);
+        game.tick = 100;
+        for invalid in [1.0, 2.5, 31.0, f32::INFINITY] {
+            assert!(!game.apply_diplomacy(0, 1, 1, u32::from(SIGHT_BUILDINGS), invalid));
+        }
+        assert!(game.apply_diplomacy(0, 1, 1, u32::from(SIGHT_BUILDINGS), 2.0));
+        assert_eq!(game.diplomacy.timed.as_ref().unwrap().offered_minutes(1), 2);
+        game.save();
+        let mut restored = Game::load(&game.savebuf).unwrap();
+        assert_eq!(restored.state_hash(), game.state_hash());
+        for world in [&mut game, &mut restored] {
+            assert!(world.apply_diplomacy(1, 0, 3, 0, 0.0));
+            assert_eq!(world.diplomacy.timed.as_ref().unwrap().deadline(1, 0), 125.0);
+            assert!(!world.apply_diplomacy(1, 0, 2, 0, 0.0));
+            world.tick = 2499;
+            world.update_diplomacy();
+            assert!(world.allied(0, 1));
+            world.tick = 2500;
+            world.update_diplomacy();
+            assert_eq!([world.relation(0, 1), world.relation(1, 0)], [NEUTRAL, NEUTRAL]);
+            assert_eq!([world.diplomacy.sharing[1], world.diplomacy.sharing[4]], [0, 0]);
+            assert_eq!(world.diplomacy.log.last().unwrap().kind, 9);
+        }
+        assert_eq!(restored.state_hash(), game.state_hash());
+        game.save();
+        assert_eq!(Game::load(&game.savebuf).unwrap().state_hash(), game.state_hash());
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    #[test]
+    fn breakable_timed_treaty_clears_its_deadline_on_an_explicit_war() {
+        let mut game = humans();
+        assert!(game.configure_sight_terms());
+        assert!(game.configure_timed_treaties(false));
+        peace(&mut game);
+        game.tick = 100;
+        assert!(game.apply_diplomacy(0, 1, 1, u32::from(SIGHT_FULL), 2.0));
+        assert!(game.apply_diplomacy(1, 0, 3, 0, 0.0));
+        assert!(game.apply_diplomacy(1, 0, 2, 0, 0.0));
+        game.tick = 2500;
+        game.update_diplomacy();
+        assert_eq!([game.relation(0, 1), game.relation(1, 0)], [NEUTRAL, WAR]);
+        assert_eq!(game.diplomacy.timed.as_ref().unwrap().deadline(0, 1), 0.0);
     }
     #[test]
     fn explored_mode_hides_undiscovered_buildings_and_reveal_does_not_target() {
