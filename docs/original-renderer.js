@@ -364,7 +364,8 @@ function gpuPart(gl,part,instanceBuffer,materialTexture,keepPickingGeometry=fals
 
 import {regionalModelEntries,selectRegionalModel} from './original-regional-models.js?v=regicide';
 import {citizenModelEntries,selectCitizenModel} from './original-citizen-models.js?v=citizen9';
-import {loadAnimationPayload,withoutAnimationPayload} from './original-animation-payload.js?v=citizen9';
+import {loadAnimationPayload,withoutAnimationPayload,attachAnimationPayload} from './original-animation-payload.js?v=citizen9';
+import {loadOriginalScoutIdle} from './original-scout-idle.js?v=native103';
 import {createCityCenterTerrainBinding} from './original-citycenter-terrain.js?v=origin1';
 export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},options={}){
  const result={available:new Set(),models:new Map(),resourceRenderIds:new Set(),errors:[],seasonClimates:['Temperate'],climateErrors:[],metrics:{colorMs:0,shadowMs:0,calls:0,triangles:0,gpuMs:0},draw(){},updateTerrain(){},setLightingContext(){return false;},setLightingSettings(){return false;},setVisualCivilizations(){return false;},setHouseLodProfile(){return false;},setSeasonPhase(){return false;},setSeasonClimate(){return false;},pickResource(){return null;},clearResourcePicks(){}};if(!enabled)return result;
@@ -445,7 +446,9 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   if(sailManifest.format!=='ee2-native-sail-initial-composites-v1'||!Array.isArray(sailManifest.models))throw new Error('Unsupported native initial sail manifest');
   sailStatus.manifestAvailable=true;result.sailManifest=sailManifest;
  }catch{/* Old portable folders and all existing models remain usable. */}}
+ const scoutIdle=options.scoutIdle?await loadOriginalScoutIdle({attachAnimationPayload}):null;
  const augmentModel=async(model,entry,lod='near')=>{
+  if(scoutIdle&&entry.id===57&&(entry.epoch??0)<6&&lod==='near')model=scoutIdle(model);
   if(model.animationPayload){try{model=await loadAnimationPayload(model,{base:import.meta.url});}catch(e){result.citizenModels.errors.push(e.message);result.errors.push('Citizen motion sidecar: '+e.message);model=withoutAnimationPayload(model);}}
   const packRow=packManifest?.models.find(r=>r.id===entry.id&&r.epoch===(entry.epoch??0)&&r.modelURL===(entry.url||entry.file)&&r.sourceSha256===model.source?.sha256);
   if(packRow){try{
@@ -1088,7 +1091,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
      gl.uniform1i(u.uFarmPlotConform,part.farmPlotOffset?1:0);gl.uniform3fv(u.uFarmPlotCenter,part.farmPlotOffset||[0,0,0]);
      const pose=part.pose(clip);gl.uniform1i(u.uAnimated,pose?1:0);
      const samples=part.animations?.[clip];
-     gl.uniform1i(u.uAnimationOnce,samples&&(once||(variant.priestClips||variant.spyClips)&&samples.endpointIncluded)?1:0);
+     gl.uniform1i(u.uAnimationOnce,samples&&(once||samples.loopIncludesEnd||(variant.priestClips||variant.spyClips)&&samples.endpointIncluded)?1:0);
      gl.activeTexture(gl.TEXTURE5);gl.bindTexture(gl.TEXTURE_2D_ARRAY,pose?.texture||emptyFrames);
      gl.uniform1i(u.uFrameWidth,pose?.width||1);gl.uniform1i(u.uFrameCount,pose?.count||1);
      const seasonal=part.forSeason(team);

@@ -1,4 +1,4 @@
-//! Directed hostility, mutual treaties and negotiated full/none shared sight.
+//! Directed hostility, mutual treaties and negotiated shared sight.
 
 //! Treaty vocabulary follows the local EE2 headers/manual. AI negotiation
 
@@ -11,6 +11,12 @@ use core::fmt::Write;
 pub const WAR: u8 = 0;
 pub const NEUTRAL: u8 = 1;
 pub const ALLIED: u8 = 2;
+const SIGHT_NONE: u8 = 0;
+pub(crate) const SIGHT_FULL: u8 = 1;
+const SIGHT_BUILDINGS: u8 = 2;
+const SIGHT_MOBILE: u8 = 3;
+#[cfg(feature = "ee2-native13")]
+pub(crate) const SIGHT_TERMS_SAVE_TAG: u32 = 1 << 21;
 
 pub const DIP_MAGIC: u32 = 0x3150_4944; // DIP1
 
@@ -54,6 +60,7 @@ pub struct Diplomacy {
     pub(crate) clock: DiplomacyClock,
     #[cfg(feature = "ee2-native13")]
     pub(crate) fixed_teams: Option<crate::fixed_teams::FixedTeams>,
+    pub(crate) sight_terms: bool,
 
     pub visibility: u8,
     pub log: Vec<DipEvent>,
@@ -78,9 +85,16 @@ impl Default for Diplomacy {
             clock: DiplomacyClock::default(),
             #[cfg(feature = "ee2-native13")]
             fixed_teams: None,
+            sight_terms: false,
             visibility: 0,
             log: Vec::with_capacity(DIP_LOGS),
         }
+    }
+}
+
+impl Diplomacy {
+    fn max_sight_term(&self) -> u8 {
+        if self.sight_terms { SIGHT_MOBILE } else { SIGHT_FULL }
     }
 }
 
@@ -190,7 +204,31 @@ impl Game {
     pub fn shares_to(&self, donor: u8, viewer: u8) -> bool {
         donor != viewer
             && self.allied(donor, viewer)
-            && self.diplomacy.sharing[donor as usize * 4 + viewer as usize] == 1
+            && self.diplomacy.sharing[donor as usize * 4 + viewer as usize] == SIGHT_FULL
+    }
+
+    pub(crate) fn shares_actor_sight(&self, donor: u8, viewer: u8, building: bool) -> bool {
+        if donor == viewer || !self.allied(donor, viewer) {
+            return false;
+        }
+        match self.diplomacy.sharing[donor as usize * 4 + viewer as usize] {
+            SIGHT_FULL => true,
+            SIGHT_BUILDINGS => building,
+            SIGHT_MOBILE => !building,
+            _ => false,
+        }
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn configure_sight_terms(&mut self) -> bool {
+        if self.tick != 0 || self.bench > 0 || self.diplomacy.sight_terms
+            || (self.net && (self.humans < 2 || self.grouped_coop.is_some()))
+        {
+            return false;
+        }
+        self.diplomacy.sight_terms = true;
+        self.update_fog();
+        true
     }
 
     pub fn real_fog(&self, team: u8, tile: usize) -> u8 {
@@ -199,6 +237,7 @@ impl Game {
         }
         let mut v = self.team_vis[team as usize * NN + tile];
 
+        if self.diplomacy.sight_terms { return v; }
         for p in 0..self.nplayers {
             if self.shares_to(p as u8, team) {
                 v = v.max(self.team_vis[p * NN + tile]);
@@ -227,15 +266,15 @@ impl Game {
             return;
         }
 
-        // Copy our real map, then combine only active, explicitly granted ally sight.
-
         let start = self.local as usize * NN;
         self.vis.copy_from_slice(&self.team_vis[start..start + NN]);
 
-        for p in 0..self.nplayers {
-            if self.shares_to(p as u8, self.local) {
-                for i in 0..NN {
-                    self.vis[i] = self.vis[i].max(self.team_vis[p * NN + i]);
+        if !self.diplomacy.sight_terms {
+            for p in 0..self.nplayers {
+                if self.shares_to(p as u8, self.local) {
+                    for i in 0..NN {
+                        self.vis[i] = self.vis[i].max(self.team_vis[p * NN + i]);
+                    }
                 }
             }
         }
@@ -318,7 +357,7 @@ impl Game {
                     && if action == 0 {
                         self.relation(from, to) == WAR || self.relation(to, from) == WAR
                     } else {
-                        alliance_allowed && resource <= 1
+                        alliance_allowed && resource <= u32::from(self.diplomacy.max_sight_term())
                             && self.relation(from, to) == NEUTRAL
                             && self.relation(to, from) == NEUTRAL
                     }
@@ -348,7 +387,7 @@ impl Game {
             6 => self.diplomacy.offers[i] != 0,
 
             7 => {
-                amount <= 1.0
+                amount <= f32::from(self.diplomacy.max_sight_term())
                     && self.allied(from, to)
                     && self.diplomacy.sharing[i] != (amount as u8)
                     && self.diplomacy.offers[i] == 0
@@ -495,7 +534,13 @@ impl Game {
                     self.diplomacy.sharing[i] = sharing;
                     self.diplomacy.sharing[j] = sharing;
                 } else {
-                    let sharing = if offer == 3 { 1 } else { 0 };
+                    let sharing = if self.diplomacy.sight_terms {
+                        self.diplomacy.offer_vision[j]
+                    } else if offer == 3 {
+                        SIGHT_FULL
+                    } else {
+                        SIGHT_NONE
+                    };
                     self.diplomacy.sharing[i] = sharing;
                     self.diplomacy.sharing[j] = sharing;
                 }
@@ -522,7 +567,11 @@ impl Game {
             }
 
             7 => {
-                self.diplomacy.offers[i] = if amount == 1.0 { 3 } else { 4 };
+                let term = amount as u8;
+                self.diplomacy.offers[i] = if term == SIGHT_NONE { 4 } else { 3 };
+                if self.diplomacy.sight_terms {
+                    self.diplomacy.offer_vision[i] = term;
+                }
                 self.diplomacy.offer_tick[i] = self.tick;
                 self.diplomacy.cooldown[i] = self.tick.saturating_add(100);
                 self.diplomacy.clock.offer[i] = self.sim_elapsed();
@@ -638,9 +687,11 @@ impl Game {
         let me = self.local;
         let _ = write!(
             s,
-            ",\"diplomacy\":{{\"local\":{},\"visibility\":{},\"players\":[",
+            ",\"diplomacy\":{{\"local\":{},\"visibility\":{}",
             me, self.display_visibility()
         );
+        if self.diplomacy.sight_terms { s.push_str(",\"sightTerms\":true"); }
+        s.push_str(",\"players\":[");
 
         for p in 0..self.nplayers {
             let i = me as usize * 4 + p;
@@ -648,6 +699,10 @@ impl Game {
             let cooldown=self.diplomacy_cooldown_seconds(self.diplomacy.cooldown[i],self.diplomacy.clock.offer[i]);
             let _=write!(s,"{}{{\"team\":{},\"alive\":{},\"ai\":{},\"relation\":{},\"theirRelation\":{},\"incoming\":{},\"outgoing\":{},\"incomingAllianceVision\":{},\"outgoingAllianceVision\":{},\"sharedVision\":{},\"sharingVision\":{},\"cooldown\":{:.1}}}",if p>0{","}else{""},p,self.players[p].alive,self.players[p].ai,self.diplomacy.relation[i],self.diplomacy.relation[j],self.diplomacy.offers[j],self.diplomacy.offers[i],self.diplomacy.offer_vision[j]!=0,self.diplomacy.offer_vision[i]!=0,self.shares_to(p as u8,me),self.shares_to(me,p as u8),cooldown);
             s.pop();
+            if self.diplomacy.sight_terms {
+                let _ = write!(s, ",\"sightTerm\":{},\"incomingSightTerm\":{},\"outgoingSightTerm\":{}",
+                    self.diplomacy.sharing[j], self.diplomacy.offer_vision[j], self.diplomacy.offer_vision[i]);
+            }
             #[cfg(feature = "ee2-native13")]
             if let Some(team) = self.fixed_team(p) {
                 let _ = write!(s, ",\"fixedTeam\":{}", team + 1);
@@ -704,13 +759,12 @@ impl Game {
             4 => "lehnt das Angebot ab",
             5 => "sendet Tribut",
             6 => "zieht das Angebot zurück",
-            7 => {
-                if e.value == 1 {
-                    "bietet gemeinsame Sicht an"
-                } else {
-                    "bietet Sichttrennung an"
-                }
-            }
+            7 => match e.value as u8 {
+                SIGHT_FULL => "bietet gemeinsame Sicht an",
+                SIGHT_BUILDINGS => "bietet die Sicht von Gebäuden an",
+                SIGHT_MOBILE => "bietet die Sicht mobiler Einheiten an",
+                _ => "bietet Sichttrennung an",
+            },
             _ => "Angebot abgelaufen",
         };
 
@@ -750,6 +804,8 @@ impl Game {
         let visibility = self.diplomacy.fixed_teams.map_or(visibility, |teams| {
             teams.visibility_word(self.diplomacy.visibility)
         });
+        #[cfg(feature = "ee2-native13")]
+        let visibility = visibility | if self.diplomacy.sight_terms { SIGHT_TERMS_SAVE_TAG } else { 0 };
         for v in [
             DIP_MAGIC,
             DIP_VERSION,
@@ -811,7 +867,13 @@ impl Game {
         let visibility = u(16);
         #[cfg(feature = "ee2-native13")]
         {
-            let (visibility, teams) = crate::fixed_teams::FixedTeams::read_visibility_word(visibility, self.nplayers)?;
+            self.diplomacy.sight_terms = visibility & SIGHT_TERMS_SAVE_TAG != 0;
+            if self.diplomacy.sight_terms && self.net && (self.humans < 2 || self.grouped_coop.is_some()) {
+                return None;
+            }
+            let (visibility, teams) = crate::fixed_teams::FixedTeams::read_visibility_word(
+                visibility & !SIGHT_TERMS_SAVE_TAG, self.nplayers,
+            )?;
             self.diplomacy.fixed_teams = teams;
             self.diplomacy.visibility = visibility;
         }
@@ -883,8 +945,10 @@ impl Game {
                 let j = c * 4 + a;
                 if d.relation[i] > ALLIED
                     || d.offers[i] > 4
-                    || d.offer_vision[i] > 1
-                    || d.sharing[i] > 1
+                    || d.offer_vision[i] > d.max_sight_term()
+                    || d.sharing[i] > d.max_sight_term()
+                    || (d.sight_terms && ((d.offers[i] == 3 && d.offer_vision[i] == SIGHT_NONE)
+                        || (d.offers[i] == 4 && d.offer_vision[i] != SIGHT_NONE)))
                     || d.offer_tick[i] > self.tick
                     || d.neutral_since[i] > self.tick
                     || d.war_tick[i] > self.tick
@@ -974,6 +1038,82 @@ mod tests {
         assert!(g.apply_diplomacy(0, 1, 2, 0, 0.0));
         assert!(!g.shares_to(0, 1) && !g.shares_to(1, 0));
         assert_eq!(g.relation(1, 0), NEUTRAL);
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    #[test]
+    fn source_treaties_stamp_each_viewer_by_actor_class_without_copying_history() {
+        let mut g = Game::new(7, 1, 0, 2, 0);
+        assert!(g.configure_sight_terms());
+        let building = g.ents.iter().position(|e| e.alive && e.team == 1 && e.def == TC).unwrap();
+        let mobiles: Vec<_> = g.ents.iter().enumerate().filter_map(|(i, e)| {
+            (e.alive && e.team == 1 && !DEFS[e.def as usize].building).then_some(i)
+        }).collect();
+        assert!(!mobiles.is_empty());
+        for &index in &mobiles {
+            g.ents[index].x = 64.5;
+            g.ents[index].y = 64.5;
+        }
+        let mobile_tile = tile_of(64.5, 64.5);
+        let building_tile = tile_of(g.ents[building].x, g.ents[building].y);
+        let past_tile = tile_of(65.5, 99.5);
+        g.team_vis[NN + past_tile] = 128;
+        g.team_vis[2 * NN + past_tile] = 255;
+
+        alliance(&mut g, u32::from(SIGHT_BUILDINGS));
+        assert_eq!(g.real_fog(0, building_tile), 0);
+        g.update_fog();
+        assert_eq!([g.real_fog(0, building_tile), g.real_fog(0, mobile_tile), g.real_fog(0, past_tile)], [255, 0, 0]);
+        assert_eq!([g.real_fog(1, mobile_tile), g.real_fog(1, past_tile)], [255, 128]);
+        assert_eq!(g.real_fog(2, building_tile), 0);
+
+        for (term, expected) in [(SIGHT_MOBILE, [128, 255]), (SIGHT_FULL, [255, 255]), (SIGHT_NONE, [128, 128])] {
+            g.tick += 100;
+            assert!(g.apply_diplomacy(0, 1, 7, 0, f32::from(term)));
+            let mut bytes = Vec::new();
+            g.write_diplomacy(&mut bytes);
+            let mut loaded = Game::new(7, 1, 0, 2, 1);
+            loaded.tick = g.tick;
+            for &index in &mobiles { loaded.ents[index] = g.ents[index]; }
+            loaded.read_diplomacy(&bytes).unwrap();
+            assert_eq!(g.state_hash(), loaded.state_hash());
+            assert!(loaded.diplomacy.sight_terms);
+            assert_eq!(loaded.diplomacy.offer_vision[1], term);
+            for game in [&mut g, &mut loaded] {
+                assert!(game.apply_diplomacy(1, 0, 3, 0, 0.0));
+                game.update_fog();
+                assert_eq!([game.real_fog(0, building_tile), game.real_fog(0, mobile_tile)], expected);
+                assert_eq!(game.real_fog(0, past_tile), 0);
+            }
+            assert_eq!(g.state_hash(), loaded.state_hash());
+        }
+
+        let mut legacy = humans();
+        peace(&mut legacy);
+        legacy.tick = 100;
+        assert!(!legacy.apply_diplomacy(0, 1, 1, u32::from(SIGHT_BUILDINGS), 0.0));
+        assert!(legacy.apply_diplomacy(0, 1, 1, u32::from(SIGHT_FULL), 0.0));
+        assert!(legacy.apply_diplomacy(1, 0, 3, 0, 0.0));
+        legacy.tick = 200;
+        assert!(!legacy.apply_diplomacy(0, 1, 7, 0, f32::from(SIGHT_MOBILE)));
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    #[test]
+    fn source_treaty_excludes_spies_and_foundations_from_foreign_coverage() {
+        let mut g = humans();
+        assert!(g.configure_sight_terms());
+        alliance(&mut g, u32::from(SIGHT_FULL));
+        let foundation = g.spawn(HOUSE, 1, 60.5, 60.5);
+        g.ents[foundation].built = 0.5;
+        g.spawn(crate::spy46_defs::SPY, 1, 100.5, 60.5);
+        let tiles = [tile_of(60.5, 60.5), tile_of(100.5, 60.5)];
+        g.update_fog();
+        assert_eq!(tiles.map(|tile| g.real_fog(0, tile)), [0, 0]);
+        assert_eq!(tiles.map(|tile| g.real_fog(1, tile)), [0, 255]);
+        g.ents[foundation].built = 1.0;
+        g.update_fog();
+        assert_eq!(tiles.map(|tile| g.real_fog(0, tile)), [255, 0]);
     }
     #[test]
     fn explored_mode_hides_undiscovered_buildings_and_reveal_does_not_target() {

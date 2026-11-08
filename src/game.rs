@@ -923,6 +923,10 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         if self.ents[j].team != team && self.spy_disguised(j) { return false; }
         let t=&self.ents[j];if t.team==team||!DEFS[t.def as usize].has(F_STEALTH)||t.reveal_t>0.0||t.revealed>>team&1==1{return true;}
+        if self.diplomacy.sight_terms {
+            return (t.team as usize) < self.nplayers
+                && self.shares_actor_sight(t.team, team, DEFS[t.def as usize].building);
+        }
         (0..self.nplayers).any(|p|self.shares_to(p as u8,team)&&(t.team==p as u8||t.revealed>>p&1==1))
     }
     #[inline]
@@ -1559,6 +1563,8 @@ impl Game {
         mix(self.diplomacy.visibility as u32);
         #[cfg(feature = "ee2-native13")]
         if let Some(teams) = self.diplomacy.fixed_teams { mix(teams.visibility_word(0)); }
+        #[cfg(feature = "ee2-native13")]
+        if self.diplomacy.sight_terms { mix(crate::diplomacy::SIGHT_TERMS_SAVE_TAG); }
         for a in [&self.diplomacy.relation,&self.diplomacy.offers,&self.diplomacy.offer_vision,&self.diplomacy.sharing]{for &v in a{mix(v as u32);}}
         for a in [&self.diplomacy.offer_tick,&self.diplomacy.cooldown,&self.diplomacy.gifts,&self.diplomacy.neutral_since,&self.diplomacy.war_tick]{for &v in a{mix(v);}}
         for h in self.territory.claims{mix(h);}
@@ -3308,7 +3314,24 @@ impl Game {
             let range = self.modifiers[e.team as usize][e.def as usize][5];
             #[cfg(feature = "ee2-native13")]
             let range = if farseeing & (1 << e.team) != 0 && DEFS[e.def as usize].building { range + 14.0 } else { range };
+            let building = DEFS[e.def as usize].building;
+            if self.diplomacy.sight_terms
+                && (e.hp <= 0.0 || e.stuck == BOARDED || range < 1.0 || (building && e.built < 1.0))
+            {
+                continue;
+            }
             Self::paint_unit_sight(&mut self.team_vis, e.team, e, range, [width, height]);
+            #[cfg(feature = "ee2-native13")]
+            if self.diplomacy.sight_terms && e.def != crate::spy46_defs::SPY {
+                // The treaty selects the donor's actors before they stamp the
+                // viewer's plane. The original canDisguise descriptor excludes
+                // the Spy even while its disguise is temporarily down.
+                for viewer in 0..self.nplayers as u8 {
+                    if self.shares_actor_sight(e.team, viewer, building) {
+                        Self::paint_unit_sight(&mut self.team_vis, viewer, e, range, [width, height]);
+                    }
+                }
+            }
             #[cfg(feature = "ee2-native13")]
             if farseeing != 0 && e.def == TC && e.hp > 0.0 && e.built >= 1.0 {
                 for viewer in 0..self.nplayers {
@@ -3320,9 +3343,9 @@ impl Game {
         }
         #[cfg(feature = "ee2-native13")]
         self.paint_spy_intel();
-        // Shared exploration is remembered; current unit sight remains a
-        // live treaty right and disappears when the agreement ends.
-        for donor in 0..self.nplayers{for viewer in 0..self.nplayers{if self.shares_to(donor as u8,viewer as u8){for t in 0..NN{if self.team_vis[donor*NN+t]>0{let v=&mut self.team_vis[viewer*NN+t];*v=(*v).max(128);}}}}}
+        if !self.diplomacy.sight_terms {
+            for donor in 0..self.nplayers{for viewer in 0..self.nplayers{if self.shares_to(donor as u8,viewer as u8){for t in 0..NN{if self.team_vis[donor*NN+t]>0{let v=&mut self.team_vis[viewer*NN+t];*v=(*v).max(128);}}}}}
+        }
         self.refresh_display_fog();
         #[cfg(feature = "ee2-native13")]
         self.refresh_city_memory();

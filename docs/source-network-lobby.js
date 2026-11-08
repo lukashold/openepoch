@@ -119,7 +119,7 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
       return 'Alle Mitspieler benötigen eine Spielversion mit Gruppen-Koop-Spielständen.';
     if(!room.sharedOwner&&!room.groupedOwners&&(!validateArchive||guests.some(guest=>!guest.checkpoints)))
       return 'Alle Mitspieler benötigen eine Spielversion mit Mehrspieler-Spielständen.';
-    const {climate,features,crownVictory,capitolVictory,humanSeats,ai,captureCheckpoint,startingTeams}=room.archive.settings;
+    const {climate,features,crownVictory,capitolVictory,humanSeats,ai,captureCheckpoint,startingTeams,sightTerms}=room.archive.settings;
     if(crownVictory&&guests.some(guest=>!guest.crownVictory))
       return 'Alle Mitspieler benötigen eine Spielversion mit Kronen-Siegbedingungen.';
     if(capitolVictory&&guests.some(guest=>!guest.capitolVictory||
@@ -129,6 +129,8 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
       return 'Alle Mitspieler benötigen eine Spielversion mit Eroberungen nach dem Laden.';
     if(startingTeams&&guests.some(guest=>!guest.startingTeams))
       return 'Alle Mitspieler benötigen eine Spielversion mit Startteams.';
+    if(sightTerms&&guests.some(guest=>!guest.sightTerms))
+      return 'Alle Mitspieler benötigen eine Spielversion mit diesen Sichtregeln.';
     if(guests.some(guest=>!guest.climates.includes(climate)||features.some(key=>!guest.features.includes(key))))
       return 'Einem Mitspieler fehlen Regeln oder Grafiken für diesen Spielstand.';
     return '';
@@ -249,6 +251,7 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
           throw Error('Der Spielstand hat eine andere Spielerzuordnung.');
         room.settings=checkSettings(archive.settings,room.seats,true);
         if(room.settings.startingTeams&&!link.hello.startingTeams)throw Error('Der Host hat Startteams nicht angekündigt.');
+        if(room.settings.sightTerms&&!link.hello.sightTerms)throw Error('Der Host hat diese Sichtregeln nicht angekündigt.');
         validateArchive(archive,room.local,room.seats);
         room.archive=archive;
         confirmPrepared(room,link,archive.digest);
@@ -358,6 +361,7 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
       if(room.local!==0&&message.type==='prepare'&&room.phase==='lobby'){
         room.settings=checkSettings(message.settings,room.seats);
         if(room.settings.startingTeams&&!link.hello.startingTeams)throw Error('Der Host hat Startteams nicht angekündigt.');
+        if(room.settings.sightTerms&&!link.hello.sightTerms)throw Error('Der Host hat diese Sichtregeln nicht angekündigt.');
         room.checkpoints=message.checkpoints===true&&!!validateArchive;
         if(message.checkpoints===true&&!room.checkpoints)throw Error('Diese Spielversion kann gemeinsame Spielstände nicht öffnen.');
         if(room.settings.sharedOwner&&(!link.hello.sharedOwner||(room.checkpoints&&

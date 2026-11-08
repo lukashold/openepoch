@@ -7,8 +7,8 @@ import { researchPanel } from './research.js?v=rank-families';
 import {loadCrownArt,mountCrownProgress,mountCrownVictoryRows} from './crown-progress.js?v=native65';
 import {loadCrownStatusArt,readCrownActorVisuals,crownStatusSlots} from './crown-visuals.js?v=native58';
 import { originalResearchActions, researchCost, researchState } from './original-research-actions.js?v=rank-families';
-import { diplomacyPanel } from './diplomacy.js?v=native74';
-import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native74';
+import { diplomacyPanel } from './diplomacy.js?v=native76';
+import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=native76';
 import {loadNativeFontUI} from './original-font-ui.js?v=native21names';
 import {territoryClaimMessage} from './territory-help.js?v=native64-koth';
 import * as sfx from './audio.js?v=native66';
@@ -22,7 +22,7 @@ import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regi
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native66';
-import {loadOriginalModels} from './original-renderer.js?v=native80-wake';
+import {loadOriginalModels} from './original-renderer.js?v=native103';
 import {loadOriginalBoatWake,readNavalWakeActors} from './original-boat-wake.js?v=native80-wake';
 import {loadKingOfTheHillPresentation} from './original-koth.js?v=native64-koth';
 import {loadWonderPresentation} from './original-wonders.js?v=native63';
@@ -57,12 +57,12 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=clock38';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native75';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native76';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
 import {createSourceRoundCarrier, selectedRoundTripMilliseconds} from './source-network-wire.js?v=native54';
-import {mountSourceRosterLobby,requiresCapitolRoster} from './source-network-lobby.js?v=native75-teams';
+import {mountSourceRosterLobby,requiresCapitolRoster} from './source-network-lobby.js?v=native76';
 import {applyNetworkCheckpoint} from './source-network-resume.js?v=native75-teams';
 import {createFullscreenController} from './fullscreen.js?v=building2';
 import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native67';
@@ -161,7 +161,7 @@ const valleyRequested=rulesProfile.id==='up15'&&(!!valleyManifest||['1','archive
 try{
   if(valleyRequested){
     const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley75_commit','valley71_force_attack_at','valley71_neutral_opening']:rulesProfile.requiredExports;
-    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native75-valley'};
+    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native76-valley'};
     try{wasm=await loadRulesWasm(previewRules,import.meta.url);}catch{/* The ordinary ruleset remains available. */}
   }
   wasm??=await loadRulesWasm(rulesProfile,import.meta.url);
@@ -716,6 +716,7 @@ const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,to
   hercAttack,hercBeam,
   navalBasisForActor,
   boatWakeBodySha:boatWake?.bodySha256,
+  scoutIdle:rulesProfile.id==='up15',
   airTakeoff,takeoffElapsedForActor:airTakeoff?actor=>{
     if(takeoffSample.now===null)return takeoffElapsed(takeoffSample.tick,takeoffSample.alpha,takeoffStartTick(actor.handle));
     const start=takeoffStartSeconds(actor.handle);
@@ -1432,6 +1433,9 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
     if(referenceMode)wasm.skirmish_epoch(+$('start-epoch').value);
   }
   if(!benchUnits)wasm.skirmish_visibility(+$('map-visibility').value);
+  if(originalSkirmish&&typeof wasm.configure_sight_terms==='function'&&wasm.configure_sight_terms()!==1){
+    toast('Die Sichtregeln konnten nicht eingerichtet werden.');return;
+  }
   if(!benchUnits&&hasInitialCeasefire&&!wasm.configure_initial_ceasefire(+$('initial-ceasefire').value)) {
     toast('Der anfängliche Waffenstillstand konnte nicht gestartet werden.');
     return;
@@ -3395,6 +3399,8 @@ function checkRosterSettings(cfg,humanSeats,resuming=false) {
   const startingTeams=checkStartingTeams(cfg.startingTeams,worldHumans+cfg.ai);
   if(startingTeams&&(!supportsNetworkTeams||sharedOwner||cfg.groupedOwners||crownVictory||capitolVictory))
     throw Error('Startteams benötigen getrennte Spielerplätze in Eroberung.');
+  if(cfg.sightTerms!==undefined&&(cfg.sightTerms!==true||!supportsNetworkSightTerms||sharedOwner||cfg.groupedOwners))
+    throw Error('Die Sichtregeln benötigen getrennte Spielerplätze und eine passende Spielversion.');
   checkedEpochRange(cfg.epoch,cfg.finalEpoch,wasm.epoch_count());
   return {humanSeats,ai:cfg.ai,seed:cfg.seed,visibility:cfg.visibility,popLimit:cfg.popLimit,supplies:cfg.supplies,
     resignationPolicy:cfg.resignationPolicy,ceasefire:cfg.ceasefire,epoch:cfg.epoch,finalEpoch:cfg.finalEpoch,
@@ -3406,14 +3412,15 @@ function checkRosterSettings(cfg,humanSeats,resuming=false) {
     ...(capitolVictory?{capitolVictory}:{}),
     ...(captureCheckpoint?{captureCheckpoint:true}:{}),
     ...(startingTeams?{startingTeams}:{}),
+    ...(cfg.sightTerms?{sightTerms:true}:{}),
     ...(sharedOwner?{sharedOwner:true}:cfg.groupedOwners?{groupedOwners:cfg.groupedOwners.slice(),
       ...(resuming?{groupedWorldHumans:worldHumans}:{})}:{})};
 }
 
-function checkpointCrownRules(cfg){
+function checkpointRules(cfg){
   const crowns=cfg.crownsDisabled===undefined?0:cfg.crownsDisabled?2:1;
   const capture=cfg.captureCheckpoint?1+Number(cfg.features.includes('captureAnimation')):0;
-  const rules=crowns|(capture<<25);
+  const rules=crowns|(capture<<25)|(Number(cfg.sightTerms===true)<<27);
   const crown=cfg.crownVictory, capitol=cfg.capitolVictory;
   if(crown)return rules|(crown.mode<<8)|(crown.target<<16);
   if(capitol)return rules|(capitol.mode<<8)|(capitol.minutes<<16)|(Number(capitol.sole)<<24);
@@ -3424,7 +3431,7 @@ function startRosterGame(cfg,seat,send,links,{archive,onCheckpoint}) {
   const sharedOwner=cfg.sharedOwner===true;
   const groupedOwners=cfg.groupedOwners??null;
   const worldHumans=sharedOwner?1:groupedOwners?Math.max(...groupedOwners)+1:cfg.humanSeats;
-  if(archive)applyNetworkCheckpoint(wasm,archive.decoded,seat,cfg.humanSeats,false,checkpointCrownRules(cfg),checkpointStartingTeams(cfg.startingTeams));
+  if(archive)applyNetworkCheckpoint(wasm,archive.decoded,seat,cfg.humanSeats,false,checkpointRules(cfg),checkpointStartingTeams(cfg.startingTeams));
   else{
     const {crownVictory,capitolVictory,...matchSettings}=cfg;
     if(sharedOwner){
@@ -3439,6 +3446,8 @@ function startRosterGame(cfg,seat,send,links,{archive,onCheckpoint}) {
     if(cfg.startingTeams&&wasm.configure_network_starting_teams(packStartingTeams(cfg.startingTeams),Number(cfg.startingTeams.locked))!==1)
       throw Error('Die Startteams konnten nicht eingerichtet werden.');
     wasm.skirmish_visibility(cfg.visibility);
+    if(cfg.sightTerms&&wasm.configure_sight_terms()!==1)
+      throw Error('Die Sichtregeln konnten nicht eingerichtet werden.');
     if((!sharedOwner&&!wasm.configure_network_resignation(cfg.resignationPolicy))||
       (cfg.ceasefire&&!wasm.configure_initial_ceasefire(cfg.ceasefire)))throw Error('Die Regeln für diesen Raum konnten nicht aktiviert werden.');
     for(const name of cfg.features){
@@ -3497,6 +3506,7 @@ const supportsNetworkCheckpoint=supportsSourceRoster&&!!globalThis.crypto?.subtl
   ['save_network_resume','load_network_resume','validate_network_resume','network_resume_pending'].every(name=>typeof wasm[name]==='function');
 const supportsNetworkTeams=supportsNetworkCheckpoint&&
   ['configure_network_starting_teams','load_network_resume_with_teams','validate_network_resume_with_teams'].every(name=>typeof wasm[name]==='function');
+const supportsNetworkSightTerms=supportsNetworkCheckpoint&&typeof wasm.configure_sight_terms==='function';
 const supportsSharedOwner=supportsSourceRoster&&typeof wasm.init_network_shared_owner==='function'&&typeof wasm.network_shared_owner==='function';
 const supportsSharedCheckpoint=supportsSharedOwner&&supportsNetworkCheckpoint&&
   ['save_shared_owner_resume','load_shared_owner_resume','validate_shared_owner_resume'].every(name=>typeof wasm[name]==='function');
@@ -3532,6 +3542,7 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
     ...(supportsNetworkCapitolRoster?{capitolRoster:true}:{}),
     ...(supportsCaptureCheckpoint?{captureCheckpoint:true}:{}),
     ...(supportsNetworkTeams?{startingTeams:true}:{}),
+    ...(supportsNetworkSightTerms?{sightTerms:true}:{}),
     checkpoints:supportsNetworkCheckpoint,sharedOwner:supportsSharedOwner,sharedOwnerCheckpoint:supportsSharedCheckpoint,
     groupedCoop:supportsGroupedCoop,groupedCheckpoint:supportsGroupedCheckpoint}),
   checkHello(hello){
@@ -3544,6 +3555,7 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
       capitolRoster:hello.capitolRoster===true,
       captureCheckpoint:hello.captureCheckpoint===true,
       startingTeams:hello.startingTeams===true,
+      sightTerms:hello.sightTerms===true,
       checkpoints:hello.checkpoints===true,sharedOwner:hello.sharedOwner===true,
       sharedOwnerCheckpoint:hello.sharedOwner===true&&hello.sharedOwnerCheckpoint===true,groupedCoop:hello.groupedCoop===true,
       groupedCheckpoint:hello.groupedCoop===true&&hello.groupedCheckpoint===true};
@@ -3574,6 +3586,7 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
       features.includes('capture')&&guests.every(guest=>guest.captureCheckpoint);
     const startingTeams=networkTeamPicker.read();
     if(startingTeams&&guests.some(guest=>!guest.startingTeams))throw Error('Alle Mitspieler benötigen eine Spielversion mit Startteams.');
+    const sightTerms=supportsNetworkSightTerms&&!sharedOwner&&!groupedOwners&&guests.every(guest=>guest.sightTerms);
     return {humanSeats,ai,seed:(seedOf()>>>0)||1,visibility:+$('map-visibility').value,
       popLimit:+$('pop-limit').value,supplies:+$('supplies').value,resignationPolicy:+$('mp-resign-policy').value,
       ceasefire:+$('initial-ceasefire').value,climate,seasons:menuSeasonSettings(),gameTempo:menuTempo(),
@@ -3582,6 +3595,7 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
       ...(capitolVictory?{capitolVictory}:{}),
       ...(captureCheckpoint?{captureCheckpoint:true}:{}),
       ...(startingTeams?{startingTeams}:{}),
+      ...(sightTerms?{sightTerms:true}:{}),
       ...resolvedSkirmishChoices(choices,worldHumans+ai),
       ...(sharedOwner?{sharedOwner:true}:groupedOwners?{groupedOwners}:{})};
   },
@@ -3589,7 +3603,7 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
   validateArchive:supportsNetworkCheckpoint?(archive,seat,seats)=>{
     if(archive.decoded.meta.groupedOwners&&!supportsGroupedCheckpoint)throw Error('Dieser Spielstand benötigt Unterstützung für Gruppen-Koop-Spielstände.');
     if(archive.decoded.meta.sharedOwner&&!supportsSharedCheckpoint)throw Error('Dieser Spielstand benötigt Koop-Spielstandunterstützung.');
-    applyNetworkCheckpoint(wasm,archive.decoded,seat,seats,true,checkpointCrownRules(archive.settings),checkpointStartingTeams(archive.settings.startingTeams));
+    applyNetworkCheckpoint(wasm,archive.decoded,seat,seats,true,checkpointRules(archive.settings),checkpointStartingTeams(archive.settings.startingTeams));
   }:null,
   sharedOwnerAvailable:supportsSharedOwner,
   sharedCheckpointAvailable:supportsSharedCheckpoint,

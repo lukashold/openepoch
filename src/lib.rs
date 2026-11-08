@@ -1004,10 +1004,12 @@ pub extern "C" fn validate_grouped_resume(layout: u32, controller: u32, tick: u3
 fn crown_resume_matches(game: &Game, encoded: u32) -> bool {
     let rules = encoded & 255;
     let victory = (encoded >> 8) & 0x1ffff;
-    let capture = encoded >> 25;
+    let capture = (encoded >> 25) & 3;
+    let sight = encoded >> 27;
     (rules == 0 && victory == 0 && capture == 0 || rules == game.crown_rules() + 1)
         && victory == (game.crown_victory_config() | game.network_capitol_config())
         && capture == u32::from(game.capture_checkpoint_mode)
+        && sight == u32::from(game.diplomacy.sight_terms)
 }
 
 #[cfg(feature = "ee2-native13")]
@@ -2770,6 +2772,12 @@ pub extern "C" fn stat(team: u32, what: u32) -> f32 {
 /// Start display setting; deterministic shared map config is allowed in MP.
 #[no_mangle]
 pub extern "C" fn skirmish_visibility(mode:u32)->u32 {let game=g();if mode>2||game.tick!=0||game.bench>0{return 0;}game.diplomacy.visibility=mode as u8;game.refresh_display_fog();1}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_sight_terms() -> u32 {
+    u32::from(g().configure_sight_terms())
+}
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
 pub extern "C" fn configure_skirmish_teams(groups: u32, lock: u32) -> u32 {

@@ -23,7 +23,7 @@ export async function enhanceOriginalDiplomacy(panel,{wasm,enabled=true,manifest
  const giftForm=query('.dip-gift'),giftLabel=query('label[for="dip-resource"]'),funds=giftForm?.nextElementSibling;
  const resource=doc.getElementById('dip-resource'),amount=query('input',giftForm),giftSend=query('button',giftForm);
  const byText=(text,base=relations)=>Array.from(base?.querySelectorAll('button')||[]).find(button=>button.textContent===text);
- const controls={peace:byText('Frieden anbieten'),alliance:byText('Bündnis anbieten'),war:byText('Krieg erklären'),accept:byText('Annehmen'),reject:byText('Ablehnen'),withdraw:byText('Zurückziehen'),vision:byText('Gemeinsame Sicht anbieten')};
+ const controls={peace:byText('Frieden anbieten'),alliance:byText('Bündnis anbieten'),war:byText('Krieg erklären'),accept:byText('Annehmen'),reject:byText('Ablehnen'),withdraw:byText('Zurückziehen'),vision:doc.getElementById('dip-sight-change')};
  if([title,header,close,players,detail,tabs,relations,territory,relationTab,territoryTab,giftForm,giftLabel,funds,resource,amount,giftSend,...Object.values(controls)].some(node=>!node)){result.errors.push('Required live diplomacy controls are missing');return result;}
  const sourceAttrs=new Map(),moved=new Map(),sourceBindings=[],frameBindings=[],addedRowLabels=[],mapMarkers=[];
  const skinHandlers=['onmouseenter','onmouseleave','onmousedown','onmouseup'];
