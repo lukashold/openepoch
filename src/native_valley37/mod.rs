@@ -25,6 +25,8 @@ mod house134;
 pub(crate) use neutral71::{FORCE_ATTACK, RAW_ATTACK_MODIFIER};
 #[cfg(feature = "ee2-authored-valley37-qa-commit")]
 mod source_building_forest;
+#[cfg(feature = "ee2-valley74-city-footprint")]
+mod farm143;
 #[cfg(feature = "ee2-authored-valley37-qa-commit")]
 mod world8_placement_math;
 

@@ -148,7 +148,7 @@ impl Game {
         }
         let center = (ty + height / 2) as usize * N + (tx + width / 2) as usize;
         #[cfg(feature = "ee2-valley74-city-footprint")]
-        if self.valley_house_reservation_overlaps((tx, ty, width, height)) { return 1; }
+        if self.valley_rejects_building_site(def, (tx, ty, width, height), turn) { return 1; }
         #[cfg(feature = "ee2-native13")]
         if !self.hotspot_allows_placement(team, def, [tx as f32 + width as f32 * 0.5, ty as f32 + height as f32 * 0.5]) {
             return 12;
