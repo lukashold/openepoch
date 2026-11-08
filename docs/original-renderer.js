@@ -11,6 +11,7 @@ import {appendInitialSailParts,nativeInitialSailDiffuse} from './original-sail-c
 import {createDynamicSailBinding,createDynamicSailGPU,dynamicSailForces} from './original-dynamic-sails.js?v=native75-sails';
 import {appendNativePackAnimations,nativePackPose} from './original-pack-states.js?v=pack8';
 import {createNativePackBlendHistory,hasSourcePackBlend} from './original-pack-blend.js?v=pack-blend126';
+import {createPackRigFrames,loadPackRigModel,packRigBinding} from './original-pack-rig.js?v=pack-rig129';
 import {captureAnimationBindings,captureOverlayMatches,loadCaptureAnimationOverlay,nativeCapturePose,regionalCaptureBindings,loadRegionalCaptureAsset} from './original-capture-animations.js?v=native26';
 import {nativeTakeoffPose} from './air-takeoff.js?v=native33';
 import {scaffoldInstanceKey,wonderScaffoldStage} from './original-wonder-scaffold.js?v=native63';
@@ -87,6 +88,12 @@ const VS=`#version 300 es
 layout(location=0) in vec3 aPosition;layout(location=1) in vec3 aNormal;layout(location=2) in vec2 aUV;
 layout(location=3) in vec4 iA;layout(location=4) in vec4 iB;layout(location=5) in vec4 iC;
 layout(location=6) in vec4 aColor;
+#ifdef PACK_RIG
+layout(location=7) in vec3 aPackRestPosition;
+layout(location=8) in vec3 aPackRestNormal;
+layout(location=9) in vec3 aPackSkin;
+uniform bool uPackRigActive;uniform int uPackRigOffset;uniform vec4 uPackRigNormalization;
+#endif
 uniform mat4 uVP;uniform highp int uShadow;uniform bool uAnimated;uniform bool uGuidedRocket;uniform float uYOffset;uniform vec3 uOriginOffset;
 uniform bool uNaval;uniform mat3 uNavalBasis;
 uniform highp sampler2DArray uFrames;uniform int uFrameWidth;uniform int uFrameCount;uniform bool uAnimationOnce;
@@ -117,8 +124,28 @@ void animationPose(highp sampler2DArray frames,int count,bool once,float at,out 
  uv.x+=1;vec3 n0=texelFetch(frames,ivec3(uv,frame),0).xyz,n1=texelFetch(frames,ivec3(uv,next),0).xyz;
  local=mix(p0,p1,fract(phase));normal=mix(n0,n1,fract(phase));
 }
+#ifdef PACK_RIG
+void packRigPose(out vec3 position,out vec3 normal){
+ int i=uPackRigOffset+int(aPackSkin.x),j=uPackRigOffset+int(aPackSkin.y),layer=int(iC.y);
+ vec4 rest=vec4(aPackRestPosition,1.);
+ vec3 first,second;
+ for(int row=0;row<3;row++){
+  vec4 a=texelFetch(uPackOutgoingFrames,ivec3(row,i,layer),0);
+  first[row]=dot(a,rest);
+  second[row]=dot(texelFetch(uPackOutgoingFrames,ivec3(row,j,layer),0),rest);
+  normal[row]=dot(a.xyz,aPackRestNormal);
+ }
+ vec3 mixed=first*aPackSkin.z+second*(1.-aPackSkin.z);
+ position=(vec3(mixed.x,mixed.z,-mixed.y)+uPackRigNormalization.xyz)*uPackRigNormalization.w;
+ normal=normalize(vec3(normal.x,normal.z,-normal.y));
+}
+#endif
 void main(){
  vec3 local=aPosition,normal=aNormal;
+#ifdef PACK_RIG
+ if(uPackRigActive)packRigPose(local,normal);
+ else
+#endif
  if(uAnimated){
 #ifdef PACK_BLEND
   if(uPackBlendActive){
@@ -270,9 +297,10 @@ function applyDrawState(gl,part,shadow,preview,shimmerBlend){
   gl.blendFunc(factors[a.source]??gl.SRC_ALPHA,factors[a.destination]??gl.ONE_MINUS_SRC_ALPHA);
  }
 }
-function program(gl,fragment=FS,extraUniforms=[],packBlend=false){
+function program(gl,fragment=FS,extraUniforms=[],packBlend=false,packRig=false){
  const p=gl.createProgram();
- const vertex=packBlend?VS.replace('#version 300 es\n','#version 300 es\n#define PACK_BLEND\n'):VS;
+ const define=packBlend?'#define PACK_BLEND\n':'';
+ const vertex=VS.replace('#version 300 es\n','#version 300 es\n'+define+(packRig?'#define PACK_RIG\n':''));
  for(const [type,source] of [[gl.VERTEX_SHADER,vertex],[gl.FRAGMENT_SHADER,fragment]]){
   const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);
   if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));
@@ -281,6 +309,7 @@ function program(gl,fragment=FS,extraUniforms=[],packBlend=false){
  gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));
  const u={};for(const name of ['uVP','uShadow','uAnimated','uAnimationOnce','uYOffset','uOriginOffset','uDiffuse','uDiffuseNext','uModelSeasonBlend','uFog','uColor','uHasAlpha','uCutoff','uModelHeight','uTeam','uFrames','uFrameWidth','uFrameCount','uTerrain','uTerrainSize','uTerrainEnabled','uSunDirection','uAmbientMaterial','uSpecularMaterial','uEmissiveMaterial','uGlossiness','uSpecularEnabled','uVertexMode','uLightingMode','uAmbientLight','uSunColor','uSpecularLight','uNativeShader','uTextureScale','uNativeLighting','uEye','uAlphaFunction','uClipEnabled','uClipPlane','uFarmPlotConform','uFarmPlotCenter'])u[name]=gl.getUniformLocation(p,name);
  if(packBlend)for(const name of ['uPackOutgoingFrames','uPackOutgoingCount','uPackOutgoingOnce','uPackBlendActive','uPackOutgoingPhase','uPackIncomingPhase','uPackBlendWeight'])u[name]=gl.getUniformLocation(p,name);
+ if(packRig)for(const name of ['uPackRigActive','uPackRigOffset','uPackRigNormalization'])u[name]=gl.getUniformLocation(p,name);
  u.uSpyEmissive=gl.getUniformLocation(p,'uSpyEmissive');
  u.uWonderConstructionPlane=gl.getUniformLocation(p,'uWonderConstructionPlane');
  u.uGuidedRocket=gl.getUniformLocation(p,'uGuidedRocket');
@@ -359,7 +388,7 @@ function rayTriangles(origin,direction,geometry,limit){
  }
  return closest;
 }
-function gpuPart(gl,part,instanceBuffer,materialTexture,keepPickingGeometry=false){
+function gpuPart(gl,part,instanceBuffer,materialTexture,keepPickingGeometry=false,packRigPart=null){
  const positions=part.positions,normals=part.normals,uvs=part.uvs;
  gl.bindVertexArray(null);
  const indices=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,indices);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,new Uint32Array(part.indices),gl.STATIC_DRAW);
@@ -368,6 +397,12 @@ function gpuPart(gl,part,instanceBuffer,materialTexture,keepPickingGeometry=fals
   const vao=gl.createVertexArray();gl.bindVertexArray(vao);
   gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,vertices,gl.STATIC_DRAW);
   for(const [loc,n,offset] of [[0,3,0],[1,3,12],[2,2,24],[6,4,32]]){gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,n,gl.FLOAT,false,48,offset);}
+  if(packRigPart){
+   gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,packRigPart.vertices,gl.STATIC_DRAW);
+   for(const [location,offset] of [[7,0],[8,12],[9,24]]){
+    gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,3,gl.FLOAT,false,36,offset);
+   }
+  }
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,indices);gl.bindBuffer(gl.ARRAY_BUFFER,instanceBuffer);
   for(const loc of [3,4,5]){gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,4,gl.FLOAT,false,48,(loc-3)*16);gl.vertexAttribDivisor(loc,1);}
   return vao;
@@ -395,7 +430,7 @@ function gpuPart(gl,part,instanceBuffer,materialTexture,keepPickingGeometry=fals
  };
  // Only static resource archetypes retain CPU indices for click tests.
  const pickGeometry=keepPickingGeometry?{positions,indices:part.indices,bounds:geometryBounds(positions)}:null;
- return {vao,pose,animations:part.animations,nativeStateClips:part.nativeStateClips,activities:part.activities,clipVisibility:part.clipVisibility,count:part.indices.length,texture:materialTexture,material:modelMaterial(part),alpha:alphaState(part),depth:depthState(part),height:maxY,pickGeometry,farmPlotOffset:part.farmPlotOffset||null,pipeline:{skinned:part.skinned,textureApplyMode:part.textureApplyMode,textureUrl:part.textureUrl,textureSource:part.textureSource,texture:part.texture}};
+ return {vao,pose,packRigPart,animations:part.animations,nativeStateClips:part.nativeStateClips,activities:part.activities,clipVisibility:part.clipVisibility,count:part.indices.length,texture:materialTexture,material:modelMaterial(part),alpha:alphaState(part),depth:depthState(part),height:maxY,pickGeometry,farmPlotOffset:part.farmPlotOffset||null,pipeline:{skinned:part.skinned,textureApplyMode:part.textureApplyMode,textureUrl:part.textureUrl,textureSource:part.textureSource,texture:part.texture}};
 }
 
 import {regionalModelEntries,selectRegionalModel} from './original-regional-models.js?v=regicide';
@@ -536,8 +571,12 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   if(unavailableClimates.has(climate))return false;
   seasonClimate=climate;return true;
  };
- let shader;
- try{shader=program(gl,FS,[],packStatus.enabled);}catch(e){result.errors.push(e.message);console.warn('Originalmodell-Renderer:',e);return result;}
+ let shader,packRigFrames=null;
+ if(packStatus.enabled){
+  try{shader=program(gl,FS,[],true,true);packRigFrames=createPackRigFrames(gl);}
+  catch{/* Keep the existing morph shader when the optional palette cannot compile. */}
+ }
+ try{shader??=program(gl,FS,[],packStatus.enabled);}catch(e){result.errors.push(e.message);console.warn('Originalmodell-Renderer:',e);return result;}
  const instances=gl.createBuffer(),textures=new Map();
  const dynamicGPU=options.dynamicSails?createDynamicSailGPU(gl,instances):null,dynamicSourceVariants=new Map();
  const navalMatrices=new WeakMap();
@@ -580,7 +619,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   if(options.houseLodProfile!==undefined)result.setHouseLodProfile(options.houseLodProfile);
  }catch(error){houseLodModels.clear();houseLodError(error);}}
  const entries=[...(Array.isArray(manifest.models)?manifest.models:Object.entries(manifest.models||manifest.mapping||{}).map(([id,value])=>typeof value==='string'?{id:+id,url:value}:{id:+id,...value})),...regionalEntries,...citizenEntries,...presentationEntries];
- const loadParts=async (model,keepPickingGeometry=false,modelUrl=null,teamOverride=null,textureHashes=null)=>{
+ const loadParts=async (model,keepPickingGeometry=false,modelUrl=null,teamOverride=null,textureHashes=null,packRig=null)=>{
    const parts=[],selectedSeasonManifest=regionalSeasonManifest.models?.[modelUrl]?regionalSeasonManifest:seasonManifest;
    let sourceSailIndex=0;for(const part of model.parts){
     const sailIndex=part.nativeSail?sourceSailIndex++:null;
@@ -596,7 +635,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
       if(dynamicGPU){try{darkTextures=await Promise.all(part.nativeSail.damageMaskUrls.map(url=>texture(gl,url,textures,true)));if(!dynamicSailShader)dynamicSailShader=program(gl,DYNAMIC_SAIL_FS,['uDark','uSailDiffuse']);}catch(e){sailError('Dynamic sail mask preload: '+e.message);}}
      }
     }catch(e){if(!part.nativeSail)throw e;sailError(e.message);continue;}
-    const gpu=gpuPart(gl,{...part,nativeStateClips:part.nativeStateClips||model.nativeStateClips},instances,materialTexture,keepPickingGeometry);
+    const gpu=gpuPart(gl,{...part,nativeStateClips:part.nativeStateClips||model.nativeStateClips},instances,materialTexture,keepPickingGeometry,packRig?.parts.get(part.sourceNode));
     if(part.nativeSail){
      gpu.nativeSail=part.nativeSail;gpu.darkTexture=darkTexture;gpu.darkTextures=darkTextures;gpu.sailIndex=sailIndex;gpu.forTeam=()=>gpu.texture;gpu.forSeason=()=>({first:gpu.texture,next:gpu.texture,blend:0});parts.push(gpu);sailStatus.parts++;continue;
     }
@@ -739,7 +778,12 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
        ||entry.nativeScaleBinding.sourceSha256!==houseBinding.sourceSha256)throw new Error('House LOD scale differs');
     body=await readHouseLodModel(houseBinding,houseBinding.levels[0],import.meta.url);
    }catch(error){houseBinding=null;houseLodError(error);}}
-   const model=await augmentModel(body??await (entry.presentation?verifiedModelJSON(modelUrl,entry.sha256,'Original unit model'):json(modelUrl)),{...entry,id}),parts=await loadParts(model,assetKind===1,modelUrl,entry.presentation?.teamManifest,entry.presentation?.textureHashes);
+   const sourceSha=entry.source?.sha256,rigBinding=packRigFrames&&assetKind===0&&!entry.presentation&&packRigBinding(id,sourceSha);
+   const qualified=rigBinding&&await loadPackRigModel(absolute(modelUrl),sourceSha,rigBinding);
+   const raw=body??qualified?.model??await (entry.presentation?verifiedModelJSON(modelUrl,entry.sha256,'Original unit model'):json(modelUrl));
+   const model=await augmentModel(raw,{...entry,id});
+   const rig=qualified?.rig&&model.parts===raw.parts?qualified.rig:null;
+   const parts=await loadParts(model,assetKind===1,modelUrl,entry.presentation?.teamManifest,entry.presentation?.textureHashes,rig);
    if(!parts.length)continue;
    const scaleKey=(entry.assetKind===undefined?'':assetKind+':')+id+':'+(entry.epoch??0),sea=assetKind===0&&((id>=29&&id<=36)||id===42||id===45);
    const scaleBinding=entry.regionalCivilizations||entry.wonderFamily||entry.kothObjective||entry.fishingAsset?entry.nativeScaleBinding:scales.variants?.[scaleKey];
@@ -748,6 +792,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    const variant={sourceId:id,assetKind,scaleKey,epoch:entry.epoch??0,until:entry.until,regionalCivilizations:entry.regionalCivilizations,regionalFallback:entry.regionalFallback===true,sourceIdentity:entry.sourceIdentity,region:entry.region,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),nativeAttackClock:entry.nativeAttackClock===true,yOffset,originOffset:transform.originOffset,nativeScale:transform.native?transform.scale:null,yawOffset:entry.yawOffset??model.yawOffset??0,farUrl:entry.lodFarUrl,far:null,farRequested:false,pickBounds:resourceBounds(parts),rallyTag:rallyTag(model),nativeTakeoff:model.nativeTakeoff};
    variant.nativeCapture=model.nativeCapture;
    variant.nativePackBlend=options.packAnimations&&assetKind===0&&hasSourcePackBlend(id,model);
+   variant.nativePackRig=rig;
    variant.navalBasis=transform.native&&navalBasisModel(model,id);
    if(variant.navalBasis)variant.wakeSource={sha256:model.source.sha256,scale:scaleBinding.sourceScale};
    if(id===29&&variant.navalBasis&&model.source.sha256===options.boatWakeBodySha)result.boatWakeHull=true;
@@ -933,6 +978,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   // Reflection uses the main snapshot. Only the independent picture-in-picture
   // capture must leave the main animation history alone.
   const packBlendReady=packBlendHistory?.begin(actorMetadata,capture&&!clipPlane);
+  const packRigReady=packRigFrames?.begin(actorMetadata,capture&&!clipPlane);
   const scaffoldDraws=[];
   const fenceDraws=[];
   let guidedRocketDraws=0;
@@ -1019,7 +1065,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
       variant.farRequested=true;const near=variant;
       const presentation=near.presentationEntry;
       const request=presentation?verifiedModelJSON(near.farUrl,presentation.lodFarSha256,'Original Far unit model'):json(near.farUrl);
-      request.then(model=>augmentModel(model,presentation||{id:near.sourceId,assetKind:near.assetKind,epoch:near.epoch},'far')).then(async model=>({model,parts:await loadParts(model,near.assetKind===1,near.farUrl,presentation?.presentation?.teamManifest)})).then(({model,parts})=>{near.far={...near,parts,nativePackBlend:false,sourceVisual:sourceVisual(model,near.farUrl),pickBounds:resourceBounds(parts),sailComposite:model.nativeSailComposite,dynamicSailBinding:null,nativeCapture:model.nativeCapture,rallyTag:rallyTag(model),nativeTakeoff:model.nativeTakeoff,navalBasis:near.navalBasis&&navalBasisModel(model,near.sourceId),hercAttack:options.hercAttack?.acceptsModel(near.sourceId,model)??false};}).catch(e=>{result.errors.push(e.message);console.warn('Original-Fernmodell:',e);});
+      request.then(model=>augmentModel(model,presentation||{id:near.sourceId,assetKind:near.assetKind,epoch:near.epoch},'far')).then(async model=>({model,parts:await loadParts(model,near.assetKind===1,near.farUrl,presentation?.presentation?.teamManifest)})).then(({model,parts})=>{near.far={...near,parts,nativePackBlend:false,nativePackRig:null,sourceVisual:sourceVisual(model,near.farUrl),pickBounds:resourceBounds(parts),sailComposite:model.nativeSailComposite,dynamicSailBinding:null,nativeCapture:model.nativeCapture,rallyTag:rallyTag(model),nativeTakeoff:model.nativeTakeoff,navalBasis:near.navalBasis&&navalBasisModel(model,near.sourceId),hercAttack:options.hercAttack?.acceptsModel(near.sourceId,model)??false};}).catch(e=>{result.errors.push(e.message);console.warn('Original-Fernmodell:',e);});
      }
      if(variant.far)variant=variant.far;
     }
@@ -1070,6 +1116,9 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     const blend=packBlendReady&&matchingActor&&variant.nativePackBlend&&actor.pack&&animation
       ? packBlendHistory.pose(actor,variant,{clip,once,phase,period:packPose?.once?actor.pack.duration:duration,span:duration,packPose})
       : null;
+    const rigPose=packRigReady&&matchingActor&&variant.nativePackRig
+     ? packRigFrames.pose(actor,variant.nativePackRig,clip,phase,blend)
+     : null;
     if(hercBeamMuzzles&&matchingActor&&variant.hercAttack)options.hercBeam?.capture(hercBeamMuzzles,actor,clip,phase);
     // Parts with authored visibility events batch only with actors in the same visible state.
     const hiddenParts=variant.hasClipVisibility?variant.parts.filter(part=>{
@@ -1084,15 +1133,15 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     const visibilityKey=hiddenParts?.length?':hidden:'+hiddenParts.map(part=>variant.parts.indexOf(part)).join(','):'';
     const shimmerKey=shimmer&&(shimmer.opacity!==1||shimmer.emissive!==0)?':shimmer:'+shimmer.opacity+':'+shimmer.emissive:'';
     const navalKey=navalBasis?':naval:'+actor.handle:'';
-    const blendKey=blend?':pack-blend:'+actor.handle:'';
+    const blendKey=rigPose?':pack-rig:'+rigPose.page:blend?':pack-blend:'+actor.handle:'';
     const preview=!!previewFlags,key=variantIndex+':'+team+':'+activity+':'+(far&&variant.farRequested?1:0)+':'+previewFlags+':'+clip+':'+once+(variant.houseLodKey===undefined?'':':house:'+variant.houseLodKey)+visibilityKey+shimmerKey+navalKey+blendKey;
     if(collectStoneThrowerWheels&&!preview&&actor?.def===22&&epoch<2&&variant.stoneThrowerWheelClips?.has(clip)){
      stoneThrowerWheels.push({handle:actor.handle,clip,x:actor.renderX,y:actor.renderY,altitude:actor.renderAltitude});
     }
-    const group=groups.get(key)||{variant,team,activity,clip,once,blend,preview,hiddenParts,shimmer:shimmerKey?shimmer:null,navalBasis,list:[],instanceIndices:[]};
+    const group=groups.get(key)||{variant,team,activity,clip,once,blend,rigPose,preview,hiddenParts,shimmer:shimmerKey?shimmer:null,navalBasis,list:[],instanceIndices:[]};
     group.instanceIndices.push(i);
     const offset=group.list.length;for(let k=0;k<12;k++)group.list.push(data[i*12+k]);
-    group.list[offset+3]+=variant.yawOffset;group.list[offset+9]=phase;
+    group.list[offset+3]+=variant.yawOffset;group.list[offset+9]=rigPose?.layer??phase;
     if(variant.nativeScale!==null)group.list[offset+8]=variant.nativeScale;
     groups.set(key,group);
     const scaffoldStage=!shadow&&variant.wonderScaffold&&wonderScaffoldStage(variant.wonderScaffold,data,i*12);
@@ -1108,7 +1157,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
      }
     }
    }
-   for(const {variant,team,list,activity,clip,once,blend,preview,hiddenParts,shimmer,navalBasis,instanceIndices} of groups.values()){
+   for(const {variant,team,list,activity,clip,once,blend,rigPose,preview,hiddenParts,shimmer,navalBasis,instanceIndices} of groups.values()){
     if(rememberPicks&&variant.assetKind===1&&variant.pickBounds)rememberResources(data,instanceIndices,variant,activity);
     selectShader(shader);gl.uniform1f(shader.u.uYOffset,variant.yOffset);
     gl.uniform3fv(shader.u.uOriginOffset,variant.originOffset);
@@ -1136,10 +1185,18 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
      if(navalBasis)gl.uniformMatrix3fv(u.uNavalBasis,false,navalBasis);
      if(part.nativeSail){gl.uniform1f(u.uYOffset,variant.yOffset);gl.uniform3fv(u.uOriginOffset,variant.originOffset);}
      gl.uniform1i(u.uFarmPlotConform,part.farmPlotOffset?1:0);gl.uniform3fv(u.uFarmPlotCenter,part.farmPlotOffset||[0,0,0]);
-     const pose=part.pose(clip);gl.uniform1i(u.uAnimated,pose?1:0);
+     const rigPart=rigPose&&part.packRigPart&&activeShader===shader?part.packRigPart:null;
+     if(packRigFrames&&activeShader===shader){
+      gl.uniform1i(u.uPackRigActive,rigPart?1:0);
+      if(rigPart){
+       gl.activeTexture(gl.TEXTURE0+8);gl.bindTexture(gl.TEXTURE_2D_ARRAY,rigPose.texture);
+       gl.uniform1i(u.uPackRigOffset,rigPart.offset);gl.uniform4fv(u.uPackRigNormalization,rigPose.rig.normalization);
+      }
+     }
+     const pose=rigPart?null:part.pose(clip);gl.uniform1i(u.uAnimated,rigPart||pose?1:0);
      const samples=part.animations?.[clip];
      if(packBlendHistory&&activeShader===shader){
-      const outgoingSamples=blend&&part.animations?.[blend.outgoing.clip];
+      const outgoingSamples=!rigPart&&blend&&part.animations?.[blend.outgoing.clip];
       const outgoingPose=pose&&samples&&outgoingSamples?part.pose(blend.outgoing.clip):null;
       const blendPart=outgoingPose&&outgoingPose.width===pose.width;
       gl.uniform1i(u.uPackBlendActive,blendPart?1:0);
