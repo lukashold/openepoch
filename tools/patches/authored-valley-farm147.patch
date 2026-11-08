@@ -1,0 +1,551 @@
+diff --git a/src/cmd.rs b/src/cmd.rs
+--- a/src/cmd.rs
++++ b/src/cmd.rs
+@@ -43,6 +43,8 @@
+ #[cfg(feature="ee2-native13")]pub(crate) const C_LEADER_DIVERSION:u8=31;
+ #[cfg(feature="ee2-native13")]pub(crate) const C_LEADER_PURCHASE:u8=32;
+ #[cfg(feature="ee2-native13")]pub(crate) const C_IMPERIALISM:u8=33;
++#[cfg(feature = "ee2-valley74-city-footprint")]
++pub(crate) const C_VALLEY_FARM_CURSOR: u8 = 34;
+ #[cfg(feature="ee2-native13")]pub(crate) const SOLO_RESIGN_SAVE_FLAG:u32=1<<11;
+ 
+ const HEAD: usize = 14; // kind, count, a, b, c
+@@ -230,6 +232,8 @@
+                 }
+             }
+             C_STOP => self.order_stop(&ids),
++            #[cfg(feature = "ee2-valley74-city-footprint")]
++            C_VALLEY_FARM_CURSOR => self.apply_valley_farm_pose(team, a, b, f32::from_bits(c as u32), &ids),
+             C_PLACE|C_PLACE_ROTATED=>{
+                 if a.fract()!=0.0||b.fract()!=0.0||a<0.0||b<0.0||a>=N as f32||b>=N as f32||c<0{return;}
+                 let bits=c as u32;let shift=if cfg!(feature="ee2-roster6"){16}else{8};let mask=(1u32<<shift)-1;
+diff --git a/src/game.rs b/src/game.rs
+--- a/src/game.rs
++++ b/src/game.rs
+@@ -492,6 +492,8 @@
+     /// Camera position (x, height, y) for picking; height 0 = top-down, no parallax.
+     pub eye: [f32; 3],
+     pub placement_cache:crate::placement::PlacementCache,
++    #[cfg(feature = "ee2-valley74-city-footprint")]
++    pub(crate) valley_farm_cursor: crate::native_valley37::farm_cursor147::FarmCursor,
+     #[cfg(feature = "ee2-authored-valley37")]
+     pub(crate) valley_fixture: Option<crate::native_valley37::FixtureState>,
+ }
+@@ -729,6 +731,8 @@
+             ranges: vec![0; crate::ids::render_capacity()*2],
+             eye: [0.0; 3],
+             placement_cache:crate::placement::PlacementCache::default(),
++            #[cfg(feature = "ee2-valley74-city-footprint")]
++            valley_farm_cursor: crate::native_valley37::farm_cursor147::FarmCursor::default(),
+             #[cfg(feature = "ee2-authored-valley37")]
+             valley_fixture: None,
+         }
+diff --git a/src/lib.rs b/src/lib.rs
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -519,6 +519,12 @@
+     g().render_with_rotation(alpha,x0,y0,x1,y1,ghost,gx,gy,turn)
+ }
+ 
++#[cfg(feature = "ee2-valley74-city-footprint")]
++#[no_mangle]
++pub extern "C" fn render_valley_farm_cursor(alpha:f32,x0:f32,y0:f32,x1:f32,y1:f32)->u32 {
++    unsafe { (&mut *addr_of_mut!(GAME)).as_mut().map_or(0, |game| game.render_farm_cursor(alpha,x0,y0,x1,y1)) }
++}
++
+ /// Optional rendering-only metadata ABI. All getters are safe before init.
+ #[cfg(feature="ee2-render-meta7")]
+ #[no_mangle] pub extern "C" fn render_meta_version()->u32{1}
+@@ -2006,6 +2012,53 @@
+ #[no_mangle]
+ pub extern "C" fn cmd_place_rotated(def:u32,tx:i32,ty:i32,turn:u32)->u32{
+     if place_error_rotated(def,tx,ty,turn)!=0{return 0;}let game=g();let hs=handles(game,&selected(game));let kind=if turn==0{C_PLACE}else{C_PLACE_ROTATED};game.submit(kind,tx as f32,ty as f32,(def|(turn<<if cfg!(feature="ee2-roster6"){16}else{8}))as i32,&hs);1
++}
++
++#[cfg(feature = "ee2-valley74-city-footprint")]
++#[no_mangle]
++pub extern "C" fn valley_farm_cursor_available() -> u32 {
++    unsafe { u32::from((&*addr_of_mut!(GAME)).as_ref().is_some_and(|game| game.valley_farm_cursor_enabled())) }
++}
++#[cfg(feature = "ee2-valley74-city-footprint")]
++#[no_mangle]
++pub extern "C" fn valley_farm_cursor_reset(yaw: f32) {
++    if valley_farm_cursor_available() != 0 { g().valley_farm_cursor_reset(yaw); }
++}
++#[cfg(feature = "ee2-valley74-city-footprint")]
++#[no_mangle]
++pub extern "C" fn valley_farm_cursor_pointer(x: f32, y: f32) -> u32 {
++    if valley_farm_cursor_available() == 0 { return 1; }
++    g().valley_farm_cursor_pointer(x, y)
++}
++#[cfg(feature = "ee2-valley74-city-footprint")]
++#[no_mangle]
++pub extern "C" fn valley_farm_cursor_rotate(direction: i32, mode: u32) -> u32 {
++    if valley_farm_cursor_available() == 0 { return 1; }
++    g().valley_farm_cursor_rotate(direction, mode)
++}
++#[cfg(feature = "ee2-valley74-city-footprint")]
++#[no_mangle]
++pub extern "C" fn valley_farm_cursor_component(field: u32) -> f32 {
++    if valley_farm_cursor_available() == 0 { return f32::NAN; }
++    g().valley_farm_cursor_component(field)
++}
++#[cfg(feature = "ee2-valley74-city-footprint")]
++#[no_mangle]
++pub extern "C" fn valley_farm_cursor_error() -> u32 {
++    if valley_farm_cursor_available() == 0 { return 1; }
++    g().valley_farm_cursor_error()
++}
++#[cfg(feature = "ee2-valley74-city-footprint")]
++#[no_mangle]
++pub extern "C" fn valley_farm_cursor_place() -> u32 {
++    if valley_farm_cursor_available() == 0 { return 0; }
++    g().valley_farm_cursor_place()
++}
++#[cfg(feature = "ee2-valley74-city-footprint")]
++#[no_mangle]
++pub extern "C" fn valley_farm_cursor_time_multiplier() -> f32 {
++    if valley_farm_cursor_available() == 0 { return 1.0; }
++    g().valley_farm_cursor_time_multiplier()
+ }
+ 
+ #[no_mangle]
+diff --git a/src/native_valley37/farm_cursor147.rs b/src/native_valley37/farm_cursor147.rs
+new file mode 100644
+--- /dev/null
++++ b/src/native_valley37/farm_cursor147.rs
+@@ -0,0 +1,207 @@
++//! Authenticated authored Valley Farm input and shared candidate admission.
++
++use super::{Geometry, VALLEY_SHA};
++use crate::{
++    cmd::C_VALLEY_FARM_CURSOR,
++    game::Game,
++    hotspot_start66::{quad_from_basis, raster_quad, snap_from_basis},
++    placement::PlacementSite,
++};
++
++pub(crate) const INITIAL: f32 = f32::from_bits(0xbf49_0fdb);
++const PERIOD: f32 = f32::from_bits(0x40c9_0fdb);
++const STEPS: [f32; 5] = [
++    f32::from_bits(0x3fc9_0fda),
++    f32::from_bits(0x3f49_0fdb),
++    f32::from_bits(0x3ec9_0fdb),
++    f32::from_bits(0x3e49_0fd8),
++    f32::from_bits(0x3dc9_0fdf),
++];
++const BODY: f32 = f32::from_bits(0x4007_c3b6);
++const PADDED: f32 = f32::from_bits(0x4062_5692);
++const CORNERS: [[f32; 2]; 4] = [[1., 1.], [1., -1.], [-1., -1.], [-1., 1.]];
++
++#[derive(Clone, Copy)]
++pub(crate) struct FarmPose {
++    xyz: [f32; 3],
++    yaw: f32,
++}
++
++impl FarmPose {
++    pub(crate) fn site(self) -> PlacementSite {
++        PlacementSite::valley_farm(self.xyz[0], self.xyz[1], self.yaw)
++    }
++}
++
++pub(crate) struct FarmCursor {
++    yaw: f32,
++    requested: Option<[f32; 3]>,
++    resolved: Option<FarmPose>,
++}
++
++impl Default for FarmCursor {
++    fn default() -> Self {
++        Self { yaw: INITIAL, requested: None, resolved: None }
++    }
++}
++
++fn valid_yaw(yaw: f32) -> bool {
++    (INITIAL..=PERIOD).contains(&yaw)
++}
++
++fn basis(yaw: f32) -> [f32; 2] {
++    let (sin, cos) = f64::from(yaw).sin_cos();
++    [cos as f32, sin as f32]
++}
++
++fn in_world(world: &Geometry, [x,y]: [f32; 2]) -> bool {
++    (0.0..world.width as f32).contains(&x) && (0.0..world.height as f32).contains(&y)
++}
++
++fn nearby([x,y]: [f32; 2]) -> impl Iterator<Item=[f32; 2]> {
++    // 00862DB0 alternates half-step directions around the four signed corners.
++    (1..=3).flat_map(move |ring| {
++        (0..2 * ring).flat_map(move |k| {
++            let radius = ring as f32 * 0.5;
++            let step = ((k + 1) / 2) as f32 * 0.5;
++            let signed = if k % 2 == 0 { step } else { -step };
++            CORNERS.into_iter().map(move |[sx, sy]| {
++                [(x + sx * radius) + sy * signed, (y + sy * radius) - sx * signed]
++            })
++        })
++    })
++}
++
++impl Game {
++    pub(crate) fn valley_farm_cursor_enabled(&self) -> bool {
++        !self.net && self.bench == 0 && self.valley_fixture.is_some() &&
++            self.map.source_world.as_ref().is_some_and(|world| world.source_sha == VALLEY_SHA)
++    }
++
++    pub(crate) fn valley_farm_terrain_allows(&self, x: f32, y: f32, yaw: f32) -> bool {
++        if !self.valley_farm_cursor_enabled() || !valid_yaw(yaw) { return false; }
++        let Some(world) = self.map.source_world.as_ref() else { return false; };
++        let Some(quad) = quad_from_basis([x, y], [PADDED; 2], basis(yaw)) else { return false; };
++        let Some(raster) = raster_quad(quad, world.width as u32, world.height as u32, true) else { return false; };
++        if raster.contains_outside_corner || raster.corners.is_empty() { return false; }
++        let stride = world.width + 1;
++        let material = |at: usize| world.move_palette[world.materials[at] as usize];
++        let mut min = f32::INFINITY;
++        let mut max = f32::NEG_INFINITY;
++        let mut sum = 0.0_f64;
++        for [x,y] in &raster.corners {
++            let at = *x as usize + *y as usize * stride;
++            let h = world.heights[at];
++            if h < 0.0 || material(at) != 0 || material(at+1) == 3 || material(at+stride) == 3 {
++                return false;
++            }
++            min = min.min(h);
++            max = max.max(h);
++            sum += f64::from(h);
++        }
++        let reference = (sum / raster.corners.len() as f64) as f32;
++        // s_maxBldgElevDifferential is 1.0, split across both sides of the
++        // reference height by 00862421. The default height quantum is zero.
++        f64::from(max) - f64::from(reference) <= 0.5 &&
++            f64::from(reference) - f64::from(min) <= 0.5
++    }
++
++    pub(crate) fn valley_farm_cursor_reset(&mut self, yaw: f32) {
++        let yaw = if valid_yaw(yaw) { yaw } else { INITIAL };
++        self.valley_farm_cursor = FarmCursor { yaw, ..FarmCursor::default() };
++    }
++
++    pub(crate) fn valley_farm_cursor_pose(&self) -> Option<FarmPose> {
++        self.valley_farm_cursor_enabled().then_some(self.valley_farm_cursor.resolved).flatten()
++    }
++
++    pub(crate) fn valley_farm_cursor_component(&self, field: u32) -> f32 {
++        match (self.valley_farm_cursor_pose(), field) {
++            (Some(pose), 0..=2) => pose.xyz[field as usize],
++            (_, 3) => self.valley_farm_cursor.yaw,
++            _ => f32::NAN,
++        }
++    }
++
++    fn valley_farm_resolve(&mut self, origin: [f32; 2]) {
++        let Some(world) = self.map.source_world.as_ref() else { return; };
++        let yaw = self.valley_farm_cursor.yaw;
++        let Some([x,y]) = snap_from_basis(origin, [BODY; 2], basis(yaw)) else {
++            self.valley_farm_cursor.resolved = None;
++            return;
++        };
++        let xi = (x as i32).clamp(0, world.width as i32) as usize;
++        let yi = (y as i32).clamp(0, world.height as i32) as usize;
++        let next = [x,y,world.heights[yi * (world.width + 1) + xi].max(0.0)];
++        let requested = self.valley_farm_cursor.requested.filter(|p| {
++            let dx = f64::from(p[0]) - f64::from(x);
++            let dy = f64::from(p[1]) - f64::from(y);
++            dx*dx + dy*dy < 0.5
++        }).unwrap_or(next);
++        self.valley_farm_cursor.requested = Some(requested);
++        let direct = FarmPose { xyz: requested, yaw };
++        let mut resolved = direct;
++        if self.placement_geometry_for(self.local, direct.site()) != 0 {
++            for [x,y] in nearby([requested[0],requested[1]]) {
++                if !in_world(world, [x,y]) { continue; }
++                let z = world.base_height(&world.heights,x,y);
++                let candidate = FarmPose { xyz: [x,y,z], yaw };
++                if self.placement_geometry_for(self.local, candidate.site()) == 0 {
++                    resolved = candidate;
++                    break;
++                }
++            }
++        }
++        self.valley_farm_cursor.resolved = Some(resolved);
++    }
++
++    pub(crate) fn valley_farm_cursor_pointer(&mut self, x: f32, y: f32) -> u32 {
++        if !self.valley_farm_cursor_enabled() { return 1; }
++        if !self.map.source_world.as_ref().is_some_and(|world| in_world(world, [x,y])) {
++            self.valley_farm_cursor.resolved = None;
++            return 1;
++        }
++        self.valley_farm_resolve([x,y]);
++        self.valley_farm_cursor_error()
++    }
++
++    pub(crate) fn valley_farm_cursor_rotate(&mut self, direction: i32, mode: u32) -> u32 {
++        let Some(pose) = self.valley_farm_cursor_pose() else { return 1; };
++        let Some(&step) = STEPS.get(mode as usize) else { return 1; };
++        if !matches!(direction, -1 | 1) { return 1; }
++        let period = f64::from(PERIOD);
++        let yaw = f64::from(pose.yaw) + f64::from(direction) * f64::from(step);
++        self.valley_farm_cursor.yaw = yaw.rem_euclid(period) as f32;
++        self.valley_farm_resolve([pose.xyz[0],pose.xyz[1]]);
++        self.valley_farm_cursor_error()
++    }
++
++    pub(crate) fn valley_farm_cursor_error(&mut self) -> u32 {
++        let Some(pose) = self.valley_farm_cursor_pose() else { return 1; };
++        let ids = crate::selected(self);
++        self.placement_error_at(self.local, pose.site(), &ids, true)
++    }
++
++    pub(crate) fn valley_farm_cursor_place(&mut self) -> u32 {
++        if self.winner != 0 || self.valley_farm_cursor_error() != 0 { return 0; }
++        let Some(pose) = self.valley_farm_cursor_pose() else { return 0; };
++        let handles = crate::handles(self, &crate::selected(self));
++        self.submit(C_VALLEY_FARM_CURSOR, pose.xyz[0], pose.xyz[1], pose.yaw.to_bits() as i32, &handles);
++        1
++    }
++
++    pub(crate) fn valley_farm_cursor_time_multiplier(&self) -> f32 {
++        self.valley_farm_cursor_pose().map_or(1.0, |pose| {
++            let mut actor = pose.site().actor;
++            actor.team = self.local;
++            self.construction_multiplier(&actor)
++        })
++    }
++
++    pub(crate) fn apply_valley_farm_pose(&mut self, team: u8, x: f32, y: f32, yaw: f32, ids: &[usize]) {
++        if team == self.local && self.winner == 0 && self.valley_farm_cursor_enabled() && valid_yaw(yaw) &&
++            self.map.source_world.as_ref().is_some_and(|world| in_world(world, [x,y])) {
++            self.begin_construction_at(team, PlacementSite::valley_farm(x,y,yaw), ids, true);
++        }
++    }
++}
+diff --git a/src/native_valley37/mod.rs b/src/native_valley37/mod.rs
+--- a/src/native_valley37/mod.rs
++++ b/src/native_valley37/mod.rs
+@@ -27,6 +27,8 @@
+ mod source_building_forest;
+ #[cfg(feature = "ee2-valley74-city-footprint")]
+ mod farm143;
++#[cfg(feature = "ee2-valley74-city-footprint")]
++pub(crate) mod farm_cursor147;
+ #[cfg(feature = "ee2-authored-valley37-qa-commit")]
+ mod world8_placement_math;
+ 
+diff --git a/src/placement.rs b/src/placement.rs
+--- a/src/placement.rs
++++ b/src/placement.rs
+@@ -2,6 +2,30 @@
+ //! auto-orientation are explicit adapters; native building input rotates 90deg.
+ use crate::{defs::*, game::*, map::*};
+ pub const ROTATION_STEPS: u32 = 8;
++#[derive(Clone, Copy)]
++pub(crate) struct PlacementSite {
++    pub(crate) actor: Ent,
++    bounds: (i32, i32, i32, i32),
++    turn: Option<u32>,
++}
++
++impl PlacementSite {
++    fn grid(def: DefId, tx: i32, ty: i32, turn: u32) -> Self {
++        let (width, height) = Game::footprint_axes(def, turn);
++        Self {
++            actor: Game::planned_building(def, tx, ty, turn),
++            bounds: (tx, ty, width, height),
++            turn: Some(turn),
++        }
++    }
++
++    #[cfg(feature = "ee2-valley74-city-footprint")]
++    pub(crate) fn valley_farm(x: f32, y: f32, rot: f32) -> Self {
++        let actor = Ent { def: FARM, x, y, rot, ..E0 };
++        Self { actor, bounds: Game::building_bounds(&actor), turn: None }
++    }
++}
++
+ pub struct PlacementCache {
+     pub key: Option<(u32, i32, i32, i32, i32)>,
+     pub approach: Vec<u32>,
+@@ -125,6 +149,9 @@
+     }
+     pub fn footprint_known(&self, team: u8, def:DefId, tx: i32, ty: i32, turn: u32) -> bool {
+         let (width, height) = Self::footprint_axes(def, turn);
++        self.placement_rectangle_known(team, (tx, ty, width, height))
++    }
++    fn placement_rectangle_known(&self, team: u8, (tx, ty, width, height): (i32,i32,i32,i32)) -> bool {
+         if width == 0 || tx < 0 || ty < 0 || tx > N as i32 - width || ty > N as i32 - height {
+             return false;
+         }
+@@ -135,7 +162,11 @@
+             .all(|y| (tx..tx + width).all(|x| self.real_fog(team, y as usize * N + x as usize) > 0))
+     }
+     pub fn placement_geometry_error(&self, team: u8, def:DefId, tx: i32, ty: i32, turn: u32) -> u32 {
+-        let (width, height) = Self::footprint_axes(def, turn);
++        self.placement_geometry_for(team, PlacementSite::grid(def, tx, ty, turn))
++    }
++    pub(crate) fn placement_geometry_for(&self, team: u8, site: PlacementSite) -> u32 {
++        let (tx, ty, width, height) = site.bounds;
++        let def = site.actor.def;
+         let [map_width, map_height] = self.map.world_dimensions().map(|dimension| dimension as i32);
+         if width == 0
+             || team as usize >= self.nplayers
+@@ -146,11 +177,16 @@
+         {
+             return 1;
+         }
+-        let center = (ty + height / 2) as usize * N + (tx + width / 2) as usize;
++        let center = tile_of(site.actor.x, site.actor.y);
+         #[cfg(feature = "ee2-valley74-city-footprint")]
+-        if self.valley_rejects_building_site(def, (tx, ty, width, height), turn) { return 1; }
+-        #[cfg(feature = "ee2-native13")]
+-        if !self.hotspot_allows_placement(team, def, [tx as f32 + width as f32 * 0.5, ty as f32 + height as f32 * 0.5]) {
++        match site.turn {
++            Some(turn) if self.valley_rejects_building_site(def, site.bounds, turn) => return 1,
++            None if self.valley_house_reservation_overlaps(site.bounds) ||
++                !self.valley_farm_terrain_allows(site.actor.x, site.actor.y, site.actor.rot) => return 1,
++            _ => (),
++        }
++        #[cfg(feature = "ee2-native13")]
++        if !self.hotspot_allows_placement(team, def, [site.actor.x, site.actor.y]) {
+             return 12;
+         }
+         let territory = self.map.terr[center];
+@@ -214,7 +250,7 @@
+         let mut water = 0u32;
+         let mut land = 0u32;
+         #[cfg(feature="ee2-roster6")]
+-        if def==60 && !crate::roster6_placement::near_accepted_water(&self.map,tx as f32+width as f32*0.5,ty as f32+height as f32*0.5){return 1;}
++        if def==60 && !crate::roster6_placement::near_accepted_water(&self.map,site.actor.x,site.actor.y){return 1;}
+         for y in ty..ty + height {
+             for x in tx..tx + width {
+                 let t = y as usize * N + x as usize;
+@@ -259,9 +295,9 @@
+         }
+         #[cfg(feature = "ee2-native13")]
+         {
+-            let mut site = Self::planned_building(def, tx, ty, turn);
+-            site.team = team;
+-            if self.factory_placement_blocked(&site) { return 1; }
++            let mut actor = site.actor;
++            actor.team = team;
++            if self.factory_placement_blocked(&actor) { return 1; }
+         }
+         0
+     }
+@@ -336,7 +372,11 @@
+         ids: &[usize],
+         check_fog: bool,
+     ) -> u32 {
+-        let (width, height) = Self::footprint_axes(def, turn);
++        self.placement_error_at(team, PlacementSite::grid(def, tx, ty, turn), ids, check_fog)
++    }
++    pub(crate) fn placement_error_at(&mut self, team: u8, site: PlacementSite, ids: &[usize], check_fog: bool) -> u32 {
++        let def = site.actor.def;
++        let (tx, ty, width, height) = site.bounds;
+         if width == 0
+             || team as usize >= self.nplayers
+             || tx < 2
+@@ -352,10 +392,10 @@
+         if !self.afford(team, &self.construction_cost(team, def)) {
+             return 4;
+         }
+-        if check_fog && !self.footprint_known(team, def, tx, ty, turn) {
++        if check_fog && !self.placement_rectangle_known(team, site.bounds) {
+             return 3;
+         }
+-        let geometry = self.placement_geometry_error(team, def, tx, ty, turn);
++        let geometry = self.placement_geometry_for(team, site);
+         if geometry != 0 {
+             return geometry;
+         }
+@@ -363,7 +403,7 @@
+         if builders.is_empty() {
+             return 6;
+         }
+-        let bounds = Self::building_bounds(&Self::planned_building(def, tx, ty, turn));
++        let bounds = Self::building_bounds(&site.actor);
+         self.prepare_build_routes(bounds);
+         if !builders.iter().any(|&i| {
+             self.placement_cache.approach[tile_of(self.ents[i].x, self.ents[i].y)] != NONE
+@@ -385,7 +425,10 @@
+         ids: &[usize],
+         check_fog: bool,
+     ) -> usize {
+-        if self.placement_error_for(team, def, tx, ty, turn, ids, check_fog) != 0 {
++        self.begin_construction_at(team, PlacementSite::grid(def, tx, ty, turn), ids, check_fog)
++    }
++    pub(crate) fn begin_construction_at(&mut self, team: u8, site: PlacementSite, ids: &[usize], check_fog: bool) -> usize {
++        if self.placement_error_at(team, site, ids, check_fog) != 0 {
+             return NOIDX;
+         }
+         let builders: Vec<(usize, u32)> = self
+@@ -396,7 +439,7 @@
+                 (t != NONE).then_some((i, t))
+             })
+             .collect();
+-        let bi = self.place_with_rotation(def, tx, ty, team, turn);
++        let bi = self.place_at(team, site);
+         if bi == NOIDX {
+             return bi;
+         }
+@@ -454,8 +497,12 @@
+         bi
+     }
+     pub fn place_with_rotation(&mut self, def:DefId, tx: i32, ty: i32, team: u8, turn: u32) -> usize {
++        self.place_at(team, PlacementSite::grid(def, tx, ty, turn))
++    }
++    fn place_at(&mut self, team: u8, site: PlacementSite) -> usize {
++        let def = site.actor.def;
+         if !self.construction_available(team, def)
+-            || self.placement_geometry_error(team, def, tx, ty, turn) != 0
++            || self.placement_geometry_for(team, site) != 0
+         {
+             return NOIDX;
+         }
+@@ -463,7 +510,7 @@
+         if !self.afford(team, &cost) {
+             return NOIDX;
+         }
+-        let site = Self::planned_building(def, tx, ty, turn);
++        let site = site.actor;
+         let initial_progress = 1.0;
+         #[cfg(feature = "ee2-valley74-city-footprint")]
+         let initial_progress = if self.uses_valley_house_movement(def) { 0.0 } else { initial_progress };
+diff --git a/src/render.rs b/src/render.rs
+--- a/src/render.rs
++++ b/src/render.rs
+@@ -118,6 +118,15 @@
+     }
+     #[allow(clippy::too_many_arguments)]
+     pub fn render_with_rotation(&mut self,alpha:f32,x0:f32,y0:f32,x1:f32,y1:f32,ghost:i32,gx:i32,gy:i32,turn:u32)->u32{
++        self.render_scene(alpha,x0,y0,x1,y1,ghost,gx,gy,turn,false)
++    }
++    #[cfg(feature = "ee2-valley74-city-footprint")]
++    pub(crate) fn render_farm_cursor(&mut self, alpha: f32, x0: f32, y0: f32, x1: f32, y1: f32) -> u32 {
++        self.render_scene(alpha,x0,y0,x1,y1,-1,0,0,0,true)
++    }
++    #[allow(clippy::too_many_arguments)]
++    fn render_scene(&mut self,alpha:f32,x0:f32,y0:f32,x1:f32,y1:f32,ghost:i32,gx:i32,gy:i32,turn:u32,
++                    #[allow(unused_variables)] farm_cursor:bool)->u32 {
+         #[cfg(feature="ee2-render-meta7")]
+         crate::render_meta7::begin_frame();
+         let mut o = std::mem::take(&mut self.tmp);
+@@ -306,6 +315,16 @@
+             if width>0{let ids:Vec<usize>=(0..self.high).filter(|&i|self.ents[i].alive&&self.ents[i].sel&&self.ents[i].team==me).collect();let ok=self.placement_error_for(me,ghost as DefId,gx,gy,turn,&ids,true)==0;
+                 let(cx,cy)=(gx as f32+width as f32*0.5,gy as f32+height as f32*0.5);let a=if ghost as DefId==DOCK{0.0}else{self.map.height(cx,cy).max(0.0)};
+                 put(&mut o,cx,cy,a,Self::angle_for_turn(turn),crate::ids::unit_render(ghost as DefId),me as f32,1.0,FL_NOFOG+if ok{FL_GHOST_OK}else{FL_GHOST_BAD},d.size);
++            }
++        }
++        #[cfg(feature = "ee2-valley74-city-footprint")]
++        if farm_cursor {
++            if let Some(pose) = self.valley_farm_cursor_pose() {
++                let actor = pose.site().actor;
++                let ok = self.valley_farm_cursor_error() == 0;
++                let elevation = self.map.height(actor.x, actor.y).max(0.0);
++                put(&mut o,actor.x,actor.y,elevation,actor.rot,crate::ids::unit_render(FARM),
++                    me as f32,1.0,FL_NOFOG+if ok{FL_GHOST_OK}else{FL_GHOST_BAD},DEFS[FARM as usize].size);
+             }
+         }
+ 

@@ -72,7 +72,7 @@ import {bindCrownVictoryMenu,checkCrownVictorySettings,readCrownVictoryHud,CROWN
 import {bindCapitolsMenu,readCapitolHud} from './capitols-menu.js?v=native66';
 import {capitolFeedback,loadCapitolFeedback} from './capitol-feedback.js?v=native67';
 import {bindKothMenu,formatKothStatus} from './koth-menu.js?v=native64-koth';
-import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=foreign-economy142';
+import {createBuildingControls,nextBuildingTurn,placementMessage} from './building-controls.js?v=farm-cursor147';
 import {updateOriginalCamera,originalCameraRay,originalFractionForZoom,normalizeOriginalHeading,rotateOriginalCameraHeading} from './original-camera.js?v=heading2';
 import {updateAuthoredCamera} from './authored-camera-axis.js';
 import {createFullmap} from './fullmap.js?v=native77';
@@ -188,7 +188,7 @@ const valleyRequested=rulesProfile.id==='up15'&&(!!valleyManifest||['1','archive
 try{
   if(valleyRequested){
     const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley76_commit','valley71_force_attack_at','valley71_neutral_opening','configure_late_population']:rulesProfile.requiredExports;
-    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=farm-footprint144-valley'};
+    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=farm-cursor147-valley'};
     try{wasm=await loadRulesWasm(previewRules,import.meta.url);}catch{/* The ordinary ruleset remains available. */}
   }
   wasm??=await loadRulesWasm(rulesProfile,import.meta.url);
@@ -1020,8 +1020,27 @@ function viewRect() {
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.style.opacity = 1; clearTimeout(toast.h); toast.h = setTimeout(() => t.style.opacity = 0, 2200); }
 const buildingControls=createBuildingControls({rotate:rotateBuilding,cancel:cancelBuilding,automatic(){if(ghost){ghost.manual=false;placementKey='';updatePlacement();}}});
 function cancelBuilding(){ghost=null;placementKey='';buildingControls.hide();delete canvas.dataset.placement;canvas.style.cursor='default';}
+const FARM_INITIAL_YAW=-0.7853981852531433;
+
+function farmCursorPose(overMap=mouse.inside&&document.elementFromPoint(mouse.x,mouse.y)===canvas){
+  if(!overMap)return null;
+  const raw=toWorld(mouse.x,mouse.y);
+  if(!raw)return null;
+  const x=Math.fround(raw[0]),y=Math.fround(raw[1]);
+  if(x!==ghost.pick?.[0]||y!==ghost.pick?.[1]){
+    ghost.pick=[x,y];
+    wasm.valley_farm_cursor_pointer(x,y);
+  }
+  return [0,1,2,3].map(field=>wasm.valley_farm_cursor_component(field));
+}
+
 function rotateBuilding(direction,fine=false){
   if(!ghost)return;
+  if(ghost.nativeFarm){
+    farmCursorPose();
+    wasm.valley_farm_cursor_rotate(direction,fine?3:1);
+    placementKey='';updatePlacement();return;
+  }
   if(!wasm.cmd_place_rotated)return toast('Lade die aktuelle Spielfassung neu, um Gebäude zu drehen.');
   const isWonder=Boolean(wasm.wonder_footprint?.(ghost.id,0));
   ghost.turn=nextBuildingTurn(ghost.turn,direction,fine&&!isWonder);ghost.manual=true;placementKey='';updatePlacement();
@@ -1050,8 +1069,26 @@ function ghostTile() {
   }
   return [Math.round(wx - width / 2), Math.round(wy - height / 2)];
 }
-function updatePlacement(now=performance.now()){
+function updatePlacement(now=performance.now(),farmPose){
   if(!ghost){buildingControls.hide();placementKey='';delete canvas.dataset.placement;return;}
+  if(ghost.nativeFarm){
+    const pose=farmPose===undefined?farmCursorPose():farmPose;
+    const size=footprintSize();
+    if(!pose){
+      placementKey='';delete canvas.dataset.placement;
+      const yaw=wasm.valley_farm_cursor_component(3);
+      buildingControls.update({name:ghost.name,id:ghost.id,yaw:Number.isFinite(yaw)?yaw:FARM_INITIAL_YAW,error:1,size});
+      return;
+    }
+    const [x,y,z,yaw]=pose,key=['farm',x,y,z,yaw,ui?.sel?.n,ui?.sel?.def,Math.floor(now/250)].join(':');
+    if(key===placementKey)return;placementKey=key;
+    const error=wasm.valley_farm_cursor_error();
+    const time=wasm.valley_farm_cursor_time_multiplier?.();
+    const note=!error&&time===2?'Neutrales Land: doppelte Bauzeit':!error&&time===3?'Fremdes Gebiet: dreifache Bauzeit':'';
+    buildingControls.update({name:ghost.name,id:ghost.id,yaw,error,size,note});
+    if(qaMode)canvas.dataset.placement=JSON.stringify({id:ghost.id,nativeFarm:true,pick:ghost.pick,x,y,z,yaw,error,size});
+    return;
+  }
   const tile=ghostTile();
   if(!tile){
     placementKey='';delete canvas.dataset.placement;
@@ -2139,10 +2176,12 @@ function frame(now) {
 
   const [x0, y0, x1, y1] = viewRect();
   let gid = -1, gx = 0, gy = 0;
-  const ghostAt=ghost?ghostTile():null;
+  const farmPose=ghost?.nativeFarm?farmCursorPose():null;
+  const ghostAt=ghost&&!ghost.nativeFarm?ghostTile():null;
   if (ghostAt) { gid = ghost.id; [gx, gy] = ghostAt; }
-  updatePlacement(now);
-  const n = (wasm.render_rotated||wasm.render)(alpha, x0, y0, x1, y1, gid, gx, gy,ghost?.turn||0);
+  updatePlacement(now,farmPose);
+  const n = farmPose?wasm.render_valley_farm_cursor(alpha,x0,y0,x1,y1):
+    (wasm.render_rotated||wasm.render)(alpha, x0, y0, x1, y1, gid, gx, gy,ghost?.turn||0);
   if (!n) originalModels.clearResourcePicks();
   const ranges = n ? new Uint32Array(wasm.memory.buffer, wasm.ranges_ptr(), renderNamespace.rangeLength) : null;
   const renderEpochs=[0,1,2,3].map(t=>wasm.stat(t,0));
@@ -2619,7 +2658,13 @@ function doAct(i, count=1) {
   if (!a) return;
   tradeRoute?.cancel();
   airMission?.cancel();
-  if (a.k === 'b') { activeTargetOrder()?.cancel();ghost = { id: a.id, size: a.size,name:label(a.name,a.id),turn:0,manual:false }; placementKey='';attackMode = false; sfx.play(20);updatePlacement();return; }
+  if (a.k === 'b') {
+    activeTargetOrder()?.cancel();
+    const nativeFarm=a.id===2&&wasm.valley_farm_cursor_available?.()===1;
+    ghost={id:a.id,size:a.size,name:label(a.name,a.id),turn:0,manual:false,nativeFarm};
+    if(nativeFarm)wasm.valley_farm_cursor_reset(FARM_INITIAL_YAW);
+    placementKey='';attackMode=false;sfx.play(20);updatePlacement();return;
+  }
   if (a.k === 'u') { wasm.cmd_unload(); sfx.play(22); return; }
   if(a.k==='p'){if(typeof wasm.cmd_pack==='function'&&wasm.cmd_pack(a.id)){if(!selectedUnitVoice('order'))sfx.play(20);}else sfx.play(21);lastUi=0;return;}
   if(a.k==='i'&&!a.ok){sfx.play(21);toast(researchState(a,a.hostName));return;}
@@ -2758,6 +2803,16 @@ canvas.addEventListener('mousedown', e => {
     return;
   }
   if (ghost) {
+    if(ghost.nativeFarm){
+      mouse.inside=true;
+      if(!farmCursorPose(true))return;
+      if(wasm.valley_farm_cursor_place()===1){
+        if(!selectedUnitVoice('build'))sfx.play(20);
+        if(!e.shiftKey)cancelBuilding();
+        else {placementKey='';updatePlacement();}
+      }else{sfx.play(21);toast(placementMessage(wasm.valley_farm_cursor_error()||1,ghost.id));}
+      return;
+    }
     const tile=ghostTile();if(!tile)return;
     const [tx,ty]=tile,err=wasm.place_error_rotated?wasm.place_error_rotated(ghost.id,tx,ty,ghost.turn):wasm.place_error(ghost.id,tx,ty);
     const placed=!err&&(wasm.cmd_place_rotated?wasm.cmd_place_rotated(ghost.id,tx,ty,ghost.turn):wasm.cmd_place(ghost.id,tx,ty));
@@ -3004,7 +3059,13 @@ addEventListener('keydown', e => {
   if(k==='Escape'&&airMission?.cancel()){e.preventDefault();airPress=null;return;}
   if(k==='Escape'&&(tradeRoute?.cancel()||e.repeat)){e.preventDefault();tradePress=null;return;}
   if(ghost&&!e.metaKey&&(e.key==='Control'||k==='R'||e.code==='Comma'||e.code==='Period')){
-    e.preventDefault();if(!e.repeat)rotateBuilding(e.code==='Comma'?-1:1,e.shiftKey);return;
+    e.preventDefault();
+    if(!e.repeat){
+      const direction=e.code==='Comma'||(ghost.nativeFarm&&e.key==='Control')?-1:1;
+      const fine=ghost.nativeFarm&&e.key==='Control'?e.altKey:e.shiftKey;
+      rotateBuilding(direction,fine);
+    }
+    return;
   }
   if (e.code.startsWith('Digit')) {
     const n = +e.code[5];

@@ -25,15 +25,29 @@ export function nextBuildingTurn(turn,direction,fine=false){return (turn+(direct
 
 export function createBuildingControls({document:doc=globalThis.document,rotate,cancel,automatic}={}){
   const panel=doc.getElementById('building-controls'),heading=doc.getElementById('building-name'),
-    angle=doc.getElementById('building-angle'),status=doc.getElementById('building-status');
-  doc.getElementById('building-left').onclick=event=>rotate(-1,event.shiftKey);
-  doc.getElementById('building-right').onclick=event=>rotate(1,event.shiftKey);
+    angle=doc.getElementById('building-angle'),status=doc.getElementById('building-status'),
+    left=doc.getElementById('building-left'),right=doc.getElementById('building-right'),hint=panel.querySelector('small');
+  left.onclick=event=>rotate(-1,event.shiftKey);
+  right.onclick=event=>rotate(1,event.shiftKey);
   doc.getElementById('building-cancel').onclick=cancel;
   const auto=doc.getElementById('building-auto');auto.onclick=automatic;
+  let nativeFarm=false;
   return {
     hide(){panel.hidden=true;},
-    update({name,id,turn,error,size,width=size,height=size,manual,note=''}){
-      panel.hidden=false;heading.textContent=name;angle.textContent=`${turn*45}° · ${width} × ${height} Felder`;
+    update({name,id,turn,yaw,error,size,width=size,height=size,manual,note=''}){
+      panel.hidden=false;heading.textContent=name;
+      const continuous=Number.isFinite(yaw);
+      if(continuous!==nativeFarm){
+        nativeFarm=continuous;
+        const step=nativeFarm?'45°':'90°',fine=nativeFarm?'11,25°':'45°';
+        left.textContent=`↶${step}`;right.textContent=`${step}↷`;
+        left.title=`${step} nach links · mit Umschalt ${fine}`;
+        right.title=`${step} nach rechts · mit Umschalt ${fine}`;
+        hint.textContent=nativeFarm?'Strg: 45° · Alt+Strg: 11,25° · Esc: abbrechen':
+          'Strg / R / Komma / Punkt: 90° · mit Umschalt: 45° · Umschalt+Mausrad: 45° · Esc: abbrechen';
+      }
+      const degrees=continuous?((Math.round(yaw*18000/Math.PI)%36000+36000)%36000/100).toLocaleString('de-DE'):turn*45;
+      angle.textContent=`${degrees}° · ${width} × ${height} Felder`;
       auto.hidden=id!==5;auto.textContent=manual?'Küste: manuell':'Küste: automatisch';
       const text=placementMessage(error,id)+(note?` · ${note}`:'');if(status.textContent!==text)status.textContent=text;
       status.dataset.valid=String(error===0);
