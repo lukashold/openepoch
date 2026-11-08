@@ -22,7 +22,7 @@ import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regi
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native66';
-import {loadOriginalModels} from './original-renderer.js?v=pack-rig129';
+import {loadOriginalModels} from './original-renderer.js?v=pack-clock131';
 import {loadOriginalBoatWake,readNavalWakeActors} from './original-boat-wake.js?v=native78-wake83';
 import {loadKingOfTheHillPresentation} from './original-koth.js?v=native64-koth';
 import {loadWonderPresentation} from './original-wonders.js?v=native63';
@@ -43,11 +43,12 @@ import {loadSourceSailRuntime} from './source-sail-runtime.js?v=sails7';
 import {createRenderAssetMapping} from './original-render-namespace.js?v=native6';
 import {createFrontendNamespace} from './render-namespace.js?v=native77';
 import {ORIGINAL_SPEEDS, changeOriginalSpeed, checkOriginalTempo, loadOriginalTempo, originalStartingSpeed} from './original-game-tempo.js?v=native37';
-import {advanceAdaptiveSourceFrame, advanceSourceSoloFrame, createAdaptiveSourceClock, sampleSourceRenderFps, SOURCE_SOLO_INTERVAL, sourceRenderSeconds, sourceStepDelta, sourceWallInterval} from './source-solo-clock.js?v=native44';
+import {addF64, advanceAdaptiveSourceFrame, advanceSourceSoloFrame, createAdaptiveSourceClock, sampleSourceRenderFps, SOURCE_SOLO_INTERVAL, sourceRenderSeconds, sourceStepDelta, sourceWallInterval, storeF32} from './source-solo-clock.js?v=native44';
 import {mountOriginalGameOptions} from './original-game-options.js?v=native37';
 import {mountOriginalGameSettings} from './original-game-settings.js?v=native79-wake';
 import {createRenderActorMetadata} from './render-actor-metadata.js?v=pack8';
 import {createPackRenderMetadata} from './original-pack-states.js?v=pack-frame123';
+import {createNativePackSceneClock} from './original-pack-scene.js?v=pack-clock131';
 import {createFullmapPipBridge} from './original-fullmap-pip-bridge.js?v=native66';
 import {loadOriginalGround,sampleGroundHeight} from './original-ground.js?v=native67';
 import {createCaptureGlow} from './capture-glow.js?v=native64-koth';
@@ -57,7 +58,7 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {NATIVE_SEASON_CHOICE,normalizeSeasonChoice,resolveSeasonChoice} from './original-seasons.js?v=native108';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=native108';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=late-pop129';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=pack-clock131';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION as BASE_PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
@@ -186,7 +187,7 @@ const valleyRequested=rulesProfile.id==='up15'&&(!!valleyManifest||['1','archive
 try{
   if(valleyRequested){
     const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley75_commit','valley71_force_attack_at','valley71_neutral_opening','configure_late_population']:rulesProfile.requiredExports;
-    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=late-pop129-valley'};
+    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=house134-valley'};
     try{wasm=await loadRulesWasm(previewRules,import.meta.url);}catch{/* The ordinary ruleset remains available. */}
   }
   wasm??=await loadRulesWasm(rulesProfile,import.meta.url);
@@ -581,6 +582,8 @@ for (const pr of [terrain, water, models, quads]) {
   if (pr.u.uTeam) gl.uniform3fv(pr.u.uTeam, teamFlat);
 }
 const originalEnabled=referenceMode&&new URLSearchParams(location.search).get('assets')!=='procedural';
+const packScene=originalEnabled&&rulesProfile.ruleset===2&&typeof wasm.pack_visual_revision==='function'
+  ? createNativePackSceneClock(wasm.pack_visual_revision,wasm.entity_alive) : null;
 const marketArt=await loadMarketArt(originalEnabled&&typeof wasm.market_quote==='function');
 const dockArt=await loadUngarrisonArt(originalEnabled&&typeof wasm.configure_dock_garrison==='function');
 const ambientPresentation=await loadOriginalAmbient({enabled:originalEnabled&&rulesProfile.id==='up15'});
@@ -1357,6 +1360,7 @@ function begin(tempo = null, useSourceClock = wasm.sim_clock_active?.() === 1, a
     ? createAdaptiveSourceClock(wasm.game_tick(), adaptiveRate, storedRate ? wasm.sim_adaptive_scale() : tempo?.requested ?? 1)
     : null;
   valleyWorld=valleyPreview?activeValleyGeometry(wasm):null;
+  packScene?.reset(wasm.sim_elapsed_seconds());
   originalModels.clearResourcePicks();
   takeoffAudio?.reset();
   sfx.resetAirFlightAudio();
@@ -1695,12 +1699,15 @@ function playHillCapture(kind,x,y) {
 }
 function advance(dt, now) {
   let visualSeconds = dt * speed;
+  const packStartTick=packScene?wasm.game_tick()>>>0:0;
+  let packSeconds=null;
   if (net?.sourceRounds) {
     net.refreshLink?.(now);
     let result;
     try { result=net.ls.advance(dt); }
     catch(error) { net.ls.abort(error.message); }
     visualSeconds=result?.gameSeconds??0;
+    packSeconds=visualSeconds;
     if(result?.steps){simMs=net.ls.cpuSeconds*1000;waitSince=now;}
   } else if (net) {
     acc = Math.min(acc + dt * speed, TICK * 6);         // allow a short catch-up burst, never a spiral
@@ -1717,6 +1724,7 @@ function advance(dt, now) {
       admit: (oldRate, rate, scale) => wasm.tick_with_adaptive_source_slot(oldRate, rate, scale) === 1,
     });
     visualSeconds = result.gameSeconds;
+    packSeconds=visualSeconds;
     if (result.steps) simMs = adaptiveSoloClock.cpuSeconds * 1000;
   } else if (sourceSoloClock) {
     const t0 = performance.now();
@@ -1726,6 +1734,7 @@ function advance(dt, now) {
     }, delta => wasm.tick_with_source_delta(delta) === 1);
     acc = result.remainder;
     visualSeconds = result.gameSeconds;
+    packSeconds=visualSeconds;
     if (result.steps) simMs += ((performance.now() - t0) / result.steps - simMs) * 0.1;
   } else if (!paused) {
     acc += dt * speed;
@@ -1736,6 +1745,14 @@ function advance(dt, now) {
     }
     if (steps) simMs += ((performance.now() - t0) / steps - simMs) * 0.1;
     if (acc > TICK) acc = TICK;                          // drop time instead of stalling the frame
+  }
+  if(packScene){
+    if(packSeconds===null){
+      packSeconds=0;
+      const steps=((wasm.game_tick()>>>0)-packStartTick)>>>0,step=wasm.sim_step_seconds();
+      for(let i=0;i<steps;i++)packSeconds=storeF32(addF64(packSeconds,step));
+    }
+    packScene.advance(packSeconds,wasm.sim_elapsed_seconds());
   }
   // sound cues the simulation queued up
   const n = wasm.events_len();
@@ -1980,7 +1997,7 @@ function drawFullmapPipScene(pipView, alpha, renderEpochs, now, mission, prepare
     gl.bindBuffer(gl.ARRAY_BUFFER,instBuf);
     gl.bufferData(gl.ARRAY_BUFFER,fallbackModelInstances(data,ranges),gl.STREAM_DRAW);
     drawFallbackModels(vp,ranges);
-    originalModels.draw({data,ranges,vp,eye,zoom,epochs:renderEpochs,actorMetadata,preparedSailMetadata,capture:true,hercBeamMuzzles});
+    originalModels.draw({data,ranges,vp,eye,zoom,epochs:renderEpochs,actorMetadata,preparedSailMetadata,capture:true,hercBeamMuzzles,packScene});
   }
   if(originalWater.enabled){
     originalWater.drawWater({vp,time:now/1000,fogTexture});
@@ -2154,7 +2171,7 @@ function frame(now) {
       reflection=originalReflection.render({vp:view.vp,eye:view.eye,width:Math.max(1,Math.round(w*scale)),height:Math.max(1,Math.round(h*scale)),
         drawScene:pass=>{
           originalTerrain.drawTerrain({vao:vaoT,px,fogTexture,territoryTexture,...pass});
-          if(n)originalModels.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,epochs:renderEpochs,zoom:cam.zoom,actorMetadata,...pass});
+          if(n)originalModels.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,epochs:renderEpochs,zoom:cam.zoom,actorMetadata,packScene,...pass});
         }});
     }catch(error){reflectionError=String(error);console.warn('Water reflection:',error);}
     if(qaMode){canvas.dataset.reflection=JSON.stringify(originalReflection.metrics);canvas.dataset.reflectionError=reflectionError||'';}
@@ -2203,12 +2220,12 @@ function frame(now) {
         const cnt=ranges[id*2+1]; if(!cnt||!mesh.count[template])continue;
         instOffset(ranges[id*2]); gl.drawArraysInstanced(gl.TRIANGLES,mesh.first[template],mesh.count[template],cnt);
       }
-      originalModels.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,vp:view.vp,epochs:renderEpochs,zoom:cam.zoom,eye:view.eye,shadow:true,actorMetadata});
+      originalModels.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,vp:view.vp,epochs:renderEpochs,zoom:cam.zoom,eye:view.eye,shadow:true,actorMetadata,packScene});
       gl.disable(gl.STENCIL_TEST); gl.depthMask(true);
     }
     // one instanced draw per model type
     drawFallbackModels(view.vp,ranges);
-    originalModels.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,vp:view.vp,epochs:renderEpochs,zoom:cam.zoom,eye:view.eye,actorMetadata,stoneThrowerWheels,hercBeamMuzzles});
+    originalModels.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,vp:view.vp,epochs:renderEpochs,zoom:cam.zoom,eye:view.eye,actorMetadata,stoneThrowerWheels,hercBeamMuzzles,packScene});
     if(qaMode){
       canvas.dataset.wonderScaffolds=JSON.stringify(originalModels.metrics.wonderScaffolds??[]);
       canvas.dataset.wonderFences=JSON.stringify(originalModels.metrics.wonderFences??[]);

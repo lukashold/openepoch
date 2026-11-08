@@ -973,7 +973,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   return hit;
  };
  const packBlendHistory=packStatus.enabled?createNativePackBlendHistory():null;
- result.draw=({data,ranges,vp,epochs,zoom=80,shadow=false,eye=[0,200,0],lighting=defaultLighting,clipPlane=null,capture=false,actorMetadata=null,preparedSailMetadata=actorMetadata,civilizations=visualCivilizations,stoneThrowerWheels=null,hercBeamMuzzles=null})=>{
+ result.draw=({data,ranges,vp,epochs,zoom=80,shadow=false,eye=[0,200,0],lighting=defaultLighting,clipPlane=null,capture=false,actorMetadata=null,preparedSailMetadata=actorMetadata,civilizations=visualCivilizations,stoneThrowerWheels=null,hercBeamMuzzles=null,packScene=null})=>{
   const started=performance.now();let calls=0,triangles=0,querying=false;
   // Reflection uses the main snapshot. Only the independent picture-in-picture
   // capture must leave the main animation history alone.
@@ -1112,10 +1112,13 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     const once=dedicatedPose?.once??(timedAttack&&attackElapsed>=0);
     const animation=variant.parts.find(p=>p.animations?.[clip])?.animations?.[clip];
     const duration=animation?.duration||1;
-    const phase=dedicatedPose?.phase??(timedAttack&&attackElapsed>=0?Math.min(1,attackElapsed/duration):((time/duration+seed)%1+1)%1);
-    const blend=packBlendReady&&matchingActor&&variant.nativePackBlend&&actor.pack&&animation
-      ? packBlendHistory.pose(actor,variant,{clip,once,phase,period:packPose?.once?actor.pack.duration:duration,span:duration,packPose})
-      : null;
+    let phase=dedicatedPose?.phase??(timedAttack&&attackElapsed>=0?Math.min(1,attackElapsed/duration):((time/duration+seed)%1+1)%1);
+    let blend=null;
+    if(packBlendReady&&matchingActor&&variant.nativePackBlend&&actor.pack&&animation){
+     const pose={clip,once,phase,period:packPose?.once?actor.pack.duration:duration,span:duration,packPose};
+     if(packScene)({phase,blend}=packScene.pose(actor,variant,pose,capture&&!clipPlane));
+     else blend=packBlendHistory.pose(actor,variant,pose);
+    }
     const rigPose=packRigReady&&matchingActor&&variant.nativePackRig
      ? packRigFrames.pose(actor,variant.nativePackRig,clip,phase,blend)
      : null;

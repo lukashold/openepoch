@@ -41,6 +41,8 @@ pub(crate) struct FixtureState {
     pub(super) neutral_opening: bool,
     #[cfg(feature = "ee2-valley74-city-footprint")]
     pub(super) native_city_footprints: bool,
+    #[cfg(feature = "ee2-valley74-city-footprint")]
+    pub(super) native_house_construction: bool,
 }
 
 impl Start {
@@ -129,6 +131,8 @@ impl Start {
             neutral_opening: false,
             #[cfg(feature = "ee2-valley74-city-footprint")]
             native_city_footprints: false,
+            #[cfg(feature = "ee2-valley74-city-footprint")]
+            native_house_construction: false,
         });
         game.rebuild_territories();
         game.build_grid();

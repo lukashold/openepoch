@@ -1925,6 +1925,16 @@ pub extern "C" fn cmd_pack(unpacked:u32)->u32{
  unsafe{(&*addr_of_mut!(GAME)).as_ref().map_or(0,|game|selected(game).into_iter().filter(|&i|game.pack_spec(&game.ents[i]).is_some_and(|s|s.capable)).count()as u32)}
 }
 
+/// Ephemeral, per-handle render request sequence. Neither saves nor lockstep
+/// hashes consume it; a rebuilt animator starts with no outgoing clip.
+#[cfg(feature="ee2-pack8")]
+#[no_mangle]
+pub extern "C" fn pack_visual_revision(handle:u32)->u32{
+    unsafe{(&*addr_of_mut!(GAME)).as_ref()
+        .and_then(|game|game.get(handle).map(|index|game.canonical_pack(index).visual_revision))
+        .unwrap_or(0)}
+}
+
 #[cfg(feature="ee2-pack8")]
 #[no_mangle]pub extern "C" fn pack_schema_revision()->u32{if cfg!(feature="ee2-citizen9"){4}else if cfg!(feature="ee2-civ8"){3}else{1}}
 #[cfg(feature="ee2-pack8")]

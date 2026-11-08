@@ -2341,6 +2341,8 @@ impl Game {
     fn damage(&mut self, j: usize, dmg: f32, kind: u8) {
         #[cfg(feature = "ee2-native13")]
         if self.ents[j].def == crate::koth64::HILL { return; }
+        #[cfg(feature = "ee2-valley74-city-footprint")]
+        if self.valley_house_awaiting_labor(&self.ents[j]) { return; }
         let (team, td) = (self.ents[j].team, &DEFS[self.ents[j].def as usize]);
         let m = MULT[kind as usize][td.armor as usize] * self.players[team as usize].dfn[class_of(td)];
         let protected = self.god_mode_for(team);
@@ -2359,6 +2361,8 @@ impl Game {
         let (team,def)=(self.ents[j].team,self.ents[j].def);
         #[cfg(feature = "ee2-native13")]
         if def == crate::koth64::HILL { return; }
+        #[cfg(feature = "ee2-valley74-city-footprint")]
+        if self.valley_house_awaiting_labor(&self.ents[j]) { return; }
         let td=&DEFS[def as usize];
         let native=crate::ee2_combat::multiplier_from_profile(attacker_profile,def,self.players[team as usize].epoch);
         let m=native.unwrap_or(MULT[kind as usize][td.armor as usize])*self.players[team as usize].dfn[class_of(td)];
@@ -3322,10 +3326,20 @@ impl Game {
             return;
         }
         let maxhp=self.max_hp(e.team,b.def);
-        let step = self.sim_step() / (self.production_time(e.team,b.def)*self.construction_multiplier(&b));
+        let duration = self.production_time(e.team,b.def)*self.construction_multiplier(&b);
+        let seconds = self.sim_step();
+        #[cfg(feature = "ee2-valley74-city-footprint")]
+        let native_house = self.uses_valley_house_construction(b.def);
         let t = &mut self.ents[j];
-        t.built = (t.built + step).min(1.0);
-        t.hp = (t.hp + maxhp * 0.9 * step).min(maxhp);
+        #[cfg(feature = "ee2-valley74-city-footprint")]
+        if native_house { Self::advance_valley_house_health(t, maxhp, seconds, duration); }
+        #[cfg(not(feature = "ee2-valley74-city-footprint"))]
+        let native_house = false;
+        if !native_house {
+            let step = seconds / duration;
+            t.built = (t.built + step).min(1.0);
+            t.hp = (t.hp + maxhp * 0.9 * step).min(maxhp);
+        }
         let completed = t.built >= 1.0;
         if completed && b.team == self.local { self.ev(14.0, b.x, b.y); }
         #[cfg(feature="ee2-reference")]

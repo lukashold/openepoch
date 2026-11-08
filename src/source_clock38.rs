@@ -126,12 +126,12 @@ impl SourceClock {
     }
 }
 
-fn store_positive_f32(value: f64) -> f32 {
+pub(crate) fn store_positive_f32(value: f64) -> f32 {
     let nearest = value as f32;
     if f64::from(nearest) > value { f32::from_bits(nearest.to_bits() - 1) } else { nearest }
 }
 
-fn add_positive_f64(left: f64, right: f64) -> f64 {
+pub(crate) fn add_positive_f64(left: f64, right: f64) -> f64 {
     let nearest = left + right;
     if sum_error(left, right, nearest) < 0.0 { f64::from_bits(nearest.to_bits() - 1) } else { nearest }
 }
@@ -145,6 +145,20 @@ fn product_parts(left: f64, right: f64) -> (f64, f64) {
     let expanded = 134217729.0 * left;
     let high = expanded - (expanded - left);
     (high * right, (left - high) * right)
+}
+
+#[cfg(feature = "ee2-valley74-city-footprint")]
+pub(crate) fn divide_positive_f32_as_f64(numerator: f32, denominator: f32) -> f64 {
+    let numerator = f64::from(numerator);
+    let denominator = f64::from(denominator);
+    let nearest = numerator / denominator;
+    let (high, low) = product_parts(nearest, denominator);
+    let product = high + low;
+    if (product - numerator) + sum_error(high, low, product) > 0.0 {
+        f64::from_bits(nearest.to_bits() - 1)
+    } else {
+        nearest
+    }
 }
 
 fn valid_step(step: f32) -> bool {

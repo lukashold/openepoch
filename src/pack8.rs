@@ -7,10 +7,22 @@ pub const NONE:u8=0;pub const PACK:u8=1;pub const UNPACK:u8=2;pub const UNPACKED
 pub struct State{
  pub handle:u32,pub flags:u8,pub phase:u8,pub started:bool,pub history_unknown:bool,
  pub start:f32,pub duration:f32,pub ai_until:f32,pub last_goal:f32,
- pub visual:u8,pub visual_start:f32,pub visual_duration:f32,
+ pub visual:u8,pub visual_start:f32,pub visual_duration:f32,pub visual_revision:u32,
 }
-pub const EMPTY:State=State{handle:u32::MAX,flags:0,phase:0,started:false,history_unknown:false,start:0.0,duration:0.0,ai_until:0.0,last_goal:0.0,visual:0,visual_start:0.0,visual_duration:0.0};
-impl State{pub fn fresh(handle:u32)->Self{Self{handle,..EMPTY}}}
+pub const EMPTY:State=State{handle:u32::MAX,flags:0,phase:0,started:false,history_unknown:false,start:0.0,duration:0.0,ai_until:0.0,last_goal:0.0,visual:0,visual_start:0.0,visual_duration:0.0,visual_revision:0};
+impl State{
+ pub fn fresh(handle:u32)->Self{Self{handle,..EMPTY}}
+
+ // The animator refuses the outgoing blend if another visual request still
+ // needs a scene update. Count distinct requests, including those between draws.
+ fn set_visual(&mut self,visual:u8,duration:f32,now:f32){
+  if (self.visual,self.visual_duration)==(visual,duration){return;}
+  if visual!=NONE{self.visual_start=now;}
+  self.visual=visual;
+  self.visual_duration=duration;
+  self.visual_revision=self.visual_revision.wrapping_add(1);
+ }
+}
 pub fn interrupt(state:&mut State){state.phase=NONE;state.started=false;state.start=0.0;state.duration=0.0;}
 
 impl Game{
@@ -30,7 +42,7 @@ impl Game{
  ///00815FF0: activation/resume stores clock only while the old stamp==0.
  pub(crate) fn pack_activate(&mut self,index:usize){let now=self.pack_now();let state=&mut self.pack_states[index];if state.phase==NONE{return;}if state.start==0.0{state.start=now;}state.started=true;
   //008754B0: identical packets preserve their visual start stamp.
-  if state.visual!=state.phase||state.visual_duration!=state.duration{state.visual=state.phase;state.visual_duration=state.duration;state.visual_start=now;}
+  state.set_visual(state.phase,state.duration,now);
  }
  pub(crate) fn pack_tick_actor(&mut self,index:usize,e:&Ent){
   self.pack_sync(index,e);if self.pack_states[index].phase!=NONE&&!self.pack_states[index].started{self.pack_activate(index);}
@@ -73,10 +85,10 @@ impl Game{
   let now=self.pack_now();let spec=self.pack_spec(e);let state=&mut self.pack_states[index];
   if active_goal||state.phase!=NONE{state.last_goal=now;}
   if state.phase!=NONE{return;}
-  if active_goal||moving{state.visual=NONE;state.visual_duration=0.0;return;}
+  if active_goal||moving{state.set_visual(NONE,0.0,now);return;}
   if now<state.ai_until{return;}
-  if state.flags&UNPACKED==0{state.visual=NONE;state.visual_duration=0.0;return;}
-  if spec.is_some_and(|s|s.unpacked_idle){if state.visual!=UNPACKED_IDLE{state.visual_start=now;}state.visual=UNPACKED_IDLE;state.visual_duration=0.0;return;}
+  if state.flags&UNPACKED==0{state.set_visual(NONE,0.0,now);return;}
+  if spec.is_some_and(|s|s.unpacked_idle){state.set_visual(UNPACKED_IDLE,0.0,now);return;}
   if state.flags&MANUAL==0&&(now as f64)-1.0>(state.last_goal as f64){if self.pack_enqueue(index,e,false,true){self.pack_activate(index);}}
  }
 }

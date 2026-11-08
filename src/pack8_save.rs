@@ -76,7 +76,7 @@ impl Game{
   for b in records.chunks_exact(RECORD){
    let w:Vec<u32>=(0..12).map(|k|u(b,k*4).unwrap()).collect();let index=self.get(w[0])?;
    if previous.is_some_and(|p|index<=p)||w[1]&!10!=0||w[2]>2||w[3]>1||w[4]>1||w[9]>3{return None;}previous=Some(index);
-   let f=|k|f32::from_bits(w[k]);let state=State{handle:w[0],flags:w[1]as u8,phase:w[2]as u8,started:w[3]!=0,history_unknown:w[4]!=0,start:f(5),duration:f(6),ai_until:f(7),last_goal:f(8),visual:w[9]as u8,visual_start:f(10),visual_duration:f(11)};
+   let f=|k|f32::from_bits(w[k]);let state=State{handle:w[0],flags:w[1]as u8,phase:w[2]as u8,started:w[3]!=0,history_unknown:w[4]!=0,start:f(5),duration:f(6),ai_until:f(7),last_goal:f(8),visual:w[9]as u8,visual_start:f(10),visual_duration:f(11),visual_revision:0};
    if [state.start,state.duration,state.ai_until,state.last_goal,state.visual_start,state.visual_duration].iter().any(|v|!v.is_finite()||v.is_sign_negative())||state.last_goal>now||state.visual_start>now||state.start>now{return None;}
    let def=self.ents[index].def;
    // Preserve the old validator’s accepted per-definition durations.

@@ -19,6 +19,8 @@ mod terrain_tree;
 mod neutral71;
 #[cfg(feature = "ee2-valley74-city-footprint")]
 mod city_footprint74;
+#[cfg(feature = "ee2-valley74-city-footprint")]
+mod house134;
 #[cfg(feature = "ee2-valley71-neutral-qa")]
 pub(crate) use neutral71::{FORCE_ATTACK, RAW_ATTACK_MODIFIER};
 #[cfg(feature = "ee2-authored-valley37-qa-commit")]
@@ -140,6 +142,8 @@ pub(crate) fn restore_private_map(locator: save_wire::Locator, seed: u32, n_ai: 
         if locator.neutral_opening && !game.set_valley_neutral_opening() { return None; }
         #[cfg(feature = "ee2-valley74-city-footprint")]
         if locator.native_city_footprints { game.enable_valley_start_city_masks()?; }
+        #[cfg(feature = "ee2-valley74-city-footprint")]
+        if locator.native_house_construction { game.enable_valley_house_construction()?; }
         Some(game)
     })
 }
@@ -279,7 +283,7 @@ fn commit_neutral_valley(visibility: u32, _current_solo: bool) -> u32 {
             return false;
         }
         #[cfg(feature = "ee2-valley74-city-footprint")]
-        if _current_solo && !configure_current_solo(game) {
+        if _current_solo && (!configure_current_solo(game) || game.enable_valley_house_construction().is_none()) {
             stage.game = None;
             return false;
         }

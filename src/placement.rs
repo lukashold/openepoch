@@ -440,9 +440,12 @@ impl Game {
         let site = Self::planned_building(def, tx, ty, turn);
         let i = self.spawn_oriented(def, team, site.x, site.y, site.rot);
         if i != NOIDX {
+            let health = self.max_hp(team, def) * 0.1;
+            #[cfg(feature = "ee2-valley74-city-footprint")]
+            let health = if self.uses_valley_house_construction(def) { 1.0 } else { health };
             self.pay(team, &cost, 1.0);
             self.ents[i].built = 0.0;
-            self.ents[i].hp = self.max_hp(team, def) * 0.1;
+            self.ents[i].hp = health;
             #[cfg(feature="ee2-native13")]
             self.wonder_notice(crate::wonders61::Notice::Started, def, team);
             #[cfg(feature="ee2-reference")]
