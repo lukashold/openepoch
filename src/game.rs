@@ -10,7 +10,7 @@ use crate::map::*;
 #[path = "capture25.rs"]
 mod capture25;
 #[cfg(feature = "ee2-native13")]
-pub(crate) use capture25::split_capture_save;
+pub(crate) use capture25::{split_capture_save, CAPTURE_CHECKPOINT_SAVE_MASK};
 #[cfg(feature = "ee2-native13")]
 #[path = "bless42.rs"]
 pub(crate) mod bless42;
@@ -295,6 +295,8 @@ pub struct Game {
     pub(crate) capture_enabled: bool,
     #[cfg(feature="ee2-native13")]
     pub(crate) capture_animation_enabled: bool,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) capture_checkpoint_mode: u8,
     #[cfg(feature="ee2-native13")]
     pub(crate) infantry_roster_enabled: bool,
     #[cfg(feature="ee2-native13")]
@@ -537,6 +539,8 @@ impl Game {
             capture_enabled: !net && bench == 0,
             #[cfg(feature="ee2-native13")]
             capture_animation_enabled: !net && bench == 0,
+            #[cfg(feature = "ee2-native13")]
+            capture_checkpoint_mode: 0,
             #[cfg(feature="ee2-native13")]
             infantry_roster_enabled: !net && bench == 0,
             #[cfg(feature="ee2-native13")]
@@ -1471,6 +1475,11 @@ impl Game {
         }
         #[cfg(feature = "ee2-native13")]
         self.capture.hash(self.capture_animation_enabled, self.source_clock.is_some(), &mut mix);
+        #[cfg(feature = "ee2-native13")]
+        if self.capture_checkpoint_mode != 0 {
+            mix(capture25::CAPTURE_CHECKPOINT_HASH_TAG);
+            mix(u32::from(self.capture_checkpoint_mode));
+        }
         #[cfg(feature = "ee2-native13")]
         if let Some(powers) = &self.powers { powers.hash(&mut mix); }
         #[cfg(feature = "ee2-native13")]

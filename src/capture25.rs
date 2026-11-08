@@ -11,6 +11,9 @@ const VERSION: u32 = 1;
 const VISUAL_VERSION: u32 = 2;
 const CLOCK_VERSION: u32 = 3;
 const CLOCK_VISUAL_VERSION: u32 = 4;
+const CHECKPOINT_SAVE_SHIFT: u32 = 17;
+pub(crate) const CAPTURE_CHECKPOINT_SAVE_MASK: u32 = 3 << CHECKPOINT_SAVE_SHIFT;
+pub(crate) const CAPTURE_CHECKPOINT_HASH_TAG: u32 = u32::from_le_bytes(*b"CPR1");
 const NATURAL_ORDER: [usize; 9] = [0, 1, 3, 4, 5, 2, 6, 7, 8];
 
 #[derive(Clone, Copy)]
@@ -117,8 +120,33 @@ impl State {
 impl Game {
     pub(crate) fn capture_match_enabled(&self) -> bool { self.capture_enabled && self.winner == 0 }
 
+    fn capture_checkpoint_allowed(&self) -> bool {
+        self.net && self.bench == 0 && (2..=4).contains(&self.humans)
+            && self.grouped_coop.is_none() && self.capitols.is_none()
+    }
+
+    pub(crate) fn configure_network_capture_checkpoint(&mut self) -> bool {
+        if !self.capture_checkpoint_allowed() || !self.capture_enabled || self.tick != 0
+            || self.net_resignation.is_none() || self.civ_setup_open || self.capture_checkpoint_mode != 0
+            || !self.outbox.is_empty() || !self.inbox.is_empty() { return false; }
+        self.capture_checkpoint_mode = 1 + u8::from(self.capture_animation_enabled);
+        true
+    }
+
+    pub(crate) fn capture_checkpoint_save_flags(&self) -> u32 {
+        u32::from(self.capture_checkpoint_mode) << CHECKPOINT_SAVE_SHIFT
+    }
+
+    pub(crate) fn read_capture_checkpoint_flags(&mut self, flags: u32) -> Option<()> {
+        let mode = (flags & CAPTURE_CHECKPOINT_SAVE_MASK) >> CHECKPOINT_SAVE_SHIFT;
+        if mode > 2 { return None; }
+        self.capture_checkpoint_mode = mode as u8;
+        Some(())
+    }
+
     pub(crate) fn configure_peer_capture(&mut self, enabled: bool) -> bool {
-        if !self.net || self.bench != 0 || self.tick != 0 || !self.capture.empty() || (!enabled && self.capitols.is_some()) { return false; }
+        if !self.net || self.bench != 0 || self.tick != 0 || !self.capture.empty()
+            || (!enabled && (self.capitols.is_some() || self.capture_checkpoint_mode != 0)) { return false; }
         self.capture_enabled = enabled;
         if !enabled { self.capture_animation_enabled = false; }
         true
@@ -126,7 +154,8 @@ impl Game {
 
     pub(crate) fn configure_peer_capture_animation(&mut self, enabled: bool) -> bool {
         if !self.net || self.bench != 0 || self.tick != 0 || !self.capture.empty()
-            || (enabled && !self.capture_enabled) || (!enabled && self.capitols.is_some()) { return false; }
+            || (enabled && !self.capture_enabled) || (!enabled && self.capitols.is_some())
+            || (self.capture_checkpoint_mode != 0 && enabled != self.capture_animation_enabled) { return false; }
         self.capture_animation_enabled = enabled;
         true
     }
@@ -635,7 +664,14 @@ impl Game {
         out
     }
 
-    pub(crate) fn restore_capture_save(&mut self, fields: Option<CaptureSave<'_>>) -> Option<()> {
+    pub(crate) fn restore_capture_save(&mut self, fields: Option<CaptureSave<'_>>, authenticated_network: bool) -> Option<()> {
+        if self.capture_checkpoint_mode != 0 {
+            let animation = self.capture_checkpoint_mode == 2;
+            if !authenticated_network || !self.capture_checkpoint_allowed()
+                || fields.as_ref().is_some_and(|save| save.visual != animation) { return None; }
+            self.capture_enabled = true;
+            self.capture_animation_enabled = animation;
+        }
         let Some(CaptureSave { fields, visual: with_visual, clock: with_clock }) = fields else {
             return self.ents[..self.high].iter().all(|actor| !actor.alive || actor.order != O_CAPTURE).then_some(());
         };
@@ -759,6 +795,41 @@ pub(crate) fn split_capture_save(bytes: &[u8]) -> Option<(&[u8], Option<CaptureS
 mod tests {
     use super::*;
     use crate::cmd::{C_CAPTURE, C_STOP};
+
+    #[test]
+    fn an_empty_roster_archive_restores_the_negotiated_capture_mode() {
+        for animation in [false, true] {
+            let mut game = Game::new(7, 0, 0, 2, 0);
+            assert!(game.configure_match_epoch_range(0xee81, 500, 2, 0, 14));
+            assert!(game.configure_network_resignation(1));
+            assert!(!game.configure_network_capture_checkpoint());
+            assert!(game.configure_peer_capture(true));
+            assert!(game.configure_peer_capture_animation(animation));
+            assert!(game.configure_network_capture_checkpoint());
+            assert!(!game.configure_peer_capture(false));
+            assert!(!game.configure_peer_capture_animation(!animation));
+            assert!(!game.configure_network_capitols(2, 0));
+            assert_eq!(game.tick_with_network_source_slot(30, 30, 1.5, true), 1);
+            assert!(game.capture.empty());
+            game.save_network_resume();
+            let loaded = Game::load_network_resume(&game.savebuf, 2, 1, game.tick, 30, 1.5).unwrap();
+            assert!(loaded.capture_enabled && loaded.capture.empty());
+            assert_eq!(loaded.capture_animation_enabled, animation);
+            assert_eq!(loaded.state_hash(), game.state_hash());
+            let bits = u32::from(game.capture_checkpoint_mode) << 25;
+            assert!(crate::crown_resume_matches(&loaded, bits | 1));
+            assert!(!crate::crown_resume_matches(&loaded, bits));
+            assert!(!crate::crown_resume_matches(&loaded, 1));
+
+            // A pre-negotiation room still uses the previous archive format and behavior.
+            game.capture_checkpoint_mode = 0;
+            game.save_network_resume();
+            let legacy = Game::load_network_resume(&game.savebuf, 2, 1, game.tick, 30, 1.5).unwrap();
+            assert!(!legacy.capture_enabled && !legacy.capture_animation_enabled);
+            assert!(crate::crown_resume_matches(&legacy, 1));
+            assert!(!crate::crown_resume_matches(&legacy, bits | 1));
+        }
+    }
 
     #[test]
     fn pyramid_rolls_once_per_eligible_neighbor_after_conversion() {

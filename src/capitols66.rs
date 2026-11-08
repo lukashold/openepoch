@@ -180,7 +180,8 @@ impl Game {
     pub(crate) fn configure_network_capitols_roster(&mut self, mode: u32, minutes: u32, sole: u32) -> bool {
         if !self.supports_network_capitols() || self.net_resignation.is_none() || self.civ_setup_open
             || !self.capture_enabled || !self.capture_animation_enabled || self.tick != 0
-            || self.crown_victory.is_some() || self.capitols.is_some() || !self.outbox.is_empty() || !self.inbox.is_empty() {
+            || self.crown_victory.is_some() || self.capitols.is_some() || self.capture_checkpoint_mode != 0
+            || !self.outbox.is_empty() || !self.inbox.is_empty() {
             return false;
         }
         let Some(rule) = self.new_capitols(mode, minutes, sole) else { return false; };

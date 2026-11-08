@@ -550,6 +550,54 @@ pub extern "C" fn render_naval_basis(handle: u32, render_yaw: f32) -> *const f32
     out.cast()
 }
 
+#[cfg(feature = "ee2-native13")]
+#[repr(C)]
+struct NavalWakeRow {
+    handle: u32,
+    moving: u32,
+    x: f32,
+    y: f32,
+    basis: [f32; 9],
+}
+
+#[cfg(feature = "ee2-native13")]
+const _: [(); 52] = [(); core::mem::size_of::<NavalWakeRow>()];
+#[cfg(feature = "ee2-native13")]
+static mut NAVAL_WAKE_ROWS: Vec<NavalWakeRow> = Vec::new();
+
+// A single presentation snapshot serves both cameras, including wake tags
+// just outside the current model pass. No command or simulation state changes.
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn render_naval_wakes(alpha: f32) -> u32 {
+    let rows = unsafe { &mut *addr_of_mut!(NAVAL_WAKE_ROWS) };
+    rows.clear();
+    let Some(game) = (unsafe { (&*addr_of_mut!(GAME)).as_ref() }) else { return 0; };
+    if !(0.0..=1.0).contains(&alpha) || game.powers.is_none() { return 0; }
+    let step = game.sim_step();
+    let epsilon = f32::from_bits(0x3586_37bd);
+    for (i, actor) in game.ents[..game.high].iter().enumerate() {
+        if !actor.alive || actor.def != 29 || actor.built < 1.0 || game.players[actor.team as usize].epoch >= 2 ||
+            !game.can_see(game.local, i) { continue; }
+        let Some((id, altitude)) = game.naval_surface_pose(i) else { continue; };
+        let yaw_delta = crate::game::angdiff(actor.rot, actor.prot);
+        let Some(basis) = naval_tilt73::naval_surface_basis(id, altitude, actor.prot + yaw_delta * alpha) else { continue; };
+        // 0085CC93–0085CD32 tests scalar motion and yaw rate. The portable
+        // ship stores horizontal velocity and the two committed headings.
+        let moving = actor.vx.hypot(actor.vy) >= epsilon || yaw_delta.abs() >= epsilon * step;
+        rows.push(NavalWakeRow { handle: game.h(i), moving: u32::from(moving),
+            x: actor.px + (actor.x - actor.px) * alpha, y: actor.py + (actor.y - actor.py) * alpha, basis });
+    }
+    rows.len() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn render_naval_wakes_ptr() -> *const u8 {
+    let rows = unsafe { &*addr_of_mut!(NAVAL_WAKE_ROWS) };
+    if rows.is_empty() { core::ptr::null() } else { rows.as_ptr().cast() }
+}
+
 #[no_mangle]
 pub extern "C" fn inst_ptr() -> *const f32 {
     g().inst.as_ptr()
@@ -898,9 +946,11 @@ pub extern "C" fn validate_grouped_resume(layout: u32, controller: u32, tick: u3
 #[cfg(feature = "ee2-native13")]
 fn crown_resume_matches(game: &Game, encoded: u32) -> bool {
     let rules = encoded & 255;
-    let victory = encoded >> 8;
-    (rules == 0 && victory == 0 || rules == game.crown_rules() + 1)
+    let victory = (encoded >> 8) & 0x1ffff;
+    let capture = encoded >> 25;
+    (rules == 0 && victory == 0 && capture == 0 || rules == game.crown_rules() + 1)
         && victory == (game.crown_victory_config() | game.network_capitol_config())
+        && capture == u32::from(game.capture_checkpoint_mode)
 }
 
 #[cfg(feature = "ee2-native13")]
@@ -1187,6 +1237,12 @@ pub extern "C" fn sel_center(axis: u32) -> f32 {
 #[no_mangle]
 pub extern "C" fn capture_configure_peer(enabled: u32) -> u32 {
     u32::from(enabled <= 1 && g().configure_peer_capture(enabled != 0))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_network_capture_checkpoint() -> u32 {
+    g().configure_network_capture_checkpoint() as u32
 }
 
 #[cfg(feature = "ee2-native13")]

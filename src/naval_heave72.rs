@@ -80,10 +80,11 @@ impl crate::game::Game {
     pub(crate) fn naval_surface_pose_at(&self, index: usize, elapsed: f32) -> Option<(u32, f32)> {
         let actor = &self.ents[index];
         // The hull keeps its NavalMove class after its training line retires.
-        // WarGalley, Destroyer, Battleship and FightingSail retain zero-depth
-        // surface NavalMove through their active source upgrades.
+        // These authored families retain zero-depth surface NavalMove through
+        // their active source upgrades. Aircraft carrier deck geometry has a
+        // separate saved capability because it also affects simulation.
         let carrier = actor.def == crate::carrier36_defs::CARRIER && self.carrier_surface_pose_enabled;
-        if !(matches!(actor.def, 29 | 32 | 33 | 35 | 58) || carrier) ||
+        if !(matches!(actor.def, 29..=33 | 35 | 42 | 58 | 82) || carrier) ||
             actor.hp <= 0.0 || !self.production_roster_enabled { return None; }
         let serial = self.powers.as_ref()?.actor(self.h(index))?.serial;
         let id = (u32::from(actor.team) + 1) << 27 | serial;

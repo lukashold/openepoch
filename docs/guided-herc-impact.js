@@ -49,12 +49,13 @@ const componentScale=f(1/255);
 
 // 006242B0 tests the original descriptor's radius-1 sphere against six
 // inward-facing camera planes. VP encodes the same portable clip volume.
-export function guidedImpactInside(vp,x,y,z){
+export function guidedImpactInside(vp,x,y,z,strict=false){
  if(!finite(vp,16)||![x,y,z].every(Number.isFinite))return false;
  for(let axis=0;axis<3;axis++)for(const sign of [1,-1]){
   const nx=vp[3]+sign*vp[axis],ny=vp[7]+sign*vp[4+axis],nz=vp[11]+sign*vp[8+axis];
   const offset=vp[15]+sign*vp[12+axis];
-  if(nx*x+ny*z+nz*y+offset < -Math.hypot(nx,ny,nz))return false;
+  const distance=nx*x+ny*z+nz*y+offset, boundary=-Math.hypot(nx,ny,nz);
+  if(distance<boundary||(strict&&distance===boundary))return false;
  }
  return true;
 }

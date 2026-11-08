@@ -132,6 +132,8 @@ impl Game {
         #[cfg(feature="ee2-native13")]
         let options = options | if self.carrier_surface_pose_enabled { crate::runway32::CARRIER_POSE_SAVE_FLAG } else { 0 };
         #[cfg(feature="ee2-native13")]
+        let options = options | self.capture_checkpoint_save_flags();
+        #[cfg(feature="ee2-native13")]
         let options = options | if self.solo_resigned { crate::cmd::SOLO_RESIGN_SAVE_FLAG } else { 0 };
         #[cfg(feature="ee2-native13")]
         let options = options | crate::initial_ceasefire::save_option(self.initial_ceasefire);
@@ -533,7 +535,7 @@ impl Game {
                 crate::game::trade30::SAVE_FLAG | crate::air31::SAVE_FLAG | crate::runway32::SAVE_FLAG |
                 crate::takeoff33::SAVE_FLAG | crate::landing34::SAVE_FLAG | crate::carrier36_defs::SAVE_FLAG |
                 crate::cmd::SOLO_RESIGN_SAVE_FLAG | crate::initial_ceasefire::SAVE_MASK |
-                crate::runway32::CARRIER_POSE_SAVE_FLAG;
+                crate::runway32::CARRIER_POSE_SAVE_FLAG | CAPTURE_CHECKPOINT_SAVE_MASK;
             let flags = v(0);
             if flags & !allowed != 0 || v(4) > 1 { return None; }
             g.cheats_enabled = flags & 1 != 0;
@@ -550,6 +552,7 @@ impl Game {
                 g.air_landing_enabled = flags & crate::landing34::SAVE_FLAG != 0;
                 g.air_carrier_enabled = flags & crate::carrier36_defs::SAVE_FLAG != 0;
                 g.carrier_surface_pose_enabled = flags & crate::runway32::CARRIER_POSE_SAVE_FLAG != 0;
+                g.read_capture_checkpoint_flags(flags)?;
                 g.solo_resigned = flags & crate::cmd::SOLO_RESIGN_SAVE_FLAG != 0;
                 g.initial_ceasefire = crate::initial_ceasefire::read_option(flags)?;
                 if g.air_runway_enabled && !g.air_missions_enabled { return None; }
@@ -916,7 +919,7 @@ impl Game {
         #[cfg(feature="ee2-native13")]
         g.restore_spy_extraction(extraction)?;
         #[cfg(feature="ee2-native13")]
-        g.restore_capture_save(capture)?;
+        g.restore_capture_save(capture, net_resignation.is_some())?;
         #[cfg(feature="ee2-native13")]
         if g.net && g.capitols.is_some() && !g.capture_animation_enabled { return None; }
         #[cfg(feature="ee2-native13")]

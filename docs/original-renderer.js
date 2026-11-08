@@ -20,6 +20,16 @@ const navalPoseModels=new Map([
   '8da0386f6c4a34b90cafcb317557ad076805c9030affc251997b25a03c96a6af',
   'dd512fc27fb5c5c24fdbd28497d4063bc60e17360252dfa443f23d06c7f08ce5',
  ])],
+ [30, new Set([
+  '4a8e7bcdb59dc760076cb2c852c632ba445b0e29836a3eebc1ca6391d289cca7',
+  'b2de264c62ec26853f74f70a1d6ffe0cfbaa8b531c9704d4e3195d21afa4cd6b',
+  'f3e65ebe1b544efbe0f6dff8ef73d1a86fd21affcc7756188d3c05c2e438b387',
+ ])],
+ [31, new Set([
+  '80ceeb714533858cc9690e980f6db5af362373f502a76d7ef6bc8a299efb9793',
+  '921c59457b2e50187837ec49f7a441d7ee9d3e18139cbfe9ac1b79c2d325b85c',
+  'acc3ba38a90ada0d385062f06910d347b5b46d3f107ef80d6b836486293610ab',
+ ])],
  [32, new Set([
   '68f5ffb2ba40047adf09c5fd1179440d16e104d13a971e663259847b1ff889fb',
   'e6c137a050e8b99c7e10f5c0cecaa2f615ed644ba632cd82fa2c55af127cb153',
@@ -33,10 +43,19 @@ const navalPoseModels=new Map([
   '32299c3438ca7aa2ebc8cb682bf1b1fc1b4e0c35db688f59e5fb5c08c4fa0ded',
   '8c010579b6a9551c3658940ab6db0df5588b1be9ab71be0292cf787797fc80f7',
  ])],
+ [42, new Set([
+  'd2143f183f4519503526aff8a09014131deaef5a562cbe341776ec69c9b5a01f',
+  '8decd53eeb60b67426096fe7ea990b52b013bcdc7d554c580d139da75a028809',
+ ])],
  [58, new Set([
   'f3c70a79746d5f01f8749ab63d72d64525290736a1c998f444247d10ed012a39',
   '5af9ace81bc7c2d174c90673f2ffcc998653cb8c688cd76c4e304482e81fe1eb',
   'abf0a61d4e22df75118ed2637fc44c5d02ecaa98fdcc489fb4951fac8b358d1b',
+ ])],
+ [82, new Set([
+  '447678200be81d99b999c47c4b87d3ac5597d92f8056644d58ce797a52445f17',
+  '99835e2be1f47173d5af27ba6eb26e0b4c06a47c9f774291a9d6fdc2ece9842d',
+  'e84287b5320e76ea54fb83a0f0dddb6ebaea46818daef0fd9736db7ebac09416',
  ])],
  [84, new Set([
   'a51621715027d57f06086861bd7670b8b1a151d5f988c0cf67e70c06fc6bfad6',
@@ -688,6 +707,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    const variant={sourceId:id,assetKind,scaleKey,epoch:entry.epoch??0,until:entry.until,regionalCivilizations:entry.regionalCivilizations,regionalFallback:entry.regionalFallback===true,sourceIdentity:entry.sourceIdentity,region:entry.region,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),nativeAttackClock:entry.nativeAttackClock===true,yOffset,originOffset:transform.originOffset,nativeScale:transform.native?transform.scale:null,yawOffset:entry.yawOffset??model.yawOffset??0,farUrl:entry.lodFarUrl,far:null,farRequested:false,pickBounds:resourceBounds(parts),rallyTag:rallyTag(model),nativeTakeoff:model.nativeTakeoff};
    variant.nativeCapture=model.nativeCapture;
    variant.navalBasis=transform.native&&navalBasisModel(model,id);
+   if(id===29&&variant.navalBasis&&model.source.sha256===options.boatWakeBodySha)result.boatWakeHull=true;
    variant.hercAttack=options.hercAttack?.acceptsModel(id,model)??false;
    variant.sourceVisual=sourceVisual(model,modelUrl);
    variant.sourceScale=transform.native?scaleBinding.sourceScale:null;
