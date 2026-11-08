@@ -111,11 +111,16 @@ impl Flight {
     }
 
     pub(crate) fn read(words: [u32; 8], now: f32) -> Option<Self> {
+        Self::read_with_speed(words, now, SPEED, false)
+    }
+
+    pub(crate) fn read_with_speed(words: [u32; 8], now: f32, maximum: f32, allow_zero_velocity: bool) -> Option<Self> {
         let [z, previous_z, x, y, vz, speed, target_z, started] = words.map(f32::from_bits);
         if ![z, previous_z, x, y, vz, speed, target_z, started].into_iter().all(f32::is_finite)
             || [z, previous_z, target_z].into_iter().any(|height| height.abs() > 128.0)
-            || !(0.0..=SPEED + 0.001).contains(&speed) || !(0.0..=now).contains(&started)
-            || (magnitude([x, y, vz]) - f64::from(speed)).abs() > 0.001 {
+            || !(0.0..=maximum + 0.001).contains(&speed) || !(0.0..=now).contains(&started)
+            || (!(allow_zero_velocity && [x, y, vz] == [0.0; 3]) &&
+                (magnitude([x, y, vz]) - f64::from(speed)).abs() > 0.001) {
             return None;
         }
         Some(Self { z, previous_z, velocity: [x, y, vz], speed, target_z, started })

@@ -315,6 +315,8 @@ pub struct Game {
     #[cfg(feature = "ee2-native13")]
     pub(crate) submarine_depth_enabled: bool,
     #[cfg(feature = "ee2-native13")]
+    pub(crate) torpedo84_enabled: bool,
+    #[cfg(feature = "ee2-native13")]
     pub(crate) trade: trade30::State,
     #[cfg(feature = "ee2-native13")]
     pub(crate) air_missions_enabled: bool,
@@ -562,6 +564,8 @@ impl Game {
             fishing_enabled: false,
             #[cfg(feature = "ee2-native13")]
             submarine_depth_enabled: false,
+            #[cfg(feature = "ee2-native13")]
+            torpedo84_enabled: false,
             #[cfg(feature = "ee2-native13")]
             trade: trade30::State::default(),
             #[cfg(feature = "ee2-native13")]
@@ -2271,6 +2275,8 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         if guided.is_some() { self.queue_herc_beam(_source_index, e, tj); }
         #[cfg(feature = "ee2-native13")]
+        let guided = guided.or_else(|| self.launch_native_torpedo(_source_index, e, &t, w.kind));
+        #[cfg(feature = "ee2-native13")]
         let [x, y] = guided.as_ref().map_or([e.x, e.y], |launch| launch.position);
         #[cfg(feature = "ee2-native13")]
         let [tx, ty, _] = guided.as_ref().map_or([t.x, t.y, 0.0], |launch| launch.aim);
@@ -2390,14 +2396,17 @@ impl Game {
             #[cfg(feature = "ee2-native13")]
             if let Some(flight) = p.guided {
                 use crate::rocket_herc::GuidedStep;
-                match self.advance_guided_herc_rocket(&mut p, flight, dt) {
+                let torpedo = p.kind == W_TORP;
+                let step = if torpedo { self.advance_native_torpedo(&mut p, flight, dt) }
+                    else { self.advance_guided_herc_rocket(&mut p, flight, dt) };
+                match step {
                     GuidedStep::Continue => {
                         self.projs[k] = p;
                         k += 1;
                         continue;
                     }
-                    GuidedStep::Impact(z) => self.emit_guided_herc_impact(p.x, p.y, z),
-                    GuidedStep::Discard => {}
+                    GuidedStep::Impact(z) if !torpedo => self.emit_guided_herc_impact(p.x, p.y, z),
+                    GuidedStep::Impact(_) | GuidedStep::Discard => {}
                 }
                 self.projs.swap_remove(k);
                 let origin = self.get(p.attack_source).filter(|&index| self.ents[index].team == p.team)
@@ -3118,6 +3127,10 @@ impl Game {
         }
         #[cfg(feature = "ee2-native13")]
         self.update_submarine_depth(&mut e, dt);
+        #[cfg(feature = "ee2-native13")]
+        if self.submarine_depth_enabled && crate::submarine82::is_submarine(e.def) {
+            self.observe_submarine_motion_audio(i, &e, speed, engaged);
+        }
         #[cfg(feature="ee2-pack8")] self.pack_finish_actor(i,&e,engaged||e.order!=O_IDLE,moving);
         #[cfg(feature = "ee2-native13")]
         if self.guided_herc_rocket && crate::herc_attack66::is_herc(e.def) &&

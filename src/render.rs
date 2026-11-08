@@ -174,6 +174,10 @@ impl Game {
             if let Some(flight) = p.guided {
                 let z = flight.previous_z + (flight.z - flight.previous_z) * alpha;
                 let yaw = flight.velocity[1].atan2(flight.velocity[0]);
+                if p.kind == W_TORP {
+                    put(&mut o, x, y, z, yaw, S_PROJ + f32::from(W_TORP), p.team as f32, 0.0, 0.0, 1.0);
+                    continue;
+                }
                 let pitch = flight.velocity[2].atan2(flight.velocity[0].hypot(flight.velocity[1]));
                 let first = o.len();
                 put(&mut o, x, y, z, yaw, crate::ids::GUIDED_HERC_RENDER as f32, p.team as f32, 0.0, 0.0, 1.0);

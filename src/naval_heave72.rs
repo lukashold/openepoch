@@ -24,12 +24,12 @@ pub(crate) fn add(left: f64, right: f64) -> f64 {
     trunc_rounding(value, error)
 }
 
-fn mul(left: f64, right: f64) -> f64 {
+pub(crate) fn mul(left: f64, right: f64) -> f64 {
     let value = left * right;
     trunc_rounding(value, left.mul_add(right, -value))
 }
 
-fn div(numerator: f64, denominator: f64) -> f64 {
+pub(crate) fn div(numerator: f64, denominator: f64) -> f64 {
     let value = numerator / denominator;
     trunc_rounding(value, (-value).mul_add(denominator, numerator))
 }

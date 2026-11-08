@@ -123,6 +123,8 @@ mod naval_heave72;
 #[cfg(feature = "ee2-native13")]
 mod submarine82;
 #[cfg(feature = "ee2-native13")]
+mod torpedo84;
+#[cfg(feature = "ee2-native13")]
 mod naval_tilt73;
 #[cfg(feature = "ee2-native13")]
 use game::fishing81;
@@ -2129,6 +2131,12 @@ pub extern "C" fn configure_carrier_surface_pose() -> u32 {
 #[no_mangle]
 pub extern "C" fn configure_submarine_depth() -> u32 {
     u32::from(g().configure_submarine_depth())
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_torpedo84() -> u32 {
+    u32::from(g().configure_torpedo84())
 }
 
 #[cfg(feature = "ee2-native13")]

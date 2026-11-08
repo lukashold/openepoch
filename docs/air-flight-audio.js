@@ -50,6 +50,17 @@ export function addCarrierFlightAudio(flight, carrier){
     row:(definition,epoch)=>flight.row(definition,epoch)??carrier.row(definition,epoch)};
 }
 
+export function submarineMoveAudio(enabled){
+  if(!enabled)return null;
+  const event='fx_move_sub_ping_low';
+  const sample={url:new URL('./local-original/submarine-audio/fx_move_sub_ping_low.mp3',import.meta.url),
+    sha256:'4756bbed5fe8de15ddbac59d1c26fcb3313d43f665866d56a69ea1bfeff7b251',
+    gain:.5,maxInstances:3,pitchVariation:0};
+  const row={states:{walk:{clipDuration:1,mode:0,keys:[{type:'PLAY_SOUND',event,time:.5}]}}};
+  return {events:new Map([[event,sample]]),row:(definition,epoch)=>
+    epoch<14&&(definition===36||definition===34&&epoch>=12)?row:null};
+}
+
 export function readAirFlightAudio(wasm,alpha){
   const sourceSeconds=sourceRenderSeconds(wasm,alpha);
   const count=wasm.air_audio_prepare(alpha)>>>0;

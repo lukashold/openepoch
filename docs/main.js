@@ -57,7 +57,7 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {NATIVE_SEASON_CHOICE,normalizeSeasonChoice,resolveSeasonChoice} from './original-seasons.js?v=native108';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=native108';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native79';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native80';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
@@ -96,7 +96,7 @@ import {createTradeWaitStatus,loadTradeWaitArt,selectedTradeWait} from './trade-
 import {airActions,airMissionActions,airMissionSelection,airMissionTrainingKey,createAirMissionOrder,decorateAirMissionButton,loadAirMissionArt,supportsAirMission} from './air-mission-order.js?v=native32';
 import {loadAirMissionFlag,loadCarrierGarrisonFlag,projectAirMissionFlags,readAirMissionVisualRoutes} from './air-mission-flag.js?v=native76-carrier';
 import {createTakeoffAudioClock,loadAirTakeoff,takeoffElapsed} from './air-takeoff.js?v=native40clock';
-import {addCarrierFlightAudio,loadAirFlightAudio,readAirFlightAudio} from './air-flight-audio.js?v=native40clock';
+import {addCarrierFlightAudio,loadAirFlightAudio,readAirFlightAudio,submarineMoveAudio} from './air-flight-audio.js?v=native110';
 import {loadFullmapCityNameCatalog,loadFullmapTerritoryNameCatalog} from './fullmap-territory-names.js?v=native22';
 import {createWarplanPeer,WARPLAN_PEER_VERSION} from './original-warplan-peer.js';
 import {activeValleyGeometry,initialValleyViews,pickValleyGround,valleyMinimapPoint,valleyMinimapSnapshot} from './authored-view.js';
@@ -172,7 +172,7 @@ const valleyRequested=rulesProfile.id==='up15'&&(!!valleyManifest||['1','archive
 try{
   if(valleyRequested){
     const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley75_commit','valley71_force_attack_at','valley71_neutral_opening']:rulesProfile.requiredExports;
-    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native79-valley'};
+    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native80-valley'};
     try{wasm=await loadRulesWasm(previewRules,import.meta.url);}catch{/* The ordinary ruleset remains available. */}
   }
   wasm??=await loadRulesWasm(rulesProfile,import.meta.url);
@@ -641,8 +641,9 @@ const hercAttack=originalEnabled&&Number.isInteger(heavyMounted3Id)&&
   ['guided_herc_attack_prepare','guided_herc_attack_ptr','guided_herc_attack_shot_at'].every(name=>typeof wasm[name]==='function')
   ?createGuidedHercAttack(wasm,heavyMounted3Id,{soundReady:sfx.airFlightEffectReady,
     play:(event,x,y,z)=>sfx.playAirFlightEffect(event,x,y,z,view)}):null;
-const airFlightAudio=addCarrierFlightAudio(
-  addCarrierFlightAudio(aircraftFlightAudio,wasm.air_audio_version?.()===1?carrierPresentation?.movementAudio:null),hercAttack?.audio);
+const airFlightAudio=addCarrierFlightAudio(addCarrierFlightAudio(
+  addCarrierFlightAudio(aircraftFlightAudio,wasm.air_audio_version?.()===1?carrierPresentation?.movementAudio:null),hercAttack?.audio),
+  submarineMoveAudio(originalEnabled&&wasm.air_audio_version?.()===1&&typeof wasm.configure_submarine_depth==='function'));
 const takeoffSample={tick:0,alpha:0,now:null};
 const takeoffStartTick=handle=>wasm.air_takeoff_start_tick(handle)>>>0;
 const takeoffStartSeconds=handle=>wasm.air_takeoff_start_seconds?.(handle)??-1;
@@ -1489,6 +1490,10 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
   }
   if(originalSkirmish&&typeof wasm.configure_submarine_depth==='function'&&!wasm.configure_submarine_depth()){
     toast('Die Tauchtiefe der U-Boote konnte nicht eingerichtet werden.');
+    return;
+  }
+  if(originalSkirmish&&typeof wasm.configure_torpedo84==='function'&&!wasm.configure_torpedo84()){
+    toast('Der Torpedoantrieb konnte nicht eingerichtet werden.');
     return;
   }
   if(!benchUnits&&humans===1&&priestEnabled&&typeof wasm.configure_dock_garrison==='function'
