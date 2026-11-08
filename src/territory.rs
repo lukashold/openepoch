@@ -6,7 +6,10 @@ use core::fmt::Write;
 pub const TERR_MAGIC: u32 = 0x3152_4554; // TER1
 pub const TERR_BYTES: usize = 8 + 32 * 4 + 16 * 12 + 4 + 12 * 16;
 pub const TERR_NONE: u8 = 255;
-pub const TERR_POLICY: &str = "Eigene Gebäude und Einheiten im Gebiet wechseln mitsamt Besatzung den Besitzer. Laufende Aufträge werden gestoppt und dem bisherigen Besitzer erstattet. Erforschte Technologien werden nicht übertragen.";
+#[cfg(not(feature = "ee2-reference"))]
+const TERR_POLICY: &str = "Eigene Gebäude und Einheiten im Gebiet wechseln mitsamt Besatzung den Besitzer. Laufende Aufträge werden gestoppt und dem bisherigen Besitzer erstattet. Erforschte Technologien werden nicht übertragen.";
+#[cfg(feature = "ee2-reference")]
+const TERR_POLICY: &str = "Übertragbare eigene Gebäude und Einheiten im Gebiet wechseln mitsamt Besatzung den Besitzer. Baustellen, Wunder und Kronenführer bleiben beim bisherigen Besitzer. Laufende Aufträge der übergebenen Gebäude werden erstattet. Erforschte Technologien verbleiben beim bisherigen Besitzer.";
 #[derive(Clone, Copy)]
 pub struct TerritoryOffer {
     pub active: bool,
@@ -289,18 +292,44 @@ impl Game {
                 })
     }
     pub fn territory_counts(&self, id: usize, owner: u8) -> [u32; 3] {
+        self.territory_count_sets(id, owner, false).0
+    }
+    fn territory_count_sets(&self, id: usize, owner: u8, visible_only: bool) -> ([u32; 3], [u32; 3]) {
         let mut counts = [0; 3];
-        for e in &self.ents[..self.high] {
-            if e.alive
-                && e.hp > 0.0
-                && e.team == owner
-                && self.map.terr[tile_of(e.x, e.y)] as usize == id
+        let mut tribute = [0; 3];
+        for (index, e) in self.ents[..self.high].iter().enumerate() {
+            if !e.alive || e.hp <= 0.0 || e.team != owner
+                || self.map.terr[tile_of(e.x, e.y)] as usize != id
+                || (visible_only && !self.visible(index))
             {
-                counts[if DEFS[e.def as usize].building { 0 } else { 1 }] += 1;
-                counts[2] += e.ncargo as u32;
+                continue;
+            }
+            let category = if DEFS[e.def as usize].building { 0 } else { 1 };
+            let crew = if visible_only { 0 } else { u32::from(e.ncargo) };
+            counts[category] += 1;
+            counts[2] += crew;
+            if self.territory_tribute_ready(index, id) {
+                tribute[category] += 1;
+                tribute[2] += crew;
             }
         }
-        counts
+        (counts, tribute)
+    }
+
+    fn territory_tribute_ready(&self, index: usize, territory: usize) -> bool {
+        let e = &self.ents[index];
+        // 0071DF15 invokes 0054FED0 before changing the object's owner.
+        // Imported pre-57 saves can retain a city foundation as the claim anchor.
+        if cfg!(feature = "ee2-reference") && DEFS[e.def as usize].building && e.built < 1.0
+            && self.territory.claims[territory] != self.h(index)
+        {
+            return false;
+        }
+        #[cfg(feature = "ee2-native13")]
+        if crate::wonders61::is_wonder(e.def) || crate::leader58_defs::branch(e.def).is_some() {
+            return false;
+        }
+        true
     }
     fn territory_offer_valid(&self, from: u8, to: u8, o: TerritoryOffer) -> bool {
         let index = from as usize * 4 + to as usize;
@@ -373,10 +402,11 @@ impl Game {
                 continue;
             }
             let territory = self.map.terr[tile_of(e.x, e.y)];
-            if e.team == from && territory == give {
-                objects.push((i, to));
-            } else if want != TERR_NONE && e.team == to && territory == want {
-                objects.push((i, from));
+            let new_team = if e.team == from && territory == give { to }
+                else if want != TERR_NONE && e.team == to && territory == want { from }
+                else { continue; };
+            if self.territory_tribute_ready(i, usize::from(territory)) {
+                objects.push((i, new_team));
             }
         }
         // Cancel and refund while each building still has its original owner.
@@ -555,8 +585,9 @@ impl Game {
     }
     fn territory_value(&self, owner: u8, id:u8) -> f32 {
         let mut value = 100.0;
-        for e in &self.ents[..self.high] {
+        for (index, e) in self.ents[..self.high].iter().enumerate() {
             if !e.alive || e.hp <= 0.0 || e.team != owner || self.map.terr[tile_of(e.x, e.y)] != id
+                || !self.territory_tribute_ready(index, usize::from(id))
             {
                 continue;
             }
@@ -659,21 +690,7 @@ impl Game {
             let owner = if seen { actual } else { TERR_NONE };
             let complete =
                 seen && (actual == self.local || disclosed[id] || self.display_visibility() == 2);
-            let mut counts = [0; 3];
-            if complete {
-                counts = self.territory_counts(id, actual);
-            } else if seen {
-                for (i, e) in self.ents[..self.high].iter().enumerate() {
-                    if e.alive
-                        && e.hp > 0.0
-                        && e.team == actual
-                        && self.map.terr[tile_of(e.x, e.y)] as usize == id
-                        && self.visible(i)
-                    {
-                        counts[if DEFS[e.def as usize].building { 0 } else { 1 }] += 1;
-                    }
-                }
-            }
+            let (counts, tribute) = if seen { self.territory_count_sets(id, actual, !complete) } else { ([0; 3], [0; 3]) };
             let transferable = seen
                 && actual != TERR_NONE
                 && self.territory_living(actual)
@@ -697,7 +714,7 @@ impl Game {
             let control=if seen {self.territory_control_counts(self.local,id)}else{[0;4]};
             let claim_status=if seen {self.territory_claim_status(self.local,id)}else{0};
             let adjacent=seen&&self.territory_adjacent_owned(self.local,id);
-            let _=write!(s,"{}{{\"id\":{},\"name\":\"Territorium {}\",\"owner\":{},\"x\":{:.2},\"y\":{:.2},\"known\":{},\"canGive\":{},\"transferable\":{},\"reason\":\"{}\",\"buildings\":{},\"units\":{},\"garrison\":{},\"countsComplete\":{},\"lastTerritory\":{},\"claimStatus\":{},\"adjacent\":{},\"townCenters\":{},\"fortresses\":{},\"eligibleTownCenters\":{},\"eligibleFortresses\":{}}}",if id>0{","}else{""},id,id+1,owner,x,y,seen,transferable&&actual==self.local,transferable,reason,counts[0],counts[1],counts[2],complete,seen&&actual!=TERR_NONE&&self.players.get(actual as usize).map_or(false,|p|p.terr<=1),claim_status,adjacent,control[0],control[1],control[2],control[3]);
+            let _=write!(s,"{}{{\"id\":{},\"name\":\"Territorium {}\",\"owner\":{},\"x\":{:.2},\"y\":{:.2},\"known\":{},\"canGive\":{},\"transferable\":{},\"reason\":\"{}\",\"buildings\":{},\"units\":{},\"garrison\":{},\"tributeBuildings\":{},\"tributeUnits\":{},\"tributeGarrison\":{},\"countsComplete\":{},\"lastTerritory\":{},\"claimStatus\":{},\"adjacent\":{},\"townCenters\":{},\"fortresses\":{},\"eligibleTownCenters\":{},\"eligibleFortresses\":{}}}",if id>0{","}else{""},id,id+1,owner,x,y,seen,transferable&&actual==self.local,transferable,reason,counts[0],counts[1],counts[2],tribute[0],tribute[1],tribute[2],complete,seen&&actual!=TERR_NONE&&self.players.get(actual as usize).map_or(false,|p|p.terr<=1),claim_status,adjacent,control[0],control[1],control[2],control[3]);
         }
         s.push(']');
     }
@@ -967,6 +984,50 @@ mod tests {
         let loaded = Game::load(&g.savebuf).unwrap();
         assert_eq!(g.state_hash(), loaded.state_hash());
         assert_eq!(loaded.towner[giver as usize], 1);
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    #[test]
+    fn tribute_leaves_foundations_wonders_and_leaders_with_their_owner() {
+        let mut game = Game::new(7, 1, 0, 1, 0);
+        game.players[1].ai = false;
+        assert!(game.configure_crowns(false));
+        assert!(game.configure_priest_skirmish());
+        assert!(game.configure_crown_leaders());
+        let a = region(&game, 0);
+        let b = region(&game, 1);
+        let [mut excluded, mut houses] = [Vec::new(), Vec::new()];
+        for (seat, region) in [(0, a), (1, b)] {
+            let city = game.ents[game.get(game.territory.claims[usize::from(region)]).unwrap()];
+            let site = game.spawn(HOUSE, seat, city.x + 4.0, city.y);
+            game.ents[site].built = 0.4;
+            let wonder = game.spawn_oriented(crate::wonders61::PARTHENON, seat, city.x - 6.0, city.y, 0.0);
+            let leader = game.spawn(crate::leader58_defs::FIRST, seat, city.x, city.y + 4.0);
+            let house = game.spawn(HOUSE, seat, city.x, city.y - 6.0);
+            for index in [site, wonder, leader, house] {
+                let e = game.ents[index];
+                assert_eq!(game.map.terr[tile_of(e.x, e.y)], region);
+            }
+            excluded.extend([site, wonder, leader].map(|index| (game.h(index), seat)));
+            houses.push((game.h(house), seat));
+        }
+        game.build_grid();
+        let (counts, tribute) = game.territory_count_sets(usize::from(a), 0, false);
+        assert_eq!(counts[0] - tribute[0], 2);
+        assert_eq!(counts[1] - tribute[1], 1);
+        peace(&mut game);
+        assert!(game.apply_territory(0, 1, 1, u32::from(a), u32::from(b)));
+        assert!(game.apply_territory(1, 0, 2, NONE, NONE));
+        assert_eq!((game.towner[usize::from(a)], game.towner[usize::from(b)]), (1, 0));
+        for (handle, old_owner) in excluded {
+            assert_eq!(game.ents[game.get(handle).unwrap()].team, old_owner);
+        }
+        for (handle, old_owner) in houses {
+            assert_eq!(game.ents[game.get(handle).unwrap()].team, 1 - old_owner);
+        }
+        game.save();
+        let restored = Game::load(&game.savebuf).expect("mixed-owner territories remain valid");
+        assert_eq!(restored.state_hash(), game.state_hash());
     }
     #[test]
     fn swap_requires_acceptance_is_atomic_and_keeps_alliance() {

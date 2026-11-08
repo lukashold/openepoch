@@ -62,7 +62,11 @@ export function territoryPanel({wasm,referenceMode=false,onOrder,onRefresh,onFoc
  const selectedWant=()=>want.value===''?null:area(+want.value);
  const title=id=>area(id)?.name||`Territorium ${id+1}`;
  const label=territory=>`${territory.name} · ${territory.countsComplete===false?'mind. ':''}${territory.buildings} Gebäude`;
- function renderReview(territory){reviewTitle.textContent=`${territory.name} an Spieler ${target+1} verschenken?`;reviewText.textContent=`${territory.buildings} Gebäude${territory.units!==undefined?`, ${territory.units} Einheiten`:''}${territory.garrison?` und ${territory.garrison} Insassen`:''}. ${data().territoryPolicy||'Die Übergabe ändert den Besitzer des Gebiets.'}`;reviewRisk.hidden=!territory.lastTerritory;reviewRisk.textContent='Dies ist dein letztes Territorium. Bestehende Bündnisse werden aufgehoben. Ohne eigene Gebäude verlierst du die Partie.';confirm.setAttribute('aria-describedby',`${reviewTitle.id} ${reviewText.id}${territory.lastTerritory?' '+reviewRisk.id:''}`);}
+ function tributeSummary(territory){
+  const buildings=territory.tributeBuildings??territory.buildings,units=territory.tributeUnits??territory.units,crew=territory.tributeGarrison??territory.garrison;
+  return `${buildings} Gebäude${units!==undefined?`, ${units} Einheiten`:''}${crew?`, ${crew} Insassen`:''}`;
+ }
+ function renderReview(territory){reviewTitle.textContent=`${territory.name} an Spieler ${target+1} verschenken?`;reviewText.textContent=`Mitgabe: ${tributeSummary(territory)}. ${data().territoryPolicy||'Die Übergabe ändert den Besitzer des Gebiets.'}`;reviewRisk.hidden=!territory.lastTerritory;reviewRisk.textContent='Dies ist dein letztes Territorium. Bestehende Bündnisse werden aufgehoben. Ohne eigene Gebäude verlierst du die Partie.';confirm.setAttribute('aria-describedby',`${reviewTitle.id} ${reviewText.id}${territory.lastTerritory?' '+reviewRisk.id:''}`);}
  function replaceOptions(select,list){const previous=select.value;select.replaceChildren();if(!list.length){select.append(new Option('Kein Territorium verfügbar',''));select.disabled=true;}else{select.disabled=false;select.append(...list.map(territory=>new Option(label(territory),String(territory.id))));if(list.some(territory=>String(territory.id)===previous))select.value=previous;}}
  function clearReview(){reviewed=null;review.hidden=true;}
  function command(action,giveId=NONE,wantId=NONE){
@@ -107,8 +111,8 @@ export function territoryPanel({wasm,referenceMode=false,onOrder,onRefresh,onFoc
   const hostile=p?.relation===0||p?.theirRelation===0;
   gift.disabled=!p?.alive||!a?.canGive;trade.disabled=!p?.alive||hostile||!a||!b||a.transferable===false||b.transferable===false||!!p.territoryOutgoing||p.territoryCooldown>0;accept.disabled=!p?.alive||hostile;
   giveFocus.disabled=!a;wantFocus.disabled=!b;
-  wantSummary.textContent=b?`${b.countsComplete===false?'Sichtbar':'Mitgabe'}: ${b.buildings} Gebäude${b.units!==undefined?`, ${b.units} Einheiten`:''}${b.garrison?`, ${b.garrison} Insassen`:''}.${b.countsComplete===false?' Weitere Objekte können noch unbekannt sein.':''}`:'';
-  counts.textContent=a?`${a.name}: ${a.buildings} eigene Gebäude${a.units!==undefined?` · ${a.units} Einheiten`:''}${a.garrison?` · ${a.garrison} stationiert`:''}`:'Du besitzt derzeit kein Territorium.';
+  wantSummary.textContent=b?`${b.countsComplete===false?'Sichtbare Mitgabe':'Mitgabe'}: ${tributeSummary(b)}.${b.countsComplete===false?' Weitere Objekte können noch unbekannt sein.':''}`:'';
+  counts.textContent=a?`${a.name} · Mitgabe: ${tributeSummary(a)}.`:'Du besitzt derzeit kein Territorium.';
   policy.textContent=d.territoryPolicy||'Die eigenen Gebäude im Gebiet gehören zur Übergabe.';
   reason.textContent=a?.reason||(hostile?'Für einen Tausch zuerst gegenseitigen Frieden schließen.':!b?'Kein bekanntes Gebiet dieses Spielers für einen Tausch. Erkunde seine Gebiete zuerst.':p?.territoryCooldown>0?`Neues Tauschangebot in ${Math.ceil(p.territoryCooldown)} Sek.`:'Beide Seiten stimmen einem Tausch zu, bevor sich der Besitzer ändert.');
   const risks=[];if(a?.lastTerritory)risks.push('Beim Verschenken deines letzten Gebiets enden Bündnisse; ohne eigene Gebäude verlierst du.');if(p?.alive&&(p.relation===0||p.theirRelation===0))risks.push('Ein Geschenk an diesen Feind ist sofort wirksam.');warning.hidden=!risks.length;warning.textContent=risks.join(' ');
