@@ -1,4 +1,4 @@
-import {createSeasonClock,normalizeSeasonSettings} from './original-seasons.js?v=clock38';
+import {createSeasonClock,normalizeSeasonSettings} from './original-seasons.js?v=native108';
 import {checkedClimate,CLIMATE_NAMES} from './skirmish-climates.js';
 
 // Saves made before the calendar existed displayed fixed summer. Preserve that

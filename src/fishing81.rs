@@ -161,11 +161,13 @@ impl Game {
     pub(crate) fn fishing_allowed(&self) -> bool {
         #[cfg(feature = "ee2-authored-valley37")]
         if self.map.source_world.is_some() { return false; }
-        !self.net && self.humans == 1 && self.bench == 0 && self.map.world_dimensions() == [N, N]
+        let seats = if self.net { (2..=4).contains(&self.humans) && self.grouped_coop.is_none() }
+            else { self.humans == 1 };
+        seats && self.bench == 0 && self.map.world_dimensions() == [N, N]
     }
 
-    pub(crate) fn configure_fishing(&mut self) -> bool {
-        if self.tick != 0 || self.fishing_enabled || !self.fishing_allowed() { return false; }
+    pub(crate) fn configure_fishing(&mut self, network: bool) -> bool {
+        if self.net != network || self.tick != 0 || self.fishing_enabled || !self.fishing_allowed() { return false; }
         place_fish(&mut self.map);
         self.fishing_enabled = true;
         true
@@ -174,12 +176,20 @@ impl Game {
     pub(super) fn order_fishing(&mut self, indices: &[usize], tile: usize) {
         if !self.fishing_enabled || self.map.res[tile] != R_FISH ||
             !indices.iter().any(|&index| self.ents[index].def == FISHING_SHIP) { return; }
-        let reachable = super::trade30::connected(&self.map.pass[1], tile);
+        let mut routes = Vec::new();
         let (x, y) = center(tile);
         let key = self.key_for(SEA, x, y);
         for &index in indices {
+            let actor = &self.ents[index];
+            if actor.def != FISHING_SHIP || !self.map.permits_territory(tile, self.denied_border_territories(actor)) { continue; }
+            let denied = self.border_egress_mask(actor);
+            let route = routes.iter().position(|(mask, _)| *mask == denied).unwrap_or_else(|| {
+                let pass = self.fishing_pass(denied);
+                routes.push((denied, super::trade30::connected(&pass, tile)));
+                routes.len() - 1
+            });
+            if !routes[route].1[tile_of(actor.x, actor.y)] { continue; }
             let e = &mut self.ents[index];
-            if e.def != FISHING_SHIP || !reachable[tile_of(e.x, e.y)] { continue; }
             let returning = e.carry >= CARRY_LIMIT || e.carry >= 1.0 && e.q[1] == 1;
             e.order = O_GATHER;
             e.otile = tile as u32;
@@ -194,6 +204,13 @@ impl Game {
         }
     }
 
+    fn fishing_pass(&self, denied: u32) -> std::borrow::Cow<'_, [bool]> {
+        let pass = self.map.pass[1].as_slice();
+        if denied == 0 { return pass.into(); }
+        pass.iter().enumerate().map(|(tile, &water)| water && self.map.permits_territory(tile, denied))
+            .collect::<Vec<_>>().into()
+    }
+
     fn fishing_port(&self, dock: usize, team: u8) -> Option<(f32, f32)> {
         let host = &self.ents[dock];
         if host.def != DOCK || !host.alive || host.hp <= 0.0 || host.team != team || host.built < 1.0 || self.sabotaged(dock) {
@@ -205,7 +222,8 @@ impl Game {
     fn nearest_fishing_port(&self, e: &Ent) -> Option<(u32, (f32, f32))> {
         let candidates: Vec<_> = (0..self.high).filter_map(|i| self.fishing_port(i, e.team).map(|p| (i, p))).collect();
         if candidates.is_empty() { return None; }
-        let distances = water_distances(&self.map.pass[1], tile_of(e.x, e.y), &candidates);
+        let pass = self.fishing_pass(self.border_egress_mask(e));
+        let distances = water_distances(&pass, tile_of(e.x, e.y), &candidates);
         candidates.into_iter().filter(|(_, p)| distances[tile_of(p.0, p.1)] != u32::MAX)
             .min_by_key(|(i, p)| (distances[tile_of(p.0, p.1)], *i))
             .map(|(i, p)| (self.h(i), p))
@@ -254,7 +272,7 @@ impl Game {
             self.return_fish(e, d, want, moving);
             return;
         }
-        if self.map.res[tile] != R_FISH {
+        if self.map.res[tile] != R_FISH || !self.map.permits_territory(tile, self.denied_border_territories(e)) {
             if e.carry >= 1.0 {
                 e.q[1] = 1;
             } else {

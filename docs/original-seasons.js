@@ -1,16 +1,35 @@
 // Render-only calendar. Tick rate comes from the deterministic simulation.
 // Native Calendar constructor006C8B60 uses a1200-second year and cycling on;
 // terrain headers require twelve uniformly interpolated monthly images.
-// Starting in summer is this application's choice, not a native saved preset.
+// Keep the legacy render defaults for callers without explicit match settings.
 export const MINUTES_PER_SEASON=Object.freeze([1,5,10,20,30]);
 export const MONTH_NAMES=Object.freeze(['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember']);
 export const DEFAULT_SEASON_SETTINGS=Object.freeze({cycle:true,startMonth:6,minutesPerSeason:5});
 const TICKS_PER_SECOND=20;
+const RANDOM_START_SEASON=-2;
+export const NATIVE_SEASON_CHOICE=Object.freeze({cycle:true,startMonth:RANDOM_START_SEASON,minutesPerSeason:10});
+// 00884D90 maps the four eFeSeason values to the first month of each season.
+const SEASON_START_MONTHS=Object.freeze([11,2,5,8]);
 
 export function normalizeSeasonSettings(options={}){
+ return normalizeSeason(options,false);
+}
+
+export function normalizeSeasonChoice(options={}){
+ return normalizeSeason(options,true);
+}
+
+export function resolveSeasonChoice(choice,word15){
+ const settings=normalizeSeasonChoice(choice);
+ if(settings.startMonth!==RANDOM_START_SEASON)return settings;
+ return Object.freeze({...settings,startMonth:SEASON_START_MONTHS[word15()&3]});
+}
+
+function normalizeSeason(options,allowRandom){
  const {cycle=DEFAULT_SEASON_SETTINGS.cycle,startMonth=DEFAULT_SEASON_SETTINGS.startMonth,minutesPerSeason=DEFAULT_SEASON_SETTINGS.minutesPerSeason}=options;
  if(typeof cycle!=='boolean')throw new TypeError('Season cycle must be boolean');
- if(!Number.isInteger(startMonth)||startMonth<0||startMonth>11)throw new RangeError('Start month must be an integer 0..11');
+ if(!(allowRandom&&startMonth===RANDOM_START_SEASON)&&(!Number.isInteger(startMonth)||startMonth<0||startMonth>11))
+  throw new RangeError('Start month must be an integer 0..11');
  if(!MINUTES_PER_SEASON.includes(minutesPerSeason))throw new RangeError('Unsupported minutes per season');
  return Object.freeze({cycle,startMonth,minutesPerSeason});
 }

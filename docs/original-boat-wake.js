@@ -7,13 +7,22 @@ const manifestSha256='0ea3fa84c35d5672245f3c1e90a7924ba81175726c4a77df61d0997553
 const highManifestSha256='74ae41c04153c1f58130a47a814370be059039210b30071418246871bec39945';
 const fleetIdleSha256='b520af0c97c380eee34e34c3c2b5785be9ac11af2e1f907fa665f6f0011d90b9';
 const fleetHullSha256='5fe90de51d9c0b0361a54b2ce3640d4365558045060eed2d80a4d0f2e622bb1d';
+const submarineHullSha256='dbcda6c425784487ab44f1148406f37543979bc34db30f4550f1b131ef455a76';
+const wakeWaterline=Math.fround(-.1); // 00B477BC
 const finite=(values,length)=>values?.length===length&&Array.prototype.every.call(values,Number.isFinite);
 
 export function readNavalWakeActors(wasm,alpha,fleet=false){
- const stride=fleet?64:52;
- const count=(fleet?wasm.render_naval_wake_fleet(alpha):wasm.render_naval_wakes(alpha))>>>0;
+ const result=fleet?readWakeRows(wasm,alpha,64,wasm.render_naval_wake_fleet,wasm.render_naval_wake_fleet_ptr)
+  :readWakeRows(wasm,alpha,52,wasm.render_naval_wakes,wasm.render_naval_wakes_ptr);
+ if(fleet&&wasm.render_naval_wake_submarines&&wasm.render_naval_wake_submarines_ptr)
+  result.push(...readWakeRows(wasm,alpha,68,wasm.render_naval_wake_submarines,wasm.render_naval_wake_submarines_ptr));
+ return result;
+}
+
+function readWakeRows(wasm,alpha,stride,render,pointer){
+ const count=render(alpha)>>>0;
  if(!count)return [];
- const ptr=(fleet?wasm.render_naval_wake_fleet_ptr():wasm.render_naval_wakes_ptr())>>>0, memory=wasm.memory.buffer;
+ const ptr=pointer()>>>0,memory=wasm.memory.buffer;
  if(!ptr||ptr%4||ptr+count*stride>memory.byteLength)return [];
  const rows=new DataView(memory,ptr,count*stride),result=[];
  for(let i=0;i<count;i++){
@@ -21,10 +30,14 @@ export function readNavalWakeActors(wasm,alpha,fleet=false){
   const basis=Array.from({length:9},(_,index)=>value(4+index));
   if(word(1)>1||!finite(basis,9)||!Number.isFinite(value(2))||!Number.isFinite(value(3)))continue;
   const actor={handle:word(0),moving:word(1)===1,x:value(2),y:value(3),basis};
-  if(fleet){
+  if(stride>=64){
    const def=word(13),team=word(14),epoch=word(15);
    if(team>=4||epoch>=15)continue;
    Object.assign(actor,{def,team,epoch});
+  }
+  if(stride===68){
+   actor.altitude=value(16);
+   if(!Number.isFinite(actor.altitude))continue;
   }
   result.push(actor);
  }
@@ -72,6 +85,13 @@ export function wakeTagXY(actor,{point},scale){
  return [store32(add(actor.x,store32(rx*scale))),store32(add(actor.y,store32(ry*scale)))];
 }
 
+export function wakeTagAltitude(actor,{point},scale){
+ const [,b,,,e,,,h]=actor.basis,[x,y,z]=point;
+ // Native Z row at 008E6974. The tag is stored before scaling and translation.
+ const rotated=store32(add(add(mul(e,z),mul(b,x)),mul(-h,y)));
+ return store32(add(actor.altitude,store32(mul(rotated,scale))));
+}
+
 export function createBoatWakeFrames({hull,descriptor,models},{seed=()=>Math.floor(Date.now()/1000)}={}){
  let session,random=0,owners=new Map(),waiting=[],ready=[],active=[];
  let detail=1;
@@ -112,7 +132,7 @@ export function createBoatWakeFrames({hull,descriptor,models},{seed=()=>Math.flo
   const current=new Set();
   for(const actor of actors){
    current.add(actor.handle);
-   const {descriptor:context,tags,scale,idleModel,movedTimer,idleTimer}=actor.wakeHull??legacy;
+   const {descriptor:context,tags,scale,idleModel,movedTimer,idleTimer,stopUnderWater}=actor.wakeHull??legacy;
    let owner=owners.get(actor.handle);
    if(!owner||owner.context!==context){
     owner={context,moving:false,counter:store32(word()*idleTimer*0.000030518509447574615)};
@@ -132,14 +152,17 @@ export function createBoatWakeFrames({hull,descriptor,models},{seed=()=>Math.flo
     (admissible(effect)?ready:waiting).push(effect);
    };
    if(owner.moving){
-    const points=tags.length?tags.map(tag=>wakeTagXY(actor,tag,scale)):[[actor.x,actor.y]];
-    for(const point of points){
+    const points=tags.length?tags.map(tag=>[...wakeTagXY(actor,tag,scale),stopUnderWater?wakeTagAltitude(actor,tag,scale):0])
+     :[[actor.x,actor.y,actor.altitude]];
+    for(const [x,y,z] of points){
+     // 006397FB / 00639913 gate after the timer resets. Existing wakes keep aging.
+     if(stopUnderWater&&!(z>=wakeWaterline))continue;
      // The source's tagged branch calls both models at 00639867/006398BB.
      // Only the tagless branch tests the high-detail L1 flag.
-     if(models.crest&&(tags.length||detail>=2))emit('crest',...point);
-     emit('moving',...point);
+     if(models.crest&&(tags.length||detail>=2))emit('crest',x,y);
+     emit('moving',x,y);
     }
-   }else emit('idle',actor.x,actor.y,idleModel);
+   }else if(!stopUnderWater||actor.altitude>=wakeWaterline)emit('idle',actor.x,actor.y,idleModel);
   }
   for(const handle of owners.keys())if(!current.has(handle))owners.delete(handle);
   Object.assign(stats,{owners:owners.size,waiting:waiting.length,ready:ready.length,moving:0,idle:0,crest:0});
@@ -239,6 +262,14 @@ export async function loadOriginalBoatWake(gl,{enabled,fleet=false,additionalHul
     if(!Object.hasOwn(profiles,digest)&&Object.hasOwn(data.models,row.idleModel))profiles[digest]=row;
    }
   }catch{/* Keep the early galley path for previously installed media. */}}
+  if(profiles){try{
+   const submarines=JSON.parse(new TextDecoder().decode(await read(new URL('submarine-hulls.json',manifestURL),submarineHullSha256)));
+   if(submarines.format!=='ee2-native-boat-wake-submarines-v1'||submarines.fleetHullSha256!==fleetHullSha256)
+    throw Error('Boat wake submarine profile differs');
+   for(const [digest,row] of Object.entries(submarines.profiles)){
+    if(!Object.hasOwn(profiles,digest)&&Object.hasOwn(data.models,row.idleModel))profiles[digest]=row;
+   }
+  }catch{/* Older private media keep their existing surface profiles. */}}
   const before=saveSceneGLState(gl);
   const cleanup=[];
   try{
