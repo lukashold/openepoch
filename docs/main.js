@@ -762,7 +762,7 @@ const unitPresentations=[tradePresentation,fighterBomberPresentation,carrierPres
 sfx.configureOriginalDefinitions({wasm,bindings:[...(originalModels.manifest?.models||[]),...(originalModels.additionalRegionalAudio||[]),...unitPresentations.flatMap(source=>source.audioModelRows)],additionalFamilyManifest:unitPresentations.map(source=>source.audioManifest),citizenPresentation,regionalMusic:rulesProfile.ruleset===2,...(rulesProfile.ruleset===2?{familyManifestURL:'native-families-civ8-regicide.json',playbackManifestURL:'manifest-stone-thrower-up.json'}:{})});
 const captureGlow = originalEnabled && typeof wasm.active_capture_glow === 'function'
   ? createCaptureGlow({kothDefinition:kothPresentation?kothDefinition:undefined}) : null;
-const originalGround=await loadOriginalGround(gl,originalEnabled,{assetMapping,captureGlow:!!captureGlow,blessGlow:!!blessGround,wonderPresentation,
+const originalGround=await loadOriginalGround(gl,originalEnabled,{assetMapping,climateProfiles,captureGlow:!!captureGlow,blessGlow:!!blessGround,wonderPresentation,
   extractionDecal:spyArt?.extractionVisuals.decal.url,mixedGlow:spyAdvancedArt?.mixedGlow,hotspotMarker:hotspotAvailable,...(rulesProfile.ruleset===2
   ?{manifestURL:'./local-original/regional-temple/ground-decals.json'}:{})});
 const originalTerrain=await loadOriginalTerrain(gl,originalEnabled,TEAM,{climateProfiles});
