@@ -57,7 +57,7 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {NATIVE_SEASON_CHOICE,normalizeSeasonChoice,resolveSeasonChoice} from './original-seasons.js?v=native108';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=native108';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=stone-pack125';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=late-pop129';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION as BASE_PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
@@ -185,8 +185,8 @@ const valleyNeutralRequested=valleyMode==='neutral-qa'||valleyNormal;
 const valleyRequested=rulesProfile.id==='up15'&&(!!valleyManifest||['1','archive-qa','neutral-qa'].includes(valleyMode));
 try{
   if(valleyRequested){
-    const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley75_commit','valley71_force_attack_at','valley71_neutral_opening']:rulesProfile.requiredExports;
-    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native82-valley'};
+    const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley75_commit','valley71_force_attack_at','valley71_neutral_opening','configure_late_population']:rulesProfile.requiredExports;
+    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=late-pop129-valley'};
     try{wasm=await loadRulesWasm(previewRules,import.meta.url);}catch{/* The ordinary ruleset remains available. */}
   }
   wasm??=await loadRulesWasm(rulesProfile,import.meta.url);
@@ -1426,6 +1426,11 @@ function resolvedSkirmishChoices(choices, players) {
   const range = resolveEpochRange(+$('start-epoch').value, +$('end-epoch').value, wasm.epoch_count(), sfx.presentationWord);
   return {civilizations, ...range};
 }
+function configureOriginalPopulation() {
+  if (wasm.configure_late_population?.() === 1) return true;
+  toast('Die Originalregel für die Bevölkerung konnte nicht aktiviert werden.');
+  return false;
+}
 function start(nAi, seed, benchUnits, humans = 1, local = 0) {
   const originalSkirmish=!benchUnits&&humans===1&&rulesProfile.id==='up15';
   const victoryMode=victoryCondition.value;
@@ -1464,6 +1469,7 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
     wasm.skirmish_setup(+$('pop-limit').value, +$('supplies').value);
     if(referenceMode)wasm.skirmish_epoch(+$('start-epoch').value);
   }
+  if (originalSkirmish && !configureOriginalPopulation()) return;
   seasonSession.configure(menuSeasonSettings(),climate);
   if(!benchUnits)wasm.skirmish_visibility(+$('map-visibility').value);
   if(originalSkirmish&&typeof wasm.configure_sight_terms==='function'&&wasm.configure_sight_terms()!==1){
@@ -1563,6 +1569,7 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
 
 function startValley(authored) {
   if(!valleyPreview?.start(+$('map-visibility').value,authored))return toast('Valley konnte nicht gestartet werden.');
+  if (valleyNormal && authored && !configureOriginalPopulation()) return;
   net=null;bench=0;restartPoint=null;
   seasonSession.configure({cycle:false,startMonth:6,minutesPerSeason:5},0);
   if(!wasm.ai9_game_research_setup_manual?.())toast('Originalforschung konnte für dieses Scharmützel nicht gestartet werden.');
@@ -2397,6 +2404,7 @@ function updateUi(drawn, now) {
     if(s.carrying>0)h+=`<br>${s.returning?'Bringt zurück':'Trägt'}: ${s.carrying.toFixed(1)} ${RESOURCE_NAMES[s.carriedResource-1]}`;
     if (s.types.length > 1) h += '<div class="types">' + s.types.map(t => `<span>${escapeLabelHtml(label(t[2],t[0],t[1]))} ×${t[1]}</span>`).join('') + '</div>';
     if (s.q.length) h += `<div class="q" id="queue"></div><div class="hp"><i style="width:${s.qp * 100}%;background:#4aa3ff"></i></div>`;
+    if (s.populationBlocked) h += '<div class="dim">Wartet auf freie Bevölkerungsplätze</div>';
     info.innerHTML = h;
     if (s.n === 1) {
       const context = selectedCitizenContext(wasm, ui);
@@ -2588,7 +2596,7 @@ function doAct(i, count=1) {
   let queued=0;
   while(queued<count&&(renderNamespace.wide?wasm.cmd_queue_job(a.id):wasm.cmd_train(a.id)))queued++;
   if (queued) sfx.play(20);
-  else { sfx.play(21); toast(a.ok ? 'Warteschlange voll' : a.k==='e' && referenceMode && ui.research.count<6 ? 'Zuerst sechs Technologien dieser Epoche erforschen' : a.tp && ui.research.points<a.tp ? 'Technologiepunkte fehlen – Bürger in Universitäten schicken' : a.k === 't' && ui.pop >= ui.cap ? 'Mehr Häuser bauen' : 'Rohstoffe fehlen'); }
+  else { sfx.play(21); toast(a.ok ? 'Warteschlange voll' : a.k==='e' && referenceMode && ui.research.count<6 ? 'Zuerst sechs Technologien dieser Epoche erforschen' : a.tp && ui.research.points<a.tp ? 'Technologiepunkte fehlen – Bürger in Universitäten schicken' : a.k === 't' && !ui.latePopulation && ui.pop >= ui.cap ? 'Mehr Häuser bauen' : 'Rohstoffe fehlen'); }
 }
 
 const mini = $('mini'), mctx = mini.getContext('2d');

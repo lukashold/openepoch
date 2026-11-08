@@ -304,6 +304,8 @@ pub struct Game {
     pub(crate) infantry_roster_enabled: bool,
     #[cfg(feature="ee2-native13")]
     pub(crate) production_roster_enabled: bool,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) late_population: bool,
     #[cfg(feature="ee2-native13")]
     pub(crate) heavy_mounted3: bool,
     #[cfg(feature = "ee2-native13")]
@@ -554,6 +556,8 @@ impl Game {
             infantry_roster_enabled: !net && bench == 0,
             #[cfg(feature="ee2-native13")]
             production_roster_enabled: !net && bench == 0,
+            #[cfg(feature = "ee2-native13")]
+            late_population: false,
             #[cfg(feature="ee2-native13")]
             heavy_mounted3: false,
             #[cfg(feature = "ee2-native13")]
@@ -1044,8 +1048,30 @@ impl Game {
             let k = (def - TECH0) as usize;
             k < TECHS.len() && TECHS[k].at == e.def && TECHS[k].epoch <= p.epoch && (p.tech | p.tech_busy) >> k & 1 == 0 && self.afford(e.team, &TECHS[k].cost)
         } else {
-            (def as usize) < DEFS.len() && self.unit_production_available(e.team, e.def, def as DefId) && self.afford(e.team, &self.unit_cost(e.team,def as DefId)) && p.pop + crate::economy::population(def as DefId,p.epoch) <= p.cap
+            (def as usize) < DEFS.len()
+                && self.unit_production_available(e.team, e.def, def as DefId)
+                && self.afford(e.team, &self.unit_cost(e.team, def as DefId))
+                && (!self.reserves_queue_population() || p.pop + crate::economy::population(def as DefId, p.epoch) <= p.cap)
         }
+    }
+
+    pub(crate) fn reserves_queue_population(&self) -> bool {
+        #[cfg(feature = "ee2-native13")]
+        { !self.late_population }
+        #[cfg(not(feature = "ee2-native13"))]
+        { true }
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn configure_late_population(&mut self) -> bool {
+        if self.late_population || self.net || self.bench != 0 || self.tick != 0
+            || !self.outbox.is_empty() || !self.inbox.is_empty() || !self.queue_prices.is_empty()
+        {
+            return false;
+        }
+        self.late_population = true;
+        self.recount_paid_players();
+        true
     }
 
     pub fn train(&mut self, b: usize, def:QueueItem) -> bool {
@@ -1560,6 +1586,8 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         if self.production_roster_enabled { mix(u32::from_le_bytes(*b"PRD1")); }
         #[cfg(feature = "ee2-native13")]
+        if self.late_population { mix(u32::from_le_bytes(*b"LPP1")); }
+        #[cfg(feature = "ee2-native13")]
         if self.heavy_mounted3 { mix(crate::heavy_mounted3_61::HASH_TAG); }
         #[cfg(feature = "ee2-native13")]
         self.factory_clocks.hash(&mut mix);
@@ -2013,6 +2041,7 @@ impl Game {
     pub fn build_grid(&mut self) {
         #[cfg(feature="ee2-reference")]
         self.sync_city_ground();
+        let reserves_queue_population = self.reserves_queue_population();
         let g = &mut self.grid;
         for c in g.start.iter_mut() {
             *c = 0;
@@ -2050,9 +2079,11 @@ impl Game {
                     #[cfg(feature = "ee2-native13")]
                     { cap[t] += crate::wonders61::population_bonus(e); }
                 }
-                for &q in &e.q[..e.qn as usize] {
-                    if (q as usize) < DEFS.len() {
-                        pop[t] += crate::economy::population(q as DefId,player.epoch);
+                if reserves_queue_population {
+                    for &q in &e.q[..e.qn as usize] {
+                        if (q as usize) < DEFS.len() {
+                            pop[t] += crate::economy::population(q as DefId,player.epoch);
+                        }
                     }
                 }
             }
@@ -2693,8 +2724,7 @@ impl Game {
                     }
                     #[cfg(not(feature="ee2-paidqueue7"))] {e.qt+=dt;}
                 }
-                // population was already reserved when queued; cap can still drop if houses die
-                if e.qt >= time && (self.players[team].pop <= self.players[team].cap || self.bench > 0) {
+                if e.qt >= time && self.production_has_population(team, item as DefId) {
                     let (sx, sy) = self.spawn_point(e, d, ud);
                     #[cfg(feature="ee2-citizen9")] let source_identity=if item==WORKER as QueueItem{Some(self.source_birth.production_identity())}else{None};
                     let u = self.spawn(item as DefId, e.team, sx, sy);
@@ -2802,6 +2832,16 @@ impl Game {
         self.map.pass[0][tile_of(point.0, point.1)].then_some(point)
     }
 
+    pub(crate) fn production_has_population(&self, team: usize, definition: DefId) -> bool {
+        let player = &self.players[team];
+        if self.reserves_queue_population() {
+            return player.pop <= player.cap || self.bench > 0;
+        }
+        // 007F4B95 checks the current unit type's slot count at completion.
+        let needed = crate::economy::population(definition, player.epoch);
+        needed == 0 || player.pop + needed <= player.cap
+    }
+
     fn update_ent(&mut self, i: usize) {
         let mut e = self.ents[i];
         #[cfg(feature = "ee2-native13")]
@@ -2838,7 +2878,11 @@ impl Game {
             } else {
                 self.update_building(i, &mut e, d);
             }
+            #[cfg(feature = "ee2-native13")]
+            let capacity_changed = self.late_population && self.ents[i].built < 1.0 && e.built >= 1.0;
             self.ents[i] = e;
+            #[cfg(feature = "ee2-native13")]
+            if capacity_changed { self.recount_paid_players(); }
             return;
         }
         #[cfg(feature = "ee2-native13")]
@@ -3290,6 +3334,7 @@ impl Game {
         if completed {
             if b.def == TC { self.name_completed_city(j, self.ents[j]); }
             self.wonder_notice(crate::wonders61::Notice::Completed, b.def, b.team);
+            if self.late_population { self.recount_paid_players(); }
         }
     }
 

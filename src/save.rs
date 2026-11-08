@@ -141,6 +141,8 @@ impl Game {
         let options = options | if self.fishing_enabled { crate::fishing81::SAVE_FLAG } else { 0 };
         #[cfg(feature="ee2-native13")]
         let options = options | if self.submarine_depth_enabled { crate::submarine82::SAVE_FLAG } else { 0 };
+        #[cfg(feature="ee2-native13")]
+        let options = options | if self.late_population { crate::paid_queue7::LATE_POPULATION_SAVE_FLAG } else { 0 };
         for v in [options, self.instant_build as u32, self.tech_points] {
             b.extend_from_slice(&v.to_le_bytes());
         }
@@ -549,7 +551,7 @@ impl Game {
                 crate::takeoff33::SAVE_FLAG | crate::landing34::SAVE_FLAG | crate::carrier36_defs::SAVE_FLAG |
                 crate::cmd::SOLO_RESIGN_SAVE_FLAG | crate::initial_ceasefire::SAVE_MASK |
                 crate::runway32::CARRIER_POSE_SAVE_FLAG | CAPTURE_CHECKPOINT_SAVE_MASK |
-                crate::fishing81::SAVE_FLAG | crate::submarine82::SAVE_FLAG;
+                crate::fishing81::SAVE_FLAG | crate::submarine82::SAVE_FLAG | crate::paid_queue7::LATE_POPULATION_SAVE_FLAG;
             let flags = v(0);
             if flags & !allowed != 0 || v(4) > 1 { return None; }
             g.cheats_enabled = flags & 1 != 0;
@@ -571,6 +573,8 @@ impl Game {
                 g.initial_ceasefire = crate::initial_ceasefire::read_option(flags)?;
                 g.fishing_enabled = flags & crate::fishing81::SAVE_FLAG != 0;
                 g.submarine_depth_enabled = flags & crate::submarine82::SAVE_FLAG != 0;
+                g.late_population = flags & crate::paid_queue7::LATE_POPULATION_SAVE_FLAG != 0;
+                if g.late_population && g.net { return None; }
                 if g.air_runway_enabled && !g.air_missions_enabled { return None; }
                 if g.air_takeoff_enabled && !g.air_runway_enabled { return None; }
                 if g.air_landing_enabled && !g.air_takeoff_enabled { return None; }

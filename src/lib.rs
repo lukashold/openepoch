@@ -1381,6 +1381,12 @@ pub extern "C" fn production_roster_configure_peer(enabled: u32) -> u32 {
 
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
+pub extern "C" fn configure_late_population() -> u32 {
+    u32::from(g().configure_late_population())
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
 pub extern "C" fn trade_route_configure_peer(enabled: u32) -> u32 {
     u32::from(enabled <= 1 && g().configure_peer_trade_route(enabled != 0))
 }

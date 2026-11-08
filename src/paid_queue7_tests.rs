@@ -14,6 +14,76 @@ fn game(epoch:u8)->(Game,usize,usize){
 }
 fn stock(g:&Game)->[f32;9]{core::array::from_fn(|r|g.resource(0,r))}
 
+#[cfg(feature = "ee2-native13")]
+#[test]
+fn late_population_keeps_two_paid_heads_blocked_then_admits_only_one() {
+    let mut game = Game::new(7, 1, 0, 1, 0);
+    for i in 0..game.high { game.kill(i); }
+    game.players[1].ai = false;
+    game.players[0].population_limit = 3;
+    game.players[0].res = [1000.0; 3];
+    game.extra_resources[0] = [1000.0; 6];
+    let town = game.spawn(TC, 0, 64.5, 64.5);
+    game.ents[town].built = 1.0;
+    let mut mills = [game.spawn(MILL, 0, 70.5, 64.5), game.spawn(MILL, 0, 76.5, 64.5)];
+    mills.sort_unstable();
+    let [first, second] = mills;
+    for mill in [first, second] { game.ents[mill].built = 1.0; }
+    let workers = [62.0, 64.0, 66.0].map(|x| game.spawn(WORKER, 0, x, 68.5));
+    game.build_grid();
+    assert_eq!((game.players[0].pop, game.players[0].cap), (3, 3));
+    assert!(!game.can_train(first, 22));
+    assert!(game.configure_late_population());
+    assert!(!game.configure_late_population());
+
+    let before = stock(&game);
+    for mill in [first, second] {
+        assert!(game.train(mill, 22));
+        let (duration, _) = game.begin_paid_job(mill);
+        game.ents[mill].qt = duration;
+    }
+    let paid = game.queue_payment(first, 0);
+    let charged = stock(&game);
+    for (slot, original) in before.into_iter().enumerate() {
+        assert_eq!(charged[slot], original - 2.0 * paid.price[paid_queue7::NATIVE_IDS[slot]]);
+    }
+    game.tick();
+    assert_eq!(game.players[0].pop, 3);
+    for mill in [first, second] {
+        assert_eq!(game.ents[mill].qn, 1);
+        assert_eq!(game.ents[mill].qt, paid.duration);
+    }
+    assert_eq!(stock(&game), charged);
+    game.save();
+    let blocked = game.savebuf.clone();
+    let mut resumed = Game::load(&blocked).unwrap();
+    assert!(resumed.late_population);
+    assert_eq!(resumed.state_hash(), game.state_hash());
+    resumed.save();
+    assert_eq!(resumed.savebuf, blocked);
+
+    let mut cancelled = Game::load(&blocked).unwrap();
+    assert!(cancelled.cancel_paid_job(first, 0));
+    assert_eq!(cancelled.ents[first].qt, 0.0);
+    assert_eq!(cancelled.ents[second].qt, paid.duration);
+    for (slot, balance) in charged.into_iter().enumerate() {
+        assert_eq!(cancelled.resource(0, slot), balance + paid.price[paid_queue7::NATIVE_IDS[slot]]);
+    }
+
+    for world in [&mut game, &mut resumed] {
+        for worker in workers { world.kill(worker); }
+        world.tick();
+        assert_eq!(world.players[0].pop, 3);
+        assert_eq!(world.ents[first].qn, 0);
+        assert_eq!(world.ents[second].qn, 1);
+        assert_eq!(world.ents[second].qt, paid.duration);
+        assert_eq!(stock(world), charged);
+        world.save();
+    }
+    assert_eq!(resumed.state_hash(), game.state_hash());
+    assert_eq!(resumed.savebuf, game.savebuf);
+}
+
 #[test]
 fn active_sail_keeps_paid_resource_mix_until_main_obsolete_cancel(){
     let(mut g,_,dock)=game(7);let before=stock(&g);assert!(g.train(dock,58));

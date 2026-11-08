@@ -11,6 +11,8 @@ const VERSION:u32=2;
 const META:u32=0x31533652;
 const META_END:u32=0x45533652;
 pub const NATIVE_IDS:[usize;9]=[0,1,5,2,3,4,6,7,8];
+#[cfg(feature = "ee2-native13")]
+pub(crate) const LATE_POPULATION_SAVE_FLAG: u32 = 1 << 21;
 
 ///006E8461..8482 with a binary53, nearest evaluation context: division is
 /// followed by double0.5, double103079215104, then __allshr16 on its bits.
@@ -59,6 +61,7 @@ impl Game {
     /// Financial commands can change reserved population between normal grid
     /// rebuilds. Recount only derived player fields, never the spatial grid.
     pub(crate) fn recount_paid_players(&mut self){
+        let reserves_queue_population = self.reserves_queue_population();
         let mut pop=[0_u32;4];let mut cap=[0_u32;4];let mut buildings=[0_u32;4];
         for e in &self.ents[..self.high]{
             #[cfg(feature = "ee2-native13")]
@@ -73,7 +76,11 @@ impl Game {
                     #[cfg(feature="ee2-native13")]
                     {cap[t]+=crate::wonders61::population_bonus(e);}
                 }
-                for &job in &e.q[..e.qn as usize]{if(job as usize)<DEFS.len(){pop[t]+=crate::economy::population(job as DefId,epoch);}}
+                if reserves_queue_population {
+                    for &job in &e.q[..e.qn as usize] {
+                        if (job as usize) < DEFS.len() { pop[t] += crate::economy::population(job as DefId, epoch); }
+                    }
+                }
             }
         }
         for t in 0..4{self.players[t].pop=pop[t];self.players[t].cap=cap[t].min(self.players[t].population_limit);self.players[t].buildings=buildings[t];}

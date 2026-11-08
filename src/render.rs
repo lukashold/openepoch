@@ -445,6 +445,8 @@ impl Game {
         );
         if observer { s.push_str("\"observer\":true,"); }
         #[cfg(feature = "ee2-native13")]
+        if self.late_population { s.push_str("\"latePopulation\":true,"); }
+        #[cfg(feature = "ee2-native13")]
         if let Some(rule) = self.territory_victory {
             let standing = self.territory_standing(rule.percent);
             let _ = write!(s, "\"territoryVictory\":{{\"percent\":{},\"owned\":{},\"total\":{},\"target\":{}}},",
@@ -527,6 +529,13 @@ impl Game {
                 let _ = write!(s, "{}[{},{},\"{}\"]", if k > 0 { "," } else { "" }, t.0, t.1, DEFS[t.0 as usize].name);
             }
             s.push(']');
+            #[cfg(feature = "ee2-native13")]
+            if self.late_population && e.team == me && d.building && e.qn > 0
+                && (e.q[0] as usize) < DEFS.len() && qt >= 1.0
+                && !self.production_has_population(e.team as usize, e.q[0] as DefId)
+            {
+                s.push_str(",\"populationBlocked\":true");
+            }
             #[cfg(feature = "ee2-native13")]
             let defended_house = self.defended_house(&e, d);
             #[cfg(feature = "ee2-native13")]
