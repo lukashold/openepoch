@@ -357,10 +357,13 @@ export function createOriginalAudio(options={}) {
     return playUnitReply(plan,scope,'citizen-reply');
   }
   function playSubmarineReply(def,action,epoch,scope) {
-    if(!scope||def!==36||(epoch!==12&&epoch!==13))return false;
+    if(!scope)return false;
+    const stagedEarly=scope.submarineStage===10&&def===34&&epoch===10;
+    if(!stagedEarly&&(def!==36||(epoch!==12&&epoch!==13)))return false;
     if(!['select','order','attack'].includes(action))return true;
-    const voice=manifest?.voices['36'];
-    const files=voice?.source_visual==='Submarine_13'?voice[action]:null;
+    const voice=manifest?.voices[String(def)];
+    const visual=stagedEarly?'Submarine_11':'Submarine_13';
+    const files=voice?.source_visual===visual?voice[action]:null;
     if(!files?.length)return false;
     const records=files.map(file=>({file,volume:manifest.assets?.[file.toLowerCase()]?.sound_records?.[0]?.volume}));
     if(records.some(record=>record.volume!==1))return false;
