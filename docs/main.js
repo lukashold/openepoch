@@ -47,7 +47,7 @@ import {advanceAdaptiveSourceFrame, advanceSourceSoloFrame, createAdaptiveSource
 import {mountOriginalGameOptions} from './original-game-options.js?v=native37';
 import {mountOriginalGameSettings} from './original-game-settings.js?v=native79-wake';
 import {createRenderActorMetadata} from './render-actor-metadata.js?v=pack8';
-import {createPackRenderMetadata} from './original-pack-states.js?v=pack8';
+import {createPackRenderMetadata} from './original-pack-states.js?v=pack-frame123';
 import {createFullmapPipBridge} from './original-fullmap-pip-bridge.js?v=native66';
 import {loadOriginalGround,sampleGroundHeight} from './original-ground.js?v=native67';
 import {createCaptureGlow} from './capture-glow.js?v=native64-koth';

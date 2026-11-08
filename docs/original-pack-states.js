@@ -11,10 +11,13 @@ export function createPackRenderMetadata(wasm){
   if(wasm.render_pack_count()!==count||bytes!==count*32||wasm.render_meta_session()!==session||wasm.render_meta_frame()!==frame)fail('stale or unaligned frame');
   const memory=wasm.memory.buffer;if(ptr%4||ptr>memory.byteLength||bytes>memory.byteLength-ptr||(count===0)!==(ptr===0))fail('invalid memory range');
   const v=new DataView(new Uint8Array(memory,ptr,bytes).slice().buffer),rows=Array(count).fill(null),byHandle=new Map(),actors=[];
+  // Pack rows describe the committed tick while actors may still render its earlier endpoint.
+  const committedTime=wasm.sim_render_seconds?.(1);
   for(let i=0;i<count;i++){
    const at=i*32,h=v.getUint32(at,true),actor=actorMetadata.forInstance(i);if(!actor){if(h!==0xffffffff)fail('nonactor has pack identity');continue;}if(h!==actor.handle)fail('actor handle mismatch');
    const flags=v.getUint32(at+4,true),phase=v.getUint32(at+8,true),visual=v.getUint32(at+12,true),start=v.getFloat32(at+16,true),duration=v.getFloat32(at+20,true),unknown=v.getUint32(at+24,true),capable=v.getUint32(at+28,true);
-   if(flags&~10||phase>2||visual>3||unknown>1||capable>1||!Number.isFinite(start)||start<0||!Number.isFinite(duration)||duration<0||start>actor.renderTime||(visual===1||visual===2?duration<=0:duration!==0))fail('invalid pack state');
+   const latestStart=Number.isFinite(committedTime)?Math.max(actor.renderTime,committedTime):actor.renderTime;
+   if(flags&~10||phase>2||visual>3||unknown>1||capable>1||!Number.isFinite(start)||start<0||!Number.isFinite(duration)||duration<0||start>latestStart||(visual===1||visual===2?duration<=0:duration!==0))fail('invalid pack state');
    const pack=Object.freeze({flags,phase,visual,start,duration,historyUnknown:!!unknown,capable:!!capable});
    const row=Object.freeze({...actor,pack});rows[i]=row;actors.push(row);byHandle.set(h,row);
   }
