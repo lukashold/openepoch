@@ -4,7 +4,9 @@ use super::{geometry::Geometry, VALLEY_SHA};
 use crate::{defs::{DefId, FARM}, game::Game, hotspot_start66::{quad_from_basis, raster_quad}};
 
 const MOUNTAIN: u8 = 3;
-const MIN_FOOTPRINT: f32 = f32::from_bits(0x3fb5_04f3) + f32::from_bits(0x3a83_126f);
+// 0053B03B scales Farm's 1.5 body size when the DDF omits a placement size.
+const FARM_FOOTPRINT: f32 = f32::from_bits(0x4007_c3b6);
+const PADDED_FOOTPRINT: f32 = (FARM_FOOTPRINT + f32::from_bits(0x3fb5_04f3)) + f32::from_bits(0x3a83_126f);
 
 fn mountain_sample(world: &Geometry, [x, y]: [i16; 2]) -> bool {
     let stride = world.width + 1;
@@ -25,9 +27,8 @@ impl Game {
         let (tx, ty, width, height) = bounds;
         let center = [tx as f32 + width as f32 * 0.5, ty as f32 + height as f32 * 0.5];
         let (sin, cos) = Self::angle_for_turn(turn).sin_cos();
-        // Use the footprint guaranteed by the two source padding terms. The
-        // ordinary world grid keeps its own anchor and occupancy dimensions.
-        quad_from_basis(center, [MIN_FOOTPRINT; 2], [cos, sin])
+        // The source raster uses the native footprint at the current anchor.
+        quad_from_basis(center, [PADDED_FOOTPRINT; 2], [cos, sin])
             .and_then(|quad| raster_quad(quad, world.width as u32, world.height as u32, true))
             .is_none_or(|raster| raster.corners.into_iter().any(|p| mountain_sample(world, p)))
     }
