@@ -48,7 +48,7 @@ import {mountOriginalGameOptions} from './original-game-options.js?v=native37';
 import {mountOriginalGameSettings} from './original-game-settings.js?v=native79-wake';
 import {createRenderActorMetadata} from './render-actor-metadata.js?v=pack8';
 import {createPackRenderMetadata} from './original-pack-states.js?v=pack-frame123';
-import {createNativePackSceneClock} from './original-pack-scene.js?v=pack-clock131';
+import {createNativePackSceneClock} from './original-pack-scene.js?v=pack-offscreen132';
 import {createFullmapPipBridge} from './original-fullmap-pip-bridge.js?v=native66';
 import {loadOriginalGround,sampleGroundHeight} from './original-ground.js?v=native67';
 import {createCaptureGlow} from './capture-glow.js?v=native64-koth';
@@ -187,7 +187,7 @@ const valleyRequested=rulesProfile.id==='up15'&&(!!valleyManifest||['1','archive
 try{
   if(valleyRequested){
     const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley75_commit','valley71_force_attack_at','valley71_neutral_opening','configure_late_population']:rulesProfile.requiredExports;
-    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=house134-valley'};
+    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=occupancy135-valley'};
     try{wasm=await loadRulesWasm(previewRules,import.meta.url);}catch{/* The ordinary ruleset remains available. */}
   }
   wasm??=await loadRulesWasm(rulesProfile,import.meta.url);
@@ -583,7 +583,7 @@ for (const pr of [terrain, water, models, quads]) {
 }
 const originalEnabled=referenceMode&&new URLSearchParams(location.search).get('assets')!=='procedural';
 const packScene=originalEnabled&&rulesProfile.ruleset===2&&typeof wasm.pack_visual_revision==='function'
-  ? createNativePackSceneClock(wasm.pack_visual_revision,wasm.entity_alive) : null;
+  ? createNativePackSceneClock(wasm.pack_visual_revision,wasm.entity_alive,()=>ui?.local) : null;
 const marketArt=await loadMarketArt(originalEnabled&&typeof wasm.market_quote==='function');
 const dockArt=await loadUngarrisonArt(originalEnabled&&typeof wasm.configure_dock_garrison==='function');
 const ambientPresentation=await loadOriginalAmbient({enabled:originalEnabled&&rulesProfile.id==='up15'});

@@ -826,6 +826,8 @@ impl Game {
         for i in 0..high {
             g.ents[i].fslot = u16::MAX; // flow-field cache starts empty
             if g.ents[i].alive && DEFS[g.ents[i].def as usize].building {
+                #[cfg(feature = "ee2-valley74-city-footprint")]
+                if g.valley_house_reserves_placement_only(&g.ents[i]) { continue; }
                 let(tx0,ty0,width,height)=Game::building_bounds(&g.ents[i]);
                 #[cfg(feature = "ee2-valley74-city-footprint")]
                 let mask = g.valley_start_city_mask(i);

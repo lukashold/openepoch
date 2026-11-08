@@ -24,6 +24,8 @@ impl Game {
     fn imperial_construction_fraction(&self, owner: u8, target: usize) -> Option<f32> {
         let site = &self.ents[target];
         if !site.alive || site.hp <= 0.0 || site.team != owner || !(0.0..1.0).contains(&site.built) { return None; }
+        #[cfg(feature = "ee2-valley74-city-footprint")]
+        if self.valley_house_reserves_placement_only(site) && !self.valley_house_footprint_clear(site) { return None; }
         advancement(self.players[owner as usize].epoch, site.def)
     }
 
@@ -57,6 +59,8 @@ impl Game {
         let maximum = self.max_hp(site.team, site.def);
         self.ents[target].built = new_progress;
         self.ents[target].hp = (site.hp + maximum * 0.9 * applied).min(maximum);
+        #[cfg(feature = "ee2-valley74-city-footprint")]
+        if self.valley_house_reserves_placement_only(&site) { self.block(target, true); }
         self.sync_city_ground_entry(target);
         if new_progress == 1.0 {
             if site.def == TC { self.name_completed_city(target, self.ents[target]); }

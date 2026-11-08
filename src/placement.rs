@@ -147,6 +147,8 @@ impl Game {
             return 1;
         }
         let center = (ty + height / 2) as usize * N + (tx + width / 2) as usize;
+        #[cfg(feature = "ee2-valley74-city-footprint")]
+        if self.valley_house_reservation_overlaps((tx, ty, width, height)) { return 1; }
         #[cfg(feature = "ee2-native13")]
         if !self.hotspot_allows_placement(team, def, [tx as f32 + width as f32 * 0.5, ty as f32 + height as f32 * 0.5]) {
             return 12;
@@ -394,6 +396,8 @@ impl Game {
             e.fslot = u16::MAX;
             e.stuck = 0;
         }
+        #[cfg(feature = "ee2-valley74-city-footprint")]
+        if self.valley_house_reserves_placement_only(&self.ents[bi]) { return bi; }
         // Own ground units caught by a new foundation step aside; construction
         // itself cannot progress until its builders have left the blocked footprint.
         let mut displaced = Vec::new();
@@ -438,7 +442,10 @@ impl Game {
             return NOIDX;
         }
         let site = Self::planned_building(def, tx, ty, turn);
-        let i = self.spawn_oriented(def, team, site.x, site.y, site.rot);
+        let initial_progress = 1.0;
+        #[cfg(feature = "ee2-valley74-city-footprint")]
+        let initial_progress = if self.uses_valley_house_movement(def) { 0.0 } else { initial_progress };
+        let i = self.spawn_oriented_with_progress(def, team, site.x, site.y, site.rot, initial_progress);
         if i != NOIDX {
             let health = self.max_hp(team, def) * 0.1;
             #[cfg(feature = "ee2-valley74-city-footprint")]

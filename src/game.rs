@@ -788,6 +788,9 @@ impl Game {
         self.spawn_oriented(def,team,x,y,0.0)
     }
     pub fn spawn_oriented(&mut self,def:DefId,team:u8,x:f32,y:f32,angle:f32)->usize {
+        self.spawn_oriented_with_progress(def, team, x, y, angle, 1.0)
+    }
+    pub(crate) fn spawn_oriented_with_progress(&mut self,def:DefId,team:u8,x:f32,y:f32,angle:f32,built:f32)->usize {
         let i = match self.free.pop() {
             Some(i) => i as usize,
             None => return NOIDX,
@@ -798,7 +801,7 @@ impl Game {
         #[cfg(feature="ee2-paidqueue7")] self.clear_queue_payments(i);
         let d = &DEFS[def as usize];
         let gen = self.ents[i].gen;
-        self.ents[i] = Ent { alive: true, def, team, gen, x, y, px: x, py: y, ox: x, oy: y, hp: self.max_hp(team,def), rot:angle,prot:angle,..E0 };
+        self.ents[i] = Ent { alive: true, def, team, gen, x, y, px: x, py: y, ox: x, oy: y, hp: self.max_hp(team,def), rot:angle,prot:angle,built,..E0 };
         #[cfg(feature = "ee2-native13")]
         if crate::wonders61::is_wonder(def) { self.wonder_sites.insert(i); }
         #[cfg(feature = "ee2-native13")]
@@ -824,6 +827,8 @@ impl Game {
 
     pub(crate) fn block(&mut self, i: usize, on: bool) {
         let e = &self.ents[i];
+        #[cfg(feature = "ee2-valley74-city-footprint")]
+        if self.valley_house_reserves_placement_only(e) { return; }
         let (tx0,ty0,width,height)=Self::building_bounds(e);
         #[cfg(feature = "ee2-valley74-city-footprint")]
         let mask = self.valley_start_city_mask(i);
@@ -2603,6 +2608,8 @@ impl Game {
 
     fn update_building(&mut self, i: usize, e: &mut Ent, d: &Def) {
         let instant = self.instant_build_for(e.team);
+        #[cfg(feature = "ee2-valley74-city-footprint")]
+        let instant = instant && (!self.valley_house_reserves_placement_only(e) || self.valley_house_footprint_clear(e));
         if e.built < 1.0 && instant {
             e.built = 1.0;
             e.hp = self.max_hp(e.team,e.def);
@@ -2884,7 +2891,11 @@ impl Game {
             }
             #[cfg(feature = "ee2-native13")]
             let capacity_changed = self.late_population && self.ents[i].built < 1.0 && e.built >= 1.0;
+            #[cfg(feature = "ee2-valley74-city-footprint")]
+            let house_started = e.built > 0.0 && self.valley_house_reserves_placement_only(&self.ents[i]);
             self.ents[i] = e;
+            #[cfg(feature = "ee2-valley74-city-footprint")]
+            if house_started { self.block(i, true); }
             #[cfg(feature = "ee2-native13")]
             if capacity_changed { self.recount_paid_players(); }
             return;
@@ -3330,6 +3341,10 @@ impl Game {
         let seconds = self.sim_step();
         #[cfg(feature = "ee2-valley74-city-footprint")]
         let native_house = self.uses_valley_house_construction(b.def);
+        #[cfg(feature = "ee2-valley74-city-footprint")]
+        let pending_house = self.valley_house_reserves_placement_only(&b);
+        #[cfg(feature = "ee2-valley74-city-footprint")]
+        if pending_house && !self.valley_house_footprint_clear(&b) { return; }
         let t = &mut self.ents[j];
         #[cfg(feature = "ee2-valley74-city-footprint")]
         if native_house { Self::advance_valley_house_health(t, maxhp, seconds, duration); }
@@ -3341,6 +3356,8 @@ impl Game {
             t.hp = (t.hp + maxhp * 0.9 * step).min(maxhp);
         }
         let completed = t.built >= 1.0;
+        #[cfg(feature = "ee2-valley74-city-footprint")]
+        if pending_house && t.built > 0.0 { self.block(j, true); }
         if completed && b.team == self.local { self.ev(14.0, b.x, b.y); }
         #[cfg(feature="ee2-reference")]
         self.sync_city_ground_entry(j);
