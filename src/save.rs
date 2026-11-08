@@ -896,7 +896,11 @@ impl Game {
             g.restore_hotspots(mode, outcome)?;
         }
         #[cfg(feature = "ee2-native13")]
-        if g.diplomacy.fixed_teams.is_some() && !g.supports_skirmish_teams() { return None; }
+        if g.diplomacy.fixed_teams.is_some()
+            && (!g.supports_starting_teams() || (g.net && !matches!(roster, Some(ArchiveRoster::Distinct { .. }))))
+        {
+            return None;
+        }
         #[cfg(feature="ee2-native13")]
         if let Some(payload) = military_leader_powers {
             g.military_leader_powers = Some(crate::game::military_leader59::State::read(&g, payload)?);

@@ -567,29 +567,52 @@ const _: [(); 52] = [(); core::mem::size_of::<NavalWakeRow>()];
 #[cfg(feature = "ee2-native13")]
 static mut NAVAL_WAKE_ROWS: Vec<NavalWakeRow> = Vec::new();
 
+#[cfg(feature = "ee2-native13")]
+#[repr(C)]
+struct NavalWakeFleetRow {
+    pose: NavalWakeRow,
+    definition: u32,
+    team: u32,
+    epoch: u32,
+}
+
+#[cfg(feature = "ee2-native13")]
+const _: [(); 64] = [(); core::mem::size_of::<NavalWakeFleetRow>()];
+#[cfg(feature = "ee2-native13")]
+static mut NAVAL_WAKE_FLEET_ROWS: Vec<NavalWakeFleetRow> = Vec::new();
+
 // A single presentation snapshot serves both cameras, including wake tags
 // just outside the current model pass. No command or simulation state changes.
 #[cfg(feature = "ee2-native13")]
-#[no_mangle]
-pub extern "C" fn render_naval_wakes(alpha: f32) -> u32 {
-    let rows = unsafe { &mut *addr_of_mut!(NAVAL_WAKE_ROWS) };
-    rows.clear();
-    let Some(game) = (unsafe { (&*addr_of_mut!(GAME)).as_ref() }) else { return 0; };
-    if !(0.0..=1.0).contains(&alpha) || game.powers.is_none() { return 0; }
+fn collect_naval_wakes(alpha: f32, fleet: bool, mut push: impl FnMut(NavalWakeRow, u32, u32, u32)) {
+    let Some(game) = (unsafe { (&*addr_of_mut!(GAME)).as_ref() }) else { return; };
+    if !(0.0..=1.0).contains(&alpha) || game.powers.is_none() { return; }
     let step = game.sim_step();
     let epsilon = f32::from_bits(0x3586_37bd);
     for (i, actor) in game.ents[..game.high].iter().enumerate() {
-        if !actor.alive || actor.def != 29 || actor.built < 1.0 || game.players[actor.team as usize].epoch >= 2 ||
-            !game.can_see(game.local, i) { continue; }
+        if !actor.alive || actor.built < 1.0 || (!fleet && actor.def != 29) { continue; }
+        let Some(player) = game.players.get(usize::from(actor.team)) else { continue; };
+        let epoch = player.epoch;
+        if !fleet && epoch >= 2 { continue; }
         let Some((id, altitude)) = game.naval_surface_pose(i) else { continue; };
+        if !game.can_see(game.local, i) { continue; }
         let yaw_delta = crate::game::angdiff(actor.rot, actor.prot);
         let Some(basis) = naval_tilt73::naval_surface_basis(id, altitude, actor.prot + yaw_delta * alpha) else { continue; };
         // 0085CC93–0085CD32 tests scalar motion and yaw rate. The portable
         // ship stores horizontal velocity and the two committed headings.
         let moving = actor.vx.hypot(actor.vy) >= epsilon || yaw_delta.abs() >= epsilon * step;
-        rows.push(NavalWakeRow { handle: game.h(i), moving: u32::from(moving),
-            x: actor.px + (actor.x - actor.px) * alpha, y: actor.py + (actor.y - actor.py) * alpha, basis });
+        let pose = NavalWakeRow { handle: game.h(i), moving: u32::from(moving),
+            x: actor.px + (actor.x - actor.px) * alpha, y: actor.py + (actor.y - actor.py) * alpha, basis };
+        push(pose, u32::from(actor.def), u32::from(actor.team), u32::from(epoch));
     }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn render_naval_wakes(alpha: f32) -> u32 {
+    let rows = unsafe { &mut *addr_of_mut!(NAVAL_WAKE_ROWS) };
+    rows.clear();
+    collect_naval_wakes(alpha, false, |pose, _, _, _| rows.push(pose));
     rows.len() as u32
 }
 
@@ -597,6 +620,24 @@ pub extern "C" fn render_naval_wakes(alpha: f32) -> u32 {
 #[no_mangle]
 pub extern "C" fn render_naval_wakes_ptr() -> *const u8 {
     let rows = unsafe { &*addr_of_mut!(NAVAL_WAKE_ROWS) };
+    if rows.is_empty() { core::ptr::null() } else { rows.as_ptr().cast() }
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn render_naval_wake_fleet(alpha: f32) -> u32 {
+    let rows = unsafe { &mut *addr_of_mut!(NAVAL_WAKE_FLEET_ROWS) };
+    rows.clear();
+    collect_naval_wakes(alpha, true, |pose, definition, team, epoch| {
+        rows.push(NavalWakeFleetRow { pose, definition, team, epoch });
+    });
+    rows.len() as u32
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn render_naval_wake_fleet_ptr() -> *const u8 {
+    let rows = unsafe { &mut *addr_of_mut!(NAVAL_WAKE_FLEET_ROWS) };
     if rows.is_empty() { core::ptr::null() } else { rows.as_ptr().cast() }
 }
 
@@ -870,21 +911,35 @@ pub extern "C" fn save_network_resume() -> *const u8 {
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
 pub extern "C" fn load_network_resume(humans: u32, local: u32, tick: u32, rate: u32, scale: f32, crown_rules: u32) -> u32 {
-    unsafe {
-        let Some(game) = Game::load_network_resume(&*addr_of_mut!(LOADBUF), humans, local, tick, rate, scale) else { return 0; };
-        if !crown_resume_matches(&game, crown_rules) { return 0; }
-        *addr_of_mut!(GAME) = Some(Box::new(game));
-    }
+    load_network_resume_with_teams(humans, local, tick, rate, scale, crown_rules, 0)
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn validate_network_resume(humans: u32, local: u32, tick: u32, rate: u32, scale: f32, crown_rules: u32) -> u32 {
+    validate_network_resume_with_teams(humans, local, tick, rate, scale, crown_rules, 0)
+}
+
+#[cfg(feature = "ee2-native13")]
+fn matching_network_resume(humans: u32, local: u32, tick: u32, rate: u32, scale: f32, crown_rules: u32, teams: u32) -> Option<Game> {
+    let bytes = unsafe { &*addr_of_mut!(LOADBUF) };
+    Game::load_network_resume(bytes, humans, local, tick, rate, scale)
+        .filter(|game| crown_resume_matches(game, crown_rules) && game.matches_checkpoint_teams(teams))
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn load_network_resume_with_teams(humans: u32, local: u32, tick: u32, rate: u32, scale: f32, crown_rules: u32, teams: u32) -> u32 {
+    let Some(game) = matching_network_resume(humans, local, tick, rate, scale, crown_rules, teams) else { return 0; };
+    unsafe { *addr_of_mut!(GAME) = Some(Box::new(game)); }
     render_meta7::reset_session();
     1
 }
 
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
-pub extern "C" fn validate_network_resume(humans: u32, local: u32, tick: u32, rate: u32, scale: f32, crown_rules: u32) -> u32 {
-    let bytes = unsafe { &*addr_of_mut!(LOADBUF) };
-    u32::from(Game::load_network_resume(bytes, humans, local, tick, rate, scale)
-        .is_some_and(|game| crown_resume_matches(&game, crown_rules)))
+pub extern "C" fn validate_network_resume_with_teams(humans: u32, local: u32, tick: u32, rate: u32, scale: f32, crown_rules: u32, teams: u32) -> u32 {
+    u32::from(matching_network_resume(humans, local, tick, rate, scale, crown_rules, teams).is_some())
 }
 
 #[cfg(feature = "ee2-native13")]
@@ -2719,6 +2774,11 @@ pub extern "C" fn skirmish_visibility(mode:u32)->u32 {let game=g();if mode>2||ga
 #[no_mangle]
 pub extern "C" fn configure_skirmish_teams(groups: u32, lock: u32) -> u32 {
     u32::from(lock <= 1 && g().configure_skirmish_teams(groups, lock == 1))
+}
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_network_starting_teams(groups: u32, lock: u32) -> u32 {
+    u32::from(lock <= 1 && g().configure_network_starting_teams(groups, lock == 1))
 }
 #[no_mangle]
 pub extern "C" fn cmd_diplomacy(target:u32,action:u32,resource:u32,amount:f32)->u32 {

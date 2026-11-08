@@ -17,12 +17,13 @@ import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,origina
 import {mountOriginalShellVideo} from './original-shell-video.js?v=native12';
 import {mountSkirmishMenu} from './skirmish-menu.js?v=native13';
 import {mountSkirmishTeams} from './skirmish-teams.js?v=native74-teams';
+import {checkStartingTeams, checkpointStartingTeams, mountNetworkTeamPicker, packStartingTeams} from './network-starting-teams.js?v=native75-teams';
 import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regional10';
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native66';
-import {loadOriginalModels} from './original-renderer.js?v=native78-wake';
-import {loadOriginalBoatWake,readNavalWakeActors} from './original-boat-wake.js?v=native79-wake';
+import {loadOriginalModels} from './original-renderer.js?v=native80-wake';
+import {loadOriginalBoatWake,readNavalWakeActors} from './original-boat-wake.js?v=native80-wake';
 import {loadKingOfTheHillPresentation} from './original-koth.js?v=native64-koth';
 import {loadWonderPresentation} from './original-wonders.js?v=native63';
 import {loadWonderScaffold} from './original-wonder-scaffold.js?v=native63';
@@ -56,13 +57,13 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {normalizeSeasonSettings} from './original-seasons.js';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=clock38';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native74';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native75';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
 import {createSourceRoundCarrier, selectedRoundTripMilliseconds} from './source-network-wire.js?v=native54';
-import {mountSourceRosterLobby,requiresCapitolRoster} from './source-network-lobby.js?v=network-capture-checkpoint1';
-import {applyNetworkCheckpoint} from './source-network-resume.js?v=native58';
+import {mountSourceRosterLobby,requiresCapitolRoster} from './source-network-lobby.js?v=native75-teams';
+import {applyNetworkCheckpoint} from './source-network-resume.js?v=native75-teams';
 import {createFullscreenController} from './fullscreen.js?v=building2';
 import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native67';
 import {bindCrownVictoryMenu,checkCrownVictorySettings,readCrownVictoryHud,CROWN_VICTORY_COUNT} from './crown-victory-ui.js?v=network-crowns1';
@@ -160,7 +161,7 @@ const valleyRequested=rulesProfile.id==='up15'&&(!!valleyManifest||['1','archive
 try{
   if(valleyRequested){
     const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley75_commit','valley71_force_attack_at','valley71_neutral_opening']:rulesProfile.requiredExports;
-    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native74-valley'};
+    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native75-valley'};
     try{wasm=await loadRulesWasm(previewRules,import.meta.url);}catch{/* The ordinary ruleset remains available. */}
   }
   wasm??=await loadRulesWasm(rulesProfile,import.meta.url);
@@ -704,7 +705,8 @@ const navalBasisForActor=typeof wasm.render_naval_basis==='function'?actor=>{
   return at?new Float32Array(wasm.memory.buffer,at,9).slice():null;
 }:null;
 const boatWake=await loadOriginalBoatWake(gl,{enabled:originalEnabled&&rulesProfile.ruleset===2&&
-  typeof wasm.render_naval_wakes==='function'&&typeof wasm.render_naval_wakes_ptr==='function'});
+  typeof wasm.render_naval_wakes==='function'&&typeof wasm.render_naval_wakes_ptr==='function',
+  fleet:typeof wasm.render_naval_wake_fleet==='function'&&typeof wasm.render_naval_wake_fleet_ptr==='function'});
 const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,total)=>{
   $('play').textContent=`Originalgrafiken laden · ${Math.round(loaded/total*100)} %`;
 },{assetMapping,climateProfiles,capturePoseForActor,tradePresentation,fighterBomberPresentation,carrierPresentation,priestPresentation,priestPoseForActor,spyPresentation,spyPoseForActor,leaderPresentation,wonderPresentation,wonderScaffold,wonderFence,diversionPresentation,heavyMounted3Presentation,kothPresentation,
@@ -722,6 +724,7 @@ const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,to
   packAnimations:rulesProfile.ruleset===2,dynamicSails:rulesProfile.ruleset===2&&typeof wasm.render_meta_version==='function',lightingSettings:{profile:rulesProfile.ruleset===1?'base':'native155'},...(rulesProfile.ruleset===2?{manifestURL:'./local-original/models/manifest-civ8.json',scaleManifestURL:'./local-original/model-scales-civ8.json',teamManifestURL:'./local-original/team-textures/manifest-civ8.json',regionalManifestURL:'./local-original/regional-stable/regional-models-native17.json',additionalRegionalManifestURL:'./local-original/king-regicide/manifest.json',productionRegionalManifestURL:'./local-original/production-visuals/manifest.json',stoneAttackElapsedForActor:actor=>wasm.render_stone_thrower_attack_elapsed(actor.handle,actor.renderTime),terrainFallbackManifestURL:'./local-original/regional-e15-seasons/terrain-fallback.json',houseLodManifestURL:'./local-original/regional-house-lod/manifest.json',houseLodProfile:{mode:'resource',modelDetail:2,rendererCap0x200:false},citizenManifestURL:'./local-original/citizens9/manifest.json',citizenNeutralFallback:'west',sourceIdentityForActor:actor=>wasm.actor_source_identity(actor.handle)>>>0}:{})});
 const carrierGarrisonFlag=airMissionAvailable&&originalModels.available.has(renderNamespace.unitRenderId(84))
   ?await loadCarrierGarrisonFlag(gl,{source:carrierPresentation?.garrisonFlag,navalBasisForActor:originalModels.carrierHullBasis}):null;
+const wakeEnabled=boatWake&&(boatWake.fleet?originalModels.hasBoatWakeSources:originalModels.boatWakeHull);
 const carrierOccupied=handle=>wasm.air_mission_status(handle,1)>0;
 const sourceSails=await loadSourceSailRuntime({wasm,namespace:renderNamespace,models:originalModels,enabled:originalEnabled&&rulesProfile.ruleset===2,decorateMetadata:metadata=>packMetadata?packMetadata.snapshot(metadata):metadata});
 if(sourceSails?.metrics.error)console.warn('Source sails:',sourceSails.metrics.error);
@@ -2005,10 +2008,17 @@ function frame(now) {
     : adaptiveSoloClock ? adaptiveSoloClock.remainder / sourceWallInterval(adaptiveSoloClock.rate)
     : acc / (sourceSoloClock ? SOURCE_SOLO_INTERVAL : TICK);
   const alpha = paused || (net && net.ls.waiting) ? 1 : Math.min(1, interpolation);
-  if(boatWake&&originalModels.boatWakeHull){
+  if(wakeEnabled){
+    const poses=readNavalWakeActors(wasm,alpha,boatWake.fleet);
+    const actors=boatWake.fleet?poses.flatMap(actor=>{
+      const source=originalModels.boatWakeSourceForActor(actor,wasm.player_civilization(actor.team));
+      const wakeHull=boatWake.hullForActor(actor,source);
+      return wakeHull?[{...actor,wakeHull}]:[];
+    }):poses;
     boatWake.advance({world:wasm.render_meta_session(),delta:paused||document.hidden||net?.ls.waiting?0:visualSeconds,
-      actors:readNavalWakeActors(wasm,alpha),views:[view.vp,fullmapPip.admissionProjection()],visible:guidedImpactVisible});
-    if(qaMode)canvas.dataset.boatWake=JSON.stringify(boatWake.stats);
+      actors,views:[view.vp,fullmapPip.admissionProjection()],visible:guidedImpactVisible});
+    if(qaMode)canvas.dataset.boatWake=JSON.stringify({...boatWake.stats,hulls:actors.map(({handle,wakeHull})=>
+      ({handle,visual:wakeHull?.visual,tags:wakeHull?.tags.length}))});
   }
   hercBeam?.advance(wasm.sim_elapsed_seconds(),wasm,alpha);
   if (!net && !bench && now - lastAuto > 180000) { lastAuto = now; saveGame(true); }
@@ -2580,7 +2590,7 @@ function cancelMapGesture(){activeTargetOrder()?.cancel();tradeRoute?.cancel();a
 const fullscreen=createFullscreenController({buttons:[$('fullscreen'),$('menu-fullscreen')],notify:toast,
   onChange(){keys.clear();cancelMapGesture();updateCamera();}});
 const wakeDetailSelect=$('native-settings-effects'),wakeDetailKey='openepoch-effect-detail';
-if(boatWake&&originalModels.boatWakeHull){
+if(wakeEnabled){
   wakeDetailSelect.disabled=false;
   for(const option of wakeDetailSelect.options)option.disabled=!boatWake.supportsDetail(Number(option.value));
   try{boatWake.setDetail(Number(localStorage.getItem(wakeDetailKey)??'1'));}catch{/* optional local setting storage */}
@@ -3382,6 +3392,9 @@ function checkRosterSettings(cfg,humanSeats,resuming=false) {
   const captureCheckpoint=cfg.captureCheckpoint===true;
   if(cfg.captureCheckpoint!==undefined&&(!captureCheckpoint||!supportsCaptureCheckpoint||!features.includes('capture')||
     sharedOwner||cfg.groupedOwners||capitolVictory))throw Error('Dieser Raum benötigt Unterstützung für Eroberungen nach dem Laden.');
+  const startingTeams=checkStartingTeams(cfg.startingTeams,worldHumans+cfg.ai);
+  if(startingTeams&&(!supportsNetworkTeams||sharedOwner||cfg.groupedOwners||crownVictory||capitolVictory))
+    throw Error('Startteams benötigen getrennte Spielerplätze in Eroberung.');
   checkedEpochRange(cfg.epoch,cfg.finalEpoch,wasm.epoch_count());
   return {humanSeats,ai:cfg.ai,seed:cfg.seed,visibility:cfg.visibility,popLimit:cfg.popLimit,supplies:cfg.supplies,
     resignationPolicy:cfg.resignationPolicy,ceasefire:cfg.ceasefire,epoch:cfg.epoch,finalEpoch:cfg.finalEpoch,
@@ -3392,6 +3405,7 @@ function checkRosterSettings(cfg,humanSeats,resuming=false) {
     ...(crownVictory?{crownVictory}:{}),
     ...(capitolVictory?{capitolVictory}:{}),
     ...(captureCheckpoint?{captureCheckpoint:true}:{}),
+    ...(startingTeams?{startingTeams}:{}),
     ...(sharedOwner?{sharedOwner:true}:cfg.groupedOwners?{groupedOwners:cfg.groupedOwners.slice(),
       ...(resuming?{groupedWorldHumans:worldHumans}:{})}:{})};
 }
@@ -3410,7 +3424,7 @@ function startRosterGame(cfg,seat,send,links,{archive,onCheckpoint}) {
   const sharedOwner=cfg.sharedOwner===true;
   const groupedOwners=cfg.groupedOwners??null;
   const worldHumans=sharedOwner?1:groupedOwners?Math.max(...groupedOwners)+1:cfg.humanSeats;
-  if(archive)applyNetworkCheckpoint(wasm,archive.decoded,seat,cfg.humanSeats,false,checkpointCrownRules(cfg));
+  if(archive)applyNetworkCheckpoint(wasm,archive.decoded,seat,cfg.humanSeats,false,checkpointCrownRules(cfg),checkpointStartingTeams(cfg.startingTeams));
   else{
     const {crownVictory,capitolVictory,...matchSettings}=cfg;
     if(sharedOwner){
@@ -3422,6 +3436,8 @@ function startRosterGame(cfg,seat,send,links,{archive,onCheckpoint}) {
     }else if(cfg.humanSeats===2)wasm.init(cfg.seed,cfg.ai,0,2,seat);
     else if(wasm.init_network_roster(cfg.seed,cfg.ai,cfg.humanSeats,seat)!==1)throw Error('Dieser Spielerplatz konnte nicht gestartet werden.');
     applyMatchSettings(wasm,matchSettings,worldHumans+cfg.ai);
+    if(cfg.startingTeams&&wasm.configure_network_starting_teams(packStartingTeams(cfg.startingTeams),Number(cfg.startingTeams.locked))!==1)
+      throw Error('Die Startteams konnten nicht eingerichtet werden.');
     wasm.skirmish_visibility(cfg.visibility);
     if((!sharedOwner&&!wasm.configure_network_resignation(cfg.resignationPolicy))||
       (cfg.ceasefire&&!wasm.configure_initial_ceasefire(cfg.ceasefire)))throw Error('Die Regeln für diesen Raum konnten nicht aktiviert werden.');
@@ -3479,6 +3495,8 @@ const supportsSourceRoster=supportsSourceNetworkClock&&civilizationSetup.enabled
   typeof wasm.init_network_roster==='function'&&typeof wasm.network_roster_peer_disconnected==='function';
 const supportsNetworkCheckpoint=supportsSourceRoster&&!!globalThis.crypto?.subtle&&
   ['save_network_resume','load_network_resume','validate_network_resume','network_resume_pending'].every(name=>typeof wasm[name]==='function');
+const supportsNetworkTeams=supportsNetworkCheckpoint&&
+  ['configure_network_starting_teams','load_network_resume_with_teams','validate_network_resume_with_teams'].every(name=>typeof wasm[name]==='function');
 const supportsSharedOwner=supportsSourceRoster&&typeof wasm.init_network_shared_owner==='function'&&typeof wasm.network_shared_owner==='function';
 const supportsSharedCheckpoint=supportsSharedOwner&&supportsNetworkCheckpoint&&
   ['save_shared_owner_resume','load_shared_owner_resume','validate_shared_owner_resume'].every(name=>typeof wasm[name]==='function');
@@ -3499,8 +3517,10 @@ $('mp-checkpoint-download').onclick=()=>{
 };
 $('mp-roster-resume-file').disabled=!supportsNetworkCheckpoint;
 $('mp-roster-count').querySelector('[value="2"]').hidden=!supportsNetworkCheckpoint;
+const networkTeamPicker=mountNetworkTeamPicker({document,anchor:$('mp-roster-start'),victory:victoryCondition,available:supportsNetworkTeams});
 const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
   rtcHost,rtcJoin,
+  onHostRoster:networkTeamPicker.configure,
   describeRoom:archive=>archive?{climate:archive.climate,epoch:archive.epoch,finalEpoch:archive.finalEpoch}:
     {climate:menuClimate(),epoch:+$('start-epoch').value,finalEpoch:+$('end-epoch').value},
   epochName:epoch=>epoch===-1?'Zufall':epoch>=0&&epoch<wasm.epoch_count()?
@@ -3511,6 +3531,7 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
     ...(supportsNetworkCapitols?{capitolVictory:true}:{}),
     ...(supportsNetworkCapitolRoster?{capitolRoster:true}:{}),
     ...(supportsCaptureCheckpoint?{captureCheckpoint:true}:{}),
+    ...(supportsNetworkTeams?{startingTeams:true}:{}),
     checkpoints:supportsNetworkCheckpoint,sharedOwner:supportsSharedOwner,sharedOwnerCheckpoint:supportsSharedCheckpoint,
     groupedCoop:supportsGroupedCoop,groupedCheckpoint:supportsGroupedCheckpoint}),
   checkHello(hello){
@@ -3522,6 +3543,7 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
       capitolVictory:hello.capitolVictory===true,
       capitolRoster:hello.capitolRoster===true,
       captureCheckpoint:hello.captureCheckpoint===true,
+      startingTeams:hello.startingTeams===true,
       checkpoints:hello.checkpoints===true,sharedOwner:hello.sharedOwner===true,
       sharedOwnerCheckpoint:hello.sharedOwner===true&&hello.sharedOwnerCheckpoint===true,groupedCoop:hello.groupedCoop===true,
       groupedCheckpoint:hello.groupedCoop===true&&hello.groupedCheckpoint===true};
@@ -3550,6 +3572,8 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
     const capitolVictory=capitol?{...capitol,sole:capitol.mode===5&&$('sk-sole-survivor').checked}:undefined;
     const captureCheckpoint=supportsCaptureCheckpoint&&!sharedOwner&&!groupedOwners&&!capitolVictory&&
       features.includes('capture')&&guests.every(guest=>guest.captureCheckpoint);
+    const startingTeams=networkTeamPicker.read();
+    if(startingTeams&&guests.some(guest=>!guest.startingTeams))throw Error('Alle Mitspieler benötigen eine Spielversion mit Startteams.');
     return {humanSeats,ai,seed:(seedOf()>>>0)||1,visibility:+$('map-visibility').value,
       popLimit:+$('pop-limit').value,supplies:+$('supplies').value,resignationPolicy:+$('mp-resign-policy').value,
       ceasefire:+$('initial-ceasefire').value,climate,seasons:menuSeasonSettings(),gameTempo:menuTempo(),
@@ -3557,6 +3581,7 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
       ...(crownVictory?{crownVictory}:{}),
       ...(capitolVictory?{capitolVictory}:{}),
       ...(captureCheckpoint?{captureCheckpoint:true}:{}),
+      ...(startingTeams?{startingTeams}:{}),
       ...resolvedSkirmishChoices(choices,worldHumans+ai),
       ...(sharedOwner?{sharedOwner:true}:groupedOwners?{groupedOwners}:{})};
   },
@@ -3564,7 +3589,7 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
   validateArchive:supportsNetworkCheckpoint?(archive,seat,seats)=>{
     if(archive.decoded.meta.groupedOwners&&!supportsGroupedCheckpoint)throw Error('Dieser Spielstand benötigt Unterstützung für Gruppen-Koop-Spielstände.');
     if(archive.decoded.meta.sharedOwner&&!supportsSharedCheckpoint)throw Error('Dieser Spielstand benötigt Koop-Spielstandunterstützung.');
-    applyNetworkCheckpoint(wasm,archive.decoded,seat,seats,true,checkpointCrownRules(archive.settings));
+    applyNetworkCheckpoint(wasm,archive.decoded,seat,seats,true,checkpointCrownRules(archive.settings),checkpointStartingTeams(archive.settings.startingTeams));
   }:null,
   sharedOwnerAvailable:supportsSharedOwner,
   sharedCheckpointAvailable:supportsSharedCheckpoint,

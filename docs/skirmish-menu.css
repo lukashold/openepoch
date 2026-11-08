@@ -43,6 +43,7 @@
 #sk-teams { margin: 8px 0; }
 #sk-teams .row { margin: 4px 0; }
 #sk-teams .row[hidden] { display: none; }
+#mp-roster-starting-teams .row[hidden] { display: none; }
 #sk-teams p { margin: 6px 0 2px; font-size: .9em; }
 #menu.skirmish-layout #skirmish-overview { display: none; }
 

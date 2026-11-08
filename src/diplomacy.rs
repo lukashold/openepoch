@@ -812,7 +812,6 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         {
             let (visibility, teams) = crate::fixed_teams::FixedTeams::read_visibility_word(visibility, self.nplayers)?;
-            if teams.is_some() && (self.net || self.humans != 1) { return None; }
             self.diplomacy.fixed_teams = teams;
             self.diplomacy.visibility = visibility;
         }

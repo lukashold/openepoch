@@ -655,12 +655,14 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
      sourceScale:transform.native?entry.nativeScaleBinding.sourceScale:null,
      nativeScale:transform.scale,originOffset:transform.originOffset,yOffset:0,farRequested:lod==='far',
      yawOffset:entry.yawOffset??model.yawOffset??0,rallyTag:rallyTag(model),nativeTakeoff:model.nativeTakeoff,
-     navalBasis:navalBasisModel(model,entry.id)};
+     navalBasis:navalBasisModel(model,entry.id),wakeSource:{sha256:model.source?.sha256,scale:entry.nativeScaleBinding.sourceScale}};
     productionStatus[lod]++;
    }).catch(error=>{productionStatus.errors.push(`${url}: ${error.message}`);});
   }
   return cache[lod].variant;
  };
+ const productionEntryFor=(sourceId,epoch,civ)=>productionRows.get(sourceId)?.find(row=>row.epoch<=epoch&&epoch<row.until&&
+   (row.regionalCivilizations.length===14||row.regionalCivilizations.includes(civ)));
  const scaffold=options.wonderScaffold;
  let scaffoldModules=null;
  if(scaffold){try{
@@ -707,6 +709,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    const variant={sourceId:id,assetKind,scaleKey,epoch:entry.epoch??0,until:entry.until,regionalCivilizations:entry.regionalCivilizations,regionalFallback:entry.regionalFallback===true,sourceIdentity:entry.sourceIdentity,region:entry.region,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),nativeAttackClock:entry.nativeAttackClock===true,yOffset,originOffset:transform.originOffset,nativeScale:transform.native?transform.scale:null,yawOffset:entry.yawOffset??model.yawOffset??0,farUrl:entry.lodFarUrl,far:null,farRequested:false,pickBounds:resourceBounds(parts),rallyTag:rallyTag(model),nativeTakeoff:model.nativeTakeoff};
    variant.nativeCapture=model.nativeCapture;
    variant.navalBasis=transform.native&&navalBasisModel(model,id);
+   if(variant.navalBasis)variant.wakeSource={sha256:model.source.sha256,scale:scaleBinding.sourceScale};
    if(id===29&&variant.navalBasis&&model.source.sha256===options.boatWakeBodySha)result.boatWakeHull=true;
    variant.hercAttack=options.hercAttack?.acceptsModel(id,model)??false;
    variant.sourceVisual=sourceVisual(model,modelUrl);
@@ -781,6 +784,21 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   }catch(error){result.errors.push(error.message);}
  }
  for(const list of result.models.values())list.sort((a,b)=>a.epoch-b.epoch);
+ const wakeVariants=new Map();
+ for(const definition of navalPoseModels.keys()){
+  const [binding]=sourceRenderBindings(assetMapping,0,definition);
+  if(binding&&result.models.has(binding.renderId))wakeVariants.set(definition,result.models.get(binding.renderId));
+ }
+ result.boatWakeSourceForActor=({def,epoch},civ)=>{
+  const variants=wakeVariants.get(def);
+  if(!variants)return null;
+  const fallback=selectRegionalModel(variants,epoch,civ);
+  if(!fallback)return null;
+  const entry=productionEntryFor(def,epoch,civ);
+  const variant=(entry&&productionVariant(entry,'near'))||fallback;
+  return variant.navalBasis&&nativeNavalYaw(variant)?variant.wakeSource:null;
+ };
+ result.hasBoatWakeSources=wakeVariants.size>0;
  for(const [renderId,variants] of result.models){
   if(variants.length===1&&variants[0].wonderScaffold)scaffoldBindings.set(renderId,variants[0].wonderScaffold);
  }
@@ -935,8 +953,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
      continue;
     }
     const civ=civilizations?.[team],regionalEntry=regionalCaptureRows?.get(`${sourceId}:${epoch}:${civ}`);
-    const productionEntry=variant.assetKind===0&&productionRows.get(sourceId)?.find(row=>row.epoch<=epoch&&epoch<row.until&&
-     (row.regionalCivilizations.length===14||row.regionalCivilizations.includes(civ)));
+    const productionEntry=variant.assetKind===0&&productionEntryFor(sourceId,epoch,civ);
     const matchingActorPose=!previewFlags&&actor?.def===sourceId
      &&actor.index===i&&actor.hpRatio>0&&actor.renderTime===time&&actor.renderX===data[i*12]&&actor.renderY===data[i*12+1]
      &&actor.renderAltitude===data[i*12+2]&&actor.renderYaw===data[i*12+3];

@@ -121,6 +121,7 @@ impl Game {
         let Some(objective) = Objective::parse(mode, target) else { return false; };
         if !self.supports_network_crown_victory() || self.net_resignation.is_none() || self.civ_setup_open
             || self.tick != 0 || self.crown_victory.is_some() || self.capitols.is_some()
+            || self.diplomacy.fixed_teams.is_some()
             || !self.outbox.is_empty() || !self.inbox.is_empty() {
             return false;
         }

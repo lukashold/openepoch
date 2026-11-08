@@ -181,6 +181,7 @@ impl Game {
         if !self.supports_network_capitols() || self.net_resignation.is_none() || self.civ_setup_open
             || !self.capture_enabled || !self.capture_animation_enabled || self.tick != 0
             || self.crown_victory.is_some() || self.capitols.is_some() || self.capture_checkpoint_mode != 0
+            || self.diplomacy.fixed_teams.is_some()
             || !self.outbox.is_empty() || !self.inbox.is_empty() {
             return false;
         }

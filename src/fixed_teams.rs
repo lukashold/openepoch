@@ -6,12 +6,34 @@ use crate::game::Game;
 const UNUSED_SEAT: u8 = 15;
 const MAX_GROUP: u8 = 10;
 const SAVE_TAG: u32 = 1 << 20;
+const CHECKPOINT_TAG: u32 = 1 << 16;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) struct FixedTeams([u8; 4]);
 
 impl FixedTeams {
     fn group(self, seat: usize) -> u8 { self.0[seat] }
+
+    fn assignments(packed: u32, players: usize, lock: bool) -> Option<Self> {
+        if packed > 0xffff { return None; }
+        // Values 1–11 encode original setup group IDs 0–10. Zero is unassigned.
+        let choices: [u8; 4] = core::array::from_fn(|seat| ((packed >> (seat * 4)) & 15) as u8);
+        if choices[..players].iter().any(|&choice| choice > MAX_GROUP + 1)
+            || choices[players..].iter().any(|&choice| choice != 0)
+        {
+            return None;
+        }
+        let mut groups = choices.map(|choice| choice.checked_sub(1).unwrap_or(UNUSED_SEAT));
+        if lock {
+            // 00546860 assigns each remaining seat to the first empty group.
+            for seat in 0..players {
+                if groups[seat] == UNUSED_SEAT {
+                    groups[seat] = (0..=MAX_GROUP).find(|group| !groups.contains(group))?;
+                }
+            }
+        }
+        Some(Self(groups))
+    }
 
     pub(crate) fn visibility_word(self, visibility: u8) -> u32 {
         self.0.iter().enumerate().fold(SAVE_TAG | u32::from(visibility), |word, (seat, &group)| {
@@ -38,44 +60,46 @@ impl FixedTeams {
 }
 
 impl Game {
-    pub(crate) fn supports_skirmish_teams(&self) -> bool {
-        !self.net && self.humans == 1 && self.bench == 0 && self.sole_rules().is_none()
+    pub(crate) fn supports_starting_teams(&self) -> bool {
+        (if self.net { self.humans >= 2 && self.grouped_coop.is_none() } else { self.humans == 1 })
+            && self.bench == 0 && self.sole_rules().is_none()
             && self.territory_victory.is_none() && self.regicide.is_none() && self.crown_victory.is_none()
             && self.koth.is_none() && self.capitols.is_none() && self.hotspots.is_none()
     }
 
     pub(crate) fn configure_skirmish_teams(&mut self, packed: u32, lock: bool) -> bool {
-        if self.tick != 0 || packed > 0xffff || !self.supports_skirmish_teams()
+        !self.net && self.configure_starting_teams(packed, lock)
+    }
+
+    pub(crate) fn configure_network_starting_teams(&mut self, packed: u32, lock: bool) -> bool {
+        self.net && self.configure_starting_teams(packed, lock)
+    }
+
+    pub(crate) fn matches_checkpoint_teams(&self, expected: u32) -> bool {
+        match self.diplomacy.fixed_teams {
+            None => expected == 0,
+            Some(actual) => expected >> 16 == 1
+                && FixedTeams::assignments(expected & (CHECKPOINT_TAG - 1), self.nplayers, true) == Some(actual),
+        }
+    }
+
+    fn configure_starting_teams(&mut self, packed: u32, lock: bool) -> bool {
+        if self.tick != 0 || !self.supports_starting_teams()
             || self.diplomacy.fixed_teams.is_some()
+            || self.diplomacy.offers.iter().any(|&offer| offer != 0)
             || (0..self.nplayers).any(|from| (from + 1..self.nplayers).any(|to| self.allied(from as u8, to as u8)))
         {
             return false;
         }
 
-        // Values 1–11 encode original setup group IDs 0–10. Zero is unassigned.
-        let choices: [u8; 4] = core::array::from_fn(|seat| ((packed >> (seat * 4)) & 15) as u8);
-        if choices[..self.nplayers].iter().any(|&choice| choice > MAX_GROUP + 1)
-            || choices[self.nplayers..].iter().any(|&choice| choice != 0)
-        {
-            return false;
-        }
-
-        let mut groups = choices.map(|choice| choice.checked_sub(1).unwrap_or(UNUSED_SEAT));
-        if lock {
-            // 00546860 assigns each remaining seat to the first empty group.
-            for seat in 0..self.nplayers {
-                if groups[seat] == UNUSED_SEAT {
-                    groups[seat] = (0..=MAX_GROUP).find(|group| !groups.contains(group)).unwrap();
-                }
-            }
-            self.diplomacy.fixed_teams = Some(FixedTeams(groups));
-        }
+        let Some(groups) = FixedTeams::assignments(packed, self.nplayers, lock) else { return false; };
+        self.diplomacy.fixed_teams = lock.then_some(groups);
 
         // 00546690 establishes each initial alliance before enabling its lock.
         // 005499FA writes Allied in both directions. Zero terms use full sight.
         for from in 0..self.nplayers {
             for to in from + 1..self.nplayers {
-                let allied = groups[from] != UNUSED_SEAT && groups[from] == groups[to];
+                let allied = groups.group(from) != UNUSED_SEAT && groups.group(from) == groups.group(to);
                 for index in [from * 4 + to, to * 4 + from] {
                     if allied {
                         self.diplomacy.relation[index] = ALLIED;
@@ -161,5 +185,32 @@ mod tests {
         assert!(FixedTeams::read_visibility_word(SAVE_TAG | 1, 3).is_none());
         assert!(FixedTeams::read_visibility_word(SAVE_TAG | 0x000f_0003, 3).is_none());
         assert!(FixedTeams::read_visibility_word(SAVE_TAG | 0x000f_0002, 3).is_some());
+    }
+
+    #[test]
+    fn distinct_network_seats_keep_fixed_teams_through_authenticated_resume() {
+        let mut peers = core::array::from_fn::<_, 3, _>(|seat| Game::new_network_roster(7, 1, 3, seat as u32).unwrap());
+        for game in &mut peers {
+            assert!(game.configure_match_epoch_range(0xe281, 500, 2, 0, 14));
+            assert!(game.configure_network_resignation(1));
+            assert!(!game.configure_skirmish_teams(0x44, true));
+            assert!(game.configure_network_starting_teams(0x44, true));
+            assert!(game.allied(0, 1) && game.hostile(0, 2) && game.hostile(0, 3));
+            assert!(!game.apply_diplomacy(1, 0, 2, 0, 0.0));
+            assert!(game.apply_diplomacy(1, 0, 5, 1, 10.0));
+            assert_eq!(game.tick_with_network_source_slot(30, 30, 1.5, true), 1);
+            game.save_network_resume();
+            assert!(!game.savebuf.is_empty());
+        }
+        let archive = &peers[0].savebuf;
+        for (seat, game) in peers.iter().enumerate() {
+            assert!(archive == &game.savebuf, "canonical archive differs by seat");
+            let loaded = Game::load_network_resume(archive, 3, seat as u32, 1, 30, 1.5).unwrap();
+            assert_eq!(loaded.state_hash(), game.state_hash());
+            assert!(loaded.matches_checkpoint_teams(CHECKPOINT_TAG | 0x44));
+            assert!(!loaded.matches_checkpoint_teams(CHECKPOINT_TAG | 0x42));
+            assert!(!loaded.matches_checkpoint_teams(0));
+        }
+        assert!(Game::load(archive).is_none());
     }
 }

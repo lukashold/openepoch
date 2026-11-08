@@ -5,22 +5,38 @@ import {saveSceneGLState,restoreSceneGLState} from './original-reflection.js';
 const manifestPath='./local-original/boat-wake/manifest.json';
 const manifestSha256='0ea3fa84c35d5672245f3c1e90a7924ba81175726c4a77df61d099755315ff30';
 const highManifestSha256='74ae41c04153c1f58130a47a814370be059039210b30071418246871bec39945';
-const stride=52;
+const fleetIdleSha256='b520af0c97c380eee34e34c3c2b5785be9ac11af2e1f907fa665f6f0011d90b9';
+const fleetHullSha256='5fe90de51d9c0b0361a54b2ce3640d4365558045060eed2d80a4d0f2e622bb1d';
 const finite=(values,length)=>values?.length===length&&Array.prototype.every.call(values,Number.isFinite);
 
-export function readNavalWakeActors(wasm,alpha){
- const count=wasm.render_naval_wakes(alpha)>>>0;
+export function readNavalWakeActors(wasm,alpha,fleet=false){
+ const stride=fleet?64:52;
+ const count=(fleet?wasm.render_naval_wake_fleet(alpha):wasm.render_naval_wakes(alpha))>>>0;
  if(!count)return [];
- const ptr=wasm.render_naval_wakes_ptr()>>>0, memory=wasm.memory.buffer;
+ const ptr=(fleet?wasm.render_naval_wake_fleet_ptr():wasm.render_naval_wakes_ptr())>>>0, memory=wasm.memory.buffer;
  if(!ptr||ptr%4||ptr+count*stride>memory.byteLength)return [];
  const rows=new DataView(memory,ptr,count*stride),result=[];
  for(let i=0;i<count;i++){
   const offset=i*stride,word=slot=>rows.getUint32(offset+slot*4,true),value=slot=>rows.getFloat32(offset+slot*4,true);
   const basis=Array.from({length:9},(_,index)=>value(4+index));
-  if(word(1)<=1&&finite(basis,9)&&Number.isFinite(value(2))&&Number.isFinite(value(3)))
-   result.push({handle:word(0),moving:word(1)===1,x:value(2),y:value(3),basis});
+  if(word(1)>1||!finite(basis,9)||!Number.isFinite(value(2))||!Number.isFinite(value(3)))continue;
+  const actor={handle:word(0),moving:word(1)===1,x:value(2),y:value(3),basis};
+  if(fleet){
+   const def=word(13),team=word(14),epoch=word(15);
+   if(team>=4||epoch>=15)continue;
+   Object.assign(actor,{def,team,epoch});
+  }
+  result.push(actor);
  }
  return result;
+}
+
+export function resolveWakeFleetHull(profiles,actor,source){
+ const {sha256,scale}=source??{};
+ const profile=profiles?.[sha256];
+ if(!profile||!profile.definitions.includes(actor.def)||actor.epoch<profile.from||actor.epoch>=profile.until||
+    !Number.isFinite(scale)||scale<=0)return null;
+ return {...profile,scale};
 }
 
 export function wakeTrack({method,keys},seconds){
@@ -58,15 +74,14 @@ export function wakeTagXY(actor,{point},scale){
 
 export function createBoatWakeFrames({hull,descriptor,models},{seed=()=>Math.floor(Date.now()/1000)}={}){
  let session,random=0,owners=new Map(),waiting=[],ready=[],active=[];
- let detail=1,interval;
+ let detail=1;
+ const legacy={...hull,descriptor:descriptor.name,idleModel:'idle',movedTimer:descriptor.movedTimer,idleTimer:descriptor.idleTimer};
  const detailFactors=[Math.fround(1.3),Math.fround(1.2),Math.fround(1.1),.8];
  const supportsDetail=value=>Number.isInteger(value)&&value>=0&&value<=(models.crest?3:1);
  function setDetail(value){
   detail=supportsDetail(value)?value:1;
-  interval=store32(mul(descriptor.movedTimer,detailFactors[detail]));
   return detail;
  }
- setDetail(detail);
  const stats={owners:0,waiting:0,ready:0,moving:0,idle:0,crest:0};
  function reset(next){
   session=next;random=seed()>>>0;owners.clear();waiting=[];ready=[];active=[];
@@ -83,7 +98,7 @@ export function createBoatWakeFrames({hull,descriptor,models},{seed=()=>Math.flo
   // only when the next visual update transfers that list into the active scene.
   active=active.concat(ready).filter(effect=>{
    effect.age=store32(add(effect.age,delta));
-   return effect.age<models[effect.kind].duration;
+   return effect.age<models[effect.model].duration;
   });
   ready=[];
   waiting=waiting.filter(effect=>{
@@ -97,33 +112,34 @@ export function createBoatWakeFrames({hull,descriptor,models},{seed=()=>Math.flo
   const current=new Set();
   for(const actor of actors){
    current.add(actor.handle);
+   const {descriptor:context,tags,scale,idleModel,movedTimer,idleTimer}=actor.wakeHull??legacy;
    let owner=owners.get(actor.handle);
-   if(!owner){
-    owner={moving:false,counter:store32(word()*descriptor.idleTimer*0.000030518509447574615)};
+   if(!owner||owner.context!==context){
+    owner={context,moving:false,counter:store32(word()*idleTimer*0.000030518509447574615)};
     owners.set(actor.handle,owner);
    }
    if(actor.moving!==owner.moving){
     owner.moving=actor.moving;
-    owner.counter=owner.moving?descriptor.movedTimer:0;
+    owner.counter=owner.moving?movedTimer:0;
    }
    owner.counter=store32(add(owner.counter,delta));
-   if(owner.counter<(owner.moving?interval:descriptor.idleTimer))continue;
+   if(owner.counter<(owner.moving?store32(mul(movedTimer,detailFactors[detail])):idleTimer))continue;
    owner.counter=0;
    if(detail===0)continue;
    const yaw=store32(Math.atan2(-actor.basis[6],actor.basis[0]));
-   const emit=(kind,x,y)=>{
-    const effect={kind,x,y,yaw,age:0};
+   const emit=(kind,x,y,model=kind)=>{
+    const effect={kind,model,x,y,yaw,age:0};
     (admissible(effect)?ready:waiting).push(effect);
    };
    if(owner.moving){
-    for(const tag of hull.tags){
-     const point=wakeTagXY(actor,tag,hull.scale);
+    const points=tags.length?tags.map(tag=>wakeTagXY(actor,tag,scale)):[[actor.x,actor.y]];
+    for(const point of points){
      // The source's tagged branch calls both models at 00639867/006398BB.
      // Only the tagless branch tests the high-detail L1 flag.
-     if(models.crest)emit('crest',...point);
+     if(models.crest&&(tags.length||detail>=2))emit('crest',...point);
      emit('moving',...point);
     }
-   }else emit('idle',actor.x,actor.y);
+   }else emit('idle',actor.x,actor.y,idleModel);
   }
   for(const handle of owners.keys())if(!current.has(handle))owners.delete(handle);
   Object.assign(stats,{owners:owners.size,waiting:waiting.length,ready:ready.length,moving:0,idle:0,crest:0});
@@ -179,7 +195,7 @@ function wakeVertices(model,effects,z){
  return new Float32Array(vertices);
 }
 
-export async function loadOriginalBoatWake(gl,{enabled,fetchFile=globalThis.fetch}={}){
+export async function loadOriginalBoatWake(gl,{enabled,fleet=false,fetchFile=globalThis.fetch}={}){
  if(!enabled)return null;
  const manifestURL=new URL(manifestPath,import.meta.url);
  async function read(url,sha256){
@@ -193,9 +209,11 @@ export async function loadOriginalBoatWake(gl,{enabled,fetchFile=globalThis.fetc
  try{
   const data=JSON.parse(new TextDecoder().decode(await read(manifestURL,manifestSha256)));
   if(data.format!=='ee2-native-boat-wake-v1'||data.detail!==1)return null;
+  const textureReads=new Map();
   const readModel=async (kind,model)=>{
    const {texture}=model;
-   const bytes=await read(new URL(texture.url,manifestURL),texture.sha256);
+   if(!textureReads.has(texture.sha256))textureReads.set(texture.sha256,read(new URL(texture.url,manifestURL),texture.sha256));
+   const bytes=await textureReads.get(texture.sha256);
    if(bytes.byteLength!==texture.bytes)throw Error('Boat wake pixel length differs');
    return [kind,model,bytes];
   };
@@ -206,15 +224,30 @@ export async function loadOriginalBoatWake(gl,{enabled,fetchFile=globalThis.fetc
    media.push(await readModel('crest',high.model));
    data.models.crest=high.model;
   }catch{/* Earlier private media can still provide the Medium profile. */}
+  let profiles=null;
+  if(fleet&&data.models.crest){try{
+   const [idle,hulls]=await Promise.all([
+    read(new URL('fleet-idle.json',manifestURL),fleetIdleSha256),
+    read(new URL('fleet-hulls.json',manifestURL),fleetHullSha256),
+   ]).then(packs=>packs.map(pack=>JSON.parse(new TextDecoder().decode(pack))));
+   if(idle.format!=='ee2-native-boat-wake-fleet-v1'||idle.baseSha256!==manifestSha256||idle.crestSha256!==highManifestSha256||
+      hulls.format!=='ee2-native-boat-wake-hulls-v1'||hulls.idleSha256!==fleetIdleSha256)throw Error('Boat wake fleet profile differs');
+   const added=await Promise.all(Object.entries(idle.models).map(([kind,model])=>readModel(kind,model)));
+   media.push(...added);Object.assign(data.models,idle.models);
+   profiles=hulls.profiles;
+  }catch{/* Keep the early galley path for previously installed media. */}}
   const before=saveSceneGLState(gl);
   const cleanup=[];
   try{
-   const program=makeProgram(gl),textures=new Map(),vao=gl.createVertexArray(),buffer=gl.createBuffer();
+   const program=makeProgram(gl),textures=new Map(),byDigest=new Map(),vao=gl.createVertexArray(),buffer=gl.createBuffer();
    cleanup.push(()=>gl.deleteProgram(program),()=>gl.deleteVertexArray(vao),()=>gl.deleteBuffer(buffer));
    const vp=gl.getUniformLocation(program,'uWakeVP'),sampler=gl.getUniformLocation(program,'uWakeTexture'),alphaTest=gl.getUniformLocation(program,'uWakeAlphaTest');
    gl.activeTexture(gl.TEXTURE0);
    for(const [kind,{texture},bytes] of media){
+    const existing=byDigest.get(texture.sha256);
+    if(existing){textures.set(kind,existing);continue;}
     const handle=gl.createTexture();textures.set(kind,handle);cleanup.push(()=>gl.deleteTexture(handle));
+    byDigest.set(texture.sha256,handle);
     gl.bindTexture(gl.TEXTURE_2D,handle);
     for(const [level,{w,h,offset}] of texture.mips.entries())
      gl.texImage2D(gl.TEXTURE_2D,level,gl.RGBA8,w,h,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array(bytes,offset,w*h*4));
@@ -227,7 +260,8 @@ export async function loadOriginalBoatWake(gl,{enabled,fetchFile=globalThis.fetc
     gl.enableVertexAttribArray(index);gl.vertexAttribPointer(index,size,gl.FLOAT,false,24,offset);
    }
    const frames=createBoatWakeFrames(data);
-   return Object.assign(frames,{bodySha256:data.hull.source.sha256,draw(projection,visible){
+   return Object.assign(frames,{bodySha256:data.hull.source.sha256,fleet:!!profiles,
+    hullForActor:(actor,source)=>resolveWakeFleetHull(profiles,actor,source),draw(projection,visible){
     const effects=frames.sample(visible);
     if(!effects.length)return;
     const state=saveSceneGLState(gl);
@@ -237,7 +271,7 @@ export async function loadOriginalBoatWake(gl,{enabled,fetchFile=globalThis.fetc
      gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.depthMask(false);gl.disable(gl.CULL_FACE);
      gl.enable(gl.BLEND);gl.blendEquation(gl.FUNC_ADD);gl.blendFunc(gl.SRC_ALPHA,gl.ONE);
      for(const [kind,model] of media){
-      const vertices=wakeVertices(model,effects.filter(effect=>effect.kind===kind),data.descriptor.z);
+      const vertices=wakeVertices(model,effects.filter(effect=>effect.model===kind),data.descriptor.z);
       if(!vertices.length)continue;
       gl.bindTexture(gl.TEXTURE_2D,textures.get(kind));gl.uniform1i(alphaTest,model.alphaTest?1:0);
       gl.bufferData(gl.ARRAY_BUFFER,vertices,gl.STREAM_DRAW);gl.drawArrays(gl.TRIANGLES,0,vertices.length/6);
