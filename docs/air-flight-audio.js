@@ -50,15 +50,26 @@ export function addCarrierFlightAudio(flight, carrier){
     row:(definition,epoch)=>flight.row(definition,epoch)??carrier.row(definition,epoch)};
 }
 
-export function submarineMoveAudio(enabled){
+export function submarineMoveAudio(enabled,attackEnabled=false){
   if(!enabled)return null;
-  const event='fx_move_sub_ping_low';
-  const sample={url:new URL('./local-original/submarine-audio/fx_move_sub_ping_low.mp3',import.meta.url),
+  const sonar='fx_move_sub_ping_low',launch='fx_battle_torp_launch';
+  const events=new Map([[sonar,{url:new URL('./local-original/submarine-audio/fx_move_sub_ping_low.mp3',import.meta.url),
     sha256:'4756bbed5fe8de15ddbac59d1c26fcb3313d43f665866d56a69ea1bfeff7b251',
-    gain:.5,maxInstances:3,pitchVariation:0};
-  const row={states:{walk:{clipDuration:1,mode:0,keys:[{type:'PLAY_SOUND',event,time:.5}]}}};
-  return {events:new Map([[event,sample]]),row:(definition,epoch)=>
-    epoch<14&&(definition===36||definition===34&&epoch>=12)?row:null};
+    gain:.5,maxInstances:3,pitchVariation:0}]]);
+  if(attackEnabled)events.set(launch,{url:new URL('./local-original/audio/fx_battle_torp_launch.mp3',import.meta.url),
+    sha256:'6a7576ffbb485361afb2061817b1fc9e5cae857c051698cc47cba340980c3568',
+    gain:.65,maxInstances:4,pitchVariation:.05,sampleRate:44100});
+  const walk={clipDuration:1,mode:0,keys:[{type:'PLAY_SOUND',event:sonar,time:.5}]};
+  const movement={states:{walk}};
+  const attack1={mode:0,keys:[{type:'PLAY_SOUND',event:launch,time:.5}]};
+  const attack={states:{attack1}};
+  const nuclear={states:{attack1,walk}};
+  return {events,row:(definition,epoch)=>{
+    const usesSonar=epoch<14&&(definition===36||definition===34&&epoch>=12);
+    if(!attackEnabled)return usesSonar?movement:null;
+    if(epoch<10||(definition!==34&&definition!==36&&definition!==45))return null;
+    return usesSonar?nuclear:attack;
+  }};
 }
 
 export function readAirFlightAudio(wasm,alpha){

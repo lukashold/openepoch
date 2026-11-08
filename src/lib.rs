@@ -861,6 +861,10 @@ pub extern "C" fn air_audio_version() -> u32 { 1 }
 
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
+pub extern "C" fn submarine_attack_audio_version() -> u32 { 1 }
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
 pub extern "C" fn air_audio_prepare(alpha: f32) -> u32 {
     let game = g();
     game.prepare_air_audio(alpha);

@@ -57,7 +57,7 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {NATIVE_SEASON_CHOICE,normalizeSeasonChoice,resolveSeasonChoice} from './original-seasons.js?v=native108';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=native108';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native82';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native87-launch';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
@@ -96,7 +96,7 @@ import {createTradeWaitStatus,loadTradeWaitArt,selectedTradeWait} from './trade-
 import {airActions,airMissionActions,airMissionSelection,airMissionTrainingKey,createAirMissionOrder,decorateAirMissionButton,loadAirMissionArt,supportsAirMission} from './air-mission-order.js?v=native32';
 import {loadAirMissionFlag,loadCarrierGarrisonFlag,projectAirMissionFlags,readAirMissionVisualRoutes} from './air-mission-flag.js?v=native76-carrier';
 import {createTakeoffAudioClock,loadAirTakeoff,takeoffElapsed} from './air-takeoff.js?v=native40clock';
-import {addCarrierFlightAudio,loadAirFlightAudio,readAirFlightAudio,submarineMoveAudio} from './air-flight-audio.js?v=native110';
+import {addCarrierFlightAudio,loadAirFlightAudio,readAirFlightAudio,submarineMoveAudio} from './air-flight-audio.js?v=submarine-launch122';
 import {loadFullmapCityNameCatalog,loadFullmapTerritoryNameCatalog} from './fullmap-territory-names.js?v=native22';
 import {createWarplanPeer,WARPLAN_PEER_VERSION} from './original-warplan-peer.js';
 import {activeValleyGeometry,initialValleyViews,pickValleyGround,valleyMinimapPoint,valleyMinimapSnapshot} from './authored-view.js';
@@ -657,7 +657,8 @@ const hercAttack=originalEnabled&&Number.isInteger(heavyMounted3Id)&&
     play:(event,x,y,z)=>sfx.playAirFlightEffect(event,x,y,z,view)}):null;
 const airFlightAudio=addCarrierFlightAudio(addCarrierFlightAudio(
   addCarrierFlightAudio(aircraftFlightAudio,wasm.air_audio_version?.()===1?carrierPresentation?.movementAudio:null),hercAttack?.audio),
-  submarineMoveAudio(originalEnabled&&wasm.air_audio_version?.()===1&&typeof wasm.configure_submarine_depth==='function'));
+  submarineMoveAudio(originalEnabled&&wasm.air_audio_version?.()===1&&typeof wasm.configure_submarine_depth==='function',
+    wasm.submarine_attack_audio_version?.()===1));
 const takeoffSample={tick:0,alpha:0,now:null};
 const takeoffStartTick=handle=>wasm.air_takeoff_start_tick(handle)>>>0;
 const takeoffStartSeconds=handle=>wasm.air_takeoff_start_seconds?.(handle)??-1;

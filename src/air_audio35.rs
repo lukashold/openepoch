@@ -146,22 +146,25 @@ impl Game {
             revision: 0, tile: tile_of(actor.x, actor.y) }
     }
 
+    fn submarine_audio(&self, actor: &Ent) -> bool {
+        self.submarine_depth_enabled && is_submarine(actor.def) && self.players[actor.team as usize].epoch >= 10
+    }
+
     fn submarine_sonar(&self, actor: &Ent) -> bool {
-        if !self.submarine_depth_enabled || !is_submarine(actor.def) { return false; }
         let epoch = self.players[actor.team as usize].epoch;
-        // Definition aliases retain the same original epoch-13 hull binding.
+        // Keep the existing Walk cue's epoch-13 hull binding.
         epoch < 14 && (actor.def == 36 || (actor.def == 34 && epoch >= 12))
     }
 
     fn air_audio_visible(&self, index: usize) -> bool {
         let actor = &self.ents[index];
         actor.alive && (mission_aircraft(actor.def) || (self.air_carrier_enabled && actor.def == CARRIER) ||
-            self.submarine_sonar(actor)) && self.can_see(self.local, index)
+            self.submarine_audio(actor)) && self.can_see(self.local, index)
     }
 
     fn air_audio_active(&self, index: usize) -> bool {
         let actor = &self.ents[index];
-        self.submarine_sonar(actor) || (self.air_carrier_enabled && actor.def == CARRIER) ||
+        self.submarine_audio(actor) || (self.air_carrier_enabled && actor.def == CARRIER) ||
             self.aircraft.is_active(self.h(index))
     }
 
@@ -180,13 +183,18 @@ impl Game {
 
     pub(crate) fn observe_submarine_motion_audio(&mut self, index: usize, actor: &Ent, speed: f32, engaged: bool) {
         let handle = self.h(index);
-        if !self.submarine_sonar(actor) {
+        if !self.submarine_audio(actor) {
             self.air_audio.forget(handle);
             return;
         }
-        let kind = submarine_sound(actor, speed, engaged);
+        let kind = if self.submarine_sonar(actor) { submarine_sound(actor, speed, engaged) } else { IDLE };
         let epoch = self.players[actor.team as usize].epoch;
-        if self.air_audio.live.get(&handle).is_some_and(|cue| cue.kind == kind && cue.epoch == epoch) { return; }
+        let clock = self.attack_clock[index];
+        let active_round = crate::native_attack_clock::STARTED | crate::native_attack_clock::IN_ATTACK;
+        if self.air_audio.live.get(&handle).is_some_and(|cue| {
+            cue.epoch == epoch && (cue.kind == kind ||
+                (cue.kind == ATTACK && engaged && clock.handle == handle && clock.flags & active_round == active_round))
+        }) { return; }
         self.air_audio.queue(self.air_audio_cue(index, actor, kind, self.sim_elapsed(), 0.0));
     }
 
@@ -212,7 +220,9 @@ impl Game {
     }
 
     pub(crate) fn observe_air_attack_audio(&mut self, index: usize, actor: &Ent, now: f32, reload: f32) {
-        if !self.air_missions_enabled || !mission_aircraft(actor.def) || !self.air_audio_visible(index) || actor.hp <= 0.0 { return; }
+        let aircraft = self.air_missions_enabled && mission_aircraft(actor.def);
+        if !(aircraft || self.submarine_audio(actor)) || !self.air_audio_visible(index) || actor.hp <= 0.0 { return; }
+        // 007DD630 supplies a positive text period even for a controllerless Attack1.
         let duration = (f64::from(reload) + 3.0 * f64::from(self.sim_step())) as f32;
         let cue = self.air_audio_cue(index, actor, ATTACK, now, duration);
         self.air_audio.queue(cue);
@@ -220,7 +230,7 @@ impl Game {
 
     pub(crate) fn observe_air_death_audio(&mut self, index: usize) {
         let actor = &self.ents[index];
-        if self.submarine_sonar(actor) {
+        if self.submarine_audio(actor) {
             self.air_audio.forget(self.h(index));
             return;
         }
@@ -262,10 +272,10 @@ impl Game {
                 // The next variable step is unknown until its scheduler admits it.
                 if source_clock && self.takeoff.rolling(handle) && start == NONE { continue; }
                 let epoch = self.players[actor.team as usize].epoch;
-                let submarine_sonar = self.submarine_sonar(actor);
+                let submarine = self.submarine_audio(actor);
                 let cue = self.air_audio.live.get(&handle).copied().filter(|cue| cue.epoch == epoch).unwrap_or_else(|| {
                     let (kind, at) = if actor.def == CARRIER { (ship_sound(actor), self.tick) }
-                    else if submarine_sonar { (IDLE, self.tick) }
+                    else if submarine { (IDLE, self.tick) }
                     else if start != NONE { (TAKEOFF, start) }
                     else if self.takeoff.rolling(handle) { (TAKEOFF, self.tick + 1) }
                     else { (WALK, self.tick) };
@@ -274,7 +284,7 @@ impl Game {
                     } else { at as f32 * DT };
                     self.air_audio_cue(i, actor, kind, at, 0.0)
                 });
-                let (x, y, z) = if submarine_sonar {
+                let (x, y, z) = if submarine {
                     // 0086822C uses committed XYZ. 00875255/6A set local Z bounds
                     // to [0, UnitHeight], which defaults to 1 for Submarine/NavalDeep.
                     let body_z = self.naval_body_pose(i).map_or(0.0, |(_, z, _)| z);
