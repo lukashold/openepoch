@@ -1,6 +1,6 @@
 // Generated locally from verified source UnitModel states and attack binder defaults.
 #[derive(Clone,Copy,Debug)] pub struct Spec{pub id:u16,pub from:u8,pub until:u8,pub capable:bool,pub pack:f32,pub unpack:f32,pub unpacked_idle:bool,pub visual:&'static str}
-pub const SOURCE_HASH:[u8;32]=[96,140,192,13,85,108,182,178,117,177,241,254,41,21,81,90,41,109,110,144,65,33,194,155,246,240,15,186,244,174,94,26];
+pub const SOURCE_HASH:[u8;32]=[211,144,234,22,222,10,79,164,207,1,38,88,190,234,200,43,35,225,186,111,73,106,180,49,153,205,199,146,75,153,94,179];
 pub const ROWS:&[Spec]=&[
 Spec{id:0,from:0,until:3,capable:false,pack:1.0_f32,unpack:1.0_f32,unpacked_idle:false,visual:"CityCenter"},
 Spec{id:0,from:3,until:6,capable:false,pack:1.0_f32,unpack:1.0_f32,unpacked_idle:false,visual:"CityCenter_4"},
@@ -140,8 +140,8 @@ Spec{id:21,from:3,until:5,capable:false,pack:1.0_f32,unpack:1.0_f32,unpacked_idl
 Spec{id:21,from:5,until:7,capable:false,pack:1.0_f32,unpack:1.0_f32,unpacked_idle:false,visual:"LightMounted1_06"},
 Spec{id:21,from:7,until:9,capable:false,pack:1.0_f32,unpack:1.0_f32,unpacked_idle:false,visual:"LightMounted1_08"},
 Spec{id:21,from:9,until:15,capable:false,pack:1.0_f32,unpack:1.0_f32,unpacked_idle:false,visual:"LightMounted1_10"},
-Spec{id:22,from:0,until:2,capable:false,pack:1.0_f32,unpack:1.0_f32,unpacked_idle:true,visual:"LightArtillery1_01"},
-Spec{id:22,from:2,until:4,capable:false,pack:1.0_f32,unpack:1.0_f32,unpacked_idle:true,visual:"LightArtillery1_03"},
+Spec{id:22,from:0,until:2,capable:true,pack:1.0_f32,unpack:1.0_f32,unpacked_idle:true,visual:"LightArtillery1_01"},
+Spec{id:22,from:2,until:4,capable:true,pack:3.0_f32,unpack:3.0_f32,unpacked_idle:true,visual:"LightArtillery1_03"},
 Spec{id:22,from:4,until:6,capable:false,pack:1.0_f32,unpack:1.0_f32,unpacked_idle:false,visual:"LightArtillery1_05"},
 Spec{id:22,from:6,until:8,capable:false,pack:1.0_f32,unpack:1.0_f32,unpacked_idle:false,visual:"LightArtillery1_07"},
 Spec{id:22,from:8,until:10,capable:false,pack:1.0_f32,unpack:1.0_f32,unpacked_idle:false,visual:"LightArtillery1_09"},
@@ -166,8 +166,8 @@ Spec{id:26,from:10,until:11,capable:false,pack:1.0_f32,unpack:1.0_f32,unpacked_i
 Spec{id:26,from:11,until:12,capable:false,pack:1.0_f32,unpack:1.0_f32,unpacked_idle:false,visual:"HeavyMounted1_12"},
 Spec{id:26,from:12,until:14,capable:false,pack:1.0_f32,unpack:1.0_f32,unpacked_idle:false,visual:"HeavyMounted1_13"},
 Spec{id:26,from:14,until:15,capable:false,pack:1.0_f32,unpack:1.0_f32,unpacked_idle:false,visual:"HeavyMounted1_15"},
-Spec{id:27,from:0,until:2,capable:false,pack:1.0_f32,unpack:1.0_f32,unpacked_idle:true,visual:"LightArtillery1_01"},
-Spec{id:27,from:2,until:4,capable:false,pack:1.0_f32,unpack:1.0_f32,unpacked_idle:true,visual:"LightArtillery1_03"},
+Spec{id:27,from:0,until:2,capable:true,pack:1.0_f32,unpack:1.0_f32,unpacked_idle:true,visual:"LightArtillery1_01"},
+Spec{id:27,from:2,until:4,capable:true,pack:3.0_f32,unpack:3.0_f32,unpacked_idle:true,visual:"LightArtillery1_03"},
 Spec{id:27,from:4,until:6,capable:false,pack:1.0_f32,unpack:1.0_f32,unpacked_idle:false,visual:"LightArtillery1_05"},
 Spec{id:27,from:6,until:8,capable:false,pack:1.0_f32,unpack:1.0_f32,unpacked_idle:false,visual:"LightArtillery1_07"},
 Spec{id:27,from:8,until:10,capable:false,pack:1.0_f32,unpack:1.0_f32,unpacked_idle:false,visual:"LightArtillery1_09"},

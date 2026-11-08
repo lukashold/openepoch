@@ -420,6 +420,7 @@ impl Game {
         let (buf, native_research) = crate::ai9_game_save::split(buf)?;
         #[cfg(feature="ee2-citizen9")] let current_source9=crate::citizen9::current_outer(buf);
         #[cfg(feature="ee2-pack8")] let (pack_core,pack_records)=crate::pack8_save::split(buf)?;
+        #[cfg(feature="ee2-pack8")] let legacy_pack_profile=crate::pack8_save::legacy_source_profile(buf);
         #[cfg(feature="ee2-pack8")] let buf=pack_core;
         #[cfg(feature="ee2-citizen9")] let source9_normalized=crate::citizen9::normalize_inner(buf,current_source9)?;
         #[cfg(feature="ee2-citizen9")] let buf=source9_normalized.as_slice();
@@ -874,7 +875,7 @@ impl Game {
             g.update_fog();
         }else{g.refresh_display_fog();}
         g.terr_dirty = true;
-        #[cfg(feature="ee2-pack8")] g.read_pack_save(pack_records)?;
+        #[cfg(feature="ee2-pack8")] g.read_pack_save(pack_records,legacy_pack_profile)?;
         #[cfg(feature="ee2-ai9-game-bridge")]
         if let Some(records) = native_research {
             g.native_research = Some(crate::ai9_game_save::decode(&g, records)?);

@@ -24,6 +24,7 @@ CLAIM_AGE = 60
 TOKEN = re.compile(r'[A-Za-z0-9_-]{32}')
 ROOM = re.compile(r'[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}')
 CODE = re.compile(r'[A-Za-z0-9_-]{1,131072}')
+HUGE10_PROFILE = re.compile(r'pangea-huge10-checkpoint-transfer-1:[0-9a-f]{64}')
 PRIVATE_NETWORKS = tuple(map(ipaddress.IPv4Network, ('10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16')))
 
 
@@ -63,12 +64,21 @@ def description(value, kind):
     return value
 
 
+def lan_profile(value):
+    if value is None:
+        return {}
+    if not isinstance(value, str) or HUGE10_PROFILE.fullmatch(value) is None:
+        raise SignalingError(400, 'room')
+    return {'profile': value}
+
+
 def seat_assignment(request):
     room, seat, seats = request.get('room'), request.get('seat'), request.get('seats')
+    profile = lan_profile(request.get('profile'))
     if (not isinstance(room, str) or ROOM.fullmatch(room) is None or type(seat) is not int
-            or type(seats) is not int or not 1 <= seat < seats <= 4):
+            or type(seats) is not int or not 1 <= seat < seats <= 4 or (profile and (seat, seats) != (1, 2))):
         raise SignalingError(400, 'room')
-    return {'room': room, 'seat': seat, 'seats': seats}
+    return {'room': room, 'seat': seat, 'seats': seats, **profile}
 
 
 class Tickets:
@@ -118,6 +128,8 @@ class Tickets:
                     return {}
                 return {'answer': entry.get('answer')}
             if action == 'claim':
+                if lan_profile(request.get('profile')).get('profile') != entry['assignment'].get('profile'):
+                    raise SignalingError(404, 'ticket-expired')
                 if 'answer' in entry or entry.get('claimUntil', 0) > now:
                     raise SignalingError(409, 'seat-claimed')
                 claim = secrets.token_urlsafe(24)
@@ -190,14 +202,18 @@ def forward(request):
     address = private_ipv4(request.get('address'))
     action = request.get('action')
     fields = {'action': action, 'ticket': token(request.get('ticket'))}
+    if action == 'claim':
+        fields.update(lan_profile(request.get('profile')))
     if action in ('answer', 'release'):
         fields['claim'] = token(request.get('claim'))
     if action == 'answer':
         fields['answer'] = description(request.get('answer'), 'answer')
     result = forward_http(address, fields)
     if action == 'claim':
-        return {'offer': description(result.get('offer'), 'offer'), 'claim': token(result.get('claim')),
-                **seat_assignment(result)}
+        assignment = seat_assignment(result)
+        if assignment.get('profile') != fields.get('profile'):
+            raise SignalingError(404, 'ticket-expired')
+        return {'offer': description(result.get('offer'), 'offer'), 'claim': token(result.get('claim')), **assignment}
     return {}
 
 
@@ -215,6 +231,8 @@ def local_request(handler):
         action = request.get('action')
         if action == 'status':
             result = {'available': True, 'host': address, 'browse': 1}
+            if lan_profile(request.get('profile')):
+                result['huge10'] = 1
         elif action in LOCAL_ACTIONS:
             result = handler.server.lan_directory.local(request)
         elif action in REMOTE_ACTIONS:

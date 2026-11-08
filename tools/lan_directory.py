@@ -7,7 +7,7 @@ import socket
 import threading
 import time
 
-from lan_signaling import ROOM, SignalingError, forward_http, private_ipv4, token
+from lan_signaling import ROOM, SignalingError, forward_http, lan_profile, private_ipv4, token
 
 
 DIRECTORY_PORT = 8127
@@ -46,24 +46,29 @@ def number(value, minimum, maximum):
 def room_details(data):
     if not isinstance(data, dict):
         raise SignalingError(400, 'room')
-    seats = number(data.get('seats'), 2, 4)
+    profile = lan_profile(data.get('profile'))
+    seats = number(data.get('seats'), 2, 2 if profile else 4)
     ready = number(data.get('ready'), 1, seats)
     open_seats = number(data.get('open'), 0, seats - ready)
     mode = data.get('mode')
-    if mode not in ('ordinary', 'shared', 'grouped'):
+    if mode not in (('pangea-huge10',) if profile else ('ordinary', 'shared', 'grouped')):
         raise SignalingError(400, 'room')
-    epoch, final_epoch = number(data.get('epoch'), -1, 15), number(data.get('finalEpoch'), -1, 15)
+    last_epoch = 14 if profile else 15
+    epoch, final_epoch = number(data.get('epoch'), -1, last_epoch), number(data.get('finalEpoch'), -1, last_epoch)
     if 0 <= final_epoch < epoch:
         raise SignalingError(400, 'room')
     tick = data.get('tick')
     return {'room': room_id(data.get('room')), 'name': label(data.get('name')), 'seats': seats, 'ready': ready,
-            'open': open_seats, 'mode': mode, 'climate': number(data.get('climate'), 0, 3), 'epoch': epoch,
-            'finalEpoch': final_epoch, 'ai': number(data.get('ai'), 0, 2),
-            'tick': None if tick is None else number(tick, 0, 4294967295)}
+            'open': open_seats, 'mode': mode, 'climate': number(data.get('climate'), 0, 0 if profile else 3), 'epoch': epoch,
+            'finalEpoch': final_epoch, 'ai': number(data.get('ai'), 8, 8) if profile else number(data.get('ai'), 0, 2),
+            'tick': None if tick is None else number(tick, 1 if profile else 0, 4294967294 if profile else 4294967295),
+            **profile}
 
 
 def datagram(details, goodbye=False):
     fields = {'room': details['room'], 'closed': True} if goodbye else details
+    if goodbye:
+        fields.update(lan_profile(details.get('profile')))
     raw = MAGIC + json.dumps(fields, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
     assert len(raw) <= MAX_DATAGRAM
     return raw
@@ -72,7 +77,7 @@ def datagram(details, goodbye=False):
 def forward_directory(request):
     address = private_ipv4(request.get('address'))
     action = request['action']
-    fields = {'action': action, 'room': room_id(request.get('room'))}
+    fields = {'action': action, 'room': room_id(request.get('room')), **lan_profile(request.get('profile'))}
     if action == 'join-request':
         fields['name'] = label(request.get('name'))
     else:
@@ -91,8 +96,9 @@ def forward_directory(request):
 
 
 class BrowserScan:
-    def __init__(self, clock):
+    def __init__(self, clock, profile=None):
         self.clock = clock
+        self.profile = profile
         self.key = secrets.token_urlsafe(24)
         self.started = clock()
         self.expires = self.started + SCAN_LEASE
@@ -131,6 +137,8 @@ class BrowserScan:
                     private_ipv4(address)
                     body = json.loads(raw[len(MAGIC):])
                     if not isinstance(body, dict):
+                        continue
+                    if lan_profile(body.get('profile')).get('profile') != self.profile:
                         continue
                     if body.get('closed') is True:
                         with self.lock:
@@ -226,7 +234,7 @@ class RoomDirectory:
         if action == 'browse-start':
             if self.scan and not self.scan.stop.is_set():
                 raise SignalingError(409, 'browse-in-use')
-            self.scan = BrowserScan(self.clock)
+            self.scan = BrowserScan(self.clock, lan_profile(request.get('profile')).get('profile'))
             return {'scan': self.scan.key}
         if not self.scan or not secrets.compare_digest(token(request.get('scan')), self.scan.key):
             raise SignalingError(404, 'browse-expired')
@@ -261,7 +269,7 @@ class RoomDirectory:
                 return {}
             if action == 'room-update':
                 details = room_details(request.get('details'))
-                if details['room'] != room['details']['room'] or details['seats'] != room['details']['seats']:
+                if any(details.get(field) != room['details'].get(field) for field in ('room', 'seats', 'profile')):
                     raise SignalingError(400, 'room')
                 room['expires'] = now + ROOM_LEASE
                 if details != room['details']:
@@ -279,7 +287,7 @@ class RoomDirectory:
                 raise SignalingError(400, 'action')
             ticket, owner = token(request.get('ticket')), token(request.get('ticketOwner'))
             assignment = self.tickets.assignment(ticket, owner)
-            if assignment['room'] != room['details']['room'] or assignment['seats'] != room['details']['seats']:
+            if any(assignment.get(field) != room['details'].get(field) for field in ('room', 'seats', 'profile')):
                 raise SignalingError(400, 'room')
             for other in room['requests'].values():
                 if other.get('seat') == assignment['seat'] or other.get('ticket') == ticket:
@@ -294,7 +302,8 @@ class RoomDirectory:
             now = self.clock()
             self.prune(now)
             room = self.current
-            if not room or room['details']['room'] != room_id(request.get('room')):
+            if (not room or room['details']['room'] != room_id(request.get('room'))
+                    or room['details'].get('profile') != lan_profile(request.get('profile')).get('profile')):
                 raise SignalingError(404, 'room-expired')
             entries = room['requests']
             if action == 'join-request':

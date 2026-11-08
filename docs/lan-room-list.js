@@ -1,11 +1,11 @@
-import {lanInviteCode,lanRequest} from './lan-signaling.js?v=native56';
+import {lanInviteCode,lanRequest} from './lan-signaling.js?v=lan125';
 
 const wait=()=>new Promise(done=>setTimeout(done,750));
 const ignore=promise=>void promise.catch(()=>{});
-const modeNames={ordinary:'Scharmützel',shared:'Gemeinsame Zivilisation',grouped:'Gruppen-Koop'};
+const modeNames={ordinary:'Scharmützel',shared:'Gemeinsame Zivilisation',grouped:'Gruppen-Koop','pangea-huge10':'Pangea · Eroberung'};
 const climateNames=['Gemäßigt','Trocken','Tropisch','Tundra'];
 
-export function mountLanRoomList(get,{details,approve,join,epochName}) {
+export function mountLanRoomList(get,{details,approve,join,epochName,profile=null}) {
   const hostPanel=get('lan-host'),browsePanel=get('lan-browser'),hostStatus=get('lan-host-status');
   const pendingList=get('lan-pending'),roomsList=get('lan-rooms'),browseStatus=get('lan-browse-status');
   const toggle=get('lan-list'),cancel=get('lan-cancel-request');
@@ -100,7 +100,7 @@ export function mountLanRoomList(get,{details,approve,join,epochName}) {
 
   async function requestJoin(room){
     if(joining||!browsing)return;
-    const target={address:room.address,room:room.room},request={fields:null};
+    const target={address:room.address,room:room.room,...(profile?{profile}:{})},request={fields:null};
     joining=request;cancel.hidden=false;browsing.key=null;browsing.notice=false;
     browseStatus.textContent=`Warte auf die Freigabe für „${room.name}“ …`;
     try{
@@ -160,13 +160,13 @@ export function mountLanRoomList(get,{details,approve,join,epochName}) {
       browsing=session;browsePanel.hidden=false;
       browseStatus.textContent='Suche nach LAN-Räumen …';
       try{
-        const {scan}=await lanRequest('browse-start');
+        const {scan}=await lanRequest('browse-start',profile?{profile}:{});
         if(browsing!==session){ignore(lanRequest('browse-stop',{scan},true));return;}
         session.scan=scan;
         while(browsing===session){
           const {rooms,waiting}=await lanRequest('browse-read',{scan});
           if(browsing!==session)return;
-          renderRooms(session,rooms,waiting);
+          renderRooms(session,rooms.filter(room=>(room.profile??null)===profile),waiting);
           await wait();
         }
       }catch(error){

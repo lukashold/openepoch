@@ -4,12 +4,17 @@ use crate::{game::*,pack8::{State,EMPTY,PACK,UNPACK,UNPACKED,UNPACKED_IDLE},pack
 pub const MAGIC:u32=0x31574b50; // PKW1
 pub const END:u32=0x454b4350; // PCKE
 pub const HEADER:usize=64;pub const RECORD:usize=48;
+// Pre-125 archive profile. The PKW format remains the same.
+const LEGACY_SOURCE_HASH:[u8;32]=[96,140,192,13,85,108,182,178,117,177,241,254,41,21,81,90,41,109,110,144,65,33,194,155,246,240,15,186,244,174,94,26];
+pub(crate) fn legacy_source_profile(buf:&[u8])->bool{
+ u(buf,0)==Some(MAGIC)&&buf.get(24..56)==Some(LEGACY_SOURCE_HASH.as_slice())
+}
 fn u(b:&[u8],at:usize)->Option<u32>{Some(u32::from_le_bytes(b.get(at..at+4)?.try_into().ok()?))}
 fn put(b:&mut Vec<u8>,v:u32){b.extend_from_slice(&v.to_le_bytes());}
 pub(crate) use crate::save::checksum;
 pub fn split(buf:&[u8])->Option<(&[u8],Option<&[u8]>)>{
  if u(buf,0)!=Some(MAGIC){return Some((buf,None));}
- if buf.len()<HEADER+36+12||u(buf,56)!=Some(RECORD as u32)||u(buf,60)!=Some(HEADER as u32)||buf.get(24..56)?!=pack8_defs::SOURCE_HASH{return None;}
+ if buf.len()<HEADER+36+12||u(buf,56)!=Some(RECORD as u32)||u(buf,60)!=Some(HEADER as u32)||buf.get(24..56)?!=pack8_defs::SOURCE_HASH&&!legacy_source_profile(buf){return None;}
  let version=u(buf,4)?;if version!=1&&!(cfg!(all(feature="ee2-pack8",feature="ee2-civ8"))&&(version==2||version==3||(cfg!(feature="ee2-citizen9")&&version==4))){return None;}
  let core=u(buf,8)?as usize;let count=u(buf,12)?as usize;if core<36||core>64*1024*1024||count>MAXE||u(buf,20)?as usize!=crate::defs::SAVE_DEFINITION_COUNT{return None;}
  let records=HEADER.checked_add(core)?;let base_end=records.checked_add(count.checked_mul(RECORD)?)?.checked_add((MAXE-count).checked_mul(4)?)?;
@@ -46,7 +51,7 @@ impl Game{
   #[cfg(feature="ee2-citizen9")] if !self.append_source_birth(&mut b){return Vec::new();}
   let sum=checksum(&b);let total=(b.len()+12)as u32;put(&mut b,total);put(&mut b,sum);put(&mut b,END);b
  }
- pub(crate) fn read_pack_save(&mut self,records:Option<&[u8]>)->Option<()>{
+ pub(crate) fn read_pack_save(&mut self,records:Option<&[u8]>,legacy_profile:bool)->Option<()>{
   self.pack_states.fill(EMPTY);let now=self.pack_now();
   let Some(records)=records else{for i in 0..self.high{if self.ents[i].alive{let mut state=State::fresh(self.h(i));state.history_unknown=true;state.last_goal=now;self.pack_states[i]=state;}}
    #[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]self.read_navigation(None)?;
@@ -73,17 +78,20 @@ impl Game{
    if previous.is_some_and(|p|index<=p)||w[1]&!10!=0||w[2]>2||w[3]>1||w[4]>1||w[9]>3{return None;}previous=Some(index);
    let f=|k|f32::from_bits(w[k]);let state=State{handle:w[0],flags:w[1]as u8,phase:w[2]as u8,started:w[3]!=0,history_unknown:w[4]!=0,start:f(5),duration:f(6),ai_until:f(7),last_goal:f(8),visual:w[9]as u8,visual_start:f(10),visual_duration:f(11)};
    if [state.start,state.duration,state.ai_until,state.last_goal,state.visual_start,state.visual_duration].iter().any(|v|!v.is_finite()||v.is_sign_negative())||state.last_goal>now||state.visual_start>now||state.start>now{return None;}
-   let def=self.ents[index].def;let valid_duration=|phase:u8,value:f32|pack8_defs::ROWS.iter().any(|r|r.id==def&&r.capable&&value==if phase==PACK{r.pack}else{r.unpack});
+   let def=self.ents[index].def;
+   // Preserve the old validator’s accepted per-definition durations.
+   let rows=pack8_defs::ROWS.iter().filter(|r|r.id==def&&(!legacy_profile||!matches!((r.id,r.from),(22|27,0|2))));
+   let valid_duration=|phase:u8,value:f32|rows.clone().any(|r|r.capable&&value==if phase==PACK{r.pack}else{r.unpack});
    if state.phase==crate::pack8::NONE{if state.started||state.start!=0.0||state.duration!=0.0{return None;}}
    else if !valid_duration(state.phase,state.duration)||(state.phase==PACK&&state.flags&UNPACKED!=0)||(state.phase==UNPACK&&state.flags&UNPACKED==0)||(!state.started&&state.start!=0.0){return None;}
    if state.visual==PACK||state.visual==UNPACK{if !valid_duration(state.visual,state.visual_duration){return None;}}
    else if state.visual_duration!=0.0{return None;}
    if state.visual==UNPACKED_IDLE&&state.flags&UNPACKED==0{return None;}
    if state.started&&(state.visual!=state.phase||state.visual_duration!=state.duration){return None;}
-   if !pack8_defs::ROWS.iter().any(|r|r.id==def&&r.capable)&&(state.flags!=0||state.phase!=0||state.ai_until!=0.0||state.visual!=0){return None;}
+   if !rows.clone().any(|r|r.capable)&&(state.flags!=0||state.phase!=0||state.ai_until!=0.0||state.visual!=0){return None;}
    // Delays may outlive an interrupted goal; they never need an unbounded
    // forged future wait. Source captured pack/unpack times remain class-bound.
-   let maximum=pack8_defs::ROWS.iter().filter(|r|r.id==def).fold(0.0f32,|m,r|m.max(r.pack).max(r.unpack));
+   let maximum=rows.fold(0.0f32,|m,r|m.max(r.pack).max(r.unpack));
    let max_deadline=now as f64+maximum as f64;
    let too_late=if self.source_clock.is_some(){state.ai_until>max_deadline as f32}
        else{state.ai_until as f64>max_deadline+DT as f64};

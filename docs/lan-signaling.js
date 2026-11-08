@@ -41,8 +41,8 @@ export async function lanRequest(action, fields={}, keepalive=false) {
 
 export const isLanInvite=code=>code.trim().startsWith(PREFIX);
 
-export async function lanStatus(){
-  try{return await lanRequest('status');}
+export async function lanStatus(profile=null){
+  try{return await lanRequest('status',profile?{profile}:{});}
   catch{return {available:false,host:null};}
 }
 
@@ -76,12 +76,16 @@ export function lanInviteCode(address,ticket){
   return `${PREFIX}${address}:${ticket}`;
 }
 
-export async function claimLanInvite(code){
+export async function claimLanInvite(code,profile=null){
   const fields=code.trim().slice(PREFIX.length).split(':');
   const [address,ticket]=fields;
   if(fields.length!==2||!IPV4.test(address)||!TICKET.test(ticket))throw Error('Ungültige LAN-Einladung.');
-  const {offer,claim,room,seat,seats}=await lanRequest('claim',{address,ticket});
+  const {offer,claim,room,seat,seats,profile:admitted}=await lanRequest('claim',{address,ticket,...(profile?{profile}:{})});
   const authority={address,ticket,claim};
+  if((admitted??null)!==profile){
+    void lanRequest('release',authority,true).catch(()=>{});
+    throw Error('Die LAN-Einladung gehört zu einem anderen Raumprofil.');
+  }
   return {sdp:offer,room,seat,seats,
     answer:answer=>lanRequest('answer',{...authority,answer}),
     release:()=>{void lanRequest('release',authority,true).catch(()=>{});},

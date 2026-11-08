@@ -57,9 +57,9 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {NATIVE_SEASON_CHOICE,normalizeSeasonChoice,resolveSeasonChoice} from './original-seasons.js?v=native108';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=native108';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native87-launch';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=stone-pack125';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
-import { Lockstep, PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
+import { Lockstep, PROTOCOL_VERSION as BASE_PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
 import {createSourceRoundCarrier, selectedRoundTripMilliseconds} from './source-network-wire.js?v=native54';
 import {mountSourceRosterLobby,requiresCapitolRoster} from './source-network-lobby.js?v=fish109';
@@ -191,6 +191,8 @@ try{
   }
   wasm??=await loadRulesWasm(rulesProfile,import.meta.url);
 }catch(error){rulesLoadFailure(error);throw error;}
+// Early artillery orders change lockstep behavior. Legacy carriers keep their protocol.
+const PROTOCOL_VERSION=wasm.early_artillery_pack_version?.()===1?BASE_PROTOCOL_VERSION+1:BASE_PROTOCOL_VERSION;
 // Always take the pointer BEFORE touching memory.buffer: the call may grow (and detach) the memory.
 const u8 = (ptr, len) => new Uint8Array(wasm.memory.buffer, ptr, len);
 const f32 = (ptr, len) => new Float32Array(wasm.memory.buffer, ptr, len);

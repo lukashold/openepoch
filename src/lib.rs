@@ -1922,6 +1922,8 @@ pub extern "C" fn cmd_pack(unpacked:u32)->u32{
 #[cfg(feature="ee2-pack8")]
 #[no_mangle]pub extern "C" fn pack_schema_revision()->u32{if cfg!(feature="ee2-citizen9"){4}else if cfg!(feature="ee2-civ8"){3}else{1}}
 #[cfg(feature="ee2-pack8")]
+#[no_mangle]pub extern "C" fn early_artillery_pack_version()->u32{1}
+#[cfg(feature="ee2-pack8")]
 #[no_mangle]pub extern "C" fn render_pack_version()->u32{1}
 #[cfg(feature="ee2-pack8")]
 #[no_mangle]pub extern "C" fn render_pack_stride()->u32{pack8_render::STRIDE}
