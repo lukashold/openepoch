@@ -7,7 +7,7 @@ import socket
 import threading
 import time
 
-from lan_signaling import HUGE10_NAVAL, ROOM, SignalingError, forward_http, lan_profile, private_ipv4, token
+from lan_signaling import HUGE10_LAN_PROFILES, ROOM, SignalingError, forward_http, lan_profile, private_ipv4, token
 
 
 DIRECTORY_PORT = 8127
@@ -52,7 +52,7 @@ def room_details(data):
     open_seats = number(data.get('open'), 0, seats - ready)
     mode = data.get('mode')
     if profile:
-        allowed_modes = ('pangea-huge10-naval',) if profile['profile'].startswith(HUGE10_NAVAL + ':') else ('pangea-huge10',)
+        allowed_modes = (HUGE10_LAN_PROFILES[profile['profile'].partition(':')[0]][0],)
     else:
         allowed_modes = ('ordinary', 'shared', 'grouped')
     if mode not in allowed_modes:

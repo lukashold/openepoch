@@ -24,8 +24,12 @@ CLAIM_AGE = 60
 TOKEN = re.compile(r'[A-Za-z0-9_-]{32}')
 ROOM = re.compile(r'[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}')
 CODE = re.compile(r'[A-Za-z0-9_-]{1,131072}')
-HUGE10_NAVAL = 'pangea-huge10-native-naval-1'
-HUGE10_PROFILE = re.compile(rf'(?:pangea-huge10-checkpoint-transfer-1|{HUGE10_NAVAL}):[0-9a-f]{{64}}')
+HUGE10_LAN_PROFILES = {
+    'pangea-huge10-checkpoint-transfer-1': ('pangea-huge10', 'huge10'),
+    'pangea-huge10-native-naval-1': ('pangea-huge10-naval', 'huge10Naval'),
+    'pangea-huge10-native-pursuit-1': ('pangea-huge10-pursuit', 'huge10Pursuit'),
+}
+HUGE10_PROFILE = re.compile(r'(?:' + '|'.join(HUGE10_LAN_PROFILES) + r'):[0-9a-f]{64}')
 PRIVATE_NETWORKS = tuple(map(ipaddress.IPv4Network, ('10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16')))
 
 
@@ -234,7 +238,7 @@ def local_request(handler):
             result = {'available': True, 'host': address, 'browse': 1}
             profile = lan_profile(request.get('profile')).get('profile')
             if profile:
-                result['huge10Naval' if profile.startswith(HUGE10_NAVAL + ':') else 'huge10'] = 1
+                result[HUGE10_LAN_PROFILES[profile.partition(':')[0]][1]] = 1
         elif action in LOCAL_ACTIONS:
             result = handler.server.lan_directory.local(request)
         elif action in REMOTE_ACTIONS:
