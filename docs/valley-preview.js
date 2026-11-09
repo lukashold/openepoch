@@ -1,5 +1,5 @@
 import {activeValleyGeometry} from './authored-view.js';
-import {loadAuthoredValleyTerrain} from './authored-terrain.js?v=valley-mips151';
+import {loadAuthoredValleyTerrain,VALLEY_MATERIAL_MIPS} from './authored-terrain.js?v=valley-color-mips152';
 import {VALLEY_MASK_MIPS,VALLEY_TERRAIN_MASK} from './authored-terrain-mask.js?v=valley-mips151';
 import {loadForestShadowAssets} from './valley-forest-shadow.js';
 import {archiveForestBindings, archiveForestFrame} from './archive-forest.js';
@@ -78,11 +78,13 @@ export async function loadValleyPreview({requested, authoredRequested, neutralRe
       const bitmap = await createImageBitmap(new Blob([bytes], {type: 'image/png'}), {premultiplyAlpha: 'none', colorSpaceConversion: 'none'});
       return {bytes, bitmap};
     };
-    const [forestShadow, maskMips] = await Promise.all([
+    const [forestShadow, maskMips, materialMips] = await Promise.all([
       lighting?.sourceTerrainDirection ? loadForestShadowAssets(checked,forest,forestManifest).catch(() => null) : null,
       checked(VALLEY_MASK_MIPS).catch(() => null),
+      index.terrain.sha256 === VALLEY_MATERIAL_MIPS.terrainManifestSha256
+        ? checked(VALLEY_MATERIAL_MIPS).catch(() => null) : null,
     ]);
-    const ground = await loadAuthoredValleyTerrain(gl, geometry, terrain, readTexture, lighting, forestShadow, maskMips);
+    const ground = await loadAuthoredValleyTerrain(gl, geometry, terrain, readTexture, lighting, forestShadow, maskMips, materialMips);
     const trees = await loadOriginalModels(gl, true, teams, undefined,
       {assetMapping, manifestURL: index.forest.url, initialSails: false, nativeLighting: false});
     if (trees.errors.length || trees.models.size !== forest.models.length) throw new Error('Valley-Waldgrafiken konnten nicht geladen werden.');

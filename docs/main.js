@@ -103,7 +103,7 @@ import {addCarrierFlightAudio,loadAirFlightAudio,readAirFlightAudio,submarineMov
 import {loadFullmapCityNameCatalog,loadFullmapTerritoryNameCatalog} from './fullmap-territory-names.js?v=native22';
 import {createWarplanPeer,WARPLAN_PEER_VERSION} from './original-warplan-peer.js';
 import {activeValleyGeometry,initialValleyViews,pickValleyGround,valleyMinimapPoint,valleyMinimapSnapshot} from './authored-view.js';
-import {installedValleyManifest,loadValleyPreview,valleySaveLocator} from './valley-preview.js?v=valley-mips151';
+import {installedValleyManifest,loadValleyPreview,valleySaveLocator} from './valley-preview.js?v=valley-color-mips152';
 
 const $ = id => document.getElementById(id);
 const canvas = $('gl');

@@ -5,6 +5,24 @@ import {nativeTerrainCoefficients} from './native-terrain-lighting.js';
 import {createForestShadowRenderer} from './valley-forest-shadow.js';
 import {VALLEY_TERRAIN_MASK,valleyMaskMipLevels,valleyMaskShader,valleyTerrainPasses} from './authored-terrain-mask.js?v=valley-mips151';
 
+export const VALLEY_MATERIAL_MIPS = Object.freeze({
+  url: 'local-original/valley-terrain/terrain-color-mips.rgba8',
+  sha256: 'f6fb9b4e2a4518d33a3293a67b720bd6c08b58e937273aa9fda33f6bf755d63f',
+  terrainManifestSha256: '5285919ac3def42c1941767a656b0a89157d285f0f06e20b409953a21fdfc3d4',
+});
+
+function valleyMaterialMipLevels(bytes) {
+  if (!(bytes instanceof Uint8Array) || bytes.length !== 3495240) return null;
+  const levels = [];
+  let offset = 0;
+  for (let side = 256; side >= 1; side >>= 1) {
+    const end = offset + side * side * 4 * 10;
+    levels.push({side, pixels: bytes.subarray(offset, end)});
+    offset = end;
+  }
+  return levels;
+}
+
 // Keep the corner renderer available when the optional local mask is absent.
 const vertex = `#version 300 es
 layout(location=0) in vec3 aPosition;
@@ -109,11 +127,12 @@ function program(gl, vertexSource, fragmentSource) {
 
 const hex = bytes => Array.from(new Uint8Array(bytes), n => n.toString(16).padStart(2, '0')).join('');
 
-export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readTexture, lighting = null, forestShadow = null, maskMips = null) {
+export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readTexture, lighting = null, forestShadow = null, maskMips = null, materialMips = null) {
   const corners = valleyTerrainCornerTexture(geometry, manifest);
   const {vertices, indices} = authoredTerrainMesh(geometry);
   const boundary = authoredValleyBoundary(geometry);
-  const images = await Promise.all(manifest.bindings.map(async row => {
+  const materialLevels = valleyMaterialMipLevels(materialMips);
+  const images = materialLevels ? [] : await Promise.all(manifest.bindings.map(async row => {
     const image = await readTexture(row.url);
     if (!image?.bytes || hex(await crypto.subtle.digest('SHA-256', image.bytes)) !== row.sha256 ||
         image.bitmap?.width !== 256 || image.bitmap?.height !== 256) throw new Error('Valley terrain texture differs: ' + row.url);
@@ -158,14 +177,22 @@ export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readText
   gl.activeTexture(gl.TEXTURE0);
   const layerTexture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D_ARRAY, layerTexture);
-  gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 9, gl.RGBA8, 256, 256, images.length);
-  for (const [layer, image] of images.entries()) {
-    gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, 0, 0, layer, 256, 256, 1, gl.RGBA, gl.UNSIGNED_BYTE, image);
-    image.close();
+  const layers = manifest.bindings.length;
+  gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 9, gl.RGBA8, 256, 256, layers);
+  if (materialLevels) {
+    for (const [level, {side, pixels}] of materialLevels.entries()) {
+      gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, level, 0, 0, 0, side, side, layers, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+    }
+  } else {
+    for (const [layer, image] of images.entries()) {
+      gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, 0, 0, layer, 256, 256, 1, gl.RGBA, gl.UNSIGNED_BYTE, image);
+      image.close();
+    }
   }
   gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
   gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
+  if (!materialLevels) gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
+  for (const axis of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D_ARRAY, axis, gl.REPEAT);
   const cornerTexture = gl.createTexture();
   gl.activeTexture(gl.TEXTURE0 + 1);
   gl.bindTexture(gl.TEXTURE_2D, cornerTexture);
@@ -242,15 +269,17 @@ export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readText
         gl.bindTexture(target, texture);
         gl.uniform1i(uniforms[unit + 1], unit);
       }
-      if (mipLevels && samplerHigh !== highSampling) {
+      if ((materialLevels || mipLevels) && samplerHigh !== highSampling) {
         samplerHigh = highSampling;
         const minFilter = highSampling ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR_MIPMAP_NEAREST;
         gl.activeTexture(gl.TEXTURE0);
         gl.texParameteri(gl.TEXTURE_2D_ARRAY,gl.TEXTURE_MIN_FILTER,minFilter);
         gl.activeTexture(gl.TEXTURE0 + 6);
-        gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,minFilter);
-        // The native high branch requests anisotropic MIPFILTER. WebGL represents it with trilinear mips.
-        if (anisotropy) gl.texParameterf(gl.TEXTURE_2D,anisotropy.TEXTURE_MAX_ANISOTROPY_EXT,highSampling ? maxAnisotropy : 1);
+        if (mipLevels) {
+          gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,minFilter);
+          // The native high branch requests anisotropic MIPFILTER. WebGL represents it with trilinear mips.
+          if (anisotropy) gl.texParameterf(gl.TEXTURE_2D,anisotropy.TEXTURE_MAX_ANISOTROPY_EXT,highSampling ? maxAnisotropy : 1);
+        }
       }
       gl.bindVertexArray(vao);
       gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_INT, 0);
