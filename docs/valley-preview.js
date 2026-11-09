@@ -1,6 +1,6 @@
 import {activeValleyGeometry} from './authored-view.js';
-import {loadAuthoredValleyTerrain} from './authored-terrain.js?v=valley-mask149-shadow150';
-import {VALLEY_TERRAIN_MASK} from './authored-terrain-mask.js?v=valley-mask149';
+import {loadAuthoredValleyTerrain} from './authored-terrain.js?v=valley-mips151';
+import {VALLEY_MASK_MIPS,VALLEY_TERRAIN_MASK} from './authored-terrain-mask.js?v=valley-mips151';
 import {loadForestShadowAssets} from './valley-forest-shadow.js';
 import {archiveForestBindings, archiveForestFrame} from './archive-forest.js';
 import {bindValleyWorld0,valleyWorld0Frame} from './archive-world0.js';
@@ -78,9 +78,11 @@ export async function loadValleyPreview({requested, authoredRequested, neutralRe
       const bitmap = await createImageBitmap(new Blob([bytes], {type: 'image/png'}), {premultiplyAlpha: 'none', colorSpaceConversion: 'none'});
       return {bytes, bitmap};
     };
-    const forestShadow = lighting?.sourceTerrainDirection
-      ? await loadForestShadowAssets(checked,forest,forestManifest).catch(() => null) : null;
-    const ground = await loadAuthoredValleyTerrain(gl, geometry, terrain, readTexture, lighting, forestShadow);
+    const [forestShadow, maskMips] = await Promise.all([
+      lighting?.sourceTerrainDirection ? loadForestShadowAssets(checked,forest,forestManifest).catch(() => null) : null,
+      checked(VALLEY_MASK_MIPS).catch(() => null),
+    ]);
+    const ground = await loadAuthoredValleyTerrain(gl, geometry, terrain, readTexture, lighting, forestShadow, maskMips);
     const trees = await loadOriginalModels(gl, true, teams, undefined,
       {assetMapping, manifestURL: index.forest.url, initialSails: false, nativeLighting: false});
     if (trees.errors.length || trees.models.size !== forest.models.length) throw new Error('Valley-Waldgrafiken konnten nicht geladen werden.');
@@ -102,7 +104,7 @@ export async function loadValleyPreview({requested, authoredRequested, neutralRe
         return stageFixture(locator.fixture === authoredTest.sha256 ? authored :
           packets[index.fixtures.findIndex(row => row.sha256 === locator.fixture)]);
       },
-      drawTerrain(vp, fog, highShadows) { ground.draw(vp, fog, highShadows); },
+      drawTerrain(vp, fog, highShadows, highSampling) { ground.draw(vp, fog, highShadows, highSampling); },
       drawWorld(view, bounds) {
         const fog = new Uint8Array(wasm.memory.buffer, wasm.fog_ptr(), geometry.backing ** 2);
         const options = {vp: view.vp, eye: view.eye, zoom: view.zoom, epochs: [0, 0], capture: true};
