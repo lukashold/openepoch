@@ -3,10 +3,9 @@ import {authoredValleyBoundary} from './authored-boundary.js';
 import {buildAuthoredTerrainLightmap, SHADOW_BLOCK_SPAN, SHADOW_RESOLUTION} from './authored-terrain-shadow.js';
 import {nativeTerrainCoefficients} from './native-terrain-lighting.js';
 import {createForestShadowRenderer} from './valley-forest-shadow.js';
+import {VALLEY_TERRAIN_MASK,valleyMaskShader,valleyTerrainPasses} from './authored-terrain-mask.js?v=valley-mask149';
 
-// Compact corner palette, exact source geometry and original terrain pixels.
-// This browser shader uses triangle interpolation for material edges. The
-// original mask-staging and per-tile UV pattern are separate source work.
+// Keep the corner renderer available when the optional local mask is absent.
 const vertex = `#version 300 es
 layout(location=0) in vec3 aPosition;
 layout(location=1) in vec3 aNormal;
@@ -18,6 +17,7 @@ void main(){vWorld=aPosition;vNormal=aNormal;gl_Position=uVP*vec4(aPosition,1.0)
 `;
 const fragment = `#version 300 es
 precision highp float;
+precision highp int;
 uniform highp sampler2DArray uMaterials;
 uniform sampler2D uCorners;
 uniform sampler2D uFog;
@@ -27,6 +27,7 @@ uniform bool uProjectedShadow;
 uniform highp sampler2DArray uLightmap;
 uniform float uLightmapBlocksX;
 uniform vec3 uLightmapDiffuse, uLightmapAmbient;
+${valleyMaskShader}
 in vec3 vWorld;
 in vec3 vNormal;
 out vec4 outColor;
@@ -38,13 +39,19 @@ vec3 colour(ivec2 at,vec2 uv){
 void main(){
  if(uBoundary){outColor=vec4(0.,0.,0.,1.);return;}
  vec2 xy=vWorld.xz;
+ vec2 dx=dFdx(xy)*.4,dz=dFdy(xy)*.4;
  float fog=texture(uFog,xy/256.0).r;
  if(fog<0.015){outColor=vec4(0.,0.,0.,1.);return;}
  ivec2 cell=clamp(ivec2(floor(xy)),ivec2(0),textureSize(uCorners,0)-2);
- vec2 pos=clamp(xy-vec2(cell),0.,1.),uv=xy/4.0;
- vec3 a=colour(cell,uv),d=colour(cell+ivec2(1,1),uv),land;
- if(pos.y>=pos.x){land=a*(1.0-pos.y)+colour(cell+ivec2(0,1),uv)*(pos.y-pos.x)+d*pos.x;}
- else{land=a*(1.0-pos.x)+colour(cell+ivec2(1,0),uv)*(pos.x-pos.y)+d*pos.y;}
+ vec2 pos=clamp(xy-vec2(cell),0.,1.);
+ vec3 land;
+ if(uNativeMask)land=maskedTerrain(cell,pos,dx,dz);
+ else{
+  vec2 uv=xy/4.0;
+  vec3 a=colour(cell,uv),d=colour(cell+ivec2(1,1),uv);
+  if(pos.y>=pos.x){land=a*(1.0-pos.y)+colour(cell+ivec2(0,1),uv)*(pos.y-pos.x)+d*pos.x;}
+  else{land=a*(1.0-pos.x)+colour(cell+ivec2(1,0),uv)*(pos.x-pos.y)+d*pos.y;}
+ }
  if(uNativeLighting){
   vec2 block=floor(xy/${SHADOW_BLOCK_SPAN}.0);
   vec2 blockUV=(xy-block*${SHADOW_BLOCK_SPAN}.0)*((1.-1./${SHADOW_RESOLUTION}.0)/${SHADOW_BLOCK_SPAN}.0)+vec2(.5/${SHADOW_RESOLUTION}.0);
@@ -112,9 +119,17 @@ export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readText
         image.bitmap?.width !== 256 || image.bitmap?.height !== 256) throw new Error('Valley terrain texture differs: ' + row.url);
     return image.bitmap;
   }));
+  const mask = await readTexture(VALLEY_TERRAIN_MASK.url).catch(()=>null);
+  const bitmap = mask?.bitmap;
+  const masked = bitmap?.width === 256 && bitmap?.height === 256 && mask?.bytes &&
+    hex(await crypto.subtle.digest('SHA-256',mask.bytes)) === VALLEY_TERRAIN_MASK.sha256;
+  const passes = masked ? valleyTerrainPasses(geometry, manifest.bindings) : new Uint8Array(4);
   const shader = program(gl,vertex,fragment);
   const uniform = name => gl.getUniformLocation(shader, name);
-  const uniforms = [uniform('uVP'), uniform('uMaterials'), uniform('uCorners'), uniform('uFog'), uniform('uLightmap')];
+  const uniforms = [uniform('uVP'), uniform('uMaterials'), uniform('uCorners'), uniform('uFog'), uniform('uLightmap'),
+    null, // Forest coverage reserves texture unit 4.
+    uniform('uMaterialPasses'), uniform('uTerrainMask')];
+  const uNativeMask = uniform('uNativeMask');
   const uNativeLighting = uniform('uNativeLighting'), uBlocksX = uniform('uLightmapBlocksX');
   const uProjectedShadow = uniform('uProjectedShadow');
   const uDiffuse = uniform('uLightmapDiffuse'), uAmbient = uniform('uLightmapAmbient');
@@ -157,6 +172,22 @@ export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readText
   for (const axis of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, axis, gl.CLAMP_TO_EDGE);
   for (const mode of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, mode, gl.NEAREST);
 
+  const passTexture = gl.createTexture();
+  gl.activeTexture(gl.TEXTURE0 + 5);
+  gl.bindTexture(gl.TEXTURE_2D, passTexture);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8UI, masked ? geometry.width : 1, masked ? geometry.height : 1,
+    0, gl.RGBA_INTEGER, gl.UNSIGNED_BYTE, passes);
+  for (const mode of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, mode, gl.NEAREST);
+  const maskTexture = masked ? gl.createTexture() : cornerTexture;
+  if (masked) {
+    gl.activeTexture(gl.TEXTURE0 + 6);
+    gl.bindTexture(gl.TEXTURE_2D, maskTexture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
+    for (const axis of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, axis, gl.REPEAT);
+    for (const mode of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, mode, gl.LINEAR);
+  }
+  bitmap?.close();
+
   const lightmap = lighting?.native && lighting.climate === 'Temperate' && lighting.sourceTerrainDirection
     ? buildAuthoredTerrainLightmap(geometry, lighting.sourceTerrainDirection) : null;
   const coefficients = lightmap && nativeTerrainCoefficients(lighting);
@@ -178,6 +209,7 @@ export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readText
     draw(vp, fogTexture, highShadows = false) {
       gl.useProgram(shader);
       gl.uniform1i(uBoundary, 0);
+      gl.uniform1i(uNativeMask, masked ? 1 : 0);
       gl.uniform1i(uNativeLighting, lightmap ? 1 : 0);
       gl.uniform1i(uProjectedShadow, 0);
       if (lightmap) {
@@ -187,7 +219,8 @@ export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readText
       }
       gl.uniformMatrix4fv(uniforms[0], false, vp);
       for (const [unit, target, texture] of [[0, gl.TEXTURE_2D_ARRAY, layerTexture], [1, gl.TEXTURE_2D, cornerTexture],
-        [2, gl.TEXTURE_2D, fogTexture], [3, gl.TEXTURE_2D_ARRAY, lightmapTexture]]) {
+        [2, gl.TEXTURE_2D, fogTexture], [3, gl.TEXTURE_2D_ARRAY, lightmapTexture],
+        [5, gl.TEXTURE_2D, passTexture], [6, gl.TEXTURE_2D, maskTexture]]) {
         gl.activeTexture(gl.TEXTURE0 + unit);
         gl.bindTexture(target, texture);
         gl.uniform1i(uniforms[unit + 1], unit);

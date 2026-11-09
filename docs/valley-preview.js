@@ -1,5 +1,6 @@
 import {activeValleyGeometry} from './authored-view.js';
-import {loadAuthoredValleyTerrain} from './authored-terrain.js?v=valley-shadow150';
+import {loadAuthoredValleyTerrain} from './authored-terrain.js?v=valley-mask149-shadow150';
+import {VALLEY_TERRAIN_MASK} from './authored-terrain-mask.js?v=valley-mask149';
 import {loadForestShadowAssets} from './valley-forest-shadow.js';
 import {archiveForestBindings, archiveForestFrame} from './archive-forest.js';
 import {bindValleyWorld0,valleyWorld0Frame} from './archive-world0.js';
@@ -71,6 +72,7 @@ export async function loadValleyPreview({requested, authoredRequested, neutralRe
     await Promise.all([...forest.models, ...forest.textures.map(row => ({url: row.url, sha256: row.png_sha256})),
       ...world0.models, ...world0.textures].map(checked));
     const terrainRows = new Map(terrain.bindings.map(row => [row.url, row]));
+    terrainRows.set(VALLEY_TERRAIN_MASK.url, VALLEY_TERRAIN_MASK);
     const readTexture = async url => {
       const bytes = await checked(terrainRows.get(url));
       const bitmap = await createImageBitmap(new Blob([bytes], {type: 'image/png'}), {premultiplyAlpha: 'none', colorSpaceConversion: 'none'});
