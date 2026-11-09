@@ -282,6 +282,8 @@ impl Game {
                 for &i in &ids {
                     #[cfg(feature = "ee2-native13")]
                     if self.ents[i].def == crate::koth64::HILL || crate::diversion61_defs::slot(self.ents[i].def).is_some() { continue; }
+                    #[cfg(feature = "ee2-native13")]
+                    if !self.settle_completed_skirmish_demolition(i) { continue; }
                     city |= self.ents[i].def == TC;
                     #[cfg(feature = "ee2-native13")]
                     if self.ents[i].def == DOCK { self.retire_dock_garrison(i); }

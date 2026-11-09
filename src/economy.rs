@@ -36,6 +36,45 @@ pub fn population_capacity(def:DefId,epoch:u8)->u32{
     match def{TC=>15,HOUSE=>10,_=>0}
 }
 impl Game {
+    /// Admits ordinary completed demolition and credits the current stock quote before retirement.
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn settle_completed_skirmish_demolition(&mut self, index: usize) -> bool {
+        let actor = self.ents[index];
+        if !matches!(actor.def, HOUSE | BARRACKS | TOWER | TEMPLE)
+            || actor.built != 1.0 || !actor.hp.is_finite() || actor.hp <= 0.0
+            || (actor.def == TEMPLE && actor.ncargo != 0)
+        {
+            return true;
+        }
+        #[cfg(feature = "ee2-authored-valley37")]
+        if self.map.source_world.is_some() {
+            return true;
+        }
+        if self.net || self.winner != 0 || self.territory_victory.is_some() || self.sole_survivor.is_some()
+            || self.regicide.is_some() || self.koth.is_some() || self.crown_victory.is_some()
+            || self.capitols.is_some() || self.hotspots.is_some()
+        {
+            return true;
+        }
+        if self.capture_progress(index).is_some() || self.imperialism_active(index) {
+            return false;
+        }
+        let team = actor.team;
+        let epoch = self.players[team as usize].epoch;
+        let Some(stock) = crate::ee2_units::lookup_class(actor.def, epoch).and_then(|row| row.cost9) else {
+            return true;
+        };
+        let quote = self.unit_cost(team, actor.def);
+        if quote == stock && quote == self.construction_cost(team, actor.def) {
+            for (slot, amount) in quote.into_iter().enumerate().filter(|&(_, amount)| amount != 0) {
+                let scaled = f32::from(amount) * 0.1_f32;
+                let credit = crate::civ8_bonus::cost_integer53(f64::from(scaled));
+                self.add_resource(team, slot, credit as f32);
+            }
+        }
+        true
+    }
+
     pub fn native_generation(&self,def:DefId,team:u8,resource:u8)->f32{
         #[cfg(feature="ee2-up15")] {
             let rate=crate::ee2_up15_economy::generation(def,self.players[team as usize].epoch,resource);

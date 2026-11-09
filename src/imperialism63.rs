@@ -204,6 +204,10 @@ mod tests {
         assert!(!game.leader_purchase_target(1, house));
         assert!(game.combat_hostile(1, 0));
         let (shielded_hp, neighbor_hp) = (game.ents[house].hp, game.ents[nearby].hp);
+        let before_delete = [game.resource(0, 1), game.resource(0, 3)];
+        game.apply(0, crate::cmd::C_DELETE, 0.0, 0.0, 0, &[target]);
+        assert_eq!(game.ents[house].hp, shielded_hp);
+        assert_eq!([game.resource(0, 1), game.resource(0, 3)], before_delete);
         let profile = crate::ee2_combat::UNKNOWN_PROFILE;
         game.native_attack_impact(1, target, 80.0, 80.0, 40.0, 3, 7, 0.0, 0.0, profile, None);
         game.native_attack_impact(1, target, 80.0, 80.0, 40.0, 3, 7, 4.0, 0.0, profile, None);
@@ -220,5 +224,9 @@ mod tests {
         assert!(!game.imperialism_active(house));
         game.native_attack_impact(1, target, 80.0, 80.0, 40.0, 3, 7, 0.0, 0.0, profile, None);
         assert!(game.ents[house].hp < shielded_hp);
+        let before_delete = [game.resource(0, 1), game.resource(0, 3)];
+        game.apply(0, crate::cmd::C_DELETE, 0.0, 0.0, 0, &[target]);
+        assert_eq!(game.ents[house].hp, 0.0);
+        assert_eq!([game.resource(0, 1), game.resource(0, 3)], before_delete.map(|amount| amount + 5.0));
     }
 }

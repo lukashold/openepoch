@@ -886,6 +886,30 @@ mod tests {
     }
 
     #[test]
+    fn completed_demolition_waits_for_the_last_capture_contributor() {
+        use crate::cmd::C_DELETE;
+
+        let mut game = Game::new(7, 1, 0, 1, 0);
+        let building = game.spawn(HOUSE, 0, 80.0, 80.0);
+        let soldier = game.spawn(10, 1, 81.5, 80.0);
+        let target = game.h(building);
+        let attacker = game.h(soldier);
+        let hp = game.ents[building].hp;
+        let wood = game.resource(0, 1);
+        let stone = game.resource(0, 3);
+        game.capture.targets.insert(target, Target { count: 1, owner: 1, progress: 0.25 });
+        game.capture.orders.insert(attacker, Order { target, team: 1, next: 0.0, flags: 1, pose: None, pose_at: 0.0 });
+        game.apply(0, C_DELETE, 0.0, 0.0, 0, &[target]);
+        assert_eq!(game.ents[building].hp, hp);
+        assert_eq!([game.resource(0, 1), game.resource(0, 3)], [wood, stone]);
+        game.capture.remove_order(attacker);
+        assert_eq!(game.capture.targets[&target].progress, 0.25);
+        game.apply(0, C_DELETE, 0.0, 0.0, 0, &[target, target]);
+        assert_eq!(game.ents[building].hp, 0.0);
+        assert_eq!([game.resource(0, 1), game.resource(0, 3)], [wood + 5.0, stone + 5.0]);
+    }
+
+    #[test]
     fn koth_nature_capture_uses_a_normal_impact_and_restarts_the_timer() {
         let mut game = Game::new_hill_world(7, 1);
         assert!(game.configure_crowns(false));
