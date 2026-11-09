@@ -29,6 +29,7 @@ HUGE10_LAN_PROFILES = {
     'pangea-huge10-native-naval-1': ('pangea-huge10-naval', 'huge10Naval'),
     'pangea-huge10-native-pursuit-1': ('pangea-huge10-pursuit', 'huge10Pursuit'),
     'pangea-huge10-native-anchor-1': ('pangea-huge10-anchor', 'huge10Anchor'),
+    'pangea-huge10-epoch-economy-1': ('pangea-huge10-epoch-economy', 'huge10EpochEconomy'),
 }
 HUGE10_PROFILE = re.compile(r'(?:' + '|'.join(HUGE10_LAN_PROFILES) + r'):[0-9a-f]{64}')
 PRIVATE_NETWORKS = tuple(map(ipaddress.IPv4Network, ('10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16')))
