@@ -6,6 +6,7 @@ assets, install anything, or claim a macOS launch when executed on Windows.
 from __future__ import annotations
 
 import argparse
+from contextlib import closing
 import hashlib
 import http.client
 import json
@@ -250,6 +251,36 @@ class PortableServerTest(unittest.TestCase):
             with raised.exception as response:
                 self.assertEqual((response.code, response.headers['Content-Range'], response.read()),
                                  (416, 'bytes */32', b''))
+
+    def test_static_assets_reuse_connection_and_signaling_closes_it(self):
+        server = self.launch()
+        port = server.ready['port']
+        host = f'127.0.0.1:{port}'
+        with closing(http.client.HTTPConnection('127.0.0.1', port, timeout=4)) as connection:
+            connection.request('GET', '/')
+            response = connection.getresponse()
+            self.assertEqual((response.version, response.status), (11, 200))
+            self.assertEqual(response.read(), (self.root/'index.html').read_bytes())
+            socket_ = connection.sock
+            self.assertIsNotNone(socket_)
+            connection.request('HEAD', '/openepoch-ee2-up15.wasm?v=test')
+            response = connection.getresponse()
+            self.assertEqual(response.status, 200)
+            self.assertEqual(response.read(), b'')
+            self.assertIs(connection.sock, socket_)
+            connection.request('GET', '/openepoch-ee2-up15.wasm')
+            response = connection.getresponse()
+            self.assertEqual(response.status, 200)
+            self.assertEqual(response.read(), (self.root/'openepoch-ee2-up15.wasm').read_bytes())
+            self.assertIs(connection.sock, socket_)
+            connection.request('POST', '/__openepoch__/lan', body=b'{"action":"status"}', headers={
+                'Origin': f'http://{host}', 'Content-Type': 'application/json',
+            })
+            response = connection.getresponse()
+            self.assertEqual(response.status, 200)
+            self.assertEqual(response.getheader('Connection'), 'close')
+            self.assertTrue(json.loads(response.read())['available'])
+            self.assertIsNone(connection.sock)
 
     def test_identical_root_reuses_existing_listener(self):
         first = self.launch()

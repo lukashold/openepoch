@@ -1,0 +1,128 @@
+diff --git a/src/cmd.rs b/src/cmd.rs
+--- a/src/cmd.rs
++++ b/src/cmd.rs
+@@ -239,7 +239,11 @@
+                 self.begin_construction(team,def,a as i32,b as i32,turn,&ids,true);
+             }
+             #[cfg(feature="ee2-pangea-huge10-dock157")]
+-            C_DOCK157 if c == 0 => self.dock157_place(team,[a,b],&ids),
++            C_DOCK157 => {
++                // A zero word keeps the legacy fresh-cursor command encoding.
++                let initial = f32::from_bits(c as u32 ^ crate::dock157::INITIAL.to_bits());
++                self.dock157_place(team,[a,b],initial,&ids);
++            }
+             C_TRAIN => {
+                 if let Some(&i)=ids.first().filter(|_|c>=0&&(cfg!(feature="ee2-roster6")||c<=255)) {
+                     self.train(i, c as QueueItem);
+diff --git a/src/dock157.rs b/src/dock157.rs
+--- a/src/dock157.rs
++++ b/src/dock157.rs
+@@ -8,7 +8,7 @@
+ const CIRCLE_STEP: f32 = f32::from_bits(0x3f66_6666) / RADIUS as f32;
+ const TURN: f64 = f32::from_bits(0x40c9_0fdb) as f64;
+ const QUARTER: f64 = f32::from_bits(0x3fc9_0fdb) as f64;
+-const INITIAL: f32 = f32::from_bits(0xbf49_0fdb);
++pub(crate) const INITIAL: f32 = f32::from_bits(0xbf49_0fdb);
+ const BODY: [f32; 2] = [f32::from_bits(0x4035_04f3), f32::from_bits(0x4087_c3b6)];
+ const EXTRA_MARGIN: f32 = f32::from_bits(0x3fb5_04f3);
+ const RASTER_EDGE: f32 = f32::from_bits(0x3a83_126f);
+@@ -153,12 +153,13 @@
+         !self.net && self.map.pangea104.is_some_and(|layout| layout.terrain == TerrainKind::SourceHuge10)
+     }
+ 
+-    pub(crate) fn dock157_preview(&mut self, raw: [f32; 2], ids: &[usize]) -> Option<(Pose,u32)> {
++    pub(crate) fn dock157_preview(&mut self, raw: [f32; 2], initial: f32, ids: &[usize]) -> Option<(Pose,u32)> {
+         if !self.dock157_enabled() || raw.iter().any(|p| !p.is_finite() || *p < 2.0 || *p >= (SIDE-2) as f32) {
+             return None;
+         }
++        if initial != INITIAL && !(0.0..=TURN as f32).contains(&initial) { return None; }
+         let terrain = Coast::archived();
+-        let pose = terrain.pose(raw,INITIAL)?;
++        let pose = terrain.pose(raw,initial)?;
+         let error = self.dock157_admission(raw,pose,terrain,ids);
+         Some((pose,error))
+     }
+@@ -195,9 +196,9 @@
+         Ent { def:DOCK, x:pose.center[0], y:pose.center[1], rot:pose.yaw, ..E0 }
+     }
+ 
+-    pub(crate) fn dock157_place(&mut self, team: u8, raw: [f32;2], ids: &[usize]) {
++    pub(crate) fn dock157_place(&mut self, team: u8, raw: [f32;2], initial: f32, ids: &[usize]) {
+         if team != self.local { return; }
+-        let Some((pose,0)) = self.dock157_preview(raw,ids) else { return; };
++        let Some((pose,0)) = self.dock157_preview(raw,initial,ids) else { return; };
+         let builders = self.reachable_foundation_builders(team,ids);
+         let cost = self.construction_cost(team,DOCK);
+         let foundation = self.place_funded_foundation(DOCK,team,Self::dock157_site(pose),cost);
+diff --git a/src/lib.rs b/src/lib.rs
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -605,8 +605,14 @@
+ #[cfg(feature="ee2-pangea-huge10-dock157")]
+ #[no_mangle]
+ pub extern "C" fn render_dock157(alpha:f32,x0:f32,y0:f32,x1:f32,y1:f32,x:f32,y:f32)->u32 {
++    render_dock158(alpha,x0,y0,x1,y1,x,y,dock157::INITIAL)
++}
++
++#[cfg(feature="ee2-pangea-huge10-dock157")]
++#[no_mangle]
++pub extern "C" fn render_dock158(alpha:f32,x0:f32,y0:f32,x1:f32,y1:f32,x:f32,y:f32,initial:f32)->u32 {
+     unsafe { if (&*addr_of_mut!(GAME)).is_none() { render_meta7::begin_frame(); render_meta7::end_frame(); return 0; } }
+-    g().render_dock157(alpha,x0,y0,x1,y1,[x,y])
++    g().render_dock157(alpha,x0,y0,x1,y1,[x,y],initial)
+ }
+ 
+ /// Optional rendering-only metadata ABI. All getters are safe before init.
+@@ -2090,9 +2096,15 @@
+ #[cfg(feature="ee2-pangea-huge10-dock157")]
+ #[no_mangle]
+ pub extern "C" fn dock157_preview(x:f32,y:f32)->u32 {
++    dock158_preview(x,y,dock157::INITIAL)
++}
++
++#[cfg(feature="ee2-pangea-huge10-dock157")]
++#[no_mangle]
++pub extern "C" fn dock158_preview(x:f32,y:f32,initial:f32)->u32 {
+     let game = g();
+     let ids = selected(game);
+-    let preview = game.dock157_preview([x,y],&ids);
++    let preview = game.dock157_preview([x,y],initial,&ids);
+     DOCK157_POSE.with(|last| last.set(preview.map_or([f32::NAN;3],|(pose,_)| [pose.center[0],pose.center[1],pose.yaw])));
+     preview.map_or(1,|(_,error)| error)
+ }
+@@ -2106,11 +2118,18 @@
+ #[cfg(feature="ee2-pangea-huge10-dock157")]
+ #[no_mangle]
+ pub extern "C" fn cmd_place_dock157(x:f32,y:f32)->u32 {
++    cmd_place_dock158(x,y,dock157::INITIAL)
++}
++
++#[cfg(feature="ee2-pangea-huge10-dock157")]
++#[no_mangle]
++pub extern "C" fn cmd_place_dock158(x:f32,y:f32,initial:f32)->u32 {
+     let game = g();
+     let ids = selected(game);
+-    if !matches!(game.dock157_preview([x,y],&ids),Some((_,0))) { return 0; }
++    if !matches!(game.dock157_preview([x,y],initial,&ids),Some((_,0))) { return 0; }
+     let hs = handles(game,&ids);
+-    game.submit(crate::cmd::C_DOCK157,x,y,0,&hs);
++    let encoded = initial.to_bits() ^ dock157::INITIAL.to_bits();
++    game.submit(crate::cmd::C_DOCK157,x,y,encoded as i32,&hs);
+     1
+ }
+ #[no_mangle]
+diff --git a/src/render.rs b/src/render.rs
+--- a/src/render.rs
++++ b/src/render.rs
+@@ -122,9 +122,9 @@
+     }
+ 
+     #[cfg(feature="ee2-pangea-huge10-dock157")]
+-    pub(crate) fn render_dock157(&mut self,alpha:f32,x0:f32,y0:f32,x1:f32,y1:f32,raw:[f32;2])->u32 {
++    pub(crate) fn render_dock157(&mut self,alpha:f32,x0:f32,y0:f32,x1:f32,y1:f32,raw:[f32;2],initial:f32)->u32 {
+         let ids = crate::selected(self);
+-        let dock = self.dock157_preview(raw,&ids).map(|(pose,error)| {
++        let dock = self.dock157_preview(raw,initial,&ids).map(|(pose,error)| {
+             ([pose.center[0],pose.center[1],pose.yaw],error == 0)
+         });
+         self.render_scene(alpha,x0,y0,x1,y1,-1,0,0,0,dock)

@@ -33,6 +33,7 @@ WASM_FILES = ("openepoch.wasm", "openepoch-ee2.wasm", "openepoch-ee2-up15.wasm")
 class GameServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = os.name != "nt"
+    request_queue_size = 64
 
     def server_bind(self):
         if os.name == "nt" and hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
@@ -41,6 +42,9 @@ class GameServer(ThreadingHTTPServer):
 
 
 class GameHandler(SimpleHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+    timeout = 20
+
     extensions_map = {
         **SimpleHTTPRequestHandler.extensions_map,
         ".wasm": "application/wasm",
@@ -59,11 +63,15 @@ class GameHandler(SimpleHTTPRequestHandler):
     def end_headers(self):
         self.send_header("Cache-Control", "no-store" if self.path == LAN_PATH else "no-cache")
         self.send_header("X-Content-Type-Options", "nosniff")
+        if self.command == "POST" and self.path == LAN_PATH:
+            self.send_header("Connection", "close")
         if getattr(self, "video_response", False):
             self.send_header("Accept-Ranges", "bytes")
         super().end_headers()
 
     def do_POST(self):
+        # Rejected signaling requests can still have an unread body.
+        self.close_connection = True
         if self.path == LAN_PATH:
             local_request(self)
         else:
