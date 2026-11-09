@@ -1,0 +1,161 @@
+diff --git a/Cargo.toml b/Cargo.toml
+index f69c705..c1c60ea 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -35,6 +35,7 @@ ee2-valley74-city-footprint = ["ee2-valley71-neutral-qa"]
+ ee2-valley163-forest-qa = ["ee2-valley74-city-footprint"]
+ ee2-valley164-forest-play = ["ee2-valley163-forest-qa"]
+ ee2-valley166-forest-clock = ["ee2-valley164-forest-play"]
++ee2-valley169-forest-retarget = ["ee2-valley166-forest-clock"]
+ 
+ [profile.release]
+ opt-level = 3
+diff --git a/src/native_valley37/forest_play164.rs b/src/native_valley37/forest_play164.rs
+index 3966c22..2039168 100644
+--- a/src/native_valley37/forest_play164.rs
++++ b/src/native_valley37/forest_play164.rs
+@@ -34,6 +34,33 @@ fn carry_wood(carry: f32, amount: f32, worker: f32, player: f32, cap: f32) -> (f
+     (updated.min(f64::from(cap)) as f32, updated >= f64::from(cap))
+ }
+ 
++#[cfg(feature = "ee2-valley169-forest-retarget")]
++fn individual_score(center: (f32, f32), tree: (f32, f32), spare: i32) -> f32 {
++    use crate::ai9_count::Precision53::TowardZero;
++    let dx = TowardZero.add(f64::from(center.0), -f64::from(tree.0));
++    let dy = TowardZero.add(f64::from(center.1), -f64::from(tree.1));
++    let distance = TowardZero.store_f32(TowardZero.add(
++        TowardZero.mul(dx, dx), TowardZero.mul(dy, dy),
++    ));
++    if spare > 0 { return distance; }
++    TowardZero.store_f32(TowardZero.add(f64::from(distance), f64::from(200 - 200 * spare)))
++}
++
++fn assign_forest_order(e: &mut Ent, row: u32, (x, y): (f32, f32),
++    (goal_x, goal_y): (f32, f32), key: u32) {
++    let carried = if e.carry > 0.0 { e.q[2] } else { 0 };
++    e.order = O_VALLEY_FOREST;
++    e.ox = goal_x;
++    e.oy = goal_y;
++    e.otile = tile_of(x, y) as u32;
++    e.otgt = NONE;
++    e.tgt = NONE;
++    e.fkey = key;
++    e.fslot = u16::MAX;
++    e.stuck = 0;
++    e.q = [u32::from(R_WOOD), u32::from(carried != 0 && carried != u32::from(R_WOOD)), carried, row, 0];
++}
++
+ impl Game {
+     pub(in crate::native_valley37) fn valley_forest_play(&self) -> Option<&ForestReplay> {
+         self.valley_fixture.as_ref()?.forest_replay.as_ref().filter(|forest| forest.playable)
+@@ -62,19 +89,61 @@ impl Game {
+ 
+     // Bounded portable admission. The source uses the movement-group graph;
+     // until its Valley grid is available we admit only unobstructed approaches.
+-    fn forest_approach(&self, e: &Ent, x: f32, y: f32) -> Option<(f32, f32)> {
++    fn forest_approach_clear(&self, e: &Ent, (x, y): (f32, f32)) -> bool {
++        let [width, height] = self.map.world_dimensions();
++        if !(0.6..width as f32 - 0.6).contains(&x) || !(0.6..height as f32 - 0.6).contains(&y) { return false }
+         let denied = self.denied_border_territories(e);
++        let distance = ((e.x - x).powi(2) + (e.y - y).powi(2)).sqrt();
++        let steps = (distance * 8.0).ceil().max(1.0) as u32;
++        (0..=steps).all(|step| {
++            let t = step as f32 / steps as f32;
++            let tile = tile_of(e.x + (x - e.x) * t, e.y + (y - e.y) * t);
++            self.map.pass[0][tile] && self.map.permits_territory(tile, denied)
++        })
++    }
++
++    fn forest_approach(&self, e: &Ent, x: f32, y: f32) -> Option<(f32, f32)> {
+         let distance = |(x, y): (f32, f32)| (e.x - x).powi(2) + (e.y - y).powi(2);
+-        approaches(x, y).into_iter().filter(|&(x, y)| {
+-            let [width, height] = self.map.world_dimensions();
+-            if !(0.6..width as f32 - 0.6).contains(&x) || !(0.6..height as f32 - 0.6).contains(&y) { return false }
+-            let steps = (distance((x, y)).sqrt() * 8.0).ceil().max(1.0) as u32;
+-            (0..=steps).all(|step| {
+-                let t = step as f32 / steps as f32;
+-                let tile = tile_of(e.x + (x - e.x) * t, e.y + (y - e.y) * t);
+-                self.map.pass[0][tile] && self.map.permits_territory(tile, denied)
+-            })
+-        }).min_by(|&a, &b| distance(a).total_cmp(&distance(b)))
++        approaches(x, y).into_iter().filter(|&point| self.forest_approach_clear(e, point))
++            .min_by(|&a, &b| distance(a).total_cmp(&distance(b)))
++    }
++
++    #[cfg(feature = "ee2-valley169-forest-retarget")]
++    fn continuation_tree(&self, e: &Ent, center: (f32, f32)) -> Option<u32> {
++        let forest = self.valley_forest_play()?;
++        let individual = forest.promoted.iter().enumerate().filter_map(|(index, actor)| {
++            if !actor.is_some_and(|actor| actor.wood > 0.0) { return None; }
++            let row = index as u32;
++            let (x, y) = self.forest_position(row)?;
++            if individual_score(center, (x, y), 1) > 25.0 || self.forest_approach(e, x, y).is_none() {
++                return None;
++            }
++            let spare = WORKER_LIMIT as i32 - self.forest_staff(row).0 as i32;
++            Some((row, individual_score(center, (x, y), spare), spare))
++        }).min_by(|a, b| a.1.total_cmp(&b.1));
++        if let Some((row, score, _)) = individual {
++            if score < 1.0 { return Some(row); }
++        }
++        // The registry keeps original row identity and source probe order.
++        // Native region labels and compressed bucket traversal are separate.
++        let compressed = forest.registry.select((0..forest.promoted.len() as u32).map(ForestId),
++            [center.0, center.1], 5.0, f32::from_bits(1061625612),
++            |[x, y]| self.forest_approach_clear(e, (x, y)));
++        compressed.map(|id| id.0).or_else(|| individual.filter(|row| row.2 > 0).map(|row| row.0))
++    }
++
++    #[cfg(feature = "ee2-valley169-forest-retarget")]
++    fn continue_depleted_forest(&mut self, e: &mut Ent, row: u32) -> bool {
++        let center = self.forest_position(row).unwrap_or((e.x, e.y));
++        let Some(next) = self.continuation_tree(e, center) else { return false };
++        let Some((x, y)) = self.forest_position(next) else { return false };
++        let Some(goal) = self.forest_approach(e, x, y) else { return false };
++        let forest = self.valley_fixture.as_mut().unwrap().forest_replay.as_mut().unwrap();
++        if forest.promoted[next as usize].is_none()
++            && forest.promote(ForestId(next), actor_id(next), WOOD).is_none() { return false; }
++        let key = self.key_for(LAND, goal.0, goal.1);
++        assign_forest_order(e, next, (x, y), goal, key);
++        true
+     }
+ 
+     pub(crate) fn order_valley_forest(&mut self, team: u8, row: u32, ids: &[usize]) {
+@@ -85,25 +154,14 @@ impl Game {
+             let e = &self.ents[index];
+             if e.def != WORKER || e.team != team || (e.order == O_VALLEY_FOREST && e.q[3] == row)
+                 || (e.carry > 0.0 && e.q[2] == 0) { continue }
+-            let Some((goal_x, goal_y)) = self.forest_approach(e, x, y) else { continue };
++            let Some(goal) = self.forest_approach(e, x, y) else { continue };
+             let forest = self.valley_fixture.as_mut().unwrap().forest_replay.as_mut().unwrap();
+             if forest.promoted[row as usize].is_none() && forest.promote(ForestId(row), actor_id(row), WOOD).is_none() {
+                 return;
+             }
+-            let key = self.key_for(LAND, goal_x, goal_y);
++            let key = self.key_for(LAND, goal.0, goal.1);
+             self.native_stop_attack(index);
+-            let e = &mut self.ents[index];
+-            let carried = if e.carry > 0.0 { e.q[2] } else { 0 };
+-            e.order = O_VALLEY_FOREST;
+-            e.ox = goal_x;
+-            e.oy = goal_y;
+-            e.otile = tile_of(x, y) as u32;
+-            e.otgt = NONE;
+-            e.tgt = NONE;
+-            e.fkey = key;
+-            e.fslot = u16::MAX;
+-            e.stuck = 0;
+-            e.q = [u32::from(R_WOOD), u32::from(carried != 0 && carried != u32::from(R_WOOD)), carried, row, 0];
++            assign_forest_order(&mut self.ents[index], row, (x, y), goal, key);
+             reserved += 1;
+         }
+     }
+@@ -120,6 +178,8 @@ impl Game {
+             Self::set_idle(e);
+             return None;
+         }
++        #[cfg(feature = "ee2-valley169-forest-retarget")]
++        if wood == 0.0 && e.q[1] == 0 && self.continue_depleted_forest(e, row) { return None; }
+         if wood == 0.0 || e.q[1] == 1 {
+             e.q[4] = 0;
+             if e.carry > 0.0 {
