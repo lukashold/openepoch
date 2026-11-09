@@ -6,6 +6,7 @@ import {createForestShadowRenderer} from './valley-forest-shadow.js?v=valley-for
 import {createRuinVolumeRenderer} from './valley-ruin-shadow.js';
 import {createBuildingShadowRenderer} from './citycenter-shadow-renderer.js?v=house156';
 import {VALLEY_TERRAIN_MASK,valleyMaskMipLevels,valleyMaskShader,valleyTerrainPasses} from './authored-terrain-mask.js?v=valley-mips151';
+import {territoryBorderCompositor} from './territory-border-compositor.js?v=territory-borders218';
 
 export const VALLEY_MATERIAL_MIPS = Object.freeze({
   url: 'local-original/valley-terrain/terrain-color-mips.rgba8',
@@ -35,19 +36,20 @@ out vec3 vNormal;
 invariant gl_Position;
 void main(){vWorld=aPosition;vNormal=aNormal;gl_Position=uVP*vec4(aPosition,1.0);}
 `;
-const fragment = `#version 300 es
+const fragment = borders => `#version 300 es
 precision highp float;
 precision highp int;
 uniform highp sampler2DArray uMaterials;
 uniform sampler2D uCorners;
 uniform sampler2D uFog;
-uniform bool uBoundary;
+uniform bool uBoundary,uDeferFog;
 uniform bool uNativeLighting;
 uniform bool uProjectedShadow;
 uniform highp sampler2DArray uLightmap;
 uniform float uLightmapBlocksX;
 uniform vec3 uLightmapDiffuse, uLightmapAmbient;
 ${valleyMaskShader}
+${borders?territoryBorderCompositor:''}
 in vec3 vWorld;
 in vec3 vNormal;
 out vec4 outColor;
@@ -60,7 +62,7 @@ void main(){
  if(uBoundary){outColor=vec4(0.,0.,0.,1.);return;}
  vec2 xy=vWorld.xz;
  vec2 dx=dFdx(xy),dz=dFdy(xy);
- float fog=texture(uFog,xy/256.0).r;
+ float fog=uDeferFog?1.0:texture(uFog,xy/256.0).r;
  if(fog<0.015){outColor=vec4(0.,0.,0.,1.);return;}
  ivec2 cell=clamp(ivec2(floor(xy)),ivec2(0),textureSize(uCorners,0)-2);
  vec2 pos=clamp(xy-vec2(cell),0.,1.);
@@ -83,6 +85,7 @@ void main(){
   vec3 sun=normalize(vec3(.42,.82,.39));
   land*=vec3(.55,.57,.59)+vec3(.53,.50,.43)*max(dot(normalize(vNormal),sun),0.0);
  }
+ ${borders?'land=compositeTerritoryBorders(land,xy);':''}
  float reveal=smoothstep(.02,.45,fog)*mix(.5,1.0,smoothstep(.55,.95,fog));
  outColor=vec4(land*reveal,1.0);
 }
@@ -130,7 +133,7 @@ function program(gl, vertexSource, fragmentSource) {
 const hex = bytes => Array.from(new Uint8Array(bytes), n => n.toString(16).padStart(2, '0')).join('');
 
 export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readTexture, lighting = null, forestShadow = null,
-  maskMips = null, materialMips = null, ruinShadow = null, buildingShadow = null) {
+  maskMips = null, materialMips = null, ruinShadow = null, buildingShadow = null, territoryBorders = null) {
   const corners = valleyTerrainCornerTexture(geometry, manifest);
   const {vertices, indices} = authoredTerrainMesh(geometry);
   const boundary = authoredValleyBoundary(geometry);
@@ -147,7 +150,8 @@ export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readText
   const masked = Boolean(mipLevels || (bitmap?.width === 256 && bitmap?.height === 256 && mask?.bytes &&
     hex(await crypto.subtle.digest('SHA-256',mask.bytes)) === VALLEY_TERRAIN_MASK.sha256));
   const passes = masked ? valleyTerrainPasses(geometry, manifest.bindings) : new Uint8Array(4);
-  const shader = program(gl,vertex,fragment);
+  const directBorders = !!territoryBorders?.geometry;
+  const shader = program(gl,vertex,fragment(!!territoryBorders&&!directBorders));
   const uniform = name => gl.getUniformLocation(shader, name);
   const uniforms = [uniform('uVP'), uniform('uMaterials'), uniform('uCorners'), uniform('uFog'), uniform('uLightmap'),
     null, // Forest coverage reserves texture unit 4.
@@ -256,10 +260,14 @@ export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readText
   let samplerHigh;
   return {
     indexCount: indices.length,
-    draw(vp, fogTexture, highShadows = false, highSampling = false, ruins = [], casters = [], forestPhases = null) {
+    drawLateFog(fog,vp,quality) {
+      return fog.draw('main',vp,vao,quality,indices.length);
+    },
+    draw(vp, fogTexture, highShadows = false, highSampling = false, ruins = [], casters = [], forestPhases = null, deferFog = false) {
       const drawnBuildings=highShadows && projectBuildings && casters.length ? projectBuildings.prepare(casters) : null;
       gl.useProgram(shader);
       gl.uniform1i(uBoundary, 0);
+      gl.uniform1i(uniform('uDeferFog'),Number(deferFog));
       gl.uniform1i(uNativeMask, masked ? 1 : 0);
       gl.uniform1i(uMaskMipChain, mipLevels ? 1 : 0);
       gl.uniform1i(uNativeLighting, lightmap ? 1 : 0);
@@ -277,6 +285,7 @@ export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readText
         gl.bindTexture(target, texture);
         gl.uniform1i(uniforms[unit + 1], unit);
       }
+      if(!directBorders)territoryBorders?.bind(uniform,[8,9,10]);
       if ((materialLevels || mipLevels) && samplerHigh !== highSampling) {
         samplerHigh = highSampling;
         const minFilter = highSampling ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR_MIPMAP_NEAREST;
@@ -317,6 +326,7 @@ export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readText
         gl.stencilMask(0);
         gl.stencilOp(gl.KEEP,gl.KEEP,gl.KEEP);
         gl.useProgram(shader);
+        if(!directBorders)territoryBorders?.bind(uniform,[8,9,10]);
         gl.bindVertexArray(vao);
         if (drawVolumes) {
           gl.stencilFunc(gl.EQUAL,0,0x3f);
@@ -332,6 +342,7 @@ export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readText
         gl.depthFunc(depth);
         gl.depthMask(true);
       }
+      if(directBorders)territoryBorders.drawGeometry({vp,fogTexture,deferAllFog:deferFog});
       gl.uniform1i(uBoundary, 1);
       gl.bindVertexArray(boundaryVao);
       let first = 0;

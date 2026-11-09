@@ -83,6 +83,15 @@ export function createFullmapPipBridge({gl, canvas, available, mainPose, setMain
   };
   const point = value => Array.isArray(value) && value.length === 2 && value.every(Number.isFinite);
   const viewport=()=>opened&&fullmapPipDeviceRect(opened.getViewport(),canvas.getBoundingClientRect(),canvas.width,canvas.height);
+  function advanceFrame(delta) {
+    if (!opened || !available()) return null;
+    const rect = viewport();
+    if (!rect) return null;
+    let pose = camera.update(delta, resolveUnit);
+    if (held) { camera.focusMap(...held); pose = camera.pose(); }
+    if (wheelUnits) { pose = camera.wheel(wheelUnits); wheelUnits = 0; }
+    return {rect,pose};
+  }
   return Object.freeze({
     available,
     isOpen: () => opened !== null,
@@ -153,13 +162,17 @@ export function createFullmapPipBridge({gl, canvas, available, mainPose, setMain
       if (held) [pose.x,pose.y]=held;
       return updateOriginalCamera(pose,{},rect.width,rect.height,heightAt,ORIGINAL_PIP_CAMERA_PROFILE).vp;
     },
-    draw(delta, drawWorld) {
-      if (!opened || !available()) return null;
-      const rect = viewport();
-      if (!rect) return null;
-      let pose = camera.update(delta, resolveUnit);
-      if (held) { camera.focusMap(...held); pose = camera.pose(); }
-      if (wheelUnits) { pose = camera.wheel(wheelUnits); wheelUnits = 0; }
+    prepare(delta) {
+      const frame = advanceFrame(delta);
+      if (!frame) return null;
+      const {pose,rect} = frame;
+      const view = updateOriginalCamera({...pose},{},rect.width,rect.height,heightAt,ORIGINAL_PIP_CAMERA_PROFILE);
+      return {...frame,vp:view.vp};
+    },
+    draw(delta, drawWorld, prepared) {
+      const frame = prepared === undefined ? advanceFrame(delta) : prepared;
+      if (!frame || !opened || !available()) return null;
+      const {rect,pose} = frame;
       renderer ??= createOriginalPipRenderer(gl);
       present ??= createPresenter(gl);
       const result = renderer.render({camera: pose, width: rect.width, height: rect.height, heightAt,

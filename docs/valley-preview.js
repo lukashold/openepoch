@@ -1,5 +1,5 @@
 import {activeValleyGeometry} from './authored-view.js';
-import {loadAuthoredValleyTerrain,VALLEY_MATERIAL_MIPS} from './authored-terrain.js?v=valley-forest167';
+import {loadAuthoredValleyTerrain,VALLEY_MATERIAL_MIPS} from './authored-terrain.js?v=terrain-presentation227';
 import {VALLEY_MASK_MIPS,VALLEY_TERRAIN_MASK} from './authored-terrain-mask.js?v=valley-mips151';
 import {loadForestShadowAssets} from './valley-forest-shadow.js?v=valley-forest167';
 import {loadRuinShadowAssets,visibleRuinShadows} from './valley-ruin-shadow.js';
@@ -52,7 +52,7 @@ function supply(wasm, bytes, allocate) {
 }
 
 export async function loadValleyPreview({requested, authoredRequested, neutralRequested = false, requireAuthored = false,
-  manifest = null, wasm, gl, teams, lighting = null, read = readLocal, onUnavailable = () => {}}) {
+  manifest = null, wasm, gl, teams, lighting = null, territoryBorders = null, read = readLocal, onUnavailable = () => {}}) {
   if (!requested || typeof wasm.valley39_commit !== 'function' || !globalThis.crypto?.subtle) return null;
   const checked = row => checkedAsset(read, row);
   const json = bytes => JSON.parse(new TextDecoder().decode(bytes));
@@ -94,7 +94,7 @@ export async function loadValleyPreview({requested, authoredRequested, neutralRe
       loadRuinShadowAssets(checked,index,world0,lighting).catch(() => null),
       loadBuildingShadowAssets(checked,lighting).catch(() => null),
     ]);
-    const ground = await loadAuthoredValleyTerrain(gl, geometry, terrain, readTexture, lighting, forestShadow, maskMips, materialMips, ruinShadow,buildingShadow);
+    const ground = await loadAuthoredValleyTerrain(gl, geometry, terrain, readTexture, lighting, forestShadow, maskMips, materialMips, ruinShadow,buildingShadow,territoryBorders);
     const trees = await loadOriginalModels(gl, true, teams, undefined,
       {assetMapping, manifestURL: index.forest.url, initialSails: false, nativeLighting: false});
     if (trees.errors.length || trees.models.size !== forest.models.length) throw new Error('Valley-Waldgrafiken konnten nicht geladen werden.');
@@ -136,12 +136,15 @@ export async function loadValleyPreview({requested, authoredRequested, neutralRe
         return stageFixture(locator.fixture === authoredTest.sha256 ? authored :
           packets[index.fixtures.findIndex(row => row.sha256 === locator.fixture)]);
       },
-      drawTerrain(vp, fog, highShadows, highSampling, bounds, casters) {
+      drawTerrain(vp, fog, highShadows, highSampling, bounds, casters, deferFog = false) {
         const ruins = highShadows && ruinShadow ? visibleRuinShadows(ruinShadow,
           staticBindings.world0Cases.get(wasm.valley37_view_info(3)),
           new Uint8Array(wasm.memory.buffer, wasm.fog_ptr(), geometry.backing ** 2),bounds) : [];
         forestState = presentation?.snapshot() ?? null;
-        return ground.draw(vp, fog, highShadows, highSampling, ruins, casters, forestState?.phases);
+        return ground.draw(vp, fog, highShadows, highSampling, ruins, casters, forestState?.phases, deferFog);
+      },
+      drawLateFog(fog,vp,quality) {
+        return ground.drawLateFog(fog,vp,quality);
       },
       pickForest(origin,direction,maxDistance) {
         return forestState ? trees.pickResourceHit(origin,direction,maxDistance) : null;

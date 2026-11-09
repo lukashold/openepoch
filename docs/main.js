@@ -50,12 +50,14 @@ import {createRenderActorMetadata} from './render-actor-metadata.js?v=pack8';
 import {createPackRenderMetadata} from './original-pack-states.js?v=pack-frame123';
 import {createNativePackSceneClock} from './original-pack-scene.js?v=pack-offscreen132';
 import {createMrlsPackAudio,mrlsPackAudioCatalog} from './mrls-pack-audio.js?v=mrls-pack133';
-import {createFullmapPipBridge} from './original-fullmap-pip-bridge.js?v=native66';
+import {createFullmapPipBridge} from './original-fullmap-pip-bridge.js?v=territory-camera223';
 import {loadOriginalGround,sampleGroundHeight} from './original-ground.js?v=native67';
 import {createCaptureGlow} from './capture-glow.js?v=native64-koth';
-import {loadOriginalTerrain} from './original-terrain.js?v=skirmish-climates';
+import {loadOriginalTerrain} from './original-terrain.js?v=terrain-presentation227';
+import {loadTerrainBorderRenderer} from './terrain-border-renderer.js?v=terrain-presentation227';
+import {createSceneTerrainFog,admitsValleyTerrainFog} from './scene-terrain-fog.js?v=terrain-presentation227';
 import {loadOriginalWater} from './original-water.js?v=water-farm3';
-import {createOriginalReflection} from './original-reflection.js?v=visual-seasons2';
+import {createOriginalReflection,reflectedViewProjection} from './original-reflection.js?v=visual-seasons2';
 import {NATIVE_SEASON_CHOICE,normalizeSeasonChoice,resolveSeasonChoice} from './original-seasons.js?v=native108';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=native108';
 import {checkTimeOfDayMode,createTimeOfDayClock,readTimeOfDayState,resolveTimeOfDay,timeOfDayPeriods} from './original-time-of-day.js?v=time-of-day160';
@@ -105,7 +107,7 @@ import {addCarrierFlightAudio,loadAirFlightAudio,readAirFlightAudio,submarineMov
 import {loadFullmapCityNameCatalog,loadFullmapTerritoryNameCatalog} from './fullmap-territory-names.js?v=native22';
 import {createWarplanPeer,WARPLAN_PEER_VERSION} from './original-warplan-peer.js';
 import {activeValleyGeometry,initialValleyViews,pickValleyGround,valleyMinimapPoint,valleyMinimapSnapshot} from './authored-view.js';
-import {installedValleyManifest,loadValleyPreview,valleySaveLocator} from './valley-preview.js?v=valley-forest167';
+import {installedValleyManifest,loadValleyPreview,valleySaveLocator} from './valley-preview.js?v=terrain-presentation227';
 
 const $ = id => document.getElementById(id);
 const canvas = $('gl');
@@ -543,7 +545,11 @@ function uploadTerrain() {
   heights = f32(wasm.hmap_ptr(), HN * HN).slice();
   originalGround.updateTerrain(heights);
   originalModels.updateTerrain?.(heights);
-  if(valleyWorld)return;
+  if(valleyWorld){
+    territoryBorders?.setTerrain(valleyWorld.elevations,valleyWorld.width,valleyWorld.height,true);
+    return;
+  }
+  territoryBorders?.setTerrain(heights,MAP,MAP);
   uploadOriginalTerrainClasses();
   const v = new Float32Array(HN * HN * 6), h = (x, y) => heights[Math.min(MAP, Math.max(0, y)) * HN + Math.min(MAP, Math.max(0, x))];
   for (let y = 0, k = 0; y < HN; y++) for (let x = 0; x < HN; x++) {
@@ -799,9 +805,19 @@ const captureGlow = originalEnabled && typeof wasm.active_capture_glow === 'func
 const originalGround=await loadOriginalGround(gl,originalEnabled,{assetMapping,climateProfiles,captureGlow:!!captureGlow,blessGlow:!!blessGround,wonderPresentation,
   extractionDecal:spyArt?.extractionVisuals.decal.url,mixedGlow:spyAdvancedArt?.mixedGlow,hotspotMarker:hotspotAvailable,...(rulesProfile.ruleset===2
   ?{manifestURL:'./local-original/regional-temple/ground-decals.json'}:{})});
-const originalTerrain=await loadOriginalTerrain(gl,originalEnabled,TEAM,{climateProfiles});
+const territoryBorders=await loadTerrainBorderRenderer(gl,originalEnabled&&rulesProfile.id==='up15',
+  {geometryRequested:true});
+const originalTerrain=await loadOriginalTerrain(gl,originalEnabled,TEAM,{climateProfiles,territoryBorders});
 originalTerrain.setLightingContext?.(originalModels.lighting);
 const originalWater=await loadOriginalWater(gl,originalEnabled);
+const wantsLateTerrainFog=!!territoryBorders?.geometry;
+function makeSceneTerrainFog(options){
+  try{return createSceneTerrainFog(gl,options);}
+  catch(error){console.warn('Original terrain fog:',error);return null;}
+}
+const generatedLateFog=wantsLateTerrainFog&&originalTerrain.enabled
+  ?makeSceneTerrainFog({width:MAP,height:MAP,minHeight:originalWater.enabled?0:.012}):null;
+let valleyLateFog=null, activeLateFog=null;
 const climates=supportedSkirmishClimates(climateProfiles,originalTerrain,originalGround,originalModels);
 const seasonSession=createSeasonSession(wasm,originalTerrain,originalGround,originalModels,climates);
 let dayClock=createTimeOfDayClock();
@@ -869,7 +885,7 @@ if(originalEnabled&&(!originalAssets.enabled||originalModels.available.size<67))
 }
 const valleyPreview=await loadValleyPreview({requested:valleyRequested&&originalEnabled,
   authoredRequested:valleyMode==='archive-qa'||valleyNeutralRequested,neutralRequested:valleyNeutralRequested,
-  requireAuthored:valleyNormal,manifest:valleyManifest,wasm,gl,teams:TEAM,lighting:originalModels.lighting,
+  requireAuthored:valleyNormal,manifest:valleyManifest,wasm,gl,teams:TEAM,lighting:originalModels.lighting,territoryBorders,
   onUnavailable:error=>console.warn('Valley-Vorschau:',error.message)});
 $('valley-preview-menu').hidden=!valleyPreview;
 const valleyMapChoice=$('valley-map-choice');
@@ -1460,6 +1476,12 @@ function begin(tempo = null, useSourceClock = wasm.sim_clock_active?.() === 1, a
     ? createAdaptiveSourceClock(wasm.game_tick(), adaptiveRate, storedRate ? wasm.sim_adaptive_scale() : tempo?.requested ?? 1)
     : null;
   valleyWorld=valleyPreview?activeValleyGeometry(wasm):null;
+  const nativeValleyFog=wantsLateTerrainFog&&admitsValleyTerrainFog(valleyWorld);
+  if(nativeValleyFog&&!valleyLateFog){
+    const {width,height,backing:stride}=valleyWorld;
+    valleyLateFog=makeSceneTerrainFog({width,height,stride,sourceYForward:true});
+  }
+  activeLateFog=valleyWorld?(nativeValleyFog?valleyLateFog:null):generatedLateFog;
   packScene?.reset(wasm.sim_elapsed_seconds());
   mrlsPack?.reset(wasm.sim_elapsed_seconds());
   originalModels.clearResourcePicks();
@@ -1495,6 +1517,8 @@ function begin(tempo = null, useSourceClock = wasm.sim_clock_active?.() === 1, a
   fullmap?.invalidate();
   saveSession=Date.now();
   farmAngleMemory.reset();
+  activeLateFog?.reset();
+  if(qaMode)delete canvas.dataset.nativeTerrainFog;
   ghost = null; attackMode = false; paused = false; acc = 0; fogTick = -1; actSig = '@refresh'; worstMs = 0; ui = null;
   crownProgress?.close();
   pauseReasons.clear();
@@ -2107,7 +2131,8 @@ function drawFullmapPipScene(pipView, alpha, renderEpochs, now, mission, prepare
     Math.max(...x)+2,Math.max(...y)+6,-1,0,0,0);
   let actorMetadata=null;
   const hercBeamMuzzles=hercBeam?new Map():null;
-  originalTerrain.drawTerrain({vao:vaoT,vp,px:1/zoom,fogTexture,territoryTexture,capture:true});
+  originalTerrain.drawTerrain({vao:vaoT,vp,px:1/zoom,fogTexture,territoryTexture,capture:true,terrainCamera:'pip',
+    deferFogAbove:generatedLateFog?.minHeight??null});
   if(count){
     const data=f32(wasm.inst_ptr(),count*STRIDE),ranges=new Uint32Array(wasm.memory.buffer,wasm.ranges_ptr(),renderNamespace.rangeLength);
     actorMetadata=packMetadata?packMetadata.snapshot(packActorReader.snapshot({count,instances:data,namespace:renderNamespace})):null;
@@ -2123,6 +2148,7 @@ function drawFullmapPipScene(pipView, alpha, renderEpochs, now, mission, prepare
     gl.enable(gl.BLEND);gl.depthMask(false);
     originalTerrain.drawWater({vao:vaoW,vp,time:now/1000,eye,fogTexture});
   }
+  generatedLateFog?.draw('pip',vp,vaoT,+$('quality').value);
   boatWake?.draw(vp,guidedImpactVisible);
   drawCaptureGlow(vp,actorMetadata);
   drawBlessGround(vp,actorMetadata);
@@ -2228,7 +2254,15 @@ function frame(now) {
 
   // textures that change
   if (wasm.map_dirty()&&!valleyWorld) { bindTexture(1,mapTexture); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, MAP, MAP, gl.RGBA, gl.UNSIGNED_BYTE, u8(wasm.map_ptr(), MAP * MAP * 4)); uploadOriginalTerrainClasses(); fullmap?.invalidate(); }
-  if (wasm.terr_dirty()) { const p = wasm.terr_ptr(); bindTexture(3,territoryTexture); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, MAP, MAP, gl.RGBA, gl.UNSIGNED_BYTE, u8(p, MAP * MAP * 4)); fullmap?.invalidateTerritories(); }
+  if (wasm.terr_dirty()) {
+    const field=u8(wasm.terr_ptr(), MAP * MAP * 4);
+    bindTexture(3,territoryTexture);
+    gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,MAP,MAP,gl.RGBA,gl.UNSIGNED_BYTE,field);
+    fullmap?.invalidateTerritories();
+    territoryBorders?.update(field,{width:valleyWorld?.width??MAP,height:valleyWorld?.height??MAP,stride:MAP,authored:!!valleyWorld,warmup:true,
+      climate:valleyWorld?'temperate':CLIMATE_NAMES[seasonSession.climate].toLowerCase()});
+  }
+  territoryBorders?.setQuality(+$('quality').value>=2);
   const tickNow = wasm.game_tick()>>>0;
   playerFlare.update(tickNow,dt);
   battleFlare?.update(dt);
@@ -2238,6 +2272,10 @@ function frame(now) {
     fogTick = tickNow;
     bindTexture(2,fogTexture); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, MAP, MAP, gl.RED, gl.UNSIGNED_BYTE, u8(wasm.fog_ptr(), MAP * MAP));
   }
+
+  const lateFog=activeLateFog;
+  const fogStride=valleyWorld?.backing??MAP;
+  lateFog?.refresh(u8(wasm.fog_ptr(),fogStride*fogStride),dt);
 
   gl.depthMask(true);
   gl.clearColor(0.012, 0.03, 0.05, 1); gl.clearStencil(0); gl.stencilMask(255); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
@@ -2294,6 +2332,18 @@ function frame(now) {
   carrierGarrisonFlag?.begin({session:wasm.render_meta_session(),deltaSeconds:visualSeconds,
     runPhysics:!paused&&!(net&&net.ls.waiting),lighting:originalModels.lighting,wind:airMissionFlag?.normalWind(),occupied:carrierOccupied});
   if(qaMode&&sourceSails)canvas.dataset.sourceSails=JSON.stringify(sourceSails.metrics);
+  const terrainCameraActive=!!territoryBorders?.geometry&&(!!valleyWorld||originalTerrain.enabled);
+  const preparedPip=terrainCameraActive?fullmapPip.prepare(dt):undefined;
+  if(terrainCameraActive){
+    const cameras=[];
+    if(!valleyWorld&&!reflectionError){
+      cameras.push({id:'reflection',vp:reflectedViewProjection(view.vp)});
+      if(preparedPip)cameras.push({id:'pip-reflection',vp:reflectedViewProjection(preparedPip.vp)});
+    }
+    cameras.push({id:'main',vp:view.vp});
+    if(preparedPip)cameras.push({id:'pip',vp:preparedPip.vp});
+    territoryBorders.prepareGeometry(cameras);
+  }
   let reflection=null;
   if(!valleyWorld&&originalTerrain.enabled&&!reflectionError){
     const scale=+$('quality').value>1?1:.5;
@@ -2313,10 +2363,11 @@ function frame(now) {
     const quality=+$('quality').value;
     const casters=quality>1&&n&&valleyPreview.buildingShadowAvailable ? originalModels.buildingShadowCasters?.({
       data:f32(wasm.inst_ptr(),n*STRIDE),ranges,epochs:renderEpochs,zoom:cam.zoom,eye:view.eye,actorMetadata}) : null;
-    volumeShadowInstances=valleyPreview.drawTerrain(view.vp,fogTexture,quality>1,quality>=2,[x0,y0,x1,y1],casters??[]);
+    volumeShadowInstances=valleyPreview.drawTerrain(view.vp,fogTexture,quality>1,quality>=2,[x0,y0,x1,y1],casters??[],!!lateFog);
     valleyPreview.drawWorld(view,[x0,y0,x1,y1]);
   }else if(originalTerrain.enabled){
-    originalTerrain.drawTerrain({vao:vaoT,vp:view.vp,px,fogTexture,territoryTexture});
+    originalTerrain.drawTerrain({vao:vaoT,vp:view.vp,px,fogTexture,territoryTexture,
+      deferFogAbove:lateFog?.minHeight??null});
   }else{
     bindTexture(1,mapTexture);bindTexture(3,territoryTexture);bindTexture(4,originalAssets.terrainTexture,gl.TEXTURE_2D_ARRAY);
     gl.useProgram(terrain.p); gl.bindVertexArray(vaoT);
@@ -2390,6 +2441,11 @@ function frame(now) {
     gl.uniformMatrix4fv(water.u.uVP, false, view.vp); gl.uniform1f(water.u.uTime, now / 1000);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }
+  if(lateFog){
+    const fogQuality=+$('quality').value;
+    if(valleyWorld)valleyPreview.drawLateFog(lateFog,view.vp,fogQuality);
+    else lateFog.draw('main',view.vp,vaoT,fogQuality);
+  }
   boatWake?.draw(view.vp,guidedImpactVisible);
   drawCaptureGlow(view.vp,actorMetadata);
   drawBlessGround(view.vp,actorMetadata,{visualSeconds});
@@ -2431,7 +2487,9 @@ function frame(now) {
   crownVictoryRows.animate(now);
   if (now - lastMini > 250) { lastMini = now; drawMini(); }
   fullmap?.paint(now,ui,corners);
-  if(fullmapPip.isOpen())fullmapPip.draw(dt,pipView=>drawFullmapPipScene(pipView,alpha,renderEpochs,now,mission,actorMetadata));
+  if(fullmapPip.isOpen())fullmapPip.draw(dt,pipView=>drawFullmapPipScene(pipView,alpha,renderEpochs,now,mission,actorMetadata),preparedPip);
+  if(qaMode&&territoryBorders)canvas.dataset.territoryBorders=JSON.stringify(territoryBorders.metrics);
+  if(qaMode&&lateFog)canvas.dataset.nativeTerrainFog=JSON.stringify(lateFog.metrics);
   finishPriestEffectsFrame();
   if(supportsAdaptiveSoloClock)sampleSourceRenderFps(adaptiveRenderSample,wallSeconds);
 }

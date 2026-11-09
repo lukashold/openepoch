@@ -1,4 +1,5 @@
 import {buildNativeTerrainLightmap,validateTerrainLighting,nativeTerrainCoefficients,LIGHTMAP_LAYOUT} from './native-terrain-lightmap.js';
+import {territoryBorderCompositor} from './territory-border-compositor.js?v=territory-borders218';
 // Native terrain images and source bindings on OpenEpoch's own generated map.
 // UV scale, class blending and water motion are explicit rendering adapters.
 const MAP=256;
@@ -8,25 +9,36 @@ const COMMON=`
 float fogAt(vec2 p){return texture(uFog,clamp(p/256.,0.,1.)).r;}
 vec3 fogged(vec3 c,float f){return c*smoothstep(.02,.45,f)*mix(.5,1.,smoothstep(.55,.95,f));}
 `;
-export const TERRAIN_SHADERS={vertex:`#version 300 es
+const legacyTerritoryPaint=`
+ vec4 t=texture(uTerr,uv);float d=max(.09,uPx*1.3)/256.;float edge=0.;
+ edge=max(edge,step(.001,abs(texture(uTerr,uv+vec2(d,0.)).r-t.r)));
+ edge=max(edge,step(.001,abs(texture(uTerr,uv-vec2(d,0.)).r-t.r)));
+ edge=max(edge,step(.001,abs(texture(uTerr,uv+vec2(0.,d)).r-t.r)));
+ edge=max(edge,step(.001,abs(texture(uTerr,uv-vec2(0.,d)).r-t.r)));
+ int owner=int(t.g*255.+.5);vec3 border=owner>0&&owner<=8?uTeam[owner-1]:vec3(.9);
+ color=mix(color,border,owner>0?.04+edge*.7:edge*.2);
+`;
+const terrainShaders=(borders,geometry=false)=>({vertex:`#version 300 es
 layout(location=0) in vec3 aP;layout(location=1) in vec3 aN;
 uniform mat4 uVP;out vec3 vP;out vec3 vN;
 void main(){vP=aP;vN=aN;gl_Position=uVP*vec4(aP,1.);}
 `,fragment:`#version 300 es
 precision highp float;
+precision highp int;
 uniform highp sampler2DArray uGrass,uPatch,uForest,uRock,uBeach,uCoral,uRocky,uRoots;
 uniform sampler2D uMask,uWeights,uFog,uTerr;
 uniform highp sampler2DArray uNativeLightmap;uniform bool uNativeLighting;uniform float uNativeBlocks;uniform vec3 uNativeDiffuse,uNativeAmbient;
 uniform vec3 uTeam[8];uniform float uPx,uSeasonBlend;uniform vec2 uSeasonMonths;
-uniform bool uClipEnabled;uniform vec4 uClipPlane;in vec3 vP;in vec3 vN;out vec4 outColor;
+uniform bool uClipEnabled,uDeferFog;uniform float uDeferFogAbove;uniform vec4 uClipPlane;in vec3 vP;in vec3 vN;out vec4 outColor;
 ${COMMON}
+${borders?territoryBorderCompositor:''}
 vec3 seasonSample(highp sampler2DArray source,vec2 uv){
  vec2 layers=min(uSeasonMonths,vec2(float(textureSize(source,0).z-1)));
  return mix(texture(source,vec3(uv,layers.x)).rgb,texture(source,vec3(uv,layers.y)).rgb,uSeasonBlend);
 }
 void main(){
  if(uClipEnabled&&dot(vec4(vP,1.),uClipPlane)<0.)discard;
- vec2 w=vP.xz,uv=w/256.;float visibility=fogAt(w);
+ vec2 w=vP.xz,uv=w/256.;float visibility=uDeferFog&&vP.y>=uDeferFogAbove?1.:fogAt(w);
  if(visibility<.015){outColor=vec4(0.,0.,0.,1.);return;}
  vec4 weights=texture(uWeights,uv);
  // Terr_Mask RGB is black in the source. Its original alpha holds the edge.
@@ -53,15 +65,10 @@ void main(){
   color*=vec3(.55,.57,.59)+vec3(.53,.50,.43)*max(dot(n,sun),0.);
  }
  color*=mix(1.,.65,clamp(-vP.y*.5,0.,1.));
- vec4 t=texture(uTerr,uv);float d=max(.09,uPx*1.3)/256.;float edge=0.;
- edge=max(edge,step(.001,abs(texture(uTerr,uv+vec2(d,0.)).r-t.r)));
- edge=max(edge,step(.001,abs(texture(uTerr,uv-vec2(d,0.)).r-t.r)));
- edge=max(edge,step(.001,abs(texture(uTerr,uv+vec2(0.,d)).r-t.r)));
- edge=max(edge,step(.001,abs(texture(uTerr,uv-vec2(0.,d)).r-t.r)));
- int owner=int(t.g*255.+.5);vec3 border=owner>0&&owner<=8?uTeam[owner-1]:vec3(.9);
- color=mix(color,border,owner>0?.04+edge*.7:edge*.2);
+ ${geometry?'':borders?'color=compositeTerritoryBorders(color,w);':legacyTerritoryPaint}
  outColor=vec4(fogged(color,visibility),1.);
-}`};
+}`});
+export const TERRAIN_SHADERS=terrainShaders(false);
 
 export const WATER_SHADERS={vertex:`#version 300 es
 layout(location=0) in vec2 aP;uniform mat4 uVP;out vec2 vW;
@@ -179,7 +186,8 @@ export async function loadOriginalTerrain(gl,enabled,teams,options={}){
   if(!response.ok)throw new Error(`Native terrain manifest: ${response.status}`);
   const manifest=await response.json();result.manifest=manifest;
   if(manifest.format!=='ee2-native-terrain-v1')throw new Error('Unsupported native terrain manifest');
-  const terrain=makeProgram(gl,TERRAIN_SHADERS),water=makeProgram(gl,WATER_SHADERS),cache=new Map();
+  const territoryBorders=options.territoryBorders;
+  const terrain=makeProgram(gl,territoryBorders?terrainShaders(!territoryBorders.geometry,!!territoryBorders.geometry):TERRAIN_SHADERS),water=makeProgram(gl,WATER_SHADERS),cache=new Map();
   const texture=(url,repeat=true)=>{if(!cache.has(url))cache.set(url,imageTexture(gl,url,repeat,resolveAsset));return cache.get(url);};
   const mask=await texture(manifest.maskUrl),normal=await texture(manifest.water.normal),layer1=await texture(manifest.water.layer1),layer2=await texture(manifest.water.layer2),colorLut=await texture(manifest.water.colorLut,false);
   const images=new Map();
@@ -281,7 +289,7 @@ export async function loadOriginalTerrain(gl,enabled,teams,options={}){
    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
    lastFields=fields;mapNormals=normals&&new Float32Array(normals);result.metrics.classification=fields.classification;bake();gl.activeTexture(gl.TEXTURE0);return true;
   };
-  result.drawTerrain=({vao,indexCount=MAP*MAP*6,vp,px=1/28,fogTexture,territoryTexture,clipPlane=null,capture=false})=>{
+  result.drawTerrain=({vao,indexCount=MAP*MAP*6,vp,px=1/28,fogTexture,territoryTexture,clipPlane=null,capture=false,terrainCamera='main',deferFogAbove=null})=>{
    if(!lastFields)return;
    if(clipPlane&&(!Array.isArray(clipPlane)&&!ArrayBuffer.isView(clipPlane)||clipPlane.length!==4||!Array.from(clipPlane).every(Number.isFinite)))throw new RangeError('Invalid terrain clip plane');
    gl.useProgram(terrain.program);gl.bindVertexArray(vao);gl.uniformMatrix4fv(terrain.uniform('uVP'),false,vp);gl.uniform1f(terrain.uniform('uPx'),px);gl.uniform3fv(terrain.uniform('uTeam'),new Float32Array(teams.flat()));
@@ -296,7 +304,13 @@ export async function loadOriginalTerrain(gl,enabled,teams,options={}){
    gl.uniform2fv(terrain.uniform('uSeasonMonths'),[season.month0,season.month1]);gl.uniform1f(terrain.uniform('uSeasonBlend'),season.blend);
    bind(UNITS.mask,mask);bind(UNITS.weights,weightsTexture);gl.uniform1i(terrain.uniform('uMask'),UNITS.mask);gl.uniform1i(terrain.uniform('uWeights'),UNITS.weights);
    if(fogTexture)bind(2,fogTexture);if(territoryTexture)bind(3,territoryTexture);gl.uniform1i(terrain.uniform('uFog'),2);gl.uniform1i(terrain.uniform('uTerr'),3);
-   gl.drawElements(gl.TRIANGLES,indexCount,gl.UNSIGNED_INT,0);if(!capture)result.metrics.terrainCalls++;gl.activeTexture(gl.TEXTURE0);
+   gl.uniform1i(terrain.uniform('uDeferFog'),Number(deferFogAbove!==null));
+   gl.uniform1f(terrain.uniform('uDeferFogAbove'),deferFogAbove??0);
+   if(!territoryBorders?.geometry)territoryBorders?.bind(terrain.uniform,[1,13,15]);
+   gl.drawElements(gl.TRIANGLES,indexCount,gl.UNSIGNED_INT,0);
+   territoryBorders?.drawGeometry({vp,fogTexture,clipPlane,terrainCamera,deferFogAbove});
+   if(!capture)result.metrics.terrainCalls++;
+   gl.activeTexture(gl.TEXTURE0);
   };
   result.drawWater=({vao,vp,time=0,eye=[128,30,160],fogTexture,reflectionTexture,reflectionVP=vp})=>{
    if(!lastFields)return;
