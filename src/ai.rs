@@ -100,6 +100,15 @@ impl Game {
         self.ai_build_attempt(team, def, bx, by, builders) == BuildOutcome::Posted
     }
 
+    fn ai_retries_expansion(&self) -> bool {
+        #[cfg(feature = "ee2-authored-valley37")]
+        if self.map.source_world.is_some() {
+            return false;
+        }
+        cfg!(feature = "ee2-native13") && !self.net && self.humans == 1 && self.bench == 0
+            && self.map.world_dimensions() == [N, N]
+    }
+
     fn ai_build_attempt(&mut self, team: u8, def: DefId, bx: i32, by: i32, builders: &[usize]) -> BuildOutcome {
         let d = &DEFS[def as usize];
         if d.epoch>self.players[team as usize].epoch{return BuildOutcome::Unavailable;}
@@ -292,6 +301,7 @@ impl Game {
 
         // ---- construction (one project at a time)
         if unfinished.is_empty() && !workers.is_empty() {
+            let retry_expansion = self.ai_retries_expansion();
             let crew: Vec<usize> = workers.iter().copied().filter(|&w| !matches!(self.ents[w].order,O_BUILD|O_BOARD)).take(3).collect();
             #[cfg(feature = "ee2-native13")]
             let supporting_hotspot = self.ai_support_hotspot(team, &crew);
@@ -352,7 +362,7 @@ impl Game {
                 Some(HERC_FACILITY)
             } else if ep >= 2 && c(BARRACKS) < 2 {
                 Some(BARRACKS)
-            } else if ep >= 2 && c(TC) < 1 + ep as u32 / 2 && !p.ai_noexp {
+            } else if ep >= 2 && c(TC) < 1 + ep as u32 / 2 && (retry_expansion || !p.ai_noexp) {
                 Some(TC)
             } else if ep >= 4 && c(WORKSHOP) < 2 {
                 Some(WORKSHOP)
@@ -363,7 +373,7 @@ impl Game {
                 // a new town center goes into the nearest unclaimed territory
                 let mut at = (bxi, byi);
                 if def==FORTRESS {if let Some(b)=pending_fort {at=(self.ents[b].x as i32,self.ents[b].y as i32);}}
-                if def == TC {
+                let site = if def == TC {
                     let mut bd = f32::MAX;
                     let mut best_adjacent=false;
                     for (k, s) in self.map.tseeds.iter().enumerate() {
@@ -376,16 +386,27 @@ impl Game {
                             at = (s.0 as i32, s.1 as i32);
                         }
                     }
-                    if bd == f32::MAX {
-                        self.players[ti].ai_noexp = true;
+                    if retry_expansion {
+                        // 004E867C and 004E5B41 record a miss for the row and
+                        // current pass. A later pass can consider it again.
+                        (bd != f32::MAX && !crew.is_empty()).then_some(at)
+                    } else {
+                        if bd == f32::MAX {
+                            self.players[ti].ai_noexp = true;
+                        }
+                        Some(at)
                     }
-                }
-                let ok = self.ai_build(team, def, at.0, at.1, &crew);
-                if !ok && self.afford(team, &self.unit_cost(team,def)) {
-                    match def {
-                        DOCK => self.players[ti].ai_nodock = true, // landlocked
-                        TC => self.players[ti].ai_noexp = true,
-                        _ => {}
+                } else {
+                    Some(at)
+                };
+                if let Some((x, y)) = site {
+                    let ok = self.ai_build(team, def, x, y, &crew);
+                    if !ok && self.afford(team, &self.unit_cost(team,def)) {
+                        match def {
+                            DOCK => self.players[ti].ai_nodock = true, // landlocked
+                            TC if !retry_expansion => self.players[ti].ai_noexp = true,
+                            _ => {}
+                        }
                     }
                 }
             }
@@ -594,6 +615,10 @@ mod koth_ai_tests {
         assert_eq!(restored.koth.unwrap().holder, 1);
     }
 }
+
+#[cfg(all(test, feature = "ee2-native13"))]
+#[path = "ai_expansion_retry158_test.rs"]
+mod expansion_retry_tests;
 
 #[cfg(all(test,feature="ee2-civ8"))]
 mod civ8_ai_tests {
