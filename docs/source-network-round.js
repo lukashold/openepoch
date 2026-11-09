@@ -103,7 +103,7 @@ const framedLength = record => 5+(record.type==='commands'?record.bytes.length+1
 
 /** An original-style host scheduler over one authenticated link per remote seat. */
 export class SourceRoundPeer {
-  constructor(wasm, seat, send, {renderFps, linkMs, nowSeconds, onRequested, requested = 1, locked = true, humanSeats = 2, resume = null, onCheckpoint = null, sharedOwner = false, groupedOwners = null}) {
+  constructor(wasm, seat, send, {renderFps, linkMs, nowSeconds, onRequested, requested = 1, locked = true, humanSeats = 2, resume = null, onCheckpoint = null, sharedOwner = false, groupedOwners = null, onAdmittedStep = null}) {
     const tick = wasm.game_tick();
     const groupedLayout = groupedOwners === null ? 0 : groupedOwnerLayout(groupedOwners, humanSeats, resume?.groupedWorldHumans??null);
     const validStart = resume === null ? tick === 0 :
@@ -132,6 +132,7 @@ export class SourceRoundPeer {
     this.nowSeconds = nowSeconds;
     this.onRequested = onRequested;
     this.onCheckpoint = onCheckpoint;
+    this.onAdmittedStep = onAdmittedStep;
     this.locked = locked;
     this.rate = resume?.rate ?? BOOTSTRAP_RATE;
     this.requested = requested;
@@ -418,6 +419,7 @@ export class SourceRoundPeer {
         this.pending.push(...hostDecision(this.rate, this.length, this.requested, [this.hostSample,...peers]));
       }
       if (!this.alone) this.flush();
+      const worldTime = this.onAdmittedStep ? this.wasm.sim_elapsed_seconds() : 0;
       const before = this.nowSeconds();
       const result = this.wasm.tick_with_network_source_slot(wallRate, this.rate, this.effective, +boundary);
       if (result === 2) {
@@ -430,6 +432,7 @@ export class SourceRoundPeer {
       }
       const after = this.nowSeconds();
       if (after >= before) this.cpuSeconds = filterSourceCpu(this.cpuSeconds,addF64(after,-before));
+      this.onAdmittedStep?.(worldTime);
       gameSeconds = storeF32(addF64(gameSeconds,sourceStepDelta(this.effective,interval)));
       this.remainder = storeF32(addF64(this.remainder, -interval));
       steps++;

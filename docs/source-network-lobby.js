@@ -119,7 +119,9 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
       return 'Alle Mitspieler benötigen eine Spielversion mit Gruppen-Koop-Spielständen.';
     if(!room.sharedOwner&&!room.groupedOwners&&(!validateArchive||guests.some(guest=>!guest.checkpoints)))
       return 'Alle Mitspieler benötigen eine Spielversion mit Mehrspieler-Spielständen.';
-    const {climate,features,crownVictory,capitolVictory,humanSeats,ai,captureCheckpoint,startingTeams,sightTerms,timedTreaties,borderTreaties,fishing}=room.archive.settings;
+    const {climate,features,crownVictory,capitolVictory,humanSeats,ai,captureCheckpoint,startingTeams,sightTerms,timedTreaties,borderTreaties,fishing,timeOfDay}=room.archive.settings;
+    if(timeOfDay!==undefined&&guests.some(guest=>!guest.timeOfDay))
+      return 'Alle Mitspieler benötigen eine Spielversion mit Tageszeiten.';
     if(crownVictory&&guests.some(guest=>!guest.crownVictory))
       return 'Alle Mitspieler benötigen eine Spielversion mit Kronen-Siegbedingungen.';
     if(capitolVictory&&guests.some(guest=>!guest.capitolVictory||
@@ -261,6 +263,7 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
         if(room.settings.timedTreaties&&!link.hello.timedTreaties)throw Error('Der Host hat befristete Bündnisse nicht angekündigt.');
         if(room.settings.borderTreaties&&!link.hello.borderTreaties)throw Error('Der Host hat Bündnisgrenzen nicht angekündigt.');
         if(room.settings.fishing&&!link.hello.fishing)throw Error('Der Host hat Fischerei nicht angekündigt.');
+        if(room.settings.timeOfDay!==undefined&&!link.hello.timeOfDay)throw Error('Der Host hat Tageszeiten nicht angekündigt.');
         validateArchive(archive,room.local,room.seats);
         room.archive=archive;
         confirmPrepared(room,link,archive.digest);
@@ -304,7 +307,9 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
     }
     const save=room.save;
     if(save?.id!==id)return;
-    void captureBrowserCheckpoint(room.session.peer,room.settings).then(archive=>{
+    const presentation=room.session.checkpointPresentation?.();
+    const settings=presentation?{...room.settings,...presentation}:room.settings;
+    void captureBrowserCheckpoint(room.session.peer,settings).then(archive=>{
       if(!active(room)||room.save!==save)return;
       save.archive=archive;
       if(room.local===0)settleCheckpoint(room);
@@ -374,6 +379,7 @@ export function mountSourceRosterLobby(root,{rtcHost,rtcJoin,localHello,checkHel
         if(room.settings.timedTreaties&&!link.hello.timedTreaties)throw Error('Der Host hat befristete Bündnisse nicht angekündigt.');
         if(room.settings.borderTreaties&&!link.hello.borderTreaties)throw Error('Der Host hat Bündnisgrenzen nicht angekündigt.');
         if(room.settings.fishing&&!link.hello.fishing)throw Error('Der Host hat Fischerei nicht angekündigt.');
+        if(room.settings.timeOfDay!==undefined&&!link.hello.timeOfDay)throw Error('Der Host hat Tageszeiten nicht angekündigt.');
         room.checkpoints=message.checkpoints===true&&!!validateArchive;
         if(message.checkpoints===true&&!room.checkpoints)throw Error('Diese Spielversion kann gemeinsame Spielstände nicht öffnen.');
         if(room.settings.sharedOwner&&(!link.hello.sharedOwner||(room.checkpoints&&

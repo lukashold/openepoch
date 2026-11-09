@@ -463,6 +463,12 @@
             <optgroup label="Weitere Startmonate"><option value="0">Januar</option><option value="1">Februar</option><option value="3">April</option><option value="4">Mai</option><option value="6" selected>Juli</option><option value="7">August</option><option value="9">Oktober</option><option value="10">November</option></optgroup>
           </select></div>
           <div class="row"><label for="season-cycle">Jahreszeitenwechsel</label><input id="season-cycle" type="checkbox" checked><label for="season-length" style="width:auto">Dauer pro Jahreszeit</label><select id="season-length"><option value="1">1 Minute</option><option value="5" selected>5 Minuten</option><option value="10">10 Minuten</option><option value="20">20 Minuten</option><option value="30">30 Minuten</option></select></div>
+          <div class="row" id="time-of-day-row" hidden><label for="time-of-day">Tageszeit</label><select id="time-of-day">
+            <option value="-2" selected>Zufall</option><option value="0">Tagesanbruch</option><option value="1">Nachmittag</option>
+            <option value="2">Sonnenuntergang</option><option value="3">Nacht (1.6)</option>
+            <option value="4">Zyklus (2 min, 1.6)</option><option value="5">Zyklus (5 min, 1.6)</option>
+            <option value="6">Zyklus (10 min, 1.6)</option><option value="7">Zyklus (15 min, 1.6)</option>
+          </select></div>
           <p class="dim" style="font-size:12px;margin:0 0 10px">Gelände, Bäume und Gebäudeböden wechseln allmählich zwischen den Monaten. Der Gastgeber bestimmt die Einstellungen im Multiplayer.</p>
         </div>
       </section>
@@ -593,6 +599,6 @@
 </aside>
 <div id="trade-route-caption" hidden role="status"></div>
 <div id="air-mission-caption" hidden role="status"></div>
-<script type="module" src="main.js?v=native120-ai-retry158"></script>
+<script type="module" src="main.js?v=time-of-day160"></script>
 </body>
 </html>

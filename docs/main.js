@@ -43,7 +43,7 @@ import {loadSourceSailRuntime} from './source-sail-runtime.js?v=sails7';
 import {createRenderAssetMapping} from './original-render-namespace.js?v=native6';
 import {createFrontendNamespace} from './render-namespace.js?v=native77';
 import {ORIGINAL_SPEEDS, changeOriginalSpeed, checkOriginalTempo, loadOriginalTempo, originalStartingSpeed} from './original-game-tempo.js?v=native37';
-import {addF64, advanceAdaptiveSourceFrame, advanceSourceSoloFrame, createAdaptiveSourceClock, sampleSourceRenderFps, SOURCE_SOLO_INTERVAL, sourceRenderSeconds, sourceStepDelta, sourceWallInterval, storeF32} from './source-solo-clock.js?v=native44';
+import {addF64, advanceAdaptiveSourceFrame, advanceSourceSoloFrame, createAdaptiveSourceClock, sampleSourceRenderFps, SOURCE_SOLO_INTERVAL, sourceRenderSeconds, sourceStepDelta, sourceWallInterval, storeF32} from './source-solo-clock.js?v=time-of-day160';
 import {mountOriginalGameOptions} from './original-game-options.js?v=native37';
 import {mountOriginalGameSettings} from './original-game-settings.js?v=native79-wake';
 import {createRenderActorMetadata} from './render-actor-metadata.js?v=pack8';
@@ -58,13 +58,14 @@ import {loadOriginalWater} from './original-water.js?v=water-farm3';
 import {createOriginalReflection} from './original-reflection.js?v=visual-seasons2';
 import {NATIVE_SEASON_CHOICE,normalizeSeasonChoice,resolveSeasonChoice} from './original-seasons.js?v=native108';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=native108';
-import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
+import {checkTimeOfDayMode,createTimeOfDayClock,readTimeOfDayState,resolveTimeOfDay,timeOfDayPeriods} from './original-time-of-day.js?v=time-of-day160';
+import {CLIMATE_NAMES,checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
 import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native120-ai-retry158';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION as BASE_PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
-import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
+import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=time-of-day160';
 import {createSourceRoundCarrier, selectedRoundTripMilliseconds} from './source-network-wire.js?v=native54';
-import {mountSourceRosterLobby,requiresCapitolRoster} from './source-network-lobby.js?v=fish109';
+import {mountSourceRosterLobby,requiresCapitolRoster} from './source-network-lobby.js?v=time-of-day160';
 import {applyNetworkCheckpoint} from './source-network-resume.js?v=native75-teams';
 import {createFullscreenController} from './fullscreen.js?v=building2';
 import {createCivilizationSetup,civilizationChoice,resolveCivilizations,checkedCivilizations,applyMatchSettings,checkedEpochRange,resolveEpochRange} from './civilization-setup.js?v=native67';
@@ -170,6 +171,19 @@ for(const id of ['season-cycle','season-start','season-length'])$(id).onchange=(
   const settings=menuSeasonChoice();setSeasonControls(settings);
   try{localStorage.setItem('openepoch-seasons',JSON.stringify(settings));}catch{/* private storage */}
 };
+const timeOfDayChoice=$('time-of-day');
+const nativeTimeOfDay=rulesProfile.id==='up15'&&!!timeOfDayChoice;
+if(timeOfDayChoice){
+  $('time-of-day-row').hidden=!nativeTimeOfDay;
+  try{
+    const preference=localStorage.getItem('openepoch-time-of-day');
+    if(preference!==null&&[...timeOfDayChoice.options].some(option=>option.value===preference))timeOfDayChoice.value=preference;
+  }catch{/* optional preference */}
+  timeOfDayChoice.onchange=()=>{
+    try{localStorage.setItem('openepoch-time-of-day',timeOfDayChoice.value);}catch{/* optional preference */}
+  };
+}
+const menuTimeOfDay=()=>resolveTimeOfDay(+timeOfDayChoice.value,sfx.presentationWord);
 if (referenceMode) {
   $('play').disabled=true;$('play').textContent='Originalgrafiken laden …';
   $('supplies').innerHTML='<option value="3">Wenig</option><option value="4">Defensiv</option><option value="0">Standard</option><option value="1" selected>Viel</option><option value="2">Deathmatch</option>';
@@ -786,6 +800,36 @@ originalTerrain.setLightingContext?.(originalModels.lighting);
 const originalWater=await loadOriginalWater(gl,originalEnabled);
 const climates=supportedSkirmishClimates(climateProfiles,originalTerrain,originalGround,originalModels);
 const seasonSession=createSeasonSession(wasm,originalTerrain,originalGround,originalModels,climates);
+let dayClock=createTimeOfDayClock();
+function setDayLighting(phase){
+  const period=timeOfDayPeriods[phase];
+  try{
+    if(nativeTimeOfDay&&originalModels.setLightingSettings({profile:'native155',climate:CLIMATE_NAMES[seasonSession.climate],period})){
+      originalTerrain.setLightingContext(originalModels.lighting);
+    }
+  }catch{/* Incomplete legacy lighting catalogs retain the loaded renderer context. */}
+  if(qaMode)canvas.dataset.timeOfDay=originalModels.lighting?.period??'';
+}
+function configureTimeOfDay(mode=1,state=null){
+  dayClock=createTimeOfDayClock(state);
+  if(state===null)dayClock.begin(mode);
+  setDayLighting(dayClock.snapshot().displayed);
+}
+function advanceDayClock(previous){
+  if(!nativeTimeOfDay)return;
+  const phase=dayClock.step(previous);
+  if(phase!==null){
+    setDayLighting(phase);
+    toast(`Tageszeit wechselt zu ${['Tagesanbruch','Nachmittag','Sonnenuntergang','Nacht'][phase]}.`);
+  }
+}
+function advanceDayWith(step){
+  if(!nativeTimeOfDay)return step();
+  const previous=wasm.sim_elapsed_seconds(),tick=wasm.game_tick();
+  const result=step();
+  if(wasm.game_tick()!==tick)advanceDayClock(previous);
+  return result;
+}
 const climateControl=$('map-climate');
 for(const option of climateControl.options)option.hidden=option.disabled=!climates.includes(+option.value);
 $('map-climate-row').hidden=climates.length<2;
@@ -839,7 +883,7 @@ if(valleyNormal&&valleyPreview?.authoredAvailable){
 const valleyFixedControls=new Map();
 let valleyPreviousKothDuration=null,valleyPreviousCrown,valleyPreviousCapitols;
 const valleyPresetValues={nai:'1','pop-limit':'250',supplies:'0','start-epoch':'0','end-epoch':String(wasm.epoch_count()-1),
-  'map-climate':'0','season-start':'6','season-length':'5','initial-ceasefire':'0','sk-victory-condition':'conquest',
+  'map-climate':'0','season-start':'6','season-length':'5','time-of-day':'1','initial-ceasefire':'0','sk-victory-condition':'conquest',
   'civilization-0':'4','civilization-1':'8'};
 const valleyPresetUnchecked=new Set(['season-cycle','disable-crowns','source-solo-clock','source-adaptive-clock','sk-sole-survivor']);
 valleyMapChoice.onchange=()=>{
@@ -851,7 +895,7 @@ valleyMapChoice.onchange=()=>{
     valleyPreviousCrown=crownVictoryMenu.read();
     valleyPreviousCapitols=capitolsMenu.read();
     const ids=['seed','nai','pop-limit','supplies','start-epoch','end-epoch','map-climate','season-cycle','season-start',
-      'season-length','sk-victory-condition','sk-sole-survivor','sk-territory-percent',
+      'season-length','time-of-day','sk-victory-condition','sk-sole-survivor','sk-territory-percent',
       'disable-crowns','initial-ceasefire','source-solo-clock','source-adaptive-clock','mpopen'];
     for(const control of [...ids.map($),...document.querySelectorAll('#civilization-options select')].filter(Boolean)){
       valleyFixedControls.set(control,{disabled:control.disabled,value:control.value,checked:control.checked});
@@ -1529,6 +1573,7 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
   }
   if (originalSkirmish && !configureOriginalPopulation()) return;
   seasonSession.configure(menuSeasonSettings(),climate);
+  configureTimeOfDay(originalSkirmish&&nativeTimeOfDay?menuTimeOfDay():1);
   if(!benchUnits)wasm.skirmish_visibility(+$('map-visibility').value);
   if(originalSkirmish&&typeof wasm.configure_sight_terms==='function'&&wasm.configure_sight_terms()!==1){
     toast('Die Sichtregeln konnten nicht eingerichtet werden.');return;
@@ -1630,6 +1675,7 @@ function startValley(authored) {
   if (valleyNormal && authored && !configureOriginalPopulation()) return;
   net=null;bench=0;restartPoint=null;
   seasonSession.configure({cycle:false,startMonth:6,minutesPerSeason:5},0);
+  configureTimeOfDay();
   if(!wasm.ai9_game_research_setup_manual?.())toast('Originalforschung konnte für dieses Scharmützel nicht gestartet werden.');
   const initial=initialValleyViews(wasm,{primary:[innerWidth,innerHeight],pip:[340,200]});
   Object.assign(cam,initial.primaryPose);
@@ -1689,6 +1735,7 @@ async function saveGame(silent) {
   if (!bytes) { if (!silent) toast('Spielstand konnte nicht gespeichert werden'); return; }
   try {
     const record={bytes,cam:{...cam},when:Date.now(),epoch:ui?ui.ename:'',session:saveSession,seasons:seasonSession.settings,
+      ...(nativeTimeOfDay?{timeOfDay:dayClock.snapshot()}:{}),
       ...(originalTempo?{gameTempo:{...originalTempo,requested:speed}}:{}),
       ...(sourceSoloClock?{sourceSoloClock:true}:{}),
       ...(adaptiveSoloClock&&wasm.game_tick()===0?{adaptiveStartRate:adaptiveSoloClock.rate}:{}),
@@ -1708,9 +1755,11 @@ async function loadGame(slot='slot1') {
   const s = await readLocalSave(slot);
   if (!s) return toast('No saved game found');
   if(!savedRulesProfileMatches(s,rulesProfile))return toast('Dieser Spielstand gehört zu einer anderen Regelversion. Wähle im Menü die passende Regelversion.');
-  let seasons,climate,tempo=null;
+  let seasons,climate,tempo=null,dayState=null;
   try{seasons=savedSeasonSettings(s);climate=savedClimate(s,climates);}
   catch{return toast('Die Jahreszeiten- oder Klimaeinstellungen des Spielstands sind ungültig.');}
+  try{if(nativeTimeOfDay&&s.timeOfDay!==undefined)dayState=readTimeOfDayState(s.timeOfDay);}
+  catch{return toast('Die Tageszeit des Spielstands ist ungültig.');}
   try{if(hasOriginalTempo)tempo=loadOriginalTempo(s.gameTempo);}
   catch{return toast('Die Geschwindigkeit des Spielstands ist ungültig.');}
   if (!applyWorldSave(s.bytes)) return toast('Dieser Spielstand ist mit dieser Regelversion nicht kompatibel.');
@@ -1718,6 +1767,7 @@ async function loadGame(slot='slot1') {
   restartPoint=hasOriginalTempo&&s.restart?.bytes instanceof Uint8Array&&s.restart?.cam ? s.restart : null;
   cam.heading=normalizeOriginalHeading(s.cam?.heading??0);
   seasonSession.configure(seasons,climate);setSeasonControls(seasons);climateControl.value=climate;
+  configureTimeOfDay(dayState?.mode??1,dayState);
   if(referenceMode)cam.nativeFraction=Number.isFinite(s.cam?.nativeFraction)?s.cam.nativeFraction:originalFractionForZoom(s.cam?.zoom??28,innerWidth,innerHeight);
   const unstarted = s.sourceSoloClock === true && wasm.game_tick() === 0;
   const adaptiveStartRate = unstarted && Number.isInteger(s.adaptiveStartRate) && s.adaptiveStartRate >= 5 && s.adaptiveStartRate <= 30
@@ -1766,16 +1816,19 @@ function advance(dt, now) {
   } else if (net) {
     acc = Math.min(acc + dt * speed, TICK * 6);         // allow a short catch-up burst, never a spiral
     let steps = 0; const t0 = performance.now();
-    while (acc >= TICK && steps < 8 && net.ls.step()) { acc -= TICK; steps++; }
+    while (acc >= TICK && steps < 8 && advanceDayWith(()=>net.ls.step())) { acc -= TICK; steps++; }
     if (steps) { simMs += ((performance.now() - t0) / steps - simMs) * 0.1; waitSince = now; }
   } else if (adaptiveSoloClock) {
+    let previous=0;
     const result = advanceAdaptiveSourceFrame(adaptiveSoloClock, dt, paused, adaptiveRenderSample.fps, {
       requested: () => speed,
       beforeAdmit: () => {
         if (pendingTempo) { applyRequestedSpeed(pendingTempo); pendingTempo = 0; }
+        if(nativeTimeOfDay)previous=wasm.sim_elapsed_seconds();
       },
       nowSeconds: () => performance.now() / 1000,
       admit: (oldRate, rate, scale) => wasm.tick_with_adaptive_source_slot(oldRate, rate, scale) === 1,
+      afterAdmit: () => advanceDayClock(previous),
     });
     visualSeconds = result.gameSeconds;
     packSeconds=visualSeconds;
@@ -1785,7 +1838,7 @@ function advance(dt, now) {
     const result = advanceSourceSoloFrame(acc, dt, paused, () => {
       if (pendingTempo) { applyRequestedSpeed(pendingTempo); pendingTempo = 0; }
       return speed;
-    }, delta => wasm.tick_with_source_delta(delta) === 1);
+    }, delta => advanceDayWith(()=>wasm.tick_with_source_delta(delta)) === 1);
     acc = result.remainder;
     visualSeconds = result.gameSeconds;
     packSeconds=visualSeconds;
@@ -1795,7 +1848,7 @@ function advance(dt, now) {
     let steps = 0; const t0 = performance.now();
     while (acc >= TICK && steps < 8) {
       if(pendingTempo){applyRequestedSpeed(pendingTempo);pendingTempo=0;}
-      wasm.tick(); acc -= TICK; steps++;
+      advanceDayWith(wasm.tick); acc -= TICK; steps++;
     }
     if (steps) simMs += ((performance.now() - t0) / steps - simMs) * 0.1;
     if (acc > TICK) acc = TICK;                          // drop time instead of stalling the frame
@@ -3223,6 +3276,7 @@ function handleGameOption(action) {
     const adaptiveRate=restartPoint.adaptiveSourceClock ? adaptiveSoloClock?.rate ?? 30 : 0;
     if(!applyWorldSave(restartPoint.bytes)){toast('Dieses Scharmützel konnte nicht neu gestartet werden.');return;}
     Object.assign(cam,restartPoint.cam);
+    configureTimeOfDay(dayClock.snapshot().mode);
     gameOptions.close();begin({...originalTempo,requested:speed},restartPoint.sourceSoloClock===true,adaptiveRate);
   }
   else if(action==='exit'||action==='desktop'){
@@ -3300,6 +3354,7 @@ function channel(local) {
   let remoteResignation = false;
   let remoteInitialCeasefire = false;
   let remoteCrownRules = false;
+  let remoteTimeOfDay = false;
   let allowSourceRounds = false, remoteSourceRounds = false, helloSeen = false;
   const supportsCapture = typeof wasm.capture_configure_peer === 'function';
   const supportsCaptureAnimation = supportsCapture && typeof wasm.capture_animation_configure_peer === 'function';
@@ -3333,6 +3388,7 @@ function channel(local) {
         ...(allowSourceRounds?{sourceRounds:SOURCE_ROUND_VERSION}:{}),
         ...(hasInitialCeasefire?{initialCeasefire:1}:{}),
         ...(supportsPeerCrowns?{crownRules:1}:{}),
+        ...(nativeTimeOfDay?{timeOfDay:1}:{}),
         ...(climates.length>1?{climates}:{})}));
       mpStatus('Verbunden – Spielversion wird geprüft …');
     },
@@ -3363,6 +3419,7 @@ function channel(local) {
           remoteResignation=m.networkResignation===1;
           remoteInitialCeasefire=m.initialCeasefire===1;
           remoteCrownRules=m.crownRules===1;
+          remoteTimeOfDay=m.timeOfDay===1;
           remoteSourceRounds=m.sourceRounds===SOURCE_ROUND_VERSION;
           if (local === 0 && !net) {
             try{
@@ -3374,6 +3431,7 @@ function channel(local) {
               const ceasefire=hasInitialCeasefire?+$('initial-ceasefire').value:0;
               if(ceasefire&&!remoteInitialCeasefire)return reject('Der Mitspieler benötigt eine Version mit anfänglichem Waffenstillstand.');
               const cfg = {t:'start',protocol:PROTOCOL_VERSION,rules:wasm.ruleset(),seed:(seedOf()>>>0)||1,ai,visibility:+$('map-visibility').value,seasons:menuSeasonSettings(),
+                ...(nativeTimeOfDay&&remoteTimeOfDay?{timeOfDay:menuTimeOfDay()}:{}),
                 ...(climate?{climate}:{}),...(supportsCapture&&remoteCapture?{capture:1}:{}),
                 ...(supportsCaptureAnimation&&remoteCaptureAnimation?{captureAnimation:1}:{}),
                 ...(supportsInfantryRoster&&remoteInfantryRoster?{infantryRoster:1}:{}),
@@ -3425,6 +3483,10 @@ function channel(local) {
   function checkStart(cfg){
     if(cfg.protocol!==PROTOCOL_VERSION||cfg.rules!==wasm.ruleset()||![0,1,2].includes(cfg.visibility)||!Number.isInteger(cfg.seed)||cfg.seed<1||cfg.seed>0xffffffff||![0,1,2].includes(cfg.ai))throw Error('Invalid new match settings');
     peerSeasonSettings(cfg.seasons);
+    if(cfg.timeOfDay!==undefined){
+      if(!nativeTimeOfDay||!remoteTimeOfDay)throw Error('Unsupported time of day');
+      checkTimeOfDayMode(cfg.timeOfDay);
+    }
     checkedClimate(cfg.climate,climates);
     if(cfg.capture!==undefined&&(cfg.capture!==1||!supportsCapture||!remoteCapture))throw Error('Unsupported capture command');
     if(cfg.captureAnimation!==undefined&&(cfg.captureAnimation!==1||cfg.capture!==1||!supportsCaptureAnimation||!remoteCaptureAnimation))throw Error('Unsupported capture animation');
@@ -3473,6 +3535,7 @@ function channel(local) {
     if(cfg.ceasefire!==undefined&&!wasm.configure_initial_ceasefire(cfg.ceasefire))throw Error('Initial ceasefire setup failed');
     if(cfg.crownsDisabled!==undefined&&!wasm.configure_crowns_peer(Number(cfg.crownsDisabled)))throw Error('Crown setup failed');
     seasonSession.configure(peerSeasonSettings(cfg.seasons),cfg.climate);setSeasonControls(seasonSession.settings);climateControl.value=seasonSession.climate;
+    configureTimeOfDay(cfg.timeOfDay);
     const sourceRounds = cfg.sourceRounds===SOURCE_ROUND_VERSION;
     net = {ch,pc,ls:null,resignation:cfg.resignationPolicy!==undefined,...(sourceRounds?{sourceRounds:true}:{})};
     const tempo = cfg.gameTempo ? {locked:cfg.gameTempo.locked,apply:applyRequestedSpeed} : null;
@@ -3486,6 +3549,7 @@ function channel(local) {
         requested:originalStartingSpeed(cfg.gameTempo),locked:cfg.gameTempo.locked,
         renderFps:()=>adaptiveRenderSample.fps,linkMs:()=>roundTrip,
         nowSeconds:()=>performance.now()/1000,onRequested:applyRequestedSpeed,
+        onAdmittedStep:advanceDayClock,
       });
       if(local===0&&typeof pc?.getStats==='function')session.refreshLink=now=>{
         if(session.ls.alone||session.ls.terminal||now<nextStats)return;
@@ -3598,10 +3662,15 @@ function checkRosterSettings(cfg,humanSeats,resuming=false) {
   if(cfg.fishing!==undefined&&(cfg.fishing!==true||!supportsNetworkFishing||sharedOwner||cfg.groupedOwners))
     throw Error('Fischerei benötigt getrennte Spielerplätze und eine passende Spielversion.');
   checkedEpochRange(cfg.epoch,cfg.finalEpoch,wasm.epoch_count());
+  if(cfg.timeOfDay!==undefined)checkTimeOfDayMode(cfg.timeOfDay);
+  if(cfg.timeOfDayState!==undefined&&(!resuming||cfg.timeOfDay===undefined))throw Error('Ungültige Tageszeit im Spielstand.');
+  const dayState=cfg.timeOfDayState===undefined?null:readTimeOfDayState(cfg.timeOfDayState,cfg.timeOfDay);
   return {humanSeats,ai:cfg.ai,seed:cfg.seed,visibility:cfg.visibility,popLimit:cfg.popLimit,supplies:cfg.supplies,
     resignationPolicy:cfg.resignationPolicy,ceasefire:cfg.ceasefire,epoch:cfg.epoch,finalEpoch:cfg.finalEpoch,
     civilizations:checkedCivilizations(cfg.civilizations,worldHumans+cfg.ai),
     climate:checkedClimate(cfg.climate,climates),seasons:peerSeasonSettings(cfg.seasons),
+    ...(cfg.timeOfDay===undefined?{}:{timeOfDay:cfg.timeOfDay}),
+    ...(dayState?{timeOfDayState:dayState}:{}),
     gameTempo:checkOriginalTempo(cfg.gameTempo),features:supportedRosterFeatures.filter(key=>features.includes(key)),
     ...(features.includes('crowns')?{crownsDisabled:cfg.crownsDisabled}:{}),
     ...(crownVictory?{crownVictory}:{}),
@@ -3672,6 +3741,7 @@ function startRosterGame(cfg,seat,send,links,{archive,onCheckpoint}) {
     }
   }
   seasonSession.configure(cfg.seasons,cfg.climate);setSeasonControls(seasonSession.settings);climateControl.value=seasonSession.climate;
+  configureTimeOfDay(cfg.timeOfDay,cfg.timeOfDayState??null);
   const roundTrip=new Map();
   let nextStats=0;
   const resume=archive?.decoded.meta??null;
@@ -3679,6 +3749,7 @@ function startRosterGame(cfg,seat,send,links,{archive,onCheckpoint}) {
   const locked=resume?.locked??cfg.gameTempo.locked;
   const peer=new SourceRoundPeer(wasm,seat,send,{humanSeats:cfg.humanSeats,
     requested,locked,resume,onCheckpoint,sharedOwner,groupedOwners,
+    onAdmittedStep:advanceDayClock,
     renderFps:()=>adaptiveRenderSample.fps,linkMs:other=>roundTrip.get(other)??0,
     nowSeconds:()=>performance.now()/1000,onRequested:applyRequestedSpeed});
   const session={roster:true,sourceRounds:true,ls:peer,resignation:!sharedOwner&&!groupedOwners,checkpointHost:seat===0&&!!onCheckpoint};
@@ -3697,7 +3768,7 @@ function startRosterGame(cfg,seat,send,links,{archive,onCheckpoint}) {
   begin({...startingTempo(cfg.gameTempo),requested,locked});
   toast(archive?`Spielstand fortgesetzt · Platz ${seat+1}`:sharedOwner?'Koop · Gemeinsame Zivilisation gegen die KI':
     groupedOwners?`Gruppen-Koop · Zivilisation ${groupedOwners[seat]+1}`:`Mehrspieler · Platz ${seat+1}`);
-  return {peer,connected:count=>{
+  return {peer,checkpointPresentation:cfg.timeOfDay===undefined?null:()=>({timeOfDayState:dayClock.snapshot()}),connected:count=>{
     peer.rosterConnected=count;
     if((sharedOwner||groupedOwners)&&seat===0&&onCheckpoint){
       session.checkpointHost=sharedOwner?count===cfg.humanSeats:count>=2;
@@ -3755,6 +3826,7 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
     ...(supportsNetworkTimedTreaties?{timedTreaties:true}:{}),
     ...(supportsNetworkBorderTreaties?{borderTreaties:true}:{}),
     ...(supportsNetworkFishing?{fishing:true}:{}),
+    ...(nativeTimeOfDay?{timeOfDay:true}:{}),
     checkpoints:supportsNetworkCheckpoint,sharedOwner:supportsSharedOwner,sharedOwnerCheckpoint:supportsSharedCheckpoint,
     groupedCoop:supportsGroupedCoop,groupedCheckpoint:supportsGroupedCheckpoint}),
   checkHello(hello){
@@ -3771,6 +3843,7 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
       timedTreaties:hello.timedTreaties===true,
       borderTreaties:hello.borderTreaties===true,
       fishing:hello.fishing===true,
+      timeOfDay:hello.timeOfDay===true,
       checkpoints:hello.checkpoints===true,sharedOwner:hello.sharedOwner===true,
       sharedOwnerCheckpoint:hello.sharedOwner===true&&hello.sharedOwnerCheckpoint===true,groupedCoop:hello.groupedCoop===true,
       groupedCheckpoint:hello.groupedCoop===true&&hello.groupedCheckpoint===true};
@@ -3809,6 +3882,7 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
     return {humanSeats,ai,seed:(seedOf()>>>0)||1,visibility:+$('map-visibility').value,
       popLimit:+$('pop-limit').value,supplies:+$('supplies').value,resignationPolicy:+$('mp-resign-policy').value,
       ceasefire:+$('initial-ceasefire').value,climate,seasons:menuSeasonSettings(),gameTempo:menuTempo(),
+      ...(nativeTimeOfDay&&guests.every(guest=>guest.timeOfDay)?{timeOfDay:menuTimeOfDay()}:{}),
       features,...(features.includes('crowns')?{crownsDisabled:$('disable-crowns').checked}:{}),
       ...(crownVictory?{crownVictory}:{}),
       ...(capitolVictory?{capitolVictory}:{}),
@@ -3860,10 +3934,11 @@ for (let i = +qs.get('warm') || 0; i > 0 && running; i--) {
   if (adaptiveSoloClock) {
     if (!advance(sourceWallInterval(adaptiveSoloClock.rate) + 0.0000001, performance.now())) break;
   } else if (sourceSoloClock) {
-    if (!wasm.tick_with_source_delta(sourceStepDelta(speed))) break;
-  } else wasm.tick();
+    if (!advanceDayWith(()=>wasm.tick_with_source_delta(sourceStepDelta(speed)))) break;
+  } else advanceDayWith(wasm.tick);
 }
 for (const k of ['zoom', 'x', 'y']) if (qs.has(k)) cam[k] = +qs.get(k);
-window.openepoch = { wasm, rulesProfile, renderNamespace, cam, gl, frame, start, saveGame, loadGame, toWorld, channel, seasonSession, nativeDiplomacy, nativeBitmapFonts, fullmapPip, get net() { return net; } };
+window.openepoch = { wasm, rulesProfile, renderNamespace, cam, gl, frame, start, saveGame, loadGame, toWorld, channel, seasonSession, nativeDiplomacy, nativeBitmapFonts, fullmapPip,
+  ...(qaMode?{timeOfDay:{get settings(){return dayClock.snapshot();}}}:{}),get net() { return net; } };
 const loop = now => { requestAnimationFrame(loop); frame(now); };
 requestAnimationFrame(loop);

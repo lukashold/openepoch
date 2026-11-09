@@ -108,6 +108,7 @@ export function advanceAdaptiveSourceFrame(state, wallSeconds, paused, renderFps
     const after = callbacks.nowSeconds();
     const sample = after >= before ? addF64(after, -before) : 0;
     state.cpuSeconds = filterSourceCpu(state.cpuSeconds, sample);
+    callbacks.afterAdmit?.();
     state.tick++;
     state.rate = rate;
     state.scale = scale;
