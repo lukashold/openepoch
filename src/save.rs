@@ -141,6 +141,8 @@ impl Game {
         let options = options | if self.fishing_enabled { crate::fishing81::SAVE_FLAG } else { 0 };
         #[cfg(feature = "ee2-native13")]
         let options = options | if self.network_granary { crate::granary211::PEER_SAVE_FLAG } else { 0 };
+        #[cfg(feature = "ee2-native13")]
+        let options = options | if self.network_disputed_territories { crate::territory::DISPUTED_PEER_SAVE_FLAG } else { 0 };
         #[cfg(feature="ee2-native13")]
         let options = options | if self.submarine_depth_enabled { crate::submarine82::SAVE_FLAG } else { 0 };
         #[cfg(feature="ee2-native13")]
@@ -578,7 +580,7 @@ impl Game {
                 crate::cmd::SOLO_RESIGN_SAVE_FLAG | crate::initial_ceasefire::SAVE_MASK |
                 crate::runway32::CARRIER_POSE_SAVE_FLAG | CAPTURE_CHECKPOINT_SAVE_MASK |
                 crate::fishing81::SAVE_FLAG | crate::submarine82::SAVE_FLAG | crate::paid_queue7::LATE_POPULATION_SAVE_FLAG |
-                crate::granary211::PEER_SAVE_FLAG;
+                crate::granary211::PEER_SAVE_FLAG | crate::territory::DISPUTED_PEER_SAVE_FLAG;
             let flags = v(0);
             if flags & !allowed != 0 || v(4) > 1 { return None; }
             g.cheats_enabled = flags & 1 != 0;
@@ -600,7 +602,8 @@ impl Game {
                 g.initial_ceasefire = crate::initial_ceasefire::read_option(flags)?;
                 g.fishing_enabled = flags & crate::fishing81::SAVE_FLAG != 0;
                 g.network_granary = flags & crate::granary211::PEER_SAVE_FLAG != 0;
-                if g.network_granary && !g.net { return None; }
+                g.network_disputed_territories = flags & crate::territory::DISPUTED_PEER_SAVE_FLAG != 0;
+                if (g.network_granary || g.network_disputed_territories) && !g.net { return None; }
                 g.submarine_depth_enabled = flags & crate::submarine82::SAVE_FLAG != 0;
                 g.late_population = flags & crate::paid_queue7::LATE_POPULATION_SAVE_FLAG != 0;
                 if g.late_population && g.net { return None; }
@@ -890,8 +893,8 @@ impl Game {
         g.map.nav_ver += 1;
         // Validate claimed city handles before ownership reconstruction can
         // replace a malformed or stale handle with a convenient different city.
-        if has_territory{
-            for k in 0..32{let h=g.territory.claims[k];if h==NONE{continue;}let i=g.get(h)?;let e=g.ents[i];if k>=g.map.tseeds.len()||!g.valid_territory_anchor(&e,k){return None;}}
+        if has_territory && g.territory.claims.iter().enumerate().any(|(id, &claim)| !g.valid_territory_claim(id, claim)) {
+            return None;
         }
         if cfg!(feature="ee2-reference") && u(3)<57 {g.seed_legacy_territory_claims();}
         #[cfg(feature="ee2-native13")]
@@ -907,7 +910,7 @@ impl Game {
             if powers.is_none() { return None; }
             g.dock_garrison = Some(crate::game::dock_garrison59::State::read(&g, payload)?);
         }
-        g.build_grid();
+        g.build_grid_with_saved_disputes();
         if has_territory&&!g.validate_territory_state(){return None;}
         #[cfg(feature = "ee2-native13")]
         if let Some(borders) = border_treaties {

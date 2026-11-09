@@ -8,9 +8,9 @@ const PROFILES=Object.freeze({
 });
 
 // Archived authored carriers keep the preceding roster and share the same save profile.
-const UP_GRANARY_PROFILE=Object.freeze({...PROFILES.up15,wasm:'openepoch-ee2-up15.wasm?v=granary211',
+const UP_GRANARY_PROFILE=Object.freeze({...PROFILES.up15,wasm:'openepoch-ee2-up15.wasm?v=territory-dispute215',
  definitionCount:110,requiredExports:[...PROFILES.up15.requiredExports,
- 'granary_definition','granary_footprint','granary_bonus_for']});
+ 'granary_definition','granary_footprint','granary_bonus_for','configure_network_disputed_territories']});
 
 export function resolveRulesProfile(input,{up15Enabled=UP15_PROFILE_ENABLED,granary=false}={}){
  const url=new URL(input),reference=url.searchParams.get('rules')==='ee2';

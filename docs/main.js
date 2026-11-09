@@ -60,7 +60,7 @@ import {NATIVE_SEASON_CHOICE,normalizeSeasonChoice,resolveSeasonChoice} from './
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=native108';
 import {checkTimeOfDayMode,createTimeOfDayClock,readTimeOfDayState,resolveTimeOfDay,timeOfDayPeriods} from './original-time-of-day.js?v=time-of-day160';
 import {CLIMATE_NAMES,checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=granary211';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=territory-dispute215';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION as BASE_PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=time-of-day160';
@@ -77,7 +77,7 @@ import {createBuildingControls,nextBuildingTurn,placementMessage} from './buildi
 import {createFarmAngleMemory,FARM_INITIAL_YAW} from './farm-angle-memory.js?v=farm-angle148';
 import {updateOriginalCamera,originalCameraRay,originalFractionForZoom,normalizeOriginalHeading,rotateOriginalCameraHeading} from './original-camera.js?v=heading2';
 import {updateAuthoredCamera} from './authored-camera-axis.js';
-import {createFullmap} from './fullmap.js?v=native77';
+import {createFullmap} from './fullmap.js?v=territory-dispute214';
 import {createPlayerFlare} from './player-flare.js?v=native24';
 import {createBattleFlare} from './battle-flare.js?v=native25';
 import {createCaptureOrder,captureOrderText,decorateCommandButton} from './capture-order.js?v=native-spy';
@@ -3634,14 +3634,17 @@ const rosterFeatures=Object.freeze(Object.fromEntries([
   ['capture','capture_configure_peer'],['captureAnimation','capture_animation_configure_peer'],
   ['infantryRoster','infantry_roster_configure_peer'],['productionRoster','production_roster_configure_peer'],
   ['granary','configure_network_granary'],
+  ['disputedTerritory','configure_network_disputed_territories'],
   ...(tradeAvailable?[['tradeRoute','trade_route_configure_peer']]:[]),
   ...(airMissionAvailable?[['airMission','air_mission_configure_peer'],['airRunway','air_runway_configure_peer'],
     ['airTakeoff','air_takeoff_configure_peer'],['airLanding','air_landing_configure_peer'],['airCarrier','air_carrier_configure_peer']]:[]),
   ...(supportsPeerCrowns?[['crowns','configure_crowns_peer']]:[]),
 ].filter(([,name])=>typeof wasm[name]==='function')));
 const supportedRosterFeatures=Object.keys(rosterFeatures);
-const legacyRosterFeatures=supportedRosterFeatures.filter(key=>key!=='granary');
-const supportsNetworkGranary=Object.hasOwn(rosterFeatures,'granary');
+const extendedRosterFeatures=['granary','disputedTerritory'];
+const legacyRosterFeatures=supportedRosterFeatures.filter(key=>!extendedRosterFeatures.includes(key));
+const extendedRosterHello=Object.fromEntries(extendedRosterFeatures
+  .filter(key=>Object.hasOwn(rosterFeatures,key)).map(key=>[key,true]));
 
 function checkRosterSettings(cfg,humanSeats,resuming=false) {
   if(!cfg||cfg.humanSeats!==humanSeats||![2,3,4].includes(humanSeats)||!Number.isInteger(cfg.ai)||cfg.ai<0||
@@ -3724,7 +3727,8 @@ function checkpointRules(cfg){
   const crowns=cfg.crownsDisabled===undefined?0:cfg.crownsDisabled?2:1;
   const capture=cfg.captureCheckpoint?1+Number(cfg.features.includes('captureAnimation')):0;
   const rules=crowns|(capture<<25)|(Number(cfg.sightTerms===true)<<27)|(Number(cfg.timedTreaties===true)<<28)|
-    (Number(cfg.borderTreaties===true)<<29)|(Number(cfg.fishing===true)<<30)|(Number(cfg.features.includes('granary'))<<31);
+    (Number(cfg.borderTreaties===true)<<29)|(Number(cfg.fishing===true)<<30)|(Number(cfg.features.includes('granary'))<<31)|
+    (Number(cfg.features.includes('disputedTerritory'))<<7);
   const crown=cfg.crownVictory, capitol=cfg.capitolVictory;
   if(crown)return rules|(crown.mode<<8)|(crown.target<<16);
   if(capitol)return rules|(capitol.mode<<8)|(capitol.minutes<<16)|(Number(capitol.sole)<<24);
@@ -3852,7 +3856,7 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
     dec.decode(u8(wasm.epoch_name_ptr(epoch),wasm.epoch_name_len(epoch))):`Epoche ${epoch+1}`,
   localHello:()=>({protocol:PROTOCOL_VERSION,profile:rosterProfile,rules:wasm.ruleset(),
     civilization:civilizationSetup.choice(0),climates,features:legacyRosterFeatures,
-    ...(supportsNetworkGranary?{granary:true}:{}),
+    ...extendedRosterHello,
     ...(supportsNetworkCrownVictory?{crownVictory:true}:{}),
     ...(supportsNetworkCapitols?{capitolVictory:true}:{}),
     ...(supportsNetworkCapitolRoster?{capitolRoster:true}:{}),
@@ -3869,8 +3873,8 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
     if(hello?.protocol!==PROTOCOL_VERSION||hello.profile!==rosterProfile||hello.rules!==wasm.ruleset()||
       !Array.isArray(hello.features)||hello.features.length>11||hello.features.some(key=>typeof key!=='string'))
       throw Error('Alle Teilnehmer brauchen dieselbe UP-Spielversion.');
-    const features=hello.features.filter(key=>key!=='granary');
-    if(supportsNetworkGranary&&hello.granary===true)features.push('granary');
+    const features=hello.features.filter(key=>!extendedRosterFeatures.includes(key));
+    for(const key of extendedRosterFeatures)if(extendedRosterHello[key]&&hello[key]===true)features.push(key);
     return {civilization:civilizationChoice(hello.civilization),climates:peerClimates(hello.climates),features,
       crownVictory:hello.crownVictory===true,
       capitolVictory:hello.capitolVictory===true,

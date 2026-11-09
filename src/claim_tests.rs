@@ -35,9 +35,13 @@ fn isolated_city_waits_for_own_completed_fortress_and_retains_acquired_right() {
     assert_eq!(g.territory_claim_status(0,id),4);
     g.ents[f].built=1.0;g.build_grid();assert_eq!(g.towner[id],0);
     g.ents[f].alive=false;g.build_grid();assert_eq!(g.towner[id],0);
-    // Existing control-loss adapter: a city loss frees the parcel, rather than
-    // persisting native disputed ownership, which requires a future save format.
-    g.ents[c].alive=false;g.build_grid();assert_eq!(g.towner[id],255);
+    g.ents[c].alive=false;g.build_grid();
+    if g.disputed_territory_rules() {
+        assert_eq!(g.towner[id], 0);
+        assert!(g.territory_is_disputed(id));
+    } else {
+        assert_eq!(g.towner[id], 255);
+    }
 }
 
 #[test]
@@ -56,9 +60,158 @@ fn neighboring_completed_city_chain_ignores_entity_and_region_scan_order() {
 
 #[test]
 fn landless_player_can_bootstrap_without_fortress() {
-    let mut g=game();for e in &mut g.ents[..g.high] {if e.team==0&&e.def==TC {e.alive=false;}}
+    let mut g=game();
+    for (territory, &owner) in g.towner.iter().enumerate() {
+        if owner == 0 { g.territory.claims[territory] = NONE; }
+    }
+    for e in &mut g.ents[..g.high] {if e.team==0&&e.def==TC {e.alive=false;}}
     g.build_grid();assert!(!g.towner.contains(&0));
     let id=free(&g,false);city(&mut g,0,id,1.0);g.build_grid();assert_eq!(g.towner[id],0);
+}
+
+#[cfg(feature = "ee2-native13")]
+fn disputed_game() -> Game {
+    let mut game = Game::new(7, 1, 0, 1, 0);
+    for player in &mut game.players { player.ai = false; }
+    game
+}
+
+#[cfg(feature = "ee2-native13")]
+#[test]
+fn disputed_territory_keeps_owner_across_continue_and_restores_granary_on_completion() {
+    let mut g = disputed_game();
+    let id = free(&g, true);
+    let former_city = city(&mut g, 0, id, 1.0);
+    let (x, y) = g.map.tseeds[id];
+    let granary = g.spawn(crate::granary211::ID, 0, x + 1.0, y);
+    let worker = g.spawn(WORKER, 0, x, y);
+    assert_ne!(granary, NOIDX);
+    assert_ne!(worker, NOIDX);
+    g.build_grid();
+    assert_eq!(g.granary_farm_bonus(&g.ents[worker]), 1.0);
+    g.kill(former_city);
+    g.build_grid();
+    assert_eq!(g.towner[id], 0);
+    assert!(g.territory_is_disputed(id));
+    assert_eq!(g.granary_farm_bonus(&g.ents[worker]), 0.0);
+    assert!(!g.territory_valid(0, 1, 0, id as u32, NONE));
+    let replacement = city(&mut g, 0, id, 0.5);
+    g.build_grid();
+    assert!(g.territory_is_disputed(id));
+    g.save();
+    let mut loaded = Game::load(&g.savebuf).expect("disputed territory continues");
+    assert_eq!(loaded.towner[id], 0);
+    assert!(loaded.territory_is_disputed(id));
+    assert_eq!(loaded.granary_farm_bonus(&loaded.ents[worker]), 0.0);
+    loaded.save();
+    assert!(loaded.savebuf == g.savebuf);
+    loaded.ents[replacement].built = 1.0;
+    loaded.build_grid();
+    assert!(!loaded.territory_is_disputed(id));
+    assert_eq!(loaded.granary_farm_bonus(&loaded.ents[worker]), 1.0);
+    assert!(loaded.territory_valid(0, 1, 0, id as u32, NONE));
+}
+
+#[cfg(feature = "ee2-native13")]
+#[test]
+fn disputed_rival_claim_needs_completed_control_and_keeps_old_actors() {
+    let mut g = disputed_game();
+    let id = free(&g, true);
+    let initial = city(&mut g, 0, id, 1.0);
+    let (x, y) = g.map.tseeds[id];
+    let existing_house = g.spawn(HOUSE, 0, x, y);
+    g.build_grid();
+    g.kill(initial);
+    g.build_grid();
+    assert!(g.territory_is_disputed(id));
+    let rival = city(&mut g, 1, id, 0.5);
+    let isolated = !g.territory_adjacent_owned(1, id);
+    let fort = fortress(&mut g, 1, id, 0.5);
+    g.build_grid();
+    assert!(g.territory_is_disputed(id));
+    assert_eq!(g.towner[id], 0);
+    g.ents[rival].built = 1.0;
+    g.build_grid();
+    if isolated {
+        assert_eq!(g.towner[id], 0);
+        assert!(g.territory_is_disputed(id));
+        g.ents[fort].built = 1.0;
+        g.build_grid();
+    }
+    assert_eq!(g.towner[id], 1);
+    assert!(g.territory_is_disputed(id));
+    assert_eq!(g.ents[existing_house].team, 0);
+    g.save();
+    let mut continued = Game::load(&g.savebuf).expect("save during disputed rival acquisition");
+    assert_eq!(continued.towner[id], 1);
+    assert!(continued.territory_is_disputed(id));
+    continued.save();
+    assert!(continued.savebuf == g.savebuf);
+    g.build_grid();
+    assert!(!g.territory_is_disputed(id));
+    g.players[1].alive = false;
+    g.build_grid();
+    assert_eq!(g.towner[id], 255);
+}
+
+#[cfg(feature = "ee2-native13")]
+#[test]
+fn disputed_territory_lockstep_is_opt_in_and_resume_rejects_wrong_feature() {
+    let mut legacy = game();
+    let id = free(&legacy, true);
+    let initial = city(&mut legacy, 0, id, 1.0);
+    legacy.build_grid();
+    legacy.save();
+    let mut current = Game::load(&legacy.savebuf).unwrap();
+    current.network_disputed_territories = true;
+    for game in [&mut legacy, &mut current] {
+        game.kill(initial);
+        game.build_grid();
+        game.save();
+    }
+    assert_eq!(legacy.towner[id], 255);
+    assert_eq!(current.towner[id], 0);
+    let restored = Game::load(&current.savebuf).unwrap();
+    assert_eq!(restored.towner[id], 0);
+    assert!(restored.territory_is_disputed(id));
+    assert_ne!(legacy.state_hash(), restored.state_hash());
+    assert!(crate::crown_resume_matches(&restored, crate::territory::DISPUTED_PEER_RESUME_FLAG));
+    assert!(!crate::crown_resume_matches(&restored, 0));
+}
+
+#[cfg(feature = "ee2-native13")]
+#[test]
+fn disputed_map_pixels_and_ui_do_not_disclose_explored_enemy_state() {
+    let mut g = disputed_game();
+    let id = g.towner.iter().position(|&owner| owner == 1).unwrap();
+    let city = g.get(g.territory.claims[id]).unwrap();
+    g.kill(city);
+    g.build_grid();
+    let tile = g.map.terr.iter().position(|&region| usize::from(region) == id).unwrap();
+    let ui_disputed = |game: &Game| {
+        let mut json = String::new();
+        game.append_territory_ui(&mut json);
+        json.split_once(&format!("\"id\":{id},")).unwrap().1
+            .split('}').next().unwrap().contains("\"disputed\":true")
+    };
+    g.vis.fill(128);
+    g.terr_tex();
+    assert_eq!(&g.terr_rgba[tile * 4..tile * 4 + 4], &[id as u8, 2, 0, 255]);
+    assert!(!ui_disputed(&g));
+    g.vis[tile] = 255;
+    g.terr_tex();
+    assert_eq!(g.terr_rgba[tile * 4 + 2], 2);
+    assert!(ui_disputed(&g));
+    g.team_vis.fill(0);
+    g.refresh_display_fog();
+    assert!(g.terr_dirty);
+    g.terr_tex();
+    assert_eq!(g.terr_rgba[tile * 4 + 2], 0);
+    g.local = 1;
+    g.vis.fill(0);
+    g.terr_tex();
+    assert_eq!(g.terr_rgba[tile * 4 + 2], 2);
+    assert!(ui_disputed(&g));
 }
 
 #[test]

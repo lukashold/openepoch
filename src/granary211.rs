@@ -72,7 +72,7 @@ impl Game {
     pub(crate) fn granary_farm_bonus(&self, worker: &Ent) -> f32 {
         if worker.def != WORKER || self.granary_sites.is_empty() { return 0.0; }
         let territory = self.map.terr[tile_of(worker.x, worker.y)];
-        if self.towner[territory as usize] != worker.team { return 0.0; }
+        if self.towner[territory as usize] != worker.team || self.territory_is_disputed(territory as usize) { return 0.0; }
         self.granary_sites.iter().map(|&index| &self.ents[index]).filter(|site| site.hp > 0.0
             && site.team == worker.team && site.built >= 1.0
             && self.map.terr[tile_of(site.x, site.y)] == territory).count() as f32

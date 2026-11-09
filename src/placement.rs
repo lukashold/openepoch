@@ -165,12 +165,25 @@ impl Game {
         if def == crate::granary211::ID && self.granary_limit_reached(team, territory) { return 14; }
         let owner = self.towner[territory as usize];
         let foreign = owner != team && owner != 255;
+        let native_control = self.disputed_territory_rules();
+        let (control_limit, limit_error) = match def {
+            TC => (1, 5),
+            FORTRESS => (2, 10),
+            _ => (0, 0),
+        };
+        let control_capped = control_limit != 0 && self.ents[..self.high].iter().filter(|e| {
+            e.alive && e.hp > 0.0 && e.def == def
+                && (e.built >= 1.0 || e.team == team || def == TC && !native_control)
+                && self.map.terr[tile_of(e.x, e.y)] == territory
+        }).take(control_limit).count() == control_limit;
+        if native_control && control_capped { return limit_error; }
         #[cfg(feature = "ee2-native13")]
         {
+            let foreign_control_site = native_control && matches!(def, TC | FORTRESS);
             let native_foreign_site = foreign && (owner as usize) < self.nplayers
                 && self.diplomacy.borders.is_some()
-                && matches!(def, HOUSE | BARRACKS | DOCK | FARM | MILL | STABLE |
-                    MARKET | TEMPLE | UNIVERSITY | WAREHOUSE | crate::granary211::ID);
+                && (foreign_control_site || matches!(def, HOUSE | BARRACKS | DOCK | FARM | MILL | STABLE |
+                    MARKET | TEMPLE | UNIVERSITY | WAREHOUSE | crate::granary211::ID));
             let capacity = match def {
                 HOUSE => 6,
                 MARKET | TEMPLE | UNIVERSITY => 1,
@@ -193,22 +206,7 @@ impl Game {
         if foreign {
             return 2;
         }
-        if def == TC
-            && self.ents[..self.high].iter().any(|e| {
-                e.alive
-                    && e.hp > 0.0
-                    && e.def == TC
-                    && self.map.terr[tile_of(e.x, e.y)] == territory
-            })
-        {
-            return 5;
-        }
-        if def == FORTRESS && self.ents[..self.high].iter().filter(|e| {
-            e.alive && e.hp > 0.0 && e.def == FORTRESS && (e.built>=1.0 || e.team==team)
-                && self.map.terr[tile_of(e.x,e.y)] == territory
-        }).count() >= 2 {
-            return 10;
-        }
+        if control_capped { return limit_error; }
         let deposit = Self::extractor_kind(def);
         if deposit != R_NONE && self.map.res[center] != deposit {
             return 1;
@@ -637,6 +635,35 @@ mod tests {
         assert_eq!(g.placement_geometry_error(0, TC, x, y, 0), 2);
         assert!(g.configure_initial_ceasefire(1));
         assert_eq!(g.placement_geometry_error(0, HOUSE, x, y, 0), 11);
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    #[test]
+    fn foreign_city_and_fort_use_native_border_and_foundation_limits() {
+        let mut g = flat();
+        g.network_disputed_territories = true;
+        assert!(g.configure_sight_terms() && g.configure_timed_treaties(false) && g.configure_border_treaties());
+        let (x, y) = site(&g, TC, 0);
+        let (width, height) = Game::footprint_axes(TC, 0);
+        let region = g.map.terr[(y + height / 2) as usize * N + (x + width / 2) as usize];
+        g.towner[region as usize] = 1;
+        let (fx, fy) = site(&g, FORTRESS, 0);
+        for (term, expected) in [(0, 0), (1, 0), (2, 2), (3, 2)] {
+            g.diplomacy.borders.as_mut().unwrap().set_term(0, 1, term);
+            assert_eq!(g.placement_geometry_error(0, TC, x, y, 0), expected);
+            assert_eq!(g.placement_geometry_error(0, FORTRESS, fx, fy, 0), expected);
+        }
+        g.diplomacy.borders.as_mut().unwrap().set_term(0, 1, 1);
+        let remote = g.spawn(TC, 1, x as f32 + 18.0, y as f32 + 18.0);
+        let point = g.ents[remote];
+        g.map.terr[tile_of(point.x, point.y)] = region;
+        g.ents[remote].built = 0.5;
+        assert_eq!(g.placement_geometry_error(0, TC, x, y, 0), 0);
+        g.ents[remote].built = 1.0;
+        assert_eq!(g.placement_geometry_error(0, TC, x, y, 0), 5);
+        g.ents[remote].built = 0.5;
+        g.ents[remote].team = 0;
+        assert_eq!(g.placement_geometry_error(0, TC, x, y, 0), 5);
     }
 
     #[cfg(feature = "ee2-native13")]

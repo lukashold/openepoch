@@ -339,13 +339,15 @@ impl Game {
         n as u32
     }
 
-    /// Territory id and owner per tile, as an RGBA texture for the terrain shader.
+    /// Territory id, incumbent and disclosed disputed state per tile.
     pub fn terr_tex(&mut self) {
         for i in 0..NN {
             let t = self.map.terr[i];
             let owner = self.towner[t as usize];
             self.terr_rgba[i * 4] = t;
             self.terr_rgba[i * 4 + 1] = if owner == 255 { 0 } else { owner + 1 };
+            let disputed = (owner == self.local || self.vis[i] == 255) && self.territory_is_disputed(t as usize);
+            self.terr_rgba[i * 4 + 2] = if disputed { 2 } else { 0 };
             self.terr_rgba[i * 4 + 3] = 255;
         }
         self.terr_dirty = false;

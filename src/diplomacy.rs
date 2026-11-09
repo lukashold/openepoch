@@ -360,6 +360,9 @@ impl Game {
         if visibility == 2 {
             self.vis.fill(255);
         }
+        if self.territory_has_foreign_dispute() {
+            self.terr_dirty = true;
+        }
     }
 
     fn dip_event(&mut self, from: u8, to: u8, kind: u8, reason: u8, value: u32, resource: u32) {

@@ -299,7 +299,11 @@ mod tests {
         let mut loaded = Game::load(&game.savebuf).unwrap();
         assert_eq!(loaded.towner[territory], 0);
         loaded.kill(parthenon);
-        assert_eq!(loaded.towner[territory], 255);
+        assert_eq!(loaded.towner[territory], 0);
+        assert!(loaded.territory_is_disputed(territory));
+        assert_ne!(loaded.spawn(PARTHENON, 0, 127.0, 127.0), NOIDX);
+        loaded.rebuild_territories();
+        assert!(!loaded.territory_is_disputed(territory));
     }
 
     #[test]

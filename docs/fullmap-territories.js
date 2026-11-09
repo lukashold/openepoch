@@ -6,6 +6,7 @@ const NEUTRAL = [25,25,25];
 const BORDER = [90,70,30];
 const RASTER = 512;
 const MAX_RAY = 20;
+const INTERIOR_ALPHA = 62;
 
 export function fullmapTerritoryAlpha(ids,width) {
   const nearest=new Uint8Array(ids.length).fill(MAX_RAY+1);
@@ -20,17 +21,19 @@ export function fullmapTerritoryAlpha(ids,width) {
       if(run<nearest[index]) nearest[index]=run;
     }
   }
-  return nearest.map((distance,index)=>ids[index]===255?0:distance===1?255:distance>MAX_RAY?62:264-10*distance);
+  return nearest.map((distance,index)=>ids[index]===255?0:distance===1?255:distance>MAX_RAY?INTERIOR_ALPHA:264-10*distance);
 }
 
 export function composeFullmapTerritories(tiles,heights,terrain,size) {
   const sample=sampleFullmapTiles(heights,terrain,size,size);
   const ids=new Uint8Array(RASTER*RASTER),owners=new Uint8Array(ids.length);
+  const disputed=new Uint8Array(ids.length);
   for(let y=0;y<RASTER;y++)for(let x=0;x<RASTER;x++){
     const pixel=y*RASTER+x;
     const source=(Math.trunc(y*(size-1)/RASTER)*size+Math.trunc(x*(size-1)/RASTER))*4;
     ids[pixel]=sample(x,y).height<0?255:tiles[source];
     owners[pixel]=tiles[source+1];
+    disputed[pixel]=owners[pixel]!==0&&tiles[source+2]===2;
   }
   const alpha=fullmapTerritoryAlpha(ids,RASTER);
   const rgba=new Uint8ClampedArray(alpha.length*4);
@@ -38,7 +41,9 @@ export function composeFullmapTerritories(tiles,heights,terrain,size) {
     if(alpha[i]===0)continue;
     const color=alpha[i]===255?BORDER:OWNER_COLORS[owners[i]-1]??NEUTRAL;
     const offset=i*4;
-    rgba[offset]=color[0];rgba[offset+1]=color[1];rgba[offset+2]=color[2];rgba[offset+3]=alpha[i];
+    rgba[offset]=color[0];rgba[offset+1]=color[1];rgba[offset+2]=color[2];
+    // The native fullmap keeps owner RGB and the border ramp, fading only the deep interior.
+    rgba[offset+3]=disputed[i]&&alpha[i]===INTERIOR_ALPHA?1:alpha[i];
   }
   return rgba;
 }

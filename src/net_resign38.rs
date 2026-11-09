@@ -117,6 +117,7 @@ impl Game {
         let Some(mut state) = self.net_resignation else { return false; };
         if state.finished { return true; }
         self.refresh_match_alive();
+        self.release_inactive_territories();
         let crown_winner = self.network_crown_winning_seat();
         let resolved = if let Some(rule) = self.capitols {
             self.poll_network_capitols(rule)

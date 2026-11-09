@@ -1,6 +1,6 @@
 import {fullmapActorCatalog,fullmapActorSize,readFullmapActors} from './fullmap-actors.js?v=fishing81';
 import {paintFullmapLayers} from './fullmap-layers.js?v=fishing81';
-import {composeFullmapTerritories} from './fullmap-territories.js?v=native22';
+import {composeFullmapTerritories} from './fullmap-territories.js?v=territory-dispute214';
 import {fullmapScreenPoint,fullmapWorldPoint} from './fullmap-pointer.js';
 import {composeFullmapTerrain,loadFullmapTerrainArt,sampleFullmapTiles} from './fullmap-terrain.js';
 import {loadOriginalFullmapArt} from './original-fullmap-art.js';

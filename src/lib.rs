@@ -1055,7 +1055,8 @@ pub extern "C" fn validate_grouped_resume(layout: u32, controller: u32, tick: u3
 
 #[cfg(feature = "ee2-native13")]
 fn crown_resume_matches(game: &Game, encoded: u32) -> bool {
-    let rules = encoded & 255;
+    let disputed = encoded & territory::DISPUTED_PEER_RESUME_FLAG != 0;
+    let rules = encoded & (255 ^ territory::DISPUTED_PEER_RESUME_FLAG);
     let victory = (encoded >> 8) & 0x1ffff;
     let capture = (encoded >> 25) & 3;
     let sight = (encoded >> 27) & 1;
@@ -1071,6 +1072,7 @@ fn crown_resume_matches(game: &Game, encoded: u32) -> bool {
         && borders == u32::from(game.diplomacy.borders.is_some())
         && fishing == u32::from(game.fishing_enabled)
         && encoded >> 31 == u32::from(game.network_granary)
+        && disputed == game.network_disputed_territories
 }
 
 #[cfg(feature = "ee2-native13")]
@@ -2036,6 +2038,14 @@ pub extern "C" fn configure_network_granary(enabled: u32) -> u32 {
     let game = g();
     if enabled != 1 || !game.net || game.tick != 0 { return 0; }
     game.network_granary = true;
+    1
+}
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_network_disputed_territories(enabled: u32) -> u32 {
+    let game = g();
+    if enabled != 1 || !game.net || game.tick != 0 { return 0; }
+    game.network_disputed_territories = true;
     1
 }
 #[no_mangle]

@@ -6,6 +6,17 @@ use core::fmt::Write;
 pub const TERR_MAGIC: u32 = 0x3152_4554; // TER1
 pub const TERR_BYTES: usize = 8 + 32 * 4 + 16 * 12 + 4 + 12 * 16;
 pub const TERR_NONE: u8 = 255;
+// TER1 stores actor handles. These low words cannot be entity indices, and
+// preserve the incumbent in the same slot while there is no completed city.
+const DISPUTED_CLAIM: u32 = 0x0000_ff00;
+#[cfg(feature = "ee2-native13")]
+pub(crate) const DISPUTED_PEER_SAVE_FLAG: u32 = 1 << 23;
+#[cfg(feature = "ee2-native13")]
+pub(crate) const DISPUTED_PEER_RESUME_FLAG: u32 = 1 << 7;
+
+fn disputed_owner(claim: u32) -> Option<u8> {
+    (DISPUTED_CLAIM..DISPUTED_CLAIM + 4).contains(&claim).then(|| (claim - DISPUTED_CLAIM) as u8)
+}
 #[cfg(feature = "ee2-native13")]
 pub(crate) const TERR_GIFT_BATCH_ACTION: u32 = 5;
 #[cfg(feature = "ee2-native13")]
@@ -58,6 +69,35 @@ impl Default for TerritoryDiplomacy {
     }
 }
 impl Game {
+    pub(crate) fn disputed_territory_rules(&self) -> bool {
+        #[cfg(feature = "ee2-native13")]
+        { return self.bench == 0 && (!self.net || self.network_disputed_territories); }
+        #[cfg(not(feature = "ee2-native13"))]
+        false
+    }
+
+    pub(crate) fn territory_is_disputed(&self, territory: usize) -> bool {
+        disputed_owner(self.territory.claims[territory]).is_some()
+    }
+
+    pub(crate) fn territory_has_foreign_dispute(&self) -> bool {
+        self.territory.claims.iter().filter_map(|&claim| disputed_owner(claim)).any(|owner| owner != self.local)
+    }
+
+    fn territory_seat_active(&self, team: u8) -> bool {
+        let seat = usize::from(team);
+        seat < self.nplayers && self.players[seat].alive
+    }
+
+    pub(crate) fn valid_territory_claim(&self, territory: usize, claim: u32) -> bool {
+        claim == NONE || (territory < self.map.tseeds.len() &&
+            if let Some(team) = disputed_owner(claim) {
+                self.disputed_territory_rules() && self.territory_seat_active(team)
+            } else {
+                self.get(claim).is_some_and(|i| self.valid_territory_anchor(&self.ents[i], territory))
+            })
+    }
+
     /// New acquisition is separate from retaining an existing city anchor.
     /// BASE territory.ddf requires CityCenter1 for adjacent acquisition and
     /// CityCenter1+Fortress1 for isolated acquisition, but only CityCenter1
@@ -128,15 +168,27 @@ impl Game {
     /// A live city handle anchors the claim. Transfer changes its owner, and a
     /// destroyed/reused handle cannot restore the former owner's border next tick.
     pub fn rebuild_territories(&mut self) {
+        self.update_territories(false);
+    }
+
+    pub(crate) fn update_territories(&mut self, restoring: bool) {
         #[cfg(feature = "ee2-native13")]
         let hill = self.koth_territory();
+        let disputed = self.disputed_territory_rules();
+        let prior_claims = self.territory.claims;
+        let mut deferred = [false; 32];
         let mut first = [NONE; 32];
+        let mut first_by_team = [[NONE; 4]; 32];
         for i in 0..self.high {
             let e = &self.ents[i];
             if e.alive && e.hp > 0.0 && e.def == TC {
                 let k = self.map.terr[tile_of(e.x, e.y)] as usize;
                 if first[k] == NONE && (!cfg!(feature="ee2-reference") || Self::territory_control_ready(e)) {
                     first[k] = self.h(i);
+                }
+                if disputed && self.territory_seat_active(e.team) && Self::territory_control_ready(e) {
+                    let candidate = &mut first_by_team[k][usize::from(e.team)];
+                    if *candidate == NONE { *candidate = self.h(i); }
                 }
             }
         }
@@ -154,15 +206,34 @@ impl Game {
                 continue;
             }
             let claim = self.territory.claims[k];
+            if let Some(team) = disputed_owner(claim).filter(|_| restoring) {
+                owner[k] = team;
+                deferred[k] = true;
+                continue;
+            }
             let valid = self.get(claim).filter(|&i| self.valid_territory_anchor(&self.ents[i], k));
             let mut h = if valid.is_some() { claim } else if cfg!(feature="ee2-reference") {NONE} else { first[k] };
             #[cfg(feature = "ee2-native13")]
             if let (Some(anchor), Some(city)) = (valid, self.get(first[k])) {
                 if self.ents[anchor].def == BARRACKS && self.ents[anchor].team == self.ents[city].team { h = first[k]; }
             }
+            if disputed && claim != NONE {
+                let incumbent = valid.map(|i| self.ents[i].team).or_else(|| disputed_owner(claim))
+                    .unwrap_or(self.towner[k]);
+                h = if !self.territory_seat_active(incumbent) {
+                    NONE
+                } else if self.get(h).is_some_and(|i| Self::territory_control_ready(&self.ents[i])) {
+                    h
+                } else {
+                    let replacement = first_by_team[k][usize::from(incumbent)];
+                    if replacement == NONE { DISPUTED_CLAIM + u32::from(incumbent) } else { replacement }
+                };
+            }
             self.territory.claims[k] = h;
             if let Some(i) = self.get(h) {
                 owner[k] = self.ents[i].team;
+            } else if let Some(incumbent) = disputed_owner(h) {
+                owner[k] = incumbent;
             }
         }
         if cfg!(feature="ee2-reference") {
@@ -175,9 +246,11 @@ impl Game {
                 }
             }
             let colony = [NONE; 32];
+            let colonies_by_team = [[NONE; 4]; 32];
             #[cfg(feature = "ee2-native13")]
-            let colony = {
+            let (colony, colonies_by_team) = {
                 let mut colony = colony;
+                let mut colonies_by_team = colonies_by_team;
                 let parthenon = self.completed_wonder_owners(crate::wonders61::PARTHENON);
                 if parthenon != 0 {
                     let mut mills = [0u8; 32];
@@ -189,19 +262,33 @@ impl Game {
                     for (index, e) in self.ents[..self.high].iter().enumerate() {
                         if e.def != BARRACKS || !Self::territory_control_ready(e) || parthenon & (1 << e.team) == 0 { continue; }
                         let k = self.map.terr[tile_of(e.x, e.y)] as usize;
-                        if colony[k] == NONE && mills[k] & (1 << e.team) != 0 { colony[k] = self.h(index); }
+                        if mills[k] & (1 << e.team) == 0 { continue; }
+                        if colony[k] == NONE { colony[k] = self.h(index); }
+                        if disputed && self.territory_seat_active(e.team) {
+                            let claim = &mut colonies_by_team[k][usize::from(e.team)];
+                            if *claim == NONE { *claim = self.h(index); }
+                        }
                     }
                 }
-                colony
+                (colony, colonies_by_team)
             };
+            if disputed {
+                for k in 0..self.map.tseeds.len() {
+                    if let Some(incumbent) = disputed_owner(self.territory.claims[k]).filter(|_| !deferred[k]) {
+                        let claim = colonies_by_team[k][usize::from(incumbent)];
+                        if claim != NONE { self.territory.claims[k] = claim; }
+                    }
+                }
+            }
             for _ in 0..self.map.tseeds.len() {
                 let mut added=[TERR_NONE;32];
                 let mut anchors=[NONE;32];
                 let mut changed=false;
                 let mut bootstrap=[usize::MAX;4];
                 for k in 0..self.map.tseeds.len() {
-                    if owner[k]!=TERR_NONE {continue;}
-                    if let Some(i)=self.get(first[k]) {
+                    if deferred[k] || owner[k]!=TERR_NONE && !self.territory_is_disputed(k) {continue;}
+                    let candidates = if disputed { &first_by_team[k][..] } else { core::slice::from_ref(&first[k]) };
+                    for i in candidates.iter().filter_map(|&h| self.get(h)) {
                         let team=self.ents[i].team as usize;
                         if !owner.contains(&(team as u8)) && bootstrap[team]==usize::MAX {bootstrap[team]=k;}
                     }
@@ -209,22 +296,39 @@ impl Game {
                 for k in 0..self.map.tseeds.len() {
                     #[cfg(feature = "ee2-native13")]
                     if hill.is_some_and(|(id, _)| id == k) { continue; }
-                    if owner[k]!=TERR_NONE {continue;}
-                    if let Some(i)=self.get(first[k]) {
+                    if deferred[k] || owner[k]!=TERR_NONE && !self.territory_is_disputed(k) {continue;}
+                    let candidates = if disputed { &first_by_team[k][..] } else { core::slice::from_ref(&first[k]) };
+                    for &candidate in candidates {
+                        let Some(i) = self.get(candidate) else { continue; };
                         let team=self.ents[i].team;
                         let adjacent=owner.iter().enumerate().any(|(j,&o)|o==team && self.map.territory_neighbors[k]&(1<<j)!=0);
                         // 00719280 uses adjacentReq when this player owns no territory.
                         if adjacent || bootstrap[team as usize]==k || forts[k]&(1<<team)!=0 {
-                            anchors[k]=first[k];added[k]=team;changed=true;continue;
+                            anchors[k]=candidate;added[k]=team;changed=true;break;
                         }
                     }
-                    if let Some(i)=self.get(colony[k]) {
-                        anchors[k]=colony[k];added[k]=self.ents[i].team;changed=true;
+                    if added[k]==TERR_NONE {
+                        let colony = if disputed {
+                            colonies_by_team[k].iter().copied().find(|&claim| claim != NONE).unwrap_or(NONE)
+                        } else {
+                            colony[k]
+                        };
+                        let Some(i) = self.get(colony) else { continue; };
+                        anchors[k]=colony;added[k]=self.ents[i].team;changed=true;
                     }
                 }
                 if !changed {break;}
                 for k in 0..self.map.tseeds.len() {
-                    if added[k]!=TERR_NONE {owner[k]=added[k];self.territory.claims[k]=anchors[k];}
+                    if added[k] == TERR_NONE { continue; }
+                    owner[k] = added[k];
+                    // Native 0071D9B0 writes the new owner while preserving
+                    // state 2. The next region update checks the new owner.
+                    if self.territory_is_disputed(k) {
+                        self.territory.claims[k] = DISPUTED_CLAIM + u32::from(added[k]);
+                        deferred[k] = true;
+                    } else {
+                        self.territory.claims[k] = anchors[k];
+                    }
                 }
             }
         }
@@ -232,6 +336,11 @@ impl Game {
             #[cfg(feature = "ee2-native13")]
             self.name_territory_owner_changes(&owner);
             self.towner = owner;
+            self.terr_dirty = true;
+        }
+        if disputed && prior_claims.iter().enumerate().any(|(id, &claim)|
+            disputed_owner(claim).is_some() != self.territory_is_disputed(id))
+        {
             self.terr_dirty = true;
         }
         for t in 0..self.nplayers {
@@ -541,6 +650,7 @@ impl Game {
         self.reconcile_capture_orders();
         self.build_grid();
         self.refresh_match_alive();
+        self.release_inactive_territories();
         self.void_landless_alliances();
         self.prune_territory_offers();
         self.update_fog();
@@ -755,10 +865,13 @@ impl Game {
     }
     pub fn append_territory_ui(&self, s: &mut String) {
         let mut known = [false; 32];
+        let mut visible = [false; 32];
         let mut disclosed = [false; 32];
         for (i, &v) in self.vis.iter().enumerate() {
             if v > 0 {
-                known[self.map.terr[i] as usize] = true;
+                let territory = self.map.terr[i] as usize;
+                known[territory] = true;
+                visible[territory] |= v == 255;
             }
         }
         // An explicit offer discloses the two named parcels to its recipient.
@@ -778,6 +891,7 @@ impl Game {
         for id in 0..self.map.tseeds.len() {
             let actual = self.towner[id];
             let seen = known[id] || actual == self.local;
+            let disputed = (actual == self.local || visible[id]) && self.territory_is_disputed(id);
             let owner = if seen { actual } else { TERR_NONE };
             let complete =
                 seen && (actual == self.local || disclosed[id] || self.display_visibility() == 2);
@@ -799,6 +913,8 @@ impl Game {
                 "Ein Kapitolgebiet kann nur erobert werden"
             } else if actual == TERR_NONE {
                 "Kein Besitzer"
+            } else if disputed {
+                "Umkämpftes Gebiet"
             } else if !transferable {
                 "Kein lebender Eigentümer mit Stadtzentrum"
             } else {
@@ -808,7 +924,7 @@ impl Game {
             let control=if seen {self.territory_control_counts(self.local,id)}else{[0;4]};
             let claim_status=if seen {self.territory_claim_status(self.local,id)}else{0};
             let adjacent=seen&&self.territory_adjacent_owned(self.local,id);
-            let _=write!(s,"{}{{\"id\":{},\"name\":\"Territorium {}\",\"owner\":{},\"x\":{:.2},\"y\":{:.2},\"known\":{},\"canGive\":{},\"transferable\":{},\"reason\":\"{}\",\"buildings\":{},\"units\":{},\"garrison\":{},\"tributeBuildings\":{},\"tributeUnits\":{},\"tributeGarrison\":{},\"countsComplete\":{},\"lastTerritory\":{},\"claimStatus\":{},\"adjacent\":{},\"townCenters\":{},\"fortresses\":{},\"eligibleTownCenters\":{},\"eligibleFortresses\":{}{}}}",if id>0{","}else{""},id,id+1,owner,x,y,seen,transferable&&actual==self.local,transferable,reason,counts[0],counts[1],counts[2],tribute[0],tribute[1],tribute[2],complete,seen&&actual!=TERR_NONE&&self.players.get(actual as usize).map_or(false,|p|p.terr<=1),claim_status,adjacent,control[0],control[1],control[2],control[3],if capitol { ",\"capitolProtected\":true" } else { "" });
+            let _=write!(s,"{}{{\"id\":{},\"name\":\"Territorium {}\",\"owner\":{},\"x\":{:.2},\"y\":{:.2},\"known\":{},\"canGive\":{},\"transferable\":{},\"reason\":\"{}\",\"buildings\":{},\"units\":{},\"garrison\":{},\"tributeBuildings\":{},\"tributeUnits\":{},\"tributeGarrison\":{},\"countsComplete\":{},\"lastTerritory\":{},\"claimStatus\":{},\"adjacent\":{},\"townCenters\":{},\"fortresses\":{},\"eligibleTownCenters\":{},\"eligibleFortresses\":{}{}{}}}",if id>0{","}else{""},id,id+1,owner,x,y,seen,transferable&&actual==self.local,transferable,reason,counts[0],counts[1],counts[2],tribute[0],tribute[1],tribute[2],complete,seen&&actual!=TERR_NONE&&self.players.get(actual as usize).map_or(false,|p|p.terr<=1),claim_status,adjacent,control[0],control[1],control[2],control[3],if capitol { ",\"capitolProtected\":true" } else { "" },if disputed { ",\"disputed\":true" } else { "" });
         }
         s.push(']');
     }
@@ -947,18 +1063,8 @@ impl Game {
         Some(())
     }
     pub fn validate_territory_state(&self) -> bool {
-        for k in 0..32 {
-            let h = self.territory.claims[k];
-            if h == NONE {
-                continue;
-            }
-            let Some(i) = self.get(h) else {
-                return false;
-            };
-            let e = self.ents[i];
-            if k >= self.map.tseeds.len() || !self.valid_territory_anchor(&e, k) {
-                return false;
-            }
+        for (territory, &claim) in self.territory.claims.iter().enumerate() {
+            if !self.valid_territory_claim(territory, claim) { return false; }
         }
         for a in 0..4 {
             for b in 0..4 {

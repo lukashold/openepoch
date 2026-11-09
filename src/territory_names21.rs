@@ -155,7 +155,8 @@ mod tests {
 
         game.ents[city].hp = 0.0;
         game.build_grid();
-        assert_eq!(game.towner[id], TERR_NONE);
+        assert_eq!(game.towner[id], 1);
+        assert!(game.territory_is_disputed(id));
         assert_eq!(game.territory_names.as_ref().unwrap().ids[id], expected);
         assert_eq!(game.source_birth.rng, expected_rng);
     }

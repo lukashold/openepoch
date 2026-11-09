@@ -317,6 +317,8 @@ pub struct Game {
     #[cfg(feature = "ee2-native13")]
     pub(crate) network_granary: bool,
     #[cfg(feature = "ee2-native13")]
+    pub(crate) network_disputed_territories: bool,
+    #[cfg(feature = "ee2-native13")]
     pub(crate) submarine_depth_enabled: bool,
     #[cfg(feature = "ee2-native13")]
     pub(crate) torpedo84_enabled: bool,
@@ -576,6 +578,8 @@ impl Game {
             fishing_enabled: false,
             #[cfg(feature = "ee2-native13")]
             network_granary: false,
+            #[cfg(feature = "ee2-native13")]
+            network_disputed_territories: false,
             #[cfg(feature = "ee2-native13")]
             submarine_depth_enabled: false,
             #[cfg(feature = "ee2-native13")]
@@ -1633,6 +1637,8 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         if self.network_granary { mix(u32::from_le_bytes(*b"GRA1")); }
         #[cfg(feature = "ee2-native13")]
+        if self.network_disputed_territories { mix(u32::from_le_bytes(*b"DSP1")); }
+        #[cfg(feature = "ee2-native13")]
         if self.submarine_depth_enabled { mix(u32::from_le_bytes(*b"SUB1")); }
         #[cfg(feature = "ee2-native13")]
         if self.air_missions_enabled { self.aircraft.hash(&mut mix); }
@@ -1865,7 +1871,12 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         self.tick_capture_state();
         self.map.budget = 4;
-        self.build_grid();
+        let native_territory_update = self.disputed_territory_rules();
+        if native_territory_update {
+            self.recount_spatial_grid();
+        } else {
+            self.build_grid();
+        }
         #[cfg(feature = "ee2-native13")]
         self.tick_spy_disguise();
         #[cfg(feature = "ee2-native13")]
@@ -1923,7 +1934,7 @@ impl Game {
         self.tick_dock_garrison();
         #[cfg(feature = "ee2-native13")]
         self.tick_city_heal();
-        if city_death{self.rebuild_territories();self.void_landless_alliances();}
+        if city_death && !native_territory_update {self.rebuild_territories();self.void_landless_alliances();}
         #[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
         self.recount_paid_players();
         if deaths&&self.bench==0{self.prune_territory_offers();}
@@ -1981,6 +1992,15 @@ impl Game {
         self.reconcile_spy_intel();
         #[cfg(feature = "ee2-native13")]
         self.reconcile_spy_extraction();
+        // The ordinary original game advances the territory manager after
+        // actor and player updates, once per advancing simulation pulse.
+        if native_territory_update {
+            let previous = self.towner;
+            self.rebuild_territories();
+            if city_death || previous.iter().zip(&self.towner).any(|(&old, &new)| old != 255 && old != new) {
+                self.void_landless_alliances();
+            }
+        }
     }
 
     #[cfg(feature = "ee2-native13")]
@@ -2006,6 +2026,16 @@ impl Game {
         }
         for player in &mut self.players[..self.nplayers] {
             player.alive = player.buildings > 0;
+        }
+    }
+
+    pub(crate) fn release_inactive_territories(&mut self) {
+        if self.disputed_territory_rules() && self.towner.iter().any(|&owner| {
+            let seat = usize::from(owner);
+            seat < self.nplayers && !self.players[seat].alive
+        }) {
+            self.rebuild_territories();
+            self.void_landless_alliances();
         }
     }
 
@@ -2070,6 +2100,16 @@ impl Game {
 
     /// Counting-sort every live entity into a uniform grid; also recount population.
     pub fn build_grid(&mut self) {
+        self.recount_spatial_grid();
+        self.rebuild_territories();
+    }
+
+    pub(crate) fn build_grid_with_saved_disputes(&mut self) {
+        self.recount_spatial_grid();
+        self.update_territories(true);
+    }
+
+    fn recount_spatial_grid(&mut self) {
         #[cfg(feature="ee2-reference")]
         self.sync_city_ground();
         let reserves_queue_population = self.reserves_queue_population();
@@ -2141,7 +2181,6 @@ impl Game {
             self.players[t].cap = cap[t].min(self.players[t].population_limit);
             self.players[t].buildings = bld[t];
         }
-        self.rebuild_territories();
     }
 
     #[inline]
