@@ -1,26 +1,44 @@
-import {cityCenterShadowModels,cityCenterWorldVolume} from './citycenter-shadow-mesh.js';
+import {cityCenterShadowModels,cityCenterWorldVolume} from './citycenter-shadow-mesh.js?v=house156';
 import {createShadowVolumeBuffer} from './valley-ruin-shadow.js';
 
-const catalog={url:'local-original/building-shadows/citycenter.json',
-  sha256:'0e87571f2bb5fcf5b7a394366f4107f3fb38a421406cc73c6b2146ff404a7b35'};
+const catalogs=[
+  {url:'local-original/building-shadows/citycenter.json',format:'ee2-private-citycenter-topology-v1',
+    sha256:'0e87571f2bb5fcf5b7a394366f4107f3fb38a421406cc73c6b2146ff404a7b35'},
+  {url:'local-original/building-shadows/house.json',format:'ee2-private-house-topology-v1',
+    sha256:'f7a7f1caa85a6f1051fcff5a19894847d307800baefeb563130e020eaf4a0062'},
+];
 
-export async function loadCityCenterShadowAssets(checked,lighting) {
+export async function loadBuildingShadowAssets(checked,lighting) {
   if (!lighting?.native || lighting.climate!=='Temperate' || !lighting.sourceTerrainDirection) return null;
-  const manifest=JSON.parse(new TextDecoder().decode(await checked(catalog)));
-  const models=cityCenterShadowModels(manifest,await checked(manifest.payload));
+  const results=await Promise.allSettled(catalogs.map(async catalog=>{
+    const manifest=JSON.parse(new TextDecoder().decode(await checked(catalog)));
+    return cityCenterShadowModels(manifest,await checked(manifest.payload),catalog.format);
+  }));
+  const models=new Map(results.flatMap(result=>result.status==='fulfilled'?[...result.value]:[]));
+  if(!models.size)return null;
   const verified=new Map();
-  return caster=>{
-    const model=models.get(caster.url);
-    if (!model || model.source!==caster.source || model.scale!==caster.scale) return null;
-    if (!verified.has(caster.url)) {
-      verified.set(caster.url,false);
-      checked({url:caster.url,sha256:model.sha256}).then(()=>verified.set(caster.url,true)).catch(()=>{});
+  function modelFor(url,{source,scale}) {
+    const model=models.get(url);
+    if (!model || model.source!==source || model.scale!==scale) return null;
+    if (!verified.has(url)) {
+      verified.set(url,false);
+      checked({url,sha256:model.sha256}).then(()=>verified.set(url,true)).catch(()=>{});
     }
-    return verified.get(caster.url) ? model : null;
+    return verified.get(url) ? model : null;
+  }
+  return caster=>{
+    if(!caster.modelParts)return modelFor(caster.url,caster);
+    const parts=[];
+    for(const {url,node} of caster.modelParts){
+      const part=modelFor(url,caster)?.parts.find(candidate=>candidate.node===node);
+      if(!part)return null;
+      parts.push(part);
+    }
+    return {scale:caster.scale,parts};
   };
 }
 
-export function createCityCenterShadowRenderer(gl,match,sourceLight,compile) {
+export function createBuildingShadowRenderer(gl,match,sourceLight,compile) {
   const buffer=createShadowVolumeBuffer(gl,compile);
   let signature=null, ranges=[], active=[];
   return {
@@ -30,7 +48,7 @@ export function createCityCenterShadowRenderer(gl,match,sourceLight,compile) {
         const model=match(caster);
         if(model) selected.push({caster,model});
       }
-      const key=JSON.stringify(selected.map(({caster})=>[caster.url,...caster.pose]));
+      const key=JSON.stringify(selected.map(({caster})=>[caster.url,caster.modelParts,...caster.pose]));
       if (key!==signature) {
         const nextRanges=[], nextActive=[], points=[], indices=[];
         for(const [index,{caster,model}] of selected.entries()) {

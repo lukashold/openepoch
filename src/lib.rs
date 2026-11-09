@@ -142,6 +142,8 @@ mod ee2_up15_attack;
 mod native_attack_clock;
 mod diplomacy;
 #[cfg(feature = "ee2-native13")]
+mod alliance_territories;
+#[cfg(feature = "ee2-native13")]
 mod fixed_teams;
 #[cfg(feature = "ee2-native13")]
 mod timed_treaties;
@@ -2953,6 +2955,27 @@ pub extern "C" fn configure_network_starting_teams(groups: u32, lock: u32) -> u3
 pub extern "C" fn cmd_diplomacy(target:u32,action:u32,resource:u32,amount:f32)->u32 {
  let game=g();if !game.diplomacy_valid(game.local,target,action,resource,amount){return 0;}
  let bits=target|(action<<8)|(resource<<16);game.submit(C_DIPLOMACY,amount,0.0,bits as i32,&[]);1
+}
+#[cfg(feature = "ee2-native13")]
+static mut ALLIANCE_TERRITORY_IDS: [u32; alliance_territories::MAX_IDS] = [NONE; alliance_territories::MAX_IDS];
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn diplomacy_territories_ptr() -> *mut u32 {
+    addr_of_mut!(ALLIANCE_TERRITORY_IDS).cast::<u32>()
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn cmd_diplomacy_territories(target: u32, action: u32, terms: u32, minutes: f32, give: u32, count: u32) -> u32 {
+    if count as usize > alliance_territories::MAX_IDS { return 0; }
+    let ids = unsafe { std::slice::from_raw_parts(diplomacy_territories_ptr(), count as usize) };
+    let Some(territories) = alliance_territories::AllianceTerritories::new(give as usize, ids) else { return 0; };
+    let game = g();
+    if !game.diplomacy_territories_valid(game.local, target, action, terms, minutes, territories) { return 0; }
+    let bits = target | (action << 8) | (terms << 16);
+    game.submit(C_DIPLOMACY, minutes, give as f32, bits as i32, ids);
+    1
 }
 #[no_mangle]
 pub extern "C" fn diplomacy_stat(from:u32,to:u32,field:u32)->u32 {

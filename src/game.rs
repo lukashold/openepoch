@@ -1651,6 +1651,8 @@ impl Game {
         if let Some(timed) = &self.diplomacy.timed { timed.hash(&mut mix); }
         #[cfg(feature = "ee2-native13")]
         if let Some(borders) = &self.diplomacy.borders { borders.hash(&mut mix); }
+        #[cfg(feature = "ee2-native13")]
+        crate::alliance_territories::hash(&self.diplomacy.alliance_territories, &mut mix);
         for a in [&self.diplomacy.relation,&self.diplomacy.offers,&self.diplomacy.offer_vision,&self.diplomacy.sharing]{for &v in a{mix(v as u32);}}
         for a in [&self.diplomacy.offer_tick,&self.diplomacy.cooldown,&self.diplomacy.gifts,&self.diplomacy.neutral_since,&self.diplomacy.war_tick]{for &v in a{mix(v);}}
         for h in self.territory.claims{mix(h);}

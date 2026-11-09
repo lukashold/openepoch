@@ -11,6 +11,8 @@ use core::fmt::Write;
 use crate::timed_treaties::TimedTreaties;
 #[cfg(feature = "ee2-native13")]
 use crate::border_treaties::BorderTreaties;
+#[cfg(feature = "ee2-native13")]
+use crate::alliance_territories::{AllianceTerritories, Pending};
 
 pub const WAR: u8 = 0;
 pub const NEUTRAL: u8 = 1;
@@ -69,6 +71,8 @@ pub struct Diplomacy {
     #[cfg(feature = "ee2-native13")]
     pub(crate) borders: Option<BorderTreaties>,
     pub(crate) sight_terms: bool,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) alliance_territories: Pending,
 
     pub visibility: u8,
     pub log: Vec<DipEvent>,
@@ -98,6 +102,8 @@ impl Default for Diplomacy {
             #[cfg(feature = "ee2-native13")]
             borders: None,
             sight_terms: false,
+            #[cfg(feature = "ee2-native13")]
+            alliance_territories: [None; 16],
             visibility: 0,
             log: Vec::with_capacity(DIP_LOGS),
         }
@@ -115,6 +121,8 @@ impl Diplomacy {
         if let Some(timed) = &mut self.timed { timed.set_offer(slot, 0); }
         #[cfg(feature = "ee2-native13")]
         if let Some(borders) = &mut self.borders { borders.set_offer(slot, 0); }
+        #[cfg(feature = "ee2-native13")]
+        { self.alliance_territories[slot] = None; }
     }
 
     fn alliance_offer_terms_valid(&self, terms: u32) -> bool {
@@ -378,6 +386,15 @@ impl Game {
         resource: u32,
         amount: f32,
     ) -> bool {
+        if !self.diplomacy_base_valid(from, to, action, resource, amount) { return false; }
+        #[cfg(feature = "ee2-native13")]
+        if action == 3 && self.diplomacy.alliance_territories[to as usize * 4 + from as usize].is_some() {
+            return false;
+        }
+        true
+    }
+
+    fn diplomacy_base_valid(&self, from: u8, to: u32, action: u32, resource: u32, amount: f32) -> bool {
         if self.bench > 0
             || from as usize >= self.nplayers
             || to as usize >= self.nplayers
@@ -464,6 +481,72 @@ impl Game {
 
             _ => false,
         }
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    fn alliance_territories_pending_valid(&self, slot: usize, territories: AllianceTerritories) -> bool {
+        let (from, to) = (slot / 4, slot % 4);
+        from != to && from < self.nplayers && to < self.nplayers
+            && self.diplomacy.offers[slot] == 2
+            && self.relation(from as u8, to as u8) == NEUTRAL
+            && self.relation(to as u8, from as u8) == NEUTRAL
+            && self.territory_alliance_legs_valid(from as u8, to as u8, territories)
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    fn offered_alliance_terms(&self, slot: usize) -> (u32, f32) {
+        let sight = u32::from(self.diplomacy.offer_vision[slot]);
+        let border = self.diplomacy.borders.as_ref().map_or(0, |borders| u32::from(borders.offer(slot)));
+        let minutes = self.diplomacy.timed.as_ref().map_or(0, |timed| timed.offered_minutes(slot));
+        (sight | border << 2, f32::from(minutes))
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn diplomacy_territories_valid(
+        &self, from: u8, to: u32, action: u32, resource: u32, amount: f32, territories: AllianceTerritories,
+    ) -> bool {
+        if action == 1 {
+            return self.diplomacy_base_valid(from, to, action, resource, amount)
+                && self.territory_alliance_legs_valid(from, to as u8, territories);
+        }
+        if action != 3 || !self.diplomacy_base_valid(from, to, 3, 0, 0.0) { return false; }
+        let slot = to as usize * 4 + from as usize;
+        self.diplomacy.alliance_territories[slot] == Some(territories)
+            && self.offered_alliance_terms(slot) == (resource, amount)
+            && self.alliance_territories_pending_valid(slot, territories)
+            && !self.diplomacy_proposal_expired(self.diplomacy.offer_tick[slot], self.diplomacy.clock.offer[slot])
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn apply_diplomacy_territories(
+        &mut self, from: u8, to: u32, action: u32, resource: u32, amount: f32, territories: AllianceTerritories,
+    ) -> bool {
+        if !self.diplomacy_territories_valid(from, to, action, resource, amount, territories) { return false; }
+        self.apply_diplomacy_inner(from, to as u8, action, resource, amount);
+        if action == 1 {
+            self.diplomacy.alliance_territories[from as usize * 4 + to as usize] = Some(territories);
+        }
+        true
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn prune_alliance_territories(&mut self) {
+        for (slot, terms) in self.diplomacy.alliance_territories.into_iter().enumerate() {
+            if terms.is_some_and(|terms| !self.alliance_territories_pending_valid(slot, terms)) {
+                self.diplomacy.clear_offer(slot);
+            }
+        }
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn restore_alliance_territories(&mut self, pending: Pending) -> Option<()> {
+        if pending.into_iter().enumerate().any(|(slot, terms)| {
+            terms.is_some_and(|terms| !self.alliance_territories_pending_valid(slot, terms))
+        }) {
+            return None;
+        }
+        self.diplomacy.alliance_territories = pending;
+        Some(())
     }
 
     pub(crate) fn cancel_nonhostile_orders(&mut self) {
@@ -566,8 +649,11 @@ impl Game {
         if !self.diplomacy_valid(from, to, action, resource, amount) {
             return false;
         }
+        self.apply_diplomacy_inner(from, to as u8, action, resource, amount);
+        true
+    }
 
-        let to = to as u8;
+    fn apply_diplomacy_inner(&mut self, from: u8, to: u8, action: u32, resource: u32, amount: f32) {
         let i = from as usize * 4 + to as usize;
         let j = to as usize * 4 + from as usize;
 
@@ -597,8 +683,17 @@ impl Game {
                 let offer = self.diplomacy.offers[j];
                 if offer <= 2 {
                     let relation = if offer == 1 { NEUTRAL } else { ALLIED };
+                    let offered_sight = self.diplomacy.offer_vision[j];
+                    #[cfg(feature = "ee2-native13")]
+                    let minutes = self.diplomacy.timed.as_ref().map_or(0, |timed| timed.offered_minutes(j));
+                    #[cfg(feature = "ee2-native13")]
+                    let border = self.diplomacy.borders.as_ref().map_or(0, |borders| borders.offer(j));
                     #[cfg(feature = "ee2-valley71-neutral-qa")]
                     self.close_valley_neutral_opening();
+                    #[cfg(feature = "ee2-native13")]
+                    if let Some(territories) = self.diplomacy.alliance_territories[j].take() {
+                        self.transfer_alliance_territories(to, from, territories);
+                    }
                     self.diplomacy.relation[i] = relation;
                     self.diplomacy.relation[j] = relation;
                     self.diplomacy.neutral_since[i] = self.tick;
@@ -608,14 +703,14 @@ impl Game {
                     self.diplomacy.clock.neutral[j] = now;
                     #[cfg(feature = "ee2-native13")]
                     if let Some(timed) = &mut self.diplomacy.timed {
-                        timed.start(from as usize, to as usize, timed.offered_minutes(j), now);
+                        timed.start(from as usize, to as usize, minutes, now);
                     }
                     #[cfg(feature = "ee2-native13")]
                     if let Some(borders) = &mut self.diplomacy.borders {
-                        borders.set_term(from as usize, to as usize, borders.offer(j));
+                        borders.set_term(from as usize, to as usize, border);
                     }
                     let sharing = if offer == 2 {
-                        self.diplomacy.offer_vision[j]
+                        offered_sight
                     } else {
                         0
                     };
@@ -666,7 +761,7 @@ impl Game {
                 self.dip_event(from, to, 7, 0, amount as u32, 0);
             }
 
-            _ => return false,
+            _ => unreachable!("Validated diplomacy action"),
         }
 
         self.prune_territory_offers();
@@ -674,7 +769,6 @@ impl Game {
         self.refresh_display_fog();
         #[cfg(feature = "ee2-native13")]
         if action == 3 { self.reconcile_border_positions(); }
-        true
     }
 
     #[cfg(feature = "ee2-native13")]
@@ -710,6 +804,8 @@ impl Game {
     pub fn update_diplomacy(&mut self) {
         #[cfg(feature = "ee2-native13")]
         self.expire_timed_treaties();
+        #[cfg(feature = "ee2-native13")]
+        self.prune_alliance_territories();
         // Fixed iteration order, timestamps and team IDs; no RNG or local-seat input.
 
         for from in 0..self.nplayers {
@@ -781,6 +877,18 @@ impl Game {
                             0
                         };
 
+                        #[cfg(feature = "ee2-native13")]
+                        if reason == 0 {
+                            if let Some(terms) = self.diplomacy.alliance_territories[i] {
+                                if self.alliance_territory_value_sufficient(from as u8, to as u8, terms) {
+                                    let (rules, minutes) = self.offered_alliance_terms(i);
+                                    self.apply_diplomacy_territories(to as u8, from as u32, 3, rules, minutes, terms);
+                                } else {
+                                    self.apply_diplomacy(to as u8, from as u32, 4, 0, 0.0);
+                                }
+                                continue;
+                            }
+                        }
                         if reason == 0 {
                             self.apply_diplomacy(to as u8, from as u32, 3, 0, 0.0);
                         } else {
@@ -845,6 +953,12 @@ impl Game {
             #[cfg(feature = "ee2-native13")]
             if let Some(team) = self.fixed_team(p) {
                 let _ = write!(s, ",\"fixedTeam\":{}", team + 1);
+            }
+            #[cfg(feature = "ee2-native13")]
+            for (key, slot) in [("incomingAllianceTerritories", j), ("outgoingAllianceTerritories", i)] {
+                if let Some(terms) = self.diplomacy.alliance_territories[slot] {
+                    let _ = write!(s, ",\"{}\":{{\"give\":{:?},\"want\":{:?}}}", key, terms.give(), terms.want());
+                }
             }
             self.append_territory_player_ui(s, me, p as u8);
             s.push('}');

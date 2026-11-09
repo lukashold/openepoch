@@ -257,6 +257,14 @@ impl Game {
         if let Some(borders) = &self.diplomacy.borders { b = borders.wrap(b); }
         if self.source_clock.is_some() { b = self.diplomacy.clock.wrap(b); }
         let b = crate::source_clock38::wrap(b, self.source_clock);
+        #[cfg(feature = "ee2-native13")]
+        let b = {
+            let mut b = b;
+            if !b.is_empty() {
+                crate::alliance_territories::append(&mut b, &self.diplomacy.alliance_territories);
+            }
+            b
+        };
         #[cfg(feature = "ee2-authored-valley37")]
         let b = crate::native_valley37::wrap_save(b, self);
         self.savebuf = b;
@@ -308,6 +316,8 @@ impl Game {
         let (buf, valley) = crate::native_valley37::split_save(buf)?;
         #[cfg(feature = "ee2-authored-valley37")]
         if valley.is_some() && roster.is_some() { return None; }
+        #[cfg(feature = "ee2-native13")]
+        let (buf, alliance_territories) = crate::alliance_territories::split(buf)?;
         let (buf, source_clock) = crate::source_clock38::split(buf)?;
         let (buf, diplomacy_clock) = crate::diplomacy::DiplomacyClock::split(buf)?;
         if diplomacy_clock.is_some() && source_clock.is_none() { return None; }
@@ -993,6 +1003,8 @@ impl Game {
         g.restore_network_resignation(net_resignation)?;
         #[cfg(feature="ee2-native13")]
         g.restore_herc_attack(herc_attack)?;
+        #[cfg(feature = "ee2-native13")]
+        g.restore_alliance_territories(alliance_territories)?;
         Some(g)
     }
 }

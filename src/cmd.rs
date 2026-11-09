@@ -178,8 +178,19 @@ impl Game {
             if let(Some(give),Some(want))=(dec(a),dec(b)){self.apply_territory(team,bits&255,(bits>>8)&255,give,want);}return;
         }
         if kind==C_DIPLOMACY {
-            if !hs.is_empty()||b!=0.0||c<0||(c as u32)&0xff00_0000!=0{return;}
-            let bits=c as u32;self.apply_diplomacy(team,bits&255,(bits>>8)&255,(bits>>16)&255,a);return;
+            if c < 0 || (c as u32) & 0xff00_0000 != 0 { return; }
+            let bits = c as u32;
+            let (target, action, terms) = (bits & 255, (bits >> 8) & 255, (bits >> 16) & 255);
+            if hs.is_empty() && b == 0.0 {
+                self.apply_diplomacy(team, target, action, terms, a);
+            }
+            #[cfg(feature = "ee2-native13")]
+            if b >= 0.0 && b <= hs.len() as f32 && b.fract() == 0.0 {
+                if let Some(territories) = crate::alliance_territories::AllianceTerritories::new(b as usize, hs) {
+                    self.apply_diplomacy_territories(team, target, action, terms, a, territories);
+                }
+            }
+            return;
         }
         // never trust the wire: only our own living entities take orders
         let ids: Vec<usize> = hs.iter().filter_map(|&h| self.get(h)).filter(|&i| self.ents[i].team == team).collect();

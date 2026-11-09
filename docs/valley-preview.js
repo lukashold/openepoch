@@ -1,9 +1,9 @@
 import {activeValleyGeometry} from './authored-view.js';
-import {loadAuthoredValleyTerrain,VALLEY_MATERIAL_MIPS} from './authored-terrain.js?v=valley-city155';
+import {loadAuthoredValleyTerrain,VALLEY_MATERIAL_MIPS} from './authored-terrain.js?v=valley-building-shadow156';
 import {VALLEY_MASK_MIPS,VALLEY_TERRAIN_MASK} from './authored-terrain-mask.js?v=valley-mips151';
 import {loadForestShadowAssets} from './valley-forest-shadow.js';
 import {loadRuinShadowAssets,visibleRuinShadows} from './valley-ruin-shadow.js';
-import {loadCityCenterShadowAssets} from './citycenter-shadow-renderer.js';
+import {loadBuildingShadowAssets} from './citycenter-shadow-renderer.js?v=house156';
 import {archiveForestBindings, archiveForestFrame} from './archive-forest.js';
 import {bindValleyWorld0,valleyWorld0Frame} from './archive-world0.js';
 import {loadOriginalModels} from './original-renderer.js?v=native36';
@@ -80,15 +80,15 @@ export async function loadValleyPreview({requested, authoredRequested, neutralRe
       const bitmap = await createImageBitmap(new Blob([bytes], {type: 'image/png'}), {premultiplyAlpha: 'none', colorSpaceConversion: 'none'});
       return {bytes, bitmap};
     };
-    const [forestShadow, maskMips, materialMips, ruinShadow, cityShadow] = await Promise.all([
+    const [forestShadow, maskMips, materialMips, ruinShadow, buildingShadow] = await Promise.all([
       lighting?.sourceTerrainDirection ? loadForestShadowAssets(checked,forest,forestManifest).catch(() => null) : null,
       checked(VALLEY_MASK_MIPS).catch(() => null),
       index.terrain.sha256 === VALLEY_MATERIAL_MIPS.terrainManifestSha256
         ? checked(VALLEY_MATERIAL_MIPS).catch(() => null) : null,
       loadRuinShadowAssets(checked,index,world0,lighting).catch(() => null),
-      loadCityCenterShadowAssets(checked,lighting).catch(() => null),
+      loadBuildingShadowAssets(checked,lighting).catch(() => null),
     ]);
-    const ground = await loadAuthoredValleyTerrain(gl, geometry, terrain, readTexture, lighting, forestShadow, maskMips, materialMips, ruinShadow,cityShadow);
+    const ground = await loadAuthoredValleyTerrain(gl, geometry, terrain, readTexture, lighting, forestShadow, maskMips, materialMips, ruinShadow,buildingShadow);
     const trees = await loadOriginalModels(gl, true, teams, undefined,
       {assetMapping, manifestURL: index.forest.url, initialSails: false, nativeLighting: false});
     if (trees.errors.length || trees.models.size !== forest.models.length) throw new Error('Valley-Waldgrafiken konnten nicht geladen werden.');
@@ -99,7 +99,7 @@ export async function loadValleyPreview({requested, authoredRequested, neutralRe
     const stageFixture = bytes => !!bytes && stageMap() && supply(wasm, bytes, wasm.valley37_fixture_alloc);
     return Object.freeze({
       authoredAvailable: !!authored,
-      cityShadowAvailable: !!cityShadow,
+      buildingShadowAvailable: !!buildingShadow,
       start(visibility, useAuthored = false) {
         if (!Number.isInteger(visibility) || visibility < 0 || visibility > 2 ||
             !stageFixture(useAuthored ? authored : packets[defaultFixture])) return false;
@@ -111,11 +111,11 @@ export async function loadValleyPreview({requested, authoredRequested, neutralRe
         return stageFixture(locator.fixture === authoredTest.sha256 ? authored :
           packets[index.fixtures.findIndex(row => row.sha256 === locator.fixture)]);
       },
-      drawTerrain(vp, fog, highShadows, highSampling, bounds, cities) {
+      drawTerrain(vp, fog, highShadows, highSampling, bounds, casters) {
         const ruins = highShadows && ruinShadow ? visibleRuinShadows(ruinShadow,
           staticBindings.world0Cases.get(wasm.valley37_view_info(3)),
           new Uint8Array(wasm.memory.buffer, wasm.fog_ptr(), geometry.backing ** 2),bounds) : [];
-        return ground.draw(vp, fog, highShadows, highSampling, ruins, cities);
+        return ground.draw(vp, fog, highShadows, highSampling, ruins, casters);
       },
       drawWorld(view, bounds) {
         const fog = new Uint8Array(wasm.memory.buffer, wasm.fog_ptr(), geometry.backing ** 2);

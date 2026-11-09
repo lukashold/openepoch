@@ -4,7 +4,7 @@ import {buildAuthoredTerrainLightmap, SHADOW_BLOCK_SPAN, SHADOW_RESOLUTION} from
 import {nativeTerrainCoefficients} from './native-terrain-lighting.js';
 import {createForestShadowRenderer} from './valley-forest-shadow.js';
 import {createRuinVolumeRenderer} from './valley-ruin-shadow.js';
-import {createCityCenterShadowRenderer} from './citycenter-shadow-renderer.js';
+import {createBuildingShadowRenderer} from './citycenter-shadow-renderer.js?v=house156';
 import {VALLEY_TERRAIN_MASK,valleyMaskMipLevels,valleyMaskShader,valleyTerrainPasses} from './authored-terrain-mask.js?v=valley-mips151';
 
 export const VALLEY_MATERIAL_MIPS = Object.freeze({
@@ -130,7 +130,7 @@ function program(gl, vertexSource, fragmentSource) {
 const hex = bytes => Array.from(new Uint8Array(bytes), n => n.toString(16).padStart(2, '0')).join('');
 
 export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readTexture, lighting = null, forestShadow = null,
-  maskMips = null, materialMips = null, ruinShadow = null, cityShadow = null) {
+  maskMips = null, materialMips = null, ruinShadow = null, buildingShadow = null) {
   const corners = valleyTerrainCornerTexture(geometry, manifest);
   const {vertices, indices} = authoredTerrainMesh(geometry);
   const boundary = authoredValleyBoundary(geometry);
@@ -249,15 +249,15 @@ export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readText
     ? createForestShadowRenderer(gl,geometry,indices,forestShadow,lighting.sourceTerrainDirection,program) : null;
   const projectRuins = lightmap && ruinShadow && gl.getContextAttributes().stencil
     ? createRuinVolumeRenderer(gl,ruinShadow,program) : null;
-  const projectCities = lightmap && cityShadow && gl.getContextAttributes().stencil
-    ? createCityCenterShadowRenderer(gl,cityShadow,lighting.sourceTerrainDirection,program) : null;
+  const projectBuildings = lightmap && buildingShadow && gl.getContextAttributes().stencil
+    ? createBuildingShadowRenderer(gl,buildingShadow,lighting.sourceTerrainDirection,program) : null;
   const anisotropy = mipLevels && gl.getExtension('EXT_texture_filter_anisotropic');
   const maxAnisotropy = anisotropy ? Math.min(4,gl.getParameter(anisotropy.MAX_TEXTURE_MAX_ANISOTROPY_EXT)) : 1;
   let samplerHigh;
   return {
     indexCount: indices.length,
-    draw(vp, fogTexture, highShadows = false, highSampling = false, ruins = [], cities = []) {
-      const drawnCities=highShadows && projectCities && cities.length ? projectCities.prepare(cities) : null;
+    draw(vp, fogTexture, highShadows = false, highSampling = false, ruins = [], casters = []) {
+      const drawnBuildings=highShadows && projectBuildings && casters.length ? projectBuildings.prepare(casters) : null;
       gl.useProgram(shader);
       gl.uniform1i(uBoundary, 0);
       gl.uniform1i(uNativeMask, masked ? 1 : 0);
@@ -292,7 +292,7 @@ export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readText
       gl.bindVertexArray(vao);
       gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_INT, 0);
       const drawRuins = projectRuins && ruins.length;
-      const drawVolumes = drawRuins || drawnCities?.size;
+      const drawVolumes = drawRuins || drawnBuildings?.size;
       if (highShadows && (drawVolumes || projectForest)) {
         const depth = gl.getParameter(gl.DEPTH_FUNC);
         if (drawVolumes) {
@@ -303,7 +303,7 @@ export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readText
           gl.stencilMask(0x3f);
           gl.stencilFunc(gl.ALWAYS,0,255);
           if(drawRuins)projectRuins(vp,ruins);
-          if(drawnCities?.size)projectCities.draw(vp);
+          if(drawnBuildings?.size)projectBuildings.draw(vp);
         }
         gl.depthMask(false);
         gl.depthFunc(drawVolumes ? gl.LEQUAL : gl.EQUAL);
@@ -339,7 +339,7 @@ export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readText
         gl.drawElements(gl.TRIANGLE_STRIP, length, gl.UNSIGNED_SHORT, first * Uint16Array.BYTES_PER_ELEMENT);
         first += length;
       }
-      return drawnCities;
+      return drawnBuildings;
     },
   };
 }

@@ -242,6 +242,8 @@ impl Game {
             }
             self.players[t].terr = count;
         }
+        #[cfg(feature = "ee2-native13")]
+        self.prune_alliance_territories();
     }
     /// The original localized message explicitly voids existing alliances
     /// when the last territory is lost. Run after the entire atomic operation.
@@ -300,6 +302,32 @@ impl Game {
 
     fn territory_transferable(&self, team: u8, id: u32) -> bool {
         self.territory_owned(team, id) && !self.territory_capitol_protected(id)
+    }
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn territory_alliance_legs_valid(&self, proposer: u8, recipient: u8, terms: crate::alliance_territories::AllianceTerritories) -> bool {
+        let (give, want) = (terms.give(), terms.want());
+        // An alliance must retain land on both sides after the whole operation.
+        self.territory_living(proposer) && self.territory_living(recipient)
+            && self.players[proposer as usize].terr as usize + want.len() > give.len()
+            && self.players[recipient as usize].terr as usize + give.len() > want.len()
+            && give.iter().all(|&id| self.territory_transferable(proposer, u32::from(id)))
+            && want.iter().all(|&id| self.territory_transferable(recipient, u32::from(id)))
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn transfer_alliance_territories(&mut self, proposer: u8, recipient: u8, terms: crate::alliance_territories::AllianceTerritories) {
+        let mut objects = Vec::new();
+        for (donor, new_owner, ids) in [(recipient, proposer, terms.want()), (proposer, recipient, terms.give())] {
+            for &id in ids {
+                for (i, actor) in self.ents[..self.high].iter().enumerate() {
+                    if actor.alive && actor.hp > 0.0 && actor.team == donor && self.map.terr[tile_of(actor.x, actor.y)] == id
+                        && self.territory_tribute_ready(i, usize::from(id)) {
+                        objects.push((i, new_owner));
+                    }
+                }
+            }
+        }
+        self.transfer_territory_objects(objects);
     }
 
     fn territory_offer_protected(&self, offer: TerritoryOffer) -> bool {
@@ -426,6 +454,10 @@ impl Game {
                 objects.push((i, new_team));
             }
         }
+        self.transfer_territory_objects(objects);
+    }
+
+    fn transfer_territory_objects(&mut self, objects: Vec<(usize, u8)>) {
         // Cancel and refund while each building still has its original owner.
         for &(i, _) in &objects {
             if DEFS[self.ents[i].def as usize].building {
@@ -662,6 +694,12 @@ impl Game {
             }
         }
         value
+    }
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn alliance_territory_value_sufficient(&self, proposer: u8, recipient: u8, terms: crate::alliance_territories::AllianceTerritories) -> bool {
+        let offered: f32 = terms.give().iter().map(|&id| self.territory_value(proposer, id)).sum();
+        let requested: f32 = terms.want().iter().map(|&id| self.territory_value(recipient, id)).sum();
+        offered + 0.001 >= requested * 1.1
     }
     pub fn update_territory_diplomacy(&mut self) {
         self.prune_territory_offers();

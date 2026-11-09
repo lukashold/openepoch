@@ -24,8 +24,8 @@ export function cityCenterShadowPart(data, descriptor) {
   return {points,triangles,adjacency};
 }
 
-export function cityCenterShadowModels(manifest,data) {
-  if (manifest?.format!=='ee2-private-citycenter-topology-v1' || manifest.localOnly!==true ||
+export function cityCenterShadowModels(manifest,data,format='ee2-private-citycenter-topology-v1') {
+  if (manifest?.format!==format || manifest.localOnly!==true ||
       !Array.isArray(manifest.variants) || !(data instanceof Uint8Array)) throw new TypeError('Invalid City Center shadow catalog');
   const models=new Map(), geometries=new Map();
   for (const row of manifest.variants) {

@@ -109,11 +109,20 @@ export async function enhanceOriginalDiplomacy(panel,{wasm,enabled=true,manifest
  const propTitle=el('h3',undefined,'native-dip-widget');proposal.append(propTitle);bind(propTitle,'prop_panel_player',{sprite:false});
  const proposalTabs={};for(const [key,name]of Object.entries({terms:'prop_panel_tab_terms',resources:'prop_panel_tab_resource',units:'prop_panel_tab_unit',territories:'prop_panel_tab_territory'})){const button=sourceButton(name,undefined,proposal);button.onclick=()=>setProposalView(key);button.setAttribute('role','tab');proposalTabs[key]=button;}
  proposalTabs.units.disabled=true;proposalTabs.units.title=nativeTabs.units.title;
- const propCancel=sourceButton('prop_edit_cancel',label('prop_edit_cancel'),proposal);propCancel.onclick=()=>{proposalOpen=false;refreshNative(ui);nativeTabs[view]?.focus();};
+ const propCancel=sourceButton('prop_edit_cancel',label('prop_edit_cancel'),proposal);propCancel.onclick=()=>{
+  proposalOpen=false;panel.clearAllianceTerritories?.();panel.setAllianceTerritoryEditing?.(false);refreshNative(ui);nativeTabs[view]?.focus();
+ };
+ function proposalCommand(){
+  const p=selected();
+  if(proposalView==='territories'&&(!panel.allianceTerritoriesSupported||p?.territoryIncoming&&!p?.incomingAllianceTerritories)){
+   return byText(p?.territoryIncoming?'Tausch annehmen':'Territorientausch anbieten',territory);
+  }
+  if(proposalView==='territories')return p?.incoming?controls.accept:controls.alliance;
+  return p?.incoming?controls.accept:p?.relation===0?controls.peace:p?.relation===1?controls.alliance:controls.vision;
+ }
  const propSend=sourceButton('prop_edit_send',label('prop_edit_send'),proposal);propSend.onclick=()=>{
   if(proposalView==='resources'){if(!giftSend.disabled)giftForm.onsubmit({preventDefault(){}});}
-  else if(proposalView==='territories'){const p=selected();const action=byText(p?.territoryIncoming?'Tausch annehmen':'Territorientausch anbieten',territory);if(action&&!action.disabled)action.click();}
-  else{const p=selected(),button=p?.incoming?controls.accept:p?.relation===0?controls.peace:p?.relation===1?controls.alliance:controls.vision;if(button&&!button.disabled)button.click();}
+  else{const button=proposalCommand();if(button&&!button.disabled)button.click();}
   refreshNative(read());
  };
  function read(){const pointer=wasm.ui();return JSON.parse(new TextDecoder().decode(new Uint8Array(wasm.memory.buffer,pointer,wasm.ui_len())));}
@@ -124,6 +133,7 @@ export async function enhanceOriginalDiplomacy(panel,{wasm,enabled=true,manifest
  function setView(next){
   if(next==='units')return;
   view=next;proposalOpen=false;
+  panel.clearAllianceTerritories?.();panel.setAllianceTerritoryEditing?.(false);
   (next==='territories'?territoryTab:relationTab).click();
   if(next==='territories')move(territory,territoryBody);
   refreshNative(ui||read());
@@ -131,11 +141,16 @@ export async function enhanceOriginalDiplomacy(panel,{wasm,enabled=true,manifest
  function setProposalView(next){
   if(next==='units')return;
   proposalView=next;
+  const p=selected();
+  panel.setAllianceTerritoryEditing?.(next==='territories'&&panel.allianceTerritoriesSupported&&(!p?.territoryIncoming||!!p?.incomingAllianceTerritories));
   (next==='territories'?territoryTab:relationTab).click();
   if(next==='territories')move(territory,proposalBody);
   refreshNative(ui||read());
  }
- function openProposal(index){select(index);proposalOpen=true;setProposalView(opponents()[index]?.territoryIncoming?'territories':'terms');}
+ function openProposal(index){
+  panel.clearAllianceTerritories?.();select(index);proposalOpen=true;
+  const p=opponents()[index];setProposalView(p?.territoryIncoming||p?.incomingAllianceTerritories?'territories':'terms');
+ }
  function put(node,r){for(const [key,value]of Object.entries({left:r.x,top:r.y,width:r.width,height:r.height}))node.style[key]=value+'px';}
  function sourceLabel(widget,parent=layer){const node=el('div',label(widget),'native-dip-widget');parent.append(node);bind(node,widget,{sprite:false});return node;}
  for(const name of ['diplo_playerName_label','diplo_playerTeam_label','diplo_playerCiv_label'])sourceLabel(name);
@@ -221,7 +236,7 @@ export async function enhanceOriginalDiplomacy(panel,{wasm,enabled=true,manifest
   else if(view!=='territories')territory.hidden=true;
   if(!proposalOpen&&view==='territories')territory.hidden=false;
   detail.hidden=proposalView!=='terms';propTitle.textContent=selected()?.name||'Vertragsvorschlag';
-  propSend.disabled=proposalView==='terms'&&selected()?.fixedTeam!==undefined;
+  propSend.disabled=proposalView!=='resources'&&proposalCommand()?.disabled===true;
   send.hidden=clear.hidden=!['resources','territories'].includes(view)||proposalOpen;
   if(view==='resources'){send.textContent=label('diplo_tribute_accept');clear.textContent=label('diplo_tribute_clear');send.disabled=![...staged.values()].some(value=>value>0);clear.disabled=send.disabled;}
   else{send.textContent='Verschenken';clear.textContent='Vertrag';send.disabled=!!query('.territory-review',territory)&&!query('.territory-review',territory).hidden||!!byText('Territorium verschenken',territory)?.disabled;clear.disabled=!selected()?.alive;}

@@ -1,5 +1,5 @@
 import {RESOURCE_NAMES} from './economy-bar.js?v=economy4';
-import {territoryPanel} from './territory-panel.js?v=territory-batch154';
+import {territoryPanel} from './territory-panel.js?v=alliance-lands156';
 
 const RELATIONS=['Feindlich','Neutral','Verbündet'];
 const COLORS=['#448fff','#ef4540','#50ce62','#e5c33d'];
@@ -77,6 +77,10 @@ export function diplomacyPanel({wasm,referenceMode,onOrder=()=>{},onOpen=()=>{},
  const accept=el('button','Annehmen'),reject=el('button','Ablehnen');offerButtons.append(accept,reject);offer.append(offerText,offerButtons);
  const outgoing=el('div',undefined,'dip-outgoing'),outgoingText=el('span'),withdraw=el('button','Zurückziehen');outgoing.append(outgoingText,withdraw);
  const actions=el('div',undefined,'dip-actions'),peace=el('button','Frieden anbieten'),alliance=el('button','Bündnis anbieten'),war=el('button','Krieg erklären','dip-war');actions.append(peace,alliance,war);const cooldown=el('p',undefined,'dip-note');
+ const allianceSupported=typeof wasm.cmd_diplomacy_territories==='function'&&typeof wasm.diplomacy_territories_ptr==='function';
+ const editTerritories=el('button','Territorien zum Bündnis hinzufügen'),clearTerritories=el('button','Gebietslisten löschen');
+ editTerritories.type=clearTerritories.type='button';actions.append(editTerritories,clearTerritories);
+ const allianceSummary=el('p',undefined,'dip-note');allianceSummary.id='dip-alliance-territory-draft';
  const visionLabel=el('label',undefined,'dip-vision-label');visionLabel.htmlFor='dip-vision';
  const vision=el('input');vision.type='checkbox';vision.checked=true;vision.id='dip-vision';vision.setAttribute('aria-label','Bündnis mit gemeinsamer Sicht anbieten');visionLabel.append(vision,el('span','Bündnis mit gemeinsamer Sicht anbieten'));
  const sightLabel=el('label','Gemeinsame Sicht');sightLabel.htmlFor='dip-sight-term';sightLabel.hidden=true;
@@ -99,7 +103,7 @@ export function diplomacyPanel({wasm,referenceMode,onOrder=()=>{},onOpen=()=>{},
  const relationsTab=el('button','Beziehungen und Rohstoffe'),territoriesTab=el('button','Territorien');relationsTab.id='dip-relations-tab';territoriesTab.id='dip-territories-tab';
  for(const tab of [relationsTab,territoriesTab]){tab.type='button';tab.setAttribute('role','tab');}relationsTab.setAttribute('aria-controls','dip-relations-panel');territoriesTab.setAttribute('aria-controls','dip-territory-panel');tabs.append(relationsTab,territoriesTab);
  const relationsBody=el('section');relationsBody.id='dip-relations-panel';relationsBody.setAttribute('role','tabpanel');relationsBody.setAttribute('aria-labelledby','dip-relations-tab');
- relationsBody.append(theirRelation,rights,offer,outgoing,visionLabel,sightLabel,sight,durationLabel,duration,borderLabel,border,actions,visionChange,cooldown,giftLabel,gift,funds,status);
+ relationsBody.append(theirRelation,rights,offer,outgoing,visionLabel,sightLabel,sight,durationLabel,duration,borderLabel,border,actions,allianceSummary,visionChange,cooldown,giftLabel,gift,funds,status);
  const territories=territoryPanel({wasm,referenceMode,onOrder,onRefresh:()=>refresh(read()),onFocus(territory){close();onTerritoryFocus(territory);}});
  detail.append(name,relation,tabs,relationsBody,territories.element);layout.append(players,detail);
  const log=el('div',undefined,'dip-log');log.setAttribute('aria-label','Diplomatieverlauf');const map=el('p',undefined,'dip-map');
@@ -110,6 +114,8 @@ export function diplomacyPanel({wasm,referenceMode,onOrder=()=>{},onOpen=()=>{},
  const current=()=>state()?.players?.find(p=>p.team===target);
  function setView(next){view=next;relationsBody.hidden=view!=='relations';territories.element.hidden=view!=='territories';relationsTab.setAttribute('aria-selected',String(view==='relations'));territoriesTab.setAttribute('aria-selected',String(view==='territories'));relationsTab.tabIndex=view==='relations'?0:-1;territoriesTab.tabIndex=view==='territories'?0:-1;if(view==='territories')territories.activate();}
  relationsTab.onclick=()=>setView('relations');territoriesTab.onclick=()=>setView('territories');
+ editTerritories.onclick=()=>{territories.setAllianceMode(true);setView('territories');};
+ clearTerritories.onclick=()=>{territories.clearAlliance();territories.setAllianceMode(false);refresh(read());};
  for(const tab of [relationsTab,territoriesTab])tab.onkeydown=event=>{if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();setView(view==='relations'?'territories':'relations');(view==='relations'?relationsTab:territoriesTab).focus();}};
  function updateFunds(){
   const slot=+resource.value,stock=ui?.res?.[slot]||0,value=+amount.value,p=current();
@@ -117,8 +123,20 @@ export function diplomacyPanel({wasm,referenceMode,onOrder=()=>{},onOpen=()=>{},
   send.disabled=!p?.alive||!Number.isSafeInteger(value)||value<1||value>stock;
  }
  function command(action,slot=0,value=0){
-  if(!current()?.alive)return;
-  const result=wasm.cmd_diplomacy(target,action,slot,value);
+  const player=current();
+  if(!player?.alive)return;
+  const terms=allianceSupported?(action===1?territories.allianceTerms():action===3?player.incomingAllianceTerritories:null):null;
+  let result;
+  if(terms&&(terms.give.length||terms.want.length)){
+   if(action===3){
+    slot=Number(player.incomingSightTerm??player.incomingAllianceVision)|((player.incomingBorderTerm??0)<<2);
+    value=player.incomingMinutes??0;
+   }
+   const ids=[...terms.give,...terms.want],ptr=wasm.diplomacy_territories_ptr();
+   new Uint32Array(wasm.memory.buffer,ptr,ids.length).set(ids);
+   result=wasm.cmd_diplomacy_territories(target,action,slot,value,terms.give.length,ids.length);
+  }else result=wasm.cmd_diplomacy(target,action,slot,value);
+  if(result&&action===1)territories.clearAlliance();
   if(result){status.textContent=action===5?'Rohstoffgeschenk gesendet.':action===2?'Kriegserklärung übermittelt.':action===3?'Angebot angenommen.':action===4?'Angebot abgelehnt.':action===6?'Angebot zurückgezogen.':'Angebot übermittelt.';onOrder();}
   else status.textContent='Aktion derzeit nicht möglich. Prüfe Beziehung, laufende Angebote und deinen Vorrat.';
   refresh(read());
@@ -172,8 +190,15 @@ export function diplomacyPanel({wasm,referenceMode,onOrder=()=>{},onOpen=()=>{},
    const offeredBorder=(kind,term)=>data.borderTreaties&&kind===2?' · '+BORDER_TERMS[term]:'';
    offer.hidden=!p.alive||!p.incoming;offerText.textContent=offerName(p.incoming,p.incomingAllianceVision,p.incomingSightTerm)+offeredDuration(p.incomingMinutes)+offeredBorder(p.incoming,p.incomingBorderTerm)+' · Angebot erhalten';
    outgoing.hidden=!p.alive||!p.outgoing;outgoingText.textContent=offerName(p.outgoing,p.outgoingAllianceVision,p.outgoingSightTerm)+offeredDuration(p.outgoingMinutes)+offeredBorder(p.outgoing,p.outgoingBorderTerm)+' · Antwort ausstehend';
+   if(p.incomingAllianceTerritories)offerText.textContent+=' · '+territories.allianceText(p.incomingAllianceTerritories,true);
+   if(p.outgoingAllianceTerritories)outgoingText.textContent+=' · '+territories.allianceText(p.outgoingAllianceTerritories);
    const waiting=p.cooldown>0;cooldown.hidden=!p.alive||!waiting||!!p.outgoing;cooldown.textContent=`Neues Angebot in ${Math.ceil(p.cooldown||0)} Sek.`;
    peace.disabled=locked||!p.alive||(p.relation!==0&&p.theirRelation!==0)||!!p.outgoing||waiting;alliance.disabled=locked||!allianceAllowed||!p.alive||p.relation!==1||(p.theirRelation!==undefined&&p.theirRelation!==1)||!!p.outgoing||waiting;war.disabled=locked||!!p.treatyUnbreakable||!p.alive||p.relation===0;
+   const draft=territories.allianceTerms(),hasDraft=!!(draft.give.length||draft.want.length);
+   allianceSummary.hidden=!hasDraft;
+   allianceSummary.textContent=hasDraft?territories.allianceText(draft):'';
+   editTerritories.hidden=!allianceSupported||dialog.classList.contains('native-diplomacy')||alliance.disabled||!!p.incoming;
+   clearTerritories.hidden=!hasDraft||dialog.classList.contains('native-diplomacy');
    accept.disabled=locked||!allianceAllowed&&p.incoming===2;
    visionLabel.hidden=!!data.sightTerms||!p.alive||p.relation!==1;vision.disabled=alliance.disabled;
    sightLabel.hidden=sight.hidden=!data.sightTerms||!p.alive||p.relation===0||locked;
@@ -195,5 +220,7 @@ export function diplomacyPanel({wasm,referenceMode,onOrder=()=>{},onOpen=()=>{},
   map.textContent=`Karte: ${MODES[data.visibility]||MODES[0]}`;
  }
  setView('relations');
- return {refresh,close,isOpen:()=>dialog.open,open(){if(dialog.open)return;ui=read();const pending=ui.diplomacy?.players.find(player=>player.territoryIncoming);if(pending){target=pending.team;view='territories';}playerKey='';resourceKey='';logKey='';status.textContent='';territories.reset();onOpen();dialog.showModal();setView(view);refresh(ui);}};
+ return {refresh,close,isOpen:()=>dialog.open,
+  allianceTerritoriesSupported:allianceSupported,setAllianceTerritoryEditing:territories.setAllianceMode,clearAllianceTerritories:territories.clearAlliance,
+  open(){if(dialog.open)return;ui=read();const pending=ui.diplomacy?.players.find(player=>player.incomingAllianceTerritories||player.territoryIncoming);if(pending){target=pending.team;view=pending.incomingAllianceTerritories?'relations':'territories';}playerKey='';resourceKey='';logKey='';status.textContent='';territories.reset();onOpen();dialog.showModal();setView(view);refresh(ui);}};
 }

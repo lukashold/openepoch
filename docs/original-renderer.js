@@ -619,7 +619,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   if(options.houseLodProfile!==undefined)result.setHouseLodProfile(options.houseLodProfile);
  }catch(error){houseLodModels.clear();houseLodError(error);}}
  const entries=[...(Array.isArray(manifest.models)?manifest.models:Object.entries(manifest.models||manifest.mapping||{}).map(([id,value])=>typeof value==='string'?{id:+id,url:value}:{id:+id,...value})),...regionalEntries,...citizenEntries,...presentationEntries];
- const loadParts=async (model,keepPickingGeometry=false,modelUrl=null,teamOverride=null,textureHashes=null,packRig=null)=>{
+ const loadParts=async (model,keepPickingGeometry=false,modelUrl=null,teamOverride=null,textureHashes=null,packRig=null,shadowNodes=false)=>{
    const parts=[],selectedSeasonManifest=regionalSeasonManifest.models?.[modelUrl]?regionalSeasonManifest:seasonManifest;
    let sourceSailIndex=0;for(const part of model.parts){
     const sailIndex=part.nativeSail?sourceSailIndex++:null;
@@ -636,6 +636,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
      }
     }catch(e){if(!part.nativeSail)throw e;sailError(e.message);continue;}
     const gpu=gpuPart(gl,{...part,nativeStateClips:part.nativeStateClips||model.nativeStateClips},instances,materialTexture,keepPickingGeometry,packRig?.parts.get(part.sourceNode));
+    if(shadowNodes&&Number.isInteger(part.sourceNode))gpu.shadowOrigin={url:modelUrl,node:part.sourceNode};
     if(part.nativeSail){
      gpu.nativeSail=part.nativeSail;gpu.darkTexture=darkTexture;gpu.darkTextures=darkTextures;gpu.sailIndex=sailIndex;gpu.forTeam=()=>gpu.texture;gpu.forSeason=()=>({first:gpu.texture,next:gpu.texture,blend:0});parts.push(gpu);sailStatus.parts++;continue;
     }
@@ -783,7 +784,8 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    const raw=body??qualified?.model??await (entry.presentation?verifiedModelJSON(modelUrl,entry.sha256,'Original unit model'):json(modelUrl));
    const model=await augmentModel(raw,{...entry,id});
    const rig=qualified?.rig&&model.parts===raw.parts?qualified.rig:null;
-   const parts=await loadParts(model,assetKind===1,modelUrl,entry.presentation?.teamManifest,entry.presentation?.textureHashes,rig);
+   const house=assetKind===0&&id===1;
+   const parts=await loadParts(model,assetKind===1,modelUrl,entry.presentation?.teamManifest,entry.presentation?.textureHashes,rig,house);
    if(!parts.length)continue;
    const scaleKey=(entry.assetKind===undefined?'':assetKind+':')+id+':'+(entry.epoch??0),sea=assetKind===0&&((id>=29&&id<=36)||id===42||id===45);
    const scaleBinding=entry.regionalCivilizations||entry.wonderFamily||entry.kothObjective||entry.fishingAsset?entry.nativeScaleBinding:scales.variants?.[scaleKey];
@@ -799,7 +801,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    variant.hercAttack=options.hercAttack?.acceptsModel(id,model)??false;
    variant.sourceVisual=sourceVisual(model,modelUrl);
    variant.sourceScale=transform.native?scaleBinding.sourceScale:null;
-   if(assetKind===0&&id===0&&transform.native)variant.shadowSource={url:modelUrl,source:model.source?.sha256};
+   if(assetKind===0&&id<=1&&transform.native)variant.shadowSource={url:modelUrl,source:model.source?.sha256};
    if(entry.wonderFamily&&transform.native){
     const minimum=model.sourceBounds?.min?.[1], maximum=model.sourceBounds?.max?.[1];
     const {offset,scale}=model.normalization;
@@ -828,7 +830,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     const levelParts=[parts];
     for(const level of houseBinding.levels.slice(1)){
      const source=await readHouseLodModel(houseBinding,level,import.meta.url);
-     levelParts.push(await loadParts(source,false,level.url));
+     levelParts.push(await loadParts(source,false,level.url,null,null,null,true));
     }
     variant.selectHouseLod=bindHouseLodParts(houseBinding,levelParts);
     houseLodStatus.models++;houseLodStatus.groups+=houseBinding.groups.length;
@@ -974,21 +976,25 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   return hit;
  };
  const packBlendHistory=packStatus.enabled?createNativePackBlendHistory():null;
- result.cityShadowCasters=({data,ranges,epochs,zoom,actorMetadata})=>{
+ result.buildingShadowCasters=({data,ranges,epochs,zoom,eye,actorMetadata})=>{
   const casters=[];
   for(const actor of actorMetadata?.actors??[]){
-   if(actor.def!==0||actor.built<1||actor.hpRatio<=0||actor.renderFlags&24)continue;
+   const id=actor.def;
+   if((id!==0&&id!==1)||actor.built<1||actor.hpRatio<=0||actor.renderFlags&24)continue;
    const i=actor.index,at=i*12,renderId=Math.round(data[at+4]),team=Math.min(3,Math.round(data[at+5]));
    if(i<ranges[renderId*2]||i>=ranges[renderId*2]+ranges[renderId*2+1]||actor.team!==team||
       actor.renderX!==data[at]||actor.renderY!==data[at+1]||actor.renderAltitude!==data[at+2]||actor.renderYaw!==data[at+3])continue;
    const epoch=epochs[team]||0,civ=visualCivilizations?.[team];
-   if(regionalCaptureRows?.has(`0:${epoch}:${civ}`)||productionEntryFor(0,epoch,civ))continue;
+   if(regionalCaptureRows?.has(`${id}:${epoch}:${civ}`)||productionEntryFor(id,epoch,civ))continue;
    const variant=selectRegionalModel((result.models.get(renderId)??[]).filter(row=>row.sourceIdentity===undefined),epoch,civ);
-   if(!variant?.shadowSource||variant.sourceId!==0||variant.assetKind!==0||variant.hasClipVisibility)continue;
-   const shown=variant.nativeScale*zoom<55&&variant.far ? variant.far : variant;
-   if(shown.parts.some(part=>part.animations?.idle))continue;
-   casters.push({instance:i,url:shown===variant?variant.shadowSource.url:variant.farUrl,source:variant.shadowSource.source,
-    scale:variant.sourceScale,pose:[actor.renderX,actor.renderY,actor.renderAltitude,Math.fround(actor.renderYaw+variant.yawOffset)]});
+   if(!variant?.shadowSource||variant.sourceId!==id||variant.assetKind!==0||variant.hasClipVisibility)continue;
+   const shown=houseLodSettings&&variant.selectHouseLod ? variant.selectHouseLod(variant,data,i,eye,houseLodSettings) :
+    (variant.nativeScale*zoom<55&&variant.far ? variant.far : variant);
+   if(shown.parts.some(part=>part.animations?.idle||part.clipVisibility))continue;
+   const modelParts=id===1 ? shown.parts.map(part=>part.shadowOrigin) : null;
+   if(modelParts?.some(part=>!part))continue;
+   casters.push({instance:i,url:id===0&&shown===variant.far?variant.farUrl:variant.shadowSource.url,source:variant.shadowSource.source,
+    scale:variant.sourceScale,modelParts,pose:[actor.renderX,actor.renderY,actor.renderAltitude,Math.fround(actor.renderYaw+variant.yawOffset)]});
   }
   return casters;
  };
@@ -1085,7 +1091,11 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
       variant.farRequested=true;const near=variant;
       const presentation=near.presentationEntry;
       const request=presentation?verifiedModelJSON(near.farUrl,presentation.lodFarSha256,'Original Far unit model'):json(near.farUrl);
-      request.then(model=>augmentModel(model,presentation||{id:near.sourceId,assetKind:near.assetKind,epoch:near.epoch},'far')).then(async model=>({model,parts:await loadParts(model,near.assetKind===1,near.farUrl,presentation?.presentation?.teamManifest)})).then(({model,parts})=>{near.far={...near,parts,nativePackBlend:false,nativePackRig:null,sourceVisual:sourceVisual(model,near.farUrl),pickBounds:resourceBounds(parts),sailComposite:model.nativeSailComposite,dynamicSailBinding:null,nativeCapture:model.nativeCapture,rallyTag:rallyTag(model),nativeTakeoff:model.nativeTakeoff,navalBasis:near.navalBasis&&navalBasisModel(model,near.sourceId),hercAttack:options.hercAttack?.acceptsModel(near.sourceId,model)??false};}).catch(e=>{result.errors.push(e.message);console.warn('Original-Fernmodell:',e);});
+      const shadowNodes=near.assetKind===0&&near.sourceId===1;
+      request.then(model=>augmentModel(model,presentation||{id:near.sourceId,assetKind:near.assetKind,epoch:near.epoch},'far'))
+       .then(async model=>({model,parts:await loadParts(model,near.assetKind===1,near.farUrl,presentation?.presentation?.teamManifest,null,null,shadowNodes)}))
+       .then(({model,parts})=>{near.far={...near,parts,nativePackBlend:false,nativePackRig:null,sourceVisual:sourceVisual(model,near.farUrl),pickBounds:resourceBounds(parts),sailComposite:model.nativeSailComposite,dynamicSailBinding:null,nativeCapture:model.nativeCapture,rallyTag:rallyTag(model),nativeTakeoff:model.nativeTakeoff,navalBasis:near.navalBasis&&navalBasisModel(model,near.sourceId),hercAttack:options.hercAttack?.acceptsModel(near.sourceId,model)??false};})
+       .catch(e=>{result.errors.push(e.message);console.warn('Original-Fernmodell:',e);});
      }
      if(variant.far)variant=variant.far;
     }

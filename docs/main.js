@@ -7,8 +7,8 @@ import { researchPanel } from './research.js?v=rank-families';
 import {loadCrownArt,mountCrownProgress,mountCrownVictoryRows} from './crown-progress.js?v=native65';
 import {loadCrownStatusArt,readCrownActorVisuals,crownStatusSlots} from './crown-visuals.js?v=native58';
 import { originalResearchActions, researchCost, researchState } from './original-research-actions.js?v=rank-families';
-import { diplomacyPanel } from './diplomacy.js?v=territory-batch154';
-import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=border107';
+import { diplomacyPanel } from './diplomacy.js?v=alliance-lands156';
+import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=alliance-lands156';
 import {loadNativeFontUI} from './original-font-ui.js?v=native21names';
 import {territoryClaimMessage} from './territory-help.js?v=native64-koth';
 import * as sfx from './audio.js?v=native112voice';
@@ -22,7 +22,7 @@ import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regi
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native66';
-import {loadOriginalModels} from './original-renderer.js?v=valley-city155';
+import {loadOriginalModels} from './original-renderer.js?v=valley-building-shadow156';
 import {loadOriginalBoatWake,readNavalWakeActors} from './original-boat-wake.js?v=native78-wake83';
 import {loadKingOfTheHillPresentation} from './original-koth.js?v=native64-koth';
 import {loadWonderPresentation} from './original-wonders.js?v=native63';
@@ -59,7 +59,7 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {NATIVE_SEASON_CHOICE,normalizeSeasonChoice,resolveSeasonChoice} from './original-seasons.js?v=native108';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=native108';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native116';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=alliance-lands156';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION as BASE_PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
@@ -103,7 +103,7 @@ import {addCarrierFlightAudio,loadAirFlightAudio,readAirFlightAudio,submarineMov
 import {loadFullmapCityNameCatalog,loadFullmapTerritoryNameCatalog} from './fullmap-territory-names.js?v=native22';
 import {createWarplanPeer,WARPLAN_PEER_VERSION} from './original-warplan-peer.js';
 import {activeValleyGeometry,initialValleyViews,pickValleyGround,valleyMinimapPoint,valleyMinimapSnapshot} from './authored-view.js';
-import {installedValleyManifest,loadValleyPreview,valleySaveLocator} from './valley-preview.js?v=valley-city155';
+import {installedValleyManifest,loadValleyPreview,valleySaveLocator} from './valley-preview.js?v=valley-building-shadow156';
 
 const $ = id => document.getElementById(id);
 const canvas = $('gl');
@@ -189,7 +189,7 @@ const valleyRequested=rulesProfile.id==='up15'&&(!!valleyManifest||['1','archive
 try{
   if(valleyRequested){
     const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley76_commit','valley71_force_attack_at','valley71_neutral_opening','configure_late_population']:rulesProfile.requiredExports;
-    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native116-valley'};
+    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=alliance-lands156-valley'};
     try{wasm=await loadRulesWasm(previewRules,import.meta.url);}catch{/* The ordinary ruleset remains available. */}
   }
   wasm??=await loadRulesWasm(rulesProfile,import.meta.url);
@@ -197,7 +197,8 @@ try{
 // Upstream placement admission is part of the loaded UP engine's wire contract.
 const foreignConstructionVersion=wasm.foreign_construction_version?.()??0;
 const territoryGiftBatchVersion=typeof wasm.cmd_territory_gift_batch==='function'?1:0;
-const PROTOCOL_VERSION=rulesProfile.id==='up15'?BASE_PROTOCOL_VERSION+3+foreignConstructionVersion+territoryGiftBatchVersion:
+const allianceTerritoriesVersion=typeof wasm.cmd_diplomacy_territories==='function'?1:0;
+const PROTOCOL_VERSION=rulesProfile.id==='up15'?BASE_PROTOCOL_VERSION+3+foreignConstructionVersion+territoryGiftBatchVersion+allianceTerritoriesVersion:
   wasm.early_artillery_pack_version?.()===1?BASE_PROTOCOL_VERSION+1:BASE_PROTOCOL_VERSION;
 // Always take the pointer BEFORE touching memory.buffer: the call may grow (and detach) the memory.
 const u8 = (ptr, len) => new Uint8Array(wasm.memory.buffer, ptr, len);
@@ -2246,9 +2247,9 @@ function frame(now) {
   let volumeShadowInstances=null;
   if(valleyWorld){
     const quality=+$('quality').value;
-    const cities=quality>1&&n&&valleyPreview.cityShadowAvailable ? originalModels.cityShadowCasters?.({
-      data:f32(wasm.inst_ptr(),n*STRIDE),ranges,epochs:renderEpochs,zoom:cam.zoom,actorMetadata}) : null;
-    volumeShadowInstances=valleyPreview.drawTerrain(view.vp,fogTexture,quality>1,quality>=2,[x0,y0,x1,y1],cities??[]);
+    const casters=quality>1&&n&&valleyPreview.buildingShadowAvailable ? originalModels.buildingShadowCasters?.({
+      data:f32(wasm.inst_ptr(),n*STRIDE),ranges,epochs:renderEpochs,zoom:cam.zoom,eye:view.eye,actorMetadata}) : null;
+    volumeShadowInstances=valleyPreview.drawTerrain(view.vp,fogTexture,quality>1,quality>=2,[x0,y0,x1,y1],casters??[]);
     valleyPreview.drawWorld(view,[x0,y0,x1,y1]);
   }else if(originalTerrain.enabled){
     originalTerrain.drawTerrain({vao:vaoT,vp:view.vp,px,fogTexture,territoryTexture});
