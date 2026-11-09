@@ -54,15 +54,19 @@ impl Game {
         let Some(fraction) = self.imperial_construction_fraction(caster.team, target) else { return; };
         self.spend_unit_reserve(self.h(index), 1.0);
         let site = self.ents[target];
-        let new_progress = (site.built + fraction).min(1.0);
-        let applied = new_progress - site.built;
         let maximum = self.max_hp(site.team, site.def);
-        self.ents[target].built = new_progress;
-        self.ents[target].hp = (site.hp + maximum * 0.9 * applied).min(maximum);
+        if self.uses_generated_city_foundation(site.def) {
+            Self::advance_generated_city_foundation(&mut self.ents[target], maximum, fraction, 1.0, false);
+        } else {
+            let new_progress = (site.built + fraction).min(1.0);
+            let applied = new_progress - site.built;
+            self.ents[target].built = new_progress;
+            self.ents[target].hp = (site.hp + maximum * 0.9 * applied).min(maximum);
+        }
         #[cfg(feature = "ee2-valley74-city-footprint")]
         if self.valley_house_reserves_placement_only(&site) { self.block(target, true); }
         self.sync_city_ground_entry(target);
-        if new_progress == 1.0 {
+        if self.ents[target].built == 1.0 {
             if site.def == TC { self.name_completed_city(target, self.ents[target]); }
             if site.team == self.local { self.ev(14.0, site.x, site.y); }
             self.wonder_notice(crate::wonders61::Notice::Completed, site.def, site.team);

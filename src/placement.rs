@@ -470,6 +470,8 @@ impl Game {
         let i = self.spawn_oriented_with_progress(def, team, site.x, site.y, site.rot, initial_progress);
         if i != NOIDX {
             let health = self.max_hp(team, def) * 0.1;
+            #[cfg(feature = "ee2-native13")]
+            let health = if self.uses_generated_city_foundation(def) { 1.0 } else { health };
             #[cfg(feature = "ee2-valley74-city-footprint")]
             let health = if self.uses_valley_house_construction(def) { 1.0 } else { health };
             self.pay(team, &cost, 1.0);

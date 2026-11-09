@@ -267,6 +267,8 @@ impl Game {
         };
         #[cfg(feature = "ee2-authored-valley37")]
         let b = crate::native_valley37::wrap_save(b, self);
+        #[cfg(feature = "ee2-native13")]
+        let b = crate::construction_health163::wrap(b, self.generated_city_foundations);
         self.savebuf = b;
     }
 
@@ -312,6 +314,10 @@ impl Game {
     }
 
     fn read_archive(buf: &[u8], roster: Option<ArchiveRoster>) -> Option<Game> {
+        #[cfg(feature = "ee2-native13")]
+        let (buf, city_foundations) = crate::construction_health163::split(buf)?;
+        #[cfg(feature = "ee2-native13")]
+        if city_foundations && roster.is_some() { return None; }
         #[cfg(feature = "ee2-authored-valley37")]
         let (buf, valley) = crate::native_valley37::split_save(buf)?;
         #[cfg(feature = "ee2-authored-valley37")]
@@ -500,6 +506,11 @@ impl Game {
         };
         #[cfg(not(feature = "ee2-authored-valley37"))]
         let mut g = regular_game()?;
+        #[cfg(feature = "ee2-native13")]
+        if city_foundations {
+            if !g.supports_generated_city_foundations() { return None; }
+            g.generated_city_foundations = true;
+        }
         #[cfg(feature="ee2-native13")]
         if wonders && g.net { return None; }
         #[cfg(feature="ee2-native13")]
@@ -696,6 +707,8 @@ impl Game {
         }
         for e in &g.ents[..high] {
             if !e.alive {continue;}
+            #[cfg(feature = "ee2-native13")]
+            if !g.valid_generated_city_foundation(e) { return None; }
             #[cfg(feature="ee2-native13")]
             let neutral_hill = e.team == crate::koth64::NATURE && e.def == crate::koth64::HILL && koth.is_some();
             #[cfg(not(feature="ee2-native13"))]

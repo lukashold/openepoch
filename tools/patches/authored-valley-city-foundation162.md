@@ -1,17 +1,18 @@
-# City Center foundation health in the authored Valley carrier
+# Optional authored Valley carrier for Native127
 
-Start with the exact optional Native118 source recipe in `tools/patches/authored-valley-native118.md`. The baseline optional WASM is `5b3b68d9ab3a1ce4ac8ed0f75b6a320eead648168657f833884cfbb7c0f02a6b`.
+The standard Native127 source includes generated solo City Center foundations. Build the standard WASM directly with the `ee2-native13` feature. Start the optional build from a fresh copy of the same source and apply the four patches below in order.
 
 ```sh
-git -c core.autocrlf=false apply --check --whitespace=nowarn tools/patches/authored-valley-city-foundation162.patch
-git -c core.autocrlf=false apply --whitespace=nowarn tools/patches/authored-valley-city-foundation162.patch
-cargo build --offline --release --target wasm32-unknown-unknown --features ee2-valley74-city-footprint
+git -c core.autocrlf=false apply --whitespace=nowarn tools/patches/authored-valley-farm147.patch
+git -c core.autocrlf=false apply --whitespace=nowarn tools/patches/authored-valley-farm-angle148.patch
+git -c core.autocrlf=false apply --whitespace=nowarn tools/patches/authored-valley-house-cursor155.patch
+git -c core.autocrlf=false apply --check --whitespace=nowarn tools/patches/authored-valley-city-foundation162-over-generated163.patch
+git -c core.autocrlf=false apply --whitespace=nowarn tools/patches/authored-valley-city-foundation162-over-generated163.patch
+CARGO_BUILD_JOBS=1 cargo build --offline --release --target wasm32-unknown-unknown --features ee2-valley74-city-footprint
 ```
 
-The candidate WASM is `4237eb2dc2baf33f486ceb666d26951c35a16a6d8eead0da243824b0587a123a`, built with rustc 1.99.1. The media-free diff is `fe3ed7ac1cf913367fca262160b2bfca42d464d1faa05a81444b289b532e2d85`. The optional WASM and original map inputs belong to the local delivery. Use the standard engine built for the corresponding standard release.
+Use rustc 1.99.1 to reproduce the observed binary hashes. The standard WASM is `718bc81a7631774e448396bf52930207b787da7f00f735cb236e803bcea1a366`. The optional Valley WASM is `42e6b03636b81d8614be6778ef4657348a86791205a3d34006a0dd2e66e1982d`. The rebased optional patch has SHA-256 `637be56fae0f34c23bda1d485b88c0a6b3828534b56a3e10629d44218c33c241`. The optional compiled WASM and authenticated original assets belong to the local and Mac deliveries. For historical Native126 reproduction, use its published source and original City162 recipe.
 
-For the normal authenticated menu, prefer `valley77_commit` when it is available and use `valley76_commit` with an older optional carrier. The main profile requires the compatible `valley76_commit` export. The generic neutral preview selects `valley71_commit`. Give the optional WASM a fresh cache revision. Update the module query in Main and the Main query in the index together. Save locator parsing continues to use the existing authenticated map and fixture SHA offsets. The engine restores the appropriate rules from the locator version, independently of the fresh-start commit.
+Fresh generated UP solo games opt in during normal setup and record their rule in a checksummed `CSH1` save envelope. Paid City Center sites start with one HP, with ordinary damage enabled by first worker labor. Existing generated and Valley archives keep their saved rules. Earlier engines reject new `CSH1` saves, which can be retained for the compatible carrier.
 
-V37S 12 records a neutral fresh City-foundation match. V37S 11 records the corresponding match after hostilities. Prior V37S versions 1–10 retain their rules. A rollback to the older engine rejects 11/12 atomically, so retain the new save and restore the compatible carrier to continue it.
-
-The installed original records a one-HP City Center rebuild in already-owned territory. Its construction arithmetic adds time divided by duration to normalized health. Damage is admitted once labor starts. The immediate Imperial Endeavor adds one half to normalized health through a separate path from ordinary citizen labor. The candidate uses the current portable effective maximum and paid placement rules. The portable free-territory fixture resolves the claim on the tick after completion. Original free-territory acquisition needs a separate replay witness. The ordinary healing control supplies a known absolute HP update before labor. The portable heal recipient tables exclude City foundations.
+The optional carrier preserves authenticated Valley V37S 1–12 and prefers `valley77_commit` for new authenticated games. The web menu accepts the earlier compatible `valley76_commit` when using an older optional carrier. Multiplayer keeps the established construction behavior and lockstep protocol. The original one-HP rebuild is documented in an owned region. Exact original first acquisition timing for an unowned region remains a separate question.

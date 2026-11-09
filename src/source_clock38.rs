@@ -147,7 +147,7 @@ fn product_parts(left: f64, right: f64) -> (f64, f64) {
     (high * right, (left - high) * right)
 }
 
-#[cfg(feature = "ee2-valley74-city-footprint")]
+#[cfg(feature = "ee2-native13")]
 pub(crate) fn divide_positive_f32_as_f64(numerator: f32, denominator: f32) -> f64 {
     let numerator = f64::from(numerator);
     let denominator = f64::from(denominator);

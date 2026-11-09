@@ -165,7 +165,7 @@ pub struct Ent {
     pub stuck: u8,
     pub carry: f32,
     pub flash: f32,
-    /// Workers: resource kind they were gathering before being pulled off to build.
+    /// Workers: previous gathering resource. Source City foundations: first labor flag.
     pub prev: u8,
     /// Transports: unit type and health (percent) of each passenger.
     pub cargo: [DefId; CARGO_MAX],
@@ -361,6 +361,8 @@ pub struct Game {
     pub(crate) source_clock: Option<crate::source_clock38::SourceClock>,
     #[cfg(feature = "ee2-native13")]
     pub(crate) network_resume_tempo: Option<crate::source_clock38::AdaptiveTempo>,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) generated_city_foundations: bool,
     pub rng: Rng,
     #[cfg(feature="ee2-citizen9")]
     pub source_birth:crate::citizen9::SourceBirth,
@@ -612,6 +614,8 @@ impl Game {
             source_clock: None,
             #[cfg(feature = "ee2-native13")]
             network_resume_tempo: None,
+            #[cfg(feature = "ee2-native13")]
+            generated_city_foundations: false,
             rng: Rng(seed.wrapping_mul(2_654_435_761) | 1),
             #[cfg(feature="ee2-citizen9")]
             source_birth:crate::citizen9::SourceBirth::new(seed),
@@ -1489,6 +1493,8 @@ impl Game {
         let mut mix = |v: u32| h = (h ^ v).wrapping_mul(16_777_619);
         mix(self.tick);
         mix(self.rng.0);
+        #[cfg(feature = "ee2-native13")]
+        if self.generated_city_foundations { mix(crate::construction_health163::MAGIC); }
         if let Some(clock) = self.source_clock {
             mix(clock.magic());
             mix(clock.elapsed.to_bits());
@@ -2347,12 +2353,16 @@ impl Game {
     #[inline]
     fn damage(&mut self, j: usize, dmg: f32, kind: u8) {
         #[cfg(feature = "ee2-native13")]
+        if self.generated_city_awaiting_labor(&self.ents[j]) { return; }
+        #[cfg(feature = "ee2-native13")]
         if self.ents[j].def == crate::koth64::HILL { return; }
         #[cfg(feature = "ee2-valley74-city-footprint")]
         if self.valley_house_awaiting_labor(&self.ents[j]) { return; }
         let (team, td) = (self.ents[j].team, &DEFS[self.ents[j].def as usize]);
         let m = MULT[kind as usize][td.armor as usize] * self.players[team as usize].dfn[class_of(td)];
         let protected = self.god_mode_for(team);
+        #[cfg(feature = "ee2-native13")]
+        let protected = protected || self.damage_generated_city_foundation(j, dmg * m);
         let t = &mut self.ents[j];
         if !protected { t.hp -= dmg * m; }
         t.flash = 0.12;
@@ -2365,6 +2375,8 @@ impl Game {
     #[cfg(feature="ee2-reference")]
     #[inline]
     fn damage_from(&mut self,j:usize,dmg:f32,kind:u8,attacker_profile:u16){
+        #[cfg(feature = "ee2-native13")]
+        if self.generated_city_awaiting_labor(&self.ents[j]) { return; }
         let (team,def)=(self.ents[j].team,self.ents[j].def);
         #[cfg(feature = "ee2-native13")]
         if def == crate::koth64::HILL { return; }
@@ -2374,6 +2386,8 @@ impl Game {
         let native=crate::ee2_combat::multiplier_from_profile(attacker_profile,def,self.players[team as usize].epoch);
         let m=native.unwrap_or(MULT[kind as usize][td.armor as usize])*self.players[team as usize].dfn[class_of(td)];
         let protected = self.god_mode_for(team);
+        #[cfg(feature = "ee2-native13")]
+        let protected = protected || self.damage_generated_city_foundation(j, dmg * m);
         let t=&mut self.ents[j];if !protected {t.hp-=dmg*m;}t.flash=0.12;
         let legacy_warning = {
             #[cfg(feature = "ee2-native13")]
@@ -2613,6 +2627,8 @@ impl Game {
         #[cfg(feature = "ee2-valley74-city-footprint")]
         let instant = instant && (!self.valley_house_reserves_placement_only(e) || self.valley_house_footprint_clear(e));
         if e.built < 1.0 && instant {
+            #[cfg(feature = "ee2-native13")]
+            if self.uses_generated_city_foundation(e.def) { e.prev = 0; }
             e.built = 1.0;
             e.hp = self.max_hp(e.team,e.def);
             #[cfg(feature = "ee2-native13")]
@@ -3341,6 +3357,10 @@ impl Game {
         let maxhp=self.max_hp(e.team,b.def);
         let duration = self.production_time(e.team,b.def)*self.construction_multiplier(&b);
         let seconds = self.sim_step();
+        #[cfg(feature = "ee2-native13")]
+        let generated_city = self.uses_generated_city_foundation(b.def);
+        #[cfg(not(feature = "ee2-native13"))]
+        let generated_city = false;
         #[cfg(feature = "ee2-valley74-city-footprint")]
         let native_house = self.uses_valley_house_construction(b.def);
         #[cfg(feature = "ee2-valley74-city-footprint")]
@@ -3348,11 +3368,13 @@ impl Game {
         #[cfg(feature = "ee2-valley74-city-footprint")]
         if pending_house && !self.valley_house_labor_clear(&b, e.otgt) { return; }
         let t = &mut self.ents[j];
+        #[cfg(feature = "ee2-native13")]
+        if generated_city { Self::advance_generated_city_foundation(t, maxhp, seconds, duration, true); }
         #[cfg(feature = "ee2-valley74-city-footprint")]
         if native_house { Self::advance_valley_house_health(t, maxhp, seconds, duration); }
         #[cfg(not(feature = "ee2-valley74-city-footprint"))]
         let native_house = false;
-        if !native_house {
+        if !native_house && !generated_city {
             let step = seconds / duration;
             t.built = (t.built + step).min(1.0);
             t.hp = (t.hp + maxhp * 0.9 * step).min(maxhp);

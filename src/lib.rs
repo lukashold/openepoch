@@ -119,6 +119,8 @@ mod defs;
 mod economy;
 mod source_clock38;
 #[cfg(feature = "ee2-native13")]
+mod construction_health163;
+#[cfg(feature = "ee2-native13")]
 mod naval_heave72;
 #[cfg(feature = "ee2-native13")]
 mod submarine82;
@@ -1385,6 +1387,13 @@ pub extern "C" fn production_roster_configure_peer(enabled: u32) -> u32 {
 #[no_mangle]
 pub extern "C" fn configure_late_population() -> u32 {
     u32::from(g().configure_late_population())
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_generated_city_foundations() -> u32 {
+    unsafe { (&mut *addr_of_mut!(GAME)).as_mut() }
+        .map_or(0, |game| u32::from(game.configure_generated_city_foundations()))
 }
 
 #[cfg(feature = "ee2-native13")]

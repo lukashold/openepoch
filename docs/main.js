@@ -60,7 +60,7 @@ import {NATIVE_SEASON_CHOICE,normalizeSeasonChoice,resolveSeasonChoice} from './
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=native108';
 import {checkTimeOfDayMode,createTimeOfDayClock,readTimeOfDayState,resolveTimeOfDay,timeOfDayPeriods} from './original-time-of-day.js?v=time-of-day160';
 import {CLIMATE_NAMES,checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native120-ai-retry158';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=generated-foundation163';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION as BASE_PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=time-of-day160';
@@ -203,7 +203,7 @@ const valleyRequested=rulesProfile.id==='up15'&&(!!valleyManifest||['1','archive
 try{
   if(valleyRequested){
     const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley76_commit','valley71_force_attack_at','valley71_neutral_opening','configure_late_population']:rulesProfile.requiredExports;
-    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=city-foundation162-valley'};
+    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=generated-foundation163-valley'};
     try{wasm=await loadRulesWasm(previewRules,import.meta.url);}catch{/* The ordinary ruleset remains available. */}
   }
   wasm??=await loadRulesWasm(rulesProfile,import.meta.url);
@@ -1572,6 +1572,10 @@ function start(nAi, seed, benchUnits, humans = 1, local = 0) {
     if(referenceMode)wasm.skirmish_epoch(+$('start-epoch').value);
   }
   if (originalSkirmish && !configureOriginalPopulation()) return;
+  if(originalSkirmish&&typeof wasm.configure_generated_city_foundations==='function'
+     &&wasm.configure_generated_city_foundations()!==1){
+    toast('Die Originalregel für Stadtzentrum-Baustellen konnte nicht aktiviert werden.');return;
+  }
   seasonSession.configure(menuSeasonSettings(),climate);
   configureTimeOfDay(originalSkirmish&&nativeTimeOfDay?menuTimeOfDay():1);
   if(!benchUnits)wasm.skirmish_visibility(+$('map-visibility').value);
