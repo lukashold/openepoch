@@ -5,6 +5,7 @@ export {createRenderAssetMapping} from './original-render-namespace.js';
 // This renderer does not inspect original files or alter the deterministic simulation.
 import {DEFAULT_MODEL_LIGHTING,modelMaterial,alphaState,depthState} from './original-material.js?v=material1';
 import {nativeModelTransform} from './original-scale.js?v=native1';
+import {HOUSE_REFLECTION_CATALOG,bindHouseReflectionBound,admitsHouseReflection} from './house-reflection-bounds.js?v=house-reflection233';
 import {modelYearPhase,modelSeasonFrames,modelSeasonBinding} from './original-model-seasons.js?v=modelseason1';
 import {createNativeLightingContext,nativeModelPipeline} from './original-lighting.js?v=valley-lightmap148';
 import {appendInitialSailParts,nativeInitialSailDiffuse} from './original-sail-composite.js?v=initialsail7';
@@ -618,6 +619,8 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   houseLodModels=houseLodBindings(await json(options.houseLodManifestURL));
   if(options.houseLodProfile!==undefined)result.setHouseLodProfile(options.houseLodProfile);
  }catch(error){houseLodModels.clear();houseLodError(error);}}
+ const houseReflectionCatalog=houseLodModels.size ? await verifiedModelJSON(HOUSE_REFLECTION_CATALOG.url,
+  HOUSE_REFLECTION_CATALOG.sha256,'Original House reflection bounds').catch(()=>null) : null;
  const entries=[...(Array.isArray(manifest.models)?manifest.models:Object.entries(manifest.models||manifest.mapping||{}).map(([id,value])=>typeof value==='string'?{id:+id,url:value}:{id:+id,...value})),...regionalEntries,...citizenEntries,...presentationEntries];
  const loadParts=async (model,keepPickingGeometry=false,modelUrl=null,teamOverride=null,textureHashes=null,packRig=null,shadowNodes=false,seasonOverride=null)=>{
    const parts=[],selectedSeasonManifest=seasonOverride??(regionalSeasonManifest.models?.[modelUrl]?regionalSeasonManifest:seasonManifest);
@@ -837,6 +840,8 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
      levelParts.push(await loadParts(source,false,level.url,null,null,null,true));
     }
     variant.selectHouseLod=bindHouseLodParts(houseBinding,levelParts);
+    if(transform.native&&model===body&&variant.yawOffset===0)
+     variant.houseReflectionBound=bindHouseReflectionBound(houseReflectionCatalog,modelUrl,houseBinding,model);
     houseLodStatus.models++;houseLodStatus.groups+=houseBinding.groups.length;
    }catch(error){houseLodError(error);}}
    if(dynamicBindings.has(model)){
@@ -1017,7 +1022,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   }
   return casters;
  };
- result.draw=({data,ranges,vp,epochs,zoom=80,shadow=false,eye=[0,200,0],lighting=defaultLighting,clipPlane=null,capture=false,actorMetadata=null,preparedSailMetadata=actorMetadata,civilizations=visualCivilizations,stoneThrowerWheels=null,granaryLoops=null,hercBeamMuzzles=null,packScene=null,volumeShadowInstances=null,resourceIdentities=null,forestBases=null})=>{
+ result.draw=({data,ranges,vp,epochs,zoom=80,shadow=false,eye=[0,200,0],lighting=defaultLighting,clipPlane=null,capture=false,actorMetadata=null,preparedSailMetadata=actorMetadata,civilizations=visualCivilizations,stoneThrowerWheels=null,granaryLoops=null,hercBeamMuzzles=null,packScene=null,volumeShadowInstances=null,resourceIdentities=null,forestBases=null,houseReflection=null})=>{
   const started=performance.now();let calls=0,triangles=0,querying=false;
   // Reflection uses the main snapshot. Only the independent picture-in-picture
   // capture must leave the main animation history alone.
@@ -1121,6 +1126,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
      }
      if(variant.far)variant=variant.far;
     }
+    if(capture&&clipPlane&&!admitsHouseReflection(houseReflection,variant,matchingActor?actor:null,houseLodSettings?.mode))continue;
     const shimmer=variant.spyClips&&matchingActorPose&&actor.team===rowTeam?options.spyShimmerForActor?.(actor):
      variant.diversionVisual&&matchingActor&&actor.team===rowTeam?options.diversionShimmerForActor?.(actor,variant.diversionVisual):null;
     if(shimmer?.opacity===0)continue;

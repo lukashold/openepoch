@@ -1,3 +1,4 @@
+import {originalWaterBodyUV} from './native-water-body-uv.js?v=native-water-sampling232';
 import {createReflectionOverlay,waterStencilScope} from './reflection-overlay.js?v=native-water-presentation231';
 import {sourceWaterIndices} from './reflection-scene.js?v=native-water-presentation231';
 // Native high-water equations: see native-water-appearance-evidence.json.
@@ -12,7 +13,7 @@ export const OWN_WATER_CLASS_ADAPTER=Object.freeze([7,5,0,0,4,3]);
 const checkArray=(a,n)=>a?.length===n&&Array.from(a).every(Number.isFinite);
 
 /** Native vertex channel filters on this adapter's corner grid. */
-export function buildNativeWaterData({heights,types,movement,size=256,waterHeight=0,paletteAlphaBytes,lookupRGBBytes,uvScale=[1/12,1/12],classMapping=OWN_WATER_CLASS_ADAPTER}){
+export function buildNativeWaterData({heights,types,movement,size=256,waterHeight=0,paletteAlphaBytes,lookupRGBBytes,uvScale=[1/12,1/12],classMapping=OWN_WATER_CLASS_ADAPTER,sourceUV=false}){
  if(!Number.isInteger(size)||size<1||size>1024||!checkArray(heights,(size+1)**2)||!Number.isFinite(waterHeight)||!checkArray(uvScale,2))throw new RangeError('Invalid water height grid');
  if(!checkArray(paletteAlphaBytes,256)||paletteAlphaBytes.some(n=>!Number.isInteger(n)||n<0||n>255)||lookupRGBBytes?.length<3||lookupRGBBytes.slice(0,3).some(rgb=>!checkArray(rgb,3)||rgb.some(n=>!Number.isInteger(n)||n<0||n>255)))throw new RangeError('Invalid original water lookup data');
  if(movement){if(!checkArray(movement,size*size)&&!checkArray(movement,(size+1)**2))throw new RangeError('Invalid native water movement field');if(movement.some(n=>!Number.isInteger(n)||n<0||n>7))throw new RangeError('Unknown native movement class');}
@@ -31,8 +32,14 @@ export function buildNativeWaterData({heights,types,movement,size=256,waterHeigh
   for(const [dx,dz] of COLOR13){const j=point(x+dx,z+dz)*4;red+=raw[j];alpha+=raw[j+1];}
   for(const [dx,dz] of OCEAN33)green+=raw[point(x+dx,z+dz)*4+2];
   for(const [dx,dz,weight] of COAST29)blue+=raw[point(x+dx,z+dz)*4+3]*weight;
-  const warp=Math.cos((x+z)*.25)*f32(.03),i=(z*width+x)*8;
-  vertices.set([x,z,f32(red*MEAN13),f32(green*MEAN33),f32(blue*MEAN29),f32(alpha*MEAN13),x*uvScale[0]+warp,z*uvScale[1]-warp],i);
+  let u,v;
+  if(sourceUV){
+   [u,v]=originalWaterBodyUV(x,size-z);
+  }else{
+   const warp=Math.cos((x+z)*.25)*f32(.03);
+   u=x*uvScale[0]+warp;v=z*uvScale[1]-warp;
+  }
+  vertices.set([x,z,f32(red*MEAN13),f32(green*MEAN33),f32(blue*MEAN29),f32(alpha*MEAN13),u,v],(z*width+x)*8);
  }
  for(let z=0;z<size;z++)for(let x=0;x<size;x++){
   const a=z*width+x,b=a+1,c=a+width,d=c+1;
@@ -110,7 +117,7 @@ export async function loadOriginalWater(gl,enabled,{manifestURL=new URL('./local
   let fields=null,last=null,sourceOverlay=null;
   const sourceSlots=new Map();
   result.updateMap=options=>{
-   const settings={size:256,waterHeight:0,...options};if(last&&last.size===settings.size&&last.waterHeight===settings.waterHeight&&same(last.heights,settings.heights)&&same(last.types,settings.types)&&same(last.movement,settings.movement))return false;
+   const settings={size:256,waterHeight:0,...options};if(last&&last.size===settings.size&&last.waterHeight===settings.waterHeight&&last.sourceUV===settings.sourceUV&&same(last.heights,settings.heights)&&same(last.types,settings.types)&&same(last.movement,settings.movement))return false;
    fields=buildNativeWaterData({...settings,paletteAlphaBytes:manifest.paletteAlphaBytes,lookupRGBBytes:manifest.lookupRGBBytes,uvScale:manifest.adapter.uvScale,classMapping:manifest.adapter.ownClassToMovement});
    gl.bindVertexArray(vao);gl.bindBuffer(gl.ARRAY_BUFFER,vbo);gl.bufferData(gl.ARRAY_BUFFER,fields.vertices,gl.STATIC_DRAW);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,ibo);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,fields.indices,gl.STATIC_DRAW);
    for(const slot of sourceSlots.values())slot.key=undefined;

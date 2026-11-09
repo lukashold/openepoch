@@ -3,6 +3,7 @@ import {perspectiveGridRay} from './reflection-grid.js?v=native-water-presentati
 import {cloneReflectionCamera,createReflectionPacketCache,prepareReflectionViews,reflectionRoute,
   refreshReflectionBodies} from './original-reflection-policy.js?v=native-water-presentation231';
 import {buildOriginalWaterBodies} from './original-water-bodies.js?v=native-water-presentation231';
+import {houseReflectionPass} from './house-reflection-bounds.js?v=house-reflection233';
 
 const f32 = Math.fround;
 const fullViewport = Object.freeze([0,1,1,0]);
@@ -94,7 +95,8 @@ export function createReflectionSceneSchedule({mapHeight,targetSupported,deviceA
       const {target} = reflectionRoute(source,direct[0].camera);
       const role = roleByTarget[target.id];
       return {role,id:role==='main'?'reflection':'pip-reflection',target,packet,
-        view:sourceCameraProjection(packet.camera,mapHeight),clipPlane:[0,1,0,0]};
+        view:sourceCameraProjection(packet.camera,mapHeight),clipPlane:[0,1,0,0],
+        houseReflection:houseReflectionPass(packet,previous,mapHeight)};
     });
     const preparation = [...captures.map(({id,view})=>({id,vp:view.vp})),
       ...direct.map((source,index)=>({id:roleByTarget[index],vp:source.view.vp}))];

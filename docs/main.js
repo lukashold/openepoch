@@ -22,7 +22,7 @@ import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regi
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native66';
-import {loadOriginalModels} from './original-renderer.js?v=granary211';
+import {loadOriginalModels} from './original-renderer.js?v=house-reflection233';
 import {loadOriginalBoatWake,readNavalWakeActors} from './original-boat-wake.js?v=native78-wake83';
 import {loadKingOfTheHillPresentation} from './original-koth.js?v=native64-koth';
 import {loadWonderPresentation} from './original-wonders.js?v=native63';
@@ -56,9 +56,9 @@ import {createCaptureGlow} from './capture-glow.js?v=native64-koth';
 import {loadOriginalTerrain} from './original-terrain.js?v=terrain-presentation227';
 import {loadTerrainBorderRenderer} from './terrain-border-renderer.js?v=terrain-presentation227';
 import {createSceneTerrainFog,admitsValleyTerrainFog} from './scene-terrain-fog.js?v=native-water-presentation231';
-import {loadOriginalWater} from './original-water.js?v=native-water-presentation231';
-import {createReflectionSceneSchedule,sourceWaterBodies,reflectionGridCamera} from './reflection-scene.js?v=native-water-presentation231';
-import {createSourceReflectionTargets} from './reflection-targets.js?v=native-water-presentation231';
+import {loadOriginalWater} from './original-water.js?v=native-water-sampling232';
+import {createReflectionSceneSchedule,sourceWaterBodies,reflectionGridCamera} from './reflection-scene.js?v=house-reflection233';
+import {createSourceReflectionTargets} from './reflection-targets.js?v=native-water-sampling232';
 import {createNativeReflectionGrid} from './reflection-grid.js?v=native-water-presentation231';
 import {createNativeReflectionWarp} from './native-reflection-warp.js?v=native-water-presentation231';
 import {createOriginalReflection,reflectedViewProjection} from './original-reflection.js?v=visual-seasons2';
@@ -565,7 +565,7 @@ function uploadTerrain() {
 function uploadOriginalTerrainClasses(){
   const types=wasm.terrain_types_ptr&&wasm.terrain_types_len?.()===MAP*MAP?u8(wasm.terrain_types_ptr(),MAP*MAP).slice():undefined;
   originalTerrain.updateMap({heights,types});
-  const waterChanged=originalWater.updateMap({heights,types});
+  const waterChanged=originalWater.updateMap({heights,types,sourceUV:!!reflectionSchedule});
   if(reflectionSchedule&&(waterChanged||sourceWaterSession!==wasm.render_meta_session())){
     sourceWaterSession=wasm.render_meta_session();
     reflectionSchedule.reset(sourceWaterBodies(heights,MAP));
@@ -2409,7 +2409,7 @@ function frame(now) {
           sourceFrame.images[camera.role]=reflectionTargets.capture(camera,pass=>{
             originalTerrain.drawTerrain({vao:vaoT,px,fogTexture,territoryTexture,deferFogAbove:lateFog?.minHeight??null,...pass});
             if(count)originalModels.draw({data,ranges:reflectionRanges,epochs:renderEpochs,zoom:cam.zoom,
-              actorMetadata:reflectedActors,preparedSailMetadata:actorMetadata,packScene,...pass});
+              actorMetadata:reflectedActors,preparedSailMetadata:actorMetadata,packScene,houseReflection:camera.houseReflection,...pass});
             lateFog?.draw(camera.id,pass.vp,vaoT,+$('quality').value);
           });
         }
@@ -2563,7 +2563,9 @@ function frame(now) {
   if(fullmapPip.isOpen())fullmapPip.draw(dt,pipView=>drawFullmapPipScene(pipView,alpha,renderEpochs,now,mission,actorMetadata,sourceFrame),preparedPip);
   if(qaMode&&reflectionTargets)canvas.dataset.sourceWaterReflection=JSON.stringify({error:sourceReflectionError,
     detail:waterDetail,planned:sourceFrame?.captures.map(row=>row.role)??[],rendered:Object.keys(sourceFrame?.images??{}),
-    visible:sourceFrame?.visible??{},metrics:reflectionTargets.metrics,water:originalWater.metrics.source??{}});
+    visible:sourceFrame?.visible??{},metrics:reflectionTargets.metrics,water:originalWater.metrics.source??{},
+    houses:Object.fromEntries(sourceFrame?.captures.map(({role,houseReflection})=>
+      [role,{tested:houseReflection?.tested??0,culled:houseReflection?.culled??0}])??[])});
   if(qaMode&&territoryBorders)canvas.dataset.territoryBorders=JSON.stringify(territoryBorders.metrics);
   if(qaMode&&lateFog)canvas.dataset.nativeTerrainFog=JSON.stringify(lateFog.metrics);
   finishPriestEffectsFrame();
