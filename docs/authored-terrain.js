@@ -2,7 +2,7 @@ import {authoredTerrainMesh} from './authored-view.js';
 import {authoredValleyBoundary} from './authored-boundary.js';
 import {buildAuthoredTerrainLightmap, SHADOW_BLOCK_SPAN, SHADOW_RESOLUTION} from './authored-terrain-shadow.js';
 import {nativeTerrainCoefficients} from './native-terrain-lighting.js';
-import {createForestShadowRenderer} from './valley-forest-shadow.js';
+import {createForestShadowRenderer} from './valley-forest-shadow.js?v=valley-forest167';
 import {createRuinVolumeRenderer} from './valley-ruin-shadow.js';
 import {createBuildingShadowRenderer} from './citycenter-shadow-renderer.js?v=house156';
 import {VALLEY_TERRAIN_MASK,valleyMaskMipLevels,valleyMaskShader,valleyTerrainPasses} from './authored-terrain-mask.js?v=valley-mips151';
@@ -256,7 +256,7 @@ export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readText
   let samplerHigh;
   return {
     indexCount: indices.length,
-    draw(vp, fogTexture, highShadows = false, highSampling = false, ruins = [], casters = []) {
+    draw(vp, fogTexture, highShadows = false, highSampling = false, ruins = [], casters = [], forestPhases = null) {
       const drawnBuildings=highShadows && projectBuildings && casters.length ? projectBuildings.prepare(casters) : null;
       gl.useProgram(shader);
       gl.uniform1i(uBoundary, 0);
@@ -312,7 +312,7 @@ export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readText
         gl.stencilMask(0x3f);
         gl.stencilFunc(gl.ALWAYS,0,0x3f);
         gl.stencilOp(gl.KEEP,gl.KEEP,gl.INCR_WRAP);
-        if (projectForest) projectForest(vp);
+        if (projectForest) projectForest(vp,forestPhases);
         gl.colorMask(true,true,true,true);
         gl.stencilMask(0);
         gl.stencilOp(gl.KEEP,gl.KEEP,gl.KEEP);

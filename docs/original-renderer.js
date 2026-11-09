@@ -439,7 +439,7 @@ import {loadAnimationPayload,withoutAnimationPayload,attachAnimationPayload} fro
 import {loadOriginalScoutIdle} from './original-scout-idle.js?v=native103';
 import {createCityCenterTerrainBinding} from './original-citycenter-terrain.js?v=origin1';
 export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},options={}){
- const result={available:new Set(),models:new Map(),resourceRenderIds:new Set(),errors:[],seasonClimates:['Temperate'],climateErrors:[],metrics:{colorMs:0,shadowMs:0,calls:0,triangles:0,gpuMs:0},draw(){},updateTerrain(){},setLightingContext(){return false;},setLightingSettings(){return false;},setVisualCivilizations(){return false;},setHouseLodProfile(){return false;},setSeasonPhase(){return false;},setSeasonClimate(){return false;},pickResource(){return null;},clearResourcePicks(){}};if(!enabled)return result;
+ const result={available:new Set(),models:new Map(),resourceRenderIds:new Set(),errors:[],seasonClimates:['Temperate'],climateErrors:[],metrics:{colorMs:0,shadowMs:0,calls:0,triangles:0,gpuMs:0},draw(){},updateTerrain(){},setLightingContext(){return false;},setLightingSettings(){return false;},setVisualCivilizations(){return false;},setHouseLodProfile(){return false;},setSeasonPhase(){return false;},setSeasonClimate(){return false;},pickResource(){return null;},pickResourceHit(){return null;},clearResourcePicks(){}};if(!enabled)return result;
  let visualCivilizations=null;
  result.setVisualCivilizations=values=>{
   if(values===null){visualCivilizations=null;return true;}
@@ -937,22 +937,27 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
  // instance buffer after the main frame, and grouping keys are draw internals.
  const pickModels=[];
  const PICK_STRIDE=6;
- let pickData=new Float32Array(0);
- result.clearResourcePicks=()=>{pickModels.length=0;};
- function rememberResources(data,indices,variant,activity){
+ let pickData=new Float32Array(0),pickIds=null;
+ const pickBases=[];
+ result.clearResourcePicks=()=>{pickModels.length=0;pickBases.length=0;pickIds=null;};
+ function rememberResources(data,indices,variant,activity,resourceIdentities,forestBases){
+  if(resourceIdentities)pickIds??=[];
   const needed=(pickModels.length+indices.length)*PICK_STRIDE;
   if(needed>pickData.length){
    const grown=new Float32Array(Math.max(needed,pickData.length*2));
    grown.set(pickData.subarray(0,pickModels.length*PICK_STRIDE));pickData=grown;
   }
   for(const i of indices){
+   if(resourceIdentities?.[i]===0xffff)continue;
    const source=i*12,at=pickModels.length*PICK_STRIDE;
    pickData[at]=data[source];pickData[at+1]=data[source+1];pickData[at+2]=data[source+2];
    pickData[at+3]=data[source+3];pickData[at+4]=data[source+8];pickData[at+5]=activity;
+   if(pickIds)pickIds.push(resourceIdentities[i]);
+   pickBases.push(forestBases?.get(i));
    pickModels.push(variant);
   }
  }
- result.pickResource=(origin,direction,maxDistance=Infinity)=>{
+ result.pickResourceHit=(origin,direction,maxDistance=Infinity)=>{
   if(!origin||!direction||origin.length<3||direction.length<3)return null;
   for(let a=0;a<3;a++)if(!Number.isFinite(origin[a])||!Number.isFinite(direction[a]))return null;
   if(direction[0]**2+direction[1]**2+direction[2]**2<1e-20)return null;
@@ -963,17 +968,27 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     const scale=variant.nativeScale??pickData[at+4];if(!(scale>0))continue;
     const yaw=pickData[at+3]+variant.yawOffset,c=Math.cos(yaw),s=Math.sin(yaw),o=variant.originOffset;
     const dx=origin[0]-pickData[at],dy=origin[1]-pickData[at+2],dz=origin[2]-pickData[at+1];
-    const localOrigin=[(dx*c+dz*s)/scale-o[0],dy/scale-variant.yOffset-o[1],(-dx*s+dz*c)/scale-o[2]];
-    const localDirection=[(direction[0]*c+direction[2]*s)/scale,direction[1]/scale,(-direction[0]*s+direction[2]*c)/scale];
+    const basis=pickBases[i];
+    const localOrigin=basis ? [
+     (dx*basis[0]+dy*basis[1]+dz*basis[2])/scale-o[0],
+     (dx*basis[3]+dy*basis[4]+dz*basis[5])/scale-variant.yOffset-o[1],
+     (dx*basis[6]+dy*basis[7]+dz*basis[8])/scale-o[2],
+    ] : [(dx*c+dz*s)/scale-o[0],dy/scale-variant.yOffset-o[1],(-dx*s+dz*c)/scale-o[2]];
+    const localDirection=basis ? [0,3,6].map(k=>(direction[0]*basis[k]+direction[1]*basis[k+1]+direction[2]*basis[k+2])/scale)
+     : [(direction[0]*c+direction[2]*s)/scale,direction[1]/scale,(-direction[0]*s+direction[2]*c)/scale];
     if(!intersectsBounds(localOrigin,localDirection,variant.pickBounds,closest))continue;
     let distance=closest;
     for(const part of variant.parts){
      if(!part.pickGeometry||(part.activities&&!part.activities.includes(pickData[at+5])))continue;
      if(intersectsBounds(localOrigin,localDirection,part.pickGeometry.bounds,distance))distance=rayTriangles(localOrigin,localDirection,part.pickGeometry,distance);
     }
-    if(distance<closest){closest=distance;hit=[pickData[at],pickData[at+1]];}
+    if(distance<closest){closest=distance;hit={x:pickData[at],z:pickData[at+1],distance,identity:pickIds?.[i]};}
   }
   return hit;
+ };
+ result.pickResource=(origin,direction,maxDistance)=>{
+  const hit=result.pickResourceHit(origin,direction,maxDistance);
+  return hit?[hit.x,hit.z]:null;
  };
  const packBlendHistory=packStatus.enabled?createNativePackBlendHistory():null;
  result.buildingShadowCasters=({data,ranges,epochs,zoom,eye,actorMetadata})=>{
@@ -998,7 +1013,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   }
   return casters;
  };
- result.draw=({data,ranges,vp,epochs,zoom=80,shadow=false,eye=[0,200,0],lighting=defaultLighting,clipPlane=null,capture=false,actorMetadata=null,preparedSailMetadata=actorMetadata,civilizations=visualCivilizations,stoneThrowerWheels=null,hercBeamMuzzles=null,packScene=null,volumeShadowInstances=null})=>{
+ result.draw=({data,ranges,vp,epochs,zoom=80,shadow=false,eye=[0,200,0],lighting=defaultLighting,clipPlane=null,capture=false,actorMetadata=null,preparedSailMetadata=actorMetadata,civilizations=visualCivilizations,stoneThrowerWheels=null,hercBeamMuzzles=null,packScene=null,volumeShadowInstances=null,resourceIdentities=null,forestBases=null})=>{
   const started=performance.now();let calls=0,triangles=0,querying=false;
   // Reflection uses the main snapshot. Only the independent picture-in-picture
   // capture must leave the main animation history alone.
@@ -1016,7 +1031,9 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    actorVisuals?.delete(actor);actorSourceScales?.delete(actor);
   }
   const previousState=drawState(gl);
-  const rememberPicks=!shadow&&!capture;
+  if(resourceIdentities&&(!(resourceIdentities instanceof Uint16Array)||resourceIdentities.length!==data.length/12))
+   throw new TypeError('Resource identities do not match the render instances');
+  const rememberPicks=!shadow&&(!capture||!!resourceIdentities);
   if(rememberPicks)result.clearResourcePicks();
   if(!shadow&&!capture&&timer){
    if(gpuQuery&&gl.getQueryParameter(gpuQuery,gl.QUERY_RESULT_AVAILABLE)){
@@ -1165,13 +1182,14 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     }):null;
     const visibilityKey=hiddenParts?.length?':hidden:'+hiddenParts.map(part=>variant.parts.indexOf(part)).join(','):'';
     const shimmerKey=shimmer&&(shimmer.opacity!==1||shimmer.emissive!==0)?':shimmer:'+shimmer.opacity+':'+shimmer.emissive:'';
-    const navalKey=navalBasis?':naval:'+actor.handle:'';
+    const forestBasis=forestBases?.get(i);
+    const navalKey=forestBasis?':forest:'+i:navalBasis?':naval:'+actor.handle:'';
     const blendKey=rigPose?':pack-rig:'+rigPose.page:blend?':pack-blend:'+actor.handle:'';
     const preview=!!previewFlags,key=variantIndex+':'+team+':'+activity+':'+(far&&variant.farRequested?1:0)+':'+previewFlags+':'+clip+':'+once+(variant.houseLodKey===undefined?'':':house:'+variant.houseLodKey)+visibilityKey+shimmerKey+navalKey+blendKey;
     if(collectStoneThrowerWheels&&!preview&&actor?.def===22&&epoch<2&&variant.stoneThrowerWheelClips?.has(clip)){
      stoneThrowerWheels.push({handle:actor.handle,clip,x:actor.renderX,y:actor.renderY,altitude:actor.renderAltitude});
     }
-    const group=groups.get(key)||{variant,team,activity,clip,once,blend,rigPose,preview,hiddenParts,shimmer:shimmerKey?shimmer:null,navalBasis,list:[],instanceIndices:[]};
+    const group=groups.get(key)||{variant,team,activity,clip,once,blend,rigPose,preview,hiddenParts,shimmer:shimmerKey?shimmer:null,navalBasis,forestBasis,list:[],instanceIndices:[]};
     group.instanceIndices.push(i);
     const offset=group.list.length;for(let k=0;k<12;k++)group.list.push(data[i*12+k]);
     group.list[offset+3]+=variant.yawOffset;group.list[offset+9]=rigPose?.layer??phase;
@@ -1190,8 +1208,9 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
      }
     }
    }
-   for(const {variant,team,list,activity,clip,once,blend,rigPose,preview,hiddenParts,shimmer,navalBasis,instanceIndices} of groups.values()){
-    if(rememberPicks&&variant.assetKind===1&&variant.pickBounds)rememberResources(data,instanceIndices,variant,activity);
+   for(const {variant,team,list,activity,clip,once,blend,rigPose,preview,hiddenParts,shimmer,navalBasis,forestBasis,instanceIndices} of groups.values()){
+    const modelBasis=forestBasis??navalBasis;
+    if(rememberPicks&&variant.assetKind===1&&variant.pickBounds)rememberResources(data,instanceIndices,variant,activity,resourceIdentities,forestBases);
     selectShader(shader);gl.uniform1f(shader.u.uYOffset,variant.yOffset);
     gl.uniform3fv(shader.u.uOriginOffset,variant.originOffset);
     const constructionPlane=variant.wonderConstructionPlane;
@@ -1214,8 +1233,8 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
      if(job.record){gl.bindBuffer(gl.ARRAY_BUFFER,instances);gl.bufferData(gl.ARRAY_BUFFER,job.record,gl.STREAM_DRAW);}
      selectShader(deformed?dynamicSailShader:part.nativeSail?sailShader:shader);const u=activeShader.u;
      gl.uniform1i(u.uGuidedRocket,variant.guidedRocket?1:0);
-     gl.uniform1i(u.uNaval,navalBasis?1:0);
-     if(navalBasis)gl.uniformMatrix3fv(u.uNavalBasis,false,navalBasis);
+     gl.uniform1i(u.uNaval,modelBasis?1:0);
+     if(modelBasis)gl.uniformMatrix3fv(u.uNavalBasis,false,modelBasis);
      if(part.nativeSail){gl.uniform1f(u.uYOffset,variant.yOffset);gl.uniform3fv(u.uOriginOffset,variant.originOffset);}
      gl.uniform1i(u.uFarmPlotConform,part.farmPlotOffset?1:0);gl.uniform3fv(u.uFarmPlotCenter,part.farmPlotOffset||[0,0,0]);
      const rigPart=rigPose&&part.packRigPart&&activeShader===shader?part.packRigPart:null;

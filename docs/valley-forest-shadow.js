@@ -50,7 +50,7 @@ void main(){
 }
 `;
 
-export function forestShadowVertices(geometry, indices, assets, direction) {
+function forestShadowGeometry(geometry, indices, assets, direction) {
   const {width,height,elevations} = geometry;
   const stride = width + 1;
   let tileCount = 0;
@@ -63,7 +63,8 @@ export function forestShadowVertices(geometry, indices, assets, direction) {
   });
   const vertices = new Float32Array(tileCount * 6 * STRIDE);
   let offset = 0;
-  for (const {projection:{u,v},layer,tiles} of entries) {
+  const ends = new Uint32Array(entries.length + 1);
+  for (const [row,{projection:{u,v},layer,tiles}] of entries.entries()) {
     for (const cell of tiles) {
       for (let i = 0; i < 6; i++) {
         const corner = indices[cell*6+i], x = corner % stride, y = Math.floor(corner / stride);
@@ -71,12 +72,17 @@ export function forestShadowVertices(geometry, indices, assets, direction) {
         offset += STRIDE;
       }
     }
+    ends[row + 1] = offset / STRIDE;
   }
-  return vertices;
+  return {vertices,ends};
+}
+
+export function forestShadowVertices(geometry, indices, assets, direction) {
+  return forestShadowGeometry(geometry,indices,assets,direction).vertices;
 }
 
 export function createForestShadowRenderer(gl, geometry, indices, assets, direction, compile) {
-  const vertices = forestShadowVertices(geometry,indices,assets,direction);
+  const {vertices,ends} = forestShadowGeometry(geometry,indices,assets,direction);
   const program = compile(gl,vertex,fragment);
   const vp = gl.getUniformLocation(program,'uVP'), coverage = gl.getUniformLocation(program,'uForestCoverage');
   const vao = gl.createVertexArray();
@@ -97,13 +103,33 @@ export function createForestShadowRenderer(gl, geometry, indices, assets, direct
   const anisotropic = gl.getExtension('EXT_texture_filter_anisotropic');
   if (anisotropic) gl.texParameterf(target,anisotropic.TEXTURE_MAX_ANISOTROPY_EXT,
     Math.min(4,gl.getParameter(anisotropic.MAX_TEXTURE_MAX_ANISOTROPY_EXT)));
-  return matrix => {
+  let elements = null, compressed = null, active = null, count = 0;
+  const drawActive = phases => {
+    if (!(phases instanceof Uint8Array) || phases.length + 1 !== ends.length) throw new TypeError('Invalid forest shadow phases');
+    if (!elements) {
+      elements = gl.createBuffer();
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,elements);
+      active = new Uint32Array(ends.at(-1));
+    }
+    if (!compressed?.every((present,row)=>present === Number(phases[row] === 0))) {
+      compressed = Uint8Array.from(phases,phase=>Number(phase === 0));
+      count = 0;
+      for (const [row,present] of compressed.entries()) {
+        if (!present) continue;
+        for (let index=ends[row]; index<ends[row+1]; index++) active[count++] = index;
+      }
+      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,active.subarray(0,count),gl.DYNAMIC_DRAW);
+    }
+    if (count) gl.drawElements(gl.TRIANGLES,count,gl.UNSIGNED_INT,0);
+  };
+  return (matrix, phases = null) => {
     gl.useProgram(program);
     gl.uniformMatrix4fv(vp,false,matrix);
     gl.uniform1i(coverage,UNIT);
     gl.activeTexture(gl.TEXTURE0 + UNIT);
     gl.bindTexture(target,texture);
     gl.bindVertexArray(vao);
-    gl.drawArrays(gl.TRIANGLES,0,vertices.length / STRIDE);
+    if (phases instanceof Uint8Array) drawActive(phases);
+    else gl.drawArrays(gl.TRIANGLES,0,vertices.length / STRIDE);
   };
 }

@@ -22,7 +22,7 @@ import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regi
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native66';
-import {loadOriginalModels} from './original-renderer.js?v=valley-building-shadow156';
+import {loadOriginalModels} from './original-renderer.js?v=valley-forest167';
 import {loadOriginalBoatWake,readNavalWakeActors} from './original-boat-wake.js?v=native78-wake83';
 import {loadKingOfTheHillPresentation} from './original-koth.js?v=native64-koth';
 import {loadWonderPresentation} from './original-wonders.js?v=native63';
@@ -104,7 +104,7 @@ import {addCarrierFlightAudio,loadAirFlightAudio,readAirFlightAudio,submarineMov
 import {loadFullmapCityNameCatalog,loadFullmapTerritoryNameCatalog} from './fullmap-territory-names.js?v=native22';
 import {createWarplanPeer,WARPLAN_PEER_VERSION} from './original-warplan-peer.js';
 import {activeValleyGeometry,initialValleyViews,pickValleyGround,valleyMinimapPoint,valleyMinimapSnapshot} from './authored-view.js';
-import {installedValleyManifest,loadValleyPreview,valleySaveLocator} from './valley-preview.js?v=city-foundation162';
+import {installedValleyManifest,loadValleyPreview,valleySaveLocator} from './valley-preview.js?v=valley-forest167';
 
 const $ = id => document.getElementById(id);
 const canvas = $('gl');
@@ -203,7 +203,7 @@ const valleyRequested=rulesProfile.id==='up15'&&(!!valleyManifest||['1','archive
 try{
   if(valleyRequested){
     const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley76_commit','valley71_force_attack_at','valley71_neutral_opening','configure_late_population']:rulesProfile.requiredExports;
-    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=generated-foundation163-valley'};
+    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=valley-forest167'};
     try{wasm=await loadRulesWasm(previewRules,import.meta.url);}catch{/* The ordinary ruleset remains available. */}
   }
   wasm??=await loadRulesWasm(rulesProfile,import.meta.url);
@@ -2878,7 +2878,14 @@ canvas.addEventListener('mousedown', e => {
     let target=null;
     if(workers||fishing){
       const direction=ray(e.clientX,e.clientY),groundDistance=(groundAt(wx,wy)-view.eye[1])/direction[1];
-      target=originalModels.pickResource(view.eye,direction,groundDistance+.02);
+      const maxDistance=groundDistance+.02;
+      const hit=originalModels.pickResourceHit(view.eye,direction,maxDistance);
+      const forest=workers&&valleyWorld ? valleyPreview?.pickForest(view.eye,direction,maxDistance) : null;
+      if(forest&&(!hit||forest.distance<hit.distance)&&valleyPreview.orderForest(forest.identity)){
+        if(!selectedUnitVoice('order',false)&&ui?.sel.n)sfx.play(22);
+        return;
+      }
+      target=hit?[hit.x,hit.z]:null;
       if(referenceMode&&target){
         const kind=wasm.resource_kind(Math.floor(target[1])*MAP+Math.floor(target[0]));
         if(kind===10?!fishing:!workers)target=null;

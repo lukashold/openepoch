@@ -1,15 +1,17 @@
 import {activeValleyGeometry} from './authored-view.js';
-import {loadAuthoredValleyTerrain,VALLEY_MATERIAL_MIPS} from './authored-terrain.js?v=valley-building-shadow156';
+import {loadAuthoredValleyTerrain,VALLEY_MATERIAL_MIPS} from './authored-terrain.js?v=valley-forest167';
 import {VALLEY_MASK_MIPS,VALLEY_TERRAIN_MASK} from './authored-terrain-mask.js?v=valley-mips151';
-import {loadForestShadowAssets} from './valley-forest-shadow.js';
+import {loadForestShadowAssets} from './valley-forest-shadow.js?v=valley-forest167';
 import {loadRuinShadowAssets,visibleRuinShadows} from './valley-ruin-shadow.js';
 import {loadBuildingShadowAssets} from './citycenter-shadow-renderer.js?v=house156';
-import {archiveForestBindings, archiveForestFrame} from './archive-forest.js';
+import {archiveForestBindings, archiveForestFrame} from './archive-forest.js?v=valley-forest167';
+import {createForestPresentation} from './forest-presentation.js?v=valley-forest167';
 import {bindValleyWorld0,valleyWorld0Frame} from './archive-world0.js';
-import {loadOriginalModels} from './original-renderer.js?v=native36';
+import {loadOriginalModels} from './original-renderer.js?v=valley-forest167';
 
 const path = 'local-original/valley-preview/manifest.json';
 const digest = '75dc890404bf8f50f69975ae796d38d608e03f1a7e85e61405083615eb82419c';
+const stumpManifest = {url:'local-original/valley-stumps/manifest.json',sha256:'be609b08156e8938edb0d7fbcd6f10f5d6f277f1cb8b689269e2190e759d1d72'};
 const authoredTest = {url:'local-original/valley-owned-qa/seed-2.vow1',sha256:'68ca55d581c3e855a17aad58461575f9a160a9c6bd8fa90e081cbecee05bfefc'};
 const magic = [0x56, 0x33, 0x37, 0x53]; // V37S
 const hex = bytes => Array.from(bytes, n => n.toString(16).padStart(2, '0')).join('');
@@ -71,6 +73,9 @@ export async function loadValleyPreview({requested, authoredRequested, neutralRe
     if (geometry.sourceArchiveSha256 !== index.sourceArchiveSha256) throw new Error('Valley-Quellkarte stimmt nicht überein.');
     const terrain = json(terrainManifest), forest = json(forestManifest), world0 = json(world0Manifest);
     const assetMapping = archiveForestBindings(forest, index.sourceArchiveSha256);
+    const presentation = requireAuthored ? createForestPresentation(wasm,forest.rows.length) : null;
+    let forestState = null;
+    const clearForest = () => { forestState = null; presentation?.reset(); trees.clearResourcePicks(); };
     const staticBindings = bindValleyWorld0(world0, index.sourceArchiveSha256, index.fixtures, packets);
     await Promise.all([...forest.models, ...forest.textures.map(row => ({url: row.url, sha256: row.png_sha256})),
       ...world0.models, ...world0.textures].map(checked));
@@ -93,6 +98,22 @@ export async function loadValleyPreview({requested, authoredRequested, neutralRe
     const trees = await loadOriginalModels(gl, true, teams, undefined,
       {assetMapping, manifestURL: index.forest.url, initialSails: false, nativeLighting: false});
     if (trees.errors.length || trees.models.size !== forest.models.length) throw new Error('Valley-Waldgrafiken konnten nicht geladen werden.');
+    const stumps = presentation ? await (async () => {
+      const pack = json(await checked(stumpManifest));
+      if (pack.format !== 'ee2-private-valley-stumps-v1' || pack.localOnly !== true ||
+          pack.sourceArchiveSha256 !== index.sourceArchiveSha256 || pack.forestSha256 !== index.forest.sha256 ||
+          pack.models.length !== forest.models.length) throw new Error('Valley-Baumstümpfe stimmen nicht mit der Karte überein.');
+      const stumpMapping = pack.models.map((model, renderId) => {
+        if (model.treeModel !== forest.models[renderId].id || model.id !== 1100 + renderId ||
+            model.assetKind !== 1 || model.epoch !== 0 || !model.verified) throw new Error('Ungültiges Valley-Stumpfmodell.');
+        return {renderId, kind:model.assetKind, sourceId:model.id};
+      });
+      await Promise.all([...pack.models, ...pack.textures.map(row => ({url:row.url, sha256:row.png_sha256}))].map(checked));
+      const renderer = await loadOriginalModels(gl, true, teams, undefined,
+        {assetMapping:stumpMapping, manifestURL:stumpManifest.url, initialSails:false, nativeLighting:false});
+      if (renderer.errors.length || renderer.models.size !== pack.models.length) throw new Error('Valley-Baumstümpfe konnten nicht geladen werden.');
+      return renderer;
+    })().catch(() => null) : null;
     const statics = await loadOriginalModels(gl, true, teams, undefined,
       {assetMapping: staticBindings.assetMapping, manifestURL: index.world0.url, initialSails: false, nativeLighting: false});
     if (statics.errors.length || statics.models.size !== world0.models.length) throw new Error('Valley-Objekte konnten nicht geladen werden.');
@@ -104,11 +125,14 @@ export async function loadValleyPreview({requested, authoredRequested, neutralRe
       start(visibility, useAuthored = false) {
         if (!Number.isInteger(visibility) || visibility < 0 || visibility > 2 ||
             !stageFixture(useAuthored ? authored : packets[defaultFixture])) return false;
+        clearForest();
         const commit = useAuthored && neutralRequested ? neutralCommit : wasm.valley39_commit;
-        return wasm.valley37_prepare_fixture() === 1 && commit(visibility) === 1;
+        if (wasm.valley37_prepare_fixture() !== 1 || commit(visibility) !== 1) return false;
+        return !useAuthored || !presentation || presentation.start();
       },
       prepareLoad(locator) {
         if (!locator || locator.map !== index.map.sha256) return false;
+        clearForest();
         return stageFixture(locator.fixture === authoredTest.sha256 ? authored :
           packets[index.fixtures.findIndex(row => row.sha256 === locator.fixture)]);
       },
@@ -116,12 +140,19 @@ export async function loadValleyPreview({requested, authoredRequested, neutralRe
         const ruins = highShadows && ruinShadow ? visibleRuinShadows(ruinShadow,
           staticBindings.world0Cases.get(wasm.valley37_view_info(3)),
           new Uint8Array(wasm.memory.buffer, wasm.fog_ptr(), geometry.backing ** 2),bounds) : [];
-        return ground.draw(vp, fog, highShadows, highSampling, ruins, casters);
+        forestState = presentation?.snapshot() ?? null;
+        return ground.draw(vp, fog, highShadows, highSampling, ruins, casters, forestState?.phases);
       },
+      pickForest(origin,direction,maxDistance) {
+        return forestState ? trees.pickResourceHit(origin,direction,maxDistance) : null;
+      },
+      orderForest(row) { return presentation?.order(row) ?? false; },
       drawWorld(view, bounds) {
         const fog = new Uint8Array(wasm.memory.buffer, wasm.fog_ptr(), geometry.backing ** 2);
         const options = {vp: view.vp, eye: view.eye, zoom: view.zoom, epochs: [0, 0], capture: true};
-        trees.draw({...archiveForestFrame(forest, fog, bounds), ...options});
+        const frame = archiveForestFrame(forest, fog, bounds, forestState);
+        trees.draw({...frame, ...options});
+        if (frame.stumps?.data.length) stumps?.draw({...frame.stumps, ...options});
         const currentCase = wasm.valley37_view_info(3);
         statics.draw({...valleyWorld0Frame(staticBindings, currentCase, fog, bounds, wasm.valley37_view_info(4) === 1), ...options});
       },

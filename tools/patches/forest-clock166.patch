@@ -1,0 +1,278 @@
+diff --git a/Cargo.toml b/Cargo.toml
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -34,6 +34,7 @@
+ ee2-valley74-city-footprint = ["ee2-valley71-neutral-qa"]
+ ee2-valley163-forest-qa = ["ee2-valley74-city-footprint"]
+ ee2-valley164-forest-play = ["ee2-valley163-forest-qa"]
++ee2-valley166-forest-clock = ["ee2-valley164-forest-play"]
+ 
+ [profile.release]
+ opt-level = 3
+diff --git a/src/native_valley37/forest_play164.rs b/src/native_valley37/forest_play164.rs
+--- a/src/native_valley37/forest_play164.rs
++++ b/src/native_valley37/forest_play164.rs
+@@ -151,8 +151,12 @@
+         let amount = rate * self.sim_step();
+         let scale = self.crown_gather_scale(e.team, WORKER, R_WOOD, false, false);
+         let factor = self.modifiers[e.team as usize][WORKER as usize][crate::economy::gather_modifier(R_WOOD)] * scale;
++        #[cfg(feature = "ee2-valley166-forest-clock")]
++        let chop_time = self.sim_elapsed();
+         let forest = self.valley_fixture.as_mut()?.forest_replay.as_mut()?;
+         let actor = forest.promoted.get_mut(row as usize)?.as_mut()?;
++        #[cfg(feature = "ee2-valley166-forest-clock")]
++        { actor.last_chop = Some(chop_time); }
+         if remove_wood(&mut actor.wood, amount) {
+             let (carry, full) = carry_wood(e.carry, amount, factor, player.gather, cap);
+             e.carry = carry;
+@@ -160,6 +164,8 @@
+             e.q[1] = u32::from(full);
+             e.q[4] = u32::from(!full);
+         } else {
++            #[cfg(feature = "ee2-valley166-forest-clock")]
++            { actor.exhaustion = Some(chop_time); }
+             // Earlier workers in this tick must no longer render as active on an exhausted actor.
+             for (other, worker) in self.ents[..self.high].iter_mut().enumerate() {
+                 if other != index && worker.alive && worker.order == O_VALLEY_FOREST && worker.q[3] == row { worker.q[4] = 0; }
+@@ -177,6 +183,8 @@
+ 
+     pub(crate) fn valid_valley_forest_orders(&self, high: usize) -> bool {
+         let forest = self.valley_forest_play();
++        #[cfg(feature = "ee2-valley166-forest-clock")]
++        if forest.is_some_and(|replay| !replay.timing_within(self.sim_elapsed())) { return false; }
+         let mut reserved = vec![0; forest.map_or(0, |f| f.promoted.len())];
+         self.ents[..high].iter().filter(|e| e.alive && e.order == O_VALLEY_FOREST).all(|e| {
+             let row = e.q[3];
+@@ -269,6 +277,10 @@
+         (4, None) | (5, None) => 0,
+         (4, Some(_)) => game.forest_staff(row).1,
+         (5, Some(_)) => game.forest_staff(row).0,
++        #[cfg(feature = "ee2-valley166-forest-clock")]
++        (6, Some(actor)) => actor.last_chop.map_or(NONE, f32::to_bits),
++        #[cfg(feature = "ee2-valley166-forest-clock")]
++        (7, Some(actor)) => actor.exhaustion.map_or(NONE, f32::to_bits),
+         _ => NONE,
+     }
+ }
+diff --git a/src/native_valley37/forest_replay163.rs b/src/native_valley37/forest_replay163.rs
+--- a/src/native_valley37/forest_replay163.rs
++++ b/src/native_valley37/forest_replay163.rs
+@@ -11,6 +11,16 @@
+ const EXTENT: f32 = f32::from_bits(1061625612);
+ #[cfg(feature = "ee2-valley164-forest-play")]
+ const PLAY_MAGIC: [u8; 4] = *b"VFP1";
++#[cfg(feature = "ee2-valley166-forest-clock")]
++const CLOCK_MAGIC: [u8; 4] = *b"VFP2";
++
++#[cfg(feature = "ee2-valley166-forest-clock")]
++fn read_time(bytes: &[u8]) -> Option<Option<f32>> {
++    let word = u32::from_le_bytes(bytes.try_into().ok()?);
++    if word == u32::MAX { return Some(None); }
++    let time = f32::from_bits(word);
++    (time.is_finite() && !time.is_sign_negative()).then_some(Some(time))
++}
+ 
+ pub(super) fn bind_heights(mut world: Geometry) -> Option<Geometry> {
+     let Some(forest) = &world.forest else { return Some(world) };
+@@ -31,6 +41,10 @@
+ pub(super) struct Promoted {
+     pub(super) actor: u32,
+     pub(super) wood: f32,
++    #[cfg(feature = "ee2-valley166-forest-clock")]
++    pub(super) last_chop: Option<f32>,
++    #[cfg(feature = "ee2-valley166-forest-clock")]
++    pub(super) exhaustion: Option<f32>,
+ }
+ 
+ pub(super) struct ForestReplay {
+@@ -57,8 +71,23 @@
+         }
+         let slot = self.promoted.get_mut(id.0 as usize)?;
+         self.registry.take(id)?;
+-        *slot = Some(Promoted { actor, wood });
++        *slot = Some(Promoted { actor, wood,
++            #[cfg(feature = "ee2-valley166-forest-clock")]
++            last_chop: None,
++            #[cfg(feature = "ee2-valley166-forest-clock")]
++            exhaustion: None,
++        });
+         Some(())
++    }
++
++    #[cfg(feature = "ee2-valley166-forest-clock")]
++    pub(super) fn has_timing(&self) -> bool {
++        self.playable && self.promoted.iter().flatten().any(|row| row.last_chop.is_some())
++    }
++
++    #[cfg(feature = "ee2-valley166-forest-clock")]
++    pub(super) fn timing_within(&self, now: f32) -> bool {
++        self.promoted.iter().flatten().all(|row| row.last_chop.is_none_or(|time| time <= now))
+     }
+ 
+     fn obstruction(&self, dimensions: [u32; 2]) -> Option<SourceForestGrid> {
+@@ -75,13 +104,24 @@
+     pub(super) fn encode(&self) -> Vec<u8> {
+         #[cfg(feature = "ee2-valley164-forest-play")]
+         if self.playable {
+-            let mut bytes = PLAY_MAGIC.to_vec();
++            let magic = PLAY_MAGIC;
++            #[cfg(feature = "ee2-valley166-forest-clock")]
++            let timed = self.has_timing();
++            #[cfg(feature = "ee2-valley166-forest-clock")]
++            let magic = if timed { CLOCK_MAGIC } else { magic };
++            let mut bytes = magic.to_vec();
+             bytes.extend_from_slice(&(self.promoted.len() as u16).to_le_bytes());
+             bytes.extend_from_slice(&(self.promoted.iter().flatten().count() as u16).to_le_bytes());
+             for (index, row) in self.promoted.iter().enumerate() {
+                 if let Some(row) = row {
+                     bytes.extend_from_slice(&(index as u32).to_le_bytes());
+                     bytes.extend_from_slice(&row.wood.to_bits().to_le_bytes());
++                    #[cfg(feature = "ee2-valley166-forest-clock")]
++                    if timed {
++                        for time in [row.last_chop, row.exhaustion] {
++                            bytes.extend_from_slice(&time.map_or(u32::MAX, f32::to_bits).to_le_bytes());
++                        }
++                    }
+                 }
+             }
+             return bytes;
+@@ -100,30 +140,46 @@
+         bytes
+     }
+ 
+-    pub(super) fn decode(source: &SourceForestGrid, bytes: &[u8], playable: bool) -> Option<Self> {
+-        #[cfg(feature = "ee2-valley164-forest-play")]
+-        let magic = if playable { PLAY_MAGIC } else { MAGIC };
+-        #[cfg(not(feature = "ee2-valley164-forest-play"))]
+-        let magic = MAGIC;
++    pub(super) fn decode(source: &SourceForestGrid, bytes: &[u8], playable: bool, timed: bool) -> Option<Self> {
++        let magic = match (playable, timed) {
++            (false, false) => MAGIC,
++            #[cfg(feature = "ee2-valley164-forest-play")]
++            (true, false) => PLAY_MAGIC,
++            #[cfg(feature = "ee2-valley166-forest-clock")]
++            (true, true) => CLOCK_MAGIC,
++            _ => return None,
++        };
+         if !bytes.starts_with(&magic) { return None }
+         let rows = u16::from_le_bytes(bytes.get(4..6)?.try_into().ok()?) as usize;
+         let count = u16::from_le_bytes(bytes.get(6..8)?.try_into().ok()?) as usize;
+-        if rows != source.source_rows.len() || (!playable && count == 0) || count > rows || bytes.len() != 8 + count * 8 {
++        let stride = if timed { 16 } else { 8 };
++        if rows != source.source_rows.len() || ((!playable || timed) && count == 0) || count > rows || bytes.len() != 8 + count * stride {
+             return None;
+         }
+         let mut replay = Self::new(source);
+         #[cfg(feature = "ee2-valley164-forest-play")]
+         { replay.playable = playable; }
+         let mut previous = None;
+-        for entry in bytes[8..].chunks_exact(8) {
++        for entry in bytes[8..].chunks_exact(stride) {
+             #[cfg(feature = "ee2-valley164-forest-play")]
+             if playable {
+                 let index = u32::from_le_bytes(entry[..4].try_into().ok()?);
+-                let wood = f32::from_le_bytes(entry[4..].try_into().ok()?);
++                let wood = f32::from_le_bytes(entry[4..8].try_into().ok()?);
+                 if previous.is_some_and(|last| index <= last) || index as usize >= rows
+                     || !(wood.to_bits() == 0 || (1.0..=WOOD).contains(&wood)) { return None }
+                 previous = Some(index);
+                 replay.promote(ForestId(index), super::forest_play164::actor_id(index), wood)?;
++                #[cfg(feature = "ee2-valley166-forest-clock")]
++                if timed {
++                    let last_chop = read_time(&entry[8..12])?;
++                    let exhaustion = read_time(&entry[12..16])?;
++                    // Current playable trees deplete only on the tick that sets the chop clock.
++                    // Old VFP1 rows can be loaded into this same sidecar with both clocks absent.
++                    if exhaustion != if wood == 0.0 { last_chop } else { None } { return None; }
++                    let actor = replay.promoted[index as usize].as_mut()?;
++                    actor.last_chop = last_chop;
++                    actor.exhaustion = exhaustion;
++                }
+                 continue;
+             }
+             let index = u32::from(u16::from_le_bytes(entry[..2].try_into().ok()?));
+@@ -133,6 +189,8 @@
+             let actor = u32::from_le_bytes(entry[4..].try_into().ok()?);
+             replay.promote(ForestId(index), actor, f32::from(wood))?;
+         }
++        #[cfg(feature = "ee2-valley166-forest-clock")]
++        if timed && !replay.has_timing() { return None; }
+         Some(replay)
+     }
+ }
+diff --git a/src/native_valley37/mod.rs b/src/native_valley37/mod.rs
+--- a/src/native_valley37/mod.rs
++++ b/src/native_valley37/mod.rs
+@@ -180,7 +180,11 @@
+             let playable = locator.forest_play;
+             #[cfg(not(feature = "ee2-valley164-forest-play"))]
+             let playable = false;
+-            let replay = forest_replay163::ForestReplay::decode(source, &bytes, playable)?;
++            #[cfg(feature = "ee2-valley166-forest-clock")]
++            let timed = locator.forest_clock;
++            #[cfg(not(feature = "ee2-valley166-forest-clock"))]
++            let timed = false;
++            let replay = forest_replay163::ForestReplay::decode(source, &bytes, playable, timed)?;
+             game.valley_fixture.as_mut()?.forest_replay = Some(replay);
+         }
+         Some(game)
+diff --git a/src/native_valley37/save_wire.rs b/src/native_valley37/save_wire.rs
+--- a/src/native_valley37/save_wire.rs
++++ b/src/native_valley37/save_wire.rs
+@@ -38,6 +38,8 @@
+ const NEUTRAL: u32 = 4;
+ #[cfg(feature = "ee2-valley164-forest-play")]
+ const FOREST_PLAY: u32 = 8;
++#[cfg(feature = "ee2-valley166-forest-clock")]
++const FOREST_CLOCK: u32 = 16;
+ 
+ #[cfg(feature = "ee2-valley163-forest-qa")]
+ pub(super) fn forest_flags(fixture: &FixtureState) -> u32 {
+@@ -45,7 +47,12 @@
+         | if fixture.native_city_foundation { CITY } else { 0 }
+         | if fixture.neutral_opening { NEUTRAL } else { 0 };
+     #[cfg(feature = "ee2-valley164-forest-play")]
+-    if fixture.forest_replay.as_ref().is_some_and(|replay| replay.playable) { return flags | FOREST_PLAY; }
++    if let Some(replay) = fixture.forest_replay.as_ref().filter(|replay| replay.playable) {
++        #[cfg(feature = "ee2-valley166-forest-clock")]
++        if replay.has_timing() { return flags | FOREST_PLAY | FOREST_CLOCK; }
++        let _ = replay;
++        return flags | FOREST_PLAY;
++    }
+     flags
+ }
+ 
+@@ -68,6 +75,8 @@
+     pub(super) forest_replay: Option<Vec<u8>>,
+     #[cfg(feature = "ee2-valley164-forest-play")]
+     pub(super) forest_play: bool,
++    #[cfg(feature = "ee2-valley166-forest-clock")]
++    pub(super) forest_clock: bool,
+ }
+ 
+ pub(super) fn version(_fixture: &FixtureState) -> u32 {
+@@ -148,7 +157,14 @@
+             let allowed = FOREST | CITY | NEUTRAL;
+             #[cfg(feature = "ee2-valley164-forest-play")]
+             let allowed = allowed | FOREST_PLAY;
+-            if !(12..=12 + 335 * 8).contains(&sidecar.len()) || flags & FOREST == 0 || flags & !allowed != 0 { return None; }
++            let stride = 8;
++            #[cfg(feature = "ee2-valley166-forest-clock")]
++            let (allowed, stride) = {
++                let timed = flags & FOREST_CLOCK != 0;
++                if timed && flags & FOREST_PLAY == 0 { return None; }
++                (allowed | FOREST_CLOCK, if timed { 16 } else { stride })
++            };
++            if !(12..=12 + 335 * stride).contains(&sidecar.len()) || flags & FOREST == 0 || flags & !allowed != 0 { return None; }
+             (flags, Some(sidecar[4..].to_vec()))
+         } else {
+             if end != body_end { return None; }
+@@ -193,6 +209,8 @@
+         forest_replay,
+         #[cfg(feature = "ee2-valley164-forest-play")]
+         forest_play: flags & FOREST_PLAY != 0,
++        #[cfg(feature = "ee2-valley166-forest-clock")]
++        forest_clock: flags & FOREST_CLOCK != 0,
+     };
+     Some((&wire[HEADER..end], Some(locator)))
+ }
