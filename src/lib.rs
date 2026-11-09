@@ -2967,6 +2967,30 @@ pub extern "C" fn cmd_territory(target:u32,action:u32,give:u32,want:u32)->u32{
  let game=g();if !game.territory_valid(game.local,target,action,give,want){return 0;}
  let enc=|v:u32|if v==u32::MAX{-1.0}else{v as f32};game.submit(C_TERRITORY,enc(give),enc(want),(target|(action<<8)) as i32,&[]);1
 }
+#[cfg(feature = "ee2-native13")]
+static mut TERRITORY_GIFT_IDS: [u32; territory::TERR_GIFT_BATCH_MAX] = [NONE; territory::TERR_GIFT_BATCH_MAX];
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn territory_gift_batch_ptr() -> *mut u32 {
+    addr_of_mut!(TERRITORY_GIFT_IDS).cast::<u32>()
+}
+
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn cmd_territory_gift_batch(target: u32, count: u32) -> u32 {
+    if !(2..=territory::TERR_GIFT_BATCH_MAX as u32).contains(&count) {
+        return 0;
+    }
+    let ids = unsafe { std::slice::from_raw_parts(territory_gift_batch_ptr(), count as usize) };
+    let game = g();
+    if !game.territory_gift_batch_valid(game.local, target, ids) {
+        return 0;
+    }
+    let action = target | (territory::TERR_GIFT_BATCH_ACTION << 8);
+    game.submit(C_TERRITORY, -1.0, -1.0, action as i32, ids);
+    1
+}
 #[no_mangle]
 pub extern "C" fn territory_at(x:f32,y:f32)->u32{if !x.is_finite()||!y.is_finite()||x<0.0||y<0.0||x>=N as f32||y>=N as f32{return u32::MAX;}g().map.terr[tile_of(x,y)] as u32}
 #[no_mangle]

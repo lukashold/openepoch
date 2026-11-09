@@ -164,9 +164,18 @@ impl Game {
         #[cfg(feature="ee2-civ8")]
         if (1..=if cfg!(feature="ee2-pack8"){17}else{16}).contains(&kind){self.civ_setup_open=false;}
         if kind==C_TERRITORY{
-            if !hs.is_empty()||c<0||(c as u32)&0xffff_0000!=0{return;}
+            if c<0||(c as u32)&0xffff_0000!=0{return;}
+            let bits=c as u32;
+            #[cfg(feature="ee2-native13")]
+            if bits>>8==crate::territory::TERR_GIFT_BATCH_ACTION {
+                if a == -1.0 && b == -1.0 {
+                    self.apply_territory_gift_batch(team, bits & 255, hs);
+                }
+                return;
+            }
+            if !hs.is_empty(){return;}
             let dec=|v:f32|if v==-1.0{Some(u32::MAX)}else if v>=0.0&&v<32.0&&v.fract()==0.0{Some(v as u32)}else{None};
-            if let(Some(give),Some(want))=(dec(a),dec(b)){let bits=c as u32;self.apply_territory(team,bits&255,(bits>>8)&255,give,want);}return;
+            if let(Some(give),Some(want))=(dec(a),dec(b)){self.apply_territory(team,bits&255,(bits>>8)&255,give,want);}return;
         }
         if kind==C_DIPLOMACY {
             if !hs.is_empty()||b!=0.0||c<0||(c as u32)&0xff00_0000!=0{return;}

@@ -46,6 +46,10 @@ export function territoryPanel({wasm,referenceMode=false,onOrder,onRefresh,onFoc
  const counts=el('p',undefined,'territory-note'),policy=el('p',undefined,'territory-note'),reason=el('p',undefined,'territory-note'),warning=el('p',undefined,'territory-note territory-warning');
  const policyDetails=el('details',undefined,'territory-details');policyDetails.append(el('summary','Was wird mitgegeben?'),policy);
  const buttons=el('div',undefined,'territory-buttons'),gift=el('button','Territorium verschenken'),trade=el('button','Territorientausch anbieten');buttons.append(gift,trade);
+ const batchSupported=typeof wasm.cmd_territory_gift_batch==='function'&&typeof wasm.territory_gift_batch_ptr==='function';
+ const batchToggle=el('button','Zum Geschenk hinzufügen'),batchSummary=el('p',undefined,'territory-note');
+ batchToggle.type='button';batchToggle.hidden=!batchSupported;batchSummary.hidden=true;
+ giveField.append(batchToggle,batchSummary);
  const review=el('div',undefined,'territory-review'),reviewTitle=el('h4'),reviewText=el('p',undefined,'territory-note'),reviewRisk=el('p',undefined,'territory-note territory-warning'),reviewActions=el('div',undefined,'territory-buttons'),confirm=el('button','Übergabe bestätigen'),cancel=el('button','Abbrechen');reviewActions.append(confirm,cancel);review.append(reviewTitle,reviewText,reviewRisk,reviewActions);
  reviewTitle.id='territory-review-title';reviewText.id='territory-review-summary';reviewRisk.id='territory-review-risk';review.setAttribute('role','group');review.setAttribute('aria-labelledby',reviewTitle.id);
  const status=el('p',undefined,'territory-status');status.setAttribute('role','status');status.setAttribute('aria-live','polite');pane.append(incoming,outgoing,layout,counts,reason,warning,buttons,policyDetails,review,status);
@@ -54,6 +58,7 @@ export function territoryPanel({wasm,referenceMode=false,onOrder,onRefresh,onFoc
  inspectFocus.onclick=()=>{const territory=area(+inspectSelect.value);if(territory?.known)onFocus(territory);};
  inspectSelect.onchange=()=>{dirty=true;refresh(ui,target);};
  let ui=null,target=-1,selectionKey='',reviewed=null,mapKey='',tileIds=null,lastMap=-1,dirty=true;
+ let stagedIds=[];
  const ctx=canvas.getContext('2d');
  const data=()=>ui?.diplomacy;
  const opponent=()=>data()?.players.find(player=>player.team===target);
@@ -66,17 +71,65 @@ export function territoryPanel({wasm,referenceMode=false,onOrder,onRefresh,onFoc
   const buildings=territory.tributeBuildings??territory.buildings,units=territory.tributeUnits??territory.units,crew=territory.tributeGarrison??territory.garrison;
   return `${buildings} Gebäude${units!==undefined?`, ${units} Einheiten`:''}${crew?`, ${crew} Insassen`:''}`;
  }
- function renderReview(territory){reviewTitle.textContent=`${territory.name} an Spieler ${target+1} verschenken?`;reviewText.textContent=`Mitgabe: ${tributeSummary(territory)}. ${data().territoryPolicy||'Die Übergabe ändert den Besitzer des Gebiets.'}`;reviewRisk.hidden=!territory.lastTerritory;reviewRisk.textContent='Dies ist dein letztes Territorium. Bestehende Bündnisse werden aufgehoben. Ohne eigene Gebäude verlierst du die Partie.';confirm.setAttribute('aria-describedby',`${reviewTitle.id} ${reviewText.id}${territory.lastTerritory?' '+reviewRisk.id:''}`);}
+ function giftAreas(){
+  return stagedIds.length?stagedIds.map(area):[selectedGive()].filter(Boolean);
+ }
+ function coversLastTerritories(territories){
+  return territories.length===1?territories[0].lastTerritory:
+   territories.length===data().territories.filter(row=>row.owner===data().local).length;
+ }
+ function reviewedGift(territories){
+  return reviewed?.target===target&&reviewed.ids.length===territories.length&&
+   territories.every((row,index)=>row?.canGive&&row.id===reviewed.ids[index]);
+ }
+ function renderReview(territories){
+  const names=territories.map(row=>row.name).join(', ');
+  const contents=territories.map(row=>territories.length===1?tributeSummary(row):`${row.name}: ${tributeSummary(row)}`).join(' · ');
+  const last=coversLastTerritories(territories);
+  reviewTitle.textContent=`${names} an Spieler ${target+1} verschenken?`;
+  reviewText.textContent=`Mitgabe: ${contents}. ${data().territoryPolicy||'Die Übergabe ändert den Besitzer des Gebiets.'}`;
+  reviewRisk.hidden=!last;
+  reviewRisk.textContent=territories.length===1?
+   'Dies ist dein letztes Territorium. Bestehende Bündnisse werden aufgehoben. Ohne eigene Gebäude verlierst du die Partie.':
+   'Damit verschenkst du alle deine Territorien. Bestehende Bündnisse werden aufgehoben. Ohne eigene Gebäude verlierst du die Partie.';
+  confirm.setAttribute('aria-describedby',`${reviewTitle.id} ${reviewText.id}${last?' '+reviewRisk.id:''}`);
+ }
  function replaceOptions(select,list){const previous=select.value;select.replaceChildren();if(!list.length){select.append(new Option('Kein Territorium verfügbar',''));select.disabled=true;}else{select.disabled=false;select.append(...list.map(territory=>new Option(label(territory),String(territory.id))));if(list.some(territory=>String(territory.id)===previous))select.value=previous;}}
  function clearReview(){reviewed=null;review.hidden=true;}
- function command(action,giveId=NONE,wantId=NONE){
-  const result=wasm.cmd_territory(target,action,giveId,wantId);
-  if(result){status.textContent=action===0?'Gebietsgeschenk gesendet.':action===1?'Tauschangebot gesendet.':action===2?'Tauschangebot angenommen.':action===3?'Tauschangebot abgelehnt.':'Tauschangebot zurückgezogen.';clearReview();onOrder();}
+ function command(action,giveId=NONE,wantId=NONE,batchIds=null){
+  let result;
+  if(batchIds){
+   const ptr=wasm.territory_gift_batch_ptr();
+   new Uint32Array(wasm.memory.buffer,ptr,batchIds.length).set(batchIds);
+   result=wasm.cmd_territory_gift_batch(target,batchIds.length);
+  }else result=wasm.cmd_territory(target,action,giveId,wantId);
+  if(result){
+   status.textContent=batchIds?`${batchIds.length} Gebiete verschenkt.`:
+    action===0?'Gebietsgeschenk gesendet.':action===1?'Tauschangebot gesendet.':action===2?'Tauschangebot angenommen.':action===3?'Tauschangebot abgelehnt.':'Tauschangebot zurückgezogen.';
+   if(action===0)stagedIds=[];
+   clearReview();onOrder();
+  }
   else status.textContent='Übergabe derzeit nicht möglich. Prüfe den Gebietsbesitz und laufende Angebote.';
   onRefresh();dirty=true;
  }
- gift.onclick=()=>{const territory=selectedGive();if(!territory?.canGive)return;reviewed={id:territory.id,target};renderReview(territory);review.hidden=false;confirm.focus();};
- confirm.onclick=()=>{if(!reviewed||reviewed.target!==target||reviewed.id!==selectedGive()?.id)return clearReview();command(0,reviewed.id);};cancel.onclick=clearReview;
+ batchToggle.onclick=()=>{
+  const territory=selectedGive();
+  if(!batchSupported||!territory?.canGive)return;
+  const {id}=territory;
+  stagedIds=stagedIds.includes(id)?stagedIds.filter(value=>value!==id):[...stagedIds,id];
+  clearReview();dirty=true;refresh(ui,target);
+ };
+ gift.onclick=()=>{
+  const territories=giftAreas();
+  if(!territories.length||territories.some(row=>!row?.canGive))return;
+  reviewed={ids:territories.map(row=>row.id),target};
+  renderReview(territories);review.hidden=false;confirm.focus();
+ };
+ confirm.onclick=()=>{
+  if(!reviewedGift(giftAreas()))return clearReview();
+  if(reviewed.ids.length===1)command(0,reviewed.ids[0]);
+  else command(0,NONE,NONE,reviewed.ids);
+ };cancel.onclick=clearReview;
  trade.onclick=()=>{const a=selectedGive(),b=selectedWant();if(a&&b)command(1,a.id,b.id);};accept.onclick=()=>command(2);reject.onclick=()=>command(3);withdraw.onclick=()=>command(4);
  giveFocus.onclick=()=>{const territory=selectedGive();if(territory)onFocus(territory);};wantFocus.onclick=()=>{const territory=selectedWant();if(territory)onFocus(territory);};
  give.onchange=want.onchange=()=>{clearReview();status.textContent='';dirty=true;refresh(ui,target);};
@@ -87,16 +140,24 @@ export function territoryPanel({wasm,referenceMode=false,onOrder,onRefresh,onFoc
   if(pane.hidden||!data()||!ctx)return;const now=performance.now();if(!dirty&&now-lastMap<400)return;lastMap=now;dirty=false;
   const key=data().territories.map(territory=>`${territory.id}:${territory.x}:${territory.y}`).join('|');
   if(!tileIds||mapKey!==key){mapKey=key;tileIds=new Uint8Array(SIZE*SIZE);for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)tileIds[y*SIZE+x]=wasm.territory_at(x+.5,y+.5);}
-  const ptr=wasm.minimap(),pixels=new Uint8ClampedArray(wasm.memory.buffer,ptr,SIZE*SIZE*4).slice(),a=selectedGive()?.id,b=selectedWant()?.id,inspected=inspectSelect.value===''?null:+inspectSelect.value;
-  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){const i=y*SIZE+x,id=tileIds[i];if(id!==a&&id!==b&&id!==inspected)continue;const border=x===0||y===0||x===SIZE-1||y===SIZE-1||tileIds[i-1]!==id||tileIds[i+1]!==id||tileIds[i-SIZE]!==id||tileIds[i+SIZE]!==id,c=id===a?[79,158,232]:id===b?[229,189,87]:[238,243,222],alpha=border ? .95 : ((id===a||id===b) ? .18 : 0);for(let k=0;k<3;k++)pixels[i*4+k]=pixels[i*4+k]*(1-alpha)+c[k]*alpha;}
+  const ptr=wasm.minimap(),pixels=new Uint8ClampedArray(wasm.memory.buffer,ptr,SIZE*SIZE*4).slice(),given=new Set(giftAreas().map(row=>row?.id)),b=selectedWant()?.id,inspected=inspectSelect.value===''?null:+inspectSelect.value;
+  for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){const i=y*SIZE+x,id=tileIds[i],isGiven=given.has(id);if(!isGiven&&id!==b&&id!==inspected)continue;const border=x===0||y===0||x===SIZE-1||y===SIZE-1||tileIds[i-1]!==id||tileIds[i+1]!==id||tileIds[i-SIZE]!==id||tileIds[i+SIZE]!==id,c=isGiven?[79,158,232]:id===b?[229,189,87]:[238,243,222],alpha=border ? .95 : ((isGiven||id===b) ? .18 : 0);for(let k=0;k<3;k++)pixels[i*4+k]=pixels[i*4+k]*(1-alpha)+c[k]*alpha;}
   ctx.putImageData(new ImageData(pixels,SIZE,SIZE),0,0);
  }
  function refresh(next,nextTarget){
   ui=next;const d=data();if(!d?.territories)return;const p=d.players.find(player=>player.team===nextTarget);
-  if(target!==nextTarget){target=nextTarget;selectionKey='';clearReview();status.textContent='';dirty=true;}
+  if(target!==nextTarget){target=nextTarget;selectionKey='';stagedIds=[];clearReview();status.textContent='';dirty=true;}
   const own=d.territories.filter(territory=>territory.owner===d.local&&!territory.capitolProtected),theirs=d.territories.filter(territory=>territory.owner===target&&!territory.capitolProtected),protectedOwn=d.territories.find(territory=>territory.owner===d.local&&territory.capitolProtected),key=JSON.stringify([own,theirs].map(list=>list.map(territory=>[territory.id,territory.name,territory.buildings,territory.countsComplete])));
   if(selectionKey!==key){selectionKey=key;replaceOptions(give,own);replaceOptions(want,theirs);dirty=true;}
   const a=selectedGive(),b=selectedWant();
+  const validIds=stagedIds.filter(id=>area(id)?.canGive);
+  if(validIds.length!==stagedIds.length){stagedIds=validIds;dirty=true;}
+  const territories=giftAreas();
+  batchToggle.disabled=!p?.alive||!a?.canGive;
+  batchToggle.textContent=stagedIds.includes(a?.id)?'Aus Geschenk entfernen':'Zum Geschenk hinzufügen';
+  batchSummary.hidden=!stagedIds.length;
+  batchSummary.textContent=stagedIds.length?`Geschenk: ${territories.map(row=>row.name).join(', ')}`:'';
+  gift.textContent=territories.length>1?`${territories.length} Territorien verschenken`:'Territorium verschenken';
   const known=d.territories.filter(territory=>territory.known),inspected=inspectSelect.value;
   if(inspectSelect.dataset.key!==known.map(territory=>territory.id).join(',')){
    inspectSelect.dataset.key=known.map(territory=>territory.id).join(',');inspectSelect.replaceChildren(...known.map(territory=>new Option(territory.name,String(territory.id))));
@@ -107,10 +168,10 @@ export function territoryPanel({wasm,referenceMode=false,onOrder,onRefresh,onFoc
   if(inspectedArea?.capitolProtected)inspectText.textContent+=` ${inspectedArea.reason}.`;
   inspectCounts.hidden=!referenceMode||!inspectedArea?.known||!(inspectedArea.townCenters||inspectedArea.fortresses);
   inspectCounts.textContent=`Eigene Stadtzentren: ${inspectedArea?.townCenters||0} · Eigene Festungen: ${inspectedArea?.fortresses||0} / 2`;
-  if(reviewed&&(!p?.alive||!a?.canGive||reviewed.id!==a.id||reviewed.target!==target))clearReview();
-  if(reviewed)renderReview(a);
+  if(reviewed&&(!p?.alive||!reviewedGift(territories)))clearReview();
+  if(reviewed)renderReview(territories);
   const hostile=p?.relation===0||p?.theirRelation===0;
-  gift.disabled=!p?.alive||!a?.canGive;trade.disabled=!p?.alive||hostile||!a||!b||a.transferable===false||b.transferable===false||!!p.territoryOutgoing||p.territoryCooldown>0;accept.disabled=!p?.alive||hostile||!!p.territoryIncoming?.capitolProtected;
+  gift.disabled=!p?.alive||!territories.length||territories.some(row=>!row.canGive);trade.disabled=!p?.alive||hostile||!a||!b||a.transferable===false||b.transferable===false||!!p.territoryOutgoing||p.territoryCooldown>0;accept.disabled=!p?.alive||hostile||!!p.territoryIncoming?.capitolProtected;
   giveFocus.disabled=!a;wantFocus.disabled=!b;
   wantSummary.textContent=b?`${b.countsComplete===false?'Sichtbare Mitgabe':'Mitgabe'}: ${tributeSummary(b)}.${b.countsComplete===false?' Weitere Objekte können noch unbekannt sein.':''}`:'';
   counts.textContent=a?`${a.name} · Mitgabe: ${tributeSummary(a)}.`:protectedOwn?protectedOwn.reason:'Du besitzt derzeit kein Territorium.';
@@ -123,5 +184,5 @@ export function territoryPanel({wasm,referenceMode=false,onOrder,onRefresh,onFoc
   draw();
  }
  clearReview();incoming.hidden=true;outgoing.hidden=true;
- return {element:pane,refresh,activate(){dirty=true;draw();},reset(){clearReview();status.textContent='';selectionKey='';dirty=true;}};
+ return {element:pane,refresh,activate(){dirty=true;draw();},reset(){stagedIds=[];clearReview();status.textContent='';selectionKey='';dirty=true;}};
 }

@@ -7,7 +7,7 @@ import { researchPanel } from './research.js?v=rank-families';
 import {loadCrownArt,mountCrownProgress,mountCrownVictoryRows} from './crown-progress.js?v=native65';
 import {loadCrownStatusArt,readCrownActorVisuals,crownStatusSlots} from './crown-visuals.js?v=native58';
 import { originalResearchActions, researchCost, researchState } from './original-research-actions.js?v=rank-families';
-import { diplomacyPanel } from './diplomacy.js?v=capital139';
+import { diplomacyPanel } from './diplomacy.js?v=territory-batch154';
 import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=border107';
 import {loadNativeFontUI} from './original-font-ui.js?v=native21names';
 import {territoryClaimMessage} from './territory-help.js?v=native64-koth';
@@ -59,7 +59,7 @@ import {createOriginalReflection} from './original-reflection.js?v=visual-season
 import {NATIVE_SEASON_CHOICE,normalizeSeasonChoice,resolveSeasonChoice} from './original-seasons.js?v=native108';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=native108';
 import {checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=foreign-economy142';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=native116';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION as BASE_PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=native54';
@@ -189,14 +189,15 @@ const valleyRequested=rulesProfile.id==='up15'&&(!!valleyManifest||['1','archive
 try{
   if(valleyRequested){
     const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley76_commit','valley71_force_attack_at','valley71_neutral_opening','configure_late_population']:rulesProfile.requiredExports;
-    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=farm-angle148-valley'};
+    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=native116-valley'};
     try{wasm=await loadRulesWasm(previewRules,import.meta.url);}catch{/* The ordinary ruleset remains available. */}
   }
   wasm??=await loadRulesWasm(rulesProfile,import.meta.url);
 }catch(error){rulesLoadFailure(error);throw error;}
 // Upstream placement admission is part of the loaded UP engine's wire contract.
 const foreignConstructionVersion=wasm.foreign_construction_version?.()??0;
-const PROTOCOL_VERSION=rulesProfile.id==='up15'?BASE_PROTOCOL_VERSION+3+foreignConstructionVersion:
+const territoryGiftBatchVersion=typeof wasm.cmd_territory_gift_batch==='function'?1:0;
+const PROTOCOL_VERSION=rulesProfile.id==='up15'?BASE_PROTOCOL_VERSION+3+foreignConstructionVersion+territoryGiftBatchVersion:
   wasm.early_artillery_pack_version?.()===1?BASE_PROTOCOL_VERSION+1:BASE_PROTOCOL_VERSION;
 // Always take the pointer BEFORE touching memory.buffer: the call may grow (and detach) the memory.
 const u8 = (ptr, len) => new Uint8Array(wasm.memory.buffer, ptr, len);
@@ -1040,7 +1041,7 @@ function farmCursorPose(overMap=mouse.inside&&document.elementFromPoint(mouse.x,
 
 function rotateBuilding(direction,fine=false){
   if(!ghost)return;
-  if(ghost.nativeFarm){
+  if(ghost.nativeCursor){
     farmCursorPose();
     wasm.valley_farm_cursor_rotate(direction,fine?3:1);
     placementKey='';updatePlacement();return;
@@ -1075,7 +1076,7 @@ function ghostTile() {
 }
 function updatePlacement(now=performance.now(),farmPose){
   if(!ghost){buildingControls.hide();placementKey='';delete canvas.dataset.placement;return;}
-  if(ghost.nativeFarm){
+  if(ghost.nativeCursor){
     const pose=farmPose===undefined?farmCursorPose():farmPose;
     const size=footprintSize();
     if(!pose){
@@ -1084,13 +1085,13 @@ function updatePlacement(now=performance.now(),farmPose){
       buildingControls.update({name:ghost.name,id:ghost.id,yaw:Number.isFinite(yaw)?yaw:FARM_INITIAL_YAW,error:1,size});
       return;
     }
-    const [x,y,z,yaw]=pose,key=['farm',x,y,z,yaw,ui?.sel?.n,ui?.sel?.def,Math.floor(now/250)].join(':');
+    const [x,y,z,yaw]=pose,key=['native',ghost.id,x,y,z,yaw,ui?.sel?.n,ui?.sel?.def,Math.floor(now/250)].join(':');
     if(key===placementKey)return;placementKey=key;
     const error=wasm.valley_farm_cursor_error();
     const time=wasm.valley_farm_cursor_time_multiplier?.();
     const note=!error&&time===2?'Neutrales Land: doppelte Bauzeit':!error&&time===3?'Fremdes Gebiet: dreifache Bauzeit':'';
     buildingControls.update({name:ghost.name,id:ghost.id,yaw,error,size,note});
-    if(qaMode)canvas.dataset.placement=JSON.stringify({id:ghost.id,nativeFarm:true,pick:ghost.pick,x,y,z,yaw,error,size});
+    if(qaMode)canvas.dataset.placement=JSON.stringify({id:ghost.id,nativeFarm:ghost.id===2,nativeHouse:ghost.id===1,pick:ghost.pick,x,y,z,yaw,error,size});
     return;
   }
   const tile=ghostTile();
@@ -2181,7 +2182,7 @@ function frame(now) {
 
   const [x0, y0, x1, y1] = viewRect();
   let gid = -1, gx = 0, gy = 0;
-  let farmPose=ghost?.nativeFarm?farmCursorPose(undefined,now):null;
+  let farmPose=ghost?.nativeCursor?farmCursorPose(undefined,now):null;
   if(farmPose&&wasm.valley_farm_cursor_force_rotation){
     const step=farmAngleMemory.input(keys.has('Control'),now);
     if(step!==null){
@@ -2189,7 +2190,7 @@ function frame(now) {
       farmPose=farmCursorPose(undefined,now);
     }
   }
-  const ghostAt=ghost&&!ghost.nativeFarm?ghostTile():null;
+  const ghostAt=ghost&&!ghost.nativeCursor?ghostTile():null;
   if (ghostAt) { gid = ghost.id; [gx, gy] = ghostAt; }
   updatePlacement(now,farmPose);
   const n = farmPose?wasm.render_valley_farm_cursor(alpha,x0,y0,x1,y1):
@@ -2674,10 +2675,12 @@ function doAct(i, count=1) {
   if (a.k === 'b') {
     activeTargetOrder()?.cancel();
     const nativeFarm=a.id===2&&wasm.valley_farm_cursor_available?.()===1;
-    ghost={id:a.id,size:a.size,name:label(a.name,a.id),turn:0,manual:false,nativeFarm};
-    if(nativeFarm){
+    const nativeHouse=a.id===1&&wasm.valley_house_cursor_reset?.()===1;
+    const nativeCursor=nativeFarm||nativeHouse;
+    ghost={id:a.id,size:a.size,name:label(a.name,a.id),turn:0,manual:false,nativeCursor};
+    if(nativeCursor){
       farmAngleMemory.open(a.id);
-      wasm.valley_farm_cursor_reset(FARM_INITIAL_YAW);
+      if(nativeFarm)wasm.valley_farm_cursor_reset(FARM_INITIAL_YAW);
     }else farmAngleMemory.close();
     placementKey='';attackMode=false;sfx.play(20);updatePlacement();return;
   }
@@ -2819,7 +2822,7 @@ canvas.addEventListener('mousedown', e => {
     return;
   }
   if (ghost) {
-    if(ghost.nativeFarm){
+    if(ghost.nativeCursor){
       mouse.inside=true;
       if(!farmCursorPose(true))return;
       if(wasm.valley_farm_cursor_place()===1){
@@ -3077,9 +3080,9 @@ addEventListener('keydown', e => {
   if(ghost&&!e.metaKey&&(e.key==='Control'||k==='R'||e.code==='Comma'||e.code==='Period')){
     e.preventDefault();
     if(!e.repeat){
-      const direction=e.code==='Comma'||(ghost.nativeFarm&&e.key==='Control')?-1:1;
-      const fine=ghost.nativeFarm&&e.key==='Control'?e.altKey:e.shiftKey;
-      if(ghost.nativeFarm&&e.key==='Control')farmAngleMemory.controlPressed();
+      const direction=e.code==='Comma'||(ghost.nativeCursor&&e.key==='Control')?-1:1;
+      const fine=ghost.nativeCursor&&e.key==='Control'?e.altKey:e.shiftKey;
+      if(ghost.nativeCursor&&e.key==='Control')farmAngleMemory.controlPressed();
       rotateBuilding(direction,fine);
     }
     return;

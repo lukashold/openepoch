@@ -6,6 +6,10 @@ use core::fmt::Write;
 pub const TERR_MAGIC: u32 = 0x3152_4554; // TER1
 pub const TERR_BYTES: usize = 8 + 32 * 4 + 16 * 12 + 4 + 12 * 16;
 pub const TERR_NONE: u8 = 255;
+#[cfg(feature = "ee2-native13")]
+pub(crate) const TERR_GIFT_BATCH_ACTION: u32 = 5;
+#[cfg(feature = "ee2-native13")]
+pub(crate) const TERR_GIFT_BATCH_MAX: usize = 32;
 #[cfg(not(feature = "ee2-reference"))]
 const TERR_POLICY: &str = "Eigene Gebäude und Einheiten im Gebiet wechseln mitsamt Besatzung den Besitzer. Laufende Aufträge werden gestoppt und dem bisherigen Besitzer erstattet. Erforschte Technologien werden nicht übertragen.";
 #[cfg(feature = "ee2-reference")]
@@ -526,8 +530,7 @@ impl Game {
         let j = to as usize * 4 + from as usize;
         match action {
             0 => {
-                self.territory_event(from, to, 0, 0, give, NONE);
-                self.transfer_territories(from, to, give as u8, TERR_NONE);
+                self.gift_territory(from, to, give);
             }
             1 => {
                 self.territory.offers[i] = TerritoryOffer {
@@ -558,6 +561,42 @@ impl Game {
                 self.territory_event(from, to, 4, 0, o.give as u32, o.want as u32);
             }
             _ => return false,
+        }
+        true
+    }
+
+    fn gift_territory(&mut self, from: u8, to: u8, id: u32) {
+        self.territory_event(from, to, 0, 0, id, NONE);
+        self.transfer_territories(from, to, id as u8, TERR_NONE);
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn territory_gift_batch_valid(&self, from: u8, to: u32, ids: &[u32]) -> bool {
+        if !(2..=TERR_GIFT_BATCH_MAX).contains(&ids.len()) ||
+            !self.territory_valid(from, to, 0, ids[0], NONE) {
+            return false;
+        }
+        let mut seen = 0u32;
+        ids.iter().all(|&id| {
+            if id >= TERR_GIFT_BATCH_MAX as u32 || !self.territory_transferable(from, id) {
+                return false;
+            }
+            let bit = 1u32 << id;
+            let new = seen & bit == 0;
+            seen |= bit;
+            new
+        })
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn apply_territory_gift_batch(&mut self, from: u8, to: u32, ids: &[u32]) -> bool {
+        if !self.territory_gift_batch_valid(from, to, ids) {
+            return false;
+        }
+        // 00551273 walks one tribute list in order. Admit every ID first so a
+        // stale selection or forged payload cannot transfer part of a gift.
+        for &id in ids {
+            self.gift_territory(from, to as u8, id);
         }
         true
     }
@@ -961,6 +1000,41 @@ mod tests {
 
     #[cfg(feature = "ee2-native13")]
     #[test]
+    fn tribute_batch_preserves_input_order_and_standard_archive() {
+        let mut game = Game::new(7, 1, 0, 1, 0);
+        let home = u32::from(region(&game, 0));
+        let enemy = u32::from(region(&game, 1));
+        let (id, &(x, y)) = game.map.tseeds.iter().enumerate()
+            .find(|&(id, _)| game.towner[id] == TERR_NONE).unwrap();
+        game.spawn(TC, 0, x, y);
+        game.spawn(FORTRESS, 0, x + 2.0, y);
+        game.build_grid();
+        let expansion = id as u32;
+        let before = game.state_hash();
+        for invalid in [[home, home], [expansion, enemy], [expansion, u32::MAX]] {
+            assert!(!game.apply_territory_gift_batch(0, 1, &invalid));
+            assert_eq!(game.state_hash(), before);
+        }
+        game.save();
+        let mut sequential = Game::load(&game.savebuf).expect("unchanged source save format");
+        let order = [expansion, home];
+        let action = (TERR_GIFT_BATCH_ACTION << 8 | 1) as i32;
+        game.apply(0, crate::cmd::C_TERRITORY, 0.0, -1.0, action, &order);
+        assert_eq!(game.towner[home as usize], 0);
+        game.apply(0, crate::cmd::C_TERRITORY, -1.0, -1.0, action, &order);
+        for id in order {
+            assert!(sequential.apply_territory(0, 1, 0, id, NONE));
+            assert_eq!(game.towner[id as usize], 1);
+        }
+        assert_eq!(game.territory.log.iter().map(|event| event.give).collect::<Vec<_>>(), order);
+        sequential.civ_setup_open = game.civ_setup_open;
+        game.save();
+        sequential.save();
+        assert_eq!(game.savebuf, sequential.savebuf);
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    #[test]
     fn registered_capitol_territory_is_excluded_from_both_tribute_legs() {
         for mode in [5, 6] {
             let mut game = Game::new(7, 1, 0, 1, 0);
@@ -983,6 +1057,8 @@ mod tests {
             assert!(ui.contains("\"capitolProtected\":true"));
             let before = game.state_hash();
             assert!(!game.apply_territory(0, 1, 0, home[0], NONE));
+            assert!(!game.apply_territory_gift_batch(0, 1, &[expansion[0], home[0]]));
+            assert!(!game.apply_territory_gift_batch(0, 1, &[home[0], expansion[0]]));
             assert!(!game.apply_territory(0, 1, 1, home[0], expansion[1]));
             assert!(!game.apply_territory(0, 1, 1, expansion[0], home[1]));
             assert_eq!(game.state_hash(), before);

@@ -1,5 +1,5 @@
 import {RESOURCE_NAMES} from './economy-bar.js?v=economy4';
-import {territoryPanel} from './territory-panel.js?v=capital139';
+import {territoryPanel} from './territory-panel.js?v=territory-batch154';
 
 const RELATIONS=['Feindlich','Neutral','Verbündet'];
 const COLORS=['#448fff','#ef4540','#50ce62','#e5c33d'];
