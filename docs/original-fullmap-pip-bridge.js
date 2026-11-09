@@ -167,7 +167,7 @@ export function createFullmapPipBridge({gl, canvas, available, mainPose, setMain
       if (!frame) return null;
       const {pose,rect} = frame;
       const view = updateOriginalCamera({...pose},{},rect.width,rect.height,heightAt,ORIGINAL_PIP_CAMERA_PROFILE);
-      return {...frame,vp:view.vp};
+      return {...frame,vp:view.vp,view};
     },
     draw(delta, drawWorld, prepared) {
       const frame = prepared === undefined ? advanceFrame(delta) : prepared;

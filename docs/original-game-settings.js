@@ -6,7 +6,7 @@ const path='local-original/game-controls/settings-manifest.json';
 const digest='6ff33963fbcf7709e0469a0d3dae3b940b73056f82fe4fa43da872aa2f3bbbb8';
 const tabs=['audio','video','general','hotkeys'];
 const pieces=['ul','ll','lr','ur','top','left','bottom','right'];
-const fallback={...ORIGINAL_AUDIO_DEFAULTS,muted:false,voices:true,resolution:'2',effectDetail:'1',fullscreen:false};
+const fallback={...ORIGINAL_AUDIO_DEFAULTS,muted:false,voices:true,resolution:'2',effectDetail:'1',waterDetail:'2',fullscreen:false};
 const cssImage=url=>url?`url("${url}")`:'none';
 const position=(node,{x,y,width,height})=>Object.assign(node.style,{left:`${x}px`,top:`${y}px`,width:`${width}px`,height:`${height}px`});
 
@@ -182,7 +182,7 @@ export async function mountOriginalGameSettings({enabled=true,originalArt=false,
     if(!dialog.open||standard.disabled)return;
     const previous=current(), defaults_=typeof defaults==='function'?defaults():defaults;
     if(activeTab==='audio'){set({...previous,...ORIGINAL_AUDIO_DEFAULTS});audition();}
-    else if(activeTab==='video')set({...previous,resolution:defaults_.resolution,effectDetail:defaults_.effectDetail??fallback.effectDetail});
+    else if(activeTab==='video')set({...previous,resolution:defaults_.resolution,effectDetail:defaults_.effectDetail??fallback.effectDetail,waterDetail:defaults_.waterDetail??fallback.waterDetail});
     else if(activeTab==='general')set({...previous,fullscreen:defaults_.fullscreen});
   });
   dialog.addEventListener('close',()=>{if(!dialog.open)finish();});

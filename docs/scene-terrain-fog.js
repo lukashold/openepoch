@@ -10,7 +10,7 @@ export function createSceneTerrainFog(gl,{
 }) {
   const pass=allocate(gl,{width,height,stride:sourceYForward?stride:width,sourceYForward});
   const originalRows=sourceYForward?null:new Uint8Array(width*height);
-  const metrics={size:pass.size,uploads:0,mainDraws:0,pipDraws:0};
+  const metrics={size:pass.size,uploads:0,mainDraws:0,pipDraws:0,reflectionDraws:0,pipReflectionDraws:0};
   let countdown=0;
 
   function refresh(visibility,renderSeconds) {
@@ -30,13 +30,14 @@ export function createSceneTerrainFog(gl,{
 
   function draw(camera,vp,vao,graphicsQuality,indexCount=width*height*6) {
     const count=pass.draw({vp,vao,indexCount,graphicsQuality,minHeight});
-    if(count)metrics[camera==='pip'?'pipDraws':'mainDraws']++;
+    const key={main:'mainDraws',pip:'pipDraws',reflection:'reflectionDraws','pip-reflection':'pipReflectionDraws'}[camera];
+    if(count&&key)metrics[key]++;
     return count;
   }
 
   function reset() {
     countdown=0;
-    metrics.uploads=metrics.mainDraws=metrics.pipDraws=0;
+    metrics.uploads=metrics.mainDraws=metrics.pipDraws=metrics.reflectionDraws=metrics.pipReflectionDraws=0;
   }
 
   return {refresh,draw,reset,minHeight,metrics};

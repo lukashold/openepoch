@@ -45,18 +45,22 @@ import {createFrontendNamespace} from './render-namespace.js?v=granary211';
 import {ORIGINAL_SPEEDS, changeOriginalSpeed, checkOriginalTempo, loadOriginalTempo, originalStartingSpeed} from './original-game-tempo.js?v=native37';
 import {addF64, advanceAdaptiveSourceFrame, advanceSourceSoloFrame, createAdaptiveSourceClock, sampleSourceRenderFps, SOURCE_SOLO_INTERVAL, sourceRenderSeconds, sourceStepDelta, sourceWallInterval, storeF32} from './source-solo-clock.js?v=time-of-day160';
 import {mountOriginalGameOptions} from './original-game-options.js?v=native37';
-import {mountOriginalGameSettings} from './original-game-settings.js?v=native79-wake';
+import {mountOriginalGameSettings} from './original-game-settings.js?v=native-water-presentation231';
 import {createRenderActorMetadata} from './render-actor-metadata.js?v=pack8';
 import {createPackRenderMetadata} from './original-pack-states.js?v=pack-frame123';
 import {createNativePackSceneClock} from './original-pack-scene.js?v=pack-offscreen132';
 import {createMrlsPackAudio,mrlsPackAudioCatalog} from './mrls-pack-audio.js?v=mrls-pack133';
-import {createFullmapPipBridge} from './original-fullmap-pip-bridge.js?v=territory-camera223';
+import {createFullmapPipBridge} from './original-fullmap-pip-bridge.js?v=native-water-presentation231';
 import {loadOriginalGround,sampleGroundHeight} from './original-ground.js?v=native67';
 import {createCaptureGlow} from './capture-glow.js?v=native64-koth';
 import {loadOriginalTerrain} from './original-terrain.js?v=terrain-presentation227';
 import {loadTerrainBorderRenderer} from './terrain-border-renderer.js?v=terrain-presentation227';
-import {createSceneTerrainFog,admitsValleyTerrainFog} from './scene-terrain-fog.js?v=terrain-presentation227';
-import {loadOriginalWater} from './original-water.js?v=water-farm3';
+import {createSceneTerrainFog,admitsValleyTerrainFog} from './scene-terrain-fog.js?v=native-water-presentation231';
+import {loadOriginalWater} from './original-water.js?v=native-water-presentation231';
+import {createReflectionSceneSchedule,sourceWaterBodies,reflectionGridCamera} from './reflection-scene.js?v=native-water-presentation231';
+import {createSourceReflectionTargets} from './reflection-targets.js?v=native-water-presentation231';
+import {createNativeReflectionGrid} from './reflection-grid.js?v=native-water-presentation231';
+import {createNativeReflectionWarp} from './native-reflection-warp.js?v=native-water-presentation231';
 import {createOriginalReflection,reflectedViewProjection} from './original-reflection.js?v=visual-seasons2';
 import {NATIVE_SEASON_CHOICE,normalizeSeasonChoice,resolveSeasonChoice} from './original-seasons.js?v=native108';
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=native108';
@@ -561,7 +565,12 @@ function uploadTerrain() {
 function uploadOriginalTerrainClasses(){
   const types=wasm.terrain_types_ptr&&wasm.terrain_types_len?.()===MAP*MAP?u8(wasm.terrain_types_ptr(),MAP*MAP).slice():undefined;
   originalTerrain.updateMap({heights,types});
-  originalWater.updateMap({heights,types});
+  const waterChanged=originalWater.updateMap({heights,types});
+  if(reflectionSchedule&&(waterChanged||sourceWaterSession!==wasm.render_meta_session())){
+    sourceWaterSession=wasm.render_meta_session();
+    reflectionSchedule.reset(sourceWaterBodies(heights,MAP));
+    resetSourceWaterTargets();
+  }
 }
 const groundAt = (x, y) => {
   if(valleyWorld)return wasm.valley37_view_ground(x,y);
@@ -857,7 +866,36 @@ try{const previous=localStorage.getItem('openepoch-map-climate');if(previous!==n
 climateControl.onchange=()=>{try{localStorage.setItem('openepoch-map-climate',climateControl.value);}catch{/* optional preference */}};
 const menuClimate=()=>checkedClimate(+climateControl.value,climates);
 const originalReflection=createOriginalReflection(gl);
-let reflectionError=null;
+const reflectionTargets=referenceMode&&originalWater.enabled&&gl.getContextAttributes().stencil
+  ?createSourceReflectionTargets(gl):null;
+const waterDetailKey='openepoch-water-detail';
+let waterDetail=2,sourceWaterSession,sourceWaterQuality,sourceWaterClock=0,sourceWaterSlots=[];
+try{
+  const stored=localStorage.getItem(waterDetailKey);
+  if(['0','1','2'].includes(stored))waterDetail=Number(stored);
+}catch{/* optional preference */}
+function resetSourceWaterTargets(){
+  reflectionTargets.reset();
+  sourceWaterQuality=waterDetail;
+  sourceWaterClock=0;
+  sourceWaterSlots=waterDetail?[0,1].map(()=>createNativeReflectionWarp({requestedMode:waterDetail===2?1:0})):[];
+}
+const reflectionSchedule=reflectionTargets&&createReflectionSceneSchedule({mapHeight:MAP,targetSupported:reflectionTargets.targetSupported});
+let reflectionError=null,sourceReflectionError=null;
+function drawSourceWater(frame,role,view,width,height) {
+  const index=role==='main'?0:1;
+  const bodies=reflectionSchedule.refreshDirect(frame,role);
+  frame.visible[role]=bodies.length;
+  const warp=sourceWaterSlots[index];
+  const reflection=warp&&bodies.length&&!sourceReflectionError&&reflectionTargets.targetSupported()
+    ?frame.images[role]??reflectionTargets.sample(index):null;
+  const grid=reflection?createNativeReflectionGrid({
+    camera:reflectionGridCamera(frame.direct[index].camera),screenWidth:width,screenHeight:height,
+    columns:warp.side,rows:warp.side,offsets:warp.advance(frame.delta),
+  }):null;
+  originalWater.drawSourceWater({role,bodies,grid,vp:view.vp,time:sourceWaterClock,fogTexture,detail:waterDetail,
+    reflectionTime:warp?.elapsed??0,reflectionTexture:reflection?.texture});
+}
 await loadOriginalEpochIcons(originalAssets,originalModels.manifest);
 if(qaMode){
   canvas.dataset.originalGroundBindings=String(originalGround.entries.size);
@@ -1836,7 +1874,8 @@ function playHillCapture(kind,x,y) {
 }
 function advance(dt, now) {
   let visualSeconds = dt * speed;
-  const packStartTick=packScene?wasm.game_tick()>>>0:0;
+  const readSimulationDelta=packScene||reflectionSchedule;
+  const packStartTick=readSimulationDelta?wasm.game_tick()>>>0:0;
   let packSeconds=null;
   if (net?.sourceRounds) {
     net.refreshLink?.(now);
@@ -1886,12 +1925,12 @@ function advance(dt, now) {
     if (steps) simMs += ((performance.now() - t0) / steps - simMs) * 0.1;
     if (acc > TICK) acc = TICK;                          // drop time instead of stalling the frame
   }
+  if(readSimulationDelta&&packSeconds===null){
+    packSeconds=0;
+    const steps=((wasm.game_tick()>>>0)-packStartTick)>>>0,step=wasm.sim_step_seconds();
+    for(let i=0;i<steps;i++)packSeconds=storeF32(addF64(packSeconds,step));
+  }
   if(packScene){
-    if(packSeconds===null){
-      packSeconds=0;
-      const steps=((wasm.game_tick()>>>0)-packStartTick)>>>0,step=wasm.sim_step_seconds();
-      for(let i=0;i<steps;i++)packSeconds=storeF32(addF64(packSeconds,step));
-    }
     packScene.advance(packSeconds,wasm.sim_elapsed_seconds());
     mrlsPack?.advance(packSeconds,wasm.sim_elapsed_seconds());
   }
@@ -1958,7 +1997,7 @@ function advance(dt, now) {
     }
   }
   if(n||impacts||beamStarts)wasm.events_clear();
-  return visualSeconds;
+  return {visualSeconds,simulationSeconds:packSeconds??0};
 }
 // A hidden tab gets no animation frames, but a multiplayer peer must keep simulating.
 setInterval(() => {
@@ -2119,7 +2158,7 @@ function drawSpyExtraction(view,renderTime) {
   return `${decals}:${timers}`;
 }
 
-function drawFullmapPipScene(pipView, alpha, renderEpochs, now, mission, preparedSailMetadata) {
+function drawFullmapPipScene(pipView, alpha, renderEpochs, now, mission, preparedSailMetadata, sourceFrame) {
   const {vp,eye,zoom,width,height} = pipView;
   const corners = [[0,0],[width,0],[width,height],[0,height]].map(([x,y])=>{
     const ray=originalCameraRay(pipView,x,y,width,height);
@@ -2143,7 +2182,8 @@ function drawFullmapPipScene(pipView, alpha, renderEpochs, now, mission, prepare
     originalModels.draw({data,ranges,vp,eye,zoom,epochs:renderEpochs,actorMetadata,preparedSailMetadata,capture:true,hercBeamMuzzles,packScene});
   }
   if(originalWater.enabled){
-    originalWater.drawWater({vp,time:now/1000,fogTexture});
+    if(sourceFrame)drawSourceWater(sourceFrame,'pip',pipView,width,height);
+    else originalWater.drawWater({vp,time:now/1000,fogTexture});
   }else{
     gl.enable(gl.BLEND);gl.depthMask(false);
     originalTerrain.drawWater({vao:vaoW,vp,time:now/1000,eye,fogTexture});
@@ -2216,7 +2256,7 @@ function frame(now) {
   panCameraScreen(moveRight,moveDown);
   updateCamera();
 
-  const visualSeconds = advance(dt, now);
+  const {visualSeconds,simulationSeconds} = advance(dt, now);
   guidedImpactFX?.advance(wasm.sim_elapsed_seconds(),airMissionFlag?.normalWind());
   const hercBeamMuzzles=hercBeam?new Map():null;
   updateInitialCeasefire();
@@ -2295,8 +2335,9 @@ function frame(now) {
   const ghostAt=ghost&&!ghost.nativeCursor?ghostTile():null;
   if (ghostAt) { gid = ghost.id; [gx, gy] = ghostAt; }
   updatePlacement(now,farmPose);
-  const n = farmPose?wasm.render_valley_farm_cursor(alpha,x0,y0,x1,y1):
+  const collectMain = () => farmPose?wasm.render_valley_farm_cursor(alpha,x0,y0,x1,y1):
     (wasm.render_rotated||wasm.render)(alpha, x0, y0, x1, y1, gid, gx, gy,ghost?.turn||0);
+  const n=collectMain();
   if (!n) originalModels.clearResourcePicks();
   const ranges = n ? new Uint32Array(wasm.memory.buffer, wasm.ranges_ptr(), renderNamespace.rangeLength) : null;
   const renderEpochs=[0,1,2,3].map(t=>wasm.stat(t,0));
@@ -2334,7 +2375,19 @@ function frame(now) {
   if(qaMode&&sourceSails)canvas.dataset.sourceSails=JSON.stringify(sourceSails.metrics);
   const terrainCameraActive=!!territoryBorders?.geometry&&(!!valleyWorld||originalTerrain.enabled);
   const preparedPip=terrainCameraActive?fullmapPip.prepare(dt):undefined;
-  if(terrainCameraActive){
+  const sourceActive=reflectionSchedule&&!valleyWorld&&originalTerrain.enabled;
+  if(sourceActive&&waterDetail!==sourceWaterQuality){
+    reflectionSchedule.resetCameraLists();
+    resetSourceWaterTargets();
+  }
+  const sourceFrame=sourceActive?reflectionSchedule.prepare({main:{view},pip:preparedPip?{view:preparedPip.view}:null,
+    screenWidth:canvas.width,screenHeight:canvas.height,qualitySetting:sourceReflectionError?0:waterDetail}):null;
+  if(sourceFrame){
+    sourceFrame.images={};sourceFrame.visible={};sourceFrame.delta=simulationSeconds;
+    sourceWaterClock=Math.fround(sourceWaterClock+sourceFrame.delta);
+  }
+  if(terrainCameraActive&&sourceFrame)territoryBorders.prepareGeometry(sourceFrame.preparation);
+  else if(terrainCameraActive){
     const cameras=[];
     if(!valleyWorld&&!reflectionError){
       cameras.push({id:'reflection',vp:reflectedViewProjection(view.vp)});
@@ -2345,7 +2398,26 @@ function frame(now) {
     territoryBorders.prepareGeometry(cameras);
   }
   let reflection=null;
-  if(!valleyWorld&&originalTerrain.enabled&&!reflectionError){
+  if(sourceFrame){
+    if(sourceFrame.captures.length){
+      try{
+        const count=(wasm.render_rotated||wasm.render)(alpha,0,0,MAP,MAP,-1,0,0,0);
+        const data=f32(wasm.inst_ptr(),count*STRIDE);
+        const reflectionRanges=new Uint32Array(wasm.memory.buffer,wasm.ranges_ptr(),renderNamespace.rangeLength);
+        const reflectedActors=packMetadata?packMetadata.snapshot(packActorReader.snapshot({count,instances:data,namespace:renderNamespace})):null;
+        for(const camera of sourceFrame.captures){
+          sourceFrame.images[camera.role]=reflectionTargets.capture(camera,pass=>{
+            originalTerrain.drawTerrain({vao:vaoT,px,fogTexture,territoryTexture,deferFogAbove:lateFog?.minHeight??null,...pass});
+            if(count)originalModels.draw({data,ranges:reflectionRanges,epochs:renderEpochs,zoom:cam.zoom,
+              actorMetadata:reflectedActors,preparedSailMetadata:actorMetadata,packScene,...pass});
+            lateFog?.draw(camera.id,pass.vp,vaoT,+$('quality').value);
+          });
+        }
+      }catch(error){sourceReflectionError=String(error);console.warn('Source water reflection:',error);}
+      finally{if(collectMain()!==n)throw Error('Reflection changed direct render collection');}
+    }
+    reflection=sourceFrame.images.main??null;
+  }else if(!valleyWorld&&originalTerrain.enabled&&!reflectionError){
     const scale=+$('quality').value>1?1:.5;
     try{
       reflection=originalReflection.render({vp:view.vp,eye:view.eye,width:Math.max(1,Math.round(w*scale)),height:Math.max(1,Math.round(h*scale)),
@@ -2431,7 +2503,8 @@ function frame(now) {
   // Native base-water depth/alpha followed by the separate reflection overlay.
   gl.enable(gl.BLEND); gl.depthMask(false);
   if(!valleyWorld&&originalWater.enabled){
-    originalWater.drawWater({vp:view.vp,time:now/1000,fogTexture,reflectionTexture:reflection?.texture,reflectionVP:reflection?.vp});
+    if(sourceFrame)drawSourceWater(sourceFrame,'main',view,canvas.width,canvas.height);
+    else originalWater.drawWater({vp:view.vp,time:now/1000,fogTexture,reflectionTexture:reflection?.texture,reflectionVP:reflection?.vp});
     if(qaMode)canvas.dataset.originalWater=JSON.stringify(originalWater.metrics);
   }else if(!valleyWorld&&originalTerrain.enabled){
     originalTerrain.drawWater({vao:vaoW,vp:view.vp,time:now/1000,eye:view.eye,fogTexture,reflectionTexture:reflection?.texture,reflectionVP:reflection?.vp});
@@ -2487,7 +2560,10 @@ function frame(now) {
   crownVictoryRows.animate(now);
   if (now - lastMini > 250) { lastMini = now; drawMini(); }
   fullmap?.paint(now,ui,corners);
-  if(fullmapPip.isOpen())fullmapPip.draw(dt,pipView=>drawFullmapPipScene(pipView,alpha,renderEpochs,now,mission,actorMetadata),preparedPip);
+  if(fullmapPip.isOpen())fullmapPip.draw(dt,pipView=>drawFullmapPipScene(pipView,alpha,renderEpochs,now,mission,actorMetadata,sourceFrame),preparedPip);
+  if(qaMode&&reflectionTargets)canvas.dataset.sourceWaterReflection=JSON.stringify({error:sourceReflectionError,
+    detail:waterDetail,planned:sourceFrame?.captures.map(row=>row.role)??[],rendered:Object.keys(sourceFrame?.images??{}),
+    visible:sourceFrame?.visible??{},metrics:reflectionTargets.metrics,water:originalWater.metrics.source??{}});
   if(qaMode&&territoryBorders)canvas.dataset.territoryBorders=JSON.stringify(territoryBorders.metrics);
   if(qaMode&&lateFog)canvas.dataset.nativeTerrainFog=JSON.stringify(lateFog.metrics);
   finishPriestEffectsFrame();
@@ -2895,8 +2971,12 @@ if(wakeEnabled){
 }
 const gameSettings=await mountOriginalGameSettings({
   enabled:hasOriginalTempo,originalArt:originalEnabled,
-  read:()=>({...sfx.originalAudioSettings(),muted:sfx.isMuted(),voices:sfx.isSpeechEnabled(),
-    resolution:$('quality').value,effectDetail:String(boatWake?.detail()??1),fullscreen:fullscreen.active}),
+  read(){
+    $('native-settings-water').disabled=!reflectionTargets||!!valleyWorld;
+    return {...sfx.originalAudioSettings(),muted:sfx.isMuted(),voices:sfx.isSpeechEnabled(),
+      resolution:$('quality').value,effectDetail:String(boatWake?.detail()??1),
+      waterDetail:String(waterDetail),fullscreen:fullscreen.active};
+  },
   previewAudio(settings){sfx.setOriginalAudioSettings(settings);updateAudioButtons();},
   apply(settings){
     sfx.setMuted(settings.muted);sfx.commitOriginalAudioSettings(settings);sfx.setSpeechEnabled(settings.voices);
@@ -2904,6 +2984,10 @@ const gameSettings=await mountOriginalGameSettings({
     if(!wakeDetailSelect.disabled){
       const detail=boatWake.setDetail(Number(settings.effectDetail));
       try{localStorage.setItem(wakeDetailKey,String(detail));}catch{/* optional local setting storage */}
+    }
+    if(reflectionTargets&&['0','1','2'].includes(settings.waterDetail)){
+      waterDetail=Number(settings.waterDetail);
+      try{localStorage.setItem(waterDetailKey,settings.waterDetail);}catch{/* optional preference */}
     }
     if(fullscreen.active!==settings.fullscreen)void fullscreen.toggle();
   },
