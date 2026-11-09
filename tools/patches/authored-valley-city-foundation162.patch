@@ -1,0 +1,361 @@
+diff --git a/src/game.rs b/src/game.rs
+--- a/src/game.rs
++++ b/src/game.rs
+@@ -165,7 +165,7 @@
+     pub stuck: u8,
+     pub carry: f32,
+     pub flash: f32,
+-    /// Workers: resource kind they were gathering before being pulled off to build.
++    /// Workers: previous gathering resource. Authored Valley City foundations: first labor flag.
+     pub prev: u8,
+     /// Transports: unit type and health (percent) of each passenger.
+     pub cargo: [DefId; CARGO_MAX],
+@@ -1684,6 +1684,8 @@
+                 mix(e.y.to_bits());
+                 mix(e.hp.to_bits());
+                 mix(e.built.to_bits());
++                #[cfg(feature = "ee2-valley74-city-footprint")]
++                if self.uses_valley_city_foundation(e.def) && e.built < 1.0 { mix(u32::from(e.prev)); }
+                 if DEFS[e.def as usize].building{mix(e.rot.to_bits());}
+                 mix(e.carry.to_bits());
+                 mix(e.qt.to_bits());
+@@ -2353,10 +2355,12 @@
+         #[cfg(feature = "ee2-native13")]
+         if self.ents[j].def == crate::koth64::HILL { return; }
+         #[cfg(feature = "ee2-valley74-city-footprint")]
+-        if self.valley_house_awaiting_labor(&self.ents[j]) { return; }
++        if self.valley_house_awaiting_labor(&self.ents[j]) || self.valley_city_awaiting_labor(&self.ents[j]) { return; }
+         let (team, td) = (self.ents[j].team, &DEFS[self.ents[j].def as usize]);
+         let m = MULT[kind as usize][td.armor as usize] * self.players[team as usize].dfn[class_of(td)];
+         let protected = self.god_mode_for(team);
++        #[cfg(feature = "ee2-valley74-city-footprint")]
++        let protected = protected || self.damage_valley_city_foundation(j, dmg * m);
+         let t = &mut self.ents[j];
+         if !protected { t.hp -= dmg * m; }
+         t.flash = 0.12;
+@@ -2373,11 +2377,13 @@
+         #[cfg(feature = "ee2-native13")]
+         if def == crate::koth64::HILL { return; }
+         #[cfg(feature = "ee2-valley74-city-footprint")]
+-        if self.valley_house_awaiting_labor(&self.ents[j]) { return; }
++        if self.valley_house_awaiting_labor(&self.ents[j]) || self.valley_city_awaiting_labor(&self.ents[j]) { return; }
+         let td=&DEFS[def as usize];
+         let native=crate::ee2_combat::multiplier_from_profile(attacker_profile,def,self.players[team as usize].epoch);
+         let m=native.unwrap_or(MULT[kind as usize][td.armor as usize])*self.players[team as usize].dfn[class_of(td)];
+         let protected = self.god_mode_for(team);
++        #[cfg(feature = "ee2-valley74-city-footprint")]
++        let protected = protected || self.damage_valley_city_foundation(j, dmg * m);
+         let t=&mut self.ents[j];if !protected {t.hp-=dmg*m;}t.flash=0.12;
+         let legacy_warning = {
+             #[cfg(feature = "ee2-native13")]
+@@ -2619,6 +2625,8 @@
+         if e.built < 1.0 && instant {
+             e.built = 1.0;
+             e.hp = self.max_hp(e.team,e.def);
++            #[cfg(feature = "ee2-valley74-city-footprint")]
++            if self.uses_valley_city_foundation(e.def) { e.prev = 0; }
+             #[cfg(feature = "ee2-native13")]
+             self.name_completed_city(i, *e);
+         }
+@@ -3348,15 +3356,21 @@
+         #[cfg(feature = "ee2-valley74-city-footprint")]
+         let native_house = self.uses_valley_house_construction(b.def);
+         #[cfg(feature = "ee2-valley74-city-footprint")]
++        let native_city = self.uses_valley_city_foundation(b.def);
++        #[cfg(feature = "ee2-valley74-city-footprint")]
+         let pending_house = self.valley_house_reserves_placement_only(&b);
+         #[cfg(feature = "ee2-valley74-city-footprint")]
+         if pending_house && !self.valley_house_labor_clear(&b, e.otgt) { return; }
+         let t = &mut self.ents[j];
+         #[cfg(feature = "ee2-valley74-city-footprint")]
+         if native_house { Self::advance_valley_house_health(t, maxhp, seconds, duration); }
++        #[cfg(feature = "ee2-valley74-city-footprint")]
++        if native_city { Self::advance_valley_city_foundation(t, maxhp, seconds, duration, true); }
+         #[cfg(not(feature = "ee2-valley74-city-footprint"))]
+         let native_house = false;
+-        if !native_house {
++        #[cfg(not(feature = "ee2-valley74-city-footprint"))]
++        let native_city = false;
++        if !native_house && !native_city {
+             let step = seconds / duration;
+             t.built = (t.built + step).min(1.0);
+             t.hp = (t.hp + maxhp * 0.9 * step).min(maxhp);
+diff --git a/src/imperial_construction60.rs b/src/imperial_construction60.rs
+--- a/src/imperial_construction60.rs
++++ b/src/imperial_construction60.rs
+@@ -54,15 +54,25 @@
+         let Some(fraction) = self.imperial_construction_fraction(caster.team, target) else { return; };
+         self.spend_unit_reserve(self.h(index), 1.0);
+         let site = self.ents[target];
+-        let new_progress = (site.built + fraction).min(1.0);
+-        let applied = new_progress - site.built;
+         let maximum = self.max_hp(site.team, site.def);
+-        self.ents[target].built = new_progress;
+-        self.ents[target].hp = (site.hp + maximum * 0.9 * applied).min(maximum);
++        #[cfg(feature = "ee2-valley74-city-footprint")]
++        let native_city = self.uses_valley_city_foundation(site.def);
++        #[cfg(not(feature = "ee2-valley74-city-footprint"))]
++        let native_city = false;
++        #[cfg(feature = "ee2-valley74-city-footprint")]
++        if native_city {
++            Self::advance_valley_city_foundation(&mut self.ents[target], maximum, fraction, 1.0, false);
++        }
++        if !native_city {
++            let new_progress = (site.built + fraction).min(1.0);
++            let applied = new_progress - site.built;
++            self.ents[target].built = new_progress;
++            self.ents[target].hp = (site.hp + maximum * 0.9 * applied).min(maximum);
++        }
+         #[cfg(feature = "ee2-valley74-city-footprint")]
+         if self.valley_house_reserves_placement_only(&site) { self.block(target, true); }
+         self.sync_city_ground_entry(target);
+-        if new_progress == 1.0 {
++        if self.ents[target].built == 1.0 {
+             if site.def == TC { self.name_completed_city(target, self.ents[target]); }
+             if site.team == self.local { self.ev(14.0, site.x, site.y); }
+             self.wonder_notice(crate::wonders61::Notice::Completed, site.def, site.team);
+diff --git a/src/native_valley37/city_foundation162.rs b/src/native_valley37/city_foundation162.rs
+new file mode 100644
+--- /dev/null
++++ b/src/native_valley37/city_foundation162.rs
+@@ -0,0 +1,65 @@
++//! Normalized construction health for new authenticated Valley City Centers.
++use crate::defs::{DefId, TC};
++use crate::game::{Ent, Game};
++use crate::source_clock38::{add_positive_f64, divide_positive_f32_as_f64, store_positive_f32};
++
++impl Game {
++    pub(super) fn enable_valley_city_foundation(&mut self) -> Option<()> {
++        let fixture = self.valley_fixture.as_mut()?;
++        if self.net || !fixture.native_house_assigned_clearance { return None; }
++        fixture.native_city_foundation = true;
++        Some(())
++    }
++
++    pub(crate) fn uses_valley_city_foundation(&self, def: DefId) -> bool {
++        def == TC && self.valley_fixture.as_ref().is_some_and(|fixture| fixture.native_city_foundation)
++    }
++
++    pub(crate) fn valley_city_awaiting_labor(&self, site: &Ent) -> bool {
++        self.uses_valley_city_foundation(site.def) && site.built < 1.0 && site.prev == 0
++    }
++
++    pub(crate) fn valid_valley_city_foundation(&self, site: &Ent) -> bool {
++        !self.uses_valley_city_foundation(site.def) ||
++            ((0.0..=1.0).contains(&site.built) && site.prev <= 1 && (site.built < 1.0 || site.prev == 0))
++    }
++
++    pub(crate) fn advance_valley_city_foundation(site: &mut Ent, maximum: f32, seconds: f32, duration: f32, labor: bool) {
++        if !(site.hp > 0.0 && site.built < 1.0 && seconds > 0.0 && duration > 0.0) { return; }
++        // 007E31B3 starts labor. The immediate Imperial health event 00826280 does not.
++        if labor { site.prev = 1; }
++        let health = Self::valley_city_normalized(site, maximum);
++        let work = divide_positive_f32_as_f64(seconds, duration);
++        Self::set_valley_city_health(site, maximum, store_positive_f32(add_positive_f64(f64::from(health), work).min(1.0)));
++    }
++
++    pub(crate) fn damage_valley_city_foundation(&mut self, index: usize, amount: f32) -> bool {
++        let site = self.ents[index];
++        if !self.uses_valley_city_foundation(site.def) || site.built >= 1.0 { return false; }
++        if site.hp <= 0.0 || amount <= 0.0 { return true; }
++        let maximum = self.max_hp(site.team, site.def);
++        let health = Self::valley_city_normalized(&site, maximum);
++        // 00825FD8–0082602E stores absolute health before and after subtraction.
++        let absolute = store_positive_f32(f64::from(health) * f64::from(maximum));
++        let remaining = store_positive_f32((f64::from(absolute) - f64::from(amount)).max(0.0));
++        let normalized = store_positive_f32(divide_positive_f32_as_f64(remaining, maximum));
++        Self::set_valley_city_health(&mut self.ents[index], maximum, normalized);
++        true
++    }
++
++    fn valley_city_normalized(site: &Ent, maximum: f32) -> f32 {
++        // Reuse the stored source word while the portable HP projection is current.
++        // A separate absolute health or max-HP adjustment is the next input.
++        if site.built > 0.0 && site.built * maximum == site.hp {
++            site.built
++        } else {
++            store_positive_f32(divide_positive_f32_as_f64(site.hp, maximum))
++        }
++    }
++
++    fn set_valley_city_health(site: &mut Ent, maximum: f32, normalized: f32) {
++        site.built = normalized;
++        site.hp = normalized * maximum;
++        if normalized >= 1.0 { site.prev = 0; }
++    }
++}
+diff --git a/src/native_valley37/mod.rs b/src/native_valley37/mod.rs
+--- a/src/native_valley37/mod.rs
++++ b/src/native_valley37/mod.rs
+@@ -20,6 +20,8 @@
+ #[cfg(feature = "ee2-valley74-city-footprint")]
+ mod city_footprint74;
+ #[cfg(feature = "ee2-valley74-city-footprint")]
++mod city_foundation162;
++#[cfg(feature = "ee2-valley74-city-footprint")]
+ mod house134;
+ #[cfg(feature = "ee2-valley71-neutral-qa")]
+ pub(crate) use neutral71::{FORCE_ATTACK, RAW_ATTACK_MODIFIER};
+@@ -152,6 +154,8 @@
+         if locator.native_house_movement { game.enable_valley_house_movement()?; }
+         #[cfg(feature = "ee2-valley74-city-footprint")]
+         if locator.native_house_assigned_clearance { game.enable_valley_house_assigned_clearance()?; }
++        #[cfg(feature = "ee2-valley74-city-footprint")]
++        if locator.native_city_foundation { game.enable_valley_city_foundation()?; }
+         Some(game)
+     })
+ }
+@@ -269,23 +273,29 @@
+ #[cfg(feature = "ee2-valley71-neutral-qa")]
+ #[no_mangle]
+ pub extern "C" fn valley71_commit(visibility: u32) -> u32 {
+-    commit_neutral_valley(visibility, false, false)
++    commit_neutral_valley(visibility, false, false, false)
+ }
+ 
+ #[cfg(feature = "ee2-valley74-city-footprint")]
+ #[no_mangle]
+ pub extern "C" fn valley75_commit(visibility: u32) -> u32 {
+-    commit_neutral_valley(visibility, true, false)
++    commit_neutral_valley(visibility, true, false, false)
+ }
+ 
+ #[cfg(feature = "ee2-valley74-city-footprint")]
+ #[no_mangle]
+ pub extern "C" fn valley76_commit(visibility: u32) -> u32 {
+-    commit_neutral_valley(visibility, true, true)
++    commit_neutral_valley(visibility, true, true, false)
++}
++
++#[cfg(feature = "ee2-valley74-city-footprint")]
++#[no_mangle]
++pub extern "C" fn valley77_commit(visibility: u32) -> u32 {
++    commit_neutral_valley(visibility, true, true, true)
+ }
+ 
+ #[cfg(feature = "ee2-valley71-neutral-qa")]
+-fn commit_neutral_valley(visibility: u32, _current_solo: bool, _assigned_clearance: bool) -> u32 {
++fn commit_neutral_valley(visibility: u32, _current_solo: bool, _assigned_clearance: bool, _city_foundation: bool) -> u32 {
+     if visibility > 2 { return 0; }
+     let prepared = STAGE.with(|stage| {
+         let mut stage = stage.borrow_mut();
+@@ -304,6 +314,11 @@
+         }
+         #[cfg(feature = "ee2-valley74-city-footprint")]
+         if _assigned_clearance && game.enable_valley_house_assigned_clearance().is_none() {
++            stage.game = None;
++            return false;
++        }
++        #[cfg(feature = "ee2-valley74-city-footprint")]
++        if _city_foundation && game.enable_valley_city_foundation().is_none() {
+             stage.game = None;
+             return false;
+         }
+diff --git a/src/native_valley37/save_wire.rs b/src/native_valley37/save_wire.rs
+--- a/src/native_valley37/save_wire.rs
++++ b/src/native_valley37/save_wire.rs
+@@ -24,6 +24,10 @@
+ const HOUSE_ASSIGNED_CLEARANCE_VERSION: u32 = 9;
+ #[cfg(feature = "ee2-valley74-city-footprint")]
+ const HOUSE_ASSIGNED_CLEARANCE_NEUTRAL_VERSION: u32 = 10;
++#[cfg(feature = "ee2-valley74-city-footprint")]
++const CITY_FOUNDATION_VERSION: u32 = 11;
++#[cfg(feature = "ee2-valley74-city-footprint")]
++const CITY_FOUNDATION_NEUTRAL_VERSION: u32 = 12;
+ 
+ pub(crate) struct Locator {
+     pub(super) map: [u8; 32],
+@@ -38,9 +42,15 @@
+     pub(super) native_house_movement: bool,
+     #[cfg(feature = "ee2-valley74-city-footprint")]
+     pub(super) native_house_assigned_clearance: bool,
++    #[cfg(feature = "ee2-valley74-city-footprint")]
++    pub(super) native_city_foundation: bool,
+ }
+ 
+ pub(super) fn version(_fixture: &FixtureState) -> u32 {
++    #[cfg(feature = "ee2-valley74-city-footprint")]
++    if _fixture.native_city_foundation {
++        return if _fixture.neutral_opening { CITY_FOUNDATION_NEUTRAL_VERSION } else { CITY_FOUNDATION_VERSION };
++    }
+     #[cfg(feature = "ee2-valley74-city-footprint")]
+     if _fixture.native_house_assigned_clearance {
+         return if _fixture.neutral_opening { HOUSE_ASSIGNED_CLEARANCE_NEUTRAL_VERSION } else { HOUSE_ASSIGNED_CLEARANCE_VERSION };
+@@ -89,7 +99,8 @@
+         #[cfg(feature = "ee2-valley74-city-footprint")]
+         CITY_MASK_VERSION | CITY_MASK_NEUTRAL_VERSION | HOUSE_CONSTRUCTION_VERSION | HOUSE_CONSTRUCTION_NEUTRAL_VERSION |
+         HOUSE_MOVEMENT_VERSION | HOUSE_MOVEMENT_NEUTRAL_VERSION |
+-        HOUSE_ASSIGNED_CLEARANCE_VERSION | HOUSE_ASSIGNED_CLEARANCE_NEUTRAL_VERSION => (),
++        HOUSE_ASSIGNED_CLEARANCE_VERSION | HOUSE_ASSIGNED_CLEARANCE_NEUTRAL_VERSION |
++        CITY_FOUNDATION_VERSION | CITY_FOUNDATION_NEUTRAL_VERSION => (),
+         _ => return None,
+     }
+     let size = u32::from_le_bytes(wire[8..12].try_into().ok()?) as usize;
+@@ -99,9 +110,11 @@
+     let neutral_opening = version == NEUTRAL_OPENING_VERSION;
+     #[cfg(feature = "ee2-valley74-city-footprint")]
+     let neutral_opening = neutral_opening || matches!(version, CITY_MASK_NEUTRAL_VERSION | HOUSE_CONSTRUCTION_NEUTRAL_VERSION |
+-        HOUSE_MOVEMENT_NEUTRAL_VERSION | HOUSE_ASSIGNED_CLEARANCE_NEUTRAL_VERSION);
++        HOUSE_MOVEMENT_NEUTRAL_VERSION | HOUSE_ASSIGNED_CLEARANCE_NEUTRAL_VERSION | CITY_FOUNDATION_NEUTRAL_VERSION);
+     #[cfg(feature = "ee2-valley74-city-footprint")]
+-    let native_house_assigned_clearance = matches!(version, HOUSE_ASSIGNED_CLEARANCE_VERSION | HOUSE_ASSIGNED_CLEARANCE_NEUTRAL_VERSION);
++    let native_city_foundation = matches!(version, CITY_FOUNDATION_VERSION | CITY_FOUNDATION_NEUTRAL_VERSION);
++    #[cfg(feature = "ee2-valley74-city-footprint")]
++    let native_house_assigned_clearance = native_city_foundation || matches!(version, HOUSE_ASSIGNED_CLEARANCE_VERSION | HOUSE_ASSIGNED_CLEARANCE_NEUTRAL_VERSION);
+     #[cfg(feature = "ee2-valley74-city-footprint")]
+     let native_house_movement = native_house_assigned_clearance || matches!(version, HOUSE_MOVEMENT_VERSION | HOUSE_MOVEMENT_NEUTRAL_VERSION);
+     #[cfg(feature = "ee2-valley74-city-footprint")]
+@@ -117,6 +130,8 @@
+         native_house_movement,
+         #[cfg(feature = "ee2-valley74-city-footprint")]
+         native_house_assigned_clearance,
++        #[cfg(feature = "ee2-valley74-city-footprint")]
++        native_city_foundation,
+     };
+     Some((&wire[HEADER..end], Some(locator)))
+ }
+diff --git a/src/native_valley37/start.rs b/src/native_valley37/start.rs
+--- a/src/native_valley37/start.rs
++++ b/src/native_valley37/start.rs
+@@ -47,6 +47,8 @@
+     pub(super) native_house_movement: bool,
+     #[cfg(feature = "ee2-valley74-city-footprint")]
+     pub(super) native_house_assigned_clearance: bool,
++    #[cfg(feature = "ee2-valley74-city-footprint")]
++    pub(super) native_city_foundation: bool,
+ }
+ 
+ impl Start {
+@@ -141,6 +143,8 @@
+             native_house_movement: false,
+             #[cfg(feature = "ee2-valley74-city-footprint")]
+             native_house_assigned_clearance: false,
++            #[cfg(feature = "ee2-valley74-city-footprint")]
++            native_city_foundation: false,
+         });
+         game.rebuild_territories();
+         game.build_grid();
+diff --git a/src/placement.rs b/src/placement.rs
+--- a/src/placement.rs
++++ b/src/placement.rs
+@@ -518,7 +518,7 @@
+         if i != NOIDX {
+             let health = self.max_hp(team, def) * 0.1;
+             #[cfg(feature = "ee2-valley74-city-footprint")]
+-            let health = if self.uses_valley_house_construction(def) { 1.0 } else { health };
++            let health = if self.uses_valley_house_construction(def) || self.uses_valley_city_foundation(def) { 1.0 } else { health };
+             self.pay(team, &cost, 1.0);
+             self.ents[i].built = 0.0;
+             self.ents[i].hp = health;
+diff --git a/src/save.rs b/src/save.rs
+--- a/src/save.rs
++++ b/src/save.rs
+@@ -696,6 +696,8 @@
+         }
+         for e in &g.ents[..high] {
+             if !e.alive {continue;}
++            #[cfg(feature = "ee2-valley74-city-footprint")]
++            if !g.valid_valley_city_foundation(e) { return None; }
+             #[cfg(feature="ee2-native13")]
+             let neutral_hill = e.team == crate::koth64::NATURE && e.def == crate::koth64::HILL && koth.is_some();
+             #[cfg(not(feature="ee2-native13"))]
