@@ -1,6 +1,7 @@
 // The EE2 profile uses locally extracted original recordings when available.
 // Procedural sounds and local speech remain the fallback for the standalone game.
-import { createOriginalAudio } from './original-audio.js?v=stage-reply140';
+import { createOriginalAudio } from './original-audio.js?v=infantry157';
+export {handlesOriginalInfantryReplies} from './original-infantry-replies.js?v=infantry157';
 import {ORIGINAL_AUDIO_DEFAULTS,originalAudioLevel,originalAudioGain} from './original-audio-levels.js?v=native38audio';
 import {originalOneShotAudible,originalLoopAudible,originalSpatialMix} from './original-spatial-audio.js?v=native39audio';
 import {createPresentationRandom} from './source-music-controller.js?v=regional11';
@@ -143,7 +144,8 @@ export function acknowledge(def, action, epoch=0,context=undefined,replyScope=un
   if(role.building)return originals.acknowledge(def,action,epoch,context);
   if(!role.mobile)return false;
   if(!speechEnabled)return false;
-  if(originals.playCitizenReply(def,action,epoch,context,replyScope)||originals.playSubmarineReply(def,action,epoch,replyScope)){
+  if(originals.playCitizenReply(def,action,epoch,context,replyScope)||originals.playSubmarineReply(def,action,epoch,replyScope)||
+     originals.playInfantryReply(def,action,epoch,replyScope)){
     window.speechSynthesis?.cancel();return true;
   }
   const now = performance.now(); if (now - lastSpeech < 900) return false;

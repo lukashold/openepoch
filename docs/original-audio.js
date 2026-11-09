@@ -1,4 +1,5 @@
 import {createUnitReplyPicker} from './original-citizen-replies.js?v=native112voice';
+import {loadInfantryReplyCatalog} from './original-infantry-replies.js?v=infantry157';
 import {createTypedAudioBindings} from './original-audio-bindings.js?v=native8';
 import {createRegionalMusicPlayback} from './original-regional-music.js?v=regional12';
 import {originalOneShotAudible} from './original-spatial-audio.js?v=native39audio';
@@ -9,6 +10,7 @@ import {playbackRate} from './air-flight-audio.js?v=native65-herc';
 // contains no recordings and remains usable when local-original is absent.
 const DEFAULT_BASE=new URL('./local-original/audio/',import.meta.url);
 const STONE_THROWER_LAUNCH=26;
+const UNIT_REPLIES=['citizen-reply','submarine-reply','infantry-reply'];
 const PRIEST_CUES=Object.freeze({
   32:{file:'Building_select.mp3',sha256:'e25cb0a14c057f20d40fd32566a481927b8751f191b19622beb169cd67792646',volume:1,maximumInstances:1},
   33:{file:'priest/fx_priest_convert.mp3',sha256:'89e788acae48316721f25c00a602c13616551a387fbc32638259e4b8259e7ea8',volume:.7,maximumInstances:4},
@@ -22,6 +24,7 @@ export function createOriginalAudio(options={}) {
   const buffers=new Map(),pending=new Map(),failed=new Set(),live=new Set(),counters=new Map();
   const pickUnitReply=options.citizenReplySeconds&&options.presentationRandom?
     createUnitReplyPicker(options.presentationRandom,options.citizenReplySeconds):null;
+  let infantryRepliesEnabled=false,infantryReplies=null,infantryLoading=null;
   const takeoffBuffers=new Map(),takeoffLoads=new Map();
   let takeoffEvents=new Map();
   let priestCues=false;
@@ -63,16 +66,18 @@ export function createOriginalAudio(options={}) {
   }
   function setDefinitionBindings({wasm=null,bindings=[],familyManifestURL:url=familyManifestURL,
     citizenPresentation:citizens=citizenPresentation,regionalMusic:useRegionalMusic=regionalMusicEnabled,
-    playbackManifestURL:playbackURL=playbackManifestURL,additionalFamilyManifest:additional=null}={}) {
+    playbackManifestURL:playbackURL=playbackManifestURL,additionalFamilyManifest:additional=null,
+    infantryReplies:useInfantry=infantryRepliesEnabled}={}) {
     if(url!==familyManifestURL){familyManifest=null;familyManifestURL=url;}
     citizenPresentation=citizens;
     regionalMusicEnabled=useRegionalMusic;
     playbackManifestURL=playbackURL;
+    infantryRepliesEnabled=useInfantry;
     if (!regionalMusicEnabled) regionalMusic?.reset();
     definitionSettings={wasm,bindings};
     additionalFamilyManifest=additional;
     bindFamilies();
-    if(manifest)prepareFamilyBindings();
+    if(manifest){prepareFamilyBindings();prepareInfantryReplies();}
   }
   const stats={voicePlays:0,effectPlays:0,musicStarts:0,ambientStarts:0};
 
@@ -238,7 +243,7 @@ export function createOriginalAudio(options={}) {
   }
   function stopVoices(includeUnitReplies=false) {
     for(const source of [...live])if(source.originalGroup==='voice'||
-      includeUnitReplies&&['citizen-reply','submarine-reply'].includes(source.originalGroup))stop(source);
+      includeUnitReplies&&UNIT_REPLIES.includes(source.originalGroup))stop(source);
   }
   function stopMusic(preserve=true) {
     musicGeneration++;
@@ -303,6 +308,14 @@ export function createOriginalAudio(options={}) {
     bindFamilies();
     for(const file of [...typed.usedFiles(),...(citizenPresentation?.usedFiles()||[])])load(file);
   }
+  function prepareInfantryReplies(){
+    if(!infantryRepliesEnabled)return null;
+    infantryLoading??=loadInfantryReplyCatalog(fetchFile,base).then(catalog=>{
+      infantryReplies=catalog;
+      for(const record of catalog.records)loadVerifiedEffect(record);
+    }).catch(()=>{});
+    return infantryLoading;
+  }
   async function prepare(context,destination,musicDestination=destination) {
     if(!enabled||typeof context?.decodeAudioData!=='function')return false;
     ctx=context;soundBus=destination;musicBus=musicDestination;
@@ -323,7 +336,7 @@ export function createOriginalAudio(options={}) {
         manifest=data;
         const warm=[...[...Object.values(data.voices),...(data.voiceVariants||[])].flatMap(voice=>[...(voice.select||[]),...(voice.order||[]),...(voice.attack||[])]),...Object.values(data.effects).map(x=>x.file),...Object.values(data.buildingSelections||{}).map(x=>typeof x==='string'?x:x.file),data.ambient?.loop,...(data.ambient?.birds||[])];
         for(const file of new Set(warm))load(file);
-        await prepareFamilyBindings();
+        await Promise.all([prepareFamilyBindings(),prepareInfantryReplies()]);
         return true;
       }).catch(()=>false);
     return loading;
@@ -341,15 +354,20 @@ export function createOriginalAudio(options={}) {
     else stats.effectPlays++;
     return true;
   }
-  function playUnitReply(plan,scope,group) {
+  function playUnitReply(plan,scope,group,verified=false) {
     if(!pickUnitReply||!scope||!manifest||muted||!speech||ctx?.state!=='running'||!plan?.records.length)return false;
-    const missing=plan.records.filter(record=>!buffers.has(record.file));
-    if(missing.length){for(const record of missing)load(record.file);return false;}
+    const buffer=record=>verified?takeoffBuffers.get(record.sha256):buffers.get(record.file);
+    const missing=plan.records.filter(record=>!buffer(record));
+    if(missing.length){for(const record of missing){if(verified)loadVerifiedEffect(record);else load(record.file);}return false;}
     const selected=pickUnitReply(plan,scope);
     if(selected===null)return true;
-    if(!selected||!start(buffers.get(selected.file),plan.gain*selected.volume,0,group))return false;
+    if(!selected||!start(buffer(selected),plan.gain*selected.volume,0,group))return false;
     stats.voicePlays++;
     return true;
+  }
+  function playInfantryReply(def,action,epoch,scope) {
+    if(!infantryRepliesEnabled)return false;
+    return playUnitReply(infantryReplies?.plan(def,action,epoch),scope,'infantry-reply',true);
   }
   function playCitizenReply(def,action,epoch,context,scope) {
     if(!['select','order'].includes(action)||!citizenPresentation?.isSourceContext(def,context))return false;
@@ -449,7 +467,7 @@ export function createOriginalAudio(options={}) {
     return !musicEnabled||!!tracks?.some(file=>!failed.has(file));
   }
   return {
-    prepare,acknowledge,playCitizenReply,playSubmarineReply,citizenDeath,effect,stoneThrowerLaunch,music,menuMusic,setDefinitionBindings,updateStoneThrowerWheels,stopStoneThrowerWheels,
+    prepare,acknowledge,playCitizenReply,playSubmarineReply,playInfantryReply,citizenDeath,effect,stoneThrowerLaunch,music,menuMusic,setDefinitionBindings,updateStoneThrowerWheels,stopStoneThrowerWheels,
     bindPriestCues,playPriestCue,bindGuidedImpact,playGuidedImpact,resetGuidedImpact,
     bindTakeoffEvents,playTakeoff,stopTakeoff,playInterfaceCue,frameAmbient,resetWorldAmbience,
     setAmbientPresentation(presentation){resetWorldAmbience();nativeAmbient=null;ambientPresentation=presentation;},
@@ -460,6 +478,6 @@ export function createOriginalAudio(options={}) {
     setSpeechEnabled(value){speech=value;if(!value)stopVoices(true);},
     setMusicEnabled(value){musicEnabled=value;if(!value){regionalMusic?.suspend();stopMusic();}},
     setAmbienceEnabled(value){ambienceEnabled=value;if(!value){stopLegacyAmbient();resetWorldAmbience();}},
-    status(){const regional=regionalMusic?.status()??null;return {typedAudio:typed.status(),citizens:citizenPresentation?.status()||null,enabled,ready:!!manifest,buffers:buffers.size,failed:[...failed],activeVoices:[...live].filter(x=>['voice','citizen-reply','submarine-reply'].includes(x.originalGroup)).length,music:!!musicSource||!!regional?.active,regionalMusic:regional,ambient:!!ambientSource,worldAmbience:nativeAmbient?.status()??null,...stats};}
+    status(){const regional=regionalMusic?.status()??null;return {typedAudio:typed.status(),citizens:citizenPresentation?.status()||null,enabled,ready:!!manifest,buffers:buffers.size,failed:[...failed],activeVoices:[...live].filter(x=>x.originalGroup==='voice'||UNIT_REPLIES.includes(x.originalGroup)).length,music:!!musicSource||!!regional?.active,regionalMusic:regional,ambient:!!ambientSource,worldAmbience:nativeAmbient?.status()??null,...stats};}
   };
 }

@@ -1,0 +1,452 @@
+diff --git a/Cargo.toml b/Cargo.toml
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -24,6 +24,7 @@
+ ee2-native13 = ["ee2-epoch-range13", "ee2-ai9-game-bridge"]
+ ee2-pangea104 = ["ee2-native13"]
+ ee2-pangea-huge10 = ["ee2-pangea104"]
++ee2-pangea-huge10-dock157 = ["ee2-pangea-huge10"]
+ ee2-authored-valley37 = ["ee2-native13"]
+ ee2-authored-valley37-qa-commit = ["ee2-authored-valley37"]
+ ee2-valley39-preview = ["ee2-authored-valley37"]
+diff --git a/src/cmd.rs b/src/cmd.rs
+--- a/src/cmd.rs
++++ b/src/cmd.rs
+@@ -43,6 +43,7 @@
+ #[cfg(feature="ee2-native13")]pub(crate) const C_LEADER_DIVERSION:u8=31;
+ #[cfg(feature="ee2-native13")]pub(crate) const C_LEADER_PURCHASE:u8=32;
+ #[cfg(feature="ee2-native13")]pub(crate) const C_IMPERIALISM:u8=33;
++#[cfg(feature="ee2-pangea-huge10-dock157")]pub(crate) const C_DOCK157:u8=49;
+ #[cfg(feature="ee2-native13")]pub(crate) const SOLO_RESIGN_SAVE_FLAG:u32=1<<11;
+ 
+ const HEAD: usize = 14; // kind, count, a, b, c
+@@ -237,6 +238,8 @@
+                 let def=(bits&mask)as DefId;let turn=bits>>shift;if def as usize>=DEFS.len()||turn>=crate::placement::ROTATION_STEPS{return;}
+                 self.begin_construction(team,def,a as i32,b as i32,turn,&ids,true);
+             }
++            #[cfg(feature="ee2-pangea-huge10-dock157")]
++            C_DOCK157 if c == 0 => self.dock157_place(team,[a,b],&ids),
+             C_TRAIN => {
+                 if let Some(&i)=ids.first().filter(|_|c>=0&&(cfg!(feature="ee2-roster6")||c<=255)) {
+                     self.train(i, c as QueueItem);
+diff --git a/src/dock157.rs b/src/dock157.rs
+new file mode 100644
+--- /dev/null
++++ b/src/dock157.rs
+@@ -0,0 +1,256 @@
++//! Original Dock snap and static shoreline rules for the private authored Huge map.
++use crate::{defs::DOCK, game::{Ent,Game,E0,NOIDX}, hotspot_start66::{quad_from_basis,raster_quad,snap_from_basis},
++            map::{N,R_NONE,tile_of}, pangea104::TerrainKind};
++
++const SIDE: usize = 251;
++const ARCHIVE: &[u8; SIDE * SIDE * 5] = include_bytes!("../../private-geometry/huge10-dock-shore.bin");
++const RADIUS: f64 = 6.0;
++const CIRCLE_STEP: f32 = f32::from_bits(0x3f66_6666) / RADIUS as f32;
++const TURN: f64 = f32::from_bits(0x40c9_0fdb) as f64;
++const QUARTER: f64 = f32::from_bits(0x3fc9_0fdb) as f64;
++const INITIAL: f32 = f32::from_bits(0xbf49_0fdb);
++const BODY: [f32; 2] = [f32::from_bits(0x4035_04f3), f32::from_bits(0x4087_c3b6)];
++const EXTRA_MARGIN: f32 = f32::from_bits(0x3fb5_04f3);
++const RASTER_EDGE: f32 = f32::from_bits(0x3a83_126f);
++const MAX_HEIGHT: f32 = f32::from_bits(0x3fe6_6666);
++const MIN_LAND: f64 = f32::from_bits(0x3dcc_cccd) as f64;
++const RIVER: u8 = 6;
++const OCEAN: u8 = 7;
++
++#[derive(Clone, Copy, Debug)]
++pub(crate) struct Pose {
++    pub(crate) center: [f32; 2],
++    pub(crate) yaw: f32,
++    pub(crate) normal: Option<[f32; 2]>,
++}
++
++struct Coast<'a> {
++    dimensions: [usize; 2],
++    heights: &'a [u8],
++    movement: Option<&'a [u8]>,
++}
++
++impl Coast<'static> {
++    fn archived() -> Self {
++        let (heights, movement) = ARCHIVE.split_at(SIDE * SIDE * 4);
++        Self { dimensions:[SIDE; 2], heights, movement:Some(movement) }
++    }
++}
++
++impl Coast<'_> {
++    fn index(&self, [x,z]: [i32; 2]) -> Option<usize> {
++        let [width,height] = self.dimensions;
++        (x >= 0 && z >= 0 && (x as usize) < width && (z as usize) < height)
++            .then(|| z as usize * width + x as usize)
++    }
++
++    fn height_at(&self, index: usize) -> f32 {
++        f32::from_le_bytes(self.heights[index*4..index*4+4].try_into().unwrap())
++    }
++
++    fn height(&self, point: [f32; 2]) -> Option<f32> {
++        let cell = point.map(|v| (((v as f64 + 103_079_215_104.0).to_bits() >> 16) as u32) as i32);
++        let [x,z] = cell;
++        let [fx,fz] = [point[0]-x as f32, point[1]-z as f32];
++        let sample = |p| self.index(p).map(|index| self.height_at(index));
++        let first = sample(cell)?;
++        let diagonal = sample([x+1,z+1])? - first;
++        let (low, high, edge) = if fz < fx { (fz,fx,[x+1,z]) } else { (fx,fz,[x,z+1]) };
++        let along = sample(edge)? as f64 - first as f64;
++        Some((low as f64 * diagonal as f64 + (high as f64 - low as f64) * along + first as f64) as f32)
++    }
++
++    fn tangent(&self, center: [f32; 2]) -> Option<[f32; 2]> {
++        let mut previous = None;
++        let mut first: Option<[i32; 2]> = None;
++        let mut angle = 0.0;
++        while angle < TURN {
++            let (sin,cos) = angle.sin_cos();
++            let x = center[0] as f64 + cos as f32 as f64 * RADIUS;
++            let z = (center[1] as f64 + sin as f32 as f64 * RADIUS) as f32;
++            let point = [x as i32,z as i32];
++            let next = self.index(point).map(|index| self.height_at(index) < 0.0);
++            if let (Some(before),Some(after)) = (previous,next) {
++                if before != after {
++                    if let Some(start) = first {
++                        let x = (point[0]-start[0]) as f64;
++                        let z = (point[1]-start[1]) as f64;
++                        let length = (x*x+z*z).sqrt();
++                        return Some(if length > 0.0 { [(x/length) as f32,(z/length) as f32] } else { [0.0; 2] });
++                    }
++                    first = Some(point);
++                }
++            }
++            previous = next;
++            angle = angle as f32 as f64 + CIRCLE_STEP as f64;
++        }
++        None
++    }
++
++    fn normal(&self, center: [f32; 2]) -> Option<[f32; 2]> {
++        let [x,z] = self.tangent(center)?;
++        let normal = [-z,x];
++        let [dx,dz] = normal.map(|v| (v as f64 * RADIUS) as f32);
++        let toward = [(center[0] as f64 + normal[0] as f64 * RADIUS) as f32,
++                      (center[1] as f64 + normal[1] as f64 * RADIUS) as f32];
++        if self.height(toward)? < 0.0 { return Some(normal); }
++        (self.height([center[0]-dx,center[1]-dz])? < 0.0).then_some([z,-x])
++    }
++
++    fn pose(&self, raw: [f32; 2], initial: f32) -> Option<Pose> {
++        let (sin,cos) = (initial as f64).sin_cos();
++        let center = snap_from_basis(raw,BODY,[cos as f32,sin as f32])?;
++        let normal = self.normal(center);
++        let yaw = normal.map_or(INITIAL, |[x,z]| {
++            let angle = (z as f64).atan2(x as f64);
++            let positive = if angle < 0.0 { angle + TURN } else { angle };
++            let dock = positive + QUARTER;
++            (if dock >= TURN { dock - TURN } else { dock }) as f32
++        });
++        Some(Pose { center,yaw,normal })
++    }
++
++    fn movement_at(&self, [x,z]: [i32; 2]) -> Option<u8> {
++        let movement = self.movement?;
++        let class = |point| {
++            let value = movement[self.index(point)?];
++            (value != 255).then_some(value)
++        };
++        let base = class([x,z])?;
++        if (5..=7).contains(&base) && self.height([x as f32+0.25,z as f32+0.25])? >= 0.0 {
++            return class([x+1,z+1]);
++        }
++        if base == 3 || class([x+1,z])? == 3 || class([x,z+1])? == 3 { return Some(3); }
++        Some(base)
++    }
++
++    fn terrain_allows(&self, pose: Pose) -> Option<bool> {
++        let (sin,cos) = (pose.yaw as f64).sin_cos();
++        let size = BODY.map(|axis| (axis + EXTRA_MARGIN) + RASTER_EDGE);
++        let quad = quad_from_basis(pose.center,size,[cos as f32,sin as f32])?;
++        let [width,height] = self.dimensions.map(|dim| dim as u32-1);
++        let raster = raster_quad(quad,width,height,true)?;
++        if raster.contains_outside_corner || raster.corners.is_empty() { return Some(false); }
++        let (mut wet,mut ocean) = (0,0);
++        for [x,z] in raster.corners.iter().copied() {
++            let index = self.index([x as i32,z as i32])?;
++            let surface = self.height_at(index);
++            if surface > MAX_HEIGHT { return Some(false); }
++            if surface < 0.0 {
++                wet += 1;
++                let class = self.movement_at([x as i32,z as i32])?;
++                if class == RIVER { return Some(false); }
++                ocean += usize::from(class == OCEAN);
++            }
++        }
++        let total = raster.corners.len();
++        Some(ocean >= 3 && wet*4 >= total && (total-wet) as f64 / total as f64 >= MIN_LAND)
++    }
++}
++
++impl Game {
++    pub(crate) fn dock157_enabled(&self) -> bool {
++        !self.net && self.map.pangea104.is_some_and(|layout| layout.terrain == TerrainKind::SourceHuge10)
++    }
++
++    pub(crate) fn dock157_preview(&mut self, raw: [f32; 2], ids: &[usize]) -> Option<(Pose,u32)> {
++        if !self.dock157_enabled() || raw.iter().any(|p| !p.is_finite() || *p < 2.0 || *p >= (SIDE-2) as f32) {
++            return None;
++        }
++        let terrain = Coast::archived();
++        let pose = terrain.pose(raw,INITIAL)?;
++        let error = self.dock157_admission(raw,pose,terrain,ids);
++        Some((pose,error))
++    }
++
++    fn dock157_admission(&mut self, raw: [f32;2], pose: Pose, terrain: Coast<'_>, ids: &[usize]) -> u32 {
++        if pose.normal.is_none() || terrain.terrain_allows(pose) != Some(true) { return 1; }
++        let side = Self::footprint_side(DOCK,0);
++        let [tx,ty] = raw.map(|coordinate| (coordinate as f64 - f64::from(side) * 0.5 + 0.5).floor() as i32);
++        let error = self.placement_error_for(self.local,DOCK,tx,ty,0,ids,true);
++        if error != 0 { return error; }
++        let snapped_tile = tile_of(pose.center[0],pose.center[1]);
++        let grid_tile = tile_of(tx as f32 + side as f32*0.5,ty as f32 + side as f32*0.5);
++        if self.map.terr[snapped_tile] != self.map.terr[grid_tile] { return 2; }
++
++        // The exact source shore mask applies to the static original world.
++        // Keep the portable simulation's inherited coarse dynamic occupancy.
++        let bounds = Self::building_bounds(&Self::dock157_site(pose));
++        let (x,z,width,height) = bounds;
++        if x < 2 || z < 2 || x+width > SIDE as i32-3 || z+height > SIDE as i32-3 { return 1; }
++        let full_visibility = self.display_visibility() >= 1 && !self.players[self.local as usize].ai;
++        for row in z..z+height {
++            for col in x..x+width {
++                let at = row as usize*N+col as usize;
++                if !full_visibility && self.real_fog(self.local,at) == 0 { return 3; }
++                if self.map.blocked[at] || self.map.res[at] != R_NONE { return 1; }
++            }
++        }
++        self.prepare_build_routes(bounds);
++        if self.reachable_foundation_builders(self.local,ids).is_empty() { return 7; }
++        0
++    }
++
++    fn dock157_site(pose: Pose) -> Ent {
++        Ent { def:DOCK, x:pose.center[0], y:pose.center[1], rot:pose.yaw, ..E0 }
++    }
++
++    pub(crate) fn dock157_place(&mut self, team: u8, raw: [f32;2], ids: &[usize]) {
++        if team != self.local { return; }
++        let Some((pose,0)) = self.dock157_preview(raw,ids) else { return; };
++        let builders = self.reachable_foundation_builders(team,ids);
++        let cost = self.construction_cost(team,DOCK);
++        let foundation = self.place_funded_foundation(DOCK,team,Self::dock157_site(pose),cost);
++        if foundation != NOIDX { self.assign_foundation(team,foundation,builders); }
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    fn word(input: &mut &[u8]) -> u32 {
++        let (word,rest) = input.split_at(4);
++        *input = rest;
++        u32::from_le_bytes(word.try_into().unwrap())
++    }
++
++    fn within_one_word(x:f32,y:f32) -> bool {
++        x == y || x.to_bits().abs_diff(y.to_bits()) <= 1
++    }
++
++    #[test]
++    fn native_original_dock_corpus() {
++        let input = include_bytes!("../../private-geometry/dock157-kernel-fixture.bin");
++        let original = include_str!("../../private-geometry/dock157-kernel-original.txt");
++        let mut rows = original.lines();
++        let mut input = input.as_slice();
++        let mut cases = 0;
++        let mut normals = 0;
++        while !input.is_empty() {
++            let dimensions = [word(&mut input) as usize,word(&mut input) as usize];
++            let count = word(&mut input) as usize;
++            let (heights,rest) = input.split_at(dimensions[0]*dimensions[1]*4);
++            let terrain = Coast { dimensions,heights,movement:None };
++            input = rest;
++            for _ in 0..count {
++                let [x,z,w,h,yaw] = [0;5].map(|_| f32::from_bits(word(&mut input)));
++                assert_eq!([w,h],BODY);
++                let values: Vec<_> = rows.next().unwrap().split_whitespace().collect();
++                let expected = |at:usize| f32::from_bits(u32::from_str_radix(values[at],16).unwrap());
++                let pose = terrain.pose([x,z],yaw).unwrap();
++                assert!(within_one_word(pose.center[0],expected(1)) && within_one_word(pose.center[1],expected(2)),"{pose:?} at {:?}",[x,z]);
++                assert_eq!(pose.normal.is_some(),values[7] == "1","{pose:?} at {:?}",[x,z]);
++                if let Some([x,z]) = pose.normal {
++                    assert!(within_one_word(x,expected(8)) && within_one_word(z,expected(9)),"{pose:?}");
++                    normals += 1;
++                }
++                let expected_yaw = expected(10);
++                assert!((pose.yaw-expected_yaw).abs() <= (expected_yaw.abs()*2.0e-7).max(1.0e-7),"{pose:?} vs {expected_yaw}");
++                cases += 1;
++            }
++        }
++        assert_eq!([cases,normals],[594,530]);
++        assert!(rows.next().is_none());
++    }
++}
+diff --git a/src/lib.rs b/src/lib.rs
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -5,6 +5,8 @@
+ //! networking and talks to it through the plain C ABI below.
+ 
+ mod ai;
++#[cfg(feature = "ee2-pangea-huge10-dock157")]
++mod dock157;
+ #[cfg(feature = "ee2-native13")]
+ mod air31;
+ #[cfg(feature = "ee2-native13")]
+@@ -600,6 +602,13 @@
+     g().render_with_rotation(alpha,x0,y0,x1,y1,ghost,gx,gy,turn)
+ }
+ 
++#[cfg(feature="ee2-pangea-huge10-dock157")]
++#[no_mangle]
++pub extern "C" fn render_dock157(alpha:f32,x0:f32,y0:f32,x1:f32,y1:f32,x:f32,y:f32)->u32 {
++    unsafe { if (&*addr_of_mut!(GAME)).is_none() { render_meta7::begin_frame(); render_meta7::end_frame(); return 0; } }
++    g().render_dock157(alpha,x0,y0,x1,y1,[x,y])
++}
++
+ /// Optional rendering-only metadata ABI. All getters are safe before init.
+ #[cfg(feature="ee2-render-meta7")]
+ #[no_mangle] pub extern "C" fn render_meta_version()->u32{1}
+@@ -2068,6 +2077,42 @@
+ }
+ #[no_mangle]
+ pub extern "C" fn dock_orientation(tx:i32,ty:i32)->u32{g().dock_auto_turn(tx,ty)}
++
++#[cfg(feature="ee2-pangea-huge10-dock157")]
++thread_local! { static DOCK157_POSE: std::cell::Cell<[f32;3]> = const { std::cell::Cell::new([f32::NAN;3]) }; }
++
++#[cfg(feature="ee2-pangea-huge10-dock157")]
++#[no_mangle]
++pub extern "C" fn dock157_enabled()->u32 {
++    unsafe { (&*addr_of_mut!(GAME)).as_deref().is_some_and(Game::dock157_enabled) as u32 }
++}
++
++#[cfg(feature="ee2-pangea-huge10-dock157")]
++#[no_mangle]
++pub extern "C" fn dock157_preview(x:f32,y:f32)->u32 {
++    let game = g();
++    let ids = selected(game);
++    let preview = game.dock157_preview([x,y],&ids);
++    DOCK157_POSE.with(|last| last.set(preview.map_or([f32::NAN;3],|(pose,_)| [pose.center[0],pose.center[1],pose.yaw])));
++    preview.map_or(1,|(_,error)| error)
++}
++
++#[cfg(feature="ee2-pangea-huge10-dock157")]
++#[no_mangle]
++pub extern "C" fn dock157_component(field:u32)->f32 {
++    DOCK157_POSE.with(|last| last.get().get(field as usize).copied().unwrap_or(f32::NAN))
++}
++
++#[cfg(feature="ee2-pangea-huge10-dock157")]
++#[no_mangle]
++pub extern "C" fn cmd_place_dock157(x:f32,y:f32)->u32 {
++    let game = g();
++    let ids = selected(game);
++    if !matches!(game.dock157_preview([x,y],&ids),Some((_,0))) { return 0; }
++    let hs = handles(game,&ids);
++    game.submit(crate::cmd::C_DOCK157,x,y,0,&hs);
++    1
++}
+ #[no_mangle]
+ pub extern "C" fn placement_time_multiplier(def:u32,tx:i32,ty:i32,turn:u32)->f32{
+     if def>=DEFS.len()as u32{return 0.0;}let (width,height)=Game::footprint_axes(def as DefId,turn);if width==0||tx<0||ty<0||tx>N as i32-width||ty>N as i32-height{return 0.0;}let game=g();if def==TC as u32{return 1.0;}let owner=game.towner[game.map.terr[(ty+height/2)as usize*N+(tx+width/2)as usize]as usize];if owner==game.local{1.0}else if owner==255{2.0}else{3.0}
+diff --git a/src/placement.rs b/src/placement.rs
+--- a/src/placement.rs
++++ b/src/placement.rs
+@@ -364,18 +364,26 @@
+         if self.placement_error_for(team, def, tx, ty, turn, ids, check_fog) != 0 {
+             return NOIDX;
+         }
+-        let builders: Vec<(usize, u32)> = self
++        let builders = self.reachable_foundation_builders(team,ids);
++        let bi = self.place_with_rotation(def, tx, ty, team, turn);
++        if bi != NOIDX {
++            self.assign_foundation(team,bi,builders);
++        }
++        bi
++    }
++
++    pub(crate) fn reachable_foundation_builders(&self, team: u8, ids: &[usize]) -> Vec<(usize,u32)> {
++        self
+             .valid_builders(team, ids)
+             .into_iter()
+             .filter_map(|i| {
+                 let t = self.placement_cache.approach[tile_of(self.ents[i].x, self.ents[i].y)];
+                 (t != NONE).then_some((i, t))
+             })
+-            .collect();
+-        let bi = self.place_with_rotation(def, tx, ty, team, turn);
+-        if bi == NOIDX {
+-            return bi;
+-        }
++            .collect()
++    }
++
++    pub(crate) fn assign_foundation(&mut self, team: u8, bi: usize, builders: Vec<(usize,u32)>) {
+         let (x0, y0, width, height) = Self::building_bounds(&self.ents[bi]);
+         let ids: Vec<usize> = builders.iter().map(|p| p.0).collect();
+         let handle = self.h(bi);
+@@ -425,7 +433,6 @@
+                 false,
+             );
+         }
+-        bi
+     }
+     pub fn place_with_rotation(&mut self, def:DefId, tx: i32, ty: i32, team: u8, turn: u32) -> usize {
+         if !self.construction_available(team, def)
+@@ -438,6 +445,10 @@
+             return NOIDX;
+         }
+         let site = Self::planned_building(def, tx, ty, turn);
++        self.place_funded_foundation(def,team,site,cost)
++    }
++
++    pub(crate) fn place_funded_foundation(&mut self, def: DefId, team: u8, site: Ent, cost: [u16; 9]) -> usize {
+         let i = self.spawn_oriented(def, team, site.x, site.y, site.rot);
+         if i != NOIDX {
+             self.pay(team, &cost, 1.0);
+diff --git a/src/render.rs b/src/render.rs
+--- a/src/render.rs
++++ b/src/render.rs
+@@ -118,6 +118,20 @@
+     }
+     #[allow(clippy::too_many_arguments)]
+     pub fn render_with_rotation(&mut self,alpha:f32,x0:f32,y0:f32,x1:f32,y1:f32,ghost:i32,gx:i32,gy:i32,turn:u32)->u32{
++        self.render_scene(alpha,x0,y0,x1,y1,ghost,gx,gy,turn,None)
++    }
++
++    #[cfg(feature="ee2-pangea-huge10-dock157")]
++    pub(crate) fn render_dock157(&mut self,alpha:f32,x0:f32,y0:f32,x1:f32,y1:f32,raw:[f32;2])->u32 {
++        let ids = crate::selected(self);
++        let dock = self.dock157_preview(raw,&ids).map(|(pose,error)| {
++            ([pose.center[0],pose.center[1],pose.yaw],error == 0)
++        });
++        self.render_scene(alpha,x0,y0,x1,y1,-1,0,0,0,dock)
++    }
++
++    fn render_scene(&mut self,alpha:f32,x0:f32,y0:f32,x1:f32,y1:f32,ghost:i32,gx:i32,gy:i32,turn:u32,
++                    automatic_dock:Option<([f32;3],bool)>)->u32{
+         #[cfg(feature="ee2-render-meta7")]
+         crate::render_meta7::begin_frame();
+         let mut o = std::mem::take(&mut self.tmp);
+@@ -317,6 +331,11 @@
+                 let(cx,cy)=(gx as f32+width as f32*0.5,gy as f32+height as f32*0.5);let a=if ghost as DefId==DOCK{0.0}else{self.map.height(cx,cy).max(0.0)};
+                 put(&mut o,cx,cy,a,Self::angle_for_turn(turn),crate::ids::unit_render(ghost as DefId),me as f32,1.0,FL_NOFOG+if ok{FL_GHOST_OK}else{FL_GHOST_BAD},d.size);
+             }
++        }
++
++        if let Some(([x,y,yaw],ok)) = automatic_dock {
++            let flags = FL_NOFOG + if ok { FL_GHOST_OK } else { FL_GHOST_BAD };
++            put(&mut o,x,y,0.0,yaw,crate::ids::unit_render(DOCK),me as f32,1.0,flags,DEFS[DOCK as usize].size);
+         }
+ 
+         // ---- counting sort by model id

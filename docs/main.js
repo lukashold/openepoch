@@ -11,7 +11,7 @@ import { diplomacyPanel } from './diplomacy.js?v=alliance-lands156';
 import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=alliance-lands156';
 import {loadNativeFontUI} from './original-font-ui.js?v=native21names';
 import {territoryClaimMessage} from './territory-help.js?v=native64-koth';
-import * as sfx from './audio.js?v=native112voice';
+import * as sfx from './audio.js?v=infantry157';
 import {liveGeneratedAmbientCoverage,loadOriginalAmbient,originalAmbientPriorities} from './original-ambient.js?v=native106';
 import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=citizen9';
 import {mountOriginalShellVideo} from './original-shell-video.js?v=native12';
@@ -775,7 +775,7 @@ const carrierOccupied=handle=>wasm.air_mission_status(handle,1)>0;
 const sourceSails=await loadSourceSailRuntime({wasm,namespace:renderNamespace,models:originalModels,enabled:originalEnabled&&rulesProfile.ruleset===2,decorateMetadata:metadata=>packMetadata?packMetadata.snapshot(metadata):metadata});
 if(sourceSails?.metrics.error)console.warn('Source sails:',sourceSails.metrics.error);
 const unitPresentations=[tradePresentation,fighterBomberPresentation,carrierPresentation,priestPresentation,spyPresentation,leaderPresentation,diversionPresentation,heavyMounted3Presentation,fishingPresentation].filter(Boolean);
-sfx.configureOriginalDefinitions({wasm,bindings:[...(originalModels.manifest?.models||[]),...(originalModels.additionalRegionalAudio||[]),...unitPresentations.flatMap(source=>source.audioModelRows)],additionalFamilyManifest:unitPresentations.map(source=>source.audioManifest),citizenPresentation,regionalMusic:rulesProfile.ruleset===2,...(rulesProfile.ruleset===2?{familyManifestURL:'native-families-civ8-regicide.json',playbackManifestURL:'manifest-stone-thrower-up.json'}:{})});
+sfx.configureOriginalDefinitions({wasm,bindings:[...(originalModels.manifest?.models||[]),...(originalModels.additionalRegionalAudio||[]),...unitPresentations.flatMap(source=>source.audioModelRows)],additionalFamilyManifest:unitPresentations.map(source=>source.audioManifest),citizenPresentation,regionalMusic:rulesProfile.ruleset===2,infantryReplies:rulesProfile.id==='up15',...(rulesProfile.ruleset===2?{familyManifestURL:'native-families-civ8-regicide.json',playbackManifestURL:'manifest-stone-thrower-up.json'}:{})});
 const captureGlow = originalEnabled && typeof wasm.active_capture_glow === 'function'
   ? createCaptureGlow({kothDefinition:kothPresentation?kothDefinition:undefined}) : null;
 const originalGround=await loadOriginalGround(gl,originalEnabled,{assetMapping,climateProfiles,captureGlow:!!captureGlow,blessGlow:!!blessGround,wonderPresentation,
@@ -2999,8 +2999,9 @@ function selectedUnitVoice(action,contextAttack=false) {
   if (selected.n) {
     const context=selectedCitizenContext(wasm,state);
     const submarine=originalEnabled&&rulesProfile.id==='up15'&&selected.def===36&&(state.epoch===12||state.epoch===13);
-    if(submarine&&contextAttack)action='attack';
-    const replyScope=(context||submarine)&&rulesProfile.id==='up15'?{owner:state.local,world:wasm.render_meta_session()>>>0}:undefined;
+    const infantry=originalEnabled&&rulesProfile.id==='up15'&&sfx.handlesOriginalInfantryReplies(selected.def);
+    if((submarine||infantry)&&contextAttack)action='attack';
+    const replyScope=(context||submarine||infantry)&&rulesProfile.id==='up15'?{owner:state.local,world:wasm.render_meta_session()>>>0}:undefined;
     return sfx.acknowledge(selected.def,action,state.epoch,context,replyScope);
   }
   return false;
