@@ -22,7 +22,7 @@ import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regi
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native66';
-import {loadOriginalModels} from './original-renderer.js?v=valley-lightmap148';
+import {loadOriginalModels} from './original-renderer.js?v=valley-city155';
 import {loadOriginalBoatWake,readNavalWakeActors} from './original-boat-wake.js?v=native78-wake83';
 import {loadKingOfTheHillPresentation} from './original-koth.js?v=native64-koth';
 import {loadWonderPresentation} from './original-wonders.js?v=native63';
@@ -103,7 +103,7 @@ import {addCarrierFlightAudio,loadAirFlightAudio,readAirFlightAudio,submarineMov
 import {loadFullmapCityNameCatalog,loadFullmapTerritoryNameCatalog} from './fullmap-territory-names.js?v=native22';
 import {createWarplanPeer,WARPLAN_PEER_VERSION} from './original-warplan-peer.js';
 import {activeValleyGeometry,initialValleyViews,pickValleyGround,valleyMinimapPoint,valleyMinimapSnapshot} from './authored-view.js';
-import {installedValleyManifest,loadValleyPreview,valleySaveLocator} from './valley-preview.js?v=valley-ruins154';
+import {installedValleyManifest,loadValleyPreview,valleySaveLocator} from './valley-preview.js?v=valley-city155';
 
 const $ = id => document.getElementById(id);
 const canvas = $('gl');
@@ -2243,9 +2243,12 @@ function frame(now) {
   }
 
   bindTexture(2,fogTexture);
+  let volumeShadowInstances=null;
   if(valleyWorld){
     const quality=+$('quality').value;
-    valleyPreview.drawTerrain(view.vp,fogTexture,quality>1,quality>=2,[x0,y0,x1,y1]);
+    const cities=quality>1&&n&&valleyPreview.cityShadowAvailable ? originalModels.cityShadowCasters?.({
+      data:f32(wasm.inst_ptr(),n*STRIDE),ranges,epochs:renderEpochs,zoom:cam.zoom,actorMetadata}) : null;
+    volumeShadowInstances=valleyPreview.drawTerrain(view.vp,fogTexture,quality>1,quality>=2,[x0,y0,x1,y1],cities??[]);
     valleyPreview.drawWorld(view,[x0,y0,x1,y1]);
   }else if(originalTerrain.enabled){
     originalTerrain.drawTerrain({vao:vaoT,vp:view.vp,px,fogTexture,territoryTexture});
@@ -2286,7 +2289,7 @@ function frame(now) {
         const cnt=ranges[id*2+1]; if(!cnt||!mesh.count[template])continue;
         instOffset(ranges[id*2]); gl.drawArraysInstanced(gl.TRIANGLES,mesh.first[template],mesh.count[template],cnt);
       }
-      originalModels.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,vp:view.vp,epochs:renderEpochs,zoom:cam.zoom,eye:view.eye,shadow:true,actorMetadata,packScene});
+      originalModels.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,vp:view.vp,epochs:renderEpochs,zoom:cam.zoom,eye:view.eye,shadow:true,actorMetadata,packScene,volumeShadowInstances});
       gl.disable(gl.STENCIL_TEST); gl.depthMask(true);
     }
     // one instanced draw per model type

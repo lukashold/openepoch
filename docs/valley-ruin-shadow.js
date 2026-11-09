@@ -55,18 +55,26 @@ export function visibleRuinShadows(assets, poses, visibility, bounds) {
   });
 }
 
-export function createRuinVolumeRenderer(gl, assets, compile) {
+export function createShadowVolumeBuffer(gl, compile) {
   const program = compile(gl,vertex,fragment);
   const matrix = gl.getUniformLocation(program,'uVolumeVP');
   const vao = gl.createVertexArray();
+  const vertices = gl.createBuffer(), elements = gl.createBuffer();
   gl.bindVertexArray(vao);
-  gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());
-  gl.bufferData(gl.ARRAY_BUFFER,assets.positions,gl.STATIC_DRAW);
+  gl.bindBuffer(gl.ARRAY_BUFFER,vertices);
   gl.enableVertexAttribArray(0);
   gl.vertexAttribPointer(0,3,gl.FLOAT,false,12,0);
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,gl.createBuffer());
-  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,assets.indices,gl.STATIC_DRAW);
-  return (vp,actors) => {
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,elements);
+  let indexType=gl.UNSIGNED_SHORT,indexBytes=2;
+  function upload(positions,indices,usage) {
+    indexBytes=indices.BYTES_PER_ELEMENT;
+    indexType=indexBytes===2 ? gl.UNSIGNED_SHORT : gl.UNSIGNED_INT;
+    gl.bindVertexArray(vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER,vertices);
+    gl.bufferData(gl.ARRAY_BUFFER,positions,usage);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,indices,usage);
+  }
+  function draw(vp,actors) {
     const cullEnabled = gl.isEnabled(gl.CULL_FACE);
     const cullMode = gl.getParameter(gl.CULL_FACE_MODE);
     const frontFace = gl.getParameter(gl.FRONT_FACE);
@@ -78,10 +86,17 @@ export function createRuinVolumeRenderer(gl, assets, compile) {
     for (const [cull,pass] of [[gl.BACK,gl.INCR_WRAP],[gl.FRONT,gl.DECR_WRAP]]) {
       gl.cullFace(cull);
       gl.stencilOp(gl.KEEP,gl.KEEP,pass);
-      for (const actor of actors) gl.drawElements(gl.TRIANGLES,actor.indexCount,gl.UNSIGNED_SHORT,actor.indexStart*2);
+      for (const actor of actors) gl.drawElements(gl.TRIANGLES,actor.indexCount,indexType,actor.indexStart*indexBytes);
     }
     gl.frontFace(frontFace);
     gl.cullFace(cullMode);
     if (!cullEnabled) gl.disable(gl.CULL_FACE);
-  };
+  }
+  return {upload,draw};
+}
+
+export function createRuinVolumeRenderer(gl, assets, compile) {
+  const buffer=createShadowVolumeBuffer(gl,compile);
+  buffer.upload(assets.positions,assets.indices,gl.STATIC_DRAW);
+  return buffer.draw;
 }

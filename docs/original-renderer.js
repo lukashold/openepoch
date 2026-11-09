@@ -799,6 +799,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    variant.hercAttack=options.hercAttack?.acceptsModel(id,model)??false;
    variant.sourceVisual=sourceVisual(model,modelUrl);
    variant.sourceScale=transform.native?scaleBinding.sourceScale:null;
+   if(assetKind===0&&id===0&&transform.native)variant.shadowSource={url:modelUrl,source:model.source?.sha256};
    if(entry.wonderFamily&&transform.native){
     const minimum=model.sourceBounds?.min?.[1], maximum=model.sourceBounds?.max?.[1];
     const {offset,scale}=model.normalization;
@@ -973,7 +974,25 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   return hit;
  };
  const packBlendHistory=packStatus.enabled?createNativePackBlendHistory():null;
- result.draw=({data,ranges,vp,epochs,zoom=80,shadow=false,eye=[0,200,0],lighting=defaultLighting,clipPlane=null,capture=false,actorMetadata=null,preparedSailMetadata=actorMetadata,civilizations=visualCivilizations,stoneThrowerWheels=null,hercBeamMuzzles=null,packScene=null})=>{
+ result.cityShadowCasters=({data,ranges,epochs,zoom,actorMetadata})=>{
+  const casters=[];
+  for(const actor of actorMetadata?.actors??[]){
+   if(actor.def!==0||actor.built<1||actor.hpRatio<=0||actor.renderFlags&24)continue;
+   const i=actor.index,at=i*12,renderId=Math.round(data[at+4]),team=Math.min(3,Math.round(data[at+5]));
+   if(i<ranges[renderId*2]||i>=ranges[renderId*2]+ranges[renderId*2+1]||actor.team!==team||
+      actor.renderX!==data[at]||actor.renderY!==data[at+1]||actor.renderAltitude!==data[at+2]||actor.renderYaw!==data[at+3])continue;
+   const epoch=epochs[team]||0,civ=visualCivilizations?.[team];
+   if(regionalCaptureRows?.has(`0:${epoch}:${civ}`)||productionEntryFor(0,epoch,civ))continue;
+   const variant=selectRegionalModel((result.models.get(renderId)??[]).filter(row=>row.sourceIdentity===undefined),epoch,civ);
+   if(!variant?.shadowSource||variant.sourceId!==0||variant.assetKind!==0||variant.hasClipVisibility)continue;
+   const shown=variant.nativeScale*zoom<55&&variant.far ? variant.far : variant;
+   if(shown.parts.some(part=>part.animations?.idle))continue;
+   casters.push({instance:i,url:shown===variant?variant.shadowSource.url:variant.farUrl,source:variant.shadowSource.source,
+    scale:variant.sourceScale,pose:[actor.renderX,actor.renderY,actor.renderAltitude,Math.fround(actor.renderYaw+variant.yawOffset)]});
+  }
+  return casters;
+ };
+ result.draw=({data,ranges,vp,epochs,zoom=80,shadow=false,eye=[0,200,0],lighting=defaultLighting,clipPlane=null,capture=false,actorMetadata=null,preparedSailMetadata=actorMetadata,civilizations=visualCivilizations,stoneThrowerWheels=null,hercBeamMuzzles=null,packScene=null,volumeShadowInstances=null})=>{
   const started=performance.now();let calls=0,triangles=0,querying=false;
   // Reflection uses the main snapshot. Only the independent picture-in-picture
   // capture must leave the main animation history alone.
@@ -1024,6 +1043,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    if(shadow&&variants[0].guidedRocket)continue;
    const first=ranges[id*2],groups=new Map();
    for(let i=first;i<first+count;i++){
+    if(shadow&&volumeShadowInstances?.has(i))continue;
     const rowTeam=Math.round(data[i*12+5]),team=Math.min(3,rowTeam),epoch=epochs[team]||0;
     const actor=actorMetadata?.forInstance?.(i);let identity;
     if(options.citizenManifestURL&&variants[0].assetKind===0&&variants[0].sourceId===8&&actor&&options.sourceIdentityForActor){try{const sourceIdentity=options.sourceIdentityForActor(actor);identity=sourceIdentity===0||sourceIdentity===1?sourceIdentity:null;}catch(e){identity=null;result.citizenModels.errors.push(e.message);}}
