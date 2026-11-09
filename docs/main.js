@@ -103,7 +103,7 @@ import {addCarrierFlightAudio,loadAirFlightAudio,readAirFlightAudio,submarineMov
 import {loadFullmapCityNameCatalog,loadFullmapTerritoryNameCatalog} from './fullmap-territory-names.js?v=native22';
 import {createWarplanPeer,WARPLAN_PEER_VERSION} from './original-warplan-peer.js';
 import {activeValleyGeometry,initialValleyViews,pickValleyGround,valleyMinimapPoint,valleyMinimapSnapshot} from './authored-view.js';
-import {installedValleyManifest,loadValleyPreview,valleySaveLocator} from './valley-preview.js?v=valley-lightmap148';
+import {installedValleyManifest,loadValleyPreview,valleySaveLocator} from './valley-preview.js?v=valley-shadow150';
 
 const $ = id => document.getElementById(id);
 const canvas = $('gl');
@@ -2243,7 +2243,7 @@ function frame(now) {
 
   bindTexture(2,fogTexture);
   if(valleyWorld){
-    valleyPreview.drawTerrain(view.vp,fogTexture);
+    valleyPreview.drawTerrain(view.vp,fogTexture,+$('quality').value>1);
     valleyPreview.drawWorld(view,[x0,y0,x1,y1]);
   }else if(originalTerrain.enabled){
     originalTerrain.drawTerrain({vao:vaoT,vp:view.vp,px,fogTexture,territoryTexture});

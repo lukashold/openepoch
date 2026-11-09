@@ -1,5 +1,6 @@
 import {activeValleyGeometry} from './authored-view.js';
-import {loadAuthoredValleyTerrain} from './authored-terrain.js?v=valley-lightmap148';
+import {loadAuthoredValleyTerrain} from './authored-terrain.js?v=valley-shadow150';
+import {loadForestShadowAssets} from './valley-forest-shadow.js';
 import {archiveForestBindings, archiveForestFrame} from './archive-forest.js';
 import {bindValleyWorld0,valleyWorld0Frame} from './archive-world0.js';
 import {loadOriginalModels} from './original-renderer.js?v=native36';
@@ -75,7 +76,9 @@ export async function loadValleyPreview({requested, authoredRequested, neutralRe
       const bitmap = await createImageBitmap(new Blob([bytes], {type: 'image/png'}), {premultiplyAlpha: 'none', colorSpaceConversion: 'none'});
       return {bytes, bitmap};
     };
-    const ground = await loadAuthoredValleyTerrain(gl, geometry, terrain, readTexture, lighting);
+    const forestShadow = lighting?.sourceTerrainDirection
+      ? await loadForestShadowAssets(checked,forest,forestManifest).catch(() => null) : null;
+    const ground = await loadAuthoredValleyTerrain(gl, geometry, terrain, readTexture, lighting, forestShadow);
     const trees = await loadOriginalModels(gl, true, teams, undefined,
       {assetMapping, manifestURL: index.forest.url, initialSails: false, nativeLighting: false});
     if (trees.errors.length || trees.models.size !== forest.models.length) throw new Error('Valley-Waldgrafiken konnten nicht geladen werden.');
@@ -97,7 +100,7 @@ export async function loadValleyPreview({requested, authoredRequested, neutralRe
         return stageFixture(locator.fixture === authoredTest.sha256 ? authored :
           packets[index.fixtures.findIndex(row => row.sha256 === locator.fixture)]);
       },
-      drawTerrain(vp, fog) { ground.draw(vp, fog); },
+      drawTerrain(vp, fog, highShadows) { ground.draw(vp, fog, highShadows); },
       drawWorld(view, bounds) {
         const fog = new Uint8Array(wasm.memory.buffer, wasm.fog_ptr(), geometry.backing ** 2);
         const options = {vp: view.vp, eye: view.eye, zoom: view.zoom, epochs: [0, 0], capture: true};

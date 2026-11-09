@@ -2,6 +2,7 @@ import {authoredTerrainMesh} from './authored-view.js';
 import {authoredValleyBoundary} from './authored-boundary.js';
 import {buildAuthoredTerrainLightmap, SHADOW_BLOCK_SPAN, SHADOW_RESOLUTION} from './authored-terrain-shadow.js';
 import {nativeTerrainCoefficients} from './native-terrain-lighting.js';
+import {createForestShadowRenderer} from './valley-forest-shadow.js';
 
 // Compact corner palette, exact source geometry and original terrain pixels.
 // This browser shader uses triangle interpolation for material edges. The
@@ -12,6 +13,7 @@ layout(location=1) in vec3 aNormal;
 uniform mat4 uVP;
 out vec3 vWorld;
 out vec3 vNormal;
+invariant gl_Position;
 void main(){vWorld=aPosition;vNormal=aNormal;gl_Position=uVP*vec4(aPosition,1.0);}
 `;
 const fragment = `#version 300 es
@@ -21,6 +23,7 @@ uniform sampler2D uCorners;
 uniform sampler2D uFog;
 uniform bool uBoundary;
 uniform bool uNativeLighting;
+uniform bool uProjectedShadow;
 uniform highp sampler2DArray uLightmap;
 uniform float uLightmapBlocksX;
 uniform vec3 uLightmapDiffuse, uLightmapAmbient;
@@ -45,7 +48,7 @@ void main(){
  if(uNativeLighting){
   vec2 block=floor(xy/${SHADOW_BLOCK_SPAN}.0);
   vec2 blockUV=(xy-block*${SHADOW_BLOCK_SPAN}.0)*((1.-1./${SHADOW_RESOLUTION}.0)/${SHADOW_BLOCK_SPAN}.0)+vec2(.5/${SHADOW_RESOLUTION}.0);
-  float mask=texture(uLightmap,vec3(blockUV,block.x+block.y*uLightmapBlocksX)).r;
+  float mask=uProjectedShadow?0.0:texture(uLightmap,vec3(blockUV,block.x+block.y*uLightmapBlocksX)).r;
   vec3 stage0=clamp(2.*mask*uLightmapDiffuse,0.,1.);
   vec3 stage1=clamp(stage0+uLightmapAmbient,0.,1.);
   land=clamp(2.*land*stage1,0.,1.);
@@ -82,9 +85,9 @@ export function valleyTerrainCornerTexture(geometry, manifest) {
   return cornerTexture;
 }
 
-function program(gl) {
+function program(gl, vertexSource, fragmentSource) {
   const result = gl.createProgram();
-  for (const [kind, source] of [[gl.VERTEX_SHADER, vertex], [gl.FRAGMENT_SHADER, fragment]]) {
+  for (const [kind, source] of [[gl.VERTEX_SHADER, vertexSource], [gl.FRAGMENT_SHADER, fragmentSource]]) {
     const shader = gl.createShader(kind);
     gl.shaderSource(shader, source);
     gl.compileShader(shader);
@@ -99,7 +102,7 @@ function program(gl) {
 
 const hex = bytes => Array.from(new Uint8Array(bytes), n => n.toString(16).padStart(2, '0')).join('');
 
-export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readTexture, lighting = null) {
+export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readTexture, lighting = null, forestShadow = null) {
   const corners = valleyTerrainCornerTexture(geometry, manifest);
   const {vertices, indices} = authoredTerrainMesh(geometry);
   const boundary = authoredValleyBoundary(geometry);
@@ -109,10 +112,11 @@ export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readText
         image.bitmap?.width !== 256 || image.bitmap?.height !== 256) throw new Error('Valley terrain texture differs: ' + row.url);
     return image.bitmap;
   }));
-  const shader = program(gl);
+  const shader = program(gl,vertex,fragment);
   const uniform = name => gl.getUniformLocation(shader, name);
   const uniforms = [uniform('uVP'), uniform('uMaterials'), uniform('uCorners'), uniform('uFog'), uniform('uLightmap')];
   const uNativeLighting = uniform('uNativeLighting'), uBlocksX = uniform('uLightmapBlocksX');
+  const uProjectedShadow = uniform('uProjectedShadow');
   const uDiffuse = uniform('uLightmapDiffuse'), uAmbient = uniform('uLightmapAmbient');
   const uBoundary = uniform('uBoundary');
   const vao = gl.createVertexArray();
@@ -167,12 +171,15 @@ export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readText
   }
   const diffuse = coefficients?.diffuseBytes.map(value => value / 255);
   const ambient = coefficients?.ambientBytes.map(value => value / 255);
+  const projectForest = lightmap && forestShadow && gl.getContextAttributes().stencil
+    ? createForestShadowRenderer(gl,geometry,indices,forestShadow,lighting.sourceTerrainDirection,program) : null;
   return {
     indexCount: indices.length,
-    draw(vp, fogTexture) {
+    draw(vp, fogTexture, highShadows = false) {
       gl.useProgram(shader);
       gl.uniform1i(uBoundary, 0);
       gl.uniform1i(uNativeLighting, lightmap ? 1 : 0);
+      gl.uniform1i(uProjectedShadow, 0);
       if (lightmap) {
         gl.uniform1f(uBlocksX, lightmap.blocksX);
         gl.uniform3fv(uDiffuse, diffuse);
@@ -187,6 +194,31 @@ export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readText
       }
       gl.bindVertexArray(vao);
       gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_INT, 0);
+      if (projectForest && highShadows) {
+        const depth = gl.getParameter(gl.DEPTH_FUNC);
+        gl.depthMask(false);
+        gl.depthFunc(gl.EQUAL);
+        gl.colorMask(false,false,false,false);
+        gl.enable(gl.STENCIL_TEST);
+        gl.stencilMask(0x3f);
+        gl.stencilFunc(gl.ALWAYS,0,0x3f);
+        gl.stencilOp(gl.KEEP,gl.KEEP,gl.INCR_WRAP);
+        projectForest(vp);
+        gl.colorMask(true,true,true,true);
+        gl.stencilMask(0);
+        gl.stencilFunc(gl.NOTEQUAL,0,0x3f);
+        gl.stencilOp(gl.KEEP,gl.KEEP,gl.KEEP);
+        gl.useProgram(shader);
+        gl.bindVertexArray(vao);
+        gl.uniform1i(uProjectedShadow, 1);
+        gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_INT, 0);
+        gl.disable(gl.STENCIL_TEST);
+        gl.stencilMask(0x3f);
+        gl.clear(gl.STENCIL_BUFFER_BIT);
+        gl.stencilMask(255);
+        gl.depthFunc(depth);
+        gl.depthMask(true);
+      }
       gl.uniform1i(uBoundary, 1);
       gl.bindVertexArray(boundaryVao);
       let first = 0;
