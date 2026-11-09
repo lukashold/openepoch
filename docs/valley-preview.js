@@ -1,7 +1,8 @@
 import {activeValleyGeometry} from './authored-view.js';
-import {loadAuthoredValleyTerrain,VALLEY_MATERIAL_MIPS} from './authored-terrain.js?v=valley-color-mips152';
+import {loadAuthoredValleyTerrain,VALLEY_MATERIAL_MIPS} from './authored-terrain.js?v=valley-ruins154';
 import {VALLEY_MASK_MIPS,VALLEY_TERRAIN_MASK} from './authored-terrain-mask.js?v=valley-mips151';
 import {loadForestShadowAssets} from './valley-forest-shadow.js';
+import {loadRuinShadowAssets,visibleRuinShadows} from './valley-ruin-shadow.js';
 import {archiveForestBindings, archiveForestFrame} from './archive-forest.js';
 import {bindValleyWorld0,valleyWorld0Frame} from './archive-world0.js';
 import {loadOriginalModels} from './original-renderer.js?v=native36';
@@ -78,13 +79,14 @@ export async function loadValleyPreview({requested, authoredRequested, neutralRe
       const bitmap = await createImageBitmap(new Blob([bytes], {type: 'image/png'}), {premultiplyAlpha: 'none', colorSpaceConversion: 'none'});
       return {bytes, bitmap};
     };
-    const [forestShadow, maskMips, materialMips] = await Promise.all([
+    const [forestShadow, maskMips, materialMips, ruinShadow] = await Promise.all([
       lighting?.sourceTerrainDirection ? loadForestShadowAssets(checked,forest,forestManifest).catch(() => null) : null,
       checked(VALLEY_MASK_MIPS).catch(() => null),
       index.terrain.sha256 === VALLEY_MATERIAL_MIPS.terrainManifestSha256
         ? checked(VALLEY_MATERIAL_MIPS).catch(() => null) : null,
+      loadRuinShadowAssets(checked,index,world0,lighting).catch(() => null),
     ]);
-    const ground = await loadAuthoredValleyTerrain(gl, geometry, terrain, readTexture, lighting, forestShadow, maskMips, materialMips);
+    const ground = await loadAuthoredValleyTerrain(gl, geometry, terrain, readTexture, lighting, forestShadow, maskMips, materialMips, ruinShadow);
     const trees = await loadOriginalModels(gl, true, teams, undefined,
       {assetMapping, manifestURL: index.forest.url, initialSails: false, nativeLighting: false});
     if (trees.errors.length || trees.models.size !== forest.models.length) throw new Error('Valley-Waldgrafiken konnten nicht geladen werden.');
@@ -106,7 +108,12 @@ export async function loadValleyPreview({requested, authoredRequested, neutralRe
         return stageFixture(locator.fixture === authoredTest.sha256 ? authored :
           packets[index.fixtures.findIndex(row => row.sha256 === locator.fixture)]);
       },
-      drawTerrain(vp, fog, highShadows, highSampling) { ground.draw(vp, fog, highShadows, highSampling); },
+      drawTerrain(vp, fog, highShadows, highSampling, bounds) {
+        const ruins = highShadows && ruinShadow ? visibleRuinShadows(ruinShadow,
+          staticBindings.world0Cases.get(wasm.valley37_view_info(3)),
+          new Uint8Array(wasm.memory.buffer, wasm.fog_ptr(), geometry.backing ** 2),bounds) : [];
+        ground.draw(vp, fog, highShadows, highSampling, ruins);
+      },
       drawWorld(view, bounds) {
         const fog = new Uint8Array(wasm.memory.buffer, wasm.fog_ptr(), geometry.backing ** 2);
         const options = {vp: view.vp, eye: view.eye, zoom: view.zoom, epochs: [0, 0], capture: true};

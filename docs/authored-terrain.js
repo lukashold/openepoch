@@ -3,6 +3,7 @@ import {authoredValleyBoundary} from './authored-boundary.js';
 import {buildAuthoredTerrainLightmap, SHADOW_BLOCK_SPAN, SHADOW_RESOLUTION} from './authored-terrain-shadow.js';
 import {nativeTerrainCoefficients} from './native-terrain-lighting.js';
 import {createForestShadowRenderer} from './valley-forest-shadow.js';
+import {createRuinVolumeRenderer} from './valley-ruin-shadow.js';
 import {VALLEY_TERRAIN_MASK,valleyMaskMipLevels,valleyMaskShader,valleyTerrainPasses} from './authored-terrain-mask.js?v=valley-mips151';
 
 export const VALLEY_MATERIAL_MIPS = Object.freeze({
@@ -127,7 +128,8 @@ function program(gl, vertexSource, fragmentSource) {
 
 const hex = bytes => Array.from(new Uint8Array(bytes), n => n.toString(16).padStart(2, '0')).join('');
 
-export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readTexture, lighting = null, forestShadow = null, maskMips = null, materialMips = null) {
+export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readTexture, lighting = null, forestShadow = null,
+  maskMips = null, materialMips = null, ruinShadow = null) {
   const corners = valleyTerrainCornerTexture(geometry, manifest);
   const {vertices, indices} = authoredTerrainMesh(geometry);
   const boundary = authoredValleyBoundary(geometry);
@@ -244,12 +246,14 @@ export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readText
   const ambient = coefficients?.ambientBytes.map(value => value / 255);
   const projectForest = lightmap && forestShadow && gl.getContextAttributes().stencil
     ? createForestShadowRenderer(gl,geometry,indices,forestShadow,lighting.sourceTerrainDirection,program) : null;
+  const projectRuins = lightmap && ruinShadow && gl.getContextAttributes().stencil
+    ? createRuinVolumeRenderer(gl,ruinShadow,program) : null;
   const anisotropy = mipLevels && gl.getExtension('EXT_texture_filter_anisotropic');
   const maxAnisotropy = anisotropy ? Math.min(4,gl.getParameter(anisotropy.MAX_TEXTURE_MAX_ANISOTROPY_EXT)) : 1;
   let samplerHigh;
   return {
     indexCount: indices.length,
-    draw(vp, fogTexture, highShadows = false, highSampling = false) {
+    draw(vp, fogTexture, highShadows = false, highSampling = false, ruins = []) {
       gl.useProgram(shader);
       gl.uniform1i(uBoundary, 0);
       gl.uniform1i(uNativeMask, masked ? 1 : 0);
@@ -283,22 +287,36 @@ export async function loadAuthoredValleyTerrain(gl, geometry, manifest, readText
       }
       gl.bindVertexArray(vao);
       gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_INT, 0);
-      if (projectForest && highShadows) {
+      const drawVolumes = projectRuins && ruins.length;
+      if (highShadows && (drawVolumes || projectForest)) {
         const depth = gl.getParameter(gl.DEPTH_FUNC);
+        if (drawVolumes) {
+          gl.depthMask(false);
+          gl.depthFunc(gl.LEQUAL);
+          gl.colorMask(false,false,false,false);
+          gl.enable(gl.STENCIL_TEST);
+          gl.stencilMask(0x3f);
+          gl.stencilFunc(gl.ALWAYS,0,255);
+          projectRuins(vp,ruins);
+        }
         gl.depthMask(false);
-        gl.depthFunc(gl.EQUAL);
+        gl.depthFunc(drawVolumes ? gl.LEQUAL : gl.EQUAL);
         gl.colorMask(false,false,false,false);
         gl.enable(gl.STENCIL_TEST);
         gl.stencilMask(0x3f);
         gl.stencilFunc(gl.ALWAYS,0,0x3f);
         gl.stencilOp(gl.KEEP,gl.KEEP,gl.INCR_WRAP);
-        projectForest(vp);
+        if (projectForest) projectForest(vp);
         gl.colorMask(true,true,true,true);
         gl.stencilMask(0);
-        gl.stencilFunc(gl.NOTEQUAL,0,0x3f);
         gl.stencilOp(gl.KEEP,gl.KEEP,gl.KEEP);
         gl.useProgram(shader);
         gl.bindVertexArray(vao);
+        if (drawVolumes) {
+          gl.stencilFunc(gl.EQUAL,0,0x3f);
+          gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_INT, 0);
+        }
+        gl.stencilFunc(gl.NOTEQUAL,0,0x3f);
         gl.uniform1i(uProjectedShadow, 1);
         gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_INT, 0);
         gl.disable(gl.STENCIL_TEST);
