@@ -10,6 +10,20 @@ pub const REVEAL_EPOCH:[u8;9]=[0,0,3,0,0,0,6,9,12];
 // Ghidra 00884710 + 00b5526c resource era pairs. End is exclusive.
 pub const END_EPOCH:[u8;9]=[15,15,9,15,15,6,12,15,15];
 pub fn unlocked(slot:usize,epoch:u8)->bool {slot<RESOURCE_COUNT&&(!cfg!(feature="ee2-reference")||(epoch>=REVEAL_EPOCH[slot]&&epoch<END_EPOCH[slot]))}
+// An obsolete deposit is hidden per viewer. Other players may still use it.
+pub fn map_resource_kind(kind: u8, epoch: u8) -> u8 {
+    let slot = usize::from(kind.wrapping_sub(1));
+    if cfg!(feature = "ee2-reference") && END_EPOCH.get(slot).is_some_and(|&end| epoch >= end) {
+        R_NONE
+    } else {
+        kind
+    }
+}
+
+pub fn map_resource_unrevealed(kind: u8, epoch: u8) -> bool {
+    let slot = usize::from(kind.wrapping_sub(1));
+    cfg!(feature = "ee2-reference") && REVEAL_EPOCH.get(slot).is_some_and(|&start| epoch < start)
+}
 pub fn gather_modifier(kind:u8)->usize {if kind<=3 {7+kind as usize}else{8+kind as usize}}
 pub fn population(def:DefId,epoch:u8)->u32{
     #[cfg(feature="ee2-reference")]

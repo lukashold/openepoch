@@ -50,6 +50,7 @@ impl Game {
         self.players[seat].researching = false;
         self.rebuild_modifiers(owner, true);
         self.apply_paid_main(owner, previous);
+        self.retire_epoch_resources(owner);
         true
     }
 }

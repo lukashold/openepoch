@@ -126,13 +126,14 @@ impl Game {
         let me = self.local;
 
         // ---- resource tiles
+        let epoch = self.players[me as usize].epoch;
         let (tx0, ty0) = ((x0 - 1.0).max(0.0) as usize, (y0 - 1.0).max(0.0) as usize);
         let [width, height] = self.map.world_dimensions();
         let (tx1, ty1) = (((x1 + 2.0).max(0.0) as usize).min(width), ((y1 + 2.0).max(0.0) as usize).min(height));
         for ty in ty0..ty1 {
             for tx in tx0..tx1 {
                 let i = ty * N + tx;
-                let r = self.map.res[i];
+                let r = crate::economy::map_resource_kind(self.map.res[i], epoch);
                 if r == R_NONE || self.vis[i] == 0 || self.map.blocked[i] {
                     continue;
                 }
@@ -151,7 +152,7 @@ impl Game {
                     if o.len() > before { o[before + 10] = self.render_elapsed(alpha); }
                     continue;
                 }
-                let hidden=cfg!(feature="ee2-reference")&&self.players[self.local as usize].epoch<crate::economy::REVEAL_EPOCH[r as usize-1];
+                let hidden = crate::economy::map_resource_unrevealed(r, epoch);
                 if hidden{put(&mut o,cx,cy,alt,rot,crate::ids::resource_render(110),0.0,0.0,0.0,1.0);continue;}
                 match r {
                     R_WOOD => put(&mut o, cx, cy, alt, rot, S_TREE + ((h >> 20) & 1) as f32, 0.0, 0.0, 0.0, 1.0 + jx * 0.35),
@@ -351,6 +352,7 @@ impl Game {
     }
 
     pub fn minimap(&mut self) {
+        let epoch = self.players[self.local as usize].epoch;
         const TEAM: [[u8; 3]; 4] = [[70, 150, 255], [240, 70, 60], [80, 220, 100], [245, 210, 70]];
         for i in 0..NN {
             let f = match self.vis[i] {
@@ -360,8 +362,11 @@ impl Game {
             };
             let o = i * 4;
             let (mut r, mut g, mut b) = (self.map.rgba[o] as u32, self.map.rgba[o + 1] as u32, self.map.rgba[o + 2] as u32);
-            match self.map.res[i] {R_METAL=>(r,g,b)=(150,150,165),R_STONE=>(r,g,b)=(180,180,170),R_GOLD=>(r,g,b)=(230,195,55),R_TIN=>(r,g,b)=(160,180,190),R_SALTPETER=>(r,g,b)=(210,195,170),R_OIL=>(r,g,b)=(70,60,52),R_URANIUM=>(r,g,b)=(135,180,60),R_FISH=>(r,g,b)=(224,224,224),_=>{}}
-            let kind=self.map.res[i];if cfg!(feature="ee2-reference")&&kind>0&&crate::economy::REVEAL_EPOCH.get(kind as usize-1).is_some_and(|&epoch|self.players[self.local as usize].epoch<epoch){(r,g,b)=(150,150,150);}
+            let kind = crate::economy::map_resource_kind(self.map.res[i], epoch);
+            match kind {R_METAL=>(r,g,b)=(150,150,165),R_STONE=>(r,g,b)=(180,180,170),R_GOLD=>(r,g,b)=(230,195,55),R_TIN=>(r,g,b)=(160,180,190),R_SALTPETER=>(r,g,b)=(210,195,170),R_OIL=>(r,g,b)=(70,60,52),R_URANIUM=>(r,g,b)=(135,180,60),R_FISH=>(r,g,b)=(224,224,224),_=>{}}
+            if crate::economy::map_resource_unrevealed(kind, epoch) {
+                (r, g, b) = (150, 150, 150);
+            }
             // owned territories get a wash of their owner's colour, borders a stronger one
             let t = self.map.terr[i];
             let owner = self.towner[t as usize];

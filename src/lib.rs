@@ -494,6 +494,10 @@ pub extern "C" fn skirmish_epoch(epoch:u32)->u32 {
     }
     game.build_grid();game.update_fog();1
 }
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn resource_retirement_version() -> u32 { 1 }
+
 #[no_mangle]
 pub extern "C" fn resource_count()->u32 {economy::RESOURCE_COUNT as u32}
 #[no_mangle]
@@ -1895,8 +1899,9 @@ fn submit_context_order(x: f32, y: f32, attack_move: u32) -> bool {
             return false;
         }
     }
-    if g.map.res[tile] != R_NONE && g.real_fog(g.local,tile) > 0 && !workers.is_empty() {
-        if !g.citizen_can_gather(g.local,g.map.res[tile]){return false;}
+    let kind = economy::map_resource_kind(g.map.res[tile], g.players[g.local as usize].epoch);
+    if kind != R_NONE && g.real_fog(g.local, tile) > 0 && !workers.is_empty() {
+        if !g.citizen_can_gather(g.local, kind) { return false; }
         g.submit(C_GATHER, x, y, tile as i32, &workers);
         if !others.is_empty() {
             g.submit(C_MOVE, x, y, 0, &others);

@@ -2695,6 +2695,8 @@ impl Game {
                     self.players[team].researching = false;
                     let old=self.max_hp(e.team,e.def);self.rebuild_modifiers(e.team,true);e.hp*=self.max_hp(e.team,e.def)/old.max(0.01);
                     #[cfg(feature="ee2-paidqueue7")] self.apply_paid_main(team as u8,previous_epoch);
+                    #[cfg(feature = "ee2-native13")]
+                    self.retire_epoch_resources(e.team);
                     // Main may reprice/remove this city's pending jobs while
                     // update_building holds its active order in a local copy.
                     #[cfg(feature="ee2-paidqueue7")]

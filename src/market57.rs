@@ -132,6 +132,11 @@ impl Game {
     pub(crate) fn market_trade(&mut self, owner: u8, host: u32, native: u8, lots: i32) -> bool {
         let Some(order) = self.market_order(owner, host, native, lots) else { return false; };
         if !self.market_quote(owner, host, native, lots).is_some_and(|(_, available)| available) { return false; }
+        self.execute_market_order(owner, order);
+        true
+    }
+
+    fn execute_market_order(&mut self, owner: u8, order: Order) {
         let mut buy_price = self.market.buy[owner as usize][order.slot];
         for _ in 0..order.lots {
             let (price, next) = order.step(buy_price);
@@ -143,7 +148,25 @@ impl Game {
             buy_price = next;
         }
         self.market.buy[owner as usize][order.slot] = buy_price;
-        true
+    }
+
+    // Original 00884A90 runs from the resource upgrades at E7, E10 and E13.
+    // A market sells whole lots at the current quotes. The remainder is cleared.
+    pub(crate) fn retire_epoch_resources(&mut self, owner: u8) {
+        let epoch = self.players[owner as usize].epoch;
+        if !matches!(epoch, 6 | 9 | 12) { return; }
+        let has_market = self.ents[..self.high].iter().any(|actor| {
+            actor.alive && actor.hp > 0.0 && actor.team == owner && actor.def == MARKET && actor.built >= 1.0
+        });
+        let drift = if self.crown_market_stable(owner) { 3 } else { 5 };
+        for (native, own_slot) in [(4, 5), (5, 2), (6, 6)] {
+            if epoch < crate::economy::END_EPOCH[own_slot] { continue; }
+            let lots = (self.resource(owner, own_slot) as u32 / LOT as u32) as u16;
+            if has_market && lots != 0 {
+                self.execute_market_order(owner, Order { slot: native - 1, own_slot, lots, buy: false, drift });
+            }
+            self.set_resource(owner, own_slot, 0.0);
+        }
     }
 }
 
