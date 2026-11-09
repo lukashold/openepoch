@@ -262,6 +262,10 @@ impl Game {
     }
 
     pub(crate) fn reconcile_border_positions(&mut self) {
+        self.reconcile_border_positions_for(None);
+    }
+
+    pub(crate) fn reconcile_border_positions_for(&mut self, new_owner: Option<u8>) {
         if self.diplomacy.borders.as_ref().is_none_or(|rules| rules.terms.iter().all(|&term| term == 0)) {
             return;
         }
@@ -275,6 +279,11 @@ impl Game {
                 continue;
             }
             let here = tile_of(actor.x, actor.y);
+            if new_owner.is_some_and(|seat| {
+                seat != actor.team && self.towner.get(usize::from(self.map.terr[here])) != Some(&seat)
+            }) {
+                continue;
+            }
             if self.map.permits_territory(here, self.denied_border_territories(&actor)) {
                 continue;
             }

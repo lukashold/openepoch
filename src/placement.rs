@@ -489,7 +489,7 @@ impl Game {
             #[cfg(feature="ee2-reference")]
             self.sync_city_ground_entry(i);
             if def == TC {
-                self.rebuild_territories();
+                self.sync_territory_anchors();
             }
             #[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
             self.recount_paid_players();

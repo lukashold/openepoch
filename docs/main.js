@@ -60,7 +60,7 @@ import {NATIVE_SEASON_CHOICE,normalizeSeasonChoice,resolveSeasonChoice} from './
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=native108';
 import {checkTimeOfDayMode,createTimeOfDayClock,readTimeOfDayState,resolveTimeOfDay,timeOfDayPeriods} from './original-time-of-day.js?v=time-of-day160';
 import {CLIMATE_NAMES,checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=territory-dispute215';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=territory-order219';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION as BASE_PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=time-of-day160';
@@ -3635,13 +3635,14 @@ const rosterFeatures=Object.freeze(Object.fromEntries([
   ['infantryRoster','infantry_roster_configure_peer'],['productionRoster','production_roster_configure_peer'],
   ['granary','configure_network_granary'],
   ['disputedTerritory','configure_network_disputed_territories'],
+  ['orderedTerritories','configure_network_ordered_territories'],
   ...(tradeAvailable?[['tradeRoute','trade_route_configure_peer']]:[]),
   ...(airMissionAvailable?[['airMission','air_mission_configure_peer'],['airRunway','air_runway_configure_peer'],
     ['airTakeoff','air_takeoff_configure_peer'],['airLanding','air_landing_configure_peer'],['airCarrier','air_carrier_configure_peer']]:[]),
   ...(supportsPeerCrowns?[['crowns','configure_crowns_peer']]:[]),
 ].filter(([,name])=>typeof wasm[name]==='function')));
 const supportedRosterFeatures=Object.keys(rosterFeatures);
-const extendedRosterFeatures=['granary','disputedTerritory'];
+const extendedRosterFeatures=['granary','disputedTerritory','orderedTerritories'];
 const legacyRosterFeatures=supportedRosterFeatures.filter(key=>!extendedRosterFeatures.includes(key));
 const extendedRosterHello=Object.fromEntries(extendedRosterFeatures
   .filter(key=>Object.hasOwn(rosterFeatures,key)).map(key=>[key,true]));
@@ -3682,7 +3683,8 @@ function checkRosterSettings(cfg,humanSeats,resuming=false) {
       throw Error('Kapitole benötigen getrennte Zivilisationen und eine passende Eroberungsregel.');
     capitolVictory={mode,minutes,sole};
   }
-  const featureDeps={captureAnimation:'capture',airRunway:'airMission',airTakeoff:'airRunway',airLanding:'airTakeoff',airCarrier:'airLanding'};
+  const featureDeps={captureAnimation:'capture',airRunway:'airMission',airTakeoff:'airRunway',airLanding:'airTakeoff',
+    airCarrier:'airLanding',orderedTerritories:'disputedTerritory'};
   for(const [key,parent] of Object.entries(featureDeps))if(features.includes(key)&&!features.includes(parent))
     throw Error('Unvollständige Spielbefehle für diesen Raum.');
   const captureCheckpoint=cfg.captureCheckpoint===true;
@@ -3728,7 +3730,7 @@ function checkpointRules(cfg){
   const capture=cfg.captureCheckpoint?1+Number(cfg.features.includes('captureAnimation')):0;
   const rules=crowns|(capture<<25)|(Number(cfg.sightTerms===true)<<27)|(Number(cfg.timedTreaties===true)<<28)|
     (Number(cfg.borderTreaties===true)<<29)|(Number(cfg.fishing===true)<<30)|(Number(cfg.features.includes('granary'))<<31)|
-    (Number(cfg.features.includes('disputedTerritory'))<<7);
+    (Number(cfg.features.includes('disputedTerritory'))<<7)|(Number(cfg.features.includes('orderedTerritories'))<<6);
   const crown=cfg.crownVictory, capitol=cfg.capitolVictory;
   if(crown)return rules|(crown.mode<<8)|(crown.target<<16);
   if(capitol)return rules|(capitol.mode<<8)|(capitol.minutes<<16)|(Number(capitol.sole)<<24);
@@ -3874,7 +3876,8 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
       !Array.isArray(hello.features)||hello.features.length>11||hello.features.some(key=>typeof key!=='string'))
       throw Error('Alle Teilnehmer brauchen dieselbe UP-Spielversion.');
     const features=hello.features.filter(key=>!extendedRosterFeatures.includes(key));
-    for(const key of extendedRosterFeatures)if(extendedRosterHello[key]&&hello[key]===true)features.push(key);
+    for(const key of extendedRosterFeatures)if(extendedRosterHello[key]&&hello[key]===true&&
+      (key!=='orderedTerritories'||features.includes('disputedTerritory')))features.push(key);
     return {civilization:civilizationChoice(hello.civilization),climates:peerClimates(hello.climates),features,
       crownVictory:hello.crownVictory===true,
       capitolVictory:hello.capitolVictory===true,

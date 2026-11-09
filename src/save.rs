@@ -143,6 +143,8 @@ impl Game {
         let options = options | if self.network_granary { crate::granary211::PEER_SAVE_FLAG } else { 0 };
         #[cfg(feature = "ee2-native13")]
         let options = options | if self.network_disputed_territories { crate::territory::DISPUTED_PEER_SAVE_FLAG } else { 0 };
+        #[cfg(feature = "ee2-ordered-claims217")]
+        let options = options | if self.network_ordered_territories { crate::territory::ORDERED_PEER_SAVE_FLAG } else { 0 };
         #[cfg(feature="ee2-native13")]
         let options = options | if self.submarine_depth_enabled { crate::submarine82::SAVE_FLAG } else { 0 };
         #[cfg(feature="ee2-native13")]
@@ -581,6 +583,8 @@ impl Game {
                 crate::runway32::CARRIER_POSE_SAVE_FLAG | CAPTURE_CHECKPOINT_SAVE_MASK |
                 crate::fishing81::SAVE_FLAG | crate::submarine82::SAVE_FLAG | crate::paid_queue7::LATE_POPULATION_SAVE_FLAG |
                 crate::granary211::PEER_SAVE_FLAG | crate::territory::DISPUTED_PEER_SAVE_FLAG;
+            #[cfg(feature = "ee2-ordered-claims217")]
+            let allowed = allowed | crate::territory::ORDERED_PEER_SAVE_FLAG;
             let flags = v(0);
             if flags & !allowed != 0 || v(4) > 1 { return None; }
             g.cheats_enabled = flags & 1 != 0;
@@ -604,6 +608,11 @@ impl Game {
                 g.network_granary = flags & crate::granary211::PEER_SAVE_FLAG != 0;
                 g.network_disputed_territories = flags & crate::territory::DISPUTED_PEER_SAVE_FLAG != 0;
                 if (g.network_granary || g.network_disputed_territories) && !g.net { return None; }
+                #[cfg(feature = "ee2-ordered-claims217")]
+                {
+                    g.network_ordered_territories = flags & crate::territory::ORDERED_PEER_SAVE_FLAG != 0;
+                    if g.network_ordered_territories && (!g.net || !g.ordered_territory_rules()) { return None; }
+                }
                 g.submarine_depth_enabled = flags & crate::submarine82::SAVE_FLAG != 0;
                 g.late_population = flags & crate::paid_queue7::LATE_POPULATION_SAVE_FLAG != 0;
                 if g.late_population && g.net { return None; }

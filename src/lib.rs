@@ -1056,14 +1056,17 @@ pub extern "C" fn validate_grouped_resume(layout: u32, controller: u32, tick: u3
 #[cfg(feature = "ee2-native13")]
 fn crown_resume_matches(game: &Game, encoded: u32) -> bool {
     let disputed = encoded & territory::DISPUTED_PEER_RESUME_FLAG != 0;
-    let rules = encoded & (255 ^ territory::DISPUTED_PEER_RESUME_FLAG);
+    let extra = territory::DISPUTED_PEER_RESUME_FLAG;
+    #[cfg(feature = "ee2-ordered-claims217")]
+    let extra = extra | territory::ORDERED_PEER_RESUME_FLAG;
+    let rules = encoded & (255 ^ extra);
     let victory = (encoded >> 8) & 0x1ffff;
     let capture = (encoded >> 25) & 3;
     let sight = (encoded >> 27) & 1;
     let timed = (encoded >> 28) & 1;
     let borders = (encoded >> 29) & 1;
     let fishing = (encoded >> 30) & 1;
-    (rules == 0 && victory == 0 && capture == 0 || rules == game.crown_rules() + 1)
+    let compatible = (rules == 0 && victory == 0 && capture == 0 || rules == game.crown_rules() + 1)
         && victory == (game.crown_victory_config() | game.network_capitol_config())
         && capture == u32::from(game.capture_checkpoint_mode)
         && sight == u32::from(game.diplomacy.sight_terms)
@@ -1072,7 +1075,11 @@ fn crown_resume_matches(game: &Game, encoded: u32) -> bool {
         && borders == u32::from(game.diplomacy.borders.is_some())
         && fishing == u32::from(game.fishing_enabled)
         && encoded >> 31 == u32::from(game.network_granary)
-        && disputed == game.network_disputed_territories
+        && disputed == game.network_disputed_territories;
+    #[cfg(feature = "ee2-ordered-claims217")]
+    let compatible = compatible
+        && (encoded & territory::ORDERED_PEER_RESUME_FLAG != 0) == game.network_ordered_territories;
+    compatible
 }
 
 #[cfg(feature = "ee2-native13")]
@@ -2047,6 +2054,19 @@ pub extern "C" fn configure_network_disputed_territories(enabled: u32) -> u32 {
     if enabled != 1 || !game.net || game.tick != 0 { return 0; }
     game.network_disputed_territories = true;
     1
+}
+#[cfg(feature = "ee2-ordered-claims217")]
+#[no_mangle]
+pub extern "C" fn configure_network_ordered_territories(enabled: u32) -> u32 {
+    let game = g();
+    if enabled != 1 || !game.net || game.tick != 0 || !game.disputed_territory_rules() {
+        return 0;
+    }
+    game.network_ordered_territories = true;
+    if game.ordered_territory_rules() { 1 } else {
+        game.network_ordered_territories = false;
+        0
+    }
 }
 #[no_mangle]
 pub extern "C" fn dock_orientation(tx:i32,ty:i32)->u32{g().dock_auto_turn(tx,ty)}

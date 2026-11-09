@@ -318,6 +318,8 @@ pub struct Game {
     pub(crate) network_granary: bool,
     #[cfg(feature = "ee2-native13")]
     pub(crate) network_disputed_territories: bool,
+    #[cfg(feature = "ee2-ordered-claims217")]
+    pub(crate) network_ordered_territories: bool,
     #[cfg(feature = "ee2-native13")]
     pub(crate) submarine_depth_enabled: bool,
     #[cfg(feature = "ee2-native13")]
@@ -580,6 +582,8 @@ impl Game {
             network_granary: false,
             #[cfg(feature = "ee2-native13")]
             network_disputed_territories: false,
+            #[cfg(feature = "ee2-ordered-claims217")]
+            network_ordered_territories: false,
             #[cfg(feature = "ee2-native13")]
             submarine_depth_enabled: false,
             #[cfg(feature = "ee2-native13")]
@@ -954,7 +958,7 @@ impl Game {
             self.territory.claims[territory] != NONE && self.towner[territory] == e.team
                 && !self.get(self.territory.claims[territory]).is_some_and(|anchor| self.ents[anchor].def == TC)
         } {
-            self.rebuild_territories();
+            self.sync_territory_anchors();
             self.void_landless_alliances();
         }
         #[cfg(feature = "ee2-native13")]
@@ -1638,6 +1642,8 @@ impl Game {
         if self.network_granary { mix(u32::from_le_bytes(*b"GRA1")); }
         #[cfg(feature = "ee2-native13")]
         if self.network_disputed_territories { mix(u32::from_le_bytes(*b"DSP1")); }
+        #[cfg(feature = "ee2-ordered-claims217")]
+        if self.network_ordered_territories { mix(u32::from_le_bytes(*b"ORD1")); }
         #[cfg(feature = "ee2-native13")]
         if self.submarine_depth_enabled { mix(u32::from_le_bytes(*b"SUB1")); }
         #[cfg(feature = "ee2-native13")]
@@ -2034,7 +2040,7 @@ impl Game {
             let seat = usize::from(owner);
             seat < self.nplayers && !self.players[seat].alive
         }) {
-            self.rebuild_territories();
+            self.sync_territory_anchors();
             self.void_landless_alliances();
         }
     }
@@ -2102,6 +2108,12 @@ impl Game {
     pub fn build_grid(&mut self) {
         self.recount_spatial_grid();
         self.rebuild_territories();
+    }
+
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) fn build_grid_after_territory_command(&mut self) {
+        self.recount_spatial_grid();
+        self.sync_territory_anchors();
     }
 
     pub(crate) fn build_grid_with_saved_disputes(&mut self) {

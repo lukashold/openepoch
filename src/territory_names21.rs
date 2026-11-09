@@ -74,6 +74,13 @@ impl Game {
         }
     }
 
+    #[cfg(feature = "ee2-ordered-claims217")]
+    pub(crate) fn name_territory_acquisition(&mut self, id: usize, owner: u8) {
+        if let Some(names) = &mut self.territory_names {
+            names.assign(id, self.civilizations[owner as usize], &mut self.source_birth.rng);
+        }
+    }
+
     pub(crate) fn restore_territory_names(&mut self, names: TerritoryNames) -> Option<()> {
         if !self.valid_fullmap_naming_profile() || names.ids[self.map.tseeds.len()..].iter().any(|&id| id != 0) {
             return None;
@@ -148,6 +155,7 @@ mod tests {
         assert_eq!(game.towner[id], 0);
         assert_eq!(game.territory_names.as_ref().unwrap().ids[id], expected);
         assert_eq!(game.source_birth.rng, expected_rng);
+        if game.ordered_territory_rules() { game.rebuild_territories(); }
         assert!(game.apply_territory(0, 1, 0, id as u32, u32::MAX));
         assert_eq!(game.towner[id], 1);
         assert_eq!(game.territory_names.as_ref().unwrap().ids[id], expected);

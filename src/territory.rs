@@ -9,13 +9,24 @@ pub const TERR_NONE: u8 = 255;
 // TER1 stores actor handles. These low words cannot be entity indices, and
 // preserve the incumbent in the same slot while there is no completed city.
 const DISPUTED_CLAIM: u32 = 0x0000_ff00;
+const ACQUIRED_CLAIM: u32 = DISPUTED_CLAIM + 4;
+#[cfg(feature = "ee2-ordered-claims217")]
+#[path = "territory_ordered217.rs"]
+mod ordered;
 #[cfg(feature = "ee2-native13")]
 pub(crate) const DISPUTED_PEER_SAVE_FLAG: u32 = 1 << 23;
 #[cfg(feature = "ee2-native13")]
 pub(crate) const DISPUTED_PEER_RESUME_FLAG: u32 = 1 << 7;
+#[cfg(feature = "ee2-ordered-claims217")]
+pub(crate) const ORDERED_PEER_SAVE_FLAG: u32 = 1 << 24;
+#[cfg(feature = "ee2-ordered-claims217")]
+pub(crate) const ORDERED_PEER_RESUME_FLAG: u32 = 1 << 6;
 
 fn disputed_owner(claim: u32) -> Option<u8> {
     (DISPUTED_CLAIM..DISPUTED_CLAIM + 4).contains(&claim).then(|| (claim - DISPUTED_CLAIM) as u8)
+}
+fn acquired_owner(claim: u32) -> Option<u8> {
+    (ACQUIRED_CLAIM..ACQUIRED_CLAIM + 4).contains(&claim).then(|| (claim - ACQUIRED_CLAIM) as u8)
 }
 #[cfg(feature = "ee2-native13")]
 pub(crate) const TERR_GIFT_BATCH_ACTION: u32 = 5;
@@ -80,6 +91,17 @@ impl Game {
         disputed_owner(self.territory.claims[territory]).is_some()
     }
 
+    pub(crate) fn ordered_territory_rules(&self) -> bool {
+        #[cfg(feature = "ee2-ordered-claims217")]
+        {
+            #[cfg(feature = "ee2-authored-valley37")]
+            if self.valley_fixture.is_some() { return false; }
+            self.disputed_territory_rules() && (!self.net || self.network_ordered_territories)
+        }
+        #[cfg(not(feature = "ee2-ordered-claims217"))]
+        false
+    }
+
     pub(crate) fn territory_has_foreign_dispute(&self) -> bool {
         self.territory.claims.iter().filter_map(|&claim| disputed_owner(claim)).any(|owner| owner != self.local)
     }
@@ -93,6 +115,8 @@ impl Game {
         claim == NONE || (territory < self.map.tseeds.len() &&
             if let Some(team) = disputed_owner(claim) {
                 self.disputed_territory_rules() && self.territory_seat_active(team)
+            } else if let Some(team) = acquired_owner(claim) {
+                self.ordered_territory_rules() && self.territory_seat_active(team)
             } else {
                 self.get(claim).is_some_and(|i| self.valid_territory_anchor(&self.ents[i], territory))
             })
@@ -171,7 +195,22 @@ impl Game {
         self.update_territories(false);
     }
 
+    /// Keep anchors usable after a direct command without running an extra admission pulse.
+    pub(crate) fn sync_territory_anchors(&mut self) {
+        #[cfg(feature = "ee2-ordered-claims217")]
+        if self.ordered_territory_rules() {
+            self.update_ordered_territories(false, false);
+            return;
+        }
+        self.rebuild_territories();
+    }
+
     pub(crate) fn update_territories(&mut self, restoring: bool) {
+        #[cfg(feature = "ee2-ordered-claims217")]
+        if self.ordered_territory_rules() {
+            self.update_ordered_territories(restoring, true);
+            return;
+        }
         #[cfg(feature = "ee2-native13")]
         let hill = self.koth_territory();
         let disputed = self.disputed_territory_rules();
@@ -648,6 +687,9 @@ impl Game {
         self.cancel_nonhostile_orders();
         #[cfg(feature = "ee2-native13")]
         self.reconcile_capture_orders();
+        #[cfg(feature = "ee2-native13")]
+        self.build_grid_after_territory_command();
+        #[cfg(not(feature = "ee2-native13"))]
         self.build_grid();
         self.refresh_match_alive();
         self.release_inactive_territories();
@@ -892,6 +934,7 @@ impl Game {
             let actual = self.towner[id];
             let seen = known[id] || actual == self.local;
             let disputed = (actual == self.local || visible[id]) && self.territory_is_disputed(id);
+            let acquired = (actual == self.local || visible[id]) && acquired_owner(self.territory.claims[id]).is_some();
             let owner = if seen { actual } else { TERR_NONE };
             let complete =
                 seen && (actual == self.local || disclosed[id] || self.display_visibility() == 2);
@@ -915,6 +958,8 @@ impl Game {
                 "Kein Besitzer"
             } else if disputed {
                 "Umkämpftes Gebiet"
+            } else if acquired {
+                "Gebietsübernahme wird bestätigt"
             } else if !transferable {
                 "Kein lebender Eigentümer mit Stadtzentrum"
             } else {
@@ -1153,6 +1198,7 @@ mod tests {
         game.spawn(TC, 0, x, y);
         game.spawn(FORTRESS, 0, x + 2.0, y);
         game.build_grid();
+        if game.ordered_territory_rules() { game.rebuild_territories(); }
         let expansion = id as u32;
         let before = game.state_hash();
         for invalid in [[home, home], [expansion, enemy], [expansion, u32::MAX]] {
@@ -1192,6 +1238,7 @@ mod tests {
                 game.spawn(TC, seat, x, y);
                 game.spawn(FORTRESS, seat, x + 2.0, y);
                 game.build_grid();
+                if game.ordered_territory_rules() { game.rebuild_territories(); }
                 assert!(game.territory_transferable(seat, id as u32));
                 expansion[usize::from(seat)] = id as u32;
             }

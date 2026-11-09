@@ -643,11 +643,11 @@ impl Game {
         self.fx.truncate(fx_len);
         self.events.truncate(event_len);
         if DEFS[old.def as usize].building { self.block(new, true); }
-        self.rebuild_territories();
+        self.sync_territory_anchors();
         self.void_landless_alliances();
         self.prune_territory_offers();
         self.refresh_match_alive();
-        self.build_grid();
+        self.build_grid_after_territory_command();
         self.update_fog();
         true
     }

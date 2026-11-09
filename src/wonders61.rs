@@ -294,6 +294,7 @@ mod tests {
         game.ents[mill].built = 1.0;
         game.rebuild_territories();
         assert_eq!(game.towner[territory], 0);
+        if game.ordered_territory_rules() { game.rebuild_territories(); }
         assert_eq!(game.territory.claims[territory], game.h(barracks));
         game.save();
         let mut loaded = Game::load(&game.savebuf).unwrap();

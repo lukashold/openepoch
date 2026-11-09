@@ -92,6 +92,7 @@ mod tests {
         game.spawn(TC, team, x, y);
         game.spawn(FORTRESS, team, x + 2.0, y);
         game.build_grid();
+        if game.ordered_territory_rules() { game.rebuild_territories(); }
         assert_eq!(game.towner[id], team);
         id as u32
     }

@@ -293,7 +293,7 @@ impl Game {
                     { self.retire_city_name(i); self.forget_capture_actor(i); }
                     self.ents[i].hp = 0.0;
                 }
-                if city{self.rebuild_territories();self.void_landless_alliances();}
+                if city{self.sync_territory_anchors();self.void_landless_alliances();}
                 self.prune_territory_offers();
             }
             #[cfg(feature = "ee2-native13")]
