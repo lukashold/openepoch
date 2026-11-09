@@ -402,6 +402,8 @@ pub struct Game {
     pub research_points: [f32; 4],
     pub researched: [[u32; 6]; 4],
     pub modifiers: [crate::research::Modifiers; 4],
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) strategic_damage: [[f32; crate::research::DEF_COUNT]; 4],
     #[cfg(feature="ee2-civ8")]
     pub civilizations:[u8;4],
     #[cfg(feature="ee2-civ8")]
@@ -647,6 +649,8 @@ impl Game {
             bench,
             cheats_enabled: false, instant_build: false, god_mode: false, fog_inverted: false, tech_points: 0,
             research_points: [0.0;4], researched: [[0;6];4], modifiers: [[[0.0;19];crate::research::DEF_COUNT];4],
+            #[cfg(feature = "ee2-native13")]
+            strategic_damage: [[0.0; crate::research::DEF_COUNT]; 4],
             #[cfg(feature="ee2-civ8")]
             civilizations:[crate::civ8_runtime::LEGACY_NEUTRAL;4],
             #[cfg(feature="ee2-civ8")]

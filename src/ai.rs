@@ -21,7 +21,7 @@ impl Game {
         let epoch = self.players[team as usize].epoch;
         let row = crate::ee2_units::lookup_class(def, epoch);
         let damage = if def == WORKER { row.and_then(|unit| unit.damage).unwrap_or(0.0) }
-            else { self.effective_weapon_damage(team, def, weapon.dmg) };
+            else { self.strategic_weapon_damage(team, def, weapon.dmg) };
         let reload = row.and_then(|unit| unit.reload).unwrap_or(weapon.cd);
         let reload = if reload == 0.0 { 0.0001 } else { reload };
         ((f64::from(damage) / f64::from(reload) + f64::from(0.1_f32)) as f32 * hp).max(10.0)
@@ -738,4 +738,35 @@ mod civ8_ai_tests {
         assert!(g.ents.iter().zip(&loaded.ents).any(|(a,b)|a.alive&&(a.x.to_bits()!=b.x.to_bits()||a.y.to_bits()!=b.y.to_bits())),"actual positions differ, independently of the history marker");
         assert_eq!(g.state_hash(),repaired.state_hash(),"modern envelope restores exactly the navigation decision state");
     }
+}
+
+#[cfg(all(test, feature = "ee2-native13"))]
+#[test]
+fn sea_lanes_strength_retains_hp_and_excludes_secondary_attack() {
+    let mut game = Game::new(7, 1, 0, 1, 0);
+    assert!(game.configure_crowns(false));
+    game.researched[0][0] |= 0b1111;
+    for _ in 0..20 { game.tick(); }
+    let ship: DefId = 29;
+    let weapon = DEFS[ship as usize].w[0].dmg;
+    let before_hp = game.max_hp(0, ship);
+    let before_damage = game.effective_weapon_damage(0, ship, weapon);
+    assert!(before_damage > 0.0);
+    let before_strength = game.hill_combat_strength(0, ship, before_hp);
+    assert!(game.choose_crown_power(0, 5));
+    let after_hp = game.max_hp(0, ship);
+    assert!(after_hp > before_hp);
+    assert!(game.effective_weapon_damage(0, ship, weapon) > before_damage);
+    assert_eq!(game.strategic_weapon_damage(0, ship, weapon), before_damage);
+    let reload = crate::ee2_units::lookup_class(ship, game.players[0].epoch).and_then(|unit| unit.reload).unwrap_or(DEFS[ship as usize].w[0].cd);
+    let dps = (f64::from(before_damage) / f64::from(reload) + f64::from(0.1_f32)) as f32;
+    let after_strength = game.hill_combat_strength(0, ship, after_hp);
+    assert_eq!(after_strength, (dps * after_hp).max(10.0));
+    assert!(after_strength > before_strength);
+    game.save();
+    let mut loaded = Game::load(&game.savebuf).expect("Sea Lanes save loads");
+    assert_eq!(loaded.state_hash(), game.state_hash());
+    assert_eq!(loaded.hill_combat_strength(0, ship, loaded.max_hp(0, ship)), after_strength);
+    loaded.save();
+    assert_eq!(loaded.savebuf, game.savebuf);
 }
