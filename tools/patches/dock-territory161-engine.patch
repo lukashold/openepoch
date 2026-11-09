@@ -1,0 +1,194 @@
+diff --git a/src/dock157.rs b/src/dock157.rs
+--- a/src/dock157.rs
++++ b/src/dock157.rs
+@@ -16,6 +16,60 @@
+ const MIN_LAND: f64 = f32::from_bits(0x3dcc_cccd) as f64;
+ const RIVER: u8 = 6;
+ const OCEAN: u8 = 7;
++const TERRITORY_SIDE: usize = SIDE - 1;
++const TERRITORY: &[u8; TERRITORY_SIDE * TERRITORY_SIDE] =
++    include_bytes!("../../private-geometry/huge10-dock-territory.bin");
++const ARCHIVED_SHUFFLE: u32 = 2_394_123_698;
++const OPENING_REGIONS: [u8; 10] = [3, 5, 7, 10, 4, 11, 9, 8, 2, 6];
++const CARDINALS: [[f32; 2]; 4] = [[1.0, 0.0], [0.0, -1.0], [-1.0, 0.0], [0.0, 1.0]];
++
++fn territory_cell(coordinate: f32) -> i32 {
++    if coordinate < 0.0 {
++        coordinate.ceil() as i32
++    } else {
++        (((coordinate as f64 + 103_079_215_104.0).to_bits() >> 16) as u32) as i32
++    }
++}
++
++fn territory_offset(point: [f32; 2], direction: [f32; 2], distance: i32) -> [f32; 2] {
++    [point[0] + direction[0] * distance as f32, point[1] + direction[1] * distance as f32]
++}
++
++fn resolve_territory(point: [f32; 2], radius: i32, cell: impl Fn([i32; 2]) -> Option<u8>) -> Option<(u8, [f32; 2])> {
++    let sample = |p: [f32; 2]| cell(p.map(territory_cell));
++    if let Some(region) = sample(point).filter(|&region| region != 0) { return Some((region, point)); }
++
++    let mut active = [true; 4];
++    for distance in 1..=radius {
++        let mut positions = CARDINALS.map(|direction| territory_offset(point, direction, distance));
++        for (index, &position) in positions.iter().enumerate() {
++            if !active[index] { continue; }
++            match sample(position) {
++                Some(0) => (),
++                Some(region) => return Some((region, position)),
++                None => active[index] = false,
++            }
++        }
++        // 0071E9B0 adds each cross offset to its preceding position, in
++        // cardinal order. These are cumulative steps, not a distance sort.
++        for offset in 1..distance * 2 {
++            for (index, position) in positions.iter_mut().enumerate() {
++                if !active[index] { continue; }
++                *position = territory_offset(*position, CARDINALS[index ^ 1], offset);
++                if let Some(region) = sample(*position).filter(|&region| region != 0) {
++                    return Some((region, *position));
++                }
++            }
++        }
++        if active.iter().all(|&valid| !valid) { break; }
++    }
++    None
++}
++
++fn archived_territory([x, z]: [i32; 2]) -> Option<u8> {
++    if x < 0 || z < 0 || x >= TERRITORY_SIDE as i32 || z >= TERRITORY_SIDE as i32 { return None; }
++    Some(TERRITORY[z as usize * TERRITORY_SIDE + x as usize])
++}
+ 
+ #[derive(Clone, Copy, Debug)]
+ pub(crate) struct Pose {
+@@ -168,10 +222,11 @@
+         if pose.normal.is_none() || terrain.terrain_allows(pose) != Some(true) { return 1; }
+         let side = Self::footprint_side(DOCK,0);
+         let [tx,ty] = raw.map(|coordinate| (coordinate as f64 - f64::from(side) * 0.5 + 0.5).floor() as i32);
+-        let error = self.placement_error_for(self.local,DOCK,tx,ty,0,ids,true);
+-        if error != 0 { return error; }
+         let snapped_tile = tile_of(pose.center[0],pose.center[1]);
+         let grid_tile = tile_of(tx as f32 + side as f32*0.5,ty as f32 + side as f32*0.5);
++        let territory_error = self.archived_dock_territory_error(pose.center, self.map.terr[grid_tile]);
++        let error = self.placement_error_with_territory(self.local,DOCK,tx,ty,0,ids,true,territory_error);
++        if error != 0 { return error; }
+         if self.map.terr[snapped_tile] != self.map.terr[grid_tile] { return 2; }
+ 
+         // The exact source shore mask applies to the static original world.
+@@ -192,6 +247,25 @@
+         0
+     }
+ 
++    fn archived_dock_territory_error(&self, center: [f32; 2], grid_region: u8) -> Option<u32> {
++        let layout = self.map.pangea104?;
++        if layout.shuffle_state != ARCHIVED_SHUFFLE || self.diplomacy.borders.is_some() { return None; }
++        // The radius-four pass writes to a temporary point. The radius-five
++        // admission query finds that same region, or starts at the unmodified
++        // center if the first search missed. The Dock actor itself never moves.
++        let (native, point) = resolve_territory(center, 4, archived_territory)
++            .or_else(|| resolve_territory(center, 5, archived_territory))?;
++        let seat = OPENING_REGIONS.iter().position(|&region| region == native)?;
++        let &(x, z) = self.map.starts.get(seat)?;
++        let portable = self.map.terr[tile_of(x as f32, z as f32)];
++        if portable != grid_region || self.map.terr[tile_of(point[0], point[1])] != portable { return None; }
++
++        let owner = self.towner[usize::from(portable)];
++        // The private wide solo rules have no configurable border term. Its
++        // default Open term admits purpose 2 once the initial ceasefire ends.
++        Some(if owner != self.local && owner != 255 && self.initial_ceasefire_active() { 11 } else { 0 })
++    }
++
+     fn dock157_site(pose: Pose) -> Ent {
+         Ent { def:DOCK, x:pose.center[0], y:pose.center[1], rot:pose.yaw, ..E0 }
+     }
+@@ -218,6 +292,26 @@
+ 
+     fn within_one_word(x:f32,y:f32) -> bool {
+         x == y || x.to_bits().abs_diff(y.to_bits()) <= 1
++    }
++
++    #[test]
++    fn archived_territory_resolver_matches_original_x86() {
++        let oracle = include_str!("../../private-geometry/dock-territory161-original.txt");
++        let mut count = 0;
++        for line in oracle.lines() {
++            let fields: Vec<_> = line.split_whitespace().collect();
++            assert_eq!(fields.len(), 8);
++            let point = |x: usize, z: usize| [x,z].map(|index| f32::from_bits(u32::from_str_radix(fields[index],16).unwrap()));
++            let expected = |index: usize| fields[index].parse::<u8>().ok()
++                .map(|region| (region, point(index+1, index+2)));
++            let input = point(0,1);
++            let first = resolve_territory(input,4,archived_territory);
++            assert_eq!(first,expected(2),"{input:?}");
++            let policy = resolve_territory(first.map_or(input,|(_,found)| found),5,archived_territory);
++            assert_eq!(policy,expected(5),"{input:?}");
++            count += 1;
++        }
++        assert_eq!(count, 1552);
+     }
+ 
+     #[test]
+diff --git a/src/placement.rs b/src/placement.rs
+--- a/src/placement.rs
++++ b/src/placement.rs
+@@ -135,6 +135,12 @@
+             .all(|y| (tx..tx + width).all(|x| self.real_fog(team, y as usize * N + x as usize) > 0))
+     }
+     pub fn placement_geometry_error(&self, team: u8, def:DefId, tx: i32, ty: i32, turn: u32) -> u32 {
++        self.placement_geometry_with_territory(team, def, tx, ty, turn, None)
++    }
++
++    fn placement_geometry_with_territory(
++        &self, team: u8, def: DefId, tx: i32, ty: i32, turn: u32, territory_error: Option<u32>,
++    ) -> u32 {
+         let (width, height) = Self::footprint_axes(def, turn);
+         let [map_width, map_height] = self.map.world_dimensions().map(|dimension| dimension as i32);
+         if width == 0
+@@ -152,14 +158,15 @@
+             return 12;
+         }
+         let territory = self.map.terr[center];
+-        let owner = self.towner[territory as usize];
+-        #[cfg(feature="ee2-native13")]
+-        if owner != team && (owner != 255 || matches!(def, TOWER | FORTRESS)) && self.initial_ceasefire_active() {
+-            return 11;
+-        }
+-        if owner != team && owner != 255 {
+-            return 2;
+-        }
++        let error = territory_error.unwrap_or_else(|| {
++            let owner = self.towner[territory as usize];
++            #[cfg(feature="ee2-native13")]
++            if owner != team && (owner != 255 || matches!(def, TOWER | FORTRESS)) && self.initial_ceasefire_active() {
++                return 11;
++            }
++            if owner != team && owner != 255 { 2 } else { 0 }
++        });
++        if error != 0 { return error; }
+         if def == TC
+             && self.ents[..self.high].iter().any(|e| {
+                 e.alive
+@@ -312,6 +319,13 @@
+         ids: &[usize],
+         check_fog: bool,
+     ) -> u32 {
++        self.placement_error_with_territory(team, def, tx, ty, turn, ids, check_fog, None)
++    }
++
++    pub(crate) fn placement_error_with_territory(
++        &mut self, team: u8, def: DefId, tx: i32, ty: i32, turn: u32, ids: &[usize],
++        check_fog: bool, territory_error: Option<u32>,
++    ) -> u32 {
+         let (width, height) = Self::footprint_axes(def, turn);
+         if width == 0
+             || team as usize >= self.nplayers
+@@ -331,7 +345,7 @@
+         if check_fog && !self.footprint_known(team, def, tx, ty, turn) {
+             return 3;
+         }
+-        let geometry = self.placement_geometry_error(team, def, tx, ty, turn);
++        let geometry = self.placement_geometry_with_territory(team, def, tx, ty, turn, territory_error);
+         if geometry != 0 {
+             return geometry;
+         }
