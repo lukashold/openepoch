@@ -40,7 +40,7 @@ impl Game {
     #[cfg(feature = "ee2-native13")]
     pub(crate) fn settle_completed_skirmish_demolition(&mut self, index: usize) -> bool {
         let actor = self.ents[index];
-        if !matches!(actor.def, HOUSE | BARRACKS | TOWER | TEMPLE)
+        if !matches!(actor.def, HOUSE | BARRACKS | TOWER | TEMPLE | crate::granary211::ID)
             || actor.built != 1.0 || !actor.hp.is_finite() || actor.hp <= 0.0
             || (actor.def == TEMPLE && actor.ncargo != 0)
         {
@@ -100,10 +100,16 @@ impl Game {
         self.resource_unlocked(team,kind)&&(!cfg!(feature="ee2-reference")||kind<R_OIL)
     }
     pub fn extractor_kind(def:DefId)->u8 {match def {OIL_RIG=>R_OIL,URANIUM_MINE=>R_URANIUM,_=>R_NONE}}
+    fn accepts_gathered_resource(building: &Ent, kind: u8) -> bool {
+        let def = building.def;
+        #[cfg(feature = "ee2-native13")]
+        if def == crate::granary211::ID { return kind == R_FOOD && building.hp > 0.0; }
+        DEFS[def as usize].has(F_DROPOFF) || def == DOCK && kind == R_FOOD
+    }
     pub fn return_cargo(&mut self,e:&mut Ent,d:&Def,want:&mut(f32,f32),moving:&mut bool){
         let kind=e.q[2] as u8;
         if kind==R_NONE||!self.resource_unlocked(e.team,kind){e.carry=0.0;e.q[1]=0;e.q[2]=0;return;}
-        let dropoff=self.ents[..self.high].iter().enumerate().filter(|(_,b)|b.alive&&b.built>=1.0&&b.team==e.team&&(DEFS[b.def as usize].has(F_DROPOFF)||(b.def==DOCK&&kind==R_FOOD)))
+        let dropoff=self.ents[..self.high].iter().enumerate().filter(|(_,b)|b.alive&&b.built>=1.0&&b.team==e.team&&Self::accepts_gathered_resource(b,kind))
             .min_by(|(_,a),(_,b)|((a.x-e.x).powi(2)+(a.y-e.y).powi(2)).total_cmp(&((b.x-e.x).powi(2)+(b.y-e.y).powi(2)))).map(|(i,_)|i);
         let Some(j)=dropoff else{return;};let b=self.ents[j];
         if (b.x-e.x).abs().max((b.y-e.y).abs())>Self::building_half(&b)+0.7{

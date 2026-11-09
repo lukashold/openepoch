@@ -5,6 +5,7 @@ import {createRegionalMusicPlayback} from './original-regional-music.js?v=region
 import {originalOneShotAudible} from './original-spatial-audio.js?v=native39audio';
 import {createOriginalAmbientPlayback} from './original-ambient.js?v=native106';
 import {playbackRate} from './air-flight-audio.js?v=native65-herc';
+import {createGranaryLoopPlayback} from './original-granary.js?v=granary211';
 // Playback of original assets extracted from the user's local EE2 installation.
 // Metadata and byte-for-byte source hashes live beside those assets. This module
 // contains no recordings and remains usable when local-original is absent.
@@ -30,7 +31,7 @@ export function createOriginalAudio(options={}) {
   let priestCues=false;
   let guidedImpact=null,guidedPitchSeed=12345;
   const wheelLoops=new Map();
-  let wheelSession=null;
+  let wheelSession=null,granaryLoops=null;
   let musicSource=null,musicBuffer=null,musicFile=null,musicOffset=0,musicStarted=0,musicIndex=0,musicGeneration=0,musicPendingFile=null;
   let ambientSource=null,nextBird=0,currentEpoch=0,previousPeriod=-1;
   let ambientPresentation=null,nativeAmbient=null,nativeAmbientOwnsMix=false;
@@ -111,12 +112,13 @@ export function createOriginalAudio(options={}) {
     const output=panner??gain;
     if(panner){panner.pan.value=Math.max(-1,Math.min(1,pan));gain.connect(panner);}
     source.connect(gain);output.connect(group==='music'?musicBus:soundBus);source.originalGroup=group;
-    if(group==='wheel'){
+    if(group==='wheel'||group==='granary-idle'){
       source.updateSpatialMix=(volume,pan)=>{
         gain.gain.value=Math.max(0,Math.min(1,volume));
         if(panner)panner.pan.value=Math.max(-1,Math.min(1,pan));
       };
-    }else live.add(source);
+    }
+    if(group!=='wheel')live.add(source);
     source.originalCleanup=()=>{try{gain.disconnect();if(output!==gain)output.disconnect();}catch{}};
     source.onended=()=>{live.delete(source);source.originalCleanup();};
     source.start(0,Math.max(0,offset));return source;
@@ -240,6 +242,12 @@ export function createOriginalAudio(options={}) {
         if(wheelLoops.get(track.handle)?.source===source)wheelLoops.delete(track.handle);
       };
     }
+  }
+  function configureGranaryLoop(event) {
+    granaryLoops?.reset();
+    granaryLoops=event?createGranaryLoopPlayback(event,{
+      ready:()=>!muted&&ctx?.state==='running',buffer:file=>buffers.get(file),load,start,stop,
+    }):null;
   }
   function stopVoices(includeUnitReplies=false) {
     for(const source of [...live])if(source.originalGroup==='voice'||
@@ -449,6 +457,7 @@ export function createOriginalAudio(options={}) {
     musicEnabled = enabledMusic;
     stopAmbient();
     stopStoneThrowerWheels();
+    granaryLoops?.reset();
     stopTakeoff();
     if (musicFile) stopMusic(false);
     return regionalPlayback()?.update({mode: 'menu', running: !muted, enabled: musicEnabled}) ?? false;
@@ -468,13 +477,16 @@ export function createOriginalAudio(options={}) {
   }
   return {
     prepare,acknowledge,playCitizenReply,playSubmarineReply,playInfantryReply,citizenDeath,effect,stoneThrowerLaunch,music,menuMusic,setDefinitionBindings,updateStoneThrowerWheels,stopStoneThrowerWheels,
+    configureGranaryLoop,
+    updateGranaryLoops(world,tracks,audible){granaryLoops?.update(world,tracks,audible);},
+    stopGranaryLoops(){granaryLoops?.reset();},
     bindPriestCues,playPriestCue,bindGuidedImpact,playGuidedImpact,resetGuidedImpact,
     bindTakeoffEvents,playTakeoff,stopTakeoff,playInterfaceCue,frameAmbient,resetWorldAmbience,
     setAmbientPresentation(presentation){resetWorldAmbience();nativeAmbient=null;ambientPresentation=presentation;},
     role:(id,epoch)=>typed.role(id,epoch),
     resetRegionalMusic(){regionalMusic?.reset();},
     rebindRegionalMusic(){regionalMusic?.rebind();},
-    setMuted(value){muted=value;if(value){regionalMusic?.suspend();stopMusic();stopAmbient();resetWorldAmbience();stopStoneThrowerWheels();for(const source of [...live])stop(source);}},
+    setMuted(value){muted=value;if(value){regionalMusic?.suspend();stopMusic();stopAmbient();resetWorldAmbience();stopStoneThrowerWheels();granaryLoops?.reset();for(const source of [...live])stop(source);}},
     setSpeechEnabled(value){speech=value;if(!value)stopVoices(true);},
     setMusicEnabled(value){musicEnabled=value;if(!value){regionalMusic?.suspend();stopMusic();}},
     setAmbienceEnabled(value){ambienceEnabled=value;if(!value){stopLegacyAmbient();resetWorldAmbience();}},

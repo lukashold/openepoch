@@ -585,7 +585,10 @@ impl Game {
                         tip.push_str(if cfg!(feature="ee2-reference") {" · neutrales Land: doppelte Bauzeit"} else {" \u{b7} only inside your territory"});
                     }
                     let cost=self.construction_cost(me,id as DefId);
-                    act(&mut s, "b", id as QueueItem, d.name, &cost, self.afford(me, &cost), d.size, &tip);
+                    let name = d.name;
+                    #[cfg(feature = "ee2-native13")]
+                    let name = if id as DefId == crate::granary211::ID { crate::granary211::name(ep) } else { name };
+                    act(&mut s, "b", id as QueueItem, name, &cost, self.afford(me, &cost), d.size, &tip);
                 }
             }
         } else if !observer && first != NOIDX && DEFS[self.ents[first].def as usize].building && self.ents[first].built >= 1.0 {

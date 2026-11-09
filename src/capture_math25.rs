@@ -98,7 +98,7 @@ pub(crate) fn capture_target(def_id: DefId) -> Option<CaptureTarget> {
             target.tribute = Natural(0.1);
         }
         1 => target.time_modifier = 100.0,
-        3 | 4 | 6 | 7 | 48 | 49 | 55 | 59 | 60 => {}
+        3 | 4 | 6 | 7 | 48 | 49 | 55 | 59 | 60 | crate::granary211::ID => {}
         53 | 54 | 56 => target.has_garrison = true,
         5 | 47 | 50..=52 => {
             if def_id != 5 {

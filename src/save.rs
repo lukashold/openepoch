@@ -139,6 +139,8 @@ impl Game {
         let options = options | crate::initial_ceasefire::save_option(self.initial_ceasefire);
         #[cfg(feature="ee2-native13")]
         let options = options | if self.fishing_enabled { crate::fishing81::SAVE_FLAG } else { 0 };
+        #[cfg(feature = "ee2-native13")]
+        let options = options | if self.network_granary { crate::granary211::PEER_SAVE_FLAG } else { 0 };
         #[cfg(feature="ee2-native13")]
         let options = options | if self.submarine_depth_enabled { crate::submarine82::SAVE_FLAG } else { 0 };
         #[cfg(feature="ee2-native13")]
@@ -543,6 +545,9 @@ impl Game {
         #[cfg(feature="ee2-native13")]
         g.wonder_sites.extend(g.ents[..high].iter().enumerate().filter_map(|(index, e)|
             (e.alive && crate::wonders61::is_wonder(e.def)).then_some(index)));
+        #[cfg(feature = "ee2-native13")]
+        g.granary_sites.extend(g.ents[..high].iter().enumerate().filter_map(|(index, e)|
+            (e.alive && e.def == crate::granary211::ID).then_some(index)));
         if cfg!(feature="ee2-reference")&&trailer<236 {for e in &mut g.ents[..high]{if e.alive&&e.def==WORKER{e.carry=0.0;e.q[1]=0;e.q[2]=0;}}}
         g.map.ter.copy_from_slice(take(NN));
         g.map.res.copy_from_slice(take(NN));
@@ -572,7 +577,8 @@ impl Game {
                 crate::takeoff33::SAVE_FLAG | crate::landing34::SAVE_FLAG | crate::carrier36_defs::SAVE_FLAG |
                 crate::cmd::SOLO_RESIGN_SAVE_FLAG | crate::initial_ceasefire::SAVE_MASK |
                 crate::runway32::CARRIER_POSE_SAVE_FLAG | CAPTURE_CHECKPOINT_SAVE_MASK |
-                crate::fishing81::SAVE_FLAG | crate::submarine82::SAVE_FLAG | crate::paid_queue7::LATE_POPULATION_SAVE_FLAG;
+                crate::fishing81::SAVE_FLAG | crate::submarine82::SAVE_FLAG | crate::paid_queue7::LATE_POPULATION_SAVE_FLAG |
+                crate::granary211::PEER_SAVE_FLAG;
             let flags = v(0);
             if flags & !allowed != 0 || v(4) > 1 { return None; }
             g.cheats_enabled = flags & 1 != 0;
@@ -593,6 +599,8 @@ impl Game {
                 g.solo_resigned = flags & crate::cmd::SOLO_RESIGN_SAVE_FLAG != 0;
                 g.initial_ceasefire = crate::initial_ceasefire::read_option(flags)?;
                 g.fishing_enabled = flags & crate::fishing81::SAVE_FLAG != 0;
+                g.network_granary = flags & crate::granary211::PEER_SAVE_FLAG != 0;
+                if g.network_granary && !g.net { return None; }
                 g.submarine_depth_enabled = flags & crate::submarine82::SAVE_FLAG != 0;
                 g.late_population = flags & crate::paid_queue7::LATE_POPULATION_SAVE_FLAG != 0;
                 if g.late_population && g.net { return None; }
@@ -672,8 +680,11 @@ impl Game {
         #[cfg(feature="ee2-epoch-range13")]
         { g.final_epoch = final_epoch; }
         for p in &g.players[..g.nplayers] {if p.epoch>g.match_final_epoch() {return None;}}
+        #[cfg(feature = "ee2-native13")]
+        let granary_available = g.granary_available();
         #[cfg(feature="ee2-native13")]
         let valid_definition = |id: DefId| {
+            if id == crate::granary211::ID { return granary_available; }
             if id == crate::fishing81::FISHING_SHIP { return g.fishing_enabled; }
             if id == crate::koth64::HILL { return koth.is_some(); }
             if id == crate::heavy_mounted3_61::ID { return heavy_mounted3; }
@@ -714,6 +725,10 @@ impl Game {
             #[cfg(not(feature="ee2-native13"))]
             let neutral_hill = false;
             if !valid_definition(e.def) || (e.team as usize>=g.nplayers && !neutral_hill) || e.qn>5 || e.ncargo as usize>CARGO_MAX {return None;}
+            #[cfg(feature = "ee2-native13")]
+            if e.def == crate::granary211::ID && (e.qn != 0 || e.ncargo != 0
+                || ![0, 2, 4, 6].into_iter().any(|turn| e.rot == Game::angle_for_turn(turn)))
+            { return None; }
             #[cfg(feature="ee2-native13")]
             if e.def == crate::koth64::HILL && (e.qn != 0 || e.ncargo != 0 || e.order != O_IDLE) { return None; }
             #[cfg(feature="ee2-native13")]
@@ -768,6 +783,8 @@ impl Game {
             if e.cargo[..e.ncargo as usize].iter().any(|&c| !valid_definition(c)) {return None;}
             #[cfg(feature="ee2-native13")]
             if e.cargo[..e.ncargo as usize].contains(&crate::koth64::HILL) { return None; }
+            #[cfg(feature = "ee2-native13")]
+            if e.cargo[..e.ncargo as usize].contains(&crate::granary211::ID) { return None; }
             #[cfg(feature="ee2-native13")]
             if e.cargo[..e.ncargo as usize].iter().copied().any(crate::wonders61::is_wonder) { return None; }
             #[cfg(feature="ee2-native13")]

@@ -126,8 +126,10 @@ impl Game {
             SpyOperation::Gather => target.team != owner,
             SpyOperation::Sabotage => target.team != owner && !self.sabotaged(index),
             SpyOperation::Restore => self.allied(owner, target.team) && self.sabotaged(index),
-            SpyOperation::Contaminate => matches!(target.def, TC | WAREHOUSE) && target.team != owner && !self.contaminated(index),
-            SpyOperation::Cleanup => matches!(target.def, TC | WAREHOUSE) && self.allied(owner, target.team) && self.contaminated(index),
+            SpyOperation::Contaminate => matches!(target.def, TC | WAREHOUSE | crate::granary211::ID)
+                && target.team != owner && !self.contaminated(index),
+            SpyOperation::Cleanup => matches!(target.def, TC | WAREHOUSE | crate::granary211::ID)
+                && self.allied(owner, target.team) && self.contaminated(index),
         }
     }
 

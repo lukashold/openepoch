@@ -176,7 +176,7 @@ impl Game {
             let deadline = f32::from_bits(word(&mut words)?);
             let improved = flag(&mut words)?;
             let count = word(&mut words)? as usize;
-            if !matches!(target.def, TC | WAREHOUSE) || target.hp <= 0.0 || target.built < 1.0
+            if !matches!(target.def, TC | WAREHOUSE | crate::granary211::ID) || target.hp <= 0.0 || target.built < 1.0
                 || owner as usize >= self.nplayers || !(now..=now + SITE_TIME).contains(&deadline)
                 || count > self.high || count > words.len() { return None; }
             let mut inside = BTreeSet::new();

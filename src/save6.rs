@@ -261,7 +261,8 @@ pub fn normalize_input(input: &[u8], current_actor_defs: usize) -> Option<Vec<u8
             let valid_actor = (e.def as usize) < actor_defs;
             #[cfg(feature="ee2-native13")]
             let valid_actor = valid_actor || (carrier && e.def == crate::carrier36_defs::CARRIER)
-                || (fishing && e.def == crate::fishing81::FISHING_SHIP);
+                || (fishing && e.def == crate::fishing81::FISHING_SHIP)
+                || (!legacy && input_defs == SAVE_DEFINITION_COUNT && e.def == crate::granary211::ID);
             if !valid_actor || e.cargo[..e.ncargo as usize].iter().any(|&id|id as usize>=actor_defs){return None;}
             if DEFS[e.def as usize].building && e.q[..e.qn as usize].iter().any(|&q| {
                 #[cfg(feature="ee2-native13")]

@@ -315,6 +315,8 @@ pub struct Game {
     #[cfg(feature="ee2-native13")]
     pub(crate) fishing_enabled: bool,
     #[cfg(feature = "ee2-native13")]
+    pub(crate) network_granary: bool,
+    #[cfg(feature = "ee2-native13")]
     pub(crate) submarine_depth_enabled: bool,
     #[cfg(feature = "ee2-native13")]
     pub(crate) torpedo84_enabled: bool,
@@ -375,6 +377,8 @@ pub struct Game {
     pub territory: crate::territory::TerritoryDiplomacy,
     #[cfg(feature = "ee2-native13")]
     pub(crate) wonder_sites: std::collections::BTreeSet<usize>,
+    #[cfg(feature = "ee2-native13")]
+    pub(crate) granary_sites: std::collections::BTreeSet<usize>,
     #[cfg(feature = "ee2-native13")]
     pub(crate) factory_clocks: wonder_automation62::FactoryClocks,
     #[cfg(feature="ee2-reference")]
@@ -571,6 +575,8 @@ impl Game {
             #[cfg(feature="ee2-native13")]
             fishing_enabled: false,
             #[cfg(feature = "ee2-native13")]
+            network_granary: false,
+            #[cfg(feature = "ee2-native13")]
             submarine_depth_enabled: false,
             #[cfg(feature = "ee2-native13")]
             torpedo84_enabled: false,
@@ -628,6 +634,8 @@ impl Game {
             territory: crate::territory::TerritoryDiplomacy::default(),
             #[cfg(feature = "ee2-native13")]
             wonder_sites: std::collections::BTreeSet::new(),
+            #[cfg(feature = "ee2-native13")]
+            granary_sites: std::collections::BTreeSet::new(),
             #[cfg(feature = "ee2-native13")]
             factory_clocks: wonder_automation62::FactoryClocks::default(),
             #[cfg(feature="ee2-reference")]
@@ -813,6 +821,8 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         if crate::wonders61::is_wonder(def) { self.wonder_sites.insert(i); }
         #[cfg(feature = "ee2-native13")]
+        if def == crate::granary211::ID { self.granary_sites.insert(i); }
+        #[cfg(feature = "ee2-native13")]
         if self.powers.is_some() {
             let handle = self.h(i);
             self.powers.as_mut().unwrap().register(handle);
@@ -932,6 +942,8 @@ impl Game {
         self.free.push(i as u16);
         #[cfg(feature = "ee2-native13")]
         if crate::wonders61::is_wonder(e.def) { self.wonder_sites.remove(&i); }
+        #[cfg(feature = "ee2-native13")]
+        if e.def == crate::granary211::ID { self.granary_sites.remove(&i); }
         #[cfg(feature = "ee2-native13")]
         if e.def == crate::wonders61::PARTHENON || matches!(e.def, BARRACKS | MILL | WORKSHOP) && {
             let territory = self.map.terr[tile_of(e.x, e.y)] as usize;
@@ -1618,6 +1630,8 @@ impl Game {
                 }
             }
         }
+        #[cfg(feature = "ee2-native13")]
+        if self.network_granary { mix(u32::from_le_bytes(*b"GRA1")); }
         #[cfg(feature = "ee2-native13")]
         if self.submarine_depth_enabled { mix(u32::from_le_bytes(*b"SUB1")); }
         #[cfg(feature = "ee2-native13")]
@@ -3274,7 +3288,8 @@ impl Game {
             let desalination = if e.def == WORKER && kind == R_FOOD && farm == NOIDX {
                 self.count_completed_wonders(e.team, crate::wonders61::DESALINATION_PLANT) as f32 * 0.5
             } else { 0.0 };
-            amount * (scale + desalination)
+            let granary = if kind == R_FOOD && farm != NOIDX { self.granary_farm_bonus(e) } else { 0.0 };
+            amount * (scale + desalination + granary)
         };
         if cfg!(feature="ee2-reference"){
             if farm==NOIDX {

@@ -29,7 +29,7 @@ impl Game {
             return (0, 0);
         }
         #[cfg(feature = "ee2-native13")]
-        if let Some([x, y]) = crate::wonders61::shape(def, true) {
+        if let Some([x, y]) = Self::rectangular_building_shape(def, true) {
             if turn % 2 != 0 { return (0, 0); }
             let axes = (x.ceil() as i32, y.ceil() as i32);
             return if turn % 4 == 0 { axes } else { (axes.1, axes.0) };
@@ -45,6 +45,11 @@ impl Game {
     pub fn angle_for_turn(turn: u32) -> f32 {
         turn as f32 * core::f32::consts::FRAC_PI_4
     }
+    #[cfg(feature = "ee2-native13")]
+    fn rectangular_building_shape(def: DefId, placement: bool) -> Option<[f32; 2]> {
+        if def == crate::granary211::ID { Some(crate::granary211::SHAPE) }
+        else { crate::wonders61::shape(def, placement) }
+    }
     pub fn building_bounds(e: &Ent) -> (i32, i32, i32, i32) {
         #[cfg(feature = "ee2-native13")]
         if e.def == crate::koth64::HILL {
@@ -52,7 +57,7 @@ impl Game {
             return Self::rect_bounds(e, [side, side]);
         }
         #[cfg(feature = "ee2-native13")]
-        if let Some(size) = crate::wonders61::shape(e.def, false) {
+        if let Some(size) = Self::rectangular_building_shape(e.def, false) {
             return Self::rect_bounds(e, size);
         }
         let size = DEFS[e.def as usize].size;
@@ -105,6 +110,8 @@ impl Game {
         if team as usize >= self.nplayers || !definition.building
             || required_epoch > self.players[team as usize].epoch { return false; }
         #[cfg(feature = "ee2-native13")]
+        if def == crate::granary211::ID { return self.granary_available(); }
+        #[cfg(feature = "ee2-native13")]
         if crate::wonders61::is_wonder(def) {
             return !self.net && self.bench == 0 && self.powers.is_some()
                 && crate::wonders61::available(def, self.civilizations[team as usize] as i8, self.players[team as usize].epoch);
@@ -154,6 +161,8 @@ impl Game {
             return 12;
         }
         let territory = self.map.terr[center];
+        #[cfg(feature = "ee2-native13")]
+        if def == crate::granary211::ID && self.granary_limit_reached(team, territory) { return 14; }
         let owner = self.towner[territory as usize];
         let foreign = owner != team && owner != 255;
         #[cfg(feature = "ee2-native13")]
@@ -161,7 +170,7 @@ impl Game {
             let native_foreign_site = foreign && (owner as usize) < self.nplayers
                 && self.diplomacy.borders.is_some()
                 && matches!(def, HOUSE | BARRACKS | DOCK | FARM | MILL | STABLE |
-                    MARKET | TEMPLE | UNIVERSITY | WAREHOUSE);
+                    MARKET | TEMPLE | UNIVERSITY | WAREHOUSE | crate::granary211::ID);
             let capacity = match def {
                 HOUSE => 6,
                 MARKET | TEMPLE | UNIVERSITY => 1,

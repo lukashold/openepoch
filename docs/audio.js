@@ -1,6 +1,6 @@
 // The EE2 profile uses locally extracted original recordings when available.
 // Procedural sounds and local speech remain the fallback for the standalone game.
-import { createOriginalAudio } from './original-audio.js?v=infantry157';
+import { createOriginalAudio } from './original-audio.js?v=granary211';
 export {handlesOriginalInfantryReplies} from './original-infantry-replies.js?v=infantry157';
 import {ORIGINAL_AUDIO_DEFAULTS,originalAudioLevel,originalAudioGain} from './original-audio-levels.js?v=native38audio';
 import {originalOneShotAudible,originalLoopAudible,originalSpatialMix} from './original-spatial-audio.js?v=native39audio';
@@ -189,6 +189,13 @@ export function updateStoneThrowerWheels(session,actors,cam,view) {
   const tracks=actors?.map(({handle,clip,x,y,altitude})=>({handle,clip,...(view
     ? originalSpatialMix(view,x,y,altitude) : spatialSound(x-cam.x,y-cam.y,cam.zoom))}));
   originals.updateStoneThrowerWheels(session,tracks,view ? originalLoopAudible : undefined);
+}
+
+export const configureGranaryLoop = event => originals.configureGranaryLoop(event);
+export const stopGranaryLoops = () => originals.stopGranaryLoops();
+export function updateGranaryLoops(session,actors,view) {
+  const tracks=actors?.map(({handle,x,y,altitude})=>({handle,...originalSpatialMix(view,x,y,altitude)}));
+  originals.updateGranaryLoops(session,tracks,originalLoopAudible);
 }
 
 export function citizenDeath(context, volume, pan) {

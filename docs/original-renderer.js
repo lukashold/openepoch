@@ -507,7 +507,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    productionStatus.manifestAvailable=true;
   }catch(error){productionStatus.errors.push(error.message);}}
  }
- const presentationEntries=[options.tradePresentation,options.fighterBomberPresentation,options.carrierPresentation,options.priestPresentation,options.spyPresentation,options.leaderPresentation,options.wonderPresentation,options.diversionPresentation,options.heavyMounted3Presentation,options.kothPresentation,options.fishingPresentation].filter(Boolean)
+ const presentationEntries=[options.tradePresentation,options.fighterBomberPresentation,options.carrierPresentation,options.priestPresentation,options.spyPresentation,options.leaderPresentation,options.wonderPresentation,options.diversionPresentation,options.heavyMounted3Presentation,options.kothPresentation,options.fishingPresentation,options.granaryPresentation].filter(Boolean)
   .flatMap(presentation=>presentation.modelRows.map(row=>({...row,presentation})));
  const sailStatus={enabled:options.initialSails!==false,manifestAvailable:false,models:0,parts:0,errors:[]},sailErrors=new Set(),sailComposites=new Map();let sailManifest=null,sailShader=null,dynamicSailShader=null;const dynamicBindings=new WeakMap();
  result.initialSails=sailStatus;
@@ -619,8 +619,8 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   if(options.houseLodProfile!==undefined)result.setHouseLodProfile(options.houseLodProfile);
  }catch(error){houseLodModels.clear();houseLodError(error);}}
  const entries=[...(Array.isArray(manifest.models)?manifest.models:Object.entries(manifest.models||manifest.mapping||{}).map(([id,value])=>typeof value==='string'?{id:+id,url:value}:{id:+id,...value})),...regionalEntries,...citizenEntries,...presentationEntries];
- const loadParts=async (model,keepPickingGeometry=false,modelUrl=null,teamOverride=null,textureHashes=null,packRig=null,shadowNodes=false)=>{
-   const parts=[],selectedSeasonManifest=regionalSeasonManifest.models?.[modelUrl]?regionalSeasonManifest:seasonManifest;
+ const loadParts=async (model,keepPickingGeometry=false,modelUrl=null,teamOverride=null,textureHashes=null,packRig=null,shadowNodes=false,seasonOverride=null)=>{
+   const parts=[],selectedSeasonManifest=seasonOverride??(regionalSeasonManifest.models?.[modelUrl]?regionalSeasonManifest:seasonManifest);
    let sourceSailIndex=0;for(const part of model.parts){
     const sailIndex=part.nativeSail?sourceSailIndex++:null;
     const url=part.textureUrl||part.texture||manifest.textures?.[part.textureSource?.toLowerCase()]||null;
@@ -645,7 +645,11 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     // switch never displays an unrelated summer image while its pixels load.
     if(seasonalKey){
      const urls=new Set(Object.values(selectedSeasonManifest.sets||{}).flatMap(climate=>climate[seasonalKey]?.urls||[]));
-     for(const source of urls)neutralGPU.set(source,await texture(gl,source,textures));
+     for(const source of urls){
+      const digest=seasonOverride?textureHashes?.get(source):undefined;
+      if(seasonOverride&&!digest)throw new Error(`Unbound seasonal material ${source}`);
+      neutralGPU.set(source,await texture(gl,source,textures,false,digest));
+     }
      for(const climate of Object.keys(climateProfiles)){
       if(authoredSequence(selectedSeasonManifest,climate,seasonalKey))continue;
       for(const source of climateProfiles[climate].body[seasonalKey]||[]){
@@ -785,10 +789,10 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
    const model=await augmentModel(raw,{...entry,id});
    const rig=qualified?.rig&&model.parts===raw.parts?qualified.rig:null;
    const house=assetKind===0&&id===1;
-   const parts=await loadParts(model,assetKind===1,modelUrl,entry.presentation?.teamManifest,entry.presentation?.textureHashes,rig,house);
+   const parts=await loadParts(model,assetKind===1,modelUrl,entry.presentation?.teamManifest,entry.presentation?.textureHashes,rig,house,entry.presentation?.seasonManifest);
    if(!parts.length)continue;
    const scaleKey=(entry.assetKind===undefined?'':assetKind+':')+id+':'+(entry.epoch??0),sea=assetKind===0&&((id>=29&&id<=36)||id===42||id===45);
-   const scaleBinding=entry.regionalCivilizations||entry.wonderFamily||entry.kothObjective||entry.fishingAsset?entry.nativeScaleBinding:scales.variants?.[scaleKey];
+   const scaleBinding=entry.regionalCivilizations||entry.wonderFamily||entry.kothObjective||entry.fishingAsset||entry.granaryAsset?entry.nativeScaleBinding:scales.variants?.[scaleKey];
    const transform=nativeModelTransform(model,scaleBinding);
    const yOffset=!transform.native&&sea?-(model.normalization?.offset?.[1]||0)*(model.normalization?.scale||1):0;
    const variant={sourceId:id,assetKind,scaleKey,epoch:entry.epoch??0,until:entry.until,regionalCivilizations:entry.regionalCivilizations,regionalFallback:entry.regionalFallback===true,sourceIdentity:entry.sourceIdentity,region:entry.region,parts,hasClipVisibility:parts.some(part=>part.clipVisibility),nativeAttackClock:entry.nativeAttackClock===true,yOffset,originOffset:transform.originOffset,nativeScale:transform.native?transform.scale:null,yawOffset:entry.yawOffset??model.yawOffset??0,farUrl:entry.lodFarUrl,far:null,farRequested:false,pickBounds:resourceBounds(parts),rallyTag:rallyTag(model),nativeTakeoff:model.nativeTakeoff};
@@ -1013,7 +1017,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   }
   return casters;
  };
- result.draw=({data,ranges,vp,epochs,zoom=80,shadow=false,eye=[0,200,0],lighting=defaultLighting,clipPlane=null,capture=false,actorMetadata=null,preparedSailMetadata=actorMetadata,civilizations=visualCivilizations,stoneThrowerWheels=null,hercBeamMuzzles=null,packScene=null,volumeShadowInstances=null,resourceIdentities=null,forestBases=null})=>{
+ result.draw=({data,ranges,vp,epochs,zoom=80,shadow=false,eye=[0,200,0],lighting=defaultLighting,clipPlane=null,capture=false,actorMetadata=null,preparedSailMetadata=actorMetadata,civilizations=visualCivilizations,stoneThrowerWheels=null,granaryLoops=null,hercBeamMuzzles=null,packScene=null,volumeShadowInstances=null,resourceIdentities=null,forestBases=null})=>{
   const started=performance.now();let calls=0,triangles=0,querying=false;
   // Reflection uses the main snapshot. Only the independent picture-in-picture
   // capture must leave the main animation history alone.
@@ -1051,6 +1055,7 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
   gl.activeTexture(gl.TEXTURE0+6);gl.bindTexture(gl.TEXTURE_2D,heightTexture);gl.uniform1i(shader.u.uTerrainSize,heightSize);gl.uniform1i(shader.u.uTerrainEnabled,heightReady?1:0);
   let activeShader=shader,sailDiffuse=null;
   const collectStoneThrowerWheels=stoneThrowerWheels&&!shadow&&!capture&&!clipPlane;
+  const collectGranaryLoops=granaryLoops&&!shadow&&!capture&&!clipPlane;
   if(sailShader&&!shadow){try{sailDiffuse=nativeInitialSailDiffuse({ambient:lighting.sourceAmbient,diffuse:lighting.sourceDiffuse,sunDirection:lighting.sourceDirection});}catch(e){sailError(e.message);}}
   const selectShader=target=>{
    if(activeShader===target)return;
@@ -1188,6 +1193,9 @@ export async function loadOriginalModels(gl,enabled,teams,onProgress=()=>{},opti
     const preview=!!previewFlags,key=variantIndex+':'+team+':'+activity+':'+(far&&variant.farRequested?1:0)+':'+previewFlags+':'+clip+':'+once+(variant.houseLodKey===undefined?'':':house:'+variant.houseLodKey)+visibilityKey+shimmerKey+navalKey+blendKey;
     if(collectStoneThrowerWheels&&!preview&&actor?.def===22&&epoch<2&&variant.stoneThrowerWheelClips?.has(clip)){
      stoneThrowerWheels.push({handle:actor.handle,clip,x:actor.renderX,y:actor.renderY,altitude:actor.renderAltitude});
+    }
+    if(collectGranaryLoops&&matchingActor&&actor.built===1&&clip==='idle'&&variant.presentationEntry?.granaryAsset&&variant.presentationEntry.idleLoop){
+     granaryLoops.push({handle:actor.handle,x:actor.renderX,y:actor.renderY,altitude:actor.renderAltitude});
     }
     const group=groups.get(key)||{variant,team,activity,clip,once,blend,rigPose,preview,hiddenParts,shimmer:shimmerKey?shimmer:null,navalBasis,forestBasis,list:[],instanceIndices:[]};
     group.instanceIndices.push(i);

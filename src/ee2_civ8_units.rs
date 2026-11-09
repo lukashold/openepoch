@@ -518,11 +518,15 @@ pub const CLASS_ROWS:&[UnitRow]=&[
 /// Original epoch indices are 0..14; until is exclusive, at most 15.
 pub fn lookup(id:DefId,epoch:u8)->Option<&'static UnitRow>{
  #[cfg(feature = "ee2-native13")]
+ if id == crate::granary211::ID { return crate::granary211::row(epoch); }
+ #[cfg(feature = "ee2-native13")]
  if id == crate::fishing81::FISHING_SHIP { return crate::fishing81::lookup(id, epoch); }
  ROWS.iter().find(|row|row.id==id && epoch>=row.epoch && epoch<row.until)
 }
 /// Complete declared progression of the bound source class, not a claim of visual equivalence.
 pub fn lookup_class(id:DefId,epoch:u8)->Option<&'static UnitRow>{
+ #[cfg(feature = "ee2-native13")]
+ if id == crate::granary211::ID { return crate::granary211::row(epoch); }
  #[cfg(feature = "ee2-native13")]
  if id == crate::fishing81::FISHING_SHIP { return crate::fishing81::lookup(id, epoch); }
  #[cfg(feature = "ee2-native13")]
@@ -547,6 +551,8 @@ pub fn lookup_class(id:DefId,epoch:u8)->Option<&'static UnitRow>{
 }
 /// Zero-based native production-node epoch. This is separate from the bound visual variant epoch.
 pub fn production_class_from(id:DefId)->Option<u8>{match id{
+ #[cfg(feature = "ee2-native13")]
+ crate::granary211::ID=>Some(1),
  0=>Some(0),
  1=>Some(0),
  2=>Some(1),

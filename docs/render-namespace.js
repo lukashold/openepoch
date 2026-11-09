@@ -10,6 +10,7 @@ export function createFrontendNamespace(wasm,{referenceMode=false,assetMapping=n
  const rangeLength=wide?wasm.render_range_len()>>>0:512;
  if(!rangeLength||rangeLength%2||rangeLength>2*0x1000000)throw Error('Invalid render range length');
  const slotCount=rangeLength/2,rows=new Map(),units=new Map(),quads=new Map();
+ const granary=referenceMode?wasm.granary_definition?.():undefined;
  if(wide){
   if(!Array.isArray(assetMapping))throw Error('Typed render asset mapping required');
   for(const row of assetMapping){
@@ -31,6 +32,7 @@ export function createFrontendNamespace(wasm,{referenceMode=false,assetMapping=n
   if(referenceMode&&id===83)return 38;
   if(referenceMode&&id===84)return 33;
   if(referenceMode&&id===108)return 29;
+  if(id===granary)return 48;
   const flags=wasm.definition_flags(id)>>>0;
   return flags&1?0:flags&4?8:15;
  }

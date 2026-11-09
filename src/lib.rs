@@ -117,6 +117,8 @@ mod ids;
 mod cmd;
 mod defs;
 mod economy;
+#[cfg(feature = "ee2-native13")]
+mod granary211;
 mod source_clock38;
 #[cfg(feature = "ee2-native13")]
 mod construction_health163;
@@ -1068,7 +1070,7 @@ fn crown_resume_matches(game: &Game, encoded: u32) -> bool {
         && (timed != 0 || game.diplomacy.timed.is_none())
         && borders == u32::from(game.diplomacy.borders.is_some())
         && fishing == u32::from(game.fishing_enabled)
-        && encoded >> 31 == 0
+        && encoded >> 31 == u32::from(game.network_granary)
 }
 
 #[cfg(feature = "ee2-native13")]
@@ -2007,6 +2009,34 @@ pub extern "C" fn wonder_footprint(def: u32, turn: u32) -> u32 {
     if def >= DEFS.len() as u32 || !wonders61::is_wonder(def as DefId) { return 0; }
     let (width, height) = Game::footprint_axes(def as DefId, turn);
     width as u32 | (height as u32) << 16
+}
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn granary_definition() -> u32 {
+    u32::from(granary211::ID)
+}
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn granary_footprint(turn: u32) -> u32 {
+    let (width, height) = Game::footprint_axes(granary211::ID, turn);
+    width as u32 | (height as u32) << 16
+}
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn granary_bonus_for(handle: u32) -> u32 {
+    let game = g();
+    u32::from(game.get(handle).is_some_and(|index| {
+        let actor = &game.ents[index];
+        actor.team == game.local && actor.hp > 0.0 && game.granary_farm_bonus(actor) > 0.0
+    }))
+}
+#[cfg(feature = "ee2-native13")]
+#[no_mangle]
+pub extern "C" fn configure_network_granary(enabled: u32) -> u32 {
+    let game = g();
+    if enabled != 1 || !game.net || game.tick != 0 { return 0; }
+    game.network_granary = true;
+    1
 }
 #[no_mangle]
 pub extern "C" fn dock_orientation(tx:i32,ty:i32)->u32{g().dock_auto_turn(tx,ty)}

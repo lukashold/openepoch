@@ -11,7 +11,7 @@ import { diplomacyPanel } from './diplomacy.js?v=alliance-lands156';
 import {enhanceOriginalDiplomacy} from './original-diplomacy.js?v=alliance-lands156';
 import {loadNativeFontUI} from './original-font-ui.js?v=native21names';
 import {territoryClaimMessage} from './territory-help.js?v=native64-koth';
-import * as sfx from './audio.js?v=infantry157';
+import * as sfx from './audio.js?v=granary211';
 import {liveGeneratedAmbientCoverage,loadOriginalAmbient,originalAmbientPriorities} from './original-ambient.js?v=native106';
 import {loadOriginalAssets,loadOriginalEpochIcons,applyOriginalInterface,originalIcon} from './original-assets.js?v=citizen9';
 import {mountOriginalShellVideo} from './original-shell-video.js?v=native12';
@@ -22,7 +22,7 @@ import {loadCitizenPresentation} from './original-citizen-presentation.js?v=regi
 import {selectedCitizenContext,decodeCitizenDeathCue} from './source-citizen-context.js?v=regional10';
 import {loadOriginalLabels,escapeLabelHtml} from './original-labels.js?v=native6';
 import {loadNativeHud} from './original-hud.js?v=native66';
-import {loadOriginalModels} from './original-renderer.js?v=valley-forest167';
+import {loadOriginalModels} from './original-renderer.js?v=granary211';
 import {loadOriginalBoatWake,readNavalWakeActors} from './original-boat-wake.js?v=native78-wake83';
 import {loadKingOfTheHillPresentation} from './original-koth.js?v=native64-koth';
 import {loadWonderPresentation} from './original-wonders.js?v=native63';
@@ -41,7 +41,7 @@ import {ownMapTerrainOrigin} from './original-citycenter-terrain.js?v=regional10
 import {loadCityCenterIcons,loadHouseIcons,loadDockIcons,loadBarracksIcons,loadMillIcons,loadTempleIcons,loadLightArtilleryIcons,loadWarehouseIcons,loadStableIcons,loadKingIcons} from './original-citycenter-icons.js?v=native17';
 import {loadSourceSailRuntime} from './source-sail-runtime.js?v=sails7';
 import {createRenderAssetMapping} from './original-render-namespace.js?v=native6';
-import {createFrontendNamespace} from './render-namespace.js?v=native77';
+import {createFrontendNamespace} from './render-namespace.js?v=granary211';
 import {ORIGINAL_SPEEDS, changeOriginalSpeed, checkOriginalTempo, loadOriginalTempo, originalStartingSpeed} from './original-game-tempo.js?v=native37';
 import {addF64, advanceAdaptiveSourceFrame, advanceSourceSoloFrame, createAdaptiveSourceClock, sampleSourceRenderFps, SOURCE_SOLO_INTERVAL, sourceRenderSeconds, sourceStepDelta, sourceWallInterval, storeF32} from './source-solo-clock.js?v=time-of-day160';
 import {mountOriginalGameOptions} from './original-game-options.js?v=native37';
@@ -60,7 +60,7 @@ import {NATIVE_SEASON_CHOICE,normalizeSeasonChoice,resolveSeasonChoice} from './
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=native108';
 import {checkTimeOfDayMode,createTimeOfDayClock,readTimeOfDayState,resolveTimeOfDay,timeOfDayPeriods} from './original-time-of-day.js?v=time-of-day160';
 import {CLIMATE_NAMES,checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=stock-demolition208';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,rulesProfileURL,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=granary211';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION as BASE_PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=time-of-day160';
@@ -96,6 +96,7 @@ import {createTradeRoute,supportsTradeRoute,tradeRouteText} from './trade-route.
 import {loadMarketArt,marketOrders,marketOrderButton,marketOrderHotkey} from './market-orders.js?v=native58';
 import {loadCarrierPresentation,loadFighterBomberPresentation,loadPriestPresentation,loadSpyPresentation,loadTradePresentation,loadTradeRouteArt} from './original-trade-presentation.js?v=native-spy-powers';
 import {loadFishingPresentation} from './original-fishing.js?v=native77';
+import {loadGranaryPresentation} from './original-granary.js?v=granary211';
 import {createTradeWaitStatus,loadTradeWaitArt,selectedTradeWait} from './trade-wait-status.js?v=native31';
 import {airActions,airMissionActions,airMissionSelection,airMissionTrainingKey,createAirMissionOrder,decorateAirMissionButton,loadAirMissionArt,supportsAirMission} from './air-mission-order.js?v=native32';
 import {loadAirMissionFlag,loadCarrierGarrisonFlag,projectAirMissionFlags,readAirMissionVisualRoutes} from './air-mission-flag.js?v=native76-carrier';
@@ -125,7 +126,7 @@ function rulesLoadFailure(error){
  $('play').textContent='Regelversion konnte nicht geladen werden';
 }
 let rulesProfile;
-try{rulesProfile=resolveRulesProfile(location.href);}catch(error){rulesLoadFailure(error);throw error;}
+try{rulesProfile=resolveRulesProfile(location.href,{granary:true});}catch(error){rulesLoadFailure(error);throw error;}
 profileSelect.value=rulesProfile.id;
 const referenceMode=rulesProfile.reference,qaMode=rulesProfile.qa;
 const privateMapLinks=$('local-private-maps');
@@ -655,10 +656,11 @@ const hasTakeoffState=typeof wasm.air_takeoff_start_tick==='function';
 const diversionSupported=rulesProfile.ruleset===2&&typeof wasm.configure_leader_diversion==='function';
 const heavyMounted3Id=rulesProfile.ruleset===2?wasm.heavy_mounted3_definition?.():undefined;
 const fishingId=rulesProfile.ruleset===2?wasm.fishing_definition?.():undefined;
+const granaryId=rulesProfile.ruleset===2?wasm.granary_definition?.():undefined;
 const leaderPresentation=await loadCrownLeaderPresentation({
   enabled:originalEnabled&&rulesProfile.ruleset===2&&typeof wasm.configure_crown_leaders==='function',
 });
-const [tradePresentation,tradeRouteArt,tradeWaitArt,fighterBomberPresentation,carrierPresentation,priestPresentation,spyPresentation,airMissionArt,airMissionFlag,airTakeoff,aircraftFlightAudio,wonderPresentation,diversionPresentation,heavyMounted3Presentation,artemisPresentation,fishingPresentation]=await Promise.all([
+const [tradePresentation,tradeRouteArt,tradeWaitArt,fighterBomberPresentation,carrierPresentation,priestPresentation,spyPresentation,airMissionArt,airMissionFlag,airTakeoff,aircraftFlightAudio,wonderPresentation,diversionPresentation,heavyMounted3Presentation,artemisPresentation,fishingPresentation,granaryPresentation]=await Promise.all([
   loadTradePresentation({enabled:originalEnabled&&rulesProfile.ruleset===2&&renderNamespace.definitionCount>82}),
   loadTradeRouteArt({enabled:originalEnabled&&tradeAvailable}),
   loadTradeWaitArt({enabled:originalEnabled&&tradeAvailable&&typeof wasm.trade_wait_active==='function'}),
@@ -675,6 +677,7 @@ const [tradePresentation,tradeRouteArt,tradeWaitArt,fighterBomberPresentation,ca
   loadHeavyMounted3Presentation({enabled:originalEnabled,definition:heavyMounted3Id}),
   loadArtemisPresentation({enabled:originalEnabled&&rulesProfile.ruleset===2}),
   loadFishingPresentation({enabled:originalEnabled,definition:fishingId}),
+  loadGranaryPresentation({enabled:originalEnabled,definition:granaryId}),
 ]);
 const hercAttack=originalEnabled&&Number.isInteger(heavyMounted3Id)&&
   ['guided_herc_attack_prepare','guided_herc_attack_ptr','guided_herc_attack_shot_at'].every(name=>typeof wasm[name]==='function')
@@ -768,7 +771,7 @@ const boatWake=await loadOriginalBoatWake(gl,{enabled:originalEnabled&&rulesProf
   additionalHulls:fishingPresentation?.wakeProfiles});
 const originalModels=await loadOriginalModels(gl,originalEnabled,TEAM,(loaded,total)=>{
   $('play').textContent=`Originalgrafiken laden · ${Math.round(loaded/total*100)} %`;
-},{assetMapping,climateProfiles,capturePoseForActor,tradePresentation,fighterBomberPresentation,carrierPresentation,priestPresentation,priestPoseForActor,spyPresentation,spyPoseForActor,leaderPresentation,wonderPresentation,wonderScaffold,wonderFence,diversionPresentation,heavyMounted3Presentation,kothPresentation,fishingPresentation,
+},{assetMapping,climateProfiles,capturePoseForActor,tradePresentation,fighterBomberPresentation,carrierPresentation,priestPresentation,priestPoseForActor,spyPresentation,spyPoseForActor,leaderPresentation,wonderPresentation,wonderScaffold,wonderFence,diversionPresentation,heavyMounted3Presentation,kothPresentation,fishingPresentation,granaryPresentation,
   spyShimmerForActor:spyShimmer?actor=>spyShimmer.sample(actor,wasm.spy_disguised(actor.handle)===1):null,
   diversionShimmerForActor:diversionShimmer?(actor,visual)=>diversionShimmer.sample(actor,visual,wasm.leader_diversion_visual(actor.handle)===1):null,
   sourceVisualForModel:blessGround?.modelVisual,priestParticleScales:!!priestParticles,rallyTargetTags:airMissionFlag?.targetTags,
@@ -788,8 +791,9 @@ const wakeEnabled=boatWake&&(boatWake.fleet?originalModels.hasBoatWakeSources:or
 const carrierOccupied=handle=>wasm.air_mission_status(handle,1)>0;
 const sourceSails=await loadSourceSailRuntime({wasm,namespace:renderNamespace,models:originalModels,enabled:originalEnabled&&rulesProfile.ruleset===2,decorateMetadata:metadata=>packMetadata?packMetadata.snapshot(metadata):metadata});
 if(sourceSails?.metrics.error)console.warn('Source sails:',sourceSails.metrics.error);
-const unitPresentations=[tradePresentation,fighterBomberPresentation,carrierPresentation,priestPresentation,spyPresentation,leaderPresentation,diversionPresentation,heavyMounted3Presentation,fishingPresentation].filter(Boolean);
+const unitPresentations=[tradePresentation,fighterBomberPresentation,carrierPresentation,priestPresentation,spyPresentation,leaderPresentation,diversionPresentation,heavyMounted3Presentation,fishingPresentation,granaryPresentation].filter(Boolean);
 sfx.configureOriginalDefinitions({wasm,bindings:[...(originalModels.manifest?.models||[]),...(originalModels.additionalRegionalAudio||[]),...unitPresentations.flatMap(source=>source.audioModelRows)],additionalFamilyManifest:unitPresentations.map(source=>source.audioManifest),citizenPresentation,regionalMusic:rulesProfile.ruleset===2,infantryReplies:rulesProfile.id==='up15',...(rulesProfile.ruleset===2?{familyManifestURL:'native-families-civ8-regicide.json',playbackManifestURL:'manifest-stone-thrower-up.json'}:{})});
+sfx.configureGranaryLoop(granaryPresentation?.idleLoop);
 const captureGlow = originalEnabled && typeof wasm.active_capture_glow === 'function'
   ? createCaptureGlow({kothDefinition:kothPresentation?kothDefinition:undefined}) : null;
 const originalGround=await loadOriginalGround(gl,originalEnabled,{assetMapping,climateProfiles,captureGlow:!!captureGlow,blessGlow:!!blessGround,wonderPresentation,
@@ -1092,12 +1096,12 @@ function rotateBuilding(direction,fine=false){
     placementKey='';updatePlacement();return;
   }
   if(!wasm.cmd_place_rotated)return toast('Lade die aktuelle Spielfassung neu, um Gebäude zu drehen.');
-  const isWonder=Boolean(wasm.wonder_footprint?.(ghost.id,0));
-  ghost.turn=nextBuildingTurn(ghost.turn,direction,fine&&!isWonder);ghost.manual=true;placementKey='';updatePlacement();
+  const quarterTurns=ghost.id===granaryId||Boolean(wasm.wonder_footprint?.(ghost.id,0));
+  ghost.turn=nextBuildingTurn(ghost.turn,direction,fine&&!quarterTurns);ghost.manual=true;placementKey='';updatePlacement();
 }
 function footprintSize(){return ghost?(wasm.footprint_size?.(ghost.id,ghost.turn)||ghost.size):0;}
 function footprintAxes(){
-  const packed=ghost&&wasm.wonder_footprint?.(ghost.id,ghost.turn);
+  const packed=ghost&&(ghost.id===granaryId?wasm.granary_footprint(ghost.turn):wasm.wonder_footprint?.(ghost.id,ghost.turn));
   if(packed)return [packed&0xffff,packed>>>16];
   const size=footprintSize();
   return [size,size];
@@ -1485,6 +1489,7 @@ function begin(tempo = null, useSourceClock = wasm.sim_clock_active?.() === 1, a
   battleFlare?.reset(!bench);
   fullmapPip.reset();
   sfx.stopStoneThrowerWheels();
+  sfx.stopGranaryLoops();
   fullmap?.close();
   fullmap?.warplans.reset();
   fullmap?.invalidate();
@@ -1939,6 +1944,7 @@ setInterval(() => {
 }, 200);
 
 // ---------------------------------------------------------------- frame loop
+const granaryMixedGlow=handle=>!!spyAdvancedArt?.mixedGlow&&wasm.granary_bonus_for?.(handle)===1;
 function drawCaptureGlow(vp,actorMetadata){
   if(!captureGlow||!actorMetadata)return;
   const capture=wasm.has_active_capture_glow(),spy=wasm.spy_adverse_glow_present?.();
@@ -1946,7 +1952,7 @@ function drawCaptureGlow(vp,actorMetadata){
   const crown=wasm.crown_visuals_present?.();
   const bad=handle=>(capture&&wasm.active_capture_glow(handle))||(spy&&spyAdverseGlow(handle));
   const isMixed=handle=>spyAdvancedArt?.mixedGlow&&bad(handle)
-    && (wasm.bless_glow_active?.(handle)||wasm.imperialism_visible?.(handle)||(crown&&(wasm.crown_actor_glow(handle)&1)));
+    && (granaryMixedGlow(handle)||wasm.bless_glow_active?.(handle)||wasm.imperialism_visible?.(handle)||(crown&&(wasm.crown_actor_glow(handle)&1)));
   const projected = captureGlow.project(actorMetadata.actors, handle=>bad(handle)&&!isMixed(handle));
   originalGround.drawCaptureGlow({vp,...projected});
   if(spyAdvancedArt?.mixedGlow){
@@ -1990,11 +1996,11 @@ function drawBlessGround(vp,actorMetadata,previewFrame=null){
   const layer=blessGround.project({actors:actorMetadata.actors,local:ui?.local??0,
     visualForActor:originalModels.sourceVisualForActor,isBlessed:handle=>{
       const crownGood=crown&&(wasm.crown_actor_glow(handle)&1);
-      const good=wasm.bless_glow_active(handle)||wasm.imperialism_visible?.(handle)||crownGood;
+      const good=granaryMixedGlow(handle)||wasm.bless_glow_active(handle)||wasm.imperialism_visible?.(handle)||crownGood;
       if(crownGood)crownGround++;
       return good;
     },
-    isMixed:handle=>spyAdvancedArt?.mixedGlow&&((capture&&wasm.active_capture_glow(handle))||spyAdverseGlow(handle)),
+    isMixed:handle=>spyAdvancedArt?.mixedGlow&&(granaryMixedGlow(handle)||(capture&&wasm.active_capture_glow(handle))||spyAdverseGlow(handle)),
     hasPreview:handle=>!!previewFrame&&!!blessPreview?.handles.has(handle)});
   originalGround.drawBlessGlow({vp,...layer});
   originalGround.drawMixedGlow({vp,list:layer.mixed,alpha:layer.alpha});
@@ -2263,6 +2269,7 @@ function frame(now) {
   }
   if(airTakeoff){takeoffSample.tick=wasm.game_tick()>>>0;takeoffSample.alpha=alpha;takeoffSample.now=sourceRenderSeconds(wasm,alpha);}
   const stoneThrowerWheels=originalEnabled&&rulesProfile.ruleset===2&&!paused&&!document.hidden&&!(net&&net.ls.waiting)?[]:null;
+  const granaryLoops=granaryPresentation&&stoneThrowerWheels!==null?[]:null;
   if(rulesProfile.ruleset===2)originalModels.setVisualCivilizations?.([0,1,2,3].map(team=>wasm.player_civilization(team)));
 
   // Own visual clock: once before every scene pass. Pause/wait freezes cloth;
@@ -2360,7 +2367,7 @@ function frame(now) {
     }
     // one instanced draw per model type
     drawFallbackModels(view.vp,ranges);
-    originalModels.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,vp:view.vp,epochs:renderEpochs,zoom:cam.zoom,eye:view.eye,actorMetadata,stoneThrowerWheels,hercBeamMuzzles,packScene});
+    originalModels.draw({data:f32(wasm.inst_ptr(),n*STRIDE),ranges,vp:view.vp,epochs:renderEpochs,zoom:cam.zoom,eye:view.eye,actorMetadata,stoneThrowerWheels,granaryLoops,hercBeamMuzzles,packScene});
     if(qaMode){
       canvas.dataset.wonderScaffolds=JSON.stringify(originalModels.metrics.wonderScaffolds??[]);
       canvas.dataset.wonderFences=JSON.stringify(originalModels.metrics.wonderFences??[]);
@@ -2368,6 +2375,7 @@ function frame(now) {
     }
   }
   if(rulesProfile.ruleset===2)sfx.updateStoneThrowerWheels(actorMetadata?.session,stoneThrowerWheels,cam,referenceMode?view:undefined);
+  if(granaryPresentation)sfx.updateGranaryLoops(actorMetadata?.session,granaryLoops,view);
 
   // Native base-water depth/alpha followed by the separate reflection overlay.
   gl.enable(gl.BLEND); gl.depthMask(false);
@@ -2430,7 +2438,7 @@ function frame(now) {
 
 // ---------------------------------------------------------------- HUD
 const HOT = ['Q', 'W', 'E', 'R', 'T', 'Z', 'X', 'C', 'V', 'B'];
-const unitPresentation=id=>id===kothDefinition?kothPresentation:id===43?artemisPresentation:id===heavyMounted3Id?heavyMounted3Presentation:id===fishingId?fishingPresentation:id>=102&&id<=105?diversionPresentation:id>=87&&id<=89?leaderPresentation:id===86?spyPresentation:id===85?priestPresentation:id===84?carrierPresentation:id===83?fighterBomberPresentation:tradePresentation;
+const unitPresentation=id=>Number.isInteger(granaryId)&&id===granaryId?granaryPresentation:id===kothDefinition?kothPresentation:id===43?artemisPresentation:id===heavyMounted3Id?heavyMounted3Presentation:id===fishingId?fishingPresentation:id>=102&&id<=105?diversionPresentation:id>=87&&id<=89?leaderPresentation:id===86?spyPresentation:id===85?priestPresentation:id===84?carrierPresentation:id===83?fighterBomberPresentation:tradePresentation;
 function icon(id, px,context=undefined) {
   const wonderUrl=wonderPresentation.iconFor(id);
   if(wonderUrl){
@@ -2451,7 +2459,12 @@ function icon(id, px,context=undefined) {
 const glyph = (ch, px) => { const d = document.createElement('div'); d.style.cssText = `font-size:${px * 0.66}px;height:${px}px;line-height:${px}px`; d.textContent = ch; return d; };
 const GLYPH = { e: '⬆', r: '⚗', i: '⬆', u: '⚓', p:'⇄' };
 const LABELS = {'Worker':'Bürger','Town Center':'Stadtzentrum','House':'Haus','Farm':'Bauernhof','Barracks':'Kaserne','Workshop':'Werkstatt','Dock':'Hafen','Airfield':'Flugplatz','Watchtower':'Wachturm','Next Epoch':'Nächste Epoche','University':'Universität','Mill':'Mühle','Stable':'Stall','Market':'Markt','Temple':'Tempel','Warehouse':'Lagerhaus','Oil Rig':'Bohrturm','Uranium Mine':'Uranmine','HercFacility':'HERC-Fabrik','Fortress':'Festung','Trade Cart':'Handelskarren','Merchant Ship':'Handelsschiff'};
-const label = (name,id,count=1) => sourceResearch.unitName(wonderPresentation.nameFor(id)??unitPresentation(id)?.name(id,ui?.epoch??0,count)??originalLabels.name(id,ui?.epoch??0,LABELS[name]||name,count),id,ui?.local);
+const granaryLabel = (epoch,count) => epoch>=14
+  ? (count===1?'Botanisches Modul (1.6)':'Botanische Module (1.6)')
+  : epoch>=10?'Getreidespeicher (1.6)':(count===1?'Windmühle (1.6)':'Windmühlen (1.6)');
+const label = (name,id,count=1) => Number.isInteger(granaryId)&&id===granaryId
+  ? granaryLabel(ui?.epoch??0,count)
+  : sourceResearch.unitName(wonderPresentation.nameFor(id)??unitPresentation(id)?.name(id,ui?.epoch??0,count)??originalLabels.name(id,ui?.epoch??0,LABELS[name]||name,count),id,ui?.local);
 const actionUnitId = a => a&&(a.k==='b'||a.k==='t')?a.id:undefined;
 const ACTIVITIES = ['Bereit','Unterwegs','Holz fällen','Erz abbauen','Nahrung sammeln','Bauen','Im Kampf'];
 function costText(c) {return c.flatMap((value,slot)=>value?[`${value} ${!referenceMode&&slot===2?'Metall':RESOURCE_NAMES[slot]}`]:[]).join(' · ')||'Kostenlos';}
@@ -3027,7 +3040,7 @@ function setPauseHold(reason,hold) {
   else pauseReasons.delete(reason);
   const wasPaused=paused;
   paused=pauseReasons.size>0;
-  if(paused&&!wasPaused){sfx.stopStoneThrowerWheels();takeoffAudio?.reset();sfx.resetAirFlightAudio();tradeRoute?.cancel();airMission?.cancel();}
+  if(paused&&!wasPaused){sfx.stopStoneThrowerWheels();sfx.stopGranaryLoops();takeoffAudio?.reset();sfx.resetAirFlightAudio();tradeRoute?.cancel();airMission?.cancel();}
   if(paused!==wasPaused)last=performance.now();
   $('pause').textContent=paused?'Fortsetzen':'Pause';
 }
@@ -3039,7 +3052,7 @@ function taskSwitch() {
   if(originalTempo&&running)setPauseHold('task-switch',document.hidden||document.hasFocus?.()===false);
 }
 document.addEventListener('visibilitychange',()=>{
-  if(document.hidden){sfx.stopStoneThrowerWheels();takeoffAudio?.reset();sfx.resetAirFlightAudio();sfx.resetWorldAmbience();}
+  if(document.hidden){sfx.stopStoneThrowerWheels();sfx.stopGranaryLoops();takeoffAudio?.reset();sfx.resetAirFlightAudio();sfx.resetWorldAmbience();}
   taskSwitch();
 });
 function jumpToSelection() { const x = wasm.sel_center(0); if (x >= 0) { cam.x = x; cam.y = wasm.sel_center(1); } }
@@ -3620,12 +3633,15 @@ $('mpcopy').onclick = () => { $('mpout').select(); navigator.clipboard?.writeTex
 const rosterFeatures=Object.freeze(Object.fromEntries([
   ['capture','capture_configure_peer'],['captureAnimation','capture_animation_configure_peer'],
   ['infantryRoster','infantry_roster_configure_peer'],['productionRoster','production_roster_configure_peer'],
+  ['granary','configure_network_granary'],
   ...(tradeAvailable?[['tradeRoute','trade_route_configure_peer']]:[]),
   ...(airMissionAvailable?[['airMission','air_mission_configure_peer'],['airRunway','air_runway_configure_peer'],
     ['airTakeoff','air_takeoff_configure_peer'],['airLanding','air_landing_configure_peer'],['airCarrier','air_carrier_configure_peer']]:[]),
   ...(supportsPeerCrowns?[['crowns','configure_crowns_peer']]:[]),
 ].filter(([,name])=>typeof wasm[name]==='function')));
 const supportedRosterFeatures=Object.keys(rosterFeatures);
+const legacyRosterFeatures=supportedRosterFeatures.filter(key=>key!=='granary');
+const supportsNetworkGranary=Object.hasOwn(rosterFeatures,'granary');
 
 function checkRosterSettings(cfg,humanSeats,resuming=false) {
   if(!cfg||cfg.humanSeats!==humanSeats||![2,3,4].includes(humanSeats)||!Number.isInteger(cfg.ai)||cfg.ai<0||
@@ -3708,7 +3724,7 @@ function checkpointRules(cfg){
   const crowns=cfg.crownsDisabled===undefined?0:cfg.crownsDisabled?2:1;
   const capture=cfg.captureCheckpoint?1+Number(cfg.features.includes('captureAnimation')):0;
   const rules=crowns|(capture<<25)|(Number(cfg.sightTerms===true)<<27)|(Number(cfg.timedTreaties===true)<<28)|
-    (Number(cfg.borderTreaties===true)<<29)|(Number(cfg.fishing===true)<<30);
+    (Number(cfg.borderTreaties===true)<<29)|(Number(cfg.fishing===true)<<30)|(Number(cfg.features.includes('granary'))<<31);
   const crown=cfg.crownVictory, capitol=cfg.capitolVictory;
   if(crown)return rules|(crown.mode<<8)|(crown.target<<16);
   if(capitol)return rules|(capitol.mode<<8)|(capitol.minutes<<16)|(Number(capitol.sole)<<24);
@@ -3835,7 +3851,8 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
   epochName:epoch=>epoch===-1?'Zufall':epoch>=0&&epoch<wasm.epoch_count()?
     dec.decode(u8(wasm.epoch_name_ptr(epoch),wasm.epoch_name_len(epoch))):`Epoche ${epoch+1}`,
   localHello:()=>({protocol:PROTOCOL_VERSION,profile:rosterProfile,rules:wasm.ruleset(),
-    civilization:civilizationSetup.choice(0),climates,features:supportedRosterFeatures,
+    civilization:civilizationSetup.choice(0),climates,features:legacyRosterFeatures,
+    ...(supportsNetworkGranary?{granary:true}:{}),
     ...(supportsNetworkCrownVictory?{crownVictory:true}:{}),
     ...(supportsNetworkCapitols?{capitolVictory:true}:{}),
     ...(supportsNetworkCapitolRoster?{capitolRoster:true}:{}),
@@ -3852,7 +3869,9 @@ const rosterLobby=supportsSourceRoster?mountSourceRosterLobby($('mp-roster'),{
     if(hello?.protocol!==PROTOCOL_VERSION||hello.profile!==rosterProfile||hello.rules!==wasm.ruleset()||
       !Array.isArray(hello.features)||hello.features.length>11||hello.features.some(key=>typeof key!=='string'))
       throw Error('Alle Teilnehmer brauchen dieselbe UP-Spielversion.');
-    return {civilization:civilizationChoice(hello.civilization),climates:peerClimates(hello.climates),features:hello.features,
+    const features=hello.features.filter(key=>key!=='granary');
+    if(supportsNetworkGranary&&hello.granary===true)features.push('granary');
+    return {civilization:civilizationChoice(hello.civilization),climates:peerClimates(hello.climates),features,
       crownVictory:hello.crownVictory===true,
       capitolVictory:hello.capitolVictory===true,
       capitolRoster:hello.capitolRoster===true,
