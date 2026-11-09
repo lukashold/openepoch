@@ -364,7 +364,7 @@ void main(){
 const INST = `layout(location=3) in vec4 iA; layout(location=4) in vec4 iB; layout(location=5) in vec4 iC;`;
 const models = program(`#version 300 es
 layout(location=0) in vec3 aP; layout(location=1) in vec3 aN; layout(location=2) in vec4 aCol; layout(location=6) in float aJoint; ${INST}
-uniform mat4 uVP; uniform highp int uShadow; out vec3 vN; out vec4 vCol; out vec2 vW; out vec3 vLocal; out float vLy; flat out float vJoint; flat out vec4 vB;
+uniform mat4 uVP; uniform highp int uShadow; uniform vec2 uShadowSlope; out vec3 vN; out vec4 vCol; out vec2 vW; out vec3 vLocal; out float vLy; flat out float vJoint; flat out vec4 vB;
 void main(){
   float c=cos(iA.w), s=sin(iA.w);
   vec3 local=aP, normal=aN;
@@ -400,7 +400,7 @@ void main(){
   if(iB.x>=29. && iB.x<=36.)p.y+=sin(iC.z*1.4+iA.x)*.015;
   vec3 w = vec3(iA.x + p.x*c - p.z*s, iA.z + p.y, iA.y + p.x*s + p.z*c);
   if(uShadow==1){
-    w.xz -= vec2(.62,.44)*max(p.y,0.);
+    w.xz -= uShadowSlope*max(p.y,0.);
     w.y = iA.z+.035;
   }
   vLocal=aP;
@@ -2336,6 +2336,14 @@ function frame(now) {
       gl.stencilFunc(gl.EQUAL,0,255); gl.stencilOp(gl.KEEP,gl.KEEP,gl.INCR);
       gl.useProgram(models.p); gl.bindVertexArray(vaoM);
       gl.uniformMatrix4fv(models.u.uVP,false,view.vp); gl.uniform1i(models.u.uShadow,1);
+      const lighting=originalModels.lighting;
+      if(!valleyWorld&&nativeTimeOfDay&&lighting?.native){
+        const [x,y,z]=lighting.direction;
+        const rise=Math.max(.1,y);
+        gl.uniform2f(models.u.uShadowSlope,x/rise,z/rise);
+      }else{
+        gl.uniform2f(models.u.uShadowSlope,.62,.44);
+      }
       for(let id=0;id<renderNamespace.slotCount;id++){
         if(originalModels.available.has(id))continue;
         const template=renderNamespace.fallbackModelId(id);
