@@ -132,7 +132,7 @@ impl Game {
         for _ in 0..count { spawned.push(self.spawn(definition, team, 0.0, 0.0)); }
         let slots = formation(count, native::extent(definition).unwrap());
         let chosen = placement(&mut self.source_birth.rng, clicked, &slots, |[x, y]| {
-            location(x, y) && self.map.pass[0][tile_of(x, y)]
+            location(x, y) && self.map.pass[0][self.map.tile_of(x, y)]
         });
         let Some((yaw, points)) = chosen else {
             for unit in spawned { self.kill(unit); }

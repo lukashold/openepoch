@@ -43,6 +43,18 @@ pub const C_PLACE_ROTATED:u8=16;
 #[cfg(feature="ee2-native13")]pub(crate) const C_LEADER_DIVERSION:u8=31;
 #[cfg(feature="ee2-native13")]pub(crate) const C_LEADER_PURCHASE:u8=32;
 #[cfg(feature="ee2-native13")]pub(crate) const C_IMPERIALISM:u8=33;
+#[cfg(feature = "ee2-valley74-city-footprint")]
+pub(crate) const C_VALLEY_FARM_CURSOR: u8 = 34;
+#[cfg(feature = "ee2-valley74-city-footprint")]
+pub(crate) const C_VALLEY_HOUSE_CURSOR: u8 = 35;
+#[cfg(feature = "ee2-valley164-forest-play")]
+pub(crate) const C_VALLEY_FOREST_GATHER: u8 = 36;
+#[cfg(feature = "ee2-authored-rect233")]
+pub(crate) const C_RECT_GATHER: u8 = 37;
+#[cfg(feature = "ee2-rect242-hunt")]
+pub(crate) const C_RECT_HUNT: u8 = 38;
+#[cfg(feature = "ee2-rect284-extractor-site")]
+pub(crate) const C_RECT_EXTRACTOR: u8 = 39;
 #[cfg(feature="ee2-native13")]pub(crate) const SOLO_RESIGN_SAVE_FLAG:u32=1<<11;
 
 const HEAD: usize = 14; // kind, count, a, b, c
@@ -174,7 +186,8 @@ impl Game {
                 return;
             }
             if !hs.is_empty(){return;}
-            let dec=|v:f32|if v==-1.0{Some(u32::MAX)}else if v>=0.0&&v<32.0&&v.fract()==0.0{Some(v as u32)}else{None};
+            let regions = self.map.tseeds.len() as f32;
+            let dec=|v:f32|if v==-1.0{Some(u32::MAX)}else if v>=0.0&&v<regions&&v.fract()==0.0{Some(v as u32)}else{None};
             if let(Some(give),Some(want))=(dec(a),dec(b)){self.apply_territory(team,bits&255,(bits>>8)&255,give,want);}return;
         }
         if kind==C_DIPLOMACY {
@@ -200,7 +213,27 @@ impl Game {
         match kind {
             #[cfg(feature="ee2-pack8")]
             C_PACK=>{if a==0.0&&b==0.0&&(c==0||c==1){self.order_pack(&ids,c==1);}},
-            C_MOVE => {self.order_move(&ids,a,b,false);#[cfg(feature="ee2-pack8")]self.pack_direct_move(&ids);},
+            C_MOVE => {
+                #[cfg(feature = "ee2-valley196-citizen-route-shadow")]
+                let route_probe = self.valley_route_probe(&ids);
+                #[allow(unused_mut)]
+                let mut target = [a, b];
+                #[cfg(feature = "ee2-valley190-point-move")]
+                if let [index] = ids.as_slice() {
+                    match self.valley_scenery_move(*index, target) {
+                        Some(Some(recovered)) => target = recovered,
+                        Some(None) => return,
+                        None => {}
+                    }
+                }
+                self.order_move(&ids, target[0], target[1], false);
+                #[cfg(feature = "ee2-valley196-citizen-route-shadow")]
+                if let Some(index) = route_probe {
+                    self.valley_observe_ordinary_route(index, target);
+                }
+                #[cfg(feature="ee2-pack8")]
+                self.pack_direct_move(&ids);
+            },
             C_AMOVE => {self.order_move(&ids,a,b,true);#[cfg(feature="ee2-pack8")]self.pack_direct_move(&ids);},
             C_ATTACK => {
                 #[cfg(feature = "ee2-valley71-neutral-qa")]
@@ -230,11 +263,21 @@ impl Game {
                     self.order_building(&ids, j);
                 }
             }
+            #[cfg(feature = "ee2-authored-rect233")]
+            C_RECT_GATHER if a == 0.0 && b == 0.0 && c > 0 => {
+                self.order_world0_resource(team, c as u32, &ids);
+            }
+            #[cfg(feature = "ee2-rect242-hunt")]
+            C_RECT_HUNT if a == 0.0 && b == 0.0 && c > 0 => {
+                self.order_world0_hunt(team, c as u32, &ids);
+            }
             C_GATHER => {
                 if c >= 0 && (c as usize) < NN && self.map.res[c as usize] != R_NONE && self.real_fog(team,c as usize)>0 {
                     self.order_gather(&ids, c as usize);
                 }
             }
+            #[cfg(feature = "ee2-valley164-forest-play")]
+            C_VALLEY_FOREST_GATHER if a == 0.0 && b == 0.0 && c >= 0 => self.order_valley_forest(team, c as u32, &ids),
             C_BOARD => {
                 if let Some(j) = target.filter(|&j| self.ents[j].team == team) {
                     self.order_board(&ids, j);
@@ -244,14 +287,21 @@ impl Game {
             C_RALLY => {
                 for &i in &ids {
                     if DEFS[self.ents[i].def as usize].building {
-                        self.ents[i].rx = a.clamp(1.0, N as f32 - 1.0);
-                        self.ents[i].ry = b.clamp(1.0, N as f32 - 1.0);
+                        let [width, height] = self.map.simulation_dimensions().map(|side| side as f32);
+                        self.ents[i].rx = a.clamp(1.0, width - 1.0);
+                        self.ents[i].ry = b.clamp(1.0, height - 1.0);
                     }
                 }
             }
             C_STOP => self.order_stop(&ids),
+            #[cfg(feature = "ee2-valley74-city-footprint")]
+            C_VALLEY_FARM_CURSOR => self.apply_valley_cursor_pose(team, FARM, a, b, f32::from_bits(c as u32), &ids),
+            #[cfg(feature = "ee2-valley74-city-footprint")]
+            C_VALLEY_HOUSE_CURSOR => self.apply_valley_cursor_pose(team, HOUSE, a, b, f32::from_bits(c as u32), &ids),
+            #[cfg(feature = "ee2-rect284-extractor-site")]
+            C_RECT_EXTRACTOR => self.apply_rect_extractor(team, a, b, c as u32, &ids),
             C_PLACE|C_PLACE_ROTATED=>{
-                if a.fract()!=0.0||b.fract()!=0.0||a<0.0||b<0.0||a>=N as f32||b>=N as f32||c<0{return;}
+                if a.fract()!=0.0||b.fract()!=0.0||!self.map.layout.contains(a as i32,b as i32)||c<0{return;}
                 let bits=c as u32;let shift=if cfg!(feature="ee2-roster6"){16}else{8};let mask=(1u32<<shift)-1;
                 if(kind==C_PLACE&&bits>=DEFS.len()as u32)||(kind==C_PLACE_ROTATED&&bits>>(shift+8)!=0){return;}
                 let def=(bits&mask)as DefId;let turn=bits>>shift;if def as usize>=DEFS.len()||turn>=crate::placement::ROTATION_STEPS{return;}
@@ -285,6 +335,10 @@ impl Game {
                     #[cfg(feature = "ee2-native13")]
                     if !self.settle_completed_skirmish_demolition(i) { continue; }
                     city |= self.ents[i].def == TC;
+                    #[cfg(feature = "ee2-valley204-construction-cancel")]
+                    if !self.ents[i].alive || self.cancel_unfinished_construction(i) { continue; }
+                    #[cfg(feature = "ee2-valley205-completed-refund")]
+                    self.refund_completed_valley_building(i);
                     #[cfg(feature = "ee2-native13")]
                     if self.ents[i].def == DOCK { self.retire_dock_garrison(i); }
                     #[cfg(feature = "ee2-native13")]

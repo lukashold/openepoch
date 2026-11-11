@@ -138,7 +138,7 @@ impl Game {
         let mut dock = self.ents[index];
         dock.rx = -1.0;
         let point = self.spawn_point(&dock, &DEFS[DOCK as usize], &DEFS[definition as usize]);
-        self.map.pass[1][tile_of(point.0, point.1)].then_some(point)
+        self.map.pass[1][self.map.tile_of(point.0, point.1)].then_some(point)
     }
 
     fn dock_nested_aircraft(&self, index: usize) -> Option<u32> {
@@ -150,11 +150,11 @@ impl Game {
         let handle = self.h(dock);
         if !valid_dock(&host, host.team) || self.sabotaged(dock) { return; }
         let Some((x, y)) = self.dock_point(dock, 29) else { return; };
-        let connected = super::trade30::connected(&self.map.pass[1], tile_of(x, y));
+        let connected = super::trade30::connected(self.map.layout, &self.map.pass[1], self.map.tile_of(x, y));
         for &index in ids {
             let actor = self.ents[index];
             if actor.team != host.team || actor.hp <= 0.0 || !self.can_dock_naval(actor.def)
-                || self.trade_hidden(index, &actor) || !connected[tile_of(actor.x, actor.y)] { continue; }
+                || self.trade_hidden(index, &actor) || !connected[self.map.tile_of(actor.x, actor.y)] { continue; }
             let Some(aircraft) = self.dock_nested_aircraft(index) else { continue; };
             let cost = seats(&actor, self.players[actor.team as usize].epoch, aircraft);
             if self.dock_garrison.as_ref().unwrap().used(handle) + cost > SLOTS { continue; }

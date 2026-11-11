@@ -61,7 +61,9 @@ export function resolveEpochRange(start, end, count, word15) {
 }
 export function applyMatchSettings(wasm,settings,nplayers){
  const values=checkedCivilizations(settings?.civilizations,nplayers);
- if(![250,500,1000].includes(settings.popLimit)||![0,1,2,3,4].includes(settings.supplies))throw Error('Ungültige Scharmützeleinstellungen.');
+ const supportedSupplies = [0, 1, 2, 3, 4];
+ if (wasm.native_rect_starting_supplies_version?.() === 1) supportedSupplies.push(5);
+ if(![250,500,1000].includes(settings.popLimit)||!supportedSupplies.includes(settings.supplies))throw Error('Ungültige Scharmützeleinstellungen.');
  const count = wasm.epoch_count(), end = settings.finalEpoch ?? count - 1;
  checkedEpochRange(settings.epoch, end, count);
  if(typeof wasm.configure_match_settings!=='function')throw Error('Die Spieldatei unterstützt diese Scharmützeleinstellungen noch nicht.');

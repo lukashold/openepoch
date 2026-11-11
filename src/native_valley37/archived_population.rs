@@ -10,6 +10,8 @@ struct Actor {
     flags: u32,
     visibility: u32,
     resource: u8,
+    #[cfg(feature = "ee2-valley190-point-move")]
+    scenery: Option<super::scenery::Footprint>,
 }
 
 pub(super) struct World0 {
@@ -35,7 +37,8 @@ impl Actor {
             !(0.0..height as f32).contains(&xyz[1]) || !xyz[2].is_finite() || !yaw.is_finite() || health != 1.0 ||
             name_end > data.len() - 16 || word(tail, 0)? != u32::MAX || !f32::from_bits(word(tail, 4)?).is_finite() ||
             flags != 0 || visibility != u32::MAX { return None; }
-        let resource = match data.get(26..name_end)? {
+        let name = data.get(26..name_end)?;
+        let resource = match name {
             b"ResourceStone" => R_STONE,
             b"ResourceGold" => R_GOLD,
             b"ResourceTin" => R_TIN,
@@ -48,13 +51,23 @@ impl Actor {
             b"ResourceDummy" => R_NONE,
             _ => return None,
         };
-        Some(Self { source_id, xyz, yaw, health, flags, visibility, resource })
+        #[cfg(feature = "ee2-valley190-point-move")]
+        let scenery = super::scenery::Footprint::from_archive(name, [xyz[0], xyz[1]], yaw);
+        Some(Self { source_id, xyz, yaw, health, flags, visibility, resource,
+            #[cfg(feature = "ee2-valley190-point-move")]
+            scenery,
+        })
     }
 
     fn tile(&self) -> usize { tile_of(self.xyz[0], self.xyz[1]) }
 }
 
 impl World0 {
+    #[cfg(feature = "ee2-valley190-point-move")]
+    pub(super) fn scenery(&self) -> Vec<super::scenery::Footprint> {
+        self.actors.iter().filter_map(|actor| actor.scenery).collect()
+    }
+
     #[cfg(feature = "ee2-valley54-menu-qa")]
     pub(super) fn source_rows(&self) -> impl Iterator<Item = super::start::SourceActor> + '_ {
         self.actors.iter().map(|actor| super::start::SourceActor {

@@ -69,6 +69,7 @@ impl Game{
   #[cfg(feature = "ee2-native13")]
   let herc = version == 3 || (version == 4 && flags & 2 != 0);
   let record=record_length(version)?;
+  let bounds=self.map.simulation_dimensions().map(|side|side as f32);
   let mut projs=Vec::with_capacity(u(b,12)?as usize);
   for r in b[HEADER..b.len()-4].chunks_exact(record){
    let w:Vec<u32>=(0..16).map(|k|u(r,k*4).unwrap()).collect();let f=|k|f32::from_bits(w[k]);
@@ -77,8 +78,8 @@ impl Game{
    #[cfg(not(feature="ee2-native13"))]
    let aim_margin = 0.0;
    if [0,1,2,3,4,5,7,8,11,14,15].iter().any(|&i|!f(i).is_finite())
-    || [0,1,2,3].iter().any(|&i|f(i)<0.0||f(i)>N as f32)
-    || [4,5].iter().any(|&i|f(i) < -aim_margin||f(i)>N as f32+aim_margin)
+    || [0,1,2,3].iter().any(|&i|f(i)<0.0||f(i)>bounds[i%2])
+    || [4,5].iter().any(|&i|f(i) < -aim_margin||f(i)>bounds[i%2]+aim_margin)
     || [7,8,11,14].iter().any(|&i|f(i)<0.0)||f(15)<=0.0{return None;}
    let profile=w[13];
    let allowed=profile==crate::ee2_combat::UNKNOWN_PROFILE as u32||(profile as usize)<crate::ee2_combat::PROFILES.len();

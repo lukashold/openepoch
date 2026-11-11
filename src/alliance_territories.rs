@@ -18,9 +18,9 @@ impl AllianceTerritories {
             return None;
         }
         let mut terms = Self { count: ids.len() as u8, give_count: give as u8, ids: [0; MAX_IDS] };
-        let mut seen = 0u32;
+        let mut seen = 0u64;
         for (output, &id) in terms.ids.iter_mut().zip(ids) {
-            let bit = 1u32.checked_shl(id)?;
+            let bit = 1u64.checked_shl(id)?;
             if seen & bit != 0 { return None; }
             seen |= bit;
             *output = id as u8;

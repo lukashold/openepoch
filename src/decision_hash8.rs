@@ -19,7 +19,7 @@ impl Game{
    else if DEFS[e.def as usize].has(F_WORKER){for &q in &e.q[..3]{mix(q);}}
    for k in 0..e.ncargo as usize{mix(e.cargo[k]as u32);mix(e.cargo_hp[k]as u32);}
   }
-  for bytes in[&self.map.ter[..],&self.map.res[..],&self.map.terr[..],&self.towner[..]]{
+  for bytes in[&self.map.ter[..],&self.map.res[..],&self.map.terr[..],&self.towner[..self.map.region_storage_len()]]{
    mix(bytes.len()as u32);for b in bytes.chunks_exact(4){mix(u32::from_le_bytes(b.try_into().unwrap()));}
   }
   mix(self.map.amt.len()as u32);for v in self.map.amt.chunks_exact(2){mix(v[0]as u32|(v[1]as u32)<<16);}

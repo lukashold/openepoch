@@ -1,7 +1,7 @@
 //! Typed Fullmap territory labels projected from the current player's map view.
-use crate::{game::Game, map::N, territory::TERR_NONE};
+use crate::{game::Game, territory::TERR_NONE};
 
-pub const CAPACITY: usize = 32;
+pub const CAPACITY: usize = crate::map::REGION_CAPACITY;
 pub const UNCLAIMED: u32 = 0;
 pub const UNNAMED: u32 = 1;
 
@@ -30,13 +30,13 @@ const _: () = assert!(core::mem::size_of::<CityLabel>() == 4 * 4);
 impl Game {
     pub(crate) fn project_fullmap_territory_labels(&mut self) -> u32 {
         // 0071AD20 bounds occupied cells, including each cell's far edge.
-        let mut bounds = [TerritoryLabel { min_x: N as u32, min_y: N as u32, ..Default::default() }; CAPACITY];
+        let [width, height] = self.map.world_dimensions().map(|axis| axis as u32);
+        let mut bounds = [TerritoryLabel { min_x: width, min_y: height, ..Default::default() }; CAPACITY];
         let mut discovered = [false; CAPACITY];
-        for (tile, &id) in self.map.terr.iter().enumerate() {
-            let index = id as usize;
+        for tile in 0..self.map.terr.len() {
+            let Some(index) = self.map.region_at(tile) else { continue; };
             let area = &mut bounds[index];
-            let x = (tile % N) as u32;
-            let y = (tile / N) as u32;
+            let [x, y] = self.map.tile_xy(tile).map(|axis| axis as u32);
             area.min_x = area.min_x.min(x);
             area.min_y = area.min_y.min(y);
             area.max_x = area.max_x.max(x + 1);
@@ -50,7 +50,7 @@ impl Game {
         for (id, mut area) in bounds.into_iter().enumerate().take(self.map.tseeds.len()) {
             if !discovered[id] { continue; }
             area.id = id as u32;
-            area.name = match self.territory_names.as_ref().map_or(0, |names| names.ids[id]) {
+            area.name = match self.territory_names.as_ref().map_or(0, |names| names.ids.get(id).copied().unwrap_or(0)) {
                 0 if self.towner[id] == TERR_NONE => UNCLAIMED,
                 0 => UNNAMED,
                 name => name.into(),

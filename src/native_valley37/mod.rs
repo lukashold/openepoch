@@ -1,12 +1,92 @@
 //! Native37 preparation transaction for the pinned local Valley geometry.
 mod catalog;
 mod forest_io;
+#[cfg(feature = "ee2-valley163-forest-qa")]
+mod forest_registry;
+#[cfg(feature = "ee2-valley163-forest-qa")]
+mod forest_replay163;
+#[cfg(feature = "ee2-valley164-forest-play")]
+mod forest_play164;
 mod geometry;
+#[cfg(feature = "ee2-authored-rect233")]
+pub(crate) mod rectangular_world;
+#[cfg(feature = "ee2-rect235-forest")]
+pub(crate) mod rectangular_forest;
+#[cfg(feature = "ee2-rect239-fresh")]
+mod fresh239;
+#[cfg(feature = "ee2-rect239-fresh")]
+mod mobile_placement239;
+#[cfg(feature = "ee2-rect267-builder-reach")]
+mod builder_reach267;
+#[cfg(feature = "ee2-authored-rect233")]
+pub(crate) mod rectangular_save234;
+#[cfg(feature = "ee2-rect261-ai-clock")]
+pub(crate) mod ai_clock261;
+#[cfg(feature = "ee2-authored-rect233")]
+mod population234;
+#[cfg(feature = "ee2-authored-rect233")]
+pub(crate) mod population234_attach;
+#[cfg(all(test, feature = "ee2-authored-rect233"))]
+mod population234_attach_tests;
+#[cfg(feature = "ee2-authored-rect233")]
+mod population234_catalog;
+#[cfg(feature = "ee2-authored-rect233")]
+mod population234_stage;
+#[cfg(feature = "ee2-authored-rect233")]
+pub(crate) mod world0_resources236;
+#[cfg(feature = "ee2-rect284-extractor-site")]
+pub(crate) mod extractor_site284;
+#[cfg(feature = "ee2-rect286-oil-visual")]
+pub(crate) mod oil_visual286;
+#[cfg(feature = "ee2-rect287-oil-economy")]
+pub(crate) mod oil_economy287;
+#[cfg(feature = "ee2-rect287-oil-economy")]
+pub(crate) mod owned_ids287;
+#[cfg(feature = "ee2-rect289-citizen-work")]
+pub(crate) mod citizen_work289;
+#[cfg(feature = "ee2-rect242-hunt")]
+mod citizen_facing243;
+#[cfg(feature = "ee2-rect246-deer-live")]
+mod deer_live246;
+#[cfg(feature = "ee2-rect247-deer-foot")]
+mod deer_foot247;
+#[cfg(feature = "ee2-rect249-deer-contact")]
+mod deer_contact249;
+#[cfg(feature = "ee2-rect250-animals")]
+mod animal_wander247;
+#[cfg(feature = "ee2-rect250-animals")]
+mod animal_live250;
+#[cfg(feature = "ee2-rect251-animal-slope")]
+mod deer_slope250;
+#[cfg(feature = "ee2-rect252-animal-birth")]
+mod animal_birth252;
+#[cfg(feature = "ee2-rect254-aircraft")]
+mod aircraft252;
+#[cfg(feature = "ee2-rect254-aircraft")]
+mod aircraft_live254;
+#[cfg(feature = "ee2-rect246-deer-live")]
+mod deer_reaction245;
+#[cfg(feature = "ee2-rect246-deer-live")]
+mod deer_destination246;
+#[cfg(feature = "ee2-rect242-hunt")]
+mod hunt_order241;
+#[cfg(feature = "ee2-rect244-hunt-visual")]
+mod hunt_visual244;
+#[cfg(feature = "ee2-rect242-hunt")]
+mod wildlife_hunting240;
+#[cfg(feature = "ee2-rect242-hunt")]
+mod world0_hunt242;
 mod hash;
 mod save_wire;
 mod start;
 mod start_catalog;
 mod source_forest_grid;
+#[cfg(feature = "ee2-valley192-movement-atlas")]
+pub(crate) mod atlas_runtime;
+#[cfg(feature = "ee2-valley190-point-move")]
+mod scenery;
+#[cfg(feature = "ee2-valley190-point-move")]
+mod point_search;
 #[cfg(feature = "ee2-valley47-archive-qa")]
 mod archived_population;
 #[cfg(feature = "ee2-valley52-owned-qa")]
@@ -20,18 +100,49 @@ mod neutral71;
 #[cfg(feature = "ee2-valley74-city-footprint")]
 mod city_footprint74;
 #[cfg(feature = "ee2-valley74-city-footprint")]
+mod city_foundation162;
+#[cfg(feature = "ee2-valley74-city-footprint")]
 mod house134;
 #[cfg(feature = "ee2-valley71-neutral-qa")]
 pub(crate) use neutral71::{FORCE_ATTACK, RAW_ATTACK_MODIFIER};
-#[cfg(feature = "ee2-authored-valley37-qa-commit")]
+#[cfg(any(feature = "ee2-authored-valley37-qa-commit", feature = "ee2-rect268-city-site"))]
 mod source_building_forest;
+#[cfg(feature = "ee2-rect269-city-minerals")]
+mod city_minerals269;
+#[cfg(feature = "ee2-rect270-city-actors")]
+mod city_actors270;
+#[cfg(feature = "ee2-rect271-build-egress")]
+mod city_build_egress271;
+#[cfg(feature = "ee2-rect276-clearance-resume")]
+pub(crate) mod clearance_resume276;
+#[cfg(feature = "ee2-rect280-farm-crop")]
+pub(crate) mod farm_crop280;
+#[cfg(feature = "ee2-rect278-food-resume")]
+mod food_resume278;
+#[cfg(feature = "ee2-rect272-builder-arrival")]
+pub(crate) mod builder_arrival272;
+#[cfg(feature = "ee2-rect272-builder-arrival")]
+mod builder_approach272;
+#[cfg(feature = "ee2-rect273-builder-waypoint")]
+mod builder_waypoint273;
+#[cfg(feature = "ee2-rect273-builder-waypoint")]
+mod builder_waypoint_admission273;
+#[cfg(any(feature = "ee2-valley204-ground-motion", feature = "ee2-rect272-builder-arrival"))]
+#[path = "atlas_runtime/ground_steering.rs"]
+mod ground_steering;
 #[cfg(feature = "ee2-valley74-city-footprint")]
 mod farm143;
-#[cfg(feature = "ee2-authored-valley37-qa-commit")]
+#[cfg(feature = "ee2-valley74-city-footprint")]
+pub(crate) mod farm_cursor147;
+#[cfg(any(feature = "ee2-authored-valley37-qa-commit", feature = "ee2-rect268-city-site"))]
 mod world8_placement_math;
 
 pub(crate) use geometry::Geometry;
 pub(crate) use save_wire::{split_save, wrap_save};
+#[cfg(feature = "ee2-valley198-waypoint-save")]
+mod route_save;
+#[cfg(feature = "ee2-valley198-waypoint-save")]
+pub(crate) use route_save::restore as restore_saved_routes;
 pub(crate) use start::FixtureState;
 use crate::game::Game;
 use crate::map::{Map, N, T_DEEP, T_FOREST, T_GRASS, T_ROCK, T_SAND, T_SHALLOW};
@@ -44,6 +155,54 @@ const VALLEY_SHA: [u8; 32] = [
     0xeb, 0x79, 0x8b, 0xd1, 0x6b, 0x92, 0x2c, 0x9a, 0xef, 0x36, 0x16, 0xd0, 0x45, 0x9c, 0x4e, 0xf4,
 ];
 
+#[cfg(feature = "ee2-valley190-point-move")]
+impl crate::game::Game {
+    pub(crate) fn valley_scenery_move(&self, index: usize, target: [f32; 2]) -> Option<Option<[f32; 2]>> {
+        use crate::{defs::WORKER, map::tile_of};
+
+        let actor = &self.ents[index];
+        if actor.def != WORKER || !actor.alive || self.valley_fixture.is_none() || self.net {
+            return None;
+        }
+        let world = self.map.source_world.as_deref()?;
+        #[cfg(feature = "ee2-valley192-movement-atlas")]
+        self.valley_atlas_observe_move(index, target);
+        #[cfg(feature = "ee2-valley191-dynamic-move")]
+        let houses = self.valley_pathing_houses();
+        let blocked = |point: [f32; 2]| {
+            let cell = point.map(|axis| (axis * 2.0) as i32);
+            let blocked = world.scenery.iter().any(|shape| shape.overlaps_half_cell(cell));
+            #[cfg(feature = "ee2-valley191-dynamic-move")]
+            let blocked = blocked || houses.iter().any(|shape| shape.overlaps_half_cell(cell));
+            blocked
+        };
+        if !blocked(target) {
+            return None;
+        }
+
+        let denied = self.denied_border_territories(actor);
+        let origin = [actor.x, actor.y, self.map.height(actor.x, actor.y)];
+        let goal = [target[0], target[1], self.map.height(target[0], target[1])];
+        let recovered = point_search::recover_point(origin, goal, false, false, |[x, y, _]| {
+            let tile = tile_of(x, y);
+            self.map.pass[0][tile] && self.map.permits_territory(tile, denied) && !blocked([x, y])
+        });
+        Some(recovered.map(|[x, y, _]| [x, y]))
+    }
+
+    #[cfg(feature = "ee2-valley191-dynamic-move")]
+    fn valley_pathing_houses(&self) -> Vec<scenery::Footprint> {
+        use crate::defs::HOUSE;
+
+        self.ents[..self.high].iter()
+            .filter(|site| site.def == HOUSE && site.alive && site.hp > 0.0
+                && self.uses_valley_house_movement(site.def) && !self.valley_house_awaiting_labor(site))
+            .map(|site| scenery::Footprint::rectangle([site.x, site.y], site.rot, [1.5; 2]))
+            .collect()
+    }
+}
+
+
 fn prepare_map(world: Geometry) -> Option<Map> {
     let [width, height] = DIMENSIONS;
     if [world.width, world.height] != DIMENSIONS || world.source_sha != VALLEY_SHA || world.source_cliffs != 0 ||
@@ -52,6 +211,14 @@ fn prepare_map(world: Geometry) -> Option<Map> {
     }
     #[cfg(feature = "ee2-valley56-terrain-qa")]
     let world = world.with_initial_terrain_tree()?;
+    #[cfg(feature = "ee2-valley163-forest-qa")]
+    let world = forest_replay163::bind_heights(world)?;
+    #[cfg(feature = "ee2-valley190-point-move")]
+    let mut world = world;
+    #[cfg(feature = "ee2-valley190-point-move")]
+    {
+        world.scenery = archived_population::World0::decode(&world)?.scenery();
+    }
     let mut map = Map::blank(0);
     map.ter.fill(T_ROCK);
     map.terr.fill(UNASSIGNED);
@@ -109,6 +276,10 @@ struct Stage {
     input: Vec<u8>,
     start_input: Vec<u8>,
     game: Option<Game>,
+    #[cfg(feature = "ee2-valley192-movement-atlas")]
+    atlas_input: Vec<u8>,
+    #[cfg(feature = "ee2-valley192-movement-atlas")]
+    atlas_prepared: Option<atlas_runtime::Prepared>,
     #[cfg(feature = "ee2-valley47-archive-qa")]
     archive: Option<archived_population::World0>,
     #[cfg(feature = "ee2-valley52-owned-qa")]
@@ -122,15 +293,45 @@ thread_local! {
 }
 
 pub(crate) fn hash_game(game: &Game, mix: &mut impl FnMut(u32)) {
+    #[cfg(feature = "ee2-authored-rect233")]
+    if let Some(binding) = rectangular_save234::binding(game) {
+        mix(u32::from_le_bytes(*rectangular_save234::MAGIC));
+        game.hash_world0_resources(mix);
+        #[cfg(feature = "ee2-rect246-deer-live")]
+        game.hash_rect_deer(mix);
+        #[cfg(feature = "ee2-rect250-animals")]
+        game.hash_rect_animals(mix);
+        #[cfg(feature = "ee2-rect242-hunt")]
+        game.hash_world0_wildlife(mix);
+        for digest in [binding.source, binding.terrain, binding.population] {
+            for word in digest.chunks_exact(4) { mix(u32::from_le_bytes(word.try_into().unwrap())); }
+        }
+    }
     if let (Some(world), Some(fixture)) = (&game.map.source_world, &game.valley_fixture) {
         mix(save_wire::MAGIC);
         for word in world.input_sha.into_iter().chain(fixture.input_sha()) { mix(u32::from(word)); }
         let version = save_wire::version(fixture);
         if version != save_wire::VERSION { mix(version); }
+        #[cfg(feature = "ee2-valley163-forest-qa")]
+        if let Some(replay) = &fixture.forest_replay {
+            mix(save_wire::forest_flags(fixture));
+            for word in replay.encode().chunks(4) {
+                let mut bits = [0; 4];
+                bits[..word.len()].copy_from_slice(word);
+                mix(u32::from_le_bytes(bits));
+            }
+        }
+        #[cfg(feature = "ee2-valley198-waypoint-save")]
+        if let Some(routes) = route_save::encode(game, false) {
+            mix(save_wire::WAYPOINT_ROUTE_VERSION);
+            for word in routes.chunks_exact(4) {
+                mix(u32::from_le_bytes(word.try_into().unwrap()));
+            }
+        }
     }
 }
 
-pub(crate) fn restore_private_map(locator: save_wire::Locator, seed: u32, n_ai: u32, humans: u32) -> Option<Game> {
+pub(crate) fn restore_private_map(locator: &save_wire::Locator, seed: u32, n_ai: u32, humans: u32) -> Option<Game> {
     if !cfg!(any(feature = "ee2-authored-valley37-qa-commit", feature = "ee2-valley39-preview")) ||
         [seed, n_ai, humans] != [0, 1, 1] { return None; }
     STAGE.with(|stage| {
@@ -150,6 +351,27 @@ pub(crate) fn restore_private_map(locator: save_wire::Locator, seed: u32, n_ai: 
         if locator.native_house_movement { game.enable_valley_house_movement()?; }
         #[cfg(feature = "ee2-valley74-city-footprint")]
         if locator.native_house_assigned_clearance { game.enable_valley_house_assigned_clearance()?; }
+        #[cfg(feature = "ee2-valley74-city-footprint")]
+        if locator.native_city_foundation { game.enable_valley_city_foundation()?; }
+        #[cfg(feature = "ee2-valley163-forest-qa")]
+        if let Some(bytes) = &locator.forest_replay {
+            let source = game.map.source_world.as_deref()?.forest.as_ref()?;
+            #[cfg(feature = "ee2-valley164-forest-play")]
+            let playable = locator.forest_play;
+            #[cfg(not(feature = "ee2-valley164-forest-play"))]
+            let playable = false;
+            #[cfg(feature = "ee2-valley166-forest-clock")]
+            let timed = locator.forest_clock;
+            #[cfg(not(feature = "ee2-valley166-forest-clock"))]
+            let timed = false;
+            let replay = forest_replay163::ForestReplay::decode(source, bytes, playable, timed)?;
+            game.valley_fixture.as_mut()?.forest_replay = Some(replay);
+        }
+        #[cfg(feature = "ee2-valley198-waypoint-save")]
+        if locator.route_resume.is_some() {
+            let atlas = atlas_runtime::Prepared::decode(&stage.atlas_input)?.bind(&game)?;
+            game.valley_fixture.as_mut()?.atlas = Some(atlas);
+        }
         Some(game)
     })
 }
@@ -165,6 +387,8 @@ pub extern "C" fn valley37_alloc(length: usize) -> *mut u8 {
     STAGE.with(|stage| {
         let mut stage = stage.borrow_mut();
         stage.game = None;
+        #[cfg(feature = "ee2-valley192-movement-atlas")]
+        { stage.atlas_input.clear(); stage.atlas_prepared = None; }
         #[cfg(feature = "ee2-valley47-archive-qa")]
         { stage.archive = None; }
         #[cfg(feature = "ee2-valley52-owned-qa")]
@@ -194,6 +418,8 @@ pub extern "C" fn valley37_fixture_alloc(length: usize) -> *mut u8 {
     STAGE.with(|stage| {
         let mut stage = stage.borrow_mut();
         stage.start_input.clear();
+        #[cfg(feature = "ee2-valley192-movement-atlas")]
+        { stage.atlas_input.clear(); stage.atlas_prepared = None; }
         if !(64..=start::Start::MAX_WIRE).contains(&length) { return std::ptr::null_mut(); }
         stage.start_input.resize(length, 0);
         stage.start_input.as_mut_ptr()
@@ -267,26 +493,34 @@ pub extern "C" fn valley39_commit(visibility: u32) -> u32 {
 #[cfg(feature = "ee2-valley71-neutral-qa")]
 #[no_mangle]
 pub extern "C" fn valley71_commit(visibility: u32) -> u32 {
-    commit_neutral_valley(visibility, false, false)
+    commit_neutral_valley(visibility, false, false, false)
 }
 
 #[cfg(feature = "ee2-valley74-city-footprint")]
 #[no_mangle]
 pub extern "C" fn valley75_commit(visibility: u32) -> u32 {
-    commit_neutral_valley(visibility, true, false)
+    commit_neutral_valley(visibility, true, false, false)
 }
 
 #[cfg(feature = "ee2-valley74-city-footprint")]
 #[no_mangle]
 pub extern "C" fn valley76_commit(visibility: u32) -> u32 {
-    commit_neutral_valley(visibility, true, true)
+    commit_neutral_valley(visibility, true, true, false)
+}
+
+#[cfg(feature = "ee2-valley74-city-footprint")]
+#[no_mangle]
+pub extern "C" fn valley77_commit(visibility: u32) -> u32 {
+    commit_neutral_valley(visibility, true, true, true)
 }
 
 #[cfg(feature = "ee2-valley71-neutral-qa")]
-fn commit_neutral_valley(visibility: u32, _current_solo: bool, _assigned_clearance: bool) -> u32 {
+fn commit_neutral_valley(visibility: u32, _current_solo: bool, _assigned_clearance: bool, _city_foundation: bool) -> u32 {
     if visibility > 2 { return 0; }
     let prepared = STAGE.with(|stage| {
         let mut stage = stage.borrow_mut();
+        #[cfg(feature = "ee2-valley192-movement-atlas")]
+        let atlas = stage.atlas_prepared.take();
         let Some(game) = stage.game.as_mut() else { return false; };
         if !game.set_valley_neutral_opening() { return false; }
         #[cfg(feature = "ee2-valley74-city-footprint")]
@@ -304,6 +538,18 @@ fn commit_neutral_valley(visibility: u32, _current_solo: bool, _assigned_clearan
         if _assigned_clearance && game.enable_valley_house_assigned_clearance().is_none() {
             stage.game = None;
             return false;
+        }
+        #[cfg(feature = "ee2-valley74-city-footprint")]
+        if _city_foundation && game.enable_valley_city_foundation().is_none() {
+            stage.game = None;
+            return false;
+        }
+        #[cfg(feature = "ee2-valley192-movement-atlas")]
+        if _city_foundation {
+            if let Some(prepared) = atlas {
+                let runtime = prepared.bind(game);
+                game.valley_fixture.as_mut().unwrap().atlas = runtime;
+            }
         }
         true
     });
@@ -403,6 +649,7 @@ fn active_game() -> Option<&'static Game> {
 #[no_mangle]
 pub extern "C" fn valley37_view_info(field: u32) -> u32 {
     let Some(game) = active_game() else { return 0; };
+    if game.map.layout.profile() != 0 { return 0; }
     let Some(world) = game.map.source_world.as_deref() else { return 0; };
     match field {
         0 => world.width as u32,
@@ -418,7 +665,8 @@ pub extern "C" fn valley37_view_info(field: u32) -> u32 {
 
 #[no_mangle]
 pub extern "C" fn valley37_view_ptr(field: u32) -> *const u8 {
-    let Some(world) = active_game().and_then(|game| game.map.source_world.as_deref()) else { return std::ptr::null(); };
+    let Some(world) = active_game().filter(|game| game.map.layout.profile() == 0)
+        .and_then(|game| game.map.source_world.as_deref()) else { return std::ptr::null(); };
     match field {
         0 => world.heights.as_ptr().cast(),
         1 => world.materials.as_ptr().cast(),
@@ -473,3 +721,7 @@ pub extern "C" fn valley37_forest_building(x: f32, y: f32, hx: f32, hy: f32, c: 
         else { return u32::MAX; };
     u32::from(source_building_forest::blocked_by_forest(forest, &raster))
 }
+
+// Optional integration fixture reader is absent from production builds.
+#[cfg(test)]
+pub(crate) mod private_test_fixtures;

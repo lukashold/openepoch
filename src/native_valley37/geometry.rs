@@ -17,6 +17,8 @@ pub struct Geometry {
  pub source_cliffs:u32,pub source_edges:u32,pub wire:Vec<u8>,
  pub surfaces:Vec<CliffSurface>,
  pub forest:Option<SourceForestGrid>,
+ #[cfg(feature = "ee2-valley190-point-move")]
+ pub(super) scenery:Vec<super::scenery::Footprint>,
  #[cfg(feature = "ee2-valley56-terrain-qa")]
  pub(super) initial_terrain_tree:Option<super::terrain_tree::Tree>,
 }
@@ -34,13 +36,18 @@ impl Geometry {
   // This first slice accepts the two independently decoded input catalog
   // records. It does not trust caller-authored terrain/DB projections merely
   // because they carry an original source filename/hash.
-  if !super::catalog::INPUT_SHA.contains(&input_sha){return None;}
+  #[cfg(feature = "ee2-authored-rect233")]
+  let wide = input_sha == super::catalog::DEATH_VALLEY2_INPUT_SHA;
+  #[cfg(not(feature = "ee2-authored-rect233"))]
+  let wide = false;
+  if !wide && !super::catalog::INPUT_SHA.contains(&input_sha){return None;}
   let mut r=Reader{data,at:0};if r.u32()?!=INPUT_MAGIC||r.u32()?!=2{return None;}
   let width=r.u32()?as usize;let height=r.u32()?as usize;
-  if !(1..=256).contains(&width)||!(1..=256).contains(&height){return None;}
+  let (max_width,max_height,max_regions)=if wide{(100,300,43)}else{(256,256,31)};
+  if !(1..=max_width).contains(&width)||!(1..=max_height).contains(&height){return None;}
   let cells=width.checked_mul(height)?;if cells>65536{return None;}
   let corners=(width+1).checked_mul(height+1)?;let source_len=r.u32()?as usize;let palette_len=r.u32()?as usize;let nterr=r.u32()?as usize;
-  if source_len>MAX_INPUT||palette_len==0||palette_len>65536||nterr==0||nterr>31{return None;}
+  if source_len>MAX_INPUT||palette_len==0||palette_len>65536||nterr==0||nterr>max_regions{return None;}
   let pending_units=r.u32()?;let pending_forest=r.u32()?;let nstarts=r.u32()?as usize;let source_cliffs=r.u32()?;let source_edges=r.u32()?;
   let nsurfaces=r.u32()?as usize;if nsurfaces>cells{return None;}
   if !(1..=4).contains(&nstarts){return None;}
@@ -67,6 +74,8 @@ impl Geometry {
   let raw=r.take(source_len)?;if sha256(raw)!=source_sha||r.at!=data.len(){return None;}
   let forest=if source_sha==super::VALLEY_SHA{Some(decode_valley_forest(raw,width,height,pending_forest as usize)?)}else{None};
   Some(Self{width,height,source_sha,input_sha,heights,materials,tints,move_palette,patterns,territory_ids,territories,starts,pending_units,pending_forest,source_cliffs,source_edges,surfaces,forest,wire:data.to_vec(),
+   #[cfg(feature = "ee2-valley190-point-move")]
+   scenery:Vec::new(),
    #[cfg(feature = "ee2-valley56-terrain-qa")]
    initial_terrain_tree:None,
   })

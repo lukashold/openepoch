@@ -1,4 +1,4 @@
-//! Source construction health for explicitly enabled generated solo City Centers.
+//! Source construction health for explicitly enabled solo City Centers.
 use crate::defs::{DefId, TC};
 use crate::game::{Ent, Game};
 use crate::save::checksum;
@@ -24,7 +24,22 @@ pub(crate) fn split(bytes: &[u8]) -> Option<(&[u8], bool)> {
 
 impl Game {
     pub(crate) fn configure_generated_city_foundations(&mut self) -> bool {
-        if !self.supports_generated_city_foundations() || self.generated_city_foundations || self.tick != 0
+        self.supports_generated_city_foundations() && self.enable_source_city_foundations()
+    }
+
+    #[cfg(feature = "ee2-rect266-city-foundation")]
+    pub(crate) fn configure_rectangular_city_foundations(&mut self) -> bool {
+        self.rect_ai_clock.is_some() && self.supports_rectangular_city_foundations()
+            && self.enable_source_city_foundations()
+    }
+
+    #[cfg(feature = "ee2-rect266-city-foundation")]
+    pub(crate) fn supports_rectangular_city_foundations(&self) -> bool {
+        crate::native_valley37::rectangular_save234::binding(self).is_some()
+    }
+
+    fn enable_source_city_foundations(&mut self) -> bool {
+        if self.generated_city_foundations || self.tick != 0
             || !self.outbox.is_empty() || !self.inbox.is_empty()
             || self.ents[..self.high].iter().any(|site| site.alive && site.def == TC && site.built < 1.0)
         { return false; }

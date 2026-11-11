@@ -205,12 +205,13 @@ impl crate::game::Game {
         if temples == 0 || !crate::ee2_combat::land_effect_target(actor.def, self.players[actor.team as usize].epoch) {
             return 0.0;
         }
-        let territory = self.map.terr[tile_of(actor.x, actor.y)];
-        let owner = self.towner[territory as usize];
+        let tile = self.map.tile_of(actor.x, actor.y);
+        let territory = self.map.terr[tile];
+        let owner = self.territory_owner_at(tile);
         if owner == 255 || owner == actor.team { return 0.0; }
         let houses = self.ents[..self.high].iter().filter(|house| house.alive && house.hp > 0.0
             && house.built >= 1.0 && house.def == HOUSE && house.team == owner
-            && self.map.terr[tile_of(house.x, house.y)] == territory).count();
+            && self.map.terr[self.map.tile_of(house.x, house.y)] == territory).count();
         (houses as f32 * 0.03).min(0.5) * temples as f32
     }
 }

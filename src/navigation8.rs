@@ -7,6 +7,7 @@ pub const END:u32=0x4543564e; // NVCE
 pub const HEADER:usize=48;
 pub const FIELD_HEADER:usize=16;
 const BORDER_FIELD_HEADER:usize=20;
+const WIDE_BORDER_FIELD_HEADER:usize=24;
 pub const ACTOR:usize=8;
 pub const FIELD_COUNT:usize=96;
 fn u(b:&[u8],p:usize)->Option<u32>{Some(u32::from_le_bytes(b.get(p..p+4)?.try_into().ok()?))}
@@ -15,7 +16,7 @@ fn put(b:&mut Vec<u8>,v:u32){b.extend_from_slice(&v.to_le_bytes());}
 /// Header-only bound, before any allocation. The caller separately verifies
 /// the exact outer footer/checksum; read_navigation validates every record.
 pub fn framed_len(b:&[u8])->Option<usize>{
- let field_header=match u(b,4)?{1=>FIELD_HEADER,2=>BORDER_FIELD_HEADER,_=>return None};
+ let field_header=match u(b,4)?{1=>FIELD_HEADER,2=>BORDER_FIELD_HEADER,3=>WIDE_BORDER_FIELD_HEADER,_=>return None};
  if b.len()<HEADER+4||u(b,0)?!=MAGIC||u(b,12)?as usize!=FIELD_COUNT||u(b,16)?as usize!=map::NN||u(b,24)?>4||u(b,28)?as usize>MAXE||u(b,32)?>1||u(b,36)?as usize!=ACTOR||u(b,40)?as usize!=field_header||u(b,44)?as usize!=HEADER{return None;}
  let n=u(b,8)?as usize;let min=HEADER+FIELD_COUNT*field_header+u(b,28)?as usize*ACTOR+4;
  if n<min||n>min+FIELD_COUNT*map::NN||n>b.len()||u(b,n-4)?!=END{return None;}Some(n)
@@ -46,6 +47,44 @@ pub fn framed_len(b:&[u8])->Option<usize>{
   let mut b=bytes.clone();b.push(0);cases.push(b);
   for b in cases{assert!(g.read_navigation(Some(&b)).is_none());assert_eq!(g.state_hash(),before);}
  }
+ #[cfg(feature = "ee2-native13")]
+ #[test]
+ fn wide_border_bits_distinguish_paths_and_validate_navigation_archive() {
+  let mut game = Game::new(7, 0, 0, 2, 0);
+  assert!(game.configure_sight_terms() && game.configure_timed_treaties(true) && game.configure_border_treaties());
+  game.diplomacy.borders.as_mut().unwrap().set_term(0, 1, 3);
+  game.map.tseeds.resize(43, (0.0, 0.0));
+  game.towner.fill(u8::MAX);
+  game.towner[42] = 1;
+  game.map.pass[0].fill(true);
+  game.map.terr.fill(0);
+  for y in 0..map::N { game.map.terr[y * map::N + 9] = 42; }
+  let index = game.spawn(WORKER, 0, 8.5, 10.5);
+  let worker = game.ents[index];
+  let denied = 1u64 << 42;
+  assert_eq!(game.denied_border_territories(&worker), denied);
+  assert_eq!(game.border_egress_mask(&Ent { x: 9.5, ..worker }), 0);
+  let start = map::tile_of(worker.x, worker.y);
+  let goal = game.key_for(LAND, 10.5, 10.5);
+  let mut slot = u16::MAX;
+  game.tick = 5;
+  game.map.budget = 4;
+  assert!(game.map.flow(&mut slot, goal, start, game.tick, 0) < 8);
+  assert_eq!(game.map.flow(&mut slot, goal, start, game.tick, denied), 255);
+  let mut bytes = Vec::new();
+  game.append_navigation(&mut bytes);
+  assert_eq!(u(&bytes, 4), Some(3));
+  let before = game.state_hash();
+  let slot = slot as usize;
+  game.map.fields[slot].denied_territories = 0;
+  assert_ne!(game.state_hash(), before);
+  game.read_navigation(Some(&bytes)).unwrap();
+  assert_eq!(game.map.fields[slot].denied_territories, denied);
+  assert_eq!(game.state_hash(), before);
+  put_at(&mut bytes, HEADER + WIDE_BORDER_FIELD_HEADER + map::NN + 20, 1 << 11);
+  assert!(game.read_navigation(Some(&bytes)).is_none());
+  assert_eq!(game.state_hash(), before);
+ }
  #[test]fn every_decision_field_order_direction_and_slot_affects_hash(){
   let mut g=fixture();let hash=g.state_hash();
   g.map.nav_ver+=1;assert_ne!(g.state_hash(),hash);g.map.nav_ver-=1;
@@ -65,12 +104,17 @@ impl Game{
  pub(crate) fn append_navigation(&self,b:&mut Vec<u8>){
   let count=self.ents[..self.high].iter().filter(|e|e.alive).count();
   let borders=self.map.fields.iter().any(|f|f.denied_territories!=0);
-  let field_header=if borders{BORDER_FIELD_HEADER}else{FIELD_HEADER};
+  let (version, field_header) = match (borders, self.map.region_storage_len()) {
+    (false, _) => (1, FIELD_HEADER),
+    (true, map::LEGACY_REGION_CAPACITY) => (2, BORDER_FIELD_HEADER),
+    (true, _) => (3, WIDE_BORDER_FIELD_HEADER),
+   };
   let bytes=HEADER+FIELD_COUNT*field_header+self.map.fields.iter().map(|f|f.dir.len()).sum::<usize>()+count*ACTOR+4;
-  for v in[MAGIC,1+u32::from(borders),bytes as u32,FIELD_COUNT as u32,map::NN as u32,self.map.nav_ver,self.map.budget,count as u32,self.navigation_history_unknown as u32,ACTOR as u32,field_header as u32,HEADER as u32]{put(b,v);}
+  for v in[MAGIC,version,bytes as u32,FIELD_COUNT as u32,map::NN as u32,self.map.nav_ver,self.map.budget,count as u32,self.navigation_history_unknown as u32,ACTOR as u32,field_header as u32,HEADER as u32]{put(b,v);}
   for f in &self.map.fields{
    for v in[f.key,f.ver,f.used,f.dir.len()as u32]{put(b,v);}
-   if borders{put(b,f.denied_territories);}
+   if borders{put(b,f.denied_territories as u32);}
+    if version == 3 { put(b,(f.denied_territories >> 32) as u32); }
    b.extend_from_slice(&f.dir);
   }
   for i in 0..self.high{if self.ents[i].alive{put(b,self.h(i));put(b,self.ents[i].fslot as u32);}}
@@ -80,7 +124,9 @@ impl Game{
   let Some(b)=b else{self.navigation_history_unknown=true;return Some(());};
   if framed_len(b)?!=b.len()||u(b,28)?as usize!=self.ents[..self.high].iter().filter(|e|e.alive).count(){return None;}
   let field_header=u(b,40)?as usize;
-  let borders=field_header==BORDER_FIELD_HEADER;
+  let borders=field_header!=FIELD_HEADER;
+   let wide=field_header==WIDE_BORDER_FIELD_HEADER;
+   if borders && wide != (self.map.region_storage_len() > map::LEGACY_REGION_CAPACITY) { return None; }
   #[cfg(feature="ee2-native13")]
   if borders&&self.diplomacy.borders.is_none(){return None;}
   #[cfg(not(feature="ee2-native13"))]
@@ -88,7 +134,10 @@ impl Game{
   let mut fields=Vec::with_capacity(FIELD_COUNT);let mut keys=Vec::with_capacity(FIELD_COUNT);let mut p=HEADER;
   for _ in 0..FIELD_COUNT{
    let key=u(b,p)?;let ver=u(b,p+4)?;let used=u(b,p+8)?;let n=u(b,p+12)?as usize;
-   let denied_territories=if borders{u(b,p+16)?}else{0};p=p.checked_add(field_header)?;
+   let low=if borders{u(b,p+16)?}else{0};
+    let high=if wide{u(b,p+20)?}else{0};
+    let denied_territories=u64::from(low) | (u64::from(high) << 32);
+    p=p.checked_add(field_header)?;
    if used>self.tick{return None;}
    if denied_territories.checked_shr(self.map.tseeds.len()as u32).unwrap_or(0)!=0{return None;}
    if key==u32::MAX{if n!=0||ver!=0||used!=0||denied_territories!=0{return None;}}
@@ -115,7 +164,10 @@ impl Game{
   mix(self.map.fields.len()as u32);
   for f in &self.map.fields{
    mix(f.key);mix(f.ver);mix(f.used);mix(f.dir.len()as u32);
-   if borders{mix(f.denied_territories);}
+   if borders{mix(f.denied_territories as u32);}
+    if borders && self.map.region_storage_len() > map::LEGACY_REGION_CAPACITY {
+     mix((f.denied_territories >> 32) as u32);
+    }
    for b in f.dir.chunks_exact(4){mix(u32::from_le_bytes(b.try_into().unwrap()));}
   }
   for i in 0..self.high{if self.ents[i].alive{mix(self.h(i));mix(self.ents[i].fslot as u32);}}

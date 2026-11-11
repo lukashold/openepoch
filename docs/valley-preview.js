@@ -13,12 +13,17 @@ const path = 'local-original/valley-preview/manifest.json';
 const digest = '75dc890404bf8f50f69975ae796d38d608e03f1a7e85e61405083615eb82419c';
 const stumpManifest = {url:'local-original/valley-stumps/manifest.json',sha256:'be609b08156e8938edb0d7fbcd6f10f5d6f277f1cb8b689269e2190e759d1d72'};
 const authoredTest = {url:'local-original/valley-owned-qa/seed-2.vow1',sha256:'68ca55d581c3e855a17aad58461575f9a160a9c6bd8fa90e081cbecee05bfefc'};
+const movementAtlas = {url:'local-original/valley-preview/owned-movement.vap1',sha256:'738fd6d4585dfaf79828632be0e9b8b716a7c14510a4aa46c70254b214a72ecc'};
 const magic = [0x56, 0x33, 0x37, 0x53]; // V37S
 const hex = bytes => Array.from(bytes, n => n.toString(16).padStart(2, '0')).join('');
 
 export function valleySaveLocator(bytes) {
   if (!(bytes instanceof Uint8Array) || !magic.every((n, i) => bytes[i] === n)) return null;
-  return {map: hex(bytes.subarray(12, 44)), fixture: hex(bytes.subarray(44, 76))};
+  const locator = {map: hex(bytes.subarray(12, 44)), fixture: hex(bytes.subarray(44, 76))};
+  if (bytes.length >= 76 && new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(4, true) === 14) {
+    locator.routeAtlas = true;
+  }
+  return locator;
 }
 
 async function readLocal(path) {
@@ -51,7 +56,7 @@ function supply(wasm, bytes, allocate) {
   return true;
 }
 
-export async function loadValleyPreview({requested, authoredRequested, neutralRequested = false, requireAuthored = false,
+export async function loadValleyPreview({requested, authoredRequested, neutralRequested = false, requireAuthored = false, routeRequested = false,
   manifest = null, wasm, gl, teams, lighting = null, territoryBorders = null, read = readLocal, onUnavailable = () => {}}) {
   if (!requested || typeof wasm.valley39_commit !== 'function' || !globalThis.crypto?.subtle) return null;
   const checked = row => checkedAsset(read, row);
@@ -67,6 +72,8 @@ export async function loadValleyPreview({requested, authoredRequested, neutralRe
     const neutralSupported = !neutralRequested || typeof neutralCommit === 'function';
     const authored = authoredRequested && neutralSupported ? await checked(authoredTest).catch(() => null) : null;
     if (requireAuthored && !authored) return null;
+    const routeAtlas = authored && wasm.valley198_waypoint_archive_version?.() === 14
+      ? await checked(movementAtlas).catch(() => null) : null;
     const stageMap = () => supply(wasm, map, wasm.valley37_alloc) && wasm.valley37_prepare() === 1;
     if (!stageMap()) throw new Error('Valley-Karte konnte nicht vorbereitet werden.');
     const geometry = activeValleyGeometry(wasm, true);
@@ -119,6 +126,7 @@ export async function loadValleyPreview({requested, authoredRequested, neutralRe
     if (statics.errors.length || statics.models.size !== world0.models.length) throw new Error('Valley-Objekte konnten nicht geladen werden.');
     const defaultFixture = index.fixtures.findIndex(row => row.site === 0 && row.checkpoint === 0);
     const stageFixture = bytes => !!bytes && stageMap() && supply(wasm, bytes, wasm.valley37_fixture_alloc);
+    const stageRouteAtlas = () => !!routeAtlas && supply(wasm, routeAtlas, wasm.valley192_atlas_alloc) && wasm.valley192_atlas_prepare() === 1;
     return Object.freeze({
       authoredAvailable: !!authored,
       buildingShadowAvailable: !!buildingShadow,
@@ -127,14 +135,20 @@ export async function loadValleyPreview({requested, authoredRequested, neutralRe
             !stageFixture(useAuthored ? authored : packets[defaultFixture])) return false;
         clearForest();
         const commit = useAuthored && neutralRequested ? neutralCommit : wasm.valley39_commit;
-        if (wasm.valley37_prepare_fixture() !== 1 || commit(visibility) !== 1) return false;
+        const useRoute = routeRequested && useAuthored && neutralRequested;
+        if (wasm.valley37_prepare_fixture() !== 1 || (useRoute && !stageRouteAtlas()) || commit(visibility) !== 1) return false;
+        if (useRoute && wasm.valley197_enable_motion?.() !== 1) return false;
         return !useAuthored || !presentation || presentation.start();
       },
       prepareLoad(locator) {
         if (!locator || locator.map !== index.map.sha256) return false;
+        const fixture = locator.fixture === authoredTest.sha256 ? authored :
+          packets[index.fixtures.findIndex(row => row.sha256 === locator.fixture)];
+        if (locator.routeAtlas && (locator.fixture !== authoredTest.sha256 || !routeAtlas)) return false;
+        if (!stageFixture(fixture)) return false;
+        if (locator.routeAtlas && (wasm.valley37_prepare_fixture() !== 1 || !stageRouteAtlas())) return false;
         clearForest();
-        return stageFixture(locator.fixture === authoredTest.sha256 ? authored :
-          packets[index.fixtures.findIndex(row => row.sha256 === locator.fixture)]);
+        return true;
       },
       drawTerrain(vp, fog, highShadows, highSampling, bounds, casters, deferFog = false) {
         const ruins = highShadows && ruinShadow ? visibleRuinShadows(ruinShadow,

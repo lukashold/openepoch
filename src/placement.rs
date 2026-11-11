@@ -2,10 +2,44 @@
 //! auto-orientation are explicit adapters; native building input rotates 90deg.
 use crate::{defs::*, game::*, map::*};
 pub const ROTATION_STEPS: u32 = 8;
+#[derive(Clone, Copy)]
+pub(crate) struct PlacementSite {
+    pub(crate) actor: Ent,
+    bounds: (i32, i32, i32, i32),
+    turn: Option<u32>,
+}
+
+impl PlacementSite {
+    fn grid(def: DefId, tx: i32, ty: i32, turn: u32) -> Self {
+        let (width, height) = Game::footprint_axes(def, turn);
+        Self {
+            actor: Game::planned_building(def, tx, ty, turn),
+            bounds: (tx, ty, width, height),
+            turn: Some(turn),
+        }
+    }
+
+    #[cfg(feature = "ee2-valley74-city-footprint")]
+    pub(crate) fn valley_cursor(def: DefId, x: f32, y: f32, rot: f32) -> Self {
+        let actor = Ent { def, x, y, rot, ..E0 };
+        Self { actor, bounds: Game::building_bounds(&actor), turn: None }
+    }
+}
+
+#[derive(Clone, Copy, Eq, PartialEq)]
+struct BuildRouteKey {
+    nav: u32,
+    bounds: (i32, i32, i32, i32),
+    city: Option<[u32; 3]>,
+    denied: RegionMask,
+}
+
 pub struct PlacementCache {
-    pub key: Option<(u32, i32, i32, i32, i32)>,
+    key: Option<BuildRouteKey>,
     pub approach: Vec<u32>,
     pub queue: Vec<u32>,
+    #[cfg(feature = "ee2-rect272-builder-arrival")]
+    pub(crate) seed_count: usize,
 }
 impl Default for PlacementCache {
     fn default() -> Self {
@@ -13,6 +47,8 @@ impl Default for PlacementCache {
             key: None,
             approach: vec![NONE; NN],
             queue: Vec::with_capacity(NN),
+            #[cfg(feature = "ee2-rect272-builder-arrival")]
+            seed_count: 0,
         }
     }
 }
@@ -59,6 +95,10 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         if let Some(size) = Self::rectangular_building_shape(e.def, false) {
             return Self::rect_bounds(e, size);
+        }
+        #[cfg(feature = "ee2-rect284-extractor-site")]
+        if e.def == OIL_RIG {
+            return Self::rect_bounds(e, [crate::native_valley37::extractor_site284::OIL_BOX_WIDTH; 2]);
         }
         let size = DEFS[e.def as usize].size;
         let span = size * (e.rot.cos().abs() + e.rot.sin().abs());
@@ -132,17 +172,25 @@ impl Game {
     }
     pub fn footprint_known(&self, team: u8, def:DefId, tx: i32, ty: i32, turn: u32) -> bool {
         let (width, height) = Self::footprint_axes(def, turn);
-        if width == 0 || tx < 0 || ty < 0 || tx > N as i32 - width || ty > N as i32 - height {
+        self.placement_rectangle_known(team, (tx, ty, width, height))
+    }
+    fn placement_rectangle_known(&self, team: u8, (tx, ty, width, height): (i32,i32,i32,i32)) -> bool {
+        let [map_width, map_height] = self.map.simulation_dimensions().map(|side| side as i32);
+        if width == 0 || tx < 0 || ty < 0 || tx > map_width - width || ty > map_height - height {
             return false;
         }
         if self.display_visibility() >= 1 && !self.players[team as usize].ai {
             return true;
         }
         (ty..ty + height)
-            .all(|y| (tx..tx + width).all(|x| self.real_fog(team, y as usize * N + x as usize) > 0))
+            .all(|y| (tx..tx + width).all(|x| self.real_fog(team, self.map.tile_index(x as usize, y as usize)) > 0))
     }
     pub fn placement_geometry_error(&self, team: u8, def:DefId, tx: i32, ty: i32, turn: u32) -> u32 {
-        let (width, height) = Self::footprint_axes(def, turn);
+        self.placement_geometry_for(team, PlacementSite::grid(def, tx, ty, turn))
+    }
+    pub(crate) fn placement_geometry_for(&self, team: u8, site: PlacementSite) -> u32 {
+        let (tx, ty, width, height) = site.bounds;
+        let def = site.actor.def;
         let [map_width, map_height] = self.map.world_dimensions().map(|dimension| dimension as i32);
         if width == 0
             || team as usize >= self.nplayers
@@ -153,17 +201,23 @@ impl Game {
         {
             return 1;
         }
-        let center = (ty + height / 2) as usize * N + (tx + width / 2) as usize;
+        let center = self.map.tile_of(site.actor.x, site.actor.y);
         #[cfg(feature = "ee2-valley74-city-footprint")]
-        if self.valley_rejects_building_site(def, (tx, ty, width, height), turn) { return 1; }
+        match site.turn {
+            Some(turn) if self.valley_rejects_building_site(def, site.bounds, turn) => return 1,
+            None if self.valley_house_reservation_overlaps(site.bounds) => return 1,
+            None if def == FARM && !self.valley_farm_terrain_allows(site.actor.x, site.actor.y, site.actor.rot) => return 1,
+            _ => (),
+        }
         #[cfg(feature = "ee2-native13")]
-        if !self.hotspot_allows_placement(team, def, [tx as f32 + width as f32 * 0.5, ty as f32 + height as f32 * 0.5]) {
+        if !self.hotspot_allows_placement(team, def, [site.actor.x, site.actor.y]) {
             return 12;
         }
         let territory = self.map.terr[center];
+        let in_region = self.map.region_at(center).is_some();
         #[cfg(feature = "ee2-native13")]
-        if def == crate::granary211::ID && self.granary_limit_reached(team, territory) { return 14; }
-        let owner = self.towner[territory as usize];
+        if in_region && def == crate::granary211::ID && self.granary_limit_reached(team, territory) { return 14; }
+        let owner = self.territory_owner_at(center);
         let foreign = owner != team && owner != 255;
         let native_control = self.disputed_territory_rules();
         let (control_limit, limit_error) = match def {
@@ -171,10 +225,10 @@ impl Game {
             FORTRESS => (2, 10),
             _ => (0, 0),
         };
-        let control_capped = control_limit != 0 && self.ents[..self.high].iter().filter(|e| {
+        let control_capped = in_region && control_limit != 0 && self.ents[..self.high].iter().filter(|e| {
             e.alive && e.hp > 0.0 && e.def == def
                 && (e.built >= 1.0 || e.team == team || def == TC && !native_control)
-                && self.map.terr[tile_of(e.x, e.y)] == territory
+                && self.map.terr[self.map.tile_of(e.x, e.y)] == territory
         }).take(control_limit).count() == control_limit;
         if native_control && control_capped { return limit_error; }
         #[cfg(feature = "ee2-native13")]
@@ -191,11 +245,11 @@ impl Game {
             };
             if native_foreign_site && capacity != 0 && self.ents[..self.high].iter().filter(|e| {
                 e.alive && e.hp > 0.0 && e.def == def && (e.built >= 1.0 || e.team == team)
-                    && self.map.terr[tile_of(e.x, e.y)] == territory
+                    && self.map.terr[self.map.tile_of(e.x, e.y)] == territory
             }).count() >= capacity {
                 return if def == HOUSE { 13 } else { 14 };
             }
-            if owner != team && (owner != 255 || matches!(def, TOWER | FORTRESS)) && self.initial_ceasefire_active() {
+            if in_region && owner != team && (owner != 255 || matches!(def, TOWER | FORTRESS)) && self.initial_ceasefire_active() {
                 return 11;
             }
             if foreign && (!native_foreign_site || self.foreign_construction_is_restricted(team, owner)) {
@@ -208,7 +262,14 @@ impl Game {
         }
         if control_capped { return limit_error; }
         let deposit = Self::extractor_kind(def);
-        if deposit != R_NONE && self.map.res[center] != deposit {
+        let deposit_matches = self.map.res[center] == deposit;
+        #[cfg(feature = "ee2-rect284-extractor-site")]
+        let deposit_matches = if self.uses_rect_extractor_sites(def) {
+            self.rect_extractor_resource(def, site.actor.x, site.actor.y).is_some()
+        } else {
+            deposit_matches
+        };
+        if deposit != R_NONE && !deposit_matches {
             return 1;
         }
         #[cfg(feature = "ee2-native13")]
@@ -220,12 +281,28 @@ impl Game {
         }) { return 1; }
         let mut water = 0u32;
         let mut land = 0u32;
+        #[cfg(feature = "ee2-rect270-city-actors")]
+        let native_actor_geometry = match self.rect_city_actor_placement_blocked(team, &site.actor, site.bounds) {
+            Some(true) => return 1,
+            Some(false) => true,
+            None => false,
+        };
+        #[cfg(not(feature = "ee2-rect270-city-actors"))]
+        let native_actor_geometry = false;
+        #[cfg(feature = "ee2-rect280-farm-crop")]
+        if !native_actor_geometry && self.rect_farm_work_enabled()
+            && self.ents[..self.high].iter().any(|farm| {
+                if !farm.alive || farm.def != FARM { return false; }
+                let (x, y, w, h) = Self::building_bounds(farm);
+                tx < x + w && x < tx + width && ty < y + h && y < ty + height
+            })
+        { return 1; }
         #[cfg(feature="ee2-roster6")]
-        if def==60 && !crate::roster6_placement::near_accepted_water(&self.map,tx as f32+width as f32*0.5,ty as f32+height as f32*0.5){return 1;}
+        if def==60 && !crate::roster6_placement::near_accepted_water(&self.map,site.actor.x,site.actor.y){return 1;}
         for y in ty..ty + height {
             for x in tx..tx + width {
-                let t = y as usize * N + x as usize;
-                if self.map.blocked[t] || (self.map.res[t] != R_NONE && self.map.res[t] != deposit)
+                let t = self.map.tile_index(x as usize, y as usize);
+                if (!native_actor_geometry && self.map.blocked[t]) || (self.map.res[t] != R_NONE && self.map.res[t] != deposit)
                 {
                     return 1;
                 }
@@ -238,8 +315,13 @@ impl Game {
                     } else {
                         land += 1;
                     }
-                } else if !self.map.pass[0][t] {
-                    return 1;
+                } else {
+                    let land_pass = if native_actor_geometry {
+                        self.map.ter[t] >= T_SAND && self.map.ter[t] != T_ROCK
+                    } else {
+                        self.map.pass[0][t]
+                    };
+                    if !land_pass { return 1; }
                 }
             }
         }
@@ -254,7 +336,7 @@ impl Game {
                     (tx - 1, ty + k),
                     (tx + s, ty + k),
                 ] {
-                    let t = y as usize * N + x as usize;
+                    let t = self.map.tile_index(x as usize, y as usize);
                     land_access |= self.map.pass[0][t];
                     sea_exit |= self.map.pass[1][t];
                 }
@@ -264,58 +346,94 @@ impl Game {
                 return 1;
             }
         }
+        #[cfg(feature = "ee2-rect269-city-minerals")]
+        if self.rect_city_mineral_blocked(&site.actor) {
+            return 1;
+        }
+        #[cfg(feature = "ee2-rect268-city-site")]
+        if self.rect_city_forest_blocked(&site.actor) {
+            return 1;
+        }
         #[cfg(feature = "ee2-native13")]
         {
-            let mut site = Self::planned_building(def, tx, ty, turn);
-            site.team = team;
-            if self.factory_placement_blocked(&site) { return 1; }
+            let mut actor = site.actor;
+            actor.team = team;
+            if self.factory_placement_blocked(&actor) { return 1; }
         }
         0
     }
     /// Reverse flood from every exterior work tile. It is independent of client
     /// selection, cached by nav version/site; click revalidates current workers.
-    pub fn prepare_build_routes(&mut self, (tx, ty, width, height): (i32, i32, i32, i32)) {
-        let key = (self.map.nav_ver, tx, ty, width, height);
+    pub fn prepare_build_routes(&mut self, bounds: (i32, i32, i32, i32)) {
+        self.prepare_build_route_cache(bounds, None, 0, |_| true);
+    }
+
+    #[cfg(feature = "ee2-rect272-builder-arrival")]
+    pub(crate) fn prepare_rect_city_work_routes(&mut self, site: &Ent, denied: RegionMask) {
+        let city = [site.x, site.y, site.rot].map(f32::to_bits);
+        self.prepare_build_route_cache(Self::building_bounds(site), Some(city), denied, |center| {
+            Self::rect_city_work_point(site, center).is_some()
+        });
+    }
+
+    fn prepare_build_route_cache(
+        &mut self,
+        bounds: (i32, i32, i32, i32),
+        city: Option<[u32; 3]>,
+        denied: RegionMask,
+        admits_work: impl Fn([f32; 2]) -> bool,
+    ) {
+        let key = BuildRouteKey { nav: self.map.nav_ver, bounds, city, denied };
         if self.placement_cache.key == Some(key) {
             return;
         }
+        let (tx, ty, width, height) = bounds;
         let cache = &mut self.placement_cache;
         cache.approach.fill(NONE);
         cache.queue.clear();
         let pass = &self.map.pass[0];
-        for y in ty - 1..=ty + height {
-            for x in tx - 1..=tx + width {
+        let halo = if city.is_some() { 2 } else { 1 };
+        for y in ty - halo..ty + height + halo {
+            for x in tx - halo..tx + width + halo {
                 if x >= tx && x < tx + width && y >= ty && y < ty + height {
                     continue;
                 }
-                if x < 0 || y < 0 || x >= N as i32 || y >= N as i32 {
+                if !self.map.layout.contains(x, y) {
                     continue;
                 }
-                let t = y as usize * N + x as usize;
-                if pass[t] {
+                let t = self.map.tile_index(x as usize, y as usize);
+                if pass[t] && self.map.permits_territory(t, denied)
+                    && admits_work(self.map.tile_center(t))
+                {
                     cache.approach[t] = t as u32;
                     cache.queue.push(t as u32);
                 }
             }
         }
+        #[cfg(feature = "ee2-rect272-builder-arrival")]
+        { cache.seed_count = cache.queue.len(); }
         let mut head = 0;
         while head < cache.queue.len() {
             let t = cache.queue[head] as usize;
             head += 1;
-            let (x, y) = ((t % N) as i32, (t / N) as i32);
+            let [x, y] = self.map.tile_xy(t).map(|axis| axis as i32);
             for (k, &(dx, dy)) in DIRS.iter().enumerate() {
                 let (nx, ny) = (x + dx, y + dy);
-                if nx < 0 || ny < 0 || nx >= N as i32 || ny >= N as i32 {
+                if !self.map.layout.contains(nx, ny) {
                     continue;
                 }
-                let q = ny as usize * N + nx as usize;
-                if !pass[q] || cache.approach[q] != NONE {
+                let q = self.map.tile_index(nx as usize, ny as usize);
+                if !pass[q] || cache.approach[q] != NONE || !self.map.permits_territory(q, denied) {
                     continue;
                 }
-                if k >= 4
-                    && !(pass[y as usize * N + nx as usize] && pass[ny as usize * N + x as usize])
-                {
-                    continue;
+                if k >= 4 {
+                    let x_side = self.map.tile_index(nx as usize, y as usize);
+                    let y_side = self.map.tile_index(x as usize, ny as usize);
+                    if !pass[x_side] || !pass[y_side] || !self.map.permits_territory(x_side, denied)
+                        || !self.map.permits_territory(y_side, denied)
+                    {
+                        continue;
+                    }
                 }
                 cache.approach[q] = cache.approach[t];
                 cache.queue.push(q as u32);
@@ -333,6 +451,24 @@ impl Game {
             })
             .collect()
     }
+    pub(crate) fn placement_build_key(&self, builder: &Ent) -> u32 {
+        let route = self.placement_cache.approach[self.map.tile_of(builder.x, builder.y)];
+        #[cfg(feature = "ee2-rect267-builder-reach")]
+        if route == NONE {
+            return self.rect_start_build_key(builder);
+        }
+        route
+    }
+
+    pub(crate) fn assign_build_key(builder: &mut Ent, key: u32) {
+        #[cfg(feature = "ee2-rect272-builder-arrival")]
+        Self::clear_rect_city_approach(builder);
+        #[cfg(feature = "ee2-rect267-builder-reach")]
+        let key = Self::assign_rect_build_exit(builder, key);
+        builder.fkey = key;
+        builder.fslot = u16::MAX;
+        builder.stuck = 0;
+    }
     pub fn placement_error_for(
         &mut self,
         team: u8,
@@ -343,13 +479,18 @@ impl Game {
         ids: &[usize],
         check_fog: bool,
     ) -> u32 {
-        let (width, height) = Self::footprint_axes(def, turn);
+        self.placement_error_at(team, PlacementSite::grid(def, tx, ty, turn), ids, check_fog)
+    }
+    pub(crate) fn placement_error_at(&mut self, team: u8, site: PlacementSite, ids: &[usize], check_fog: bool) -> u32 {
+        let def = site.actor.def;
+        let (tx, ty, width, height) = site.bounds;
+        let [map_width, map_height] = self.map.simulation_dimensions().map(|side| side as i32);
         if width == 0
             || team as usize >= self.nplayers
             || tx < 2
             || ty < 2
-            || tx > N as i32 - 2 - width
-            || ty > N as i32 - 2 - height
+            || tx > map_width - 2 - width
+            || ty > map_height - 2 - height
         {
             return 1;
         }
@@ -359,10 +500,10 @@ impl Game {
         if !self.afford(team, &self.construction_cost(team, def)) {
             return 4;
         }
-        if check_fog && !self.footprint_known(team, def, tx, ty, turn) {
+        if check_fog && !self.placement_rectangle_known(team, site.bounds) {
             return 3;
         }
-        let geometry = self.placement_geometry_error(team, def, tx, ty, turn);
+        let geometry = self.placement_geometry_for(team, site);
         if geometry != 0 {
             return geometry;
         }
@@ -370,11 +511,9 @@ impl Game {
         if builders.is_empty() {
             return 6;
         }
-        let bounds = Self::building_bounds(&Self::planned_building(def, tx, ty, turn));
+        let bounds = Self::building_bounds(&site.actor);
         self.prepare_build_routes(bounds);
-        if !builders.iter().any(|&i| {
-            self.placement_cache.approach[tile_of(self.ents[i].x, self.ents[i].y)] != NONE
-        }) {
+        if !builders.iter().any(|&i| self.placement_build_key(&self.ents[i]) != NONE) {
             return 7;
         }
         if self.free.is_empty() {
@@ -392,25 +531,32 @@ impl Game {
         ids: &[usize],
         check_fog: bool,
     ) -> usize {
-        if self.placement_error_for(team, def, tx, ty, turn, ids, check_fog) != 0 {
+        self.begin_construction_at(team, PlacementSite::grid(def, tx, ty, turn), ids, check_fog)
+    }
+    pub(crate) fn begin_construction_at(&mut self, team: u8, site: PlacementSite, ids: &[usize], check_fog: bool) -> usize {
+        if self.placement_error_at(team, site, ids, check_fog) != 0 {
             return NOIDX;
         }
         let builders: Vec<(usize, u32)> = self
             .valid_builders(team, ids)
             .into_iter()
             .filter_map(|i| {
-                let t = self.placement_cache.approach[tile_of(self.ents[i].x, self.ents[i].y)];
+                let t = self.placement_build_key(&self.ents[i]);
                 (t != NONE).then_some((i, t))
             })
             .collect();
-        let bi = self.place_with_rotation(def, tx, ty, team, turn);
+        let bi = self.place_at(team, site);
         if bi == NOIDX {
             return bi;
         }
+        #[cfg(feature = "ee2-rect281-farm-family")]
+        self.select_rect_farm_family(bi);
         let (x0, y0, width, height) = Self::building_bounds(&self.ents[bi]);
         let ids: Vec<usize> = builders.iter().map(|p| p.0).collect();
         let handle = self.h(bi);
         for (i, tile) in builders {
+            #[cfg(feature = "ee2-rect276-clearance-resume")]
+            self.cancel_rect_clearance(i);
             let e = &mut self.ents[i];
             e.prev = match e.order {
                 O_GATHER if e.otgt == NONE => e.q[0] as u8,
@@ -421,9 +567,7 @@ impl Game {
             e.q[0] = R_FOOD as QueueItem;
             e.otgt = handle;
             e.tgt = NONE;
-            e.fkey = tile;
-            e.fslot = u16::MAX;
-            e.stuck = 0;
+            Self::assign_build_key(e, tile);
         }
         #[cfg(feature = "ee2-valley74-city-footprint")]
         if self.valley_house_reserves_placement_only(&self.ents[bi]) { return bi; }
@@ -432,6 +576,8 @@ impl Game {
         let mut displaced = Vec::new();
         for i in 0..self.high {
             let e = self.ents[i];
+            #[cfg(feature = "ee2-rect271-build-egress")]
+            if self.rect_city_defers_displacement(&self.ents[bi], &e) { continue; }
             if !e.alive
                 || e.team != team
                 || DEFS[e.def as usize].building
@@ -451,18 +597,18 @@ impl Game {
         for i in displaced {
             let e = self.ents[i];
             let tile = self.map.snap(e.x, e.y, 0);
-            self.order_move(
-                &[i],
-                (tile % N) as f32 + 0.5,
-                (tile / N) as f32 + 0.5,
-                false,
-            );
+            let [x, y] = self.map.tile_center(tile);
+            self.order_move(&[i], x, y, false);
         }
         bi
     }
     pub fn place_with_rotation(&mut self, def:DefId, tx: i32, ty: i32, team: u8, turn: u32) -> usize {
+        self.place_at(team, PlacementSite::grid(def, tx, ty, turn))
+    }
+    fn place_at(&mut self, team: u8, site: PlacementSite) -> usize {
+        let def = site.actor.def;
         if !self.construction_available(team, def)
-            || self.placement_geometry_error(team, def, tx, ty, turn) != 0
+            || self.placement_geometry_for(team, site) != 0
         {
             return NOIDX;
         }
@@ -470,7 +616,7 @@ impl Game {
         if !self.afford(team, &cost) {
             return NOIDX;
         }
-        let site = Self::planned_building(def, tx, ty, turn);
+        let site = site.actor;
         let initial_progress = 1.0;
         #[cfg(feature = "ee2-valley74-city-footprint")]
         let initial_progress = if self.uses_valley_house_movement(def) { 0.0 } else { initial_progress };
@@ -480,10 +626,12 @@ impl Game {
             #[cfg(feature = "ee2-native13")]
             let health = if self.uses_generated_city_foundation(def) { 1.0 } else { health };
             #[cfg(feature = "ee2-valley74-city-footprint")]
-            let health = if self.uses_valley_house_construction(def) { 1.0 } else { health };
+            let health = if self.uses_valley_house_construction(def) || self.uses_valley_city_foundation(def) { 1.0 } else { health };
             self.pay(team, &cost, 1.0);
             self.ents[i].built = 0.0;
             self.ents[i].hp = health;
+            #[cfg(feature = "ee2-valley204-construction-cancel")]
+            self.record_construction_payment(i, cost);
             #[cfg(feature="ee2-native13")]
             self.wonder_notice(crate::wonders61::Notice::Started, def, team);
             #[cfg(feature="ee2-reference")]
@@ -506,7 +654,7 @@ impl Game {
         if e.def == TC {
             return 1.0;
         }
-        let owner = self.towner[self.map.terr[tile_of(e.x, e.y)] as usize];
+        let owner = self.territory_owner_at(self.map.tile_of(e.x, e.y));
         if owner == e.team {
             1.0
         } else if owner == 255 {
@@ -537,7 +685,7 @@ impl Game {
             .into_iter()
             .enumerate()
             {
-                let t = y as usize * N + x as usize;
+                let t = self.map.tile_index(x as usize, y as usize);
                 land[side] += self.map.pass[0][t] as u32;
                 water[side] += self.map.pass[1][t] as u32;
             }

@@ -37,6 +37,8 @@ pub(crate) struct FixtureState {
     start: Start,
     owned_handles: [u32; 6],
     resource_rows: Vec<u16>,
+    #[cfg(feature = "ee2-valley192-movement-atlas")]
+    pub(super) atlas: Option<super::atlas_runtime::RuntimeAtlas>,
     #[cfg(feature = "ee2-valley71-neutral-qa")]
     pub(super) neutral_opening: bool,
     #[cfg(feature = "ee2-valley74-city-footprint")]
@@ -47,6 +49,10 @@ pub(crate) struct FixtureState {
     pub(super) native_house_movement: bool,
     #[cfg(feature = "ee2-valley74-city-footprint")]
     pub(super) native_house_assigned_clearance: bool,
+    #[cfg(feature = "ee2-valley74-city-footprint")]
+    pub(super) native_city_foundation: bool,
+    #[cfg(feature = "ee2-valley163-forest-qa")]
+    pub(super) forest_replay: Option<super::forest_replay163::ForestReplay>,
 }
 
 impl Start {
@@ -131,6 +137,8 @@ impl Start {
         }
         if !self.authored_test { game.source_birth.rng = NativeRng::from_state(self.rng); }
         game.valley_fixture = Some(FixtureState {start: self, owned_handles, resource_rows,
+            #[cfg(feature = "ee2-valley192-movement-atlas")]
+            atlas: None,
             #[cfg(feature = "ee2-valley71-neutral-qa")]
             neutral_opening: false,
             #[cfg(feature = "ee2-valley74-city-footprint")]
@@ -141,6 +149,10 @@ impl Start {
             native_house_movement: false,
             #[cfg(feature = "ee2-valley74-city-footprint")]
             native_house_assigned_clearance: false,
+            #[cfg(feature = "ee2-valley74-city-footprint")]
+            native_city_foundation: false,
+            #[cfg(feature = "ee2-valley163-forest-qa")]
+            forest_replay: None,
         });
         game.rebuild_territories();
         game.build_grid();

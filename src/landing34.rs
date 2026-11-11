@@ -203,8 +203,9 @@ impl Game {
         self.follow_air_height(handle, actor, clearance, rate);
         let (position, heading) = steering::integrate(pose.position, pose.heading, motion, dt);
         let [x, y] = source_xy(position);
-        actor.x = x.clamp(0.0, N as f32 - 1.0);
-        actor.y = y.clamp(0.0, N as f32 - 1.0);
+        let [width, height] = self.map.simulation_dimensions().map(|side| side as f32);
+        actor.x = x.clamp(0.0, width - 1.0);
+        actor.y = y.clamp(0.0, height - 1.0);
         actor.rot = -heading;
         [actor.vx, actor.vy] = source_xy(motion.velocity);
         true

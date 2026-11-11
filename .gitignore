@@ -4,3 +4,11 @@ docs/local-original/
 __pycache__/
 *.py[cod]
 .DS_Store
+
+# Local original input, imported media and authored save fixtures stay private.
+private-fixtures/
+*.w8in
+*.dvp1
+*.anm
+*.dvs1
+OpenEpoch-Mac-Komplett.zip*

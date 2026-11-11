@@ -114,6 +114,13 @@ pub(super) fn decode_valley_forest(
             return None;
         }
         grid.register([x, y], [TREE_EXTENT; 2], flags, state)?;
+        #[cfg(feature = "ee2-valley163-forest-qa")]
+        {
+            let profile = [b"TRE_OAK".as_slice(), b"TRE_MAPLE_02", b"TRE_FIR", b"TRE_OAK2",
+                b"TRE_MAPLE_01", b"TRE_OAK_DEAD"].iter().position(|&value| value == name)? as u8;
+            let position = [x, y, 0];
+            grid.source_rows.push(super::forest_registry::ForestRow {position, profile, flags, state});
+        }
         tail = &trailer[3..];
     }
     tail.is_empty().then_some(grid)

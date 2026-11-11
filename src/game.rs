@@ -6,6 +6,8 @@
 
 use crate::defs::*;
 use crate::map::*;
+#[cfg(feature = "ee2-valley206-citizen-clearance")]
+use crate::native_valley37::atlas_runtime::ground_motion::CitizenSeparationFrame;
 #[cfg(feature = "ee2-native13")]
 #[path = "capture25.rs"]
 mod capture25;
@@ -32,6 +34,8 @@ pub(crate) mod spy_toxic50;
 #[cfg(feature = "ee2-native13")]
 #[path = "crowns54.rs"]
 pub(crate) mod crowns54;
+#[cfg(feature = "ee2-rect287-oil-economy")]
+pub(crate) use crowns54::score::source_math;
 #[cfg(feature = "ee2-native13")]
 #[path = "crown_leaders58.rs"]
 pub(crate) mod crown_leaders58;
@@ -118,11 +122,14 @@ pub(crate) const O_FACTORY_EGRESS: u8 = 17;
 pub(crate) const O_LEADER_PURCHASE: u8 = 18;
 #[cfg(feature = "ee2-native13")]
 pub(crate) const O_IMPERIALISM: u8 = 19;
+#[cfg(feature = "ee2-valley164-forest-play")]
+pub(crate) const O_VALLEY_FOREST: u8 = 20;
+#[cfg(feature = "ee2-rect242-hunt")]
+pub(crate) const O_RECT_HUNT: u8 = 21;
 /// Marker in `Ent::stuck`: the unit walked onto a transport, remove it without an explosion.
 pub(crate) const BOARDED: u8 = 255;
 
 pub const RESEARCH: QueueItem = crate::ids::EPOCH_JOB;
-const GC: usize = 64; // grid cells per axis
 const CELL: f32 = 4.0;
 
 #[repr(C)]
@@ -259,16 +266,32 @@ pub struct Fx {
 }
 
 pub struct Grid {
+    width: usize,
+    height: usize,
     pub start: Vec<u32>,
     pub items: Vec<u16>,
     cursor: Vec<u32>,
 }
 
-#[inline]
-fn cell_of(x: f32, y: f32) -> usize {
-    let cx = ((x / CELL) as i32).clamp(0, GC as i32 - 1) as usize;
-    let cy = ((y / CELL) as i32).clamp(0, GC as i32 - 1) as usize;
-    cy * GC + cx
+impl Grid {
+    fn new([width, height]: [usize; 2]) -> Self {
+        let width = width.div_ceil(CELL as usize);
+        let height = height.div_ceil(CELL as usize);
+        Self { width, height, start: vec![0; width * height + 1], items: Vec::with_capacity(MAXE),
+            cursor: vec![0; width * height] }
+    }
+
+    #[inline]
+    fn cell_of(&self, x: f32, y: f32) -> usize {
+        let cx = ((x / CELL) as i32).clamp(0, self.width as i32 - 1) as usize;
+        let cy = ((y / CELL) as i32).clamp(0, self.height as i32 - 1) as usize;
+        cy * self.width + cx
+    }
+
+    #[inline]
+    fn upper_cell(&self, x: f32, y: f32) -> (usize, usize) {
+        (((x / CELL) as usize).min(self.width - 1), ((y / CELL) as usize).min(self.height - 1))
+    }
 }
 
 #[inline]
@@ -285,6 +308,10 @@ pub fn angdiff(a: f32, b: f32) -> f32 {
 
 pub struct Game {
     pub map: Map,
+    #[cfg(feature = "ee2-authored-rect233")]
+    pub(crate) rect_population: Option<crate::native_valley37::population234_attach::AttachedPopulation>,
+    #[cfg(feature = "ee2-rect235-forest")]
+    pub(crate) rect_forest: Option<crate::native_valley37::rectangular_forest::RectangularForest>,
     pub ents: Vec<Ent>,
     pub free: Vec<u16>,
     pub high: usize,
@@ -365,6 +392,18 @@ pub struct Game {
     pub nplayers: usize,
     pub tick: u32,
     pub(crate) source_clock: Option<crate::source_clock38::SourceClock>,
+    #[cfg(feature = "ee2-rect261-ai-clock")]
+    pub(crate) rect_ai_clock: Option<crate::native_valley37::ai_clock261::State>,
+    #[cfg(feature = "ee2-rect276-clearance-resume")]
+    pub(crate) rect_clearance: std::collections::BTreeMap<u32, crate::native_valley37::clearance_resume276::Clearance>,
+    #[cfg(feature = "ee2-rect280-farm-crop")]
+    pub(crate) rect_farm_crops: crate::native_valley37::farm_crop280::FarmCrops,
+    #[cfg(feature = "ee2-rect286-oil-visual")]
+    pub(crate) rect_oil_visuals: crate::native_valley37::oil_visual286::OilVisuals,
+    #[cfg(feature = "ee2-rect287-oil-economy")]
+    pub(crate) rect_native_ids: Option<crate::native_valley37::owned_ids287::OwnedIds>,
+    #[cfg(feature = "ee2-rect289-citizen-work")]
+    pub(crate) rect_citizen_work: crate::native_valley37::citizen_work289::State,
     #[cfg(feature = "ee2-native13")]
     pub(crate) network_resume_tempo: Option<crate::source_clock38::AdaptiveTempo>,
     #[cfg(feature = "ee2-native13")]
@@ -410,8 +449,6 @@ pub struct Game {
     pub research_points: [f32; 4],
     pub researched: [[u32; 6]; 4],
     pub modifiers: [crate::research::Modifiers; 4],
-    #[cfg(feature = "ee2-native13")]
-    pub(crate) strategic_damage: [[f32; crate::research::DEF_COUNT]; 4],
     #[cfg(feature="ee2-civ8")]
     pub civilizations:[u8;4],
     #[cfg(feature="ee2-civ8")]
@@ -485,7 +522,7 @@ pub struct Game {
     pub n_ai: u32,
     #[allow(dead_code)]
     pub humans: u32,
-    pub towner: [u8; 32],
+    pub towner: [u8; REGION_CAPACITY],
     pub terr_rgba: Vec<u8>,
     pub terr_dirty: bool,
     #[cfg(feature = "ee2-native13")]
@@ -504,8 +541,14 @@ pub struct Game {
     /// Camera position (x, height, y) for picking; height 0 = top-down, no parallax.
     pub eye: [f32; 3],
     pub placement_cache:crate::placement::PlacementCache,
+    #[cfg(feature = "ee2-valley74-city-footprint")]
+    pub(crate) valley_farm_cursor: crate::native_valley37::farm_cursor147::BuildingCursor,
     #[cfg(feature = "ee2-authored-valley37")]
     pub(crate) valley_fixture: Option<crate::native_valley37::FixtureState>,
+    #[cfg(feature = "ee2-valley197-waypoint-motion")]
+    pub(crate) valley_routes: crate::native_valley37::atlas_runtime::route_motion::RouteMotionState,
+    #[cfg(feature = "ee2-valley204-construction-cancel")]
+    pub(crate) construction_payments: crate::construction_cancel204::Payments,
 }
 
 impl Game {
@@ -547,12 +590,17 @@ impl Game {
     }
 
     pub(crate) fn blank(map: Map, seed: u32, n_ai: u32, bench: u32, humans: u32, local: u32, nplayers: usize, net: bool) -> Game {
+        let grid = Grid::new(map.backing_dimensions());
         Game {
             map,
+            #[cfg(feature = "ee2-authored-rect233")]
+            rect_population: None,
+            #[cfg(feature = "ee2-rect235-forest")]
+            rect_forest: None,
             ents: vec![E0; MAXE],
             free: (0..MAXE as u16).rev().collect(),
             high: 0,
-            grid: Grid { start: vec![0; GC * GC + 1], items: Vec::with_capacity(MAXE), cursor: vec![0; GC * GC] },
+            grid,
             projs: Vec::with_capacity(4096),
             #[cfg(feature = "ee2-native13")]
             battle_signals: None,
@@ -628,6 +676,18 @@ impl Game {
             nplayers,
             tick: 0,
             source_clock: None,
+            #[cfg(feature = "ee2-rect261-ai-clock")]
+            rect_ai_clock: None,
+            #[cfg(feature = "ee2-rect276-clearance-resume")]
+            rect_clearance: Default::default(),
+            #[cfg(feature = "ee2-rect280-farm-crop")]
+            rect_farm_crops: Default::default(),
+            #[cfg(feature = "ee2-rect286-oil-visual")]
+            rect_oil_visuals: Default::default(),
+            #[cfg(feature = "ee2-rect287-oil-economy")]
+            rect_native_ids: None,
+            #[cfg(feature = "ee2-rect289-citizen-work")]
+            rect_citizen_work: Default::default(),
             #[cfg(feature = "ee2-native13")]
             network_resume_tempo: None,
             #[cfg(feature = "ee2-native13")]
@@ -665,8 +725,6 @@ impl Game {
             bench,
             cheats_enabled: false, instant_build: false, god_mode: false, fog_inverted: false, tech_points: 0,
             research_points: [0.0;4], researched: [[0;6];4], modifiers: [[[0.0;19];crate::research::DEF_COUNT];4],
-            #[cfg(feature = "ee2-native13")]
-            strategic_damage: [[0.0; crate::research::DEF_COUNT]; 4],
             #[cfg(feature="ee2-civ8")]
             civilizations:[crate::civ8_runtime::LEGACY_NEUTRAL;4],
             #[cfg(feature="ee2-civ8")]
@@ -736,7 +794,7 @@ impl Game {
             seed0: seed,
             n_ai,
             humans,
-            towner: [255; 32],
+            towner: [255; REGION_CAPACITY],
             terr_rgba: vec![0; NN * 4],
             terr_dirty: true,
             #[cfg(feature = "ee2-native13")]
@@ -753,8 +811,14 @@ impl Game {
             ranges: vec![0; crate::ids::render_capacity()*2],
             eye: [0.0; 3],
             placement_cache:crate::placement::PlacementCache::default(),
+            #[cfg(feature = "ee2-valley74-city-footprint")]
+            valley_farm_cursor: crate::native_valley37::farm_cursor147::BuildingCursor::default(),
             #[cfg(feature = "ee2-authored-valley37")]
             valley_fixture: None,
+            #[cfg(feature = "ee2-valley197-waypoint-motion")]
+            valley_routes: Default::default(),
+            #[cfg(feature = "ee2-valley204-construction-cancel")]
+            construction_payments: Default::default(),
         }
     }
 
@@ -769,7 +833,7 @@ impl Game {
             g.players[p].recompute();
             let city=g.spawn(TC, p as u8, sx as f32, sy as f32);
             // Initial territory is a scenario grant, not a new expansion claim.
-            g.territory.claims[g.map.terr[tile_of(sx as f32,sy as f32)] as usize]=g.h(city);
+            g.territory.claims[g.map.terr[g.map.tile_of(sx as f32,sy as f32)] as usize]=g.h(city);
             for k in 0..5 {
                 let a = k as f32 * 1.256;
                 g.spawn(WORKER, p as u8, sx as f32 + a.cos() * 3.4, sy as f32 + a.sin() * 3.4);
@@ -815,9 +879,24 @@ impl Game {
         self.spawn_oriented_with_progress(def, team, x, y, angle, 1.0)
     }
     pub(crate) fn spawn_oriented_with_progress(&mut self,def:DefId,team:u8,x:f32,y:f32,angle:f32,built:f32)->usize {
+        self.spawn_attached(def, team, x, y, angle, built, None)
+    }
+
+    fn spawn_attached(&mut self, def: DefId, team: u8, x: f32, y: f32, angle: f32, built: f32,
+        _retained_native_id: Option<u32>) -> usize {
         let i = match self.free.pop() {
             Some(i) => i as usize,
             None => return NOIDX,
+        };
+        #[cfg(feature = "ee2-rect287-oil-economy")]
+        let native_id = if self.rect_native_ids.is_some() {
+            let Some(local) = _retained_native_id.or_else(|| self.note_rect_owned_allocation()) else {
+                self.free.push(i as u16);
+                return NOIDX;
+            };
+            Some(local)
+        } else {
+            None
         };
         if i + 1 > self.high {
             self.high = i + 1;
@@ -846,26 +925,62 @@ impl Game {
         if d.building {
             self.block(i, true);
         }
+        #[cfg(feature = "ee2-rect289-citizen-work")]
+        if _retained_native_id.is_none() { self.request_citizen_work(i, 0, 0.0); }
         #[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
         self.recount_paid_players();
+        #[cfg(feature = "ee2-rect252-animal-birth")]
+        {
+            #[cfg(feature = "ee2-rect287-oil-economy")]
+            if let Some(local) = native_id {
+                let handle = self.h(i);
+                self.rect_native_ids.as_mut().unwrap().bind(handle, local);
+                return i;
+            }
+            self.note_rect_owned_allocation();
+        }
         i
     }
 
     pub(crate) fn block(&mut self, i: usize, on: bool) {
         let e = &self.ents[i];
+        #[cfg(feature = "ee2-rect280-farm-crop")]
+        if self.rect_crop_nonblocking(e) { return; }
         #[cfg(feature = "ee2-valley74-city-footprint")]
         if self.valley_house_reserves_placement_only(e) { return; }
         let (tx0,ty0,width,height)=Self::building_bounds(e);
         #[cfg(feature = "ee2-valley74-city-footprint")]
         let mask = self.valley_start_city_mask(i);
-        for ty in ty0.max(0)..(ty0+height).min(N as i32) {
-            for tx in tx0.max(0)..(tx0+width).min(N as i32) {
+        #[cfg(feature = "ee2-rect270-city-actors")]
+        let retained: Vec<_> = if !on && self.supports_rectangular_city_foundations() {
+            self.ents[..self.high].iter().enumerate()
+                .filter(|&(index, actor)| index != i && actor.alive && DEFS[actor.def as usize].building)
+                .filter(|&(_, actor)| {
+                    #[cfg(feature = "ee2-rect280-farm-crop")]
+                    { !self.rect_crop_nonblocking(actor) }
+                    #[cfg(not(feature = "ee2-rect280-farm-crop"))]
+                    { let _ = actor; true }
+                })
+                .map(|(_, actor)| (actor, Self::building_bounds(actor)))
+                .filter(|&(_, (x, y, w, h))| x < tx0 + width && tx0 < x + w && y < ty0 + height && ty0 < y + h)
+                .collect()
+        } else { Vec::new() };
+        let [map_width, map_height] = self.map.simulation_dimensions().map(|side| side as i32);
+        for ty in ty0.max(0)..(ty0+height).min(map_height) {
+            for tx in tx0.max(0)..(tx0+width).min(map_width) {
                 #[cfg(feature = "ee2-native13")]
                 if !Self::building_blocks_tile(e, tx, ty) { continue; }
                 #[cfg(feature = "ee2-valley74-city-footprint")]
                 if mask.is_some_and(|footprint| !footprint.blocks(tx, ty)) { continue; }
-                let t = ty as usize * N + tx as usize;
+                let t = self.map.tile_index(tx as usize, ty as usize);
                 self.map.blocked[t] = on;
+                #[cfg(feature = "ee2-rect270-city-actors")]
+                if !on && retained.iter().any(|&(actor, (x, y, w, h))| {
+                    (x..x + w).contains(&tx) && (y..y + h).contains(&ty)
+                        && Self::building_blocks_tile(actor, tx, ty)
+                }) {
+                    self.map.blocked[t] = true;
+                }
                 self.map.upd_pass(t);
             }
         }
@@ -873,6 +988,26 @@ impl Game {
     }
 
     pub(crate) fn kill(&mut self, i: usize) {
+        #[cfg(feature = "ee2-rect289-citizen-work")]
+        self.rect_citizen_work.forget(self.h(i));
+        #[cfg(feature = "ee2-rect287-oil-economy")]
+        {
+            let (handle, crew) = (self.h(i), self.ents[i].ncargo);
+            if let Some(ids) = &mut self.rect_native_ids { ids.retire(handle, crew); }
+        }
+        #[cfg(feature = "ee2-rect276-clearance-resume")]
+        self.cancel_rect_clearance(i);
+        #[cfg(feature = "ee2-rect280-farm-crop")]
+        self.rect_farm_crops.forget(self.h(i), self.ents[i].def == FARM);
+        #[cfg(feature = "ee2-rect286-oil-visual")]
+        if self.ents[i].def == OIL_RIG { self.rect_oil_visuals.forget(self.h(i)); }
+        #[cfg(feature = "ee2-valley204-construction-cancel")]
+        {
+            let handle = self.h(i);
+            self.construction_payments.remove(&handle);
+        }
+        #[cfg(feature = "ee2-valley197-waypoint-motion")]
+        self.clear_valley_route(i);
         #[cfg(feature = "ee2-native13")]
         self.herc_attack.forget(self.h(i));
         #[cfg(feature = "ee2-native13")]
@@ -954,9 +1089,9 @@ impl Game {
         if e.def == crate::granary211::ID { self.granary_sites.remove(&i); }
         #[cfg(feature = "ee2-native13")]
         if e.def == crate::wonders61::PARTHENON || matches!(e.def, BARRACKS | MILL | WORKSHOP) && {
-            let territory = self.map.terr[tile_of(e.x, e.y)] as usize;
-            self.territory.claims[territory] != NONE && self.towner[territory] == e.team
-                && !self.get(self.territory.claims[territory]).is_some_and(|anchor| self.ents[anchor].def == TC)
+            self.map.region_at(self.map.tile_of(e.x, e.y)).is_some_and(|territory|
+                self.territory.claims[territory] != NONE && self.towner[territory] == e.team
+                    && !self.get(self.territory.claims[territory]).is_some_and(|anchor| self.ents[anchor].def == TC))
         } {
             self.sync_territory_anchors();
             self.void_landless_alliances();
@@ -985,7 +1120,7 @@ impl Game {
     pub fn can_see(&self, team:u8, j:usize)->bool {
         #[cfg(feature = "ee2-native13")]
         if self.trade_hidden(j, &self.ents[j]) || self.air_parked(j, &self.ents[j]) { return false; }
-        let t=&self.ents[j];t.team==team||(self.real_fog(team,tile_of(t.x,t.y))==255&&self.detected(team,j))
+        let t=&self.ents[j];t.team==team||(self.real_fog(team,self.map.tile_of(t.x,t.y))==255&&self.detected(team,j))
     }
     /// Display visibility deliberately differs from combat visibility.
     pub fn visible(&self,j:usize)->bool {
@@ -995,7 +1130,7 @@ impl Game {
         if self.network_observer(self.local) { return true; }
         let t=&self.ents[j];if t.team==self.local{return true;}
         let need=if DEFS[t.def as usize].building{128}else{255};
-        (if self.display_visibility()<2{self.real_fog(self.local,tile_of(t.x,t.y))}else{255})>=need&&self.detected(self.local,j)
+        (if self.display_visibility()<2{self.real_fog(self.local,self.map.tile_of(t.x,t.y))}else{255})>=need&&self.detected(self.local,j)
     }
 
     // ------------------------------------------------------------------ economy
@@ -1200,7 +1335,7 @@ impl Game {
             #[cfg(feature = "ee2-native13")]
             let denied = self.denied_border_territories(&self.ents[i]);
             #[cfg(feature = "ee2-native13")]
-            if !self.map.permits_territory(tile_of(x, y), denied) { continue; }
+            if !self.map.permits_territory(self.map.tile_of(x, y), denied) { continue; }
             let dom = DEFS[self.ents[i].def as usize].dom;
             let key = if dom == LAND { kl } else { ks };
             #[cfg(feature = "ee2-native13")]
@@ -1210,8 +1345,14 @@ impl Game {
                 if !self.map.pass[dc][tile] { continue; }
                 tile as u32 | ((dc as u32) << 16)
             } else { key };
+            #[cfg(feature = "ee2-rect276-clearance-resume")]
+            self.cancel_rect_clearance(i);
             #[cfg(feature = "ee2-native13")]
             { self.trade_interrupt(i); self.air_interrupt(i); }
+            #[cfg(feature = "ee2-valley197-waypoint-motion")]
+            if self.ents[i].alive && !DEFS[self.ents[i].def as usize].building {
+                self.clear_valley_route(i);
+            }
             let e = &mut self.ents[i];
             let d = &DEFS[e.def as usize];
             if d.building || !e.alive {
@@ -1224,18 +1365,17 @@ impl Game {
             let (mut tx, mut ty) = (x + r * a.cos(), y + r * a.sin());
             if d.dom != AIR {
                 let dc = if d.dom == LAND { 0 } else { 1 };
-                let slot = tile_of(tx, ty);
+                let slot = self.map.tile_of(tx, ty);
                 let passable = self.map.pass[dc][slot];
                 #[cfg(feature = "ee2-native13")]
                 let passable = passable && self.map.permits_territory(slot, denied);
                 if !passable {
                     let t = (key & 0xffff) as usize;
-                    tx = (t % N) as f32 + 0.5;
-                    ty = (t / N) as f32 + 0.5;
+                    [tx, ty] = self.map.tile_center(t);
                 }
             }
             #[cfg(feature = "ee2-native13")]
-            if d.dom == AIR && !self.map.permits_territory(tile_of(tx, ty), denied) { tx = x; ty = y; }
+            if d.dom == AIR && !self.map.permits_territory(self.map.tile_of(tx, ty), denied) { tx = x; ty = y; }
             e.order = if attack { O_AMOVE } else { O_MOVE };
             e.ox = tx;
             e.oy = ty;
@@ -1286,6 +1426,8 @@ impl Game {
             self.air_interrupt(i);
             let key = self.key_for(d.dom, t.x, t.y);
             #[cfg(feature="ee2-pack8")] self.pack_interrupt(i);
+            #[cfg(feature = "ee2-rect276-clearance-resume")]
+            self.cancel_rect_clearance(i);
             let e = &mut self.ents[i];
             #[cfg(feature="ee2-up15")]
             crate::native_attack_clock::stop(&mut self.attack_clock[i].flags);
@@ -1303,14 +1445,18 @@ impl Game {
         if kind == R_FISH { self.order_fishing(ids, tile); return; }
         if kind==R_NONE{return;}
         let ids:Vec<usize>=ids.iter().copied().filter(|&i|self.citizen_can_gather(self.ents[i].team,kind)).collect();
-        let (cx, cy) = ((tile % N) as f32 + 0.5, (tile / N) as f32 + 0.5);
+        let [cx, cy] = self.map.tile_center(tile);
         let key = self.key_for(LAND, cx, cy);
         for &i in &ids {
+            #[cfg(feature = "ee2-rect276-clearance-resume")]
+            self.cancel_rect_clearance(i);
             let e = &mut self.ents[i];
             if !DEFS[e.def as usize].has(F_WORKER) {
                 continue;
             }
             e.order = O_GATHER;
+            #[cfg(feature = "ee2-authored-rect233")]
+            if self.rect_population.is_some() { e.q[3] = 0; e.q[4] = 0; }
             if cfg!(feature="ee2-reference")&&e.carry>0.0&&e.q[0]!=kind as QueueItem {if e.q[2]==0{e.q[2]=e.q[0];}e.q[1]=1;}
             e.otile = tile as u32;
             e.otgt = NONE;
@@ -1327,10 +1473,60 @@ impl Game {
     pub fn order_building(&mut self, ids: &[usize], bj: usize) {
         let b = self.ents[bj];
         let h = self.h(bj);
-        let bounds=Self::building_bounds(&b);let(tx,ty,width,height)=bounds;self.prepare_build_routes(bounds);
-        let assignments:Vec<(usize,u32)>=ids.iter().copied().filter_map(|i|{let e=*self.ents.get(i)?;if !e.alive||e.team!=b.team||!DEFS[e.def as usize].has(F_WORKER){return None;}let route=self.placement_cache.approach[tile_of(e.x,e.y)];
-            let route=if route==NONE&&e.x>=tx as f32&&e.x<(tx+width)as f32&&e.y>=ty as f32&&e.y<(ty+height)as f32{self.map.snap(e.x,e.y,0)as u32}else{route};(route!=NONE).then_some((i,route))}).collect();
-        for(i,key)in assignments{let e=&mut self.ents[i];e.prev=match e.order{O_GATHER if e.otgt==NONE=>e.q[0] as u8,O_BUILD=>e.prev,_=>0};e.order=if b.built<1.0{O_BUILD}else{O_GATHER};e.q[0]=R_FOOD as QueueItem;e.otgt=h;e.tgt=NONE;e.fkey=key;e.fslot=u16::MAX;e.stuck=0;}
+        let bounds = Self::building_bounds(&b);
+        let (tx, ty, width, height) = bounds;
+        self.prepare_build_routes(bounds);
+        let assignments: Vec<_> = ids.iter().copied().filter_map(|i| {
+            let e = self.ents.get(i)?;
+            if !e.alive || e.team != b.team || !DEFS[e.def as usize].has(F_WORKER) { return None; }
+            let mut route = if b.built < 1.0 {
+                self.placement_build_key(e)
+            } else {
+                self.placement_cache.approach[self.map.tile_of(e.x, e.y)]
+            };
+            if route == NONE && (tx as f32..(tx + width) as f32).contains(&e.x)
+                && (ty as f32..(ty + height) as f32).contains(&e.y)
+            {
+                route = self.map.snap(e.x, e.y, 0) as u32;
+            }
+            (route != NONE).then_some((i, route))
+        }).collect();
+        #[cfg(feature = "ee2-rect278-food-resume")]
+        let farm_limited = b.def == FARM && b.built >= 1.0 && self.rect_ai_clock.is_some()
+            && self.supports_rectangular_city_foundations();
+        #[cfg(feature = "ee2-rect278-food-resume")]
+        let mut farm_reserved = farm_limited && self.rect_farm_reservers(b.team, h) != 0;
+        for (i, key) in assignments {
+            #[cfg(feature = "ee2-rect278-food-resume")]
+            if farm_limited {
+                if farm_reserved { break; }
+                if self.ents[i].stuck == BOARDED || self.ents[i].hp <= 0.0 { continue; }
+                farm_reserved = true;
+            }
+            #[cfg(feature = "ee2-rect276-clearance-resume")]
+            self.cancel_rect_clearance(i);
+            let e = &mut self.ents[i];
+            e.prev = match e.order {
+                O_GATHER if e.otgt == NONE => e.q[0] as u8,
+                O_BUILD => e.prev,
+                _ => 0,
+            };
+            e.order = if b.built < 1.0 { O_BUILD } else { O_GATHER };
+            e.q[0] = R_FOOD as QueueItem;
+            #[cfg(feature = "ee2-rect278-food-resume")]
+            if farm_limited {
+                e.q[3] = 0;
+                e.q[4] = 0;
+            }
+            e.otgt = h;
+            e.tgt = NONE;
+            Self::assign_build_key(e, key);
+            #[cfg(feature = "ee2-rect280-farm-crop")]
+            if farm_limited {
+                let worker = self.ents[i];
+                self.start_rect_farm_goal(i, &worker);
+            }
+        }
     }
 
     /// Land units walk to a transport ship and climb aboard.
@@ -1362,6 +1558,8 @@ impl Game {
             }
             #[cfg(feature = "ee2-native13")]
             self.trade_interrupt(i);
+            #[cfg(feature = "ee2-rect276-clearance-resume")]
+            self.cancel_rect_clearance(i);
             let e = &mut self.ents[i];
             e.order = O_BOARD;
             e.otgt = h;
@@ -1398,7 +1596,8 @@ impl Game {
 
     /// Transports sail to the shore nearest `(x, y)` and put everyone ashore.
     pub fn order_unload(&mut self, ids: &[usize], x: f32, y: f32) {
-        let key = self.key_for(SEA, x.clamp(1.0, N as f32 - 1.0), y.clamp(1.0, N as f32 - 1.0));
+        let [width, height] = self.map.simulation_dimensions().map(|side| side as f32);
+        let key = self.key_for(SEA, x.clamp(1.0, width - 1.0), y.clamp(1.0, height - 1.0));
         let t = (key & 0xffff) as usize;
         for &i in ids {
             let def = self.ents[i].def;
@@ -1416,8 +1615,7 @@ impl Game {
                 continue;
             }
             e.order = O_UNLOAD;
-            e.ox = (t % N) as f32 + 0.5;
-            e.oy = (t / N) as f32 + 0.5;
+            [e.ox, e.oy] = self.map.tile_center(t);
             #[cfg(feature="ee2-up15")]
             crate::native_attack_clock::stop(&mut self.attack_clock[i].flags);
             e.tgt = NONE;
@@ -1429,7 +1627,7 @@ impl Game {
 
     fn unload(&mut self, _host:usize, e: &mut Ent) {
         let lt = self.map.snap(e.x, e.y, 0);
-        let (lx, ly) = ((lt % N) as f32 + 0.5, (lt / N) as f32 + 0.5);
+        let [lx, ly] = self.map.tile_center(lt);
         let exit_radius_squared=if DEFS[e.def as usize].building {20.0_f32.max((Self::building_half(e)+1.0).powi(2))}else{20.0};
         if (lx - e.x).powi(2) + (ly - e.y).powi(2) > exit_radius_squared {
             return; // no beach within reach: keep everyone aboard
@@ -1437,13 +1635,23 @@ impl Game {
         let old_count=e.ncargo as usize;let mut remaining=0;
         #[cfg(feature="ee2-citizen9")] let source_mask=self.source_birth.slots[_host].cargo_females;
         #[cfg(feature="ee2-citizen9")] let mut remaining_source_mask=0_u32;
+        #[cfg(feature = "ee2-rect287-oil-economy")]
+        let native_host = self.h(_host);
         for k in 0..old_count {
             let (a, r) = (k as f32 * 2.4, 0.45 * (k as f32).sqrt());
             let (mut x, mut y) = (lx + a.cos() * r, ly + a.sin() * r);
-            if !self.map.pass[0][tile_of(x, y)] { x = lx; y = ly; }
+            if !self.map.pass[0][self.map.tile_of(x, y)] { x = lx; y = ly; }
             #[cfg(feature="ee2-native13")]
             let power_cursor = self.powers.as_ref().map(|state| state.cursor);
-            let u = self.spawn(e.cargo[k], e.team, x, y);
+            #[cfg(feature = "ee2-rect287-oil-economy")]
+            let native_id = self.rect_native_ids.as_ref().and_then(|ids| ids.passenger(native_host, k));
+            #[cfg(not(feature = "ee2-rect287-oil-economy"))]
+            let native_id = None;
+            let u = self.spawn_attached(e.cargo[k], e.team, x, y, 0.0, 1.0, native_id);
+            #[cfg(feature = "ee2-rect287-oil-economy")]
+            if let Some(ids) = &mut self.rect_native_ids {
+                ids.release(native_host, k, (u == NOIDX).then_some(remaining));
+            }
             #[cfg(feature="ee2-native13")]
             if let Some(cursor) = power_cursor {
                 let result = if u == NOIDX { Err(remaining) } else { Ok(self.h(u)) };
@@ -1461,6 +1669,8 @@ impl Game {
         }
         e.cargo[remaining..old_count].fill(0);e.cargo_hp[remaining..old_count].fill(0);e.ncargo=remaining as u8;
         #[cfg(feature="ee2-citizen9")] {self.source_birth.slots[_host].cargo_females=remaining_source_mask;}
+        #[cfg(feature = "ee2-rect286-oil-visual")]
+        self.rect_oil_unloaded(_host, e, old_count);
     }
 
     fn do_board(&mut self, i: usize, e: &mut Ent, d: &Def, want: &mut (f32, f32), moving: &mut bool) {
@@ -1486,10 +1696,19 @@ impl Game {
                     self.powers.as_mut().unwrap().embark(handle, host, t.ncargo as usize);
                 }
                 #[cfg(feature="ee2-citizen9")] self.source_birth.set_cargo(j,t.ncargo as usize,e.def==WORKER&&self.source_birth.slots[i].identity==1);
+                #[cfg(feature = "ee2-rect287-oil-economy")]
+                {
+                    let (handle, host) = (self.h(i), self.h(j));
+                    if let Some(ids) = &mut self.rect_native_ids {
+                        ids.embark(handle, host, usize::from(t.ncargo));
+                    }
+                }
                 let tr = &mut self.ents[j];
                 tr.cargo[tr.ncargo as usize] = e.def;
                 tr.cargo_hp[tr.ncargo as usize] = (e.hp / maxhp * 100.0).clamp(1.0, 100.0) as u8;
                 tr.ncargo += 1;
+                #[cfg(feature = "ee2-rect286-oil-visual")]
+                self.rect_oil_boarded(j, t.ncargo);
                 e.hp = 0.0;
                 e.stuck = BOARDED;
             } else {
@@ -1506,7 +1725,7 @@ impl Game {
 
     /// Sound cue for the page; only things the local player can currently see.
     pub fn ev(&mut self, kind: f32, x: f32, y: f32) {
-        if self.events.len() < 3 * 64 && self.vis[tile_of(x, y)] == 255 {
+        if self.events.len() < 3 * 64 && self.vis[self.map.tile_of(x, y)] == 255 {
             self.events.extend_from_slice(&[kind, x, y]);
         }
     }
@@ -1519,6 +1738,8 @@ impl Game {
         mix(self.rng.0);
         #[cfg(feature = "ee2-native13")]
         if self.generated_city_foundations { mix(crate::construction_health163::MAGIC); }
+        #[cfg(feature = "ee2-valley204-construction-cancel")]
+        self.hash_construction_payments(&mut mix);
         if let Some(clock) = self.source_clock {
             mix(clock.magic());
             mix(clock.elapsed.to_bits());
@@ -1531,8 +1752,22 @@ impl Game {
             }
             self.diplomacy.clock.hash(&mut mix);
         }
+        #[cfg(feature = "ee2-rect261-ai-clock")]
+        if let Some(clock) = &self.rect_ai_clock { clock.hash(&mut mix); }
+        #[cfg(feature = "ee2-rect276-clearance-resume")]
+        self.hash_rect_clearance(&mut mix);
+        #[cfg(feature = "ee2-rect280-farm-crop")]
+        self.rect_farm_crops.hash(&mut mix);
+        #[cfg(feature = "ee2-rect286-oil-visual")]
+        self.rect_oil_visuals.hash(&mut mix);
+        #[cfg(feature = "ee2-rect287-oil-economy")]
+        if let Some(ids) = &self.rect_native_ids { ids.hash(&mut mix); }
+        #[cfg(feature = "ee2-rect289-citizen-work")]
+        self.rect_citizen_work.hash(&mut mix);
         #[cfg(feature = "ee2-authored-valley37")]
         crate::native_valley37::hash_game(self, &mut mix);
+        #[cfg(feature = "ee2-rect235-forest")]
+        self.hash_rect_forest(&mut mix);
         #[cfg(feature = "ee2-epoch-range13")]
         if self.final_epoch != MAX_EPOCH {
             mix(crate::match_epoch_range13::MAGIC);
@@ -1691,7 +1926,7 @@ impl Game {
         crate::alliance_territories::hash(&self.diplomacy.alliance_territories, &mut mix);
         for a in [&self.diplomacy.relation,&self.diplomacy.offers,&self.diplomacy.offer_vision,&self.diplomacy.sharing]{for &v in a{mix(v as u32);}}
         for a in [&self.diplomacy.offer_tick,&self.diplomacy.cooldown,&self.diplomacy.gifts,&self.diplomacy.neutral_since,&self.diplomacy.war_tick]{for &v in a{mix(v);}}
-        for h in self.territory.claims{mix(h);}
+        for &h in &self.territory.claims[..self.map.region_storage_len()]{mix(h);}
         for o in self.territory.offers{mix(o.active as u32|(o.give as u32)<<8|(o.want as u32)<<16);mix(o.tick);mix(o.cooldown);}
         for e in &self.territory.log{mix(e.tick);mix(e.from as u32|(e.to as u32)<<8|(e.kind as u32)<<16|(e.reason as u32)<<24);mix(e.give);mix(e.want);}
         for chunk in self.team_vis.chunks_exact(4){mix(u32::from_le_bytes(chunk.try_into().unwrap()));}
@@ -1716,12 +1951,42 @@ impl Game {
                 mix(e.y.to_bits());
                 mix(e.hp.to_bits());
                 mix(e.built.to_bits());
+                #[cfg(feature = "ee2-valley74-city-footprint")]
+                if self.uses_valley_city_foundation(e.def) && e.built < 1.0 { mix(u32::from(e.prev)); }
                 if DEFS[e.def as usize].building{mix(e.rot.to_bits());}
                 mix(e.carry.to_bits());
                 mix(e.qt.to_bits());
+                #[cfg(feature = "ee2-rect275-idle-brake")]
+                if Self::has_rect_idle_brake(e) {
+                    for value in [e.rx, e.vx, e.vy] { mix(value.to_bits()); }
+                }
+                #[cfg(feature = "ee2-rect267-builder-reach")]
+                if Self::has_rect_build_exit(e) {
+                    mix(e.rx.to_bits());
+                    mix(e.fkey);
+                    mix(e.otgt);
+                }
+                #[cfg(feature = "ee2-rect272-builder-arrival")]
+                if e.order == O_BUILD && Self::has_rect_city_alignment(e) {
+                    mix(e.ry.to_bits());
+                    mix(e.rot.to_bits());
+                    mix(e.otgt);
+                }
+                #[cfg(feature = "ee2-rect273-builder-waypoint")]
+                if e.order == O_BUILD && Self::has_rect_city_waypoint(e) {
+                    for value in [e.rx, e.ry, e.ox, e.oy, e.rot, e.vx, e.vy] { mix(value.to_bits()); }
+                    mix(e.fkey);
+                    mix(e.otgt);
+                }
 
                 mix(e.qn as u32);
                 if DEFS[e.def as usize].building {for q in &e.q[..e.qn as usize] {mix(*q as u32);}}
+                #[cfg(feature = "ee2-valley164-forest-play")]
+                if e.order == O_VALLEY_FOREST {
+                    mix(e.ox.to_bits());
+                    mix(e.oy.to_bits());
+                    for q in &e.q[1..] { mix(*q); }
+                }
                 #[cfg(feature="ee2-native13")]
                 if e.def == crate::fishing81::FISHING_SHIP && e.order == O_GATHER {
                     mix(e.otile);
@@ -1762,11 +2027,19 @@ impl Game {
 
     pub fn order_stop(&mut self, ids: &[usize]) {
         for &i in ids {
+            #[cfg(feature = "ee2-rect276-clearance-resume")]
+            self.cancel_rect_clearance(i);
+            #[cfg(feature = "ee2-valley197-waypoint-motion")]
+            self.clear_valley_route(i);
             #[cfg(feature = "ee2-native13")]
             { self.trade_interrupt(i); self.air_interrupt(i); }
             #[cfg(feature="ee2-pack8")] self.pack_interrupt(i);
             self.native_stop_attack(i);
             let e = &mut self.ents[i];
+            #[cfg(feature = "ee2-rect267-builder-reach")]
+            Self::clear_rect_build_exit(e);
+            #[cfg(feature = "ee2-rect272-builder-arrival")]
+            Self::clear_rect_city_approach(e);
             e.order = O_IDLE;
             e.ox = e.x;
             e.oy = e.y;
@@ -1779,6 +2052,8 @@ impl Game {
     // ------------------------------------------------------------------ tick
 
     pub fn tick(&mut self) {
+        #[cfg(feature = "ee2-rect261-ai-clock")]
+        if self.rect_ai_clock.is_some() { return; }
         if self.source_clock.is_none() && self.admit_solo_commands() {
             self.step_simulation();
         }
@@ -1796,6 +2071,8 @@ impl Game {
     /// Start only from tick zero, so an existing match is never assigned an
     /// invented elapsed time. All later ticks use this explicit entry point.
     pub(crate) fn tick_with_source_delta(&mut self, seconds: f64) -> bool {
+        #[cfg(feature = "ee2-rect261-ai-clock")]
+        if self.rect_ai_clock.is_some() { return false; }
         let Some(advanced) = self.source_clock_for_step().and_then(|clock| clock.advance(seconds)) else { return false; };
         self.commit_source_step(advanced)
     }
@@ -1863,6 +2140,7 @@ impl Game {
     }
 
     fn step_simulation(&mut self) {
+        let effect_step = if cfg!(feature = "ee2-rect260-clock-timers") { self.sim_step() } else { DT };
         // Reset resource work slots once, before either old or newly trained
         // citizens run. Resetting inside a building update lets later IDs bypass it.
         for e in &mut self.ents[..self.high]{if e.alive&&e.def==FARM{e.carry=0.0;}}
@@ -1870,7 +2148,7 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         self.air_audio.prune(self.tick);
         #[cfg(feature = "ee2-native13")]
-        if let Some(signals) = &mut self.battle_signals { signals.update_groups(DT, &self.ents); }
+        if let Some(signals) = &mut self.battle_signals { signals.update_groups(effect_step, &self.ents); }
         if self.bench==0{self.update_diplomacy();}
         #[cfg(feature = "ee2-native13")]
         if self.tick % 4 == 0 { self.reconcile_border_positions(); }
@@ -1888,24 +2166,32 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         self.tick_spy_sabotage();
         if self.bench==0{self.update_territory_diplomacy();}
+        #[cfg(feature = "ee2-rect246-deer-live")]
+        self.step_rect_deer();
+        #[cfg(feature = "ee2-rect250-animals")]
+        self.advance_rect_animals();
+        #[cfg(feature = "ee2-valley206-citizen-clearance")]
+        let mut citizen_separation = CitizenSeparationFrame::new();
         for i in 0..self.high {
             if self.ents[i].alive {
                 #[cfg(feature = "ee2-native13")]
                 if self.trade_hidden(i, &self.ents[i]) || self.air_parked(i, &self.ents[i]) { continue; }
-                self.update_ent(i);
+                self.update_ent(i, #[cfg(feature = "ee2-valley206-citizen-clearance")] &mut citizen_separation);
                 #[cfg(feature = "ee2-native13")]
                 self.tick_unit_reserve(i);
             }
         }
         #[cfg(feature = "ee2-native13")]
         self.tick_garrisoned_reserves();
-        self.separate();
+        self.separate(#[cfg(feature = "ee2-valley206-citizen-clearance")] &citizen_separation);
         self.update_projs();
+        #[cfg(feature = "ee2-rect250-animals")]
+        self.schedule_rect_animals();
         #[cfg(feature = "ee2-native13")]
         self.tick_spy_toxic();
         let mut k = 0;
         while k < self.fx.len() {
-            self.fx[k].age += DT;
+            self.fx[k].age += effect_step;
             if self.fx[k].age >= self.fx[k].life {
                 self.fx.swap_remove(k);
             } else {
@@ -1944,9 +2230,15 @@ impl Game {
         #[cfg(all(feature="ee2-pack8",feature="ee2-civ8"))]
         self.recount_paid_players();
         if deaths&&self.bench==0{self.prune_territory_offers();}
-        while self.high > 0 && !self.ents[self.high - 1].alive {
+        #[cfg(feature = "ee2-rect278-food-resume")]
+        let pending_extent = self.rect_pending_farm_extent();
+        #[cfg(not(feature = "ee2-rect278-food-resume"))]
+        let pending_extent = 0;
+        while self.high > pending_extent && !self.ents[self.high - 1].alive {
             self.high -= 1;
         }
+        #[cfg(feature = "ee2-rect244-hunt-visual")]
+        self.prune_rect_hunt_visuals();
         #[cfg(feature = "ee2-native13")]
         let intel_changed = self.tick_spy_intel();
         #[cfg(not(feature = "ee2-native13"))]
@@ -1966,7 +2258,7 @@ impl Game {
                 if self.eliminated_by_victory(t) {
                     continue;
                 }
-                if self.players[t].ai && (self.tick + t as u32 * 7) % 24 == 0 {
+                if self.players[t].ai && self.portable_ai_planner_due(t) {
                     self.ai_step(t as u8);
                 }
             }
@@ -1982,6 +2274,12 @@ impl Game {
                 }
             }
         }
+        #[cfg(feature = "ee2-rect261-ai-clock")]
+        {
+            // The native script timer dispatcher runs after the PlayerManager.
+            let step = self.sim_step();
+            if let Some(clock) = &mut self.rect_ai_clock { clock.step(step); }
+        }
         #[cfg(feature = "ee2-native13")]
         self.tick_crowns();
         #[cfg(feature = "ee2-native13")]
@@ -1989,7 +2287,7 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         self.tick_city_heal_growth();
         #[cfg(feature = "ee2-native13")]
-        if let Some(signals) = &mut self.battle_signals { signals.update_markers(DT); }
+        if let Some(signals) = &mut self.battle_signals { signals.update_markers(effect_step); }
         #[cfg(feature = "ee2-native13")]
         self.reconcile_capture_orders();
         #[cfg(feature = "ee2-native13")]
@@ -2007,6 +2305,12 @@ impl Game {
                 self.void_landless_alliances();
             }
         }
+        #[cfg(feature = "ee2-valley192-movement-atlas")]
+        self.sync_valley_atlas();
+        #[cfg(feature = "ee2-valley197-waypoint-motion")]
+        self.prune_valley_routes();
+        #[cfg(feature = "ee2-valley204-construction-cancel")]
+        self.settle_construction_payments();
     }
 
     #[cfg(feature = "ee2-native13")]
@@ -2146,7 +2450,8 @@ impl Game {
             let spatial = { let _ = index; true };
             if spatial {
                 n += 1;
-                g.start[cell_of(e.x, e.y) + 1] += 1;
+                let c = g.cell_of(e.x, e.y);
+                g.start[c + 1] += 1;
             }
             let t = e.team as usize;
             let Some(player) = self.players.get(t) else { continue; };
@@ -2172,7 +2477,7 @@ impl Game {
             }
         }
         self.sim_units = alive;
-        for c in 0..GC * GC {
+        for c in 0..g.cursor.len() {
             g.start[c + 1] += g.start[c];
             g.cursor[c] = g.start[c];
         }
@@ -2183,7 +2488,7 @@ impl Game {
                 #[cfg(feature = "ee2-native13")]
                 if self.trade.is_hidden(i, e) || self.aircraft.is_parked(i, e)
                     || self.dock_garrison.as_ref().is_some_and(|state| state.parked(i, e)) { continue; }
-                let c = cell_of(e.x, e.y);
+                let c = g.cell_of(e.x, e.y);
                 g.items[g.cursor[c] as usize] = i as u16;
                 g.cursor[c] += 1;
             }
@@ -2220,12 +2525,12 @@ impl Game {
         let mask = d.all_targets();
         let m = r + 5.0;
         let (cx0, cy0) = (((e.x - m) / CELL).max(0.0) as usize, ((e.y - m) / CELL).max(0.0) as usize);
-        let (cx1, cy1) = ((((e.x + m) / CELL) as usize).min(GC - 1), (((e.y + m) / CELL) as usize).min(GC - 1));
+        let (cx1, cy1) = self.grid.upper_cell(e.x + m, e.y + m);
         let mut best = NOIDX;
         let mut bs = f32::MAX;
         for cy in cy0..=cy1 {
             for cx in cx0..=cx1 {
-                let c = cy * GC + cx;
+                let c = cy * self.grid.width + cx;
                 for k in self.grid.start[c]..self.grid.start[c + 1] {
                     let j = self.grid.items[k as usize] as usize;
                     let t = &self.ents[j];
@@ -2258,11 +2563,11 @@ impl Game {
     fn detect_mask(&self, e: &Ent) -> u8 {
         const R: f32 = 6.5;
         let (cx0, cy0) = (((e.x - R) / CELL).max(0.0) as usize, ((e.y - R) / CELL).max(0.0) as usize);
-        let (cx1, cy1) = ((((e.x + R) / CELL) as usize).min(GC - 1), (((e.y + R) / CELL) as usize).min(GC - 1));
+        let (cx1, cy1) = self.grid.upper_cell(e.x + R, e.y + R);
         let mut mask = 0u8;
         for cy in cy0..=cy1 {
             for cx in cx0..=cx1 {
-                let c = cy * GC + cx;
+                let c = cy * self.grid.width + cx;
                 for k in self.grid.start[c]..self.grid.start[c + 1] {
                     let t = &self.ents[self.grid.items[k as usize] as usize];
                     if t.team != e.team && DEFS[t.def as usize].has(F_DETECT) && t.built >= 1.0 {
@@ -2426,12 +2731,14 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         if self.ents[j].def == crate::koth64::HILL { return; }
         #[cfg(feature = "ee2-valley74-city-footprint")]
-        if self.valley_house_awaiting_labor(&self.ents[j]) { return; }
+        if self.valley_house_awaiting_labor(&self.ents[j]) || self.valley_city_awaiting_labor(&self.ents[j]) { return; }
         let (team, td) = (self.ents[j].team, &DEFS[self.ents[j].def as usize]);
         let m = MULT[kind as usize][td.armor as usize] * self.players[team as usize].dfn[class_of(td)];
         let protected = self.god_mode_for(team);
         #[cfg(feature = "ee2-native13")]
         let protected = protected || self.damage_generated_city_foundation(j, dmg * m);
+        #[cfg(feature = "ee2-valley74-city-footprint")]
+        let protected = protected || self.damage_valley_city_foundation(j, dmg * m);
         let t = &mut self.ents[j];
         if !protected { t.hp -= dmg * m; }
         t.flash = 0.12;
@@ -2450,13 +2757,15 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         if def == crate::koth64::HILL { return; }
         #[cfg(feature = "ee2-valley74-city-footprint")]
-        if self.valley_house_awaiting_labor(&self.ents[j]) { return; }
+        if self.valley_house_awaiting_labor(&self.ents[j]) || self.valley_city_awaiting_labor(&self.ents[j]) { return; }
         let td=&DEFS[def as usize];
         let native=crate::ee2_combat::multiplier_from_profile(attacker_profile,def,self.players[team as usize].epoch);
         let m=native.unwrap_or(MULT[kind as usize][td.armor as usize])*self.players[team as usize].dfn[class_of(td)];
         let protected = self.god_mode_for(team);
         #[cfg(feature = "ee2-native13")]
         let protected = protected || self.damage_generated_city_foundation(j, dmg * m);
+        #[cfg(feature = "ee2-valley74-city-footprint")]
+        let protected = protected || self.damage_valley_city_foundation(j, dmg * m);
         let t=&mut self.ents[j];if !protected {t.hp-=dmg*m;}t.flash=0.12;
         let legacy_warning = {
             #[cfg(feature = "ee2-native13")]
@@ -2566,10 +2875,10 @@ impl Game {
             if p.splash > 0.0 {
                 let m = p.splash + 5.0;
                 let (cx0, cy0) = (((p.tx - m) / CELL).max(0.0) as usize, ((p.ty - m) / CELL).max(0.0) as usize);
-                let (cx1, cy1) = ((((p.tx + m) / CELL) as usize).min(GC - 1), (((p.ty + m) / CELL) as usize).min(GC - 1));
+                let (cx1, cy1) = self.grid.upper_cell(p.tx + m, p.ty + m);
                 for cy in cy0..=cy1 {
                     for cx in cx0..=cx1 {
-                        let c = cy * GC + cx;
+                        let c = cy * self.grid.width + cx;
                         for q in self.grid.start[c]..self.grid.start[c + 1] {
                             let j = self.grid.items[q as usize] as usize;
                             let t = &self.ents[j];
@@ -2618,13 +2927,13 @@ impl Game {
             return direct;
         }
         let dc = if d.dom == LAND { 0 } else { 1 };
-        let tile = tile_of(e.x, e.y);
+        let tile = self.map.tile_of(e.x, e.y);
         if !self.map.pass[dc][tile] {
             return direct;
         }
         // inside the formation disc around the field's goal: walk straight to our slot
         let gt = (e.fkey & 0xffff) as usize;
-        let (fx, fy) = ((gt % N) as f32 + 0.5, (gt / N) as f32 + 0.5);
+        let [fx, fy] = self.map.tile_center(gt);
         let off = ((gx - fx).powi(2) + (gy - fy).powi(2)).sqrt();
         if off > 0.8 && off < 30.0 && ((e.x - fx).powi(2) + (e.y - fy).powi(2)).sqrt() < off + 2.5 {
             return direct;
@@ -2642,33 +2951,34 @@ impl Game {
         }
     }
 
-    fn try_move(&self, e: &mut Ent, d: &Def, nx: f32, ny: f32) {
-        let nx = nx.clamp(0.6, N as f32 - 0.6);
-        let ny = ny.clamp(0.6, N as f32 - 0.6);
+    pub(crate) fn try_move(&self, e: &mut Ent, d: &Def, nx: f32, ny: f32) {
+        let [width, height] = self.map.simulation_dimensions().map(|side| side as f32);
+        let nx = nx.clamp(0.6, width - 0.6);
+        let ny = ny.clamp(0.6, height - 0.6);
         #[cfg(feature = "ee2-native13")]
         let denied_territories = self.border_egress_mask(e);
         #[cfg(not(feature = "ee2-native13"))]
         let denied_territories = 0;
         if d.dom == AIR {
-            if self.map.permits_territory(tile_of(nx, ny), denied_territories) {
+            if self.map.permits_territory(self.map.tile_of(nx, ny), denied_territories) {
                 e.x = nx;
                 e.y = ny;
             }
             return;
         }
         let pass = &self.map.pass[if d.dom == LAND { 0 } else { 1 }];
-        if !pass[tile_of(e.x, e.y)] && self.map.permits_territory(tile_of(nx, ny), denied_territories) {
+        if !pass[self.map.tile_of(e.x, e.y)] && self.map.permits_territory(self.map.tile_of(nx, ny), denied_territories) {
             // standing somewhere illegal (e.g. a building was placed on us): walk out freely
             e.x = nx;
             e.y = ny;
             return;
         }
-        if pass[tile_of(nx, e.y)] && self.map.permits_territory(tile_of(nx, e.y), denied_territories) {
+        if pass[self.map.tile_of(nx, e.y)] && self.map.permits_territory(self.map.tile_of(nx, e.y), denied_territories) {
             e.x = nx;
         } else {
             e.vx = 0.0;
         }
-        if pass[tile_of(e.x, ny)] && self.map.permits_territory(tile_of(e.x, ny), denied_territories) {
+        if pass[self.map.tile_of(e.x, ny)] && self.map.permits_territory(self.map.tile_of(e.x, ny), denied_territories) {
             e.y = ny;
         } else {
             e.vy = 0.0;
@@ -2676,6 +2986,10 @@ impl Game {
     }
 
     pub(crate) fn set_idle(e: &mut Ent) {
+        #[cfg(feature = "ee2-rect267-builder-reach")]
+        Self::clear_rect_build_exit(e);
+        #[cfg(feature = "ee2-rect272-builder-arrival")]
+        Self::clear_rect_city_approach(e);
         e.order = O_IDLE;
         e.ox = e.x;
         e.oy = e.y;
@@ -2698,6 +3012,8 @@ impl Game {
         if e.built < 1.0 && instant {
             #[cfg(feature = "ee2-native13")]
             if self.uses_generated_city_foundation(e.def) { e.prev = 0; }
+            #[cfg(feature = "ee2-valley74-city-footprint")]
+            if self.uses_valley_city_foundation(e.def) { e.prev = 0; }
             e.built = 1.0;
             e.hp = self.max_hp(e.team,e.def);
             #[cfg(feature = "ee2-native13")]
@@ -2706,6 +3022,8 @@ impl Game {
         #[cfg(feature="ee2-reference")]
         self.observe_city_ground(i,*e);
         if e.built < 1.0 { return; }
+        #[cfg(feature = "ee2-rect286-oil-visual")]
+        self.update_rect_oil_visual(i, e);
         let dt = self.sim_step();
         if e.def==FORTRESS && e.ncargo>0 {
             let rate=self.fortress_heal_rate(e.team);
@@ -2729,7 +3047,11 @@ impl Game {
             let points=e.carry.floor();
             if points>=1.0 {self.research_points[e.team as usize]+=points;e.carry-=points;}
         }
-        if d.has(F_EXTRACT){
+        #[cfg(feature = "ee2-rect287-oil-economy")]
+        let native_extraction = self.update_rect_oil_economy(i, e, dt);
+        #[cfg(not(feature = "ee2-rect287-oil-economy"))]
+        let native_extraction = false;
+        if d.has(F_EXTRACT) && !native_extraction {
             let kind=Self::extractor_kind(e.def);
             // Gifts do not unlock a recipient's future or obsolete resource.
             // Keep every crew member; inactive deposits do not accumulate work.
@@ -2834,7 +3156,7 @@ impl Game {
                     #[cfg(not(feature = "ee2-native13"))]
                     let stationed = false;
                     if u != NOIDX && e.rx >= 0.0 && !stationed {
-                        let rt = tile_of(e.rx, e.ry);
+                        let rt = self.map.tile_of(e.rx, e.ry);
                         #[cfg(feature = "ee2-native13")]
                         let fishing = self.fishing_enabled && item == crate::fishing81::FISHING_SHIP as QueueItem && self.map.res[rt] == R_FISH;
                         #[cfg(not(feature = "ee2-native13"))]
@@ -2907,7 +3229,8 @@ impl Game {
             let mut bdist = f32::MAX;
             for k in -r..=r {
                 for &(x, y) in &[(cx + k, cy - r), (cx + k, cy + r), (cx - r, cy + k), (cx + r, cy + k)] {
-                    if x < 1 || y < 1 || x >= N as i32 - 1 || y >= N as i32 - 1 || !pass[y as usize * N + x as usize] {
+                    let [width, height] = self.map.simulation_dimensions().map(|side| side as i32);
+                    if x < 1 || y < 1 || x >= width - 1 || y >= height - 1 || !pass[self.map.tile_index(x as usize, y as usize)] {
                         continue;
                     }
                     let (fx, fy) = (x as f32 + 0.5, y as f32 + 0.5);
@@ -2929,7 +3252,7 @@ impl Game {
     pub(crate) fn regicide_spawn_point(&self, city: &Ent) -> Option<(f32, f32)> {
         let king = &DEFS[crate::ee2_regicide::KING as usize];
         let point = self.spawn_point(city, &DEFS[TC as usize], king);
-        self.map.pass[0][tile_of(point.0, point.1)].then_some(point)
+        self.map.pass[0][self.map.tile_of(point.0, point.1)].then_some(point)
     }
 
     pub(crate) fn production_has_population(&self, team: usize, definition: DefId) -> bool {
@@ -2942,8 +3265,15 @@ impl Game {
         needed == 0 || player.pop + needed <= player.cap
     }
 
-    fn update_ent(&mut self, i: usize) {
+    fn update_ent(
+        &mut self,
+        i: usize,
+        #[cfg(feature = "ee2-valley206-citizen-clearance")]
+        citizen_separation: &mut CitizenSeparationFrame,
+    ) {
         let mut e = self.ents[i];
+        #[cfg(feature = "ee2-rect289-citizen-work")]
+        let citizen_motion_before_update = self.citizen_work_motion(i, &e);
         #[cfg(feature = "ee2-native13")]
         if e.def == crate::koth64::HILL { return; }
         let dt = self.sim_step();
@@ -2952,15 +3282,25 @@ impl Game {
         e.px = e.x;
         e.py = e.y;
         e.prot = e.rot;
+        #[cfg(feature = "ee2-rect272-builder-arrival")]
+        if e.order != O_BUILD { Self::clear_rect_city_approach(&mut e); }
         if e.cd > 0.0 {
             e.cd -= dt;
         }
+        let effect_step = if cfg!(feature = "ee2-rect260-clock-timers") { dt } else { DT };
         if e.reveal_t > 0.0 {
-            e.reveal_t -= DT;
+            e.reveal_t -= effect_step;
         }
         if e.flash > 0.0 {
-            e.flash -= DT;
+            e.flash -= effect_step;
         }
+        #[cfg(feature = "ee2-rect276-clearance-resume")]
+        if self.rect_clearance_before_update(i, &mut e) {
+            self.ents[i] = e;
+            return;
+        }
+        #[cfg(feature = "ee2-rect275-idle-brake")]
+        if e.order != O_IDLE { Self::clear_rect_idle_brake(&mut e); }
         #[cfg(feature = "ee2-native13")]
         if e.order == O_FACTORY_EGRESS {
             self.advance_factory_egress(i, e, dt);
@@ -3104,23 +3444,53 @@ impl Game {
 
         // ---- follow orders when not fighting
         if tj==NOIDX{self.native_stop_attack(i);}
+        #[cfg(feature = "ee2-valley204-ground-motion")]
+        let mut native_motion = false;
+        #[cfg(not(feature = "ee2-valley204-ground-motion"))]
+        let native_motion = false;
+        #[cfg(feature = "ee2-rect273-builder-waypoint")]
+        let mut build_motion_applied = false;
+        #[cfg(not(feature = "ee2-rect273-builder-waypoint"))]
+        let build_motion_applied = false;
         if !engaged {
             match e.order {
                 O_MOVE | O_AMOVE => {
+                    #[cfg(feature = "ee2-valley204-ground-motion")]
+                    {
+                        let unmodified = self.valley_motion_unmodified(i);
+                        native_motion = self.valley_native_motion_step(i, &mut e, d, dt, unmodified,
+                            #[cfg(feature = "ee2-valley215-citizen-contact")] citizen_separation);
+                    }
+                    if !native_motion {
                     let dist = ((e.ox - e.x).powi(2) + (e.oy - e.y).powi(2)).sqrt();
+                    #[cfg(feature = "ee2-valley197-waypoint-motion")]
+                    let route_leg = self.valley_route_leg(i, &e);
+                    #[cfg(not(feature = "ee2-valley197-waypoint-motion"))]
+                    let route_leg: Option<([f32; 2], bool)> = None;
+                    let arrived = match route_leg {
+                        // Ordinary terminal path tolerance in native 007F2D9C.
+                        Some((_, final_leg)) => final_leg && dist < 0.05,
+                        None => dist < 0.25,
+                    };
                     if plane {
                         if dist < 2.5 {
                             e.order = O_IDLE;
                             e.stuck = 0;
                         }
-                    } else if dist < 0.25 {
+                    } else if arrived {
                         #[cfg(feature = "ee2-native13")]
                         self.complete_spy_extraction(i, &mut e);
                         Self::set_idle(&mut e);
+                    } else if let Some(([x, y], _)) = route_leg {
+                        let (dx, dy) = (x - e.x, y - e.y);
+                        let length = (dx * dx + dy * dy).sqrt().max(1e-4);
+                        want = (dx / length, dy / length);
+                        moving = true;
                     } else {
                         let (ox, oy) = (e.ox, e.oy);
                         want = self.steer(&mut e, d, ox, oy);
                         moving = true;
+                    }
                     }
                 }
                 O_UNLOAD => {
@@ -3135,8 +3505,20 @@ impl Game {
                     }
                 }
                 O_BOARD => self.do_board(i, &mut e, d, &mut want, &mut moving),
+                #[cfg(feature = "ee2-authored-rect233")]
+                O_GATHER if e.def == crate::fishing81::FISHING_SHIP && self.rect_population.is_some() => {
+                    face = self.do_world0_fishing(&mut e, d, &mut want, &mut moving);
+                }
                 O_GATHER => self.do_gather(i,&mut e, d, &mut want, &mut moving),
-                O_BUILD => self.do_build(&mut e, d, &mut want, &mut moving),
+                #[cfg(feature = "ee2-rect242-hunt")]
+                O_RECT_HUNT => face = self.do_world0_hunt(i, &mut e, d, &mut want, &mut moving),
+                #[cfg(feature = "ee2-valley164-forest-play")]
+                O_VALLEY_FOREST => face = self.do_valley_forest(i, &mut e, d, &mut want, &mut moving),
+                O_BUILD => self.do_build(
+                    &mut e, d, &mut want, &mut moving,
+                    #[cfg(feature = "ee2-rect273-builder-waypoint")]
+                    &mut build_motion_applied,
+                ),
                 #[cfg(feature = "ee2-native13")]
                 O_RENDEZVOUS if (e.x - e.ox).powi(2) + (e.y - e.oy).powi(2) > 0.25 => {
                     let (x, y) = (e.ox, e.oy);
@@ -3192,6 +3574,11 @@ impl Game {
             if matches!(e.order, O_MOVE | O_AMOVE) { Self::set_idle(&mut e); }
         }
         // ---- integrate
+        #[cfg(feature = "ee2-rect275-idle-brake")]
+        let idle_braked = !plane && !native_motion && !build_motion_applied && !moving && face.is_none()
+            && self.rect_idle_brake_step(&mut e, d, dt);
+        #[cfg(not(feature = "ee2-rect275-idle-brake"))]
+        let idle_braked = false;
         if plane {
             #[cfg(feature = "ee2-reference")]
             let angular_speed = {
@@ -3227,9 +3614,12 @@ impl Game {
             e.rot = angdiff(e.rot, 0.0);
             e.vx = e.rot.cos() * speed;
             e.vy = e.rot.sin() * speed;
-            e.x = (e.x + e.vx * dt).clamp(0.6, N as f32 - 0.6);
-            e.y = (e.y + e.vy * dt).clamp(0.6, N as f32 - 0.6);
-        } else {
+            let [width, height] = self.map.simulation_dimensions().map(|side| side as f32);
+            e.x = (e.x + e.vx * dt).clamp(0.6, width - 0.6);
+            e.y = (e.y + e.vy * dt).clamp(0.6, height - 0.6);
+        } else if !native_motion && !build_motion_applied && !idle_braked {
+            #[cfg(feature = "ee2-rect275-idle-brake")]
+            Self::clear_rect_idle_brake(&mut e);
             let (tvx, tvy) = if moving { (want.0 * speed, want.1 * speed) } else { (0.0, 0.0) };
             e.vx += (tvx - e.vx) * 0.4;
             e.vy += (tvy - e.vy) * 0.4;
@@ -3285,19 +3675,51 @@ impl Game {
             (moving || !engaged || self.pack_states[i].phase != crate::pack8::NONE) {
             self.herc_attack.forget(self.h(i));
         }
+        #[cfg(feature = "ee2-valley206-citizen-clearance")]
+        if native_motion { citizen_separation.record_native_step(i); }
+        #[cfg(feature = "ee2-rect276-clearance-resume")]
+        self.rect_clearance_after_update(i, &mut e);
+        #[cfg(feature = "ee2-rect280-farm-crop")]
+        if e.def == WORKER && (e.order != O_GATHER || e.otgt == NONE || e.q[1] != 0) {
+            self.clear_rect_farm_goal(i);
+        }
+        #[cfg(feature = "ee2-rect289-citizen-work")]
+        self.finish_citizen_work_update(i, &e, citizen_motion_before_update, engaged);
         self.ents[i] = e;
+    }
+
+    #[cfg(feature = "ee2-valley204-ground-motion")]
+    pub(crate) fn valley_motion_unmodified(&self, index: usize) -> bool {
+        !self.leader_immobilized(index) && self.leader_movement_scale(index) == 1.0
     }
 
     fn do_gather(&mut self, index:usize,e: &mut Ent, d: &Def, want: &mut (f32, f32), moving: &mut bool) {
         #[cfg(feature = "ee2-native13")]
         if e.def == crate::fishing81::FISHING_SHIP { self.do_fishing(index, e, d, want, moving); return; }
+        #[cfg(feature = "ee2-authored-rect233")]
+        if self.world0_gather_order(e).is_some() {
+            #[cfg(feature = "ee2-rect289-citizen-work")]
+            let before = *e;
+            self.do_world0_gather(e, d, want, moving);
+            #[cfg(feature = "ee2-rect289-citizen-work")]
+            self.observe_world0_citizen_work(index, &before, e, *moving);
+            return;
+        }
         let kind=e.q[0] as u8;
         if cfg!(feature="ee2-reference")&&e.carry>0.0&&e.q[2]>0&&e.q[2]!=kind as QueueItem {e.q[1]=1;}
-        if cfg!(feature="ee2-reference")&&e.q[1]==1{self.return_cargo(e,d,want,moving);return;}
+        if cfg!(feature="ee2-reference")&&e.q[1]==1{
+            #[cfg(feature = "ee2-rect279-farm-active")]
+            self.release_rect_farm_work(index);
+            #[cfg(feature = "ee2-rect289-citizen-work")]
+            self.return_cargo_with_work_visual(index,e,d,want,moving);
+            #[cfg(not(feature = "ee2-rect289-citizen-work"))]
+            self.return_cargo(e,d,want,moving);
+            return;
+        }
         if !self.citizen_can_gather(e.team,kind){e.carry=0.0;e.q[2]=0;Self::set_idle(e);return;}
         let (cx, cy, reach, farm) = if e.otgt != NONE {
             match self.get(e.otgt) {
-                Some(j) if self.ents[j].built >= 1.0 && self.ents[j].team==e.team && self.ents[j].def==FARM => (self.ents[j].x, self.ents[j].y, Self::building_half(&self.ents[j]) + 0.95, j),
+                Some(j) if self.ents[j].built >= 1.0 && self.ents[j].hp > 0.0 && self.ents[j].team==e.team && self.ents[j].def==FARM => (self.ents[j].x, self.ents[j].y, Self::building_half(&self.ents[j]) + 0.95, j),
                 _ => {
                     Self::set_idle(e);
                     return;
@@ -3310,7 +3732,8 @@ impl Game {
                     Some(nt) => {
                         t = nt;
                         e.otile = nt as u32;
-                        e.fkey = self.key_for(LAND, (nt % N) as f32 + 0.5, (nt / N) as f32 + 0.5);
+                        let [x, y] = self.map.tile_center(nt);
+                        e.fkey = self.key_for(LAND, x, y);
                     }
                     None => {
                         Self::set_idle(e);
@@ -3318,9 +3741,17 @@ impl Game {
                     }
                 }
             }
-            ((t % N) as f32 + 0.5, (t / N) as f32 + 0.5, 1.45, NOIDX)
+            let [x, y] = self.map.tile_center(t);
+            (x, y, 1.45, NOIDX)
         };
+        #[cfg(feature = "ee2-rect280-farm-crop")]
+        if farm != NOIDX && e.def == WORKER && self.rect_farm_work_enabled() {
+            self.do_rect_farm_crop(index, e, d, farm, want, moving);
+            return;
+        }
         if (cx - e.x).abs().max((cy - e.y).abs()) > reach {
+            #[cfg(feature = "ee2-rect279-farm-active")]
+            self.release_rect_farm_work(index);
             *want = self.steer(e, d, cx, cy);
             *moving = true;
             return;
@@ -3349,7 +3780,16 @@ impl Game {
                 if occupying>=limit{return;}
             }
             if farm!=NOIDX {
-                if self.ents[farm].carry>=1.0{return;}self.ents[farm].carry+=1.0;
+                #[cfg(feature = "ee2-rect279-farm-active")]
+                let native_farm = self.rect_farm_work(index, e);
+                #[cfg(not(feature = "ee2-rect279-farm-active"))]
+                let native_farm = None::<bool>;
+                if native_farm == Some(false) { return; }
+                if native_farm.is_none() {
+                    #[cfg(feature = "ee2-rect278-food-resume")]
+                    if self.rect_farm_yields_work(index, e, cx, cy, reach) { return; }
+                    if self.ents[farm].carry>=1.0{return;}self.ents[farm].carry+=1.0;
+                }
             }
             let carry_limit={
                 #[cfg(feature="ee2-up15")] {crate::ee2_units::lookup_class(e.def,p.epoch).and_then(|r|if farm!=NOIDX{r.farm_carry}else{r.carry}).unwrap_or(0.0)}
@@ -3362,6 +3802,8 @@ impl Game {
                 if self.map.amt[t]==0 {self.map.res[t]=R_NONE;if self.map.ter[t]==T_FOREST{self.map.ter[t]=T_GRASS;}self.map.recolor(t);e.q[1]=1;}
             }
             if e.carry>=carry_limit {e.q[1]=1;}
+            #[cfg(feature = "ee2-rect279-farm-active")]
+            if e.q[1] == 1 { self.release_rect_farm_work(index); }
             return;
         }
         if farm != NOIDX {
@@ -3388,7 +3830,10 @@ impl Game {
         }
     }
 
-    fn do_build(&mut self, e: &mut Ent, d: &Def, want: &mut (f32, f32), moving: &mut bool) {
+    fn do_build(
+        &mut self, e: &mut Ent, d: &Def, want: &mut (f32, f32), moving: &mut bool,
+        #[cfg(feature = "ee2-rect273-builder-waypoint")] integrated: &mut bool,
+    ) {
         let j = match self.get(e.otgt) {
             Some(j) => j,
             None => {
@@ -3398,10 +3843,31 @@ impl Game {
         };
         if self.ents[j].team!=e.team{Self::set_idle(e);e.otgt=NONE;return;}
         let b = self.ents[j];
+        #[cfg(feature = "ee2-valley204-construction-cancel")]
+        if self.map.source_world.is_some() && b.hp <= 0.0 {
+            Self::set_idle(e);
+            return;
+        }
+        #[cfg(feature = "ee2-rect267-builder-reach")]
+        if let Some(direction) = self.rect_build_egress(e, &b) {
+            *want = direction;
+            *moving = direction != (0.0, 0.0);
+            return;
+        }
+        #[cfg(feature = "ee2-rect272-builder-arrival")]
+        let source_arrival = self.rect_city_uses_work_band(e, &b) && self.generated_city_awaiting_labor(&b);
+        #[cfg(not(feature = "ee2-rect272-builder-arrival"))]
+        let source_arrival = false;
+        #[cfg(feature = "ee2-rect272-builder-arrival")]
+        if !source_arrival { Self::clear_rect_city_approach(e); }
+        #[cfg(feature = "ee2-rect272-builder-arrival")]
+        let source_work_band = self.rect_city_in_work_band(e, &b);
+        #[cfg(not(feature = "ee2-rect272-builder-arrival"))]
+        let source_work_band = false;
         let (bx,by,width,height)=Self::building_bounds(&b);
-        if b.built<1.0&&e.x>=bx as f32&&e.x<(bx+width)as f32&&e.y>=by as f32&&e.y<(by+height)as f32{
-            let goal=(e.fkey&0xffff)as usize;
-            *want=self.steer(e,d,(goal%N)as f32+0.5,(goal/N)as f32+0.5);*moving=true;return;
+        if !source_arrival && !source_work_band && b.built<1.0&&e.x>=bx as f32&&e.x<(bx+width)as f32&&e.y>=by as f32&&e.y<(by+height)as f32{
+            let [x, y] = self.map.tile_center((e.fkey & 0xffff) as usize);
+            *want=self.steer(e,d,x, y);*moving=true;return;
         }
         if b.built >= 1.0 {
             let farm_staffed=cfg!(feature="ee2-reference")&&self.ents[..self.high].iter().any(|w|w.alive&&w.def==WORKER&&w.order==O_GATHER&&w.otgt==e.otgt);
@@ -3414,18 +3880,31 @@ impl Game {
                 e.order = O_GATHER;
                 e.otgt = NONE;
                 e.q[0] = e.prev as QueueItem;
-                e.fkey = self.key_for(LAND, (t % N) as f32 + 0.5, (t / N) as f32 + 0.5);
+                let [x, y] = self.map.tile_center(t);
+                #[cfg(feature = "ee2-authored-rect233")]
+                if self.world0_gather_order(e).is_some() { e.q[4] = 0; }
+                e.fkey = self.key_for(LAND, x, y);
             } else {
                 Self::set_idle(e);
             }
             return;
         }
-        if !Self::building_within(&b, (b.x - e.x).abs(), (b.y - e.y).abs(), 0.95) {
-            let goal=(e.fkey&0xffff)as usize;
-            *want = self.steer(e, d, (goal%N)as f32+0.5, (goal/N)as f32+0.5);
+        #[cfg(feature = "ee2-rect272-builder-arrival")]
+        if source_arrival && !self.rect_city_arrived_for_work(
+            e, d, &b, want, moving,
+            #[cfg(feature = "ee2-rect273-builder-waypoint")]
+            integrated,
+        ) {
+            return;
+        }
+        if !source_arrival && !source_work_band && !Self::building_within(&b, (b.x - e.x).abs(), (b.y - e.y).abs(), 0.95) {
+            let [x, y] = self.map.tile_center((e.fkey & 0xffff) as usize);
+            *want = self.steer(e, d, x, y);
             *moving = true;
             return;
         }
+        #[cfg(feature = "ee2-rect271-build-egress")]
+        if !self.rect_city_first_work_clear(&b, e.otgt) { return; }
         let maxhp=self.max_hp(e.team,b.def);
         let duration = self.production_time(e.team,b.def)*self.construction_multiplier(&b);
         let seconds = self.sim_step();
@@ -3436,6 +3915,10 @@ impl Game {
         #[cfg(feature = "ee2-valley74-city-footprint")]
         let native_house = self.uses_valley_house_construction(b.def);
         #[cfg(feature = "ee2-valley74-city-footprint")]
+        let native_city = self.uses_valley_city_foundation(b.def);
+        #[cfg(not(feature = "ee2-valley74-city-footprint"))]
+        let native_city = false;
+        #[cfg(feature = "ee2-valley74-city-footprint")]
         let pending_house = self.valley_house_reserves_placement_only(&b);
         #[cfg(feature = "ee2-valley74-city-footprint")]
         if pending_house && !self.valley_house_labor_clear(&b, e.otgt) { return; }
@@ -3444,9 +3927,11 @@ impl Game {
         if generated_city { Self::advance_generated_city_foundation(t, maxhp, seconds, duration, true); }
         #[cfg(feature = "ee2-valley74-city-footprint")]
         if native_house { Self::advance_valley_house_health(t, maxhp, seconds, duration); }
+        #[cfg(feature = "ee2-valley74-city-footprint")]
+        if native_city { Self::advance_valley_city_foundation(t, maxhp, seconds, duration, true); }
         #[cfg(not(feature = "ee2-valley74-city-footprint"))]
         let native_house = false;
-        if !native_house && !generated_city {
+        if !native_house && !native_city && !generated_city {
             let step = seconds / duration;
             t.built = (t.built + step).min(1.0);
             t.hp = (t.hp + maxhp * 0.9 * step).min(maxhp);
@@ -3466,7 +3951,11 @@ impl Game {
     }
 
     /// Soft collision: overlapping units in the same layer push each other apart.
-    fn separate(&mut self) {
+    fn separate(
+        &mut self,
+        #[cfg(feature = "ee2-valley206-citizen-clearance")]
+        citizen_separation: &CitizenSeparationFrame,
+    ) {
         for i in 0..self.high {
             let e = &self.ents[i];
             self.push[i] = (0.0, 0.0);
@@ -3483,11 +3972,11 @@ impl Game {
             let layer = if d.dom == AIR { AIR } else { !AIR };
             let m = r + 1.3;
             let (cx0, cy0) = (((e.x - m) / CELL).max(0.0) as usize, ((e.y - m) / CELL).max(0.0) as usize);
-            let (cx1, cy1) = ((((e.x + m) / CELL) as usize).min(GC - 1), (((e.y + m) / CELL) as usize).min(GC - 1));
+            let (cx1, cy1) = self.grid.upper_cell(e.x + m, e.y + m);
             let (mut px, mut py) = (0.0f32, 0.0f32);
             for cy in cy0..=cy1 {
                 for cx in cx0..=cx1 {
-                    let c = cy * GC + cx;
+                    let c = cy * self.grid.width + cx;
                     for k in self.grid.start[c]..self.grid.start[c + 1] {
                         let j = self.grid.items[k as usize] as usize;
                         if j == i {
@@ -3503,6 +3992,8 @@ impl Game {
                         let min = r + self.entity_radius(o);
                         let d2 = dx * dx + dy * dy;
                         if d2 < min * min {
+                            #[cfg(feature = "ee2-valley206-citizen-clearance")]
+                            if citizen_separation.clear_pair(i, e, j, o) { continue; }
                             if d2 > 1e-6 {
                                 let dist = d2.sqrt();
                                 let f = (min - dist) / dist * 0.5;
@@ -3525,6 +4016,8 @@ impl Game {
             if px == 0.0 && py == 0.0 {
                 continue;
             }
+            #[cfg(feature = "ee2-valley204-ground-motion")]
+            self.valley_fallback_motion(i);
             let mut e = self.ents[i];
             let d = &DEFS[e.def as usize];
             let l = (px * px + py * py).sqrt();
@@ -3538,7 +4031,7 @@ impl Game {
         }
     }
 
-    fn paint_unit_sight(visibility: &mut [u8], viewer: u8, unit: &Ent, range: f32, [width, height]: [usize; 2]) {
+    fn paint_unit_sight(visibility: &mut [u8], viewer: u8, unit: &Ent, range: f32, [width, height]: [usize; 2], stride: usize) {
         let (cx, cy) = (unit.x as i32, unit.y as i32);
         let radius = range as i32;
         let start = viewer as usize * NN;
@@ -3549,7 +4042,7 @@ impl Game {
             let x0 = (cx - span).max(0);
             let x1 = (cx + span).min(width as i32 - 1);
             if x0 > x1 { continue; }
-            let row = start + y as usize * N;
+            let row = start + y as usize * stride;
             visibility[row + x0 as usize..=row + x1 as usize].fill(255);
         }
     }
@@ -3583,7 +4076,7 @@ impl Game {
             {
                 continue;
             }
-            Self::paint_unit_sight(&mut self.team_vis, e.team, e, range, [width, height]);
+            Self::paint_unit_sight(&mut self.team_vis, e.team, e, range, [width, height], self.map.layout.stride);
             #[cfg(feature = "ee2-native13")]
             if self.diplomacy.sight_terms && e.def != crate::spy46_defs::SPY {
                 // The treaty selects the donor's actors before they stamp the
@@ -3591,7 +4084,7 @@ impl Game {
                 // the Spy even while its disguise is temporarily down.
                 for viewer in 0..self.nplayers as u8 {
                     if self.shares_actor_sight(e.team, viewer, building) {
-                        Self::paint_unit_sight(&mut self.team_vis, viewer, e, range, [width, height]);
+                        Self::paint_unit_sight(&mut self.team_vis, viewer, e, range, [width, height], self.map.layout.stride);
                     }
                 }
             }
@@ -3599,7 +4092,7 @@ impl Game {
             if farseeing != 0 && e.def == TC && e.hp > 0.0 && e.built >= 1.0 {
                 for viewer in 0..self.nplayers {
                     if farseeing & (1 << viewer) != 0 && viewer != e.team as usize {
-                        Self::paint_unit_sight(&mut self.team_vis, viewer as u8, e, range, [width, height]);
+                        Self::paint_unit_sight(&mut self.team_vis, viewer as u8, e, range, [width, height], self.map.layout.stride);
                     }
                 }
             }
@@ -3633,7 +4126,7 @@ impl Game {
                 tries += 1;
                 let x = hx + (self.rng.f() - 0.5) * 50.0;
                 let y = c + (self.rng.f() - 0.5) * 110.0;
-                let t = tile_of(x, y);
+                let t = self.map.tile_of(x, y);
                 let roll = self.rng.f();
                 let want = if roll < 0.12 { AIR } else if self.map.pass[0][t] { LAND } else if self.map.pass[1][t] { SEA } else { 0 };
                 if want == 0 {
@@ -3743,6 +4236,28 @@ mod diplomacy_combat_tests {
         assert!(!point.is_null());
         assert_eq!(unsafe { [*point, *point.add(1)] }, [125.5, 100.5]);
     }
+
+    #[cfg(feature = "ee2-rect260-clock-timers")]
+    #[test]
+    fn short_effects_use_the_admitted_game_seconds() {
+        for source in [false, true] {
+            let mut game = Game::new(7, 0, 0, 1, 0);
+            let actor = game.spawn(WORKER, 0, 100.0, 100.0);
+            game.ents[actor].flash = 0.2;
+            game.ents[actor].reveal_t = 0.25;
+            game.fx.push(Fx { x: 100.0, y: 100.0, size: 1.0, age: 0.0, life: 1.0 });
+            if source {
+                assert!(game.tick_with_adaptive_source_slot(30, 30, 1.0));
+            } else {
+                game.tick();
+            }
+            let dt = game.sim_step();
+            assert_eq!(game.fx[0].age, dt);
+            assert_eq!(game.ents[actor].flash, 0.2 - dt);
+            assert_eq!(game.ents[actor].reveal_t, 0.25 - dt);
+            assert_eq!(dt, if source { 0.03333333 } else { DT });
+        }
+    }
 }
 
 #[cfg(test)]
@@ -3843,7 +4358,10 @@ mod artemis_collision_tests {
             let right = game.spawn(LIGHT_MOUNTED3, 0, 131.9, 130.5);
             assert_eq!(game.entity_radius(&game.ents[left]), if enabled { 0.75 } else { DEFS[LIGHT_MOUNTED3 as usize].rad() });
             game.build_grid();
-            game.separate();
+            game.separate(
+                #[cfg(feature = "ee2-valley206-citizen-clearance")]
+                &CitizenSeparationFrame::new(),
+            );
             if enabled {
                 assert!(game.push[left].0 < -0.045);
                 assert!(game.push[right].0 > 0.045);

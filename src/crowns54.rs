@@ -958,4 +958,74 @@ mod tests {
         assert_eq!(std::array::from_fn(|slot| before[slot] - after[slot]), cheaper.map(f32::from));
         assert!(game.queue_time_limit(barracks, 1) < ordinary_time);
     }
+
+    // Synthetic unit fixture, for crowns54::tests; no ordinary earning/paid-research claim.
+    #[cfg(feature = "ee2-rect288-oil-research")]
+    #[test]
+    fn oil_retooling_award_choice_native_id_update_and_expiry297() {
+        const CASES: [(usize, bool, u8, [(u32, u32); 4]); 16] = [
+            (0, false, 1, [(0x3f400000, 0x00000000), (0x3f000000, 0x3f800000), (0x3e800000, 0x40000000), (0x00000000, 0x40400000)]),
+            (0, false, 6, [(0x3f000000, 0x40800000), (0x00000000, 0x41100000), (0x3f000000, 0x41500000), (0x00000000, 0x41900000)]),
+            (0, true, 1, [(0x3f000000, 0x3f800000), (0x00000000, 0x40400000), (0x3f000000, 0x40800000), (0x00000000, 0x40c00000)]),
+            (0, true, 6, [(0x00000000, 0x41100000), (0x00000000, 0x41900000), (0x00000000, 0x41d80000), (0x00000000, 0x42100000)]),
+            (1, false, 1, [(0x3f533332, 0x00000000), (0x3f266664, 0x3f800000), (0x3ef3332c, 0x40000000), (0x3e999990, 0x40400000)]),
+            (1, false, 6, [(0x3f733328, 0x40800000), (0x3f666650, 0x41100000), (0x3f599978, 0x41600000), (0x3f4ccca0, 0x41980000)]),
+            (1, true, 1, [(0x3f266664, 0x3f800000), (0x3e999990, 0x40400000), (0x3f73332c, 0x40800000), (0x3f199990, 0x40c00000)]),
+            (1, true, 6, [(0x3f666650, 0x41100000), (0x3f4ccca0, 0x41980000), (0x3f3332f0, 0x41e80000), (0x3f199940, 0x421c0000)]),
+            (2, false, 1, [(0x3f666666, 0x00000000), (0x3f4ccccc, 0x3f800000), (0x3f333332, 0x40000000), (0x3f199998, 0x40400000)]),
+            (2, false, 6, [(0x3eccccc0, 0x40a00000), (0x3f4cccc0, 0x41200000), (0x3e4ccc80, 0x41800000), (0x3f199980, 0x41a80000)]),
+            (2, true, 1, [(0x3f4ccccc, 0x3f800000), (0x3f199998, 0x40400000), (0x3eccccc8, 0x40a00000), (0x3e4cccc0, 0x40e00000)]),
+            (2, true, 6, [(0x3f4cccc0, 0x41200000), (0x3f199980, 0x41a80000), (0x3ecccc80, 0x42000000), (0x3e4ccc00, 0x422c0000)]),
+            (3, false, 1, [(0x3f799999, 0x00000000), (0x3f733332, 0x3f800000), (0x3f6cccca, 0x40000000), (0x3f666662, 0x40400000)]),
+            (3, false, 6, [(0x3f599990, 0x40a00000), (0x3f333320, 0x41300000), (0x3f0cccb0, 0x41880000), (0x3ecccc80, 0x41b80000)]),
+            (3, true, 1, [(0x3f733332, 0x3f800000), (0x3f666664, 0x40400000), (0x3f599994, 0x40a00000), (0x3f4cccc4, 0x40e00000)]),
+            (3, true, 6, [(0x3f333320, 0x41300000), (0x3ecccc80, 0x41b80000), (0x3dcccb00, 0x420c0000), (0x3f4ccc80, 0x42380000)]),
+        ];
+        for (learned, crowned, crew, expected) in CASES {
+            let mut game = Game::new(7, 0, 0, 1, 0);
+            assert!(game.configure_crowns(false));
+            game.players[0].epoch = 13;
+            for k in 160..164 { game.researched[0][k / 32] |= 1 << (k % 32); }
+            for k in [37, 97, 157].into_iter().take(learned) {
+                game.researched[0][k / 32] |= 1 << (k % 32);
+            }
+            game.rebuild_modifiers(0, false);
+            game.tick = 20;
+            game.tick_crowns();
+            assert_eq!(game.crown_holder(ECONOMIC).unwrap().owner, 0);
+            assert!(game.can_choose_crown_power(ECONOMIC, 8));
+            if crowned {
+                assert!(game.choose_crown_power(ECONOMIC, 8));
+                assert!(!game.choose_crown_power(ECONOMIC, 8));
+            }
+            assert_eq!(game.crown_generation_scale(0, OIL_RIG, 7), if crowned { 2.0 } else { 1.0 });
+            let index = game.spawn(OIL_RIG, 0, 80.0, 80.0);
+            let handle = game.h(index);
+            game.rect_native_ids = Some(Default::default());
+            game.rect_native_ids.as_mut().unwrap().bind(handle, 4);
+            let mut actor = game.ents[index];
+            actor.ncargo = crew; actor.carry = 0.0;
+            game.set_resource(0, 7, 0.0);
+            for (pulse, (carry, bank)) in expected.into_iter().enumerate() {
+                game.tick = 23 + 31 * pulse as u32;
+                assert!(game.update_rect_oil_economy(index, &mut actor, f32::from_bits(0x3d088888)));
+                assert_eq!((actor.carry.to_bits(), game.resource(0, 7).to_bits()), (carry, bank));
+            }
+            let fraction = actor.carry;
+            game.ents[index] = actor;
+            for k in 160..164 { game.researched[0][k / 32] &= !(1 << (k % 32)); }
+            game.tick = 6040;
+            game.tick_crowns();
+            assert_eq!(game.crown_power(ECONOMIC), None);
+            assert_eq!(game.crown_generation_scale(0, OIL_RIG, 7), 1.0);
+            assert_eq!(game.ents[index].carry, fraction);
+            actor = game.ents[index];
+            actor.carry = 0.0;
+            game.set_resource(0, 7, 0.0);
+            while game.tick.wrapping_add(0x08000004) as i32 % 31 != 0 { game.tick += 1; }
+            assert!(game.update_rect_oil_economy(index, &mut actor, f32::from_bits(0x3d088888)));
+            let off = CASES.iter().find(|(l, c, n, _)| *l == learned && !*c && *n == crew).unwrap().3[0];
+            assert_eq!((actor.carry.to_bits(), game.resource(0, 7).to_bits()), off);
+        }
+    }
 }

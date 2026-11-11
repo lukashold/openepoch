@@ -168,8 +168,9 @@ impl Game {
             // 0085E6C0 stores the Y displacement before adding world Y.
             let x = (f64::from(actor.x) + f64::from(actor.vx) * f64::from(dt)) as f32;
             let y = actor.y + actor.vy * dt;
-            actor.x = x.clamp(0.0, N as f32 - 1.0);
-            actor.y = y.clamp(0.0, N as f32 - 1.0);
+            let [width, height] = self.map.simulation_dimensions().map(|side| side as f32);
+            actor.x = x.clamp(0.0, width - 1.0);
+            actor.y = y.clamp(0.0, height - 1.0);
         }
         rolling
     }

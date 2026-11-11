@@ -6,6 +6,47 @@
 
 pub const N: usize = 256;
 pub const NN: usize = N * N;
+pub(crate) const LEGACY_REGION_CAPACITY: usize = 32;
+pub(crate) const REGION_CAPACITY: usize = RegionMask::BITS as usize;
+pub(crate) type RegionMask = u64;
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) struct MapLayout {
+    pub(crate) width: usize,
+    pub(crate) height: usize,
+    pub(crate) stride: usize,
+    pub(crate) rows: usize,
+}
+
+impl MapLayout {
+    const LEGACY: Self = Self { width: N, height: N, stride: N, rows: N };
+    #[cfg(feature = "ee2-authored-rect233")]
+    pub(crate) const DEATH_VALLEY2: Self = Self { width: 100, height: 300, stride: 128, rows: 512 };
+
+    #[inline]
+    pub(crate) fn index(self, x: usize, y: usize) -> usize { y * self.stride + x }
+
+    #[inline]
+    pub(crate) fn xy(self, tile: usize) -> [usize; 2] { [tile % self.stride, tile / self.stride] }
+
+    #[inline]
+    pub(crate) fn contains(self, x: i32, y: i32) -> bool {
+        (x as usize) < self.width && (y as usize) < self.height
+    }
+
+    #[inline]
+    pub(crate) fn contains_point(self, x: f32, y: f32) -> bool {
+        (0.0..self.width as f32).contains(&x) && (0.0..self.height as f32).contains(&y)
+    }
+
+    #[inline]
+    fn tile_of(self, x: f32, y: f32) -> usize {
+        self.index((x as i32).clamp(0, self.width as i32 - 1) as usize,
+            (y as i32).clamp(0, self.height as i32 - 1) as usize)
+    }
+
+    pub(crate) fn profile(self) -> u32 { u32::from(self != Self::LEGACY) }
+}
 
 pub const T_DEEP: u8 = 0;
 pub const T_SHALLOW: u8 = 1;
@@ -88,13 +129,14 @@ fn fbm(x: f32, y: f32, s: u32, oct: u32) -> f32 {
 
 pub struct Field {
     pub key: u32,
-    pub(crate) denied_territories: u32,
+    pub(crate) denied_territories: RegionMask,
     pub dir: Vec<u8>,
     pub ver: u32,
     pub used: u32,
 }
 
 pub struct Map {
+    pub(crate) layout: MapLayout,
     pub ter: Vec<u8>,
     pub h: Vec<f32>,
     pub res: Vec<u8>,
@@ -115,25 +157,31 @@ pub struct Map {
     pub tseeds: Vec<(f32, f32)>,
     /// Shared tile-edge borders, matching native neighbor pairs in 00723ba0.
     /// This graph is derived from the map, never serialized as mutable state.
-    pub territory_neighbors: [u32; 32],
-    /// Terrain elevation at tile corners, `(N + 1)^2` values, for the 3D view.
+    pub(crate) territory_neighbors: [RegionMask; REGION_CAPACITY],
+    /// Terrain elevation at padded tile corners, for the 3D view.
     pub hm: Vec<f32>,
     #[cfg(feature = "ee2-authored-valley37")]
     pub(crate) source_world: Option<Box<crate::native_valley37::Geometry>>,
+    #[cfg(feature = "ee2-authored-rect233")]
+    pub(crate) rect_surface_index: Vec<Option<usize>>,
 }
 
 #[inline]
 pub fn tile_of(x: f32, y: f32) -> usize {
-    let tx = (x as i32).clamp(0, N as i32 - 1) as usize;
-    let ty = (y as i32).clamp(0, N as i32 - 1) as usize;
-    ty * N + tx
+    MapLayout::LEGACY.tile_of(x, y)
 }
 
 impl Map {
     pub(crate) fn blank(seed: u32) -> Map {
+        Self::blank_with_layout(seed, MapLayout::LEGACY)
+    }
+
+    pub(crate) fn blank_with_layout(seed: u32, layout: MapLayout) -> Map {
+        assert_eq!(layout.stride * layout.rows, NN);
         let s0 = (N as f32 * 0.2) as usize;
         let s1 = N - s0;
         Map {
+            layout,
             ter: vec![0; NN],
             h: vec![0.0; NN],
             res: vec![0; NN],
@@ -150,18 +198,42 @@ impl Map {
             seed,
             terr: vec![0; NN],
             tseeds: Vec::new(),
-            territory_neighbors: [0; 32],
-            hm: vec![0.0; (N + 1) * (N + 1)],
+            territory_neighbors: [0; REGION_CAPACITY],
+            hm: vec![0.0; (layout.stride + 1) * (layout.rows + 1)],
             #[cfg(feature = "ee2-authored-valley37")]
             source_world: None,
+            #[cfg(feature = "ee2-authored-rect233")]
+            rect_surface_index: Vec::new(),
         }
     }
 
     pub(crate) fn world_dimensions(&self) -> [usize; 2] {
         #[cfg(feature = "ee2-authored-valley37")]
         if let Some(world) = &self.source_world { return [world.width, world.height]; }
-        [N, N]
+        self.simulation_dimensions()
     }
+
+    /// Keep the legacy square-coordinate behavior for authored Valley, whose
+    /// original play surface is separately bounded inside the square backing.
+    pub(crate) fn simulation_dimensions(&self) -> [usize; 2] { [self.layout.width, self.layout.height] }
+
+    #[inline]
+    pub(crate) fn tile_of(&self, x: f32, y: f32) -> usize { self.layout.tile_of(x, y) }
+
+    #[inline]
+    pub(crate) fn tile_xy(&self, tile: usize) -> [usize; 2] { self.layout.xy(tile) }
+
+    #[inline]
+    pub(crate) fn tile_center(&self, tile: usize) -> [f32; 2] {
+        self.tile_xy(tile).map(|axis| axis as f32 + 0.5)
+    }
+
+    #[inline]
+    pub(crate) fn tile_index(&self, x: usize, y: usize) -> usize { self.layout.index(x, y) }
+
+    pub(crate) fn backing_dimensions(&self) -> [usize; 2] { [self.layout.stride, self.layout.rows] }
+
+    pub(crate) fn corner_stride(&self) -> usize { self.layout.stride + 1 }
 
     pub fn new(seed: u32, players: usize) -> Map {
         Self::generate(seed, players, false)
@@ -237,19 +309,30 @@ impl Map {
     }
 
     pub fn rebuild_territory_neighbors(&mut self) {
-        self.territory_neighbors = [0; 32];
-        for y in 0..N {
-            for x in 0..N {
-                let a = self.terr[y * N + x] as usize;
-                for b in [if x + 1 < N {self.terr[y*N+x+1] as usize} else {a},
-                          if y + 1 < N {self.terr[(y+1)*N+x] as usize} else {a}] {
-                    if a != b {
+        self.territory_neighbors = [0; REGION_CAPACITY];
+        let MapLayout { width, height, stride, .. } = self.layout;
+        for y in 0..height {
+            for x in 0..width {
+                let tile = y * stride + x;
+                let a = self.terr[tile] as usize;
+                for b in [if x + 1 < width {self.terr[tile + 1] as usize} else {a},
+                          if y + 1 < height {self.terr[tile + stride] as usize} else {a}] {
+                    if a != b && a < self.tseeds.len() && b < self.tseeds.len() {
                         self.territory_neighbors[a] |= 1 << b;
                         self.territory_neighbors[b] |= 1 << a;
                     }
                 }
             }
         }
+    }
+
+    pub(crate) fn region_storage_len(&self) -> usize {
+        if self.tseeds.len() > LEGACY_REGION_CAPACITY { REGION_CAPACITY } else { LEGACY_REGION_CAPACITY }
+    }
+
+    pub(crate) fn region_at(&self, tile: usize) -> Option<usize> {
+        let id = usize::from(self.terr[tile]);
+        (id < self.tseeds.len()).then_some(id)
     }
 
     fn elev(&self, i: usize) -> f32 {
@@ -282,11 +365,17 @@ impl Map {
     pub fn height(&self, x: f32, y: f32) -> f32 {
         #[cfg(feature = "ee2-authored-valley37")]
         if let Some(world) = &self.source_world {
-            return world.surface_height(&world.heights, x.clamp(0.0, world.width as f32), y.clamp(0.0, world.height as f32));
+            let x = x.clamp(0.0, world.width as f32);
+            let y = y.clamp(0.0, world.height as f32);
+            #[cfg(feature = "ee2-authored-rect233")]
+            if self.layout == MapLayout::DEATH_VALLEY2 {
+                return crate::native_valley37::rectangular_world::source_height(world, &self.rect_surface_index, x, y, true) as f32;
+            }
+            return world.surface_height(&world.heights, x, y);
         }
-        let hn = N + 1;
-        let x = x.clamp(0.0, N as f32 - 0.001);
-        let y = y.clamp(0.0, N as f32 - 0.001);
+        let hn = self.corner_stride();
+        let x = x.clamp(0.0, self.layout.width as f32 - 0.001);
+        let y = y.clamp(0.0, self.layout.height as f32 - 0.001);
         let (xi, yi) = (x as usize, y as usize);
         let (fx, fy) = (x - xi as f32, y - yi as f32);
         let i = yi * hn + xi;
@@ -477,13 +566,12 @@ impl Map {
     }
 
     pub fn upd_pass(&mut self, i: usize) {
-        #[cfg(feature = "ee2-authored-valley37")]
-        if let Some(world) = &self.source_world {
-            if i % N >= world.width || i / N >= world.height {
-                self.pass[0][i] = false;
-                self.pass[1][i] = false;
-                return;
-            }
+        let [x, y] = self.tile_xy(i);
+        let [width, height] = self.world_dimensions();
+        if x >= width || y >= height {
+            self.pass[0][i] = false;
+            self.pass[1][i] = false;
+            return;
         }
         let t = self.ter[i];
         let b = self.blocked[i];
@@ -493,7 +581,7 @@ impl Map {
 
     /// Base colour of a tile for the terrain texture / minimap. Alpha marks land (255) vs water (0).
     pub fn recolor(&mut self, i: usize) {
-        let (x, y) = ((i % N) as i32, (i / N) as i32);
+        let [x, y] = self.tile_xy(i).map(|axis| axis as i32);
         let n = (hash(x, y, 77) & 255) as f32 / 255.0 - 0.5;
         let h = self.h[i];
         let (r, g, b, a) = match self.ter[i] {
@@ -523,21 +611,21 @@ impl Map {
         self.snap_permitted(x, y, dc, 0)
     }
 
-    pub(crate) fn snap_permitted(&self, x: f32, y: f32, dc: usize, denied_territories: u32) -> usize {
-        let t = tile_of(x, y);
+    pub(crate) fn snap_permitted(&self, x: f32, y: f32, dc: usize, denied_territories: RegionMask) -> usize {
+        let t = self.tile_of(x, y);
         if self.pass[dc][t] && self.permits_territory(t, denied_territories) {
             return t;
         }
-        let (cx, cy) = ((t % N) as i32, (t / N) as i32);
+        let [cx, cy] = self.tile_xy(t).map(|axis| axis as i32);
         for r in 1..40i32 {
             let mut best = usize::MAX;
             let mut bd = i32::MAX;
             for k in -r..=r {
                 for &(nx, ny) in &[(cx + k, cy - r), (cx + k, cy + r), (cx - r, cy + k), (cx + r, cy + k)] {
-                    if nx < 0 || ny < 0 || nx >= N as i32 || ny >= N as i32 {
+                    if !self.layout.contains(nx, ny) {
                         continue;
                     }
-                    let ni = ny as usize * N + nx as usize;
+                    let ni = self.tile_index(nx as usize, ny as usize);
                     let d = (nx - cx).pow(2) + (ny - cy).pow(2);
                     if self.pass[dc][ni] && d < bd && self.permits_territory(ni, denied_territories) {
                         bd = d;
@@ -557,16 +645,16 @@ impl Map {
         if self.res[t] == kind {
             return Some(t);
         }
-        let (cx, cy) = ((t % N) as i32, (t / N) as i32);
+        let [cx, cy] = self.tile_xy(t).map(|axis| axis as i32);
         for r in 1..=maxr {
             let mut best = None;
             let mut bd = i32::MAX;
             for k in -r..=r {
                 for &(nx, ny) in &[(cx + k, cy - r), (cx + k, cy + r), (cx - r, cy + k), (cx + r, cy + k)] {
-                    if nx < 0 || ny < 0 || nx >= N as i32 || ny >= N as i32 {
+                    if !self.layout.contains(nx, ny) {
                         continue;
                     }
-                    let ni = ny as usize * N + nx as usize;
+                    let ni = self.tile_index(nx as usize, ny as usize);
                     let d = (nx - cx).pow(2) + (ny - cy).pow(2);
                     if self.res[ni] == kind && d < bd {
                         bd = d;
@@ -581,20 +669,17 @@ impl Map {
         None
     }
 
-    pub(crate) fn permits_territory(&self, tile: usize, denied_territories: u32) -> bool {
+    pub(crate) fn permits_territory(&self, tile: usize, denied_territories: RegionMask) -> bool {
         denied_territories.checked_shr(u32::from(self.terr[tile])).unwrap_or(0) & 1 == 0
     }
 
-    fn build_field(&mut self, slot: usize, key: u32, denied_territories: u32) {
-        let goal = (key & 0xffff) as usize;
-        let dc = (key >> 16) as usize & 1;
-        let mut dir = std::mem::take(&mut self.fields[slot].dir);
+    fn fill_field(
+        layout: MapLayout, pass: &[bool], regions: &[u8], goal: usize, denied_territories: RegionMask,
+        dir: &mut Vec<u8>, q: &mut Vec<u32>,
+    ) {
         dir.clear();
         dir.resize(NN, 255);
-        let pass = &self.pass[dc];
-        let regions = &self.terr;
         let allowed = |tile: usize| denied_territories.checked_shr(u32::from(regions[tile])).unwrap_or(0) & 1 == 0;
-        let q = &mut self.queue;
         q.clear();
         if allowed(goal) {
             q.push(goal as u32);
@@ -604,20 +689,20 @@ impl Map {
         while head < q.len() {
             let c = q[head] as usize;
             head += 1;
-            let (cx, cy) = ((c % N) as i32, (c / N) as i32);
+            let [cx, cy] = layout.xy(c).map(|axis| axis as i32);
             for k in 0..8 {
                 let (dx, dy) = DIRS[k];
                 let (nx, ny) = (cx + dx, cy + dy);
-                if nx < 0 || ny < 0 || nx >= N as i32 || ny >= N as i32 {
+                if !layout.contains(nx, ny) {
                     continue;
                 }
-                let ni = ny as usize * N + nx as usize;
+                let ni = layout.index(nx as usize, ny as usize);
                 if dir[ni] != 255 || !pass[ni] || !allowed(ni) {
                     continue;
                 }
                 if k >= 4 {
-                    let x_side = cy as usize * N + nx as usize;
-                    let y_side = ny as usize * N + cx as usize;
+                    let x_side = layout.index(nx as usize, cy as usize);
+                    let y_side = layout.index(cx as usize, ny as usize);
                     if !(pass[x_side] && pass[y_side] && allowed(x_side) && allowed(y_side)) {
                         continue;
                     }
@@ -627,6 +712,29 @@ impl Map {
                 q.push(ni as u32);
             }
         }
+    }
+
+    #[cfg(feature = "ee2-rect273-builder-waypoint")]
+    pub(crate) fn land_component(&self, tile: usize, denied: RegionMask) -> Vec<u8> {
+        let mut directions = Vec::new();
+        Self::fill_field(self.layout, &self.pass[0], &self.terr, tile, denied, &mut directions, &mut Vec::new());
+        directions
+    }
+
+    /// The same admitted, corner-safe movement graph used by flow fields,
+    /// without changing their shared cache, per-tick budget or LRU order.
+    #[cfg(feature = "ee2-rect291-ai-scout")]
+    pub(crate) fn scouting_component(&self, dc: usize, tile: usize, denied: RegionMask) -> Vec<u8> {
+        let mut directions = Vec::new();
+        Self::fill_field(self.layout, &self.pass[dc], &self.terr, tile, denied, &mut directions, &mut Vec::new());
+        directions
+    }
+
+    fn build_field(&mut self, slot: usize, key: u32, denied_territories: RegionMask) {
+        let goal = (key & 0xffff) as usize;
+        let dc = (key >> 16) as usize & 1;
+        let mut dir = std::mem::take(&mut self.fields[slot].dir);
+        Self::fill_field(self.layout, &self.pass[dc], &self.terr, goal, denied_territories, &mut dir, &mut self.queue);
         let f = &mut self.fields[slot];
         f.dir = dir;
         f.key = key;
@@ -636,7 +744,7 @@ impl Map {
 
     /// Direction index (0..8) to walk from `tile` toward the goal encoded in `key`,
     /// 8 at the goal, 255 if unknown/unreachable. `slot` caches the field location.
-    pub fn flow(&mut self, slot: &mut u16, key: u32, tile: usize, tick: u32, denied_territories: u32) -> u8 {
+    pub fn flow(&mut self, slot: &mut u16, key: u32, tile: usize, tick: u32, denied_territories: RegionMask) -> u8 {
         let mut s = *slot as usize;
         if s >= FIELD_SLOTS || self.fields[s].key != key || self.fields[s].denied_territories != denied_territories {
             s = usize::MAX;

@@ -7,6 +7,8 @@ pub struct SourceForestGrid {
     height: usize,
     stride: usize,
     planes: [Vec<u32>; 2],
+    #[cfg(feature = "ee2-valley163-forest-qa")]
+    pub(super) source_rows: Vec<super::forest_registry::ForestRow>,
 }
 
 impl SourceForestGrid {
@@ -21,6 +23,8 @@ impl SourceForestGrid {
             height,
             stride,
             planes,
+            #[cfg(feature = "ee2-valley163-forest-qa")]
+            source_rows: Vec::new(),
         })
     }
 

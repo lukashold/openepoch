@@ -152,7 +152,7 @@ impl Game {
         }
         let (velocity, speed) = steer(position, flight.velocity, aim, dt);
         let next = integrate(position, velocity, dt);
-        if !(0.0..N as f32).contains(&next[0]) || !(0.0..N as f32).contains(&next[1]) {
+        if !self.map.layout.contains_point(next[0], next[1]) {
             p.tgt = NONE;
             return GuidedStep::Discard;
         }

@@ -145,7 +145,7 @@ impl Game {
         let mut city = [NONE; 4];
         for (seat, slot) in city[..self.nplayers].iter_mut().enumerate() {
             let (x, y) = self.map.starts[seat];
-            let territory = self.map.terr[tile_of(x as f32, y as f32)] as usize;
+            let territory = self.map.terr[self.map.tile_of(x as f32, y as f32)] as usize;
             let handle = self.territory.claims[territory];
             let actor = &self.ents[self.get(handle)?];
             if actor.def != TC || actor.team as usize != seat || actor.built < 1.0 { return None; }
@@ -198,7 +198,7 @@ impl Game {
         // 0071B650 resolves each registered Capitol's current territory, even after capture.
         self.capitols.is_some_and(|rule| rule.city.iter().filter_map(|&handle| self.get(handle)).any(|index| {
             let city = &self.ents[index];
-            u32::from(self.map.terr[tile_of(city.x, city.y)]) == territory
+            u32::from(self.map.terr[self.map.tile_of(city.x, city.y)]) == territory
         }))
     }
 

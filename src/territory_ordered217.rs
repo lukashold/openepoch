@@ -23,14 +23,14 @@ impl ClaimsAtRegion {
 }
 
 impl Game {
-    fn ordered_claim_candidates(&self) -> [ClaimsAtRegion; 32] {
+    fn ordered_claim_candidates(&self) -> [ClaimsAtRegion; REGION_CAPACITY] {
         let parthenon = self.completed_wonder_owners(crate::wonders61::PARTHENON);
         let mut result = core::array::from_fn(|_| ClaimsAtRegion::default());
         for (index, actor) in self.ents[..self.high].iter().enumerate() {
             if !Self::territory_control_ready(actor) || !self.territory_seat_active(actor.team) {
                 continue;
             }
-            let id = usize::from(self.map.terr[tile_of(actor.x, actor.y)]);
+            let Some(id) = self.map.region_at(self.map.tile_of(actor.x, actor.y)) else { continue; };
             let region = &mut result[id];
             let seat = usize::from(actor.team);
             let owner_bit = 1 << seat;
@@ -62,7 +62,7 @@ impl Game {
     pub(super) fn update_ordered_territories(&mut self, restoring: bool, advance: bool) {
         if restoring {
             // TER1 describes a checkpoint. Reconstruct ownership without running a game pulse.
-            let mut owners = [TERR_NONE; 32];
+            let mut owners = [TERR_NONE; REGION_CAPACITY];
             for (id, owner) in owners.iter_mut().enumerate().take(self.map.tseeds.len()) {
                 *owner = self.ordered_claim_owner(id, self.territory.claims[id]).unwrap_or(TERR_NONE);
             }
@@ -77,7 +77,7 @@ impl Game {
         let candidates = self.ordered_claim_candidates();
         let hill = self.koth_territory();
         let command_counts = (!advance).then(|| self.players.each_ref().map(|player| player.terr));
-        // The portable IDs are below 32. Their order matches the source's 64 region hash buckets.
+        // The generated map's compact IDs match its original bucket order.
         for (id, candidates) in candidates.iter().enumerate().take(self.map.tseeds.len()) {
             let prior = self.territory.claims[id];
             let previous_phase = if disputed_owner(prior).is_some() { 2 }
@@ -202,6 +202,57 @@ mod tests {
         game.towner[id] = seat;
         game.players[seat as usize].terr += 1;
         index
+    }
+
+    #[test]
+    fn high_region_claims_swaps_batch_gifts_and_unassigned_tiles() {
+        let mut game = scenario();
+        game.map.tseeds.resize(43, (0.0, 0.0));
+        for (id, x) in [(31, 80), (32, 90), (42, 100)] {
+            game.map.tseeds[id] = (x as f32 + 0.5, 80.5);
+            game.map.terr[80 * N + x] = id as u8;
+        }
+        established(&mut game, 0, 0);
+        established(&mut game, 1, 1);
+        established(&mut game, 31, 0);
+        established(&mut game, 32, 1);
+        game.map.territory_neighbors[42] = 1 << 32;
+        game.map.territory_neighbors[32] = 1 << 42;
+        let last = place(&mut game, 42, 1, TC);
+        let unassigned = tile_of(110.5, 80.5);
+        game.map.terr[unassigned] = u8::MAX;
+        let no_region = game.spawn(TC, 2, 110.5, 80.5);
+        assert_ne!(no_region, NOIDX);
+        game.rebuild_territories();
+        assert_eq!(game.towner[42], 1);
+        assert_eq!(acquired_owner(game.territory.claims[42]), Some(1));
+        assert_eq!(game.players[2].terr, 0);
+        game.rebuild_territories();
+        assert_eq!(game.territory.claims[42], game.h(last));
+        assert_eq!(game.territory_owner_at(unassigned), TERR_NONE);
+        game.vis.fill(255);
+        game.terr_tex();
+        assert_eq!(&game.terr_rgba[unassigned * 4..unassigned * 4 + 4], &[255, 0, 0, 255]);
+        let mut json = String::new();
+        game.append_territory_ui(&mut json);
+        assert!(json.contains("\"id\":42,"));
+        assert!(!json.contains("\"id\":255,"));
+
+        assert!(game.apply_diplomacy(0, 1, 0, 0, 0.0));
+        assert!(game.apply_diplomacy(1, 0, 3, 0, 0.0));
+        use crate::cmd::C_TERRITORY;
+        game.apply(0, C_TERRITORY, 31.0, 42.0, 1 | (1 << 8), &[]);
+        assert!(game.territory.offers[1].active);
+        game.apply(1, C_TERRITORY, -1.0, -1.0, 2 << 8, &[]);
+        assert_eq!((game.towner[31], game.towner[42]), (1, 0));
+
+        game.apply(1, C_TERRITORY, -1.0, -1.0, 5 << 8, &[32, 32]);
+        assert_eq!(game.towner[32], 1);
+        game.apply(1, C_TERRITORY, -1.0, -1.0, 5 << 8, &[32, 31]);
+        assert_eq!((game.towner[31], game.towner[32]), (0, 0));
+        game.apply(0, C_TERRITORY, 42.0, -1.0, 1, &[]);
+        assert_eq!(game.towner[42], 1);
+        assert_eq!(game.ents[last].team, 1);
     }
 
     #[test]

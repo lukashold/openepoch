@@ -3,16 +3,27 @@
 use crate::{defs::*,game::*};
 impl Game{
  pub(crate) fn configure_match_settings(&mut self,packed:u32,pop:u32,supplies:u32,epoch:u32)->bool{
-  if packed&0xffff0000!=0||![250,500,1000].contains(&pop)||supplies>4||epoch>MAX_EPOCH as u32||self.tick!=0||self.bench!=0||!self.civ_setup_open||!self.outbox.is_empty()||!self.inbox.is_empty()||self.cheats_enabled||self.instant_build||self.god_mode||self.fog_inverted{return false;}
+  #[cfg(feature = "ee2-rect285-starting-supplies")]
+  let original_supplies = self.map.source_world.is_some() && !self.net;
+  #[cfg(not(feature = "ee2-rect285-starting-supplies"))]
+  let original_supplies = false;
+  if packed&0xffff0000!=0||![250,500,1000].contains(&pop)||supplies>4+u32::from(original_supplies)||epoch>MAX_EPOCH as u32||self.tick!=0||self.bench!=0||!self.civ_setup_open||!self.outbox.is_empty()||!self.inbox.is_empty()||self.cheats_enabled||self.instant_build||self.god_mode||self.fog_inverted{return false;}
   let civs=core::array::from_fn(|i|((packed>>(4*i))&15)as u8);
   if self.civilizations.iter().any(|&c|c!=crate::civ8_runtime::LEGACY_NEUTRAL)||civs.iter().any(|&c|c>crate::civ8_runtime::LEGACY_NEUTRAL)||civs[self.nplayers..].iter().any(|&c|c!=crate::civ8_runtime::LEGACY_NEUTRAL)||self.ents[..self.high].iter().any(|e|e.alive&&((DEFS[e.def as usize].building&&e.qn>0)||e.order!=O_IDLE)){return false;}
   // Nothing above mutates; configure_civilizations performs its own complete
   // validation before commit. No fallible operation follows the commit.
   if !self.configure_civilizations(civs){return false;}
   let stocks=match supplies{0=>[400.0,400.0,200.0],1=>[800.0,800.0,400.0],2=>[15000.0,15000.0,7500.0],_=>[200.0,200.0,0.0]};
+  let starting_technology = match supplies {
+      // 008849C0 writes the nearest DbResourceLevel row at or before the start.
+      2 => (16 + 4 * (epoch / 3)) as f32,
+      5 => 8.0,
+      _ => 0.0,
+  };
   for t in 0..self.nplayers{
    self.players[t].population_limit=pop;self.players[t].res=stocks;
-   let common=match supplies{2=>10000.0,3|4=>100.0,_=>stocks[1]};let stone=if supplies==4{500.0}else{common};self.extra_resources[t]=[stone,common,stocks[2],stocks[2],stocks[2],stocks[2]];
+   let common=match supplies{2=>10000.0,3..=5=>100.0,_=>stocks[1]};let stone=if supplies==4{500.0}else{common};self.extra_resources[t]=[stone,common,stocks[2],stocks[2],stocks[2],stocks[2]];
+   if original_supplies { self.research_points[t] = starting_technology; }
    let previous=self.players[t].epoch;self.players[t].epoch=epoch as u8;self.rebuild_modifiers(t as u8,true);self.apply_paid_main(t as u8,previous);
   }
   self.build_grid();self.update_fog();true

@@ -210,7 +210,7 @@ const valleyRequested=rulesProfile.id==='up15'&&(!!valleyManifest||['1','archive
 try{
   if(valleyRequested){
     const requiredExports=valleyNormal?[...rulesProfile.requiredExports,'valley76_commit','valley71_force_attack_at','valley71_neutral_opening','configure_late_population']:rulesProfile.requiredExports;
-    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=resource-epochs171'};
+    const previewRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-valley-preview.wasm?v=territory-order-valley219'};
     try{wasm=await loadRulesWasm(previewRules,import.meta.url);}catch{/* The ordinary ruleset remains available. */}
   }
   wasm??=await loadRulesWasm(rulesProfile,import.meta.url);
@@ -923,6 +923,7 @@ if(originalEnabled&&(!originalAssets.enabled||originalModels.available.size<67))
 }
 const valleyPreview=await loadValleyPreview({requested:valleyRequested&&originalEnabled,
   authoredRequested:valleyMode==='archive-qa'||valleyNeutralRequested,neutralRequested:valleyNeutralRequested,
+  routeRequested:valleyNormal&&valleyParams.get('valleyRoute')==='native',
   requireAuthored:valleyNormal,manifest:valleyManifest,wasm,gl,teams:TEAM,lighting:originalModels.lighting,territoryBorders,
   onUnavailable:error=>console.warn('Valley-Vorschau:',error.message)});
 $('valley-preview-menu').hidden=!valleyPreview;

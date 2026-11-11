@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenEpoch — browser RTS in Rust + WebAssembly</title>
+<meta name="description" content="OpenEpoch: lokales Echtzeit-Strategiespiel mit Scharmützeln, Forschung und Epochen von der Steinzeit bis in die Zukunft.">
+<link rel="stylesheet" href="skirmish-menu.css?v=native82-menu">
+<link rel="stylesheet" href="original-game-options.css?v=native37">
+<link rel="stylesheet" href="original-game-settings.css?v=native38audio">
+<link rel="stylesheet" href="fullmap.css?v=native20">
+<style>
+  :root { --bg:#10151b; --panel:#1a222bee; --line:#33414f; --text:#e6edf3; --dim:#93a1b0; --acc:#4aa3ff; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--text); font:14px/1.35 system-ui, "Segoe UI", sans-serif; overflow:hidden; user-select:none; }
+  canvas#gl { position:fixed; inset:0; width:100%; height:100%; display:block; cursor:default; }
+  #top { position:fixed; top:0; left:0; right:0; height:36px; display:flex; align-items:center; gap:18px; padding:0 14px; white-space:nowrap; overflow:hidden; background:var(--panel); border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums; }
+  #top b { font-weight:600; }
+  #top .r { display:flex; align-items:center; gap:6px; }
+  #top .dot { width:11px; height:11px; border-radius:50%; display:inline-block; }
+  #top .sp { flex:1; }
+  #top .dim { color:var(--dim); }
+  #top button { background:#26323e; color:var(--text); border:1px solid var(--line); border-radius:5px; padding:3px 9px; cursor:pointer; font:inherit; }
+  #top button:hover { border-color:#dec38c; background:#3b4650; }
+  #top { background:linear-gradient(180deg,#202b35f5,#111b23f5); border-bottom:1px solid #957e5a; box-shadow:0 4px 18px #0008; }
+  #bottom { background:linear-gradient(180deg,#26333bea,#101a23f7); border-top:1px solid #a48b61; box-shadow:0 -5px 25px #0007; }
+  #mini { border:2px solid #9e8969; box-shadow:0 0 0 2px #18252e; }
+  .act { background:linear-gradient(145deg,#34444c,#18242c); border-color:#59625d; }
+  .act:hover { border-color:#e0bf78; box-shadow:0 0 12px #d5ad6044; }
+  #epoch { color:#f0d497; letter-spacing:.04em; }
+  #bottom { position:fixed; left:0; right:0; bottom:0; height:170px; display:flex; gap:10px; padding:8px; background:var(--panel); border-top:1px solid var(--line); }
+  #crown-victory-hud {position:absolute;left:0;top:0;transform:translateY(-100%);padding:6px 10px;border:1px solid var(--line);background:#202020e8;color:white;max-width:100vw;}
+  #crown-victory-hud[hidden], #crown-victory-rows[hidden] {display:none;}
+  #hotspot-status-hud {position:absolute;left:8px;bottom:156px;padding:6px 10px;border:1px solid var(--line);background:#202020e8;color:white;}
+  #hotspot-status-hud[hidden],#hotspot-status-rows[hidden] {display:none;}
+  #hotspot-status-rows {padding:4px 0;min-width:185px;white-space:pre-line;}
+  .crown-victory-row {display:flex;align-items:center;gap:8px;min-height:var(--crown-status-icon,32px);white-space:normal;}
+  .crown-victory-row[data-local] {font-weight:bold;}
+  .crown-victory-row .crown-victory-icon {flex:none;width:var(--crown-status-icon,32px);height:var(--crown-status-icon,32px);background:center/100% 100% no-repeat;text-align:center;}
+  .crown-victory-icon.has-art {font-size:0;}
+  #mini { width:154px; height:154px; border:1px solid var(--line); background:#000; image-rendering:pixelated; cursor:crosshair; flex:none; }
+  #info { width:250px; flex:none; overflow:hidden; }
+  #info.has-trade-status {position:relative;}
+  #info.has-trade-status #info-content {max-height:calc(100% - 42px);overflow:hidden;}
+  #trade-wait-status {position:absolute;left:10px;right:10px;bottom:8px;height:34px;display:flex;align-items:center;padding:0 2px;background:#17222c center/100% 100% no-repeat;color:#fff;font-size:12px;}
+  #trade-wait-status[hidden] {display:none;}
+  #info h3 { margin:0 0 4px; font-size:16px; white-space:pre-line; }
+  #info .hp { height:8px; background:#0b0f13; border:1px solid var(--line); border-radius:4px; overflow:hidden; margin:4px 0; }
+  #info .hp i { display:block; height:100%; background:#3fb950; }
+  #info .priest-power i { background:#00f; }
+  #info .types { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
+  #info .types span { background:#26323e; border:1px solid var(--line); border-radius:4px; padding:1px 6px; font-size:12px; }
+  #info .q { display:flex; gap:4px; margin-top:6px; align-items:center; }
+  #info .q canvas { width:30px; height:30px; background:#0b0f13; border:1px solid var(--line); border-radius:4px; }
+  #acts { flex:1; display:grid; grid-template-columns:repeat(auto-fill, 66px); grid-auto-rows:74px; gap:6px; align-content:start; overflow:auto; }
+  #acts.has-market,#bottom.ee2-native-bottom #acts.has-market {grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:minmax(25px,1fr);gap:2px;align-content:stretch;}
+  .market-grid {display:grid;grid-column:1 / -1;grid-row:span 3;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:2px;min-width:0;}
+  #bottom #acts.has-market > .act canvas {width:20px;height:20px;}
+  .act { position:relative; background:#222c37; border:1px solid var(--line); border-radius:6px; cursor:pointer; padding:2px; text-align:center; color:var(--text); font:inherit; }
+  .act:hover { border-color:var(--acc); }
+  .act.no { opacity:.45; }
+  .act canvas { width:44px; height:44px; display:block; margin:0 auto; }
+  .act small { display:block; font-size:10px; line-height:1.1; white-space:pre-line; overflow:hidden; text-overflow:ellipsis; }
+  .act kbd { position:absolute; top:1px; left:4px; font:600 10px system-ui; color:var(--dim); }
+  #tip { position:fixed; bottom:178px; left:430px; max-width:420px; background:#0d1218f2; border:1px solid var(--line); border-radius:6px; padding:8px 10px; display:none; pointer-events:none; }
+  #tip b { font-size:15px; }
+  #tip .c { color:#f0c674; }
+  #box { position:fixed; border:1px solid #9dff9d; background:#9dff9d22; display:none; pointer-events:none; }
+  #trade-route-caption {position:fixed;z-index:4;width:100px;height:24px;transform:translate(-50%,16px);color:#fff;font:600 14px/24px system-ui;text-align:center;text-shadow:0 1px 2px #000,1px 0 #000,-1px 0 #000,0 -1px #000;pointer-events:none;}
+  .trade-route-icon {display:block;width:44px;height:44px;margin:auto;background:center/contain no-repeat;font-size:28px;line-height:44px;}
+  .air-mission-icon {display:block;width:57px;height:44px;margin:auto;background:center/contain no-repeat;font-size:28px;line-height:44px;}
+  .air-mission-action.air-mission-auto {border-color:#d2a866;}
+  #air-mission-caption {position:fixed;left:50%;top:44px;z-index:4;transform:translateX(-50%);padding:4px 10px;background:#182633ee;border:1px solid #ad9466;color:#fff;pointer-events:none;}
+  #toast { position:fixed; top:50px; left:50%; transform:translateX(-50%); background:#0d1218e6; border:1px solid var(--line); border-radius:6px; padding:6px 14px; opacity:0; transition:opacity .25s; pointer-events:none; }
+  #perf { color:var(--dim); font-size:12px; text-align:right; overflow:hidden; text-overflow:ellipsis; flex-shrink:10; }
+  #top button { flex:none; }
+  #menu { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:radial-gradient(ellipse at center, #1c2733 0%, #0b0f13 80%); z-index:10; }
+  #shell-movie { position:absolute; inset:0; width:100%; height:100%; object-fit:fill; pointer-events:none; }
+  #menu .card { width:min(640px, 92vw); max-height:94vh; overflow:auto; background:#161d25; border:1px solid var(--line); border-radius:12px; padding:26px 30px; user-select:text; }
+  #menu .card { position:relative; }
+  #menu h1 { margin:0; font-size:38px; letter-spacing:1px; }
+  #menu h1 span { color:var(--acc); }
+  #menu p { color:var(--dim); margin:6px 0 16px; }
+  #menu .row { display:flex; gap:10px; align-items:center; margin:10px 0; flex-wrap:wrap; }
+  #menu label { color:var(--dim); width:96px; }
+  #menu select, #menu input { background:#0b0f13; color:var(--text); border:1px solid var(--line); border-radius:6px; padding:7px 9px; font:inherit; }
+  #menu .map-options label {width:120px;flex:none;}
+  #menu .map-options select {min-width:0;max-width:100%;flex:1 1 260px;}
+  #menu button { background:var(--acc); color:#04121f; border:0; border-radius:7px; padding:10px 18px; font:600 15px system-ui; cursor:pointer; }
+  #menu button.alt { background:#26323e; color:var(--text); border:1px solid var(--line); }
+  #mp { display:none; border:1px solid var(--line); border-radius:8px; padding:4px 14px 8px; margin:8px 0; }
+  #mp.wide-fresh-room > :not(#huge10-room) {display:none;}
+  #huge10-room p {margin:6px 0;}
+  #play,#continue,#previous-save {display:none!important;}
+  #mp textarea { width:100%; background:#0b0f13; color:var(--text); border:1px solid var(--line); border-radius:6px; padding:6px; font:11px ui-monospace, monospace; resize:vertical; word-break:break-all; }
+  #mpstatus { color:var(--dim); font-size:13px; margin:6px 0; }
+  #mp-roster { border-top:1px solid var(--line); margin:8px 0; padding:8px 0 0; }
+  #mp-roster fieldset { border:1px solid var(--line); border-radius:6px; margin:6px 0; padding:8px; }
+  #mp-roster summary { cursor:pointer; }
+  #menu button.alt { padding:8px 14px; font-size:14px; }
+  #camera-tools {position:fixed;top:45px;right:12px;display:flex;gap:3px;z-index:3;}
+  #camera-tools[hidden]{display:none;}
+  #mp-checkpoint-download {position:fixed;top:84px;right:12px;z-index:6;padding:8px 12px;background:#182329ed;color:#e9e7cb;border:1px solid #88917b;border-radius:3px;cursor:pointer;}
+  #mp-checkpoint-download[hidden]{display:none;}
+  #map-climate-row[hidden]{display:none;}
+  #territory-victory-status[hidden],#sole-survivor-status[hidden],#koth-victory-status[hidden]{display:none;}
+  #camera-tools button{background:#182329e8;color:#e9e7cb;border:1px solid #88917b;border-radius:3px;font:600 18px system-ui;padding:4px 11px;cursor:pointer;}
+  .dim { color:var(--dim); }
+  #menu table { border-collapse:collapse; font-size:13px; color:var(--dim); margin-top:10px; }
+  #menu td { padding:2px 14px 2px 0; vertical-align:top; }
+  #menu td:first-child { color:var(--text); white-space:nowrap; }
+  #menu a { color:var(--acc); }
+  #end { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:#000a; z-index:9; font-size:44px; font-weight:700; flex-direction:column; gap:18px; }
+  #end button { font:600 16px system-ui; padding:10px 18px; border-radius:7px; border:0; background:var(--acc); cursor:pointer; }
+  @media (max-width: 1350px) { #perf { display:none; } #top { gap:7px; padding:0 7px; font-size:12px; } #top button { padding:3px 5px; } }
+  #bottom { background:linear-gradient(180deg,#26333bf2,#101a23fa); border-top:1px solid #a48b61; box-shadow:0 -5px 25px #0007; }
+  #mini { border:2px solid #9e8969; box-shadow:0 0 0 2px #18252e; }
+  .act { background:linear-gradient(145deg,#34444c,#18242c); border-color:#59625d; }
+  .act:hover { border-color:#e0bf78; box-shadow:0 0 12px #d5ad6044; }
+  .activity { margin:6px 0; color:#e7c88e; font-size:13px; }
+
+#research-dialog {color:#eee4cc;background:linear-gradient(135deg,#293b40,#131f27);border:1px solid #a99770;border-radius:12px;width:min(1040px,92vw);max-height:88vh;padding:24px;}
+#research-dialog::backdrop{background:#0008;}
+#research-dialog header{display:flex;align-items:center;justify-content:space-between;gap:20px;}
+#research-dialog h2{margin:0;font-size:28px;}
+#research-dialog p{color:#c4bda9;}
+#research-dialog button,#research-dialog select{font:inherit;color:inherit;background:#23323c;border:1px solid #657576;border-radius:6px;padding:9px;}
+#research-epochs select{width:100%;margin:10px 0;}
+#research-nodes{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+#research-nodes h3{border-bottom:1px solid #8c8065;padding-bottom:10px;}
+.research-node{display:flex;flex-direction:column;text-align:left;gap:8px;width:100%;margin:10px 0;min-height:120px;}
+.research-node strong{font-size:16px;}
+.research-node span,.research-node small{font-size:12px;color:#bac9ca;}
+.research-node:disabled{opacity:.55;}
+.research-node.done{border-color:#84b56a!important;opacity:.85;background:#283b31!important;}
+.research-node.busy{border-color:#cdaf65!important;opacity:1;}
+.research-node:enabled:hover{background:#3c5055!important;border-color:#e1c780!important;cursor:pointer;}
+#science{color:#e0ca8c;}
+@media(max-width:800px){#research-nodes{grid-template-columns:1fr;}#top .r{font-size:11px;}#top{flex-wrap:wrap;height:auto;min-height:40px;}}
+
+.original-art #menu {background-color:#000;background-size:cover;background-position:center bottom;}
+.original-art #menu .card {background:linear-gradient(#111b20ec,#10181fef);border:2px solid #999e87;box-shadow:0 12px 70px #000b;}
+.original-art .ee2-logo {display:block;width:230px;height:100px;object-fit:contain;margin:-10px auto 3px;}
+.original-art #top {background:var(--ee2-panel) center/100% 100%;color:#182018;text-shadow:0 1px #eee6;border-bottom:1px solid #6e7464;}
+.original-art #epoch,.original-art #science {color:#202918;}
+.original-art .resource-icon {width:20px;height:20px;object-fit:contain;}
+.original-art #bottom {background:#a7ab99 var(--ee2-panel) center/400px 260px;color:#181e17;border-top:4px ridge #adb09c;}
+.original-art #info {background:var(--ee2-panel) center/100% 100%;padding:5px 7px;border:1px solid #5c6455;width:250px;}
+.original-art #acts {padding:4px;background:var(--ee2-panel) center/450px 260px;border:1px solid #606755;}
+.original-art #info .dim,.original-art #info .activity {color:#343e2d;}
+.original-art .act,.original-art #top button {background:#a0a796 var(--ee2-button) center/100% 100%;border:1px solid #535c50;color:#151d13;text-shadow:0 1px #e5e6d799;}
+.original-art .act:hover,.original-art #top button:hover {filter:brightness(1.15);border-color:#f1dfab;}
+.original-art .act kbd {color:#3a4838;}
+.market-price-shift,.market-shift .market-price-plain {display:none;}
+.market-shift .market-price-shift {display:inline;}
+#acts.has-market .market-action[data-original-market] {background:var(--market-idle) center/100% 100% no-repeat;border:0;}
+#acts.has-market .market-action[data-original-market]:hover {background-image:var(--market-hover);}
+#acts.has-market .market-action[data-original-market]:active {background-image:var(--market-pressed);}
+.act .ungarrison-icon {display:block;width:44px;height:44px;margin:0 auto;background:var(--ungarrison-idle) center/contain no-repeat;}
+.act:hover .ungarrison-icon {background-image:var(--ungarrison-hover);}
+.act:active .ungarrison-icon {background-image:var(--ungarrison-pressed);}
+.act .leader-power-icon {display:block;width:44px;height:44px;margin:0 auto;background:var(--leader-power-idle) center/contain no-repeat;}
+.act:hover .leader-power-icon {background-image:var(--leader-power-hover,var(--leader-power-idle));}
+.act:active .leader-power-icon {background-image:var(--leader-power-pressed,var(--leader-power-idle));}
+.market-action[data-original-market] img {position:absolute;left:1.3%;top:13.3%;width:39%;height:50%;object-fit:contain;}
+.market-action[data-original-market] b {position:absolute;right:8%;top:13.3%;color:#fff;font-size:13px;text-shadow:1px 1px #111,-1px -1px #111,1px -1px #111,-1px 1px #111;}
+.market-action[data-original-market] small {position:absolute;width:1px;height:1px;clip-path:inset(50%);overflow:hidden;}
+.original-art #mini {border:3px ridge #c0c2ab;box-shadow:0 0 0 2px #4a5147;}
+.extra-options{margin-top:14px;border-top:1px solid #657165;padding-top:10px;color:#bcc4b5}.extra-options summary{cursor:pointer;font-size:13px}
+#building-controls{position:fixed;bottom:180px;left:50%;transform:translateX(-50%);z-index:5;max-width:min(760px,94vw);padding:10px 14px;border:1px solid #a7a987;border-radius:7px;background:#16221cef;color:#eee9d8;box-shadow:0 4px 20px #0009}
+#building-controls[hidden]{display:none}#building-controls header{display:flex;align-items:center;gap:14px;flex-wrap:wrap}#building-controls strong{font-size:16px}#building-controls button{font:inherit;color:inherit;background:#35443a;border:1px solid #8b947c;border-radius:4px;padding:5px 10px;cursor:pointer}#building-controls button:hover{background:#506148}#building-controls p{margin:7px 0 3px}#building-controls small{color:#b7c5b0}#building-status[data-valid="true"]{color:#b5ed9e}#building-status[data-valid="false"]{color:#ffd09b}
+#crown-progress-toggle{background-image:var(--crown-button,none);background-size:28px;background-position:4px center;background-repeat:no-repeat;padding-left:36px;}
+#crown-progress{position:fixed;left:50%;bottom:146px;transform:translateX(-50%);width:min(92vw,780px);z-index:12;color:#f0dfb7;background:#24261f;border:1px solid #938667;box-shadow:0 6px 20px #0009;padding:12px;}
+#crown-progress h2{font-size:18px;margin:0 0 7px;}
+.crown-ledger-row{display:grid;grid-template-columns:minmax(62px,1fr) repeat(3,minmax(70px,2fr));gap:3px;align-items:center;background:#524a36;padding:5px;}
+.crown-ledger-cell{display:grid;grid-template-columns:25px 1fr auto;gap:2px 4px;align-items:center;font-size:12px;min-width:0;}
+.crown-ledger-icon{width:25px;height:25px;background-size:contain;background-repeat:no-repeat;}
+.crown-ledger-score{text-align:right;font-variant-numeric:tabular-nums;}
+.crown-techs{display:grid;grid-template-columns:repeat(4,1fr);grid-column:1/-1;gap:2px;}
+.crown-tech{display:block;height:5px;background:#171a14;border:1px solid #6e6449;}
+.crown-tech.done{background:#bda346 var(--crown-meter,none) center/100% 100%;}
+#crown-timers{position:fixed;top:55px;right:8px;display:flex;gap:8px;z-index:12;pointer-events:none;}
+.crown-timer{position:relative;width:83px;height:83px;background-color:transparent;background-position:center;background-size:contain;background-repeat:no-repeat;border:0;color:#fff;text-shadow:0 1px 3px #000;}
+.crown-timer:not(:disabled){pointer-events:auto;cursor:pointer;}
+.crown-timer-ring{position:absolute;inset:0;background-position:center;background-size:contain;background-repeat:no-repeat;mask-image:conic-gradient(#000 0deg,#000 var(--crown-angle,0deg),transparent var(--crown-angle,0deg));}
+.crown-timer-icon{position:absolute;inset:10px 9px 9px 10px;background-size:contain;background-repeat:no-repeat;}
+.crown-timer-time{position:absolute;bottom:2px;left:0;right:0;text-align:center;font-weight:700;}
+#crown-progress[hidden],#crown-progress-toggle[hidden],.crown-ledger-row[hidden],.crown-timer[hidden]{display:none;}
+#crown-choice{width:min(88vw,1015px);color:#f4e2bc;border:1px solid #968264;background:var(--crown-dialog-top,none) top/100% 52% no-repeat,var(--crown-dialog-bottom,none) bottom/100% 52% no-repeat,#202520;padding:26px;}
+#crown-choice::backdrop{background:#0007;}
+#crown-choice h2{margin:0 0 18px;}
+.crown-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,365px),1fr));gap:3px;}
+#crown-choice [data-crown-power]{display:grid;align-content:center;text-align:left;min-height:70px;width:100%;background:#252a22 var(--crown-choice-icon,none) left 8px center/56px no-repeat;border:1px solid #92815a;color:inherit;padding:8px 10px 8px 74px;cursor:pointer;}
+#crown-choice form{margin-top:18px;}
+#crown-choice form button{min-width:160px;min-height:38px;background:#2c3228 var(--crown-close-art,none) center/100% 100% no-repeat;border:1px solid #92815a;color:inherit;cursor:pointer;}
+.crown-effect-tray{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));width:100%;margin:3px 0;}
+.crown-effect-tray img{width:min(100%,32px);height:auto;aspect-ratio:1;object-fit:contain;}
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+
+<div id="top">
+  <span class="r"><i class="dot" style="background:#e06c5a"></i>Nahrung <b id="r0">0</b></span>
+  <span class="r"><i class="dot" style="background:#6fae4c"></i>Holz <b id="r1">0</b></span>
+  <span class="r"><i class="dot" style="background:#aeb8c4"></i>Metall <b id="r2">0</b></span>
+  <span class="r">Bev. <b id="pop">0/0</b></span>
+  <span class="r"><b id="epoch">Steinzeit</b></span>
+  <span id="science" class="r" title="Technologiepunkte durch Bürger in Universitäten"></span>
+  <button id="research-button">Forschung</button>
+  <button id="crown-progress-toggle" type="button" title="Kronenfortschritt · Alt+Umschalt+C" aria-keyshortcuts="Alt+Shift+C" aria-controls="crown-progress" aria-expanded="false" hidden>Kronen</button>
+  <button id="diplomacy-button" title="Beziehungen, Friedensangebote, Bündnisse und Rohstoffgeschenke · F4">Diplomatie</button>
+  <span class="r" title="Deine Gebiete. Baue ein Stadtzentrum in einem freien Gebiet.">Gebiete <b id="terr">1</b></span>
+  <span class="r" id="territory-victory-status" hidden></span>
+  <span class="r" id="sole-survivor-status" hidden></span>
+  <span class="r" id="koth-victory-status" hidden></span>
+  <span class="r" id="initial-ceasefire-status" hidden></span>
+  <span class="r" id="observer-status" hidden>Beobachter</span>
+  <button id="idle" title="Select next idle worker (F)">Idle workers: 0</button>
+  <span class="sp"></span>
+  <span id="perf"></span>
+  <button id="music" title="Hintergrundmusik an oder aus">Musik an</button>
+  <button id="voices" title="Einheitenstimmen an oder aus">Stimmen an</button>
+  <button id="mute" title="Toggle sound (M)">Ton an</button>
+  <button id="cheats" title="Cheats eingeben (Enter)">Cheats</button>
+  <button id="save" title="Save game (Ctrl+S). The game also saves itself every few minutes.">Speichern</button>
+  <button id="speed" title="Spielgeschwindigkeit (Minus, Gleich, Rücktaste)">1×</button>
+  <button id="pause" title="Pause">Pause</button>
+  <button id="game-options-button" title="Optionen (Pause / Esc)" hidden>Optionen</button>
+  <button id="fullscreen" title="Vollbild · F11" aria-pressed="false">Vollbild</button>
+  <button id="fullmap-button" title="Weltkarte · Tab" aria-haspopup="dialog" aria-controls="fullmap" hidden>Karte</button>
+  <button id="player-flare-button" title="Kartenmarkierung setzen · Alt+Y" aria-pressed="false" hidden>Markieren</button>
+  <button id="quit">Menü</button>
+</div>
+
+<div id="bottom">
+  <canvas id="mini" width="256" height="256"></canvas>
+  <div id="info"><div id="info-content"></div><div id="trade-wait-status" hidden role="status"></div></div>
+  <div id="acts"></div>
+  <section id="crown-victory-hud" aria-label="Kronen-Status" hidden>
+    <div>Kronen-Status</div><div id="crown-victory-rows"></div>
+  </section>
+  <section id="hotspot-status-hud" aria-label="Krisenherde-Status" hidden>
+    <div>Krisenherde-Status</div><div id="hotspot-status-rows"></div>
+  </section>
+</div>
+<dialog id="fullmap" aria-labelledby="fullmap-title">
+  <canvas aria-label="Weltkarte"></canvas>
+  <div class="fullmap-border" aria-hidden="true"></div>
+  <div class="fullmap-top" aria-hidden="true"></div>
+  <div class="fullmap-bottom" aria-hidden="true"></div>
+  <div class="fullmap-options">
+    <h2 id="fullmap-title">Kartenoptionen</h2>
+    <p>Doppelklick auf die Karte, um zur Position zu springen.</p>
+  </div>
+  <canvas class="fullmap-pip" aria-label="Bild-in-Bild-Vorschau" hidden></canvas>
+  <div class="fullmap-pip-logo" aria-hidden="true" hidden></div>
+  <div class="fullmap-pip-controls" role="group" aria-label="Bild-in-Bild-Lesezeichen" hidden></div>
+  <button class="fullmap-close" type="button" title="Karte schließen · Tab oder Esc" aria-label="Karte schließen" autofocus>×</button>
+</dialog>
+<div id="tip"></div>
+<div id="box"></div>
+<div id="toast"></div>
+<button id="mp-checkpoint-download" type="button" hidden>Spielstand herunterladen</button>
+<div id="camera-tools" role="group" aria-label="Kamera ausrichten" hidden>
+  <button id="camera-left" title="Kamera 45° nach links · Strg+Pfeil links" aria-label="Kamera nach links drehen">↶</button>
+  <button id="camera-north" title="Kamera nach Norden ausrichten" aria-label="Kamera nach Norden ausrichten">N</button>
+  <button id="camera-right" title="Kamera 45° nach rechts · Strg+Pfeil rechts" aria-label="Kamera nach rechts drehen">↷</button>
+</div>
+<dialog id="research-dialog">
+ <header><h2>Forschung</h2><button id="research-close">Schließen · Esc</button></header>
+ <p id="research-status"></p><div id="research-epochs"></div><div id="research-nodes"></div>
+ <p>Bürger mit Rechtsklick in eine Universität schicken. Sechs Technologien der aktuellen Epoche und die nötigen Technologiepunkte erlauben den Epochenwechsel im Stadtzentrum.</p>
+</dialog>
+<section id="crown-progress" aria-labelledby="crown-progress-title" hidden>
+  <h2 id="crown-progress-title">Kronenfortschritt</h2>
+  <div id="crown-ledger"></div>
+</section>
+<div id="crown-timers" aria-label="Aktive Kronen"></div>
+<dialog id="crown-choice" aria-labelledby="crown-choice-title">
+  <h2 id="crown-choice-title">Kronenkraft auswählen</h2>
+  <div class="crown-choices"></div>
+  <form method="dialog"><button>Schließen</button></form>
+</dialog>
+<dialog id="native-game-pause" aria-labelledby="native-game-pause-title">
+  <h2 id="native-game-pause-title">Pausenfenster</h2>
+  <div class="native-pause-art" aria-hidden="true">
+    <span data-pause-layer="bkg_top"></span><span data-pause-layer="bkg_bot"></span><span data-pause-layer="glass"></span>
+    <span data-pause-layer="divider_1"></span><span data-pause-layer="divider_2"></span>
+  </div>
+  <div class="native-pause-frame" aria-hidden="true">
+    <span data-pause-piece="ul"></span><span data-pause-piece="ll"></span><span data-pause-piece="lr"></span><span data-pause-piece="ur"></span>
+    <span data-pause-piece="top"></span><span data-pause-piece="left"></span><span data-pause-piece="bottom"></span><span data-pause-piece="right"></span>
+  </div>
+  <button type="button" data-pause-action="resume" autofocus>ZURÜCK ZUM SPIEL</button>
+  <button type="button" data-pause-action="save">SPIEL SPEICHERN</button>
+  <button type="button" data-pause-action="load">SPIEL LADEN</button>
+  <button type="button" data-pause-action="restart">SPIEL NEU STARTEN</button>
+  <button type="button" data-pause-action="resign">AUFGEBEN</button>
+  <button type="button" data-pause-action="settings">EINSTELLUNGEN</button>
+  <button type="button" data-pause-action="record" hidden>SPIEL AUFZEICHNEN</button>
+  <button type="button" data-pause-action="exit">SPIEL BEENDEN</button>
+  <button type="button" data-pause-action="desktop">ZURÜCK ZUM DESKTOP</button>
+</dialog>
+<dialog id="native-game-settings" aria-labelledby="native-game-settings-title">
+  <video muted loop playsinline hidden></video>
+  <form>
+    <div class="native-settings-panel-art" data-settings-widget="options_panel" aria-hidden="true"></div>
+    <div class="native-settings-background" aria-hidden="true">
+      <span data-settings-widget="options_panel_bkg1"></span><span data-settings-widget="options_panel_bkg2"></span><span data-settings-widget="options_panel_bkg3"></span>
+      <span data-settings-widget="options_panel_bkg4"></span><span data-settings-widget="options_panel_bkg5"></span><span data-settings-widget="options_panel_bkg6"></span>
+      <span data-settings-widget="options_divider"></span>
+    </div>
+    <div data-settings-frame="options_root" aria-hidden="true"></div><div data-settings-frame="options_panel" aria-hidden="true"></div>
+    <h2 id="native-game-settings-title" data-settings-widget="options_root_title" data-source-label>Einstellungen</h2>
+    <nav aria-label="Einstellungsreiter" role="tablist">
+      <button type="button" role="tab" id="native-settings-tab-audio" aria-controls="native-settings-audio" data-settings-tab="audio" data-settings-widget="options_audio_tab" data-source-label>Audio</button>
+      <button type="button" role="tab" id="native-settings-tab-video" aria-controls="native-settings-video" data-settings-tab="video" data-settings-widget="options_video_tab" data-source-label>Grafik</button>
+      <button type="button" role="tab" id="native-settings-tab-general" aria-controls="native-settings-general" data-settings-tab="general" data-settings-widget="options_general_tab" data-source-label>Spiel</button>
+      <button type="button" role="tab" id="native-settings-tab-hotkeys" aria-controls="native-settings-hotkeys" data-settings-tab="hotkeys" data-settings-widget="options_hotkeys_tab" data-source-label>Schnelltasten</button>
+    </nav>
+    <section id="native-settings-audio" role="tabpanel" aria-labelledby="native-settings-tab-audio" data-settings-pane="audio">
+      <div class="native-settings-row"><input id="native-settings-music" type="checkbox" data-setting="music" data-settings-widget="options_audio_music_on"><label for="native-settings-music" data-settings-widget="options_audio_music_on_label" data-source-label>Musik Ein</label></div>
+      <div class="native-settings-row"><input id="native-settings-ambient" type="checkbox" data-setting="ambience" data-settings-widget="options_audio_amb_on"><label for="native-settings-ambient" data-settings-widget="options_audio_amb_on_label" data-source-label>Geräusche Ein</label></div>
+      <h3 data-settings-widget="options_audio_volume_label" data-source-label>Lautstärke:</h3>
+      <div class="native-settings-row"><label for="native-settings-music-volume" data-settings-widget="options_audio_musvol_label" data-source-label>Musik:</label><input id="native-settings-music-volume" class="native-settings-volume" type="range" min="0" max="1" step=".01" data-setting="musicVolume" data-settings-widget="options_audio_musvol"></div>
+      <div class="native-settings-row"><label for="native-settings-sound-volume" data-settings-widget="options_audio_sndvol_label" data-source-label>Sound:</label><input id="native-settings-sound-volume" class="native-settings-volume" type="range" min="0" max="1" step=".01" data-setting="soundVolume" data-settings-widget="options_audio_sndvol"></div>
+      <div class="native-settings-test-sounds" data-settings-widget="options_audio_test_choice" aria-hidden="true"></div>
+      <button type="button" disabled data-settings-widget="options_audio_test_sound" data-source-label>Lautstärke testen</button>
+      <label class="native-settings-extra" data-settings-extra="options_audio_pane" data-offset-x="790" data-offset-y="76"><input type="checkbox" data-setting="muted"> Ton stummschalten</label>
+      <label class="native-settings-extra" data-settings-extra="options_audio_pane" data-offset-x="790" data-offset-y="122"><input type="checkbox" data-setting="voices"> Einheitenstimmen</label>
+    </section>
+    <section id="native-settings-video" role="tabpanel" aria-labelledby="native-settings-tab-video" data-settings-pane="video" hidden>
+      <div class="native-settings-row"><label for="native-settings-resolution" data-settings-widget="options_video_txdisplaymode" data-source-label>Anzeige-Modus:</label><select id="native-settings-resolution" data-setting="resolution" data-settings-widget="options_video_displaymode"><option value="1">Standard · 1×</option><option value="1.5">Hoch · bis 1,5×</option><option value="2">Sehr hoch · bis 2×</option></select></div>
+      <div class="native-settings-row"><label for="native-settings-model" data-settings-widget="options_video_txmodeldetail" data-source-label>Modelldetails:</label><select id="native-settings-model" disabled data-settings-widget="options_video_model"><option>Nicht verfügbar</option></select></div>
+      <div class="native-settings-row"><label for="native-settings-animation" data-settings-widget="options_video_txanimdetail" data-source-label>Animationsdetails:</label><select id="native-settings-animation" disabled data-settings-widget="options_video_anim"><option>Nicht verfügbar</option></select></div>
+      <div class="native-settings-row"><label for="native-settings-texture" data-settings-widget="options_video_txtexturedetail" data-source-label>Texturdetails:</label><select id="native-settings-texture" disabled data-settings-widget="options_video_texture"><option>Nicht verfügbar</option></select></div>
+      <div class="native-settings-row"><label for="native-settings-effects" data-settings-widget="options_video_txfxdetail" data-source-label>Effektdetails:</label><select id="native-settings-effects" disabled data-setting="effectDetail" data-settings-widget="options_video_fx" aria-describedby="native-settings-graphics-info"><option value="0">Niedrig</option><option value="1" selected>Mittel</option><option value="2">Hoch</option><option value="3">Extrem</option></select></div>
+      <div class="native-settings-row"><label for="native-settings-weather" data-settings-widget="options_video_txweatherdetail" data-source-label>Wetterdetails:</label><select id="native-settings-weather" disabled data-settings-widget="options_video_weather"><option>Nicht verfügbar</option></select></div>
+      <div class="native-settings-row"><label for="native-settings-water" data-settings-widget="options_video_waterdetail_label" data-source-label>Wasserdetails:</label><select id="native-settings-water" disabled data-settings-widget="options_video_water"><option>Nicht verfügbar</option></select></div>
+      <div class="native-settings-row"><label for="native-settings-terrain" data-settings-widget="options_video_txterraindetail" data-source-label>Terraindetails:</label><select id="native-settings-terrain" disabled data-settings-widget="options_video_terrain"><option>Nicht verfügbar</option></select></div>
+      <div class="native-settings-row"><label for="native-settings-shadow" data-settings-widget="options_video_txshadowdetail" data-source-label>Schattendetails:</label><select id="native-settings-shadow" disabled data-settings-widget="options_video_shadow"><option>Nicht verfügbar</option></select></div>
+      <p id="native-settings-graphics-info" class="native-settings-graphics-info" data-settings-widget="options_video_info_text_bkg">Der Anzeigemodus bestimmt die Renderauflösung. Effektdetails steuern derzeit das originale Kielwasser.</p>
+    </section>
+    <section id="native-settings-general" role="tabpanel" aria-labelledby="native-settings-tab-general" data-settings-pane="general" hidden>
+      <h3 data-settings-widget="options_gen_mouse_label" data-source-label>Mauseinstellungen:</h3>
+      <div class="native-settings-row"><input id="native-settings-swap-mouse" type="checkbox" disabled data-settings-widget="options_gen_lr_mouse"><label for="native-settings-swap-mouse" data-settings-widget="options_gen_lr_mouse_label" data-source-label>Maustasten umkehren</label></div>
+      <h3 data-settings-widget="options_gen_autosave_label" data-source-label>Einstellungen für autom. Speichern:</h3>
+      <div class="native-settings-row"><label for="native-settings-autosaves" data-settings-widget="options_gen_num_as_label" data-source-label>Anzahl:</label><input id="native-settings-autosaves" type="range" disabled data-settings-widget="options_gen_num_as"></div>
+      <div class="native-settings-row"><label for="native-settings-autosave-interval" data-settings-widget="options_gen_freq_as_label" data-source-label>Häufigkeit:</label><input id="native-settings-autosave-interval" type="range" disabled data-settings-widget="options_gen_freq_as"></div>
+      <h3 data-settings-widget="options_gen_misc_label" data-source-label>Sonstige Einstellungen:</h3>
+      <label class="native-settings-extra" data-settings-extra="options_gen_misc" data-offset-x="70" data-offset-y="85"><input type="checkbox" data-setting="fullscreen"> Vollbild</label>
+    </section>
+    <section id="native-settings-hotkeys" role="tabpanel" aria-labelledby="native-settings-tab-hotkeys" data-settings-pane="hotkeys" hidden>
+      <h3 data-settings-widget="option_HK_keys_label" data-source-label>Tastennamen:</h3>
+      <ul class="native-settings-keys" data-settings-widget="option_HK_keys_list" aria-label="Aktive Tastaturbelegung"></ul>
+      <p data-settings-widget="option_HK_currBind_label" data-source-label>Aktuelle Zuweisung:</p>
+      <p class="native-settings-key-readonly" data-settings-widget="option_HK_currBind">Die aktiven Schnelltasten werden angezeigt.</p>
+      <button type="button" disabled data-settings-widget="option_HK_edit" data-source-label>Bearbeiten</button>
+    </section>
+    <footer>
+      <button type="submit" data-settings-widget="options_accept" data-source-label>Annehmen</button>
+      <button type="button" data-settings-command="cancel" data-settings-widget="options_cancel" data-source-label>Abbrechen</button>
+      <button type="button" data-settings-command="defaults" data-settings-widget="options_default" data-source-label>Standard</button>
+    </footer>
+  </form>
+</dialog>
+<dialog id="cheat-dialog" style="background:#161d25;color:#e8edf2;border:1px solid #596c80;border-radius:10px;max-width:480px;padding:24px">
+  <form id="cheat-form">
+    <h2 style="margin-top:0">Cheats · Scharmützel</h2>
+    <p>Mit <b>icheat</b> aktivieren, mit <b>idontcheat</b> deaktivieren.</p>
+    <p><b>loot</b> · +10.000 je Rohstoff<br><b>sea monkeys</b> · Sofortbau und Einheitenproduktion an/aus<br><b>give tech</b> · +50 Technologiepunkte</p>
+    <p id="cheat-up-commands" hidden><b>taxes</b> · bis zu 100 je Rohstoff abziehen<br><b>punish</b> · ausgewählte Einheiten verwunden<br><b>play god</b> · Schadensschutz an/aus<br><b>toggle fog</b> · Kriegsnebel an/aus<br><b>epoch up</b> · direkt in die nächste Epoche wechseln<br><b>convert</b> · die zuletzt angeklickte Einheit oder das Gebäude übernehmen<br><b>recharge me</b> · Kraftreserve der ausgewählten Priester auffüllen</p>
+    <p id="cheat-up-research" hidden><b>sea monkeys</b> beschleunigt auch bezahlte Forschung und bleibt nach <b>idontcheat</b> aktiv.</p>
+    <p id="cheat-rule" style="font-size:13px;color:#bac5d1">OpenEpoch-Regel: Ein Technologiepunkt überspringt eine Sekunde Technologieforschung. Rohstoffkosten und Epochenforschung bleiben unverändert.</p>
+    <label for="cheat-input">Cheat eingeben</label><br>
+    <input id="cheat-input" autocomplete="off" spellcheck="false" style="width:95%;padding:10px;margin:8px 0" placeholder="icheat">
+    <p id="cheat-result" role="status" aria-live="polite"></p>
+    <button type="submit">Ausführen</button> <button id="cheat-close" type="button">Schließen · Esc</button>
+  </form>
+</dialog>
+<div id="end"><span id="endtext"></span><button id="again">Back to menu</button></div>
+
+<div id="menu">
+  <video id="shell-movie" muted playsinline loop hidden aria-hidden="true" preload="none"></video>
+  <div class="card">
+    <h1>Open<span>Epoch</span></h1>
+
+    <p id="rules-note">Lokaler Nachbau mit Scharmützeln von der Steinzeit bis in die Zukunft.</p>
+    <p class="skirmish-intro">Scharmützel von der Steinzeit bis in die Zukunft.</p>
+    <h2 id="skirmish-title" hidden>Scharmützel</h2>
+    <div class="skirmish-players">
+      <h3 id="skirmish-player-title" hidden>Spielerzuordnung</h3>
+      <div class="row" id="sk-player-options"><label for="nai">KI-Gegner</label><select id="nai" disabled><option value="9">9</option></select></div>
+    </div>
+    <div class="skirmish-settings">
+      <div id="skirmish-tabs" role="tablist" aria-label="Scharmützeleinstellungen" hidden>
+        <button type="button" role="tab" id="sk-game-tab" aria-controls="sk-game">Spiel</button>
+        <button type="button" role="tab" id="sk-advanced-tab" aria-controls="sk-advanced">Erweitert</button>
+        <button type="button" role="tab" id="sk-map-tab" aria-controls="sk-map">Karte</button>
+        <button type="button" role="tab" id="sk-environment-tab" aria-controls="sk-environment">Umgebung</button>
+      </div>
+      <section id="sk-game" class="skirmish-pane">
+        <div id="sk-victory-options" hidden>
+          <div class="row"><label for="sk-victory-condition">Siegbedingung</label><select id="sk-victory-condition"><option value="conquest">Eroberung</option><option value="crowns-count" hidden disabled>Kronen (Anzahl)</option><option value="crowns-time" hidden disabled>Kronen (Zeit)</option><option value="koth" hidden disabled>Herr des Hügels</option><option value="capitols" hidden disabled>Kapitole</option><option value="allied-capitols" hidden disabled>Verb. Kapitole</option><option value="regicide">Königsmord</option><option value="hotspots" hidden disabled>Krisenherde</option><option value="territory">Territorienkontrolle</option></select></div>
+          <div id="sk-sole-victory"><div class="row"><label for="sk-sole-survivor">Einziger Überlebender</label><input id="sk-sole-survivor" type="checkbox" checked></div></div>
+          <div id="sk-crown-count-victory" hidden><div class="row"><label for="sk-crown-count">Anzahl Kronen:</label><select id="sk-crown-count" disabled><option value="2">2</option><option value="3" selected>3</option></select></div></div>
+          <div id="sk-crown-time-victory" hidden><div class="row"><label for="sk-crown-time">Dauer (Minuten):</label><select id="sk-crown-time" disabled><option value="10" selected>10</option><option value="15">15</option><option value="20">20</option><option value="25">25</option><option value="30">30</option></select></div></div>
+          <div id="sk-capitols-victory" hidden><div class="row"><label for="sk-capitols-duration">Dauer (Minuten):</label><select id="sk-capitols-duration" disabled><option value="2">2</option><option value="5">5</option><option value="10" selected>10</option></select></div></div>
+          <div id="sk-koth-victory" hidden><div class="row"><label for="sk-koth-duration">Dauer (Minuten):</label><select id="sk-koth-duration" disabled><option value="2">2</option><option value="5">5</option><option value="10" selected>10</option></select></div></div>
+          <div id="sk-hotspot-victory" hidden><div class="row"><label for="sk-hotspot-count">Anz. Krisenherde:</label><select id="sk-hotspot-count"><option value="1" selected>1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div></div>
+          <div id="sk-territory-victory" hidden><div class="row"><label for="sk-territory-percent">Zielanteil der Territorien</label><select id="sk-territory-percent"><option value="30">30 %</option><option value="40">40 %</option><option value="50" selected>50 %</option><option value="60">60 %</option><option value="70">70 %</option><option value="80">80 %</option><option value="90">90 %</option></select></div></div>
+        </div>
+        <div class="row"><label for="pop-limit">Bevölkerung</label><select id="pop-limit"><option value="250">250 pro Spieler</option><option value="500" selected>500 pro Spieler</option><option value="1000">1 000 pro Spieler</option></select></div>
+        <div class="row"><label for="supplies">Startvorräte</label><select id="supplies"><option value="0">Normal</option><option value="1" selected>Großzügig</option><option value="2">Sehr großzügig</option></select><span class="dim">Für alle Spieler gleich</span></div>
+      </section>
+      <section id="sk-advanced" class="skirmish-pane">
+        <div class="row" id="disable-crowns-option" hidden><label for="disable-crowns">Kronen deaktivieren</label><input id="disable-crowns" type="checkbox"></div>
+        <div class="row" id="initial-ceasefire-option" hidden>
+          <label for="initial-ceasefire">Anfänglicher Waffenstillstand</label>
+          <select id="initial-ceasefire">
+            <option value="0">Deaktiviert</option>
+            <option value="1">2 Minuten</option>
+            <option value="2">5 Minuten</option>
+            <option value="3">10 Minuten</option>
+            <option value="4">15 Minuten</option>
+            <option value="5">20 Minuten (1.6)</option>
+            <option value="6">30 Minuten (1.6)</option>
+            <option value="7">45 Minuten (1.6)</option>
+            <option value="8">60 Minuten (1.6)</option>
+            <option value="9">2 Stunden (1.6)</option>
+            <option value="10">24 Stunden (1.6)</option>
+          </select>
+        </div>
+        <div id="original-tempo-options" hidden>
+          <div class="row"><label for="game-speed-preset">Spielgeschwindigkeit</label><select id="game-speed-preset"><option value="0">Langsam</option><option value="1" selected>Normal</option><option value="2">Schnell</option><option value="3">Sehr schnell</option></select></div>
+          <div class="row"><label for="game-speed-locked">Geschwindigkeit sperren</label><input id="game-speed-locked" type="checkbox" checked></div>
+          <div class="row" id="source-solo-clock-option" hidden><label for="source-solo-clock">Variabler Originaltakt (Testmodus)</label><input id="source-solo-clock" type="checkbox"></div>
+          <div class="row" id="source-adaptive-clock-option" hidden><label for="source-adaptive-clock">Adaptive Schrittfrequenz (Testmodus)</label><input id="source-adaptive-clock" type="checkbox" disabled></div>
+        </div>
+        <div class="row"><label for="rules-profile">Regelversion</label><select id="rules-profile"><option value="up15">EE2 · installierte UP-Regeln</option><option value="base">EE2 · Basisdaten</option><option value="own">OpenEpoch-Regeln</option></select></div>
+        <p class="dim" style="font-size:12px;margin:0 0 10px">Jede Regelversion hat eigene Spielstände. Für Multiplayer wählen beide dieselbe Version.</p>
+        <div class="row"><label for="quality">Auflösung</label><select id="quality"><option value="1">Standard · 1×</option><option value="1.5">Hoch · bis 1,5×</option><option value="2" selected>Sehr hoch · bis 2×</option></select></div>
+      </section>
+      <section id="sk-map" class="skirmish-pane">
+        <p id="local-private-maps" class="dim" hidden>
+          Private Karten ·
+          <a href="pangea-private.html?rules=ee2" data-carrier="local-original/pangea-art110/openepoch-ee2-pangea-private.wasm" hidden>Tropisches Pangea</a>
+          <a href="islands-private.html?rules=ee2" data-carrier="local-original/islands110/openepoch-ee2-islands-private.wasm" hidden>Inseln und Kontinente</a>
+        </p>
+        <div id="pangea-map-row" hidden>
+          <div class="row"><label for="pangea-map-choice">Karte</label><select id="pangea-map-choice" disabled><option value="pangea-huge10">Pangea · riesig · 10 Spieler</option></select></div>
+          <p id="pangea-map-note" class="dim" hidden>160 × 160 Felder, Eroberung gegen drei KI-Gegner. Die Startplätze folgen dem Original. OpenEpoch erzeugt Gelände, Rohstoffe und Startgebäude.</p>
+        </div>
+        <div id="valley-preview-menu" hidden>
+          <div class="row"><label for="valley-map-choice">Karte</label><select id="valley-map-choice"><option value="own">Zufallskarte</option><option id="valley-preview-map-option" value="valley">Valley · private Vorschau</option><option id="valley-archive-qa-option" value="valley-archive-qa" hidden disabled>Valley · Archivstart (Test)</option></select></div>
+          <p id="valley-fixed-settings" class="dim" hidden>Steinzeit, Griechen gegen ägyptische KI, 250 Bevölkerung. Kartenaufdeckung und Tempo bleiben wählbar.</p>
+          <p id="valley-archive-qa-note" class="dim" hidden>Originalkarte und archivierte Rohstoffe. Die Spieler starten mit geprüften Positionen aus einem Testlauf. Die vollständige Originalinitialisierung wird noch geprüft.</p>
+        </div>
+        <div class="row"><label for="seed">Kartenschlüssel</label><input id="seed" size="8" placeholder="zufällig"></div>
+        <div class="row map-options" id="map-climate-row" hidden><label for="map-climate">Klima</label><select id="map-climate"><option value="0" selected>Gemäßigt</option><option value="1">Trocken</option><option value="2">Tropisch</option><option value="3">Tundra (1.6)</option></select></div>
+        <div class="row map-options"><label for="map-visibility">Kartenaufdeckung</label><select id="map-visibility"><option value="0">Unerforscht · mit Kriegsnebel</option><option value="1">Erkundet · mit Kriegsnebel</option><option value="2">Vollständig aufgedeckt · ohne Kriegsnebel</option></select></div>
+        <p class="dim" style="font-size:12px;margin:0 0 10px">Kartenaufdeckung gilt für ein neues Scharmützel. Erkundet zeigt das Gelände; vollständig aufgedeckt zeigt auch fremde Einheiten.</p>
+      </section>
+      <section id="sk-environment" class="skirmish-pane">
+        <div id="season-options" hidden>
+          <div class="row"><label for="season-start">Startjahreszeit</label><select id="season-start">
+            <option value="11">Winter</option><option value="2">Frühling</option><option value="5">Sommer</option><option value="8">Herbst</option>
+            <option value="-2">Zufall</option>
+            <optgroup label="Weitere Startmonate"><option value="0">Januar</option><option value="1">Februar</option><option value="3">April</option><option value="4">Mai</option><option value="6" selected>Juli</option><option value="7">August</option><option value="9">Oktober</option><option value="10">November</option></optgroup>
+          </select></div>
+          <div class="row"><label for="season-cycle">Jahreszeitenwechsel</label><input id="season-cycle" type="checkbox" checked><label for="season-length" style="width:auto">Dauer pro Jahreszeit</label><select id="season-length"><option value="1">1 Minute</option><option value="5" selected>5 Minuten</option><option value="10">10 Minuten</option><option value="20">20 Minuten</option><option value="30">30 Minuten</option></select></div>
+          <p class="dim" style="font-size:12px;margin:0 0 10px">Gelände, Bäume und Gebäudeböden wechseln allmählich zwischen den Monaten. Der Gastgeber bestimmt die Einstellungen im Multiplayer.</p>
+        </div>
+      </section>
+    </div>
+    <div class="skirmish-side">
+      <section id="skirmish-overview" aria-label="Gewählte Einstellungen" hidden>
+        <h3>Scharmützel</h3>
+        <dl><dt>Epochen</dt><dd id="sk-overview-epochs"></dd>
+          <dt>Spieler</dt><dd id="sk-overview-players"></dd>
+          <dt>Kartenaufdeckung</dt><dd id="sk-overview-map"></dd></dl>
+      </section>
+    <div class="row skirmish-actions"><button id="play">Scharmützel starten</button><button id="continue" class="alt" style="display:none">Fortsetzen</button><button id="mpopen" class="alt">U-Boot-Verfolgung mit Freunden…</button><button id="menu-fullscreen" class="alt" aria-pressed="false">Vollbild</button></div>
+      <button id="previous-save" class="alt" style="display:none">Vorheriger Spielstand</button>
+    <div id="mp" class="wide-fresh-room">
+      <section id="huge10-room" aria-label="Privater Pangea-Mehrspielerraum">
+        <h3>Pangea · U-Boot-Verfolgung</h3>
+        <p>Zwei Menschen und acht KI-Gegner auf 250 × 250 Feldern. U-Boote tauchen beim Verfolgen eines Ziels und feuern gelenkte Torpedos. Beide Spieler öffnen diese Seite. Der Gastgeber kann die Partie im lokalen Netz anzeigen. Einladung und Antwort lassen sich auch direkt austauschen.</p>
+        <p class="dim">Die Partie übernimmt die Scharmützeleinstellungen des Gastgebers. Mit Strg+S kann der Gastgeber einen gemeinsamen Spielstand erstellen. Zum Fortsetzen wählt der Gastgeber die Datei. Der Mitspieler erhält sie beim Verbinden automatisch.</p>
+        <label for="h10-resume-file">Gemeinsamen U-Boot-Spielstand öffnen</label>
+        <input id="h10-resume-file" type="file" accept=".openepoch-pgpursuit,application/octet-stream" data-h10-room="resume">
+        <div class="row">
+          <button type="button" class="alt" data-h10-room="host">Einladung erstellen</button>
+          <button type="button" class="alt" data-h10-room="guest">Einladung annehmen</button>
+          <button type="button" class="alt" data-h10-room="lan-create" hidden>LAN-Raum erstellen</button>
+          <button type="button" class="alt" data-h10-room="browse" hidden>LAN-Räume suchen</button>
+          <button type="button" class="alt" data-h10-room="cancel">Raum schließen</button>
+        </div>
+        <fieldset data-h10-room="lan-host" hidden>
+          <legend>Pangea im LAN</legend>
+          <label for="h10-lan-room-name">Raumname</label>
+          <input id="h10-lan-room-name" data-h10-room="lan-room-name" value="Pangea U-Boot" maxlength="40" autocomplete="off">
+          <button type="button" class="alt" data-h10-room="lan-list">Im LAN anzeigen</button>
+          <p data-h10-room="lan-host-status" role="status" class="dim"></p>
+          <div data-h10-room="lan-pending"></div>
+        </fieldset>
+        <fieldset data-h10-room="lan-browser" hidden>
+          <legend>Private Pangea-Räume im LAN</legend>
+          <label for="h10-lan-guest-name">Anzeigename für die Anfrage</label>
+          <input id="h10-lan-guest-name" data-h10-room="lan-guest-name" value="Mitspieler" maxlength="40" autocomplete="off">
+          <p data-h10-room="lan-browse-status" role="status" class="dim"></p>
+          <button type="button" class="alt" data-h10-room="lan-cancel-request" hidden>Anfrage zurückziehen</button>
+          <div data-h10-room="lan-rooms"></div>
+        </fieldset>
+        <p role="status" aria-live="polite" data-h10-room="status"></p>
+        <textarea rows="2" aria-label="Empfangener Raumcode" spellcheck="false" data-h10-room="input"></textarea>
+        <button type="button" class="alt" data-h10-room="connect" disabled>Verbinden</button>
+        <textarea rows="2" aria-label="Eigener Raumcode" readonly spellcheck="false" data-h10-room="output"></textarea>
+        <div class="row">
+          <button type="button" class="alt" data-h10-room="copy">Code kopieren</button>
+          <button type="button" data-h10-room="start" disabled>Partie starten</button>
+        </div>
+      </section>
+
+      <div class="row"><button id="mphost" class="alt">Host a game</button><button id="mpjoin" class="alt">Join a game</button>
+        <label style="width:auto;margin-left:10px">AI opponents</label><select id="mpai"><option>0</option><option>1</option><option>2</option></select></div>
+      <div class="row" id="mp-resignation-options" hidden><label for="mp-resign-policy">Bei Verlassen</label><select id="mp-resign-policy"><option value="0">Entfernen</option><option value="1">Defensiv</option><option value="5" selected>KI erstellen</option></select></div>
+      <div class="row" id="mp-source-rounds-option" hidden><label for="mp-source-rounds">Originaler Mehrspieler-Rundentakt</label><input id="mp-source-rounds" type="checkbox"><span class="dim">Beide Spieler müssen ihn aktivieren.</span></div>
+      <div id="mpstatus">1 vs 1, directly between two browsers — no server. The host creates an invite code, the guest answers with a reply code (send them by chat or mail).</div>
+      <textarea id="mpin" rows="3" placeholder="Choose Host or Join first" spellcheck="false"></textarea>
+      <div class="row"><button id="mpgo" class="alt">Connect</button></div>
+      <textarea id="mpout" rows="3" readonly placeholder="Your code will appear here" spellcheck="false"></textarea>
+      <div class="row"><button id="mpcopy" class="alt">Copy code</button></div>
+      <details id="mp-roster" hidden>
+        <summary>Mehrspielerraum für 2 bis 4 Personen</summary>
+        <p class="dim">Jeder Gast erhält einen eigenen Einladungscode. Der Host startet, sobald alle Plätze bereit sind.</p>
+        <p id="mp-roster-lan-help" class="dim" hidden></p>
+        <div class="row">
+          <label for="mp-roster-count">Menschliche Spieler</label>
+          <select id="mp-roster-count"><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option></select>
+          <label for="mp-roster-ai">KI-Spieler</label>
+          <select id="mp-roster-ai"><option value="0">0</option><option value="1">1</option></select>
+        </div>
+        <div class="row">
+          <button id="mp-roster-host" type="button" class="alt">Raum eröffnen</button>
+          <button id="mp-roster-coop" type="button" class="alt" hidden>Koop gegen KI eröffnen</button>
+          <button id="mp-roster-grouped" type="button" class="alt" hidden>Gruppen-Koop eröffnen</button>
+          <label id="mp-roster-group-options" hidden>Aufteilung <select id="mp-roster-group-layout">
+            <option value="pairs">2 + 2 Controller</option><option value="singlePair">2 + 1 + 1 Controller</option><option value="trio">3 + 1 Controller</option>
+          </select></label>
+          <button id="mp-roster-join" type="button" class="alt">Raum beitreten</button>
+          <button id="mp-roster-browse" type="button" class="alt" hidden>LAN-Räume suchen</button>
+          <button id="mp-roster-close" type="button" class="alt" hidden>Raum schließen</button>
+        </div>
+        <div class="row">
+          <label for="mp-roster-resume-file">Gespeicherten Mehrspielerraum öffnen</label>
+          <input id="mp-roster-resume-file" type="file" accept=".openepoch-mp,application/octet-stream">
+        </div>
+        <p id="mp-roster-status" role="status" class="dim">2 bis 4 Personen mit installiertem UP-Regelprofil.</p>
+        <div id="mp-roster-host-room" hidden>
+          <fieldset id="mp-roster-lan-host" hidden>
+            <legend>LAN-Raumliste</legend>
+            <label for="mp-roster-lan-room-name">Raumname</label>
+            <input id="mp-roster-lan-room-name" value="OpenEpoch-Scharmützel" maxlength="40" autocomplete="off">
+            <button id="mp-roster-lan-list" type="button" class="alt">Im LAN anzeigen</button>
+            <p id="mp-roster-lan-host-status" role="status" class="dim">Dieser Raum ist nur über Einladungen erreichbar.</p>
+            <div id="mp-roster-lan-pending"></div>
+          </fieldset>
+          <div id="mp-roster-players"></div>
+          <button id="mp-roster-start" type="button" disabled>Partie starten</button>
+        </div>
+        <div id="mp-roster-guest-room" hidden>
+          <label for="mp-roster-invite">Einladung vom Host</label>
+          <textarea id="mp-roster-invite" rows="2" spellcheck="false"></textarea>
+          <button id="mp-roster-reply" type="button" class="alt">Antwort erzeugen</button>
+          <div id="mp-roster-manual-answer">
+            <label for="mp-roster-answer">Antwort an den Host</label>
+            <textarea id="mp-roster-answer" rows="2" readonly spellcheck="false"></textarea>
+          </div>
+        </div>
+        <fieldset id="mp-roster-lan-browser" hidden>
+          <legend>LAN-Räume</legend>
+          <label for="mp-roster-lan-guest-name">Anzeigename für die Anfrage</label>
+          <input id="mp-roster-lan-guest-name" value="Mitspieler" maxlength="40" autocomplete="off">
+          <p id="mp-roster-lan-browse-status" role="status" class="dim"></p>
+          <button id="mp-roster-lan-cancel-request" type="button" class="alt" hidden>Anfrage zurückziehen</button>
+          <div id="mp-roster-lan-rooms"></div>
+        </fieldset>
+        <template id="mp-roster-player-template">
+          <fieldset>
+            <legend></legend>
+            <div class="row">
+              <button type="button" class="alt" data-roster-lan hidden>LAN-Einladung</button>
+              <button type="button" class="alt" data-roster-invite>Manuelle Einladung</button>
+              <span data-roster-state class="dim"></span>
+            </div>
+            <label>Einladung an den Gast<textarea rows="2" data-roster-offer readonly spellcheck="false"></textarea></label>
+            <div data-roster-manual>
+              <label>Antwort des Gasts<textarea rows="2" data-roster-answer spellcheck="false"></textarea></label>
+              <button type="button" class="alt" data-roster-connect disabled>Verbinden</button>
+            </div>
+          </fieldset>
+        </template>
+      </details>
+    </div>
+    <details class="extra-options"><summary>Steuerung und weitere Optionen</summary>
+    <div class="row"><label>Leistungstest</label>
+      <button class="alt" data-bench="1000">2 000 units</button>
+      <button class="alt" data-bench="2000">4 000 units</button>
+      <button class="alt" data-bench="3500">7 000 units</button></div>
+    <table>
+      <tr><td>Left click / drag</td><td>select · double-click selects all of a type · Shift adds</td></tr>
+      <tr><td>Right click</td><td>move · attack · gather · build · set rally point</td></tr>
+      <tr><td>A + click</td><td>attack-move &nbsp; <b>S</b> stop &nbsp; <b>Del</b> destroy</td></tr>
+      <tr><td>Pfeiltasten / Bildschirmrand</td><td>Kamera bewegen · Mausrad: Zoom · mittlere Maustaste: schieben</td></tr>
+      <tr><td>Strg / R / Komma / Punkt</td><td>Gebäude in der Bauvorschau um 90° drehen; mit Umschalt 45°</td></tr>
+      <tr><td>Umschalt + Mausrad</td><td>Bauvorschau um 45° drehen; der Hafen richtet sich zunächst an der Küste aus</td></tr>
+      <tr><td>F11</td><td>Vollbild an/aus; auch über den Vollbildbutton im Menü und Spiel</td></tr>
+      <tr><td>Q W E R T / Z X C V B</td><td>command buttons &nbsp; <b>Esc</b> cancel</td></tr>
+      <tr><td>Ctrl+1…9 / 1…9</td><td>set / recall control group (tap twice to jump)</td></tr>
+      <tr><td>F &nbsp; H &nbsp; Space</td><td>idle worker · home · jump to selection</td></tr>
+      <tr><td>F4</td><td>Diplomatie · Frieden, Bündnisse, Sicht teilen und Rohstoffe schenken</td></tr>
+      <tr><td>U</td><td>unload transport ships (or right-click a shore)</td></tr>
+      <tr><td>Umschalt+Pause &nbsp; − &nbsp; = &nbsp; Rücktaste &nbsp; M</td><td>Pause · Tempo · Starttempo · Ton</td></tr>
+      <tr><td>Strg+S</td><td>Spielstand speichern. Im Mehrspielerraum speichert der Host für alle.</td></tr>
+    </table>
+    <p><a href="reference.html">Basiswerte</a> · <a href="catalog.html">Basis-Technologiebaum</a> · <a href="?">OpenEpoch-Regeln</a></p>
+    </details>
+    </div>
+    <p class="skirmish-footer" style="margin-top:14px;font-size:12px">Private U-Boot-Partie · <a href="pangea-huge10-network-naval-private.html?rules=ee2">Pangea-Marineeinsatz</a> · <a href="pangea-huge10-network-private.html?rules=ee2">Bisheriger Pangea-Mehrspieler</a> · <a href="pangea-private.html?rules=ee2">Pangea mit vier Spielern</a> · <a href="index.html?rules=ee2">Standard-Scharmützel</a></p>
+  </div>
+</div>
+
+<aside id="building-controls" hidden aria-label="Gebäude ausrichten und platzieren">
+  <header><strong id="building-name"></strong><span id="building-angle"></span><button id="building-left" title="90° nach links · mit Umschalt 45°" aria-label="Gebäude nach links drehen">↶90°</button><button id="building-right" title="90° nach rechts · mit Umschalt 45°" aria-label="Gebäude nach rechts drehen">90°↷</button><button id="building-auto" title="Hafen wieder automatisch an der Küste ausrichten" hidden>Küste: automatisch</button><button id="building-cancel">Abbrechen</button></header>
+  <p id="building-status" role="status" aria-live="polite"></p>
+  <small>Strg / R / Komma / Punkt: 90° · mit Umschalt: 45° · Umschalt+Mausrad: 45° · Esc: abbrechen</small>
+</aside>
+<div id="trade-route-caption" hidden role="status"></div>
+<div id="air-mission-caption" hidden role="status"></div>
+<script type="module" src="main-pangea-huge10-network-pursuit-private.js?v=resource-view-specialized256"></script>
+</body>
+</html>

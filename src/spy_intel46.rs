@@ -262,7 +262,7 @@ impl Game {
             for actor in &self.ents[..self.high] {
                 if actor.alive && actor.hp > 0.0 && actor.built >= 1.0 && actor.team == owner && actor.def == def {
                     let range = self.modifiers[owner as usize][def as usize][5];
-                    Self::paint_unit_sight(&mut self.team_vis, observer, actor, range, self.map.world_dimensions());
+                    Self::paint_unit_sight(&mut self.team_vis, observer, actor, range, self.map.world_dimensions(), self.map.layout.stride);
                 }
             }
         }

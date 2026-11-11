@@ -55,7 +55,10 @@ impl Game {
         self.spend_unit_reserve(self.h(index), 1.0);
         let site = self.ents[target];
         let maximum = self.max_hp(site.team, site.def);
-        if self.uses_generated_city_foundation(site.def) {
+        let source_city = self.uses_generated_city_foundation(site.def);
+        #[cfg(feature = "ee2-valley74-city-footprint")]
+        let source_city = source_city || self.uses_valley_city_foundation(site.def);
+        if source_city {
             Self::advance_generated_city_foundation(&mut self.ents[target], maximum, fraction, 1.0, false);
         } else {
             let new_progress = (site.built + fraction).min(1.0);

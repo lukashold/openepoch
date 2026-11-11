@@ -77,7 +77,7 @@ fn trade_factor(baseline: f32, percent: i16) -> f32 {
 
 /// Connectivity for an order is read-only. The flow-field cache and its tick
 /// budget are part of live movement and must stay untouched during local input.
-pub(super) fn connected(pass: &[bool], goal: usize) -> Vec<bool> {
+pub(super) fn connected(layout: crate::map::MapLayout, pass: &[bool], goal: usize) -> Vec<bool> {
     let mut reached = vec![false; NN];
     if !pass[goal] { return reached; }
     let mut queue = vec![goal];
@@ -85,13 +85,13 @@ pub(super) fn connected(pass: &[bool], goal: usize) -> Vec<bool> {
     let mut cursor = 0;
     while let Some(&tile) = queue.get(cursor) {
         cursor += 1;
-        let (x, y) = ((tile % N) as i32, (tile / N) as i32);
+        let [x, y] = layout.xy(tile).map(|axis| axis as i32);
         // The navigation field forbids diagonal corner cuts, so the four
         // cardinal neighbours suffice to compute its connected components.
         for &(dx, dy) in &DIRS[..4] {
             let (nx, ny) = (x + dx, y + dy);
-            if nx < 0 || nx >= N as i32 || ny < 0 || ny >= N as i32 { continue; }
-            let next = ny as usize * N + nx as usize;
+            if !layout.contains(nx, ny) { continue; }
+            let next = layout.index(nx as usize, ny as usize);
             if pass[next] && !reached[next] {
                 reached[next] = true;
                 queue.push(next);
@@ -160,7 +160,7 @@ impl Game {
         let mut building = self.ents[host];
         building.rx = -1.0;
         let point = self.spawn_point(&building, &DEFS[building.def as usize], &DEFS[trader as usize]);
-        self.map.pass[domain(trader)][tile_of(point.0, point.1)].then_some(point)
+        self.map.pass[domain(trader)][self.map.tile_of(point.0, point.1)].then_some(point)
     }
 
     pub(crate) fn trade_candidates(&self, team: u8, home: u32, destination: u32, selection: &[usize]) -> Vec<usize> {
@@ -179,8 +179,8 @@ impl Game {
         let Some(home_port) = self.trade_port(home_index, trader) else { return Vec::new(); };
         let Some(destination_port) = self.trade_port(destination_index, trader) else { return Vec::new(); };
         let dc = domain(trader);
-        let reached = connected(&self.map.pass[dc], tile_of(destination_port.0, destination_port.1));
-        if !reached[tile_of(home_port.0, home_port.1)] { return Vec::new(); }
+        let reached = connected(self.map.layout, &self.map.pass[dc], self.map.tile_of(destination_port.0, destination_port.1));
+        if !reached[self.map.tile_of(home_port.0, home_port.1)] { return Vec::new(); }
         let mut accepted: Vec<_> = std::iter::once(first).chain(candidates).filter(|&i| {
             let unit = &self.ents[i];
             unit.def == trader && reached[self.map.snap(unit.x, unit.y, dc)]
@@ -193,7 +193,7 @@ impl Game {
 
     fn visible_to_trader(&self, team: u8, host: usize) -> bool {
         let e = &self.ents[host];
-        e.team == team || self.real_fog(team, tile_of(e.x, e.y)) >= 128
+        e.team == team || self.real_fog(team, self.map.tile_of(e.x, e.y)) >= 128
     }
 
     pub(crate) fn order_trade_route(&mut self, team: u8, home: u32, destination: u32, selection: &[usize]) {
@@ -231,7 +231,7 @@ impl Game {
         }
         let Some(port) = self.trade_port(index, trader) else { return Vec::new(); };
         let dc = domain(trader);
-        let reached = connected(&self.map.pass[dc], tile_of(port.0, port.1));
+        let reached = connected(self.map.layout, &self.map.pass[dc], self.map.tile_of(port.0, port.1));
         let hosts: Vec<_> = self.trade_home_indices(team, trader, destination, &reached).collect();
         let mut chosen: Vec<_> = selection.iter().copied().filter_map(|i| {
             let unit = self.ents[i];
@@ -303,7 +303,7 @@ impl Game {
 
     fn trade_replacement(&self, unit: Ent, destination: u32) -> Option<u32> {
         let dc = domain(unit.def);
-        let reached = connected(&self.map.pass[dc], self.map.snap(unit.x, unit.y, dc));
+        let reached = connected(self.map.layout, &self.map.pass[dc], self.map.snap(unit.x, unit.y, dc));
         self.nearest_trade_host(unit, self.trade_home_indices(unit.team, unit.def, destination, &reached)).map(|i| self.h(i))
     }
 
@@ -311,7 +311,7 @@ impl Game {
         (0..self.high).filter(move |&i| {
             let handle = self.h(i);
             handle != destination && self.trade_host(team, trader, handle, true).is_some() &&
-                self.trade_port(i, trader).is_some_and(|(x, y)| reached[tile_of(x, y)])
+                self.trade_port(i, trader).is_some_and(|(x, y)| reached[self.map.tile_of(x, y)])
         })
     }
 

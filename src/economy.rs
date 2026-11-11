@@ -78,6 +78,10 @@ impl Game {
     pub fn native_generation(&self,def:DefId,team:u8,resource:u8)->f32{
         #[cfg(feature="ee2-up15")] {
             let rate=crate::ee2_up15_economy::generation(def,self.players[team as usize].epoch,resource);
+            #[cfg(feature = "ee2-rect288-oil-research")]
+            let rate = if def == OIL_RIG && resource == crate::map::R_OIL - 1 {
+                self.oil_research_rate(team)
+            } else { rate };
             #[cfg(feature="ee2-native13")]
             let rate=rate*self.crown_generation_scale(team,def,resource);
             rate
@@ -106,14 +110,14 @@ impl Game {
         if def == crate::granary211::ID { return kind == R_FOOD && building.hp > 0.0; }
         DEFS[def as usize].has(F_DROPOFF) || def == DOCK && kind == R_FOOD
     }
-    pub fn return_cargo(&mut self,e:&mut Ent,d:&Def,want:&mut(f32,f32),moving:&mut bool){
+    pub fn return_cargo(&mut self,e:&mut Ent,d:&Def,want:&mut(f32,f32),moving:&mut bool)->bool{
         let kind=e.q[2] as u8;
-        if kind==R_NONE||!self.resource_unlocked(e.team,kind){e.carry=0.0;e.q[1]=0;e.q[2]=0;return;}
+        if kind==R_NONE||!self.resource_unlocked(e.team,kind){e.carry=0.0;e.q[1]=0;e.q[2]=0;return false;}
         let dropoff=self.ents[..self.high].iter().enumerate().filter(|(_,b)|b.alive&&b.built>=1.0&&b.team==e.team&&Self::accepts_gathered_resource(b,kind))
             .min_by(|(_,a),(_,b)|((a.x-e.x).powi(2)+(a.y-e.y).powi(2)).total_cmp(&((b.x-e.x).powi(2)+(b.y-e.y).powi(2)))).map(|(i,_)|i);
-        let Some(j)=dropoff else{return;};let b=self.ents[j];
+        let Some(j)=dropoff else{return false;};let b=self.ents[j];
         if (b.x-e.x).abs().max((b.y-e.y).abs())>Self::building_half(&b)+0.7{
-            e.fkey=self.key_for(LAND,b.x,b.y);*want=self.steer(e,d,b.x,b.y);*moving=true;return;
+            e.fkey=self.key_for(LAND,b.x,b.y);*want=self.steer(e,d,b.x,b.y);*moving=true;return true;
         }
         // Native Dropoff bonus: CityCenter/Warehouse, 2% per garrisoned citizen.
         let per_slot={
@@ -126,8 +130,26 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         self.crown_gathered(e.team, kind as usize - 1, delivered);
         e.carry=0.0;e.q[1]=0;e.q[2]=0;
-        let (x,y)=if let Some(f)=self.get(e.otgt){(self.ents[f].x,self.ents[f].y)}else{((e.otile as usize%N) as f32+0.5,(e.otile as usize/N) as f32+0.5)};
+        let [x, y] = self.get(e.otgt).map_or_else(
+            || self.map.tile_center(e.otile as usize),
+            |farm| [self.ents[farm].x, self.ents[farm].y],
+        );
+        #[cfg(feature = "ee2-authored-rect233")]
+        let [x, y] = self.world0_gather_order(e).map_or([x, y], |target| target.point);
         e.fkey=self.key_for(LAND,x,y);
+        false
+    }
+
+    /// The original Deposit child marks its approach Move as minor type1.
+    /// Contact completion and a missing dropoff make no new visual request.
+    #[cfg(feature = "ee2-rect289-citizen-work")]
+    pub(crate) fn return_cargo_with_work_visual(&mut self,index:usize,e:&mut Ent,d:&Def,
+        want:&mut(f32,f32),moving:&mut bool) {
+        if self.return_cargo(e,d,want,moving) {
+            self.request_citizen_work(index, if e.q[2] == u32::from(R_WOOD) {29} else {30}, 0.0);
+        } else {
+            self.retain_citizen_work(index);
+        }
     }
 }
 

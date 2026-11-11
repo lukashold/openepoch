@@ -7,6 +7,10 @@ use crate::game::*;
 mod ai_first_dock80;
 use crate::map::*;
 
+#[cfg(feature = "ee2-rect291-ai-scout")]
+#[path = "ai_scout291.rs"]
+mod ai_scout291;
+
 #[cfg(feature = "ee2-native13")]
 #[path = "hotspot_ai68.rs"]
 mod hotspot_ai68;
@@ -15,13 +19,48 @@ mod hotspot_ai68;
 enum BuildOutcome { Unavailable, NoPlot, Posted }
 
 impl Game {
+    #[cfg(feature = "ee2-rect239-fresh")]
+    fn ai_assign_rect_gather(&mut self, team: u8, worker: usize, resource: u8) -> bool {
+        let reach = if resource == R_WOOD { 80.0_f32 } else { 60.0 };
+        #[cfg(feature = "ee2-rect291-ai-scout")]
+        let reach = if resource == R_FOOD {
+            // Known food on this authored map can be beyond the old square
+            // adapter's arbitrary60-unit radius. Visibility and a connected
+            // permitted movement graph still admit every actual target.
+            let [width, height] = self.map.world_dimensions();
+            (width as f32).hypot(height as f32)
+        } else { reach };
+        let unit = self.nearest_world0_ai_resource(worker, resource, reach * reach);
+        #[cfg(feature = "ee2-rect291-ai-scout")]
+        if resource == R_FOOD {
+            if let Some((prey, distance)) = self.nearest_rect_ai_prey(worker, reach * reach) {
+                if unit.is_none_or(|(_, resource_distance)| distance < resource_distance) {
+                    self.order_world0_hunt(team, prey, &[worker]);
+                    if self.ents[worker].order == O_RECT_HUNT { return true; }
+                }
+            }
+        }
+        if resource == R_WOOD {
+            let tree = self.nearest_rect_ai_forest(worker, reach * reach);
+            if let Some((row, distance)) = tree {
+                if unit.is_none_or(|(_, unit_distance)| distance < unit_distance) {
+                    self.order_valley_forest(team, row, &[worker]);
+                    if self.ents[worker].order == O_VALLEY_FOREST { return true; }
+                }
+            }
+        }
+        let Some((id, _)) = unit else { return false; };
+        self.order_world0_resource(team, id, &[worker]);
+        self.ents[worker].order == O_GATHER
+    }
+
     #[cfg(feature = "ee2-native13")]
     fn hill_combat_strength(&self, team: u8, def: DefId, hp: f32) -> f32 {
         let weapon = DEFS[def as usize].w[0];
         let epoch = self.players[team as usize].epoch;
         let row = crate::ee2_units::lookup_class(def, epoch);
         let damage = if def == WORKER { row.and_then(|unit| unit.damage).unwrap_or(0.0) }
-            else { self.strategic_weapon_damage(team, def, weapon.dmg) };
+            else { self.effective_weapon_damage(team, def, weapon.dmg) };
         let reload = row.and_then(|unit| unit.reload).unwrap_or(weapon.cd);
         let reload = if reload == 0.0 { 0.0001 } else { reload };
         ((f64::from(damage) / f64::from(reload) + f64::from(0.1_f32)) as f32 * hp).max(10.0)
@@ -116,7 +155,7 @@ impl Game {
             return BuildOutcome::Unavailable;
         }
         let s = d.size as i32;
-        let wanted_territory=self.map.terr[tile_of(bx as f32,by as f32)];
+        let wanted_territory=self.map.terr[self.map.tile_of(bx as f32,by as f32)];
         let (r0, r1) = if def == DOCK { (4, 48) } else if def == TC { (0, 16) } else { (5, 26) };
         let start = self.rng.range(8) as i32;
         let mut found_plot = false;
@@ -124,7 +163,7 @@ impl Game {
             for k in (-r..=r).step_by(2) {
                 let k = ((k + r + start) % (2 * r + 1)) - r;
                 for &(tx, ty) in &[(bx + k, by - r), (bx + k, by + r), (bx - r, by + k), (bx + r, by + k)] {
-                    if cfg!(feature="ee2-reference") && matches!(def,TC|FORTRESS) && self.map.terr[tile_of(tx as f32+s as f32*0.5,ty as f32+s as f32*0.5)]!=wanted_territory {continue;}
+                    if cfg!(feature="ee2-reference") && matches!(def,TC|FORTRESS) && self.map.terr[self.map.tile_of(tx as f32+s as f32*0.5,ty as f32+s as f32*0.5)]!=wanted_territory {continue;}
                     // keep a one-tile lane around land buildings so bases stay walkable
                     let ok = if def == DOCK {
                         self.can_place(def, tx, ty, team)
@@ -146,17 +185,43 @@ impl Game {
     }
 
     fn lane_free(&self, tx: i32, ty: i32, s: i32) -> bool {
-        if tx < 1 || ty < 1 || tx + s >= N as i32 || ty + s >= N as i32 {
+        if tx < 1 || ty < 1 || !self.map.layout.contains(tx + s, ty + s) {
             return false;
         }
         for y in ty..ty + s {
             for x in tx..tx + s {
-                if !self.map.pass[0][y as usize * N + x as usize] {
+                if !self.map.pass[0][self.map.tile_index(x as usize, y as usize)] {
                     return false;
                 }
             }
         }
         true
+    }
+
+    pub(crate) fn portable_ai_planner_due(&self, team: usize) -> bool {
+        #[cfg(feature = "ee2-rect261-ai-clock")]
+        if self.rect_ai_clock.is_some() {
+            return crate::native_valley37::ai_clock261::planner_due(team, self.sim_previous_elapsed(), self.sim_elapsed());
+        }
+        (self.tick + team as u32 * 7) % 24 == 0
+    }
+
+    fn portable_ai_wave_ready(&self, team: usize) -> bool {
+        #[cfg(feature = "ee2-rect261-ai-clock")]
+        if let Some(clock) = &self.rect_ai_clock { return clock.wave_ready(team, self.sim_elapsed()); }
+        self.tick >= self.players[team].ai_next_attack
+    }
+
+    fn portable_ai_delay_wave(&mut self, team: usize, ticks: u32) {
+        #[cfg(feature = "ee2-rect261-ai-clock")]
+        {
+            let now = self.sim_elapsed();
+            if let Some(clock) = &mut self.rect_ai_clock {
+                clock.delay_wave(team, now, ticks / crate::native_valley37::ai_clock261::LEGACY_RATE);
+                return;
+            }
+        }
+        self.players[team].ai_next_attack = self.tick + ticks;
     }
 
     pub fn ai_step(&mut self, team: u8) {
@@ -212,6 +277,10 @@ impl Game {
                 workers.push(i);
                 match e.order {
                     O_GATHER => gath[e.q[0] as usize] += 1,
+                    #[cfg(feature = "ee2-rect291-ai-scout")]
+                    O_RECT_HUNT => gath[R_FOOD as usize] += 1,
+                    #[cfg(feature = "ee2-rect239-fresh")]
+                    O_VALLEY_FOREST if self.rect_forest.is_some() => gath[R_WOOD as usize] += 1,
                     O_BUILD => builders += 1,
                     O_BOARD => {},
                     _ => idle.push(i),
@@ -233,9 +302,31 @@ impl Game {
         let base = if tc != NOIDX { tc } else { any_b };
         let (bx, by) = (self.ents[base].x, self.ents[base].y);
         let (bxi, byi) = (bx as i32, by as i32);
-        let btile = tile_of(bx, by);
+        let btile = self.map.tile_of(bx, by);
         let ep = self.players[ti].epoch;
         let p = self.players[ti];
+        #[cfg(feature = "ee2-rect291-ai-scout")]
+        {
+            self.scout_rectangular_opening(&army);
+            // The existing idle-only allocator can strand every worker on
+            // non-food jobs. Keep its food bias alive when the next ordinary
+            // Citizen cannot be paid, without altering prices or thresholds.
+            if self.rect_population.is_some() && gath[R_FOOD as usize] == 0
+                && self.resource(team, 0) < f32::from(self.unit_cost(team, WORKER)[0]) {
+                for &worker in &workers {
+                    if !matches!(self.ents[worker].order, O_IDLE | O_GATHER | O_VALLEY_FOREST) { continue; }
+                    let old_kind = if self.ents[worker].order == O_VALLEY_FOREST { R_WOOD as usize }
+                        else if self.ents[worker].order == O_GATHER { self.ents[worker].q[0] as usize }
+                        else { 0 };
+                    if self.ai_assign_rect_gather(team, worker, R_FOOD) {
+                        if old_kind != 0 { gath[old_kind] = gath[old_kind].saturating_sub(1); }
+                        gath[R_FOOD as usize] += 1;
+                        idle.retain(|&index| index != worker);
+                        break;
+                    }
+                }
+            }
+        }
         if cfg!(feature = "ee2-reference") && workers.len()>8 {
             for &b in &finished {
                 if self.ents[b].def != UNIVERSITY {continue;}
@@ -293,6 +384,22 @@ impl Game {
                     continue;
                 }
             }
+            #[cfg(feature = "ee2-rect239-fresh")]
+            if self.rect_population.is_some() {
+                gath[kind as usize] -= 1;
+                let mut alternatives: Vec<_> = (1..=crate::economy::RESOURCE_COUNT)
+                    .filter(|&k| weights[k] > 0.0 && self.citizen_can_gather(team, k as u8))
+                    .map(|k| (k, gath[k] as f32 / weights[k] * (1.0 + self.resource(team, k - 1) / 800.0)))
+                    .collect();
+                alternatives.sort_by(|a, b| a.1.total_cmp(&b.1).then_with(|| a.0.cmp(&b.0)));
+                for (resource, _) in alternatives {
+                    if self.ai_assign_rect_gather(team, w, resource as u8) {
+                        gath[resource] += 1;
+                        break;
+                    }
+                }
+                continue;
+            }
             let found = self.map.nearest_res(btile, kind, 60).or_else(|| self.map.nearest_res(btile, R_WOOD, 80));
             if let Some(t) = found {
                 self.order_gather(&[w], t);
@@ -320,7 +427,7 @@ impl Game {
             let first_dock = false;
             let farm_slots = farms.iter().filter(|f| f.1 < if cfg!(feature="ee2-reference"){1}else{4}).count();
             let pending_fort=if cfg!(feature="ee2-reference") {finished.iter().copied().find(|&b| {
-                let e=self.ents[b];let id=self.map.terr[tile_of(e.x,e.y)] as usize;
+                let e=self.ents[b];let id=self.map.terr[self.map.tile_of(e.x,e.y)] as usize;
                 e.def==TC && self.towner[id]==255 && !self.territory_adjacent_owned(team,id)
                     && self.territory_control_counts(team,id)[1]==0
             })}else{None};
@@ -379,8 +486,8 @@ impl Game {
                     for (k, s) in self.map.tseeds.iter().enumerate() {
                         let dd = (s.0 - bx).powi(2) + (s.1 - by).powi(2);
                         let adjacent=cfg!(feature="ee2-reference")&&self.territory_adjacent_owned(team,k);
-                        let occupied=self.ents[..self.high].iter().any(|e|e.alive&&e.hp>0.0&&e.def==TC&&self.map.terr[tile_of(e.x,e.y)] as usize==k);
-                        if self.towner[k] == 255 && !occupied && self.map.pass[0][tile_of(s.0, s.1)] && ((adjacent&&!best_adjacent)||adjacent==best_adjacent&&dd<bd) {
+                        let occupied=self.ents[..self.high].iter().any(|e|e.alive&&e.hp>0.0&&e.def==TC&&self.map.terr[self.map.tile_of(e.x,e.y)] as usize==k);
+                        if self.towner[k] == 255 && !occupied && self.map.pass[0][self.map.tile_of(s.0, s.1)] && ((adjacent&&!best_adjacent)||adjacent==best_adjacent&&dd<bd) {
                             bd = dd;
                             best_adjacent=adjacent;
                             at = (s.0 as i32, s.1 as i32);
@@ -482,7 +589,7 @@ impl Game {
         if self.ai_contest_hill(team, &army) { return; }
         #[cfg(feature = "ee2-native13")]
         if self.ai_contest_hotspots(team, &army, &workers, [bx, by]) { return; }
-        if army.len() >= wave && self.tick >= self.players[ti].ai_next_attack {
+        if army.len() >= wave && self.portable_ai_wave_ready(ti) {
             let mut best = NOIDX;
             let mut bd = f32::MAX;
             for i in 0..self.high {
@@ -500,13 +607,24 @@ impl Game {
             } else if (0..self.nplayers).any(|p|self.players[p].alive&&self.combat_hostile(team,p as u8)) {
                 // Scout deterministic map sectors, never hidden enemy entity
                 // coordinates. Real sight then permits a targeted attack wave.
-                let k=(self.tick/400+team as u32*5+self.seed0)%16;
-                (32.0+(k%4) as f32*64.0, 32.0+(k/4) as f32*64.0, 400)
+                let interval = self.tick / 400;
+                #[cfg(feature = "ee2-rect261-ai-clock")]
+                let interval = if self.rect_ai_clock.is_some() {
+                    (f64::from(self.sim_elapsed()) / 20.0) as u32
+                } else { interval };
+                let k=(interval+team as u32*5+self.seed0)%16;
+                let point = [32.0+(k%4) as f32*64.0, 32.0+(k/4) as f32*64.0];
+                #[cfg(feature = "ee2-rect291-ai-scout")]
+                let point = match self.rectangular_scout_goal(&army, k) {
+                    Some(point) => point,
+                    None => return,
+                };
+                (point[0], point[1], 400)
             } else {
                 return;
             };
             self.order_move(&army, x, y, true);
-            self.players[ti].ai_next_attack = self.tick + delay;
+            self.portable_ai_delay_wave(ti, delay);
             #[cfg(feature="ee2-native13")]
             if self.air_missions_enabled {
                 let target = (best != NOIDX).then(|| self.h(best));
@@ -738,35 +856,4 @@ mod civ8_ai_tests {
         assert!(g.ents.iter().zip(&loaded.ents).any(|(a,b)|a.alive&&(a.x.to_bits()!=b.x.to_bits()||a.y.to_bits()!=b.y.to_bits())),"actual positions differ, independently of the history marker");
         assert_eq!(g.state_hash(),repaired.state_hash(),"modern envelope restores exactly the navigation decision state");
     }
-}
-
-#[cfg(all(test, feature = "ee2-native13"))]
-#[test]
-fn sea_lanes_strength_retains_hp_and_excludes_secondary_attack() {
-    let mut game = Game::new(7, 1, 0, 1, 0);
-    assert!(game.configure_crowns(false));
-    game.researched[0][0] |= 0b1111;
-    for _ in 0..20 { game.tick(); }
-    let ship: DefId = 29;
-    let weapon = DEFS[ship as usize].w[0].dmg;
-    let before_hp = game.max_hp(0, ship);
-    let before_damage = game.effective_weapon_damage(0, ship, weapon);
-    assert!(before_damage > 0.0);
-    let before_strength = game.hill_combat_strength(0, ship, before_hp);
-    assert!(game.choose_crown_power(0, 5));
-    let after_hp = game.max_hp(0, ship);
-    assert!(after_hp > before_hp);
-    assert!(game.effective_weapon_damage(0, ship, weapon) > before_damage);
-    assert_eq!(game.strategic_weapon_damage(0, ship, weapon), before_damage);
-    let reload = crate::ee2_units::lookup_class(ship, game.players[0].epoch).and_then(|unit| unit.reload).unwrap_or(DEFS[ship as usize].w[0].cd);
-    let dps = (f64::from(before_damage) / f64::from(reload) + f64::from(0.1_f32)) as f32;
-    let after_strength = game.hill_combat_strength(0, ship, after_hp);
-    assert_eq!(after_strength, (dps * after_hp).max(10.0));
-    assert!(after_strength > before_strength);
-    game.save();
-    let mut loaded = Game::load(&game.savebuf).expect("Sea Lanes save loads");
-    assert_eq!(loaded.state_hash(), game.state_hash());
-    assert_eq!(loaded.hill_combat_strength(0, ship, loaded.max_hp(0, ship)), after_strength);
-    loaded.save();
-    assert_eq!(loaded.savebuf, game.savebuf);
 }

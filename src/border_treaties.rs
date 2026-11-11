@@ -144,6 +144,11 @@ impl BorderTreaties {
         self.terms[Self::pair(from, to)]
     }
 
+    #[cfg(feature = "ee2-valley192-movement-atlas")]
+    pub(crate) fn atlas_exempt(&self, seat: usize) -> bool {
+        self.exempt & (1 << seat) != 0
+    }
+
     pub(crate) fn set_term(&mut self, from: usize, to: usize, term: u8) {
         self.terms[Self::pair(from, to)] = term;
     }
@@ -253,11 +258,11 @@ fn relocation(start: [i32; 2], width: i32, height: i32, mut allowed: impl FnMut(
 }
 
 impl Game {
-    pub(crate) fn border_egress_mask(&self, actor: &Ent) -> u32 {
+    pub(crate) fn border_egress_mask(&self, actor: &Ent) -> crate::map::RegionMask {
         let denied = self.denied_border_territories(actor);
         if denied == 0 { return 0; }
-        let tile = crate::map::tile_of(actor.x, actor.y);
-        let here = 1u32.checked_shl(u32::from(self.map.terr[tile])).unwrap_or(0);
+        let tile = self.map.tile_of(actor.x, actor.y);
+        let here = 1u64.checked_shl(u32::from(self.map.terr[tile])).unwrap_or(0);
         denied & !here
     }
 
@@ -278,7 +283,7 @@ impl Game {
             {
                 continue;
             }
-            let here = tile_of(actor.x, actor.y);
+            let here = self.map.tile_of(actor.x, actor.y);
             if new_owner.is_some_and(|seat| {
                 seat != actor.team && self.towner.get(usize::from(self.map.terr[here])) != Some(&seat)
             }) {
@@ -291,7 +296,7 @@ impl Game {
             let pass = &self.map.pass[usize::from(def.dom != LAND)];
             let destination = relocation([actor.x as i32, actor.y as i32], width, height, |[x, y]| {
                 if x >= width { return false; }
-                let tile = y as usize * N + x as usize;
+                let tile = self.map.tile_index(x as usize, y as usize);
                 (def.dom == AIR || pass[tile]) && self.map.permits_territory(tile, denied)
             });
             if let Some([x, y]) = destination {
@@ -305,18 +310,18 @@ impl Game {
             rules.restricts(builder as usize, owner as usize, 2))
     }
 
-    pub(crate) fn denied_border_territories(&self, actor: &Ent) -> u32 {
+    pub(crate) fn denied_border_territories(&self, actor: &Ent) -> crate::map::RegionMask {
         self.denied_border_territories_for(actor.team, purpose(actor.def))
     }
 
-    fn denied_border_territories_for(&self, mover: u8, purpose: u8) -> u32 {
+    fn denied_border_territories_for(&self, mover: u8, purpose: u8) -> crate::map::RegionMask {
         let Some(rules) = &self.diplomacy.borders else { return 0; };
         let mover = mover as usize;
         if mover >= self.nplayers || rules.terms.iter().all(|&term| term == 0) { return 0; }
         self.towner.iter().enumerate().fold(0, |mask, (territory, &owner)| {
             let owner = owner as usize;
             let denied = owner < self.nplayers && rules.restricts(mover, owner, purpose);
-            mask | (u32::from(denied) << territory)
+            mask | (u64::from(denied) << territory)
         })
     }
 }

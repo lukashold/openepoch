@@ -11,15 +11,7 @@ impl Game {
     /// New exact source families store native absolute Damage, avoiding v/base*base.
     /// Legacy role definitions keep their established multiplier representation.
     pub fn effective_weapon_damage(&self,team:u8,def:DefId,weapon_base:f32)->f32 {
-        self.weapon_damage_from_modifier(team, def, weapon_base, self.modifiers[team as usize][def as usize][1])
-    }
-
-    #[cfg(feature = "ee2-native13")]
-    pub(crate) fn strategic_weapon_damage(&self, team: u8, def: DefId, weapon_base: f32) -> f32 {
-        self.weapon_damage_from_modifier(team, def, weapon_base, self.strategic_damage[team as usize][def as usize])
-    }
-
-    fn weapon_damage_from_modifier(&self,team:u8,def:DefId,weapon_base:f32,value:f32)->f32 {
+        let value=self.modifiers[team as usize][def as usize][1];
         let damage = if cfg!(feature="ee2-roster6")&&def>=57 {value}else{weapon_base*value};
         #[cfg(feature="ee2-ai9-game-bridge")]
         let damage = crate::ai9_rank::damage(self, team, def, damage);
@@ -200,6 +192,10 @@ impl Game {
                 for (i,row) in m.iter_mut().enumerate() {
                     if !crate::ids::mask_has(ef.mask,i as DefId) { continue; }
                     let f=ef.field as usize; let d=&DEFS[i];
+                    // GatherOil research changes the Garrison ability's absolute
+                    // rate. Its separate area-effect multiplier stays intact.
+                    #[cfg(feature = "ee2-rect288-oil-research")]
+                    if crate::oil_research288::rate_effect(i as DefId, ef.field, ef.method) { continue; }
                     let base=if f==6 {d.w[0].range+baseline[i][6]}else{baseline[i][f]};
                     match ef.method {0=>row[f]+=base*ef.value*0.01,1=>row[f]+=ef.value,_=>row[f]=ef.value}
                 }
@@ -208,12 +204,7 @@ impl Game {
         #[cfg(feature="ee2-civ8")]
         crate::civ8_runtime::apply_modifiers(self.civilizations[team as usize],&baseline,&mut m);
         #[cfg(feature="ee2-native13")]
-        {
-            // 008568DA applies Crown EffectAttack to the secondary damage word.
-            // 00508880 reads the primary word for strategic strength.
-            self.strategic_damage[team as usize] = m.map(|row| row[1].max(0.0));
-            self.apply_crown_modifiers(team, &mut m);
-        }
+        self.apply_crown_modifiers(team, &mut m);
         for row in &mut m {
             for f in [0,1,2,3,4,5,7,8,9,10,12,13,14,15,16,17] { row[f]=row[f].max(if f==2||f==1||(cfg!(feature="ee2-up15")&&f==5) {0.0} else {0.05}); }
         }

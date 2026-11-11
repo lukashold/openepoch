@@ -64,14 +64,36 @@ pub const ACT_BUILD: f32 = 5.0;
 pub const ACT_COMBAT: f32 = 6.0;
 
 impl Game {
-    fn render_activity(&self, e: &Ent, d: &Def, speed: f32) -> (f32, f32) {
+    fn render_activity(&self, _index: usize, e: &Ent, d: &Def, speed: f32) -> (f32, f32) {
         if speed > 0.25 { return (ACT_WALK, e.rot); }
+        #[cfg(feature = "ee2-rect244-hunt-visual")]
+        if e.order == O_RECT_HUNT {
+            if let Some(active) = self.rect_hunt_visual_active(_index) {
+                return (if active { ACT_COMBAT } else { ACT_IDLE }, e.rot);
+            }
+        }
+        #[cfg(feature = "ee2-rect242-hunt")]
+        if e.order == O_RECT_HUNT && e.q[4] & u32::from(crate::native_attack_clock::STARTED) != 0 {
+            return (ACT_COMBAT, e.rot);
+        }
+        #[cfg(feature = "ee2-valley164-forest-play")]
+        if let Some(angle) = self.valley_forest_chopping_angle(e) { return (ACT_WOOD, angle); }
         #[cfg(feature = "ee2-native13")]
         if e.order == O_CAPTURE && e.cd > 0.0 {
             return (ACT_COMBAT, e.rot);
         }
         if cfg!(feature="ee2-reference")&&d.has(F_WORKER)&&e.order==O_GATHER&&e.q[1]==1{return (ACT_IDLE,e.rot);}
+        #[cfg(feature = "ee2-authored-rect233")]
+        if let Some(target) = self.world0_gather_order(e) {
+            if e.q[4] != 1 || e.q[1] == 1 || target.remaining == 0.0 { return (ACT_IDLE, e.rot); }
+            let activity = match target.kind { R_WOOD => ACT_WOOD, R_FOOD => ACT_FOOD, _ => ACT_MINE };
+            return (activity, (target.point[1] - e.y).atan2(target.point[0] - e.x));
+        }
         if d.has(F_WORKER) && e.order == O_GATHER {
+            #[cfg(feature = "ee2-rect279-farm-active")]
+            if e.otgt != NONE && self.rect_farm_work_enabled() && !self.rect_farm_cutting(_index) {
+                return (ACT_IDLE, e.rot);
+            }
             let (tx, ty, reach) = if let Some(j) = self.get(e.otgt) {
                 let target = self.ents[j];
                 if target.built < 1.0 { return (ACT_IDLE, e.rot); }
@@ -79,7 +101,8 @@ impl Game {
             } else {
                 let t = e.otile as usize;
                 if t >= NN || self.map.res[t] != e.q[0] as u8 { return (ACT_IDLE, e.rot); }
-                ((t % N) as f32 + 0.5, (t / N) as f32 + 0.5, 1.45)
+                let [x, y] = self.map.tile_center(t);
+                (x, y, 1.45)
             };
             if (tx-e.x).abs().max((ty-e.y).abs()) <= reach {
                 let activity = match e.q[0] as u8 { R_WOOD => ACT_WOOD, R_FOOD => ACT_FOOD, _ => ACT_MINE };
@@ -118,6 +141,21 @@ impl Game {
     }
     #[allow(clippy::too_many_arguments)]
     pub fn render_with_rotation(&mut self,alpha:f32,x0:f32,y0:f32,x1:f32,y1:f32,ghost:i32,gx:i32,gy:i32,turn:u32)->u32{
+        self.render_scene(alpha,x0,y0,x1,y1,ghost,gx,gy,turn,false,None)
+    }
+    #[cfg(feature = "ee2-valley74-city-footprint")]
+    pub(crate) fn render_farm_cursor(&mut self, alpha: f32, x0: f32, y0: f32, x1: f32, y1: f32) -> u32 {
+        self.render_scene(alpha,x0,y0,x1,y1,-1,0,0,0,true,None)
+    }
+    #[cfg(feature = "ee2-rect284-extractor-site")]
+    pub(crate) fn render_rect_extractor(&mut self, alpha: f32, bounds: [f32; 4], site: Option<crate::placement::PlacementSite>) -> u32 {
+        let [x0, y0, x1, y1] = bounds;
+        self.render_scene(alpha,x0,y0,x1,y1,-1,0,0,0,false,site)
+    }
+    #[allow(clippy::too_many_arguments)]
+    fn render_scene(&mut self,alpha:f32,x0:f32,y0:f32,x1:f32,y1:f32,ghost:i32,gx:i32,gy:i32,turn:u32,
+                    #[allow(unused_variables)] farm_cursor:bool,
+                    #[allow(unused_variables)] extractor:Option<crate::placement::PlacementSite>)->u32 {
         #[cfg(feature="ee2-render-meta7")]
         crate::render_meta7::begin_frame();
         let mut o = std::mem::take(&mut self.tmp);
@@ -132,7 +170,7 @@ impl Game {
         let (tx1, ty1) = (((x1 + 2.0).max(0.0) as usize).min(width), ((y1 + 2.0).max(0.0) as usize).min(height));
         for ty in ty0..ty1 {
             for tx in tx0..tx1 {
-                let i = ty * N + tx;
+                let i = self.map.tile_index(tx, ty);
                 let r = crate::economy::map_resource_kind(self.map.res[i], epoch);
                 if r == R_NONE || self.vis[i] == 0 || self.map.blocked[i] {
                     continue;
@@ -168,7 +206,7 @@ impl Game {
 
         for p in &self.projs {
             let (x, y) = (p.px + (p.x - p.px) * alpha, p.py + (p.y - p.py) * alpha);
-            if !inview(x, y) || self.vis[tile_of(x, y)] != 255 {
+            if !inview(x, y) || self.vis[self.map.tile_of(x, y)] != 255 {
                 continue;
             }
             #[cfg(feature = "ee2-native13")]
@@ -200,7 +238,7 @@ impl Game {
             put(&mut o, x, y, alt, (p.ty - p.y).atan2(p.tx - p.x), S_PROJ + p.kind as f32, p.team as f32, 0.0, 0.0, 1.0);
         }
         for f in &self.fx {
-            if inview(f.x, f.y) && self.vis[tile_of(f.x, f.y)] == 255 {
+            if inview(f.x, f.y) && self.vis[self.map.tile_of(f.x, f.y)] == 255 {
                 put(&mut o, f.x, f.y, self.map.height(f.x, f.y).max(0.0) + 0.5, 0.0, S_BOOM, 0.0, f.age / f.life, FL_NOFOG, f.size * 1.3);
             }
         }
@@ -225,18 +263,25 @@ impl Game {
                         put(&mut o, e.rx, e.ry, self.map.height(e.rx, e.ry).max(0.0), 0.0, S_FLAG, team, 0.0, FL_NOFOG, 1.0);
                     }
                 }
-                let before=o.len();put(&mut o, x, y, a, rot, crate::ids::unit_render(e.def), team, e.built, fl + FL_BUILDING, d.size);
-                if o.len()>before {o[before+10]=self.render_elapsed(alpha);o[before+11]=if d.has(F_EXTRACT)&&e.ncargo>0&&self.resource_unlocked(e.team,Self::extractor_kind(e.def)) {ACT_MINE as f32}else{ACT_IDLE as f32};}
-                #[cfg(feature="ee2-render-meta7")]
-                if o.len()>before {crate::render_meta7::actor(before/STRIDE,self.h(i),e,self.max_hp(e.team,e.def));}
-                #[cfg(feature="ee2-pack8")]
-                if o.len()>before {crate::pack8_render::actor(before/STRIDE,self.canonical_pack(i),self.pack_spec(e).is_some_and(|s|s.capable));}
-                #[cfg(feature = "ee2-native13")]
-                let show_scaffold = !crate::wonders61::is_wonder(e.def) || e.built > 0.0;
-                #[cfg(not(feature = "ee2-native13"))]
-                let show_scaffold = true;
-                if e.built < 1.0 && !far && show_scaffold {
-                    put(&mut o, x, y, a, rot, S_SCAFFOLD, team, e.built, fl, d.size);
+                #[cfg(feature = "ee2-rect280-farm-crop")]
+                let bare_farm_site = e.built < 1.0 && self.rect_crop_nonblocking(e);
+                #[cfg(not(feature = "ee2-rect280-farm-crop"))]
+                let bare_farm_site = false;
+                // The original pending Farm uses the generic NULL.nif ConstructionSite.
+                if !bare_farm_site {
+                    let before=o.len();put(&mut o, x, y, a, rot, crate::ids::unit_render(e.def), team, e.built, fl + FL_BUILDING, d.size);
+                    if o.len()>before {o[before+10]=self.render_elapsed(alpha);o[before+11]=if d.has(F_EXTRACT)&&e.ncargo>0&&self.resource_unlocked(e.team,Self::extractor_kind(e.def)) {ACT_MINE as f32}else{ACT_IDLE as f32};}
+                    #[cfg(feature="ee2-render-meta7")]
+                    if o.len()>before {crate::render_meta7::actor(before/STRIDE,self.h(i),e,self.max_hp(e.team,e.def));}
+                    #[cfg(feature="ee2-pack8")]
+                    if o.len()>before {crate::pack8_render::actor(before/STRIDE,self.canonical_pack(i),self.pack_spec(e).is_some_and(|s|s.capable));}
+                    #[cfg(feature = "ee2-native13")]
+                    let show_scaffold = !crate::wonders61::is_wonder(e.def) || e.built > 0.0;
+                    #[cfg(not(feature = "ee2-native13"))]
+                    let show_scaffold = true;
+                    if e.built < 1.0 && !far && show_scaffold {
+                        put(&mut o, x, y, a, rot, S_SCAFFOLD, team, e.built, fl, d.size);
+                    }
                 }
                 (a, d.size * 0.6 + 0.7)
             } else {
@@ -264,7 +309,7 @@ impl Game {
                     _ => 1.15,
                 };
                 let speed = ((e.x-e.px).powi(2)+(e.y-e.py).powi(2)).sqrt() / self.sim_step();
-                let (activity, facing) = self.render_activity(e, d, speed);
+                let (activity, facing) = self.render_activity(i, e, d, speed);
                 let pose_rot = if (8..=17).contains(&e.def) && activity >= ACT_WOOD { facing } else { rot };
                 #[cfg(feature = "ee2-native13")]
                 let body_altitude = self.naval_body_pose(i).map_or(a, |(_, altitude, _)| altitude);
@@ -309,6 +354,26 @@ impl Game {
                 put(&mut o,cx,cy,a,Self::angle_for_turn(turn),crate::ids::unit_render(ghost as DefId),me as f32,1.0,FL_NOFOG+if ok{FL_GHOST_OK}else{FL_GHOST_BAD},d.size);
             }
         }
+        #[cfg(feature = "ee2-valley74-city-footprint")]
+        if farm_cursor {
+            if let Some(pose) = self.valley_farm_cursor_pose() {
+                let actor = pose.site().actor;
+                let ok = self.valley_farm_cursor_error() == 0;
+                let elevation = self.map.height(actor.x, actor.y).max(0.0);
+                put(&mut o,actor.x,actor.y,elevation,actor.rot,crate::ids::unit_render(actor.def),
+                    me as f32,1.0,FL_NOFOG+if ok{FL_GHOST_OK}else{FL_GHOST_BAD},DEFS[actor.def as usize].size);
+            }
+        }
+
+        #[cfg(feature = "ee2-rect284-extractor-site")]
+        if let Some(site) = extractor {
+            let actor = site.actor;
+            let ids = crate::selected(self);
+            let ok = self.placement_error_at(me, site, &ids, true) == 0;
+            let elevation = self.map.height(actor.x, actor.y).max(0.0);
+            put(&mut o, actor.x, actor.y, elevation, actor.rot, crate::ids::unit_render(actor.def),
+                me as f32, 1.0, FL_NOFOG + if ok { FL_GHOST_OK } else { FL_GHOST_BAD }, DEFS[actor.def as usize].size);
+        }
 
         // ---- counting sort by model id
         let n = o.len() / STRIDE;
@@ -343,7 +408,7 @@ impl Game {
     pub fn terr_tex(&mut self) {
         for i in 0..NN {
             let t = self.map.terr[i];
-            let owner = self.towner[t as usize];
+            let owner = self.territory_owner_at(i);
             self.terr_rgba[i * 4] = t;
             self.terr_rgba[i * 4 + 1] = if owner == 255 { 0 } else { owner + 1 };
             let disputed = (owner == self.local || self.vis[i] == 255) && self.territory_is_disputed(t as usize);
@@ -371,10 +436,13 @@ impl Game {
             }
             // owned territories get a wash of their owner's colour, borders a stronger one
             let t = self.map.terr[i];
-            let owner = self.towner[t as usize];
+            let owner = self.territory_owner_at(i);
             if owner != 255 {
                 let c = TEAM[owner as usize & 3];
-                let edge = (i % N + 1 < N && self.map.terr[i + 1] != t) || (i + N < NN && self.map.terr[i + N] != t);
+                let [x, y] = self.map.tile_xy(i);
+                let layout = self.map.layout;
+                let edge = (x + 1 < layout.width && self.map.terr[i + 1] != t)
+                    || (y + 1 < layout.height && self.map.terr[i + layout.stride] != t);
                 let k = if edge { 150 } else { 28 };
                 r = (r * (256 - k) + c[0] as u32 * k) >> 8;
                 g = (g * (256 - k) + c[1] as u32 * k) >> 8;
@@ -394,9 +462,9 @@ impl Game {
             let Some(c) = TEAM.get(e.team as usize) else { continue; };
             let s = if d.building { d.size as i32 } else { 2 };
             let (x0, y0) = ((e.x - s as f32 * 0.5) as i32, (e.y - s as f32 * 0.5) as i32);
-            for y in y0.max(0)..(y0 + s).min(N as i32) {
-                for x in x0.max(0)..(x0 + s).min(N as i32) {
-                    let o = (y as usize * N + x as usize) * 4;
+            for y in y0.max(0)..(y0 + s).min(self.map.layout.height as i32) {
+                for x in x0.max(0)..(x0 + s).min(self.map.layout.width as i32) {
+                    let o = (self.map.tile_index(x as usize, y as usize)) * 4;
                     self.mini[o] = c[0];
                     self.mini[o + 1] = c[1];
                     self.mini[o + 2] = c[2];
@@ -420,8 +488,8 @@ impl Game {
                 let team = TEAM[e.team as usize];
                 for [dx, dy] in CROWN {
                     let (x, y) = (x + dx, y + dy);
-                    if (0..N as i32).contains(&x) && (0..N as i32).contains(&y) {
-                        let o = (y as usize * N + x as usize) * 4;
+                    if self.map.layout.contains(x, y) {
+                        let o = (self.map.tile_index(x as usize, y as usize)) * 4;
                         self.mini[o..o+3].copy_from_slice(&team);
                     }
                 }
@@ -520,7 +588,7 @@ impl Game {
             let e = self.ents[first];
             let d = &DEFS[e.def as usize];
             let speed = ((e.x-e.px).powi(2)+(e.y-e.py).powi(2)).sqrt()/self.sim_step();
-            let activity = if d.building { ACT_IDLE } else { self.render_activity(&e,d,speed).0 };
+            let activity = if d.building { ACT_IDLE } else { self.render_activity(first,&e,d,speed).0 };
             let _ = write!(s, ",\"activity\":{}", activity as u32);
             if cfg!(feature="ee2-reference")&&d.has(F_WORKER){let _=write!(s,",\"carrying\":{:.2},\"carriedResource\":{},\"returning\":{}",e.carry,e.q[2],e.q[1]==1);}
             let _ = write!(s, ",\"name\":\"{}\",\"def\":{},\"hp\":{},\"max\":{},\"built\":{:.2},\"q\":[", d.name, e.def, e.hp.max(0.0).round() as i32, self.max_hp(e.team,e.def).round() as i32, e.built);
@@ -574,17 +642,17 @@ impl Game {
                     tip.clear();
                     let _ = write!(tip, "{} HP", self.max_hp(me,id as DefId) as i32);
                     tip.push_str(match id as DefId {
-                        TC if cfg!(feature="ee2-reference") => " · angrenzendes freies Gebiet: fertiges Stadtzentrum · entferntes Gebiet: zusätzlich fertige Festung",
+                        TC if cfg!(feature="ee2-reference") => " Â· angrenzendes freies Gebiet: fertiges Stadtzentrum Â· entferntes Gebiet: zusÃ¤tzlich fertige Festung",
                         TC => " \u{b7} claims a free territory \u{b7} +15 population",
                         HOUSE => " \u{b7} +10 population",
                         FARM => " \u{b7} endless food, 4 workers",
                         DOCK => " \u{b7} place on water next to the shore",
-                        UNIVERSITY => " · Bürger mit Rechtsklick einquartieren · 0,03 Technologiepunkte je Bürger und Sekunde",
-                        FORTRESS => " · sichert entfernte Gebietsansprüche · Besatzung mit Rechtsklick · 10 Plätze · 3 Prozent Angriff je belegtem Platz",
+                        UNIVERSITY => " Â· BÃ¼rger mit Rechtsklick einquartieren Â· 0,03 Technologiepunkte je BÃ¼rger und Sekunde",
+                        FORTRESS => " Â· sichert entfernte GebietsansprÃ¼che Â· Besatzung mit Rechtsklick Â· 10 PlÃ¤tze Â· 3 Prozent Angriff je belegtem Platz",
                         _ => "",
                     });
                     if id as DefId != TC {
-                        tip.push_str(if cfg!(feature="ee2-reference") {" · neutrales Land: doppelte Bauzeit"} else {" \u{b7} only inside your territory"});
+                        tip.push_str(if cfg!(feature="ee2-reference") {" Â· neutrales Land: doppelte Bauzeit"} else {" \u{b7} only inside your territory"});
                     }
                     let cost=self.construction_cost(me,id as DefId);
                     let name = d.name;
@@ -655,7 +723,7 @@ impl Game {
                 if t.host == bdef && t.epoch == ep && !self.has_research(me,id) {
                     let item=ORIGINAL_RESEARCH0+id as QueueItem;
                     let busy=self.research_busy(me,id);
-                    act(&mut s,"r",item,t.name,&[0,0,0],self.can_train(first,item),0.0,if busy {"Forschung läuft"} else {"15 Sekunden Forschung · zählt für den Epochenwechsel"});
+                    act(&mut s,"r",item,t.name,&[0,0,0],self.can_train(first,item),0.0,if busy {"Forschung lÃ¤uft"} else {"15 Sekunden Forschung Â· zÃ¤hlt fÃ¼r den Epochenwechsel"});
                 }
             }
             if bdef == TC && ep < self.match_final_epoch() {
@@ -664,14 +732,14 @@ impl Game {
                 #[cfg(feature = "ee2-reference")]
                 let c=&[0,0,0];
                 tip.clear();
-                let _ = write!(tip, "Nächste Epoche: {}", EPOCH_NAMES[ep as usize + 1]);
-                if cfg!(feature = "ee2-reference") {let _=write!(tip," · {}/6 Technologien der aktuellen Epoche erforscht",self.research_count(me,ep));}
+                let _ = write!(tip, "NÃ¤chste Epoche: {}", EPOCH_NAMES[ep as usize + 1]);
+                if cfg!(feature = "ee2-reference") {let _=write!(tip," Â· {}/6 Technologien der aktuellen Epoche erforscht",self.research_count(me,ep));}
                 act(&mut s, "e", RESEARCH, "Next Epoch", c, self.can_advance(me), 0.0, &tip);
             }
-            if DEFS[bdef as usize].has(F_RESEARCH|F_EXTRACT|F_DROPOFF|F_GARRISON) && cargo > 0 { act(&mut s,"u",0,"Besatzung ausquartieren",&[0,0,0],true,0.0,"Die einquartierten Einheiten verlassen das Gebäude"); }
+            if DEFS[bdef as usize].has(F_RESEARCH|F_EXTRACT|F_DROPOFF|F_GARRISON) && cargo > 0 { act(&mut s,"u",0,"Besatzung ausquartieren",&[0,0,0],true,0.0,"Die einquartierten Einheiten verlassen das GebÃ¤ude"); }
             #[cfg(feature = "ee2-native13")]
             if bdef == DOCK && self.dock_garrison_count(first) > 0 {
-                act(&mut s, "u", 0, "Einheiten abziehen", &[0,0,0], !self.sabotaged(first), 0.0, "Zieht alle stationierten Einheiten aus dem Inneren des Gebäudes ab.");
+                act(&mut s, "u", 0, "Einheiten abziehen", &[0,0,0], !self.sabotaged(first), 0.0, "Zieht alle stationierten Einheiten aus dem Inneren des GebÃ¤udes ab.");
             }
         } else if cargo > 0 {
             act(&mut s, "u", 0, "Unload", &[0, 0, 0], true, 0.0, "Put everyone ashore at the nearest beach");

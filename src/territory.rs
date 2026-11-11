@@ -4,7 +4,7 @@
 use crate::{defs::*, game::*, map::*};
 use core::fmt::Write;
 pub const TERR_MAGIC: u32 = 0x3152_4554; // TER1
-pub const TERR_BYTES: usize = 8 + 32 * 4 + 16 * 12 + 4 + 12 * 16;
+pub const TERR_BYTES: usize = 8 + LEGACY_REGION_CAPACITY * 4 + 16 * 12 + 4 + 12 * 16;
 pub const TERR_NONE: u8 = 255;
 // TER1 stores actor handles. These low words cannot be entity indices, and
 // preserve the incumbent in the same slot while there is no completed city.
@@ -66,14 +66,14 @@ pub struct TerritoryEvent {
     pub want: u32,
 }
 pub struct TerritoryDiplomacy {
-    pub claims: [u32; 32],
+    pub claims: [u32; REGION_CAPACITY],
     pub offers: [TerritoryOffer; 16],
     pub log: Vec<TerritoryEvent>,
 }
 impl Default for TerritoryDiplomacy {
     fn default() -> Self {
         Self {
-            claims: [NONE; 32],
+            claims: [NONE; REGION_CAPACITY],
             offers: [TerritoryOffer::default(); 16],
             log: Vec::with_capacity(12),
         }
@@ -87,8 +87,12 @@ impl Game {
         false
     }
 
+    pub(crate) fn territory_owner_at(&self, tile: usize) -> u8 {
+        self.map.region_at(tile).map_or(TERR_NONE, |id| self.towner[id])
+    }
+
     pub(crate) fn territory_is_disputed(&self, territory: usize) -> bool {
-        disputed_owner(self.territory.claims[territory]).is_some()
+        self.territory.claims.get(territory).is_some_and(|&claim| disputed_owner(claim).is_some())
     }
 
     pub(crate) fn ordered_territory_rules(&self) -> bool {
@@ -135,10 +139,10 @@ impl Game {
     #[cfg(feature = "ee2-native13")]
     fn has_colonization_mill(&self, team: u8, territory: usize) -> bool {
         self.ents[..self.high].iter().any(|e| Self::territory_control_ready(e) && e.team == team
-            && matches!(e.def, MILL | WORKSHOP) && self.map.terr[tile_of(e.x, e.y)] as usize == territory)
+            && matches!(e.def, MILL | WORKSHOP) && self.map.terr[self.map.tile_of(e.x, e.y)] as usize == territory)
     }
     pub(crate) fn valid_territory_anchor(&self, e: &Ent, territory: usize) -> bool {
-        if e.hp <= 0.0 || self.map.terr[tile_of(e.x, e.y)] as usize != territory { return false; }
+        if e.hp <= 0.0 || self.map.terr[self.map.tile_of(e.x, e.y)] as usize != territory { return false; }
         #[cfg(feature = "ee2-native13")]
         if self.koth_territory().is_some_and(|(id, _)| id == territory) {
             return e.def == crate::koth64::HILL && e.team < self.nplayers as u8 && Self::territory_control_ready(e);
@@ -151,14 +155,14 @@ impl Game {
         e.def == TC
     }
     pub fn territory_adjacent_owned(&self, team: u8, id: usize) -> bool {
-        let mask=self.map.territory_neighbors[id];
+        let Some(&mask) = self.map.territory_neighbors.get(id) else { return false; };
         self.towner.iter().enumerate().any(|(k,&o)|o==team && mask & (1<<k)!=0)
     }
     /// Counts include foundations; ready counts reflect the acquisition gate.
     pub fn territory_control_counts(&self, team:u8, id:usize)->[u32;4] {
         let mut counts=[0;4];
         for e in &self.ents[..self.high] {
-            if !e.alive || e.hp<=0.0 || e.team!=team || self.map.terr[tile_of(e.x,e.y)] as usize!=id {continue;}
+            if !e.alive || e.hp<=0.0 || e.team!=team || self.map.terr[self.map.tile_of(e.x,e.y)] as usize!=id {continue;}
             let index=match e.def {TC=>0,FORTRESS=>1,_=>continue};
             counts[index]+=1;
             if Self::territory_control_ready(e) {counts[index+2]+=1;}
@@ -184,7 +188,7 @@ impl Game {
         for i in 0..self.high {
             let e=self.ents[i];
             if e.alive && e.hp>0.0 && e.def==TC {
-                let k=self.map.terr[tile_of(e.x,e.y)] as usize;
+                let Some(k) = self.map.region_at(self.map.tile_of(e.x,e.y)) else { continue; };
                 if self.territory.claims[k]==NONE {self.territory.claims[k]=self.h(i);}
             }
         }
@@ -215,13 +219,13 @@ impl Game {
         let hill = self.koth_territory();
         let disputed = self.disputed_territory_rules();
         let prior_claims = self.territory.claims;
-        let mut deferred = [false; 32];
-        let mut first = [NONE; 32];
-        let mut first_by_team = [[NONE; 4]; 32];
+        let mut deferred = [false; REGION_CAPACITY];
+        let mut first = [NONE; REGION_CAPACITY];
+        let mut first_by_team = [[NONE; 4]; REGION_CAPACITY];
         for i in 0..self.high {
             let e = &self.ents[i];
             if e.alive && e.hp > 0.0 && e.def == TC {
-                let k = self.map.terr[tile_of(e.x, e.y)] as usize;
+                let Some(k) = self.map.region_at(self.map.tile_of(e.x, e.y)) else { continue; };
                 if first[k] == NONE && (!cfg!(feature="ee2-reference") || Self::territory_control_ready(e)) {
                     first[k] = self.h(i);
                 }
@@ -231,7 +235,7 @@ impl Game {
                 }
             }
         }
-        let mut owner = [TERR_NONE; 32];
+        let mut owner = [TERR_NONE; REGION_CAPACITY];
         for k in 0..self.map.tseeds.len() {
             #[cfg(feature = "ee2-native13")]
             if let Some((_, index)) = hill.filter(|&(id, _)| id == k) {
@@ -278,29 +282,29 @@ impl Game {
         if cfg!(feature="ee2-reference") {
             // Use a fixed point of simultaneous acquisition rounds. Chains of
             // completed neighboring cities therefore do not depend on scan order.
-            let mut forts=[0u8;32];
+            let mut forts=[0u8; REGION_CAPACITY];
             for e in &self.ents[..self.high] {
                 if e.def==FORTRESS && Self::territory_control_ready(e) {
-                    forts[self.map.terr[tile_of(e.x,e.y)] as usize]|=1<<e.team;
+                    if let Some(id) = self.map.region_at(self.map.tile_of(e.x,e.y)) { forts[id] |= 1 << e.team; }
                 }
             }
-            let colony = [NONE; 32];
-            let colonies_by_team = [[NONE; 4]; 32];
+            let colony = [NONE; REGION_CAPACITY];
+            let colonies_by_team = [[NONE; 4]; REGION_CAPACITY];
             #[cfg(feature = "ee2-native13")]
             let (colony, colonies_by_team) = {
                 let mut colony = colony;
                 let mut colonies_by_team = colonies_by_team;
                 let parthenon = self.completed_wonder_owners(crate::wonders61::PARTHENON);
                 if parthenon != 0 {
-                    let mut mills = [0u8; 32];
+                    let mut mills = [0u8; REGION_CAPACITY];
                     for e in &self.ents[..self.high] {
                         if matches!(e.def, MILL | WORKSHOP) && Self::territory_control_ready(e) {
-                            mills[self.map.terr[tile_of(e.x, e.y)] as usize] |= 1 << e.team;
+                            if let Some(id) = self.map.region_at(self.map.tile_of(e.x, e.y)) { mills[id] |= 1 << e.team; }
                         }
                     }
                     for (index, e) in self.ents[..self.high].iter().enumerate() {
                         if e.def != BARRACKS || !Self::territory_control_ready(e) || parthenon & (1 << e.team) == 0 { continue; }
-                        let k = self.map.terr[tile_of(e.x, e.y)] as usize;
+                        let Some(k) = self.map.region_at(self.map.tile_of(e.x, e.y)) else { continue; };
                         if mills[k] & (1 << e.team) == 0 { continue; }
                         if colony[k] == NONE { colony[k] = self.h(index); }
                         if disputed && self.territory_seat_active(e.team) {
@@ -320,8 +324,8 @@ impl Game {
                 }
             }
             for _ in 0..self.map.tseeds.len() {
-                let mut added=[TERR_NONE;32];
-                let mut anchors=[NONE;32];
+                let mut added=[TERR_NONE; REGION_CAPACITY];
+                let mut anchors=[NONE; REGION_CAPACITY];
                 let mut changed=false;
                 let mut bootstrap=[usize::MAX;4];
                 for k in 0..self.map.tseeds.len() {
@@ -468,7 +472,7 @@ impl Game {
         for (donor, new_owner, ids) in [(recipient, proposer, terms.want()), (proposer, recipient, terms.give())] {
             for &id in ids {
                 for (i, actor) in self.ents[..self.high].iter().enumerate() {
-                    if actor.alive && actor.hp > 0.0 && actor.team == donor && self.map.terr[tile_of(actor.x, actor.y)] == id
+                    if actor.alive && actor.hp > 0.0 && actor.team == donor && self.map.terr[self.map.tile_of(actor.x, actor.y)] == id
                         && self.territory_tribute_ready(i, usize::from(id)) {
                         objects.push((i, new_owner));
                     }
@@ -491,7 +495,7 @@ impl Game {
         let mut tribute = [0; 3];
         for (index, e) in self.ents[..self.high].iter().enumerate() {
             if !e.alive || e.hp <= 0.0 || e.team != owner
-                || self.map.terr[tile_of(e.x, e.y)] as usize != id
+                || self.map.terr[self.map.tile_of(e.x, e.y)] as usize != id
                 || (visible_only && !self.visible(index))
             {
                 continue;
@@ -594,7 +598,7 @@ impl Game {
             if !e.alive || e.hp <= 0.0 {
                 continue;
             }
-            let territory = self.map.terr[tile_of(e.x, e.y)];
+            let territory = self.map.terr[self.map.tile_of(e.x, e.y)];
             let new_team = if e.team == from && territory == give { to }
                 else if want != TERR_NONE && e.team == to && territory == want { from }
                 else { continue; };
@@ -615,6 +619,8 @@ impl Game {
             }
         }
         for &(i, new_team) in &objects {
+            #[cfg(feature = "ee2-rect276-clearance-resume")]
+            self.cancel_rect_clearance(i);
             #[cfg(feature = "ee2-native13")]
             { self.forget_capture_actor(i); self.mark_capture_gift(i); self.trade_interrupt(i); }
             #[cfg(feature = "ee2-native13")]
@@ -655,6 +661,8 @@ impl Game {
                 e.qt = 0.0;
                 e.carry = 0.0;
             }
+            #[cfg(feature = "ee2-rect287-oil-economy")]
+            self.rect_native_transfer(i);
             #[cfg(feature="ee2-reference")]
             self.sync_city_ground_entry(i);
         }
@@ -673,6 +681,8 @@ impl Game {
                 if let Some(j) = self.get(e.otgt) {
                     if self.ents[j].team != e.team {
                         let e = &mut self.ents[i];
+                        #[cfg(feature = "ee2-rect267-builder-reach")]
+                        Self::clear_rect_build_exit(e);
                         e.order = O_IDLE;
                         e.otgt = NONE;
                         e.tgt = NONE;
@@ -760,12 +770,12 @@ impl Game {
             !self.territory_valid(from, to, 0, ids[0], NONE) {
             return false;
         }
-        let mut seen = 0u32;
+        let mut seen: RegionMask = 0;
         ids.iter().all(|&id| {
-            if id >= TERR_GIFT_BATCH_MAX as u32 || !self.territory_transferable(from, id) {
+            if id >= self.map.tseeds.len() as u32 || !self.territory_transferable(from, id) {
                 return false;
             }
-            let bit = 1u32 << id;
+            let bit = 1u64 << id;
             let new = seen & bit == 0;
             seen |= bit;
             new
@@ -822,7 +832,7 @@ impl Game {
     fn territory_value(&self, owner: u8, id:u8) -> f32 {
         let mut value = 100.0;
         for (index, e) in self.ents[..self.high].iter().enumerate() {
-            if !e.alive || e.hp <= 0.0 || e.team != owner || self.map.terr[tile_of(e.x, e.y)] != id
+            if !e.alive || e.hp <= 0.0 || e.team != owner || self.map.terr[self.map.tile_of(e.x, e.y)] != id
                 || !self.territory_tribute_ready(index, usize::from(id))
             {
                 continue;
@@ -906,12 +916,12 @@ impl Game {
         );
     }
     pub fn append_territory_ui(&self, s: &mut String) {
-        let mut known = [false; 32];
-        let mut visible = [false; 32];
-        let mut disclosed = [false; 32];
+        let mut known = [false; REGION_CAPACITY];
+        let mut visible = [false; REGION_CAPACITY];
+        let mut disclosed = [false; REGION_CAPACITY];
         for (i, &v) in self.vis.iter().enumerate() {
             if v > 0 {
-                let territory = self.map.terr[i] as usize;
+                let Some(territory) = self.map.region_at(i) else { continue; };
                 known[territory] = true;
                 visible[territory] |= v == 255;
             }
@@ -1019,7 +1029,7 @@ impl Game {
     pub fn write_territory(&self, b: &mut Vec<u8>) {
         b.extend_from_slice(&TERR_MAGIC.to_le_bytes());
         b.extend_from_slice(&1u32.to_le_bytes());
-        for &h in &self.territory.claims {
+        for &h in &self.territory.claims[..LEGACY_REGION_CAPACITY] {
             b.extend_from_slice(&h.to_le_bytes());
         }
         for o in self.territory.offers {
@@ -1045,7 +1055,7 @@ impl Game {
             return None;
         }
         let mut pos = 8;
-        for h in &mut self.territory.claims {
+        for h in &mut self.territory.claims[..LEGACY_REGION_CAPACITY] {
             *h = u(pos);
             pos += 4;
         }

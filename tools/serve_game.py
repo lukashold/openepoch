@@ -17,7 +17,7 @@ import sys
 import threading
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.error import URLError
-from urllib.parse import urlsplit
+from urllib.parse import quote, unquote, urlsplit, urlunsplit
 from urllib.request import urlopen
 import webbrowser
 
@@ -28,6 +28,69 @@ HOST = "127.0.0.1"
 STATUS_PATH = "/__openepoch__/status"
 SERVER_VERSION = 5
 WASM_FILES = ("openepoch.wasm", "openepoch-ee2.wasm", "openepoch-ee2-up15.wasm")
+PUBLIC_START_PAGE = "/?rules=ee2&build=native56"
+PRIVATE_START_PAGE = "/death-valley2-private.html?rules=ee2"
+# The local entry needs its own engine, authored map and presentation media.
+# Source-only/public packages retain the normal map/mode selection entry.
+PRIVATE_ENTRY_FILES = (
+    "death-valley2-private.html",
+    "main-death-valley2-private.js",
+    "openepoch-ee2-death-valley2.wasm",
+    "authored-rectangular-game.js",
+    "authored-rectangular-view.js",
+    "authored-cliff-terrain.js",
+    "authored-cliff-lightmap.js",
+    "authored-rectangular-layout.js",
+    "dv2-original-renderer.js",
+    "dv2-citizen-work-presentation.mjs",
+    "local-original/models/manifest.json",
+    "local-original/models/manifest-civ8.json",
+    "local-original/death-valley2-terrain/manifest.json",
+    "local-original/death-valley2-terrain/world.w8in",
+    "local-original/death-valley2-terrain/world0.dvp1",
+    "local-original/death-valley2-terrain/animal-manager.anm",
+    "local-original/death-valley2-terrain/material-2.bin",
+    "local-original/death-valley2-terrain/lightmaps.r8",
+    "local-original/citizen-work-events/manifest.json",
+    "local-original/citizen-work-events/source-metadata.json",
+)
+
+
+def default_start_page(root):
+    """Prefer the current local game only when its required files are present."""
+    root = root.resolve()
+    try:
+        for name in PRIVATE_ENTRY_FILES:
+            target = (root / name).resolve()
+            target.relative_to(root)
+            if not target.is_file() or not target.stat().st_size:
+                return PUBLIC_START_PAGE
+    except (OSError, ValueError):
+        return PUBLIC_START_PAGE
+    return PRIVATE_START_PAGE
+
+
+def start_page(root, value=None):
+    """Resolve an optional existing HTML entry beneath the same game root."""
+    if value is None:
+        return default_start_page(root)
+    invalid = "--page braucht eine relative HTML-Datei im Spielordner"
+    if not value or value != value.strip() or "\\" in value or any(ord(c) < 32 or ord(c) == 127 for c in value):
+        raise ValueError(invalid)
+    try:
+        parts = urlsplit(value)
+        if parts.scheme or parts.netloc or not parts.path or parts.path.startswith("/"):
+            raise ValueError(invalid)
+        path = unquote(parts.path, encoding="utf-8", errors="strict")
+        if ":" in path or "\\" in path or "%" in path or any(part in ("", ".", "..") for part in path.split("/")):
+            raise ValueError(invalid)
+        target = (root / path).resolve()
+        target.relative_to(root.resolve())
+        if target.suffix.lower() != ".html" or not target.is_file():
+            raise ValueError(invalid)
+    except (OSError, UnicodeError, ValueError):
+        raise ValueError(invalid) from None
+    return "/" + urlunsplit(("", "", quote(path, safe="/"), parts.query, parts.fragment))
 
 
 class GameServer(ThreadingHTTPServer):
@@ -227,6 +290,7 @@ def main(argv=None):
     parser.add_argument("--port", type=int, default=8125)
     parser.add_argument("--strict-port", action="store_true", help="Bei belegtem Port keinen anderen waehlen")
     parser.add_argument("--no-browser", action="store_true")
+    parser.add_argument("--page", metavar="RELATIVE-HTML", help="Bestimmte HTML-Seite im Spielordner oeffnen (z.B. index.html?rules=ee2)")
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--lan", metavar="PRIVATE-IPV4", help="LAN-Einladungen auf dieser privaten IPv4-Adresse zulassen")
     args = parser.parse_args(argv)
@@ -242,6 +306,12 @@ def main(argv=None):
         if not (root / name).is_file():
             print("Spielpaket unvollstaendig: " + str(root / name), file=sys.stderr)
             return 2
+    try:
+        # LAN games use the existing map/multiplayer menu unless an entry is
+        # explicitly chosen; the current private map has its own local mode.
+        page = PUBLIC_START_PAGE if args.lan and args.page is None else start_page(root, args.page)
+    except ValueError as error:
+        parser.error(str(error))
     try:
         server, port, reused = bind_server(root, args.port, args.strict_port, args.verbose, args.lan)
     except OSError as error:
@@ -259,7 +329,7 @@ def main(argv=None):
             server.server_close()
             print(f"LAN-Einladungen auf {args.lan}:{LAN_PORT} konnten nicht starten: {error}", file=sys.stderr)
             return 2
-    url = f"http://{HOST}:{port}/?rules=ee2&build=native56"
+    url = f"http://{HOST}:{port}{page}"
     print("READY " + json.dumps({"url": url, "host": HOST, "port": port, "reused": reused}), flush=True)
     if port != args.port and args.port:
         print(f"Port{args.port} war belegt. Dieses Mal wird Port{port} verwendet; gespeicherte Spiele im Browser sind an den Port gebunden.", flush=True)

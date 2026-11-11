@@ -6,7 +6,7 @@ use crate::air31_defs::{mission_aircraft, FIGHTER_BOMBER};
 use crate::carrier36_defs::{self, CARRIER};
 use crate::defs::{DefId, AIRFIELD, DEFS};
 use crate::game::{Ent, Game, MAXE, NONE, O_ATTACK, O_IDLE, O_RENDEZVOUS};
-use crate::map::N;
+use crate::map::MapLayout;
 use crate::native_rng9::NativeRng;
 
 const AIRPORT_CAPACITY: usize = 10;
@@ -204,7 +204,7 @@ impl Game {
         self.get(handle).is_some_and(|i| {
             let actor = &self.ents[i];
             actor.hp > 0.0 && !self.air_parked(i, actor) && !self.trade_hidden(i, actor) &&
-                (actor.team == team || self.real_fog(team, crate::map::tile_of(actor.x, actor.y)) >=
+                (actor.team == team || self.real_fog(team, self.map.tile_of(actor.x, actor.y)) >=
                     if crate::defs::DEFS[actor.def as usize].building { 128 } else { 255 }) &&
                 self.detected(team, i)
         })
@@ -222,7 +222,7 @@ impl Game {
             if target.is_some_and(|target| !self.air_valid_target(team, target)) || (points == 0 && target.is_none()) { return; }
             let waypoints = words[selected + 1..].chunks_exact(2).map(|point| {
                 let point = [f32::from_bits(point[0]), f32::from_bits(point[1])];
-                point.iter().all(|v| (0.0..N as f32).contains(v)).then_some(point)
+                self.map.layout.contains_point(point[0], point[1]).then_some(point)
             }).collect::<Option<Vec<_>>>();
             let Some(waypoints) = waypoints else { return; };
             let mut hosts = words[..selected].iter().filter_map(|&h| self.air_mission_host(h, team)).collect::<Vec<_>>();
@@ -494,11 +494,11 @@ pub(crate) fn split_air_save(bytes: &[u8]) -> Option<(&[u8], Option<&[u8]>)> {
     Some((bytes.get(start..end)?, Some(fields)))
 }
 
-fn read_points(words: &mut impl Iterator<Item = u32>, count: usize, limit: usize) -> Option<Vec<[f32; 2]>> {
+fn read_points(layout: MapLayout, words: &mut impl Iterator<Item = u32>, count: usize, limit: usize) -> Option<Vec<[f32; 2]>> {
     if count > limit { return None; }
     (0..count).map(|_| {
         let point = [f32::from_bits(words.next()?), f32::from_bits(words.next()?)];
-        point.iter().all(|v| (0.0..N as f32).contains(v)).then_some(point)
+        layout.contains_point(point[0], point[1]).then_some(point)
     }).collect()
 }
 
@@ -592,7 +592,7 @@ impl State {
                 let host = game.air_host(home, unit.team)?;
                 if rendezvous_pending && game.ents[host].def != CARRIER { return None; }
             }
-            let waypoints = read_points(&mut words, points, MAX_WAYPOINTS + 2)?.into();
+            let waypoints = read_points(game.map.layout, &mut words, points, MAX_WAYPOINTS + 2)?.into();
             state.aircraft.insert(handle, Aircraft { home, ordnance, phase, waypoints, mission, return_pending, rendezvous_pending });
         }
         let count = words.next()? as usize;
@@ -612,7 +612,7 @@ impl State {
                 state.airports.last_key_value().is_some_and(|(&last, _)| last >= handle) { return None; }
             let target = (target != NONE).then_some(target);
             if target.is_some_and(|target| (target & 0xffff) as usize >= MAXE) { return None; }
-            let waypoints = read_points(&mut words, points, MAX_WAYPOINTS)?;
+            let waypoints = read_points(game.map.layout, &mut words, points, MAX_WAYPOINTS)?;
             let mission = (target.is_some() || !waypoints.is_empty()).then_some(Mission { waypoints, target });
             let registered = (0..assigned_count).map(|_| {
                 let actor = words.next()?;
@@ -1007,8 +1007,8 @@ impl State {
             frame.rendezvous_pending = false;
             frame.waypoints.clear();
             let jitter = launch_jitter(&mut game.source_birth.rng);
-            let spawn = |value: f32| value.clamp(1.0, N as f32 - 1.0);
-            let point = [spawn(building.x + jitter), spawn(building.y + jitter)];
+            let [width, height] = game.map.simulation_dimensions().map(|side| side as f32);
+            let point = [(building.x + jitter).clamp(1.0, width - 1.0), (building.y + jitter).clamp(1.0, height - 1.0)];
             if game.air_runway_enabled {
                 let (pose, deck_height) = if let Some(deck) = game.carrier_deck(host, game.sim_elapsed()) {
                     let (pose, height) = deck.departure();

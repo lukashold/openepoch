@@ -66,16 +66,17 @@ impl Game {
     pub(crate) fn granary_limit_reached(&self, team: u8, territory: u8) -> bool {
         self.granary_sites.iter().map(|&index| &self.ents[index]).any(|site| site.hp > 0.0
             && (site.built >= 1.0 || site.team == team)
-            && self.map.terr[tile_of(site.x, site.y)] == territory)
+            && self.map.terr[self.map.tile_of(site.x, site.y)] == territory)
     }
 
     pub(crate) fn granary_farm_bonus(&self, worker: &Ent) -> f32 {
         if worker.def != WORKER || self.granary_sites.is_empty() { return 0.0; }
-        let territory = self.map.terr[tile_of(worker.x, worker.y)];
-        if self.towner[territory as usize] != worker.team || self.territory_is_disputed(territory as usize) { return 0.0; }
+        let tile = self.map.tile_of(worker.x, worker.y);
+        let territory = self.map.terr[tile];
+        if self.territory_owner_at(tile) != worker.team || self.territory_is_disputed(territory as usize) { return 0.0; }
         self.granary_sites.iter().map(|&index| &self.ents[index]).filter(|site| site.hp > 0.0
             && site.team == worker.team && site.built >= 1.0
-            && self.map.terr[tile_of(site.x, site.y)] == territory).count() as f32
+            && self.map.terr[self.map.tile_of(site.x, site.y)] == territory).count() as f32
     }
 }
 

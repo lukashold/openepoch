@@ -178,7 +178,7 @@ mod tests {
         g.tick = 2506;
         g.tick_spy_sabotage();
         assert!(!g.sabotaged(rival));
-        g.update_ent(rival);
+        g.update_ent(rival, #[cfg(feature = "ee2-valley206-citizen-clearance")] &mut CitizenSeparationFrame::new());
         assert!(g.ents[rival].qt > qt);
         g.researched[0][5] |= 1;
         g.tick = 2600;

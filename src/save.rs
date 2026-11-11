@@ -271,6 +271,78 @@ impl Game {
             }
             b
         };
+        #[cfg(feature = "ee2-valley204-construction-cancel")]
+        let b = {
+            let mut b = b;
+            self.append_construction_payments(&mut b);
+            b
+        };
+        #[cfg(feature = "ee2-authored-rect233")]
+        if crate::native_valley37::rectangular_save234::is_rectangular(self) {
+            use crate::native_valley37::rectangular_save234 as rect;
+            let stock = self.world0_stock_section();
+            #[cfg(feature = "ee2-rect235-forest")]
+            let forest = self.rect_forest_section();
+            #[cfg(not(feature = "ee2-rect235-forest"))]
+            let forest: Option<Vec<u8>> = None;
+            #[cfg(feature = "ee2-rect242-hunt")]
+            let wildlife = self.wildlife_section();
+            #[cfg(not(feature = "ee2-rect242-hunt"))]
+            let wildlife: Option<Vec<u8>> = None;
+            #[cfg(feature = "ee2-rect246-deer-live")]
+            let deer = self.deer_motion_section();
+            #[cfg(not(feature = "ee2-rect246-deer-live"))]
+            let deer: Option<Vec<u8>> = None;
+            #[cfg(feature = "ee2-rect250-animals")]
+            let animals = self.rect_animal_section();
+            #[cfg(not(feature = "ee2-rect250-animals"))]
+            let animals: Option<Vec<u8>> = None;
+            let sections = [stock.as_deref(), forest.as_deref(), wildlife.as_deref(), deer.as_deref(), animals.as_deref()];
+            self.savebuf = rect::binding(self).and_then(|binding| {
+                #[cfg(feature = "ee2-rect261-ai-clock")]
+                if let Some(clock) = &self.rect_ai_clock {
+                    #[cfg(feature = "ee2-rect266-city-foundation")]
+                    let b = crate::construction_health163::wrap(b, self.generated_city_foundations);
+                    #[cfg(feature = "ee2-rect289-citizen-work")]
+                    if let Some(work) = self.rect_citizen_work.section() {
+                        let clearance = self.rect_clearance_section();
+                        let crops = self.rect_farm_crops.section();
+                        let oil = self.rect_oil_visuals.section();
+                        let ids = self.rect_native_ids.as_ref().map(|rows| rows.section());
+                        return rect::wrap_with_citizen_work(b, &binding, &self.territory.claims, sections,
+                            &clock.encode(), clearance.as_deref(), crops.as_deref(), oil.as_deref(), ids.as_deref(), &work);
+                    }
+                    #[cfg(feature = "ee2-rect287-oil-economy")]
+                    if let Some(ids) = &self.rect_native_ids {
+                        let clearance = self.rect_clearance_section();
+                        let crops = self.rect_farm_crops.section();
+                        let oil = self.rect_oil_visuals.section();
+                        return rect::wrap_with_owned_ids(b, &binding, &self.territory.claims, sections,
+                            &clock.encode(), clearance.as_deref(), crops.as_deref(), oil.as_deref(), &ids.section());
+                    }
+                    #[cfg(feature = "ee2-rect286-oil-visual")]
+                    if let Some(oil) = self.rect_oil_visuals.section() {
+                        let clearance = self.rect_clearance_section();
+                        let crops = self.rect_farm_crops.section();
+                        return rect::wrap_with_oil_visuals(b, &binding, &self.territory.claims, sections,
+                            &clock.encode(), clearance.as_deref(), crops.as_deref(), &oil);
+                    }
+                    #[cfg(feature = "ee2-rect280-farm-crop")]
+                    if let Some(crops) = self.rect_farm_crops.section() {
+                        let clearance = self.rect_clearance_section();
+                        return rect::wrap_with_farm_crops(b, &binding, &self.territory.claims, sections,
+                            &clock.encode(), clearance.as_deref(), &crops);
+                    }
+                    #[cfg(feature = "ee2-rect276-clearance-resume")]
+                    if let Some(clearance) = self.rect_clearance_section() {
+                        return rect::wrap_with_clearance(b, &binding, &self.territory.claims, sections, &clock.encode(), &clearance);
+                    }
+                    return rect::wrap_with_ai(b, &binding, &self.territory.claims, sections, Some(&clock.encode()));
+                }
+                rect::wrap(b, &binding, &self.territory.claims, sections)
+            }).unwrap_or_default();
+            return;
+        }
         #[cfg(feature = "ee2-authored-valley37")]
         let b = crate::native_valley37::wrap_save(b, self);
         #[cfg(feature = "ee2-native13")]
@@ -320,6 +392,10 @@ impl Game {
     }
 
     fn read_archive(buf: &[u8], roster: Option<ArchiveRoster>) -> Option<Game> {
+        #[cfg(feature = "ee2-authored-rect233")]
+        let (buf, rectangle) = crate::native_valley37::rectangular_save234::split(buf)?;
+        #[cfg(feature = "ee2-authored-rect233")]
+        if rectangle.is_some() && roster.is_some() { return None; }
         #[cfg(feature = "ee2-native13")]
         let (buf, city_foundations) = crate::construction_health163::split(buf)?;
         #[cfg(feature = "ee2-native13")]
@@ -328,6 +404,10 @@ impl Game {
         let (buf, valley) = crate::native_valley37::split_save(buf)?;
         #[cfg(feature = "ee2-authored-valley37")]
         if valley.is_some() && roster.is_some() { return None; }
+        #[cfg(feature = "ee2-authored-rect233")]
+        if rectangle.is_some() && valley.is_some() { return None; }
+        #[cfg(feature = "ee2-valley204-construction-cancel")]
+        let (buf, construction_payments) = crate::construction_cancel204::split(buf)?;
         #[cfg(feature = "ee2-native13")]
         let (buf, alliance_territories) = crate::alliance_territories::split(buf)?;
         let (buf, source_clock) = crate::source_clock38::split(buf)?;
@@ -506,15 +586,32 @@ impl Game {
         #[cfg(not(feature="ee2-native13"))]
         let regular_game = || Some(Game::new(u(4), u(5), 0, humans, local));
         #[cfg(feature = "ee2-authored-valley37")]
-        let mut g = match valley {
+        let mut g = match valley.as_ref() {
             Some(locator) => crate::native_valley37::restore_private_map(locator, u(4), u(5), humans)?,
-            None => regular_game()?,
+            None => {
+                #[cfg(feature = "ee2-authored-rect233")]
+                let prepared = if let Some(locator) = rectangle.as_ref() {
+                    if humans != 1 { return None; }
+                    let game = crate::native_valley37::rectangular_world::staged_game(u(4), u(5))?;
+                    if crate::native_valley37::rectangular_save234::binding(&game)? != locator.binding {
+                        return None;
+                    }
+                    Some(game)
+                } else { None };
+                #[cfg(not(feature = "ee2-authored-rect233"))]
+                let prepared: Option<Game> = None;
+                prepared.or_else(regular_game)?
+            }
         };
         #[cfg(not(feature = "ee2-authored-valley37"))]
         let mut g = regular_game()?;
         #[cfg(feature = "ee2-native13")]
         if city_foundations {
-            if !g.supports_generated_city_foundations() { return None; }
+            let supported = g.supports_generated_city_foundations();
+            #[cfg(feature = "ee2-rect266-city-foundation")]
+            let supported = supported || (rectangle.as_ref().is_some_and(|locator| locator.ai_clock.is_some())
+                && g.supports_rectangular_city_foundations());
+            if !supported { return None; }
             g.generated_city_foundations = true;
         }
         #[cfg(feature="ee2-native13")]
@@ -539,7 +636,8 @@ impl Game {
         fill(&mut g.players, take(psz));
         // wipe what `new` spawned, then drop the saved world in
         for i in 0..NN {
-            g.map.blocked[i] = i % N >= width || i / N >= height;
+            let [x, y] = g.map.tile_xy(i);
+            g.map.blocked[i] = x >= width || y >= height;
         }
         for e in g.ents.iter_mut() {
             e.alive = false;
@@ -558,8 +656,11 @@ impl Game {
         fill(&mut g.map.amt, take(NN * 2));
         g.vis.copy_from_slice(take(NN));
         #[cfg(feature = "ee2-authored-valley37")]
-        if g.map.source_world.is_some() && (0..NN).any(|i| g.map.ter[i] > T_ROCK ||
-            (i % N >= width || i / N >= height) && (g.map.ter[i] != T_ROCK || g.map.res[i] != R_NONE || g.map.amt[i] != 0)) {
+        if g.map.source_world.is_some() && (0..NN).any(|i| {
+            let [x, y] = g.map.tile_xy(i);
+            g.map.ter[i] > T_ROCK || (x >= width || y >= height) &&
+                (g.map.ter[i] != T_ROCK || g.map.res[i] != R_NONE || g.map.amt[i] != 0)
+        }) {
             return None;
         }
         let end = H + psz + esz + NN * 5;
@@ -647,6 +748,43 @@ impl Game {
         if g.valley_neutral_opening() && (!has_diplomacy || !g.valid_valley_neutral_opening()) { return None; }
         if (g.god_mode || g.fog_inverted) && (g.humans != 1 || g.net) { return None; }
         if has_territory{g.read_territory(&buf[end+trailer+crate::diplomacy::DIP_BYTES..])?;}
+        #[cfg(feature = "ee2-authored-rect233")]
+        let world0_stock = rectangle.as_ref().is_some_and(|locator| locator.stock.is_some());
+        #[cfg(feature = "ee2-rect242-hunt")]
+        let wildlife = rectangle.as_ref().is_some_and(|locator| locator.wildlife.is_some());
+        #[cfg(feature = "ee2-authored-rect233")]
+        if let Some(locator) = rectangle {
+            if !has_territory { return None; }
+            let regions = g.map.tseeds.len();
+            g.territory.claims[LEGACY_REGION_CAPACITY..regions].copy_from_slice(&locator.claims);
+            if let Some(stock) = locator.stock { g.restore_world0_stock(stock)?; }
+            #[cfg(feature = "ee2-rect250-animals")]
+            if let Some(animals) = locator.animals { g.restore_rect_animals(animals)?; }
+            #[cfg(feature = "ee2-rect261-ai-clock")]
+            if let Some(clock) = locator.ai_clock {
+                g.rect_ai_clock = Some(crate::native_valley37::ai_clock261::State::decode(clock, &g)?);
+            }
+            #[cfg(feature = "ee2-rect242-hunt")]
+            if let Some(wildlife) = locator.wildlife { g.restore_wildlife(wildlife)?; }
+            #[cfg(feature = "ee2-rect246-deer-live")]
+            if let Some(deer) = locator.deer { g.restore_deer_motion(deer)?; }
+            #[cfg(feature = "ee2-rect250-animals")]
+            if locator.animals.is_some() { g.validate_rect_animals()?; }
+            #[cfg(feature = "ee2-rect235-forest")]
+            if let Some(forest) = locator.forest { g.restore_rect_forest_section(forest)?; }
+            #[cfg(not(feature = "ee2-rect235-forest"))]
+            if locator.forest.is_some() { return None; }
+            #[cfg(feature = "ee2-rect276-clearance-resume")]
+            if let Some(clearance) = locator.clearance { g.restore_rect_clearance(clearance, high)?; }
+            #[cfg(feature = "ee2-rect280-farm-crop")]
+            if let Some(crops) = locator.farm_crops { g.restore_rect_farm_crops(crops, high)?; }
+            #[cfg(feature = "ee2-rect286-oil-visual")]
+            if let Some(oil) = locator.oil_visuals { g.restore_rect_oil_visuals(oil, high)?; }
+            #[cfg(feature = "ee2-rect287-oil-economy")]
+            if let Some(ids) = locator.owned_ids { g.restore_rect_native_ids(ids, high)?; }
+            #[cfg(feature = "ee2-rect289-citizen-work")]
+            if let Some(work) = locator.citizen_work { g.restore_citizen_work(work, high)?; }
+        }
         if let Some(clock) = diplomacy_clock {
             if !clock.valid(g.sim_elapsed(), g.nplayers) { return None; }
             g.diplomacy.clock = clock;
@@ -655,6 +793,8 @@ impl Game {
         if g.map.res.iter().enumerate().any(|(_tile, &kind)| {
             #[cfg(feature="ee2-native13")]
             if kind == R_FISH && g.fishing_enabled {
+                #[cfg(feature = "ee2-authored-rect233")]
+                if g.rect_population.is_some() { return true; }
                 return g.map.ter[_tile] != T_DEEP || !(1..=crate::fishing81::FISH_AMOUNT).contains(&g.map.amt[_tile]);
             }
             kind as usize > crate::economy::RESOURCE_COUNT
@@ -728,15 +868,29 @@ impl Game {
             }) { return None; }
             g.factory_clocks = factory_clocks;
         }
+        #[cfg(feature = "ee2-valley164-forest-play")]
+        if !g.valid_valley_forest_orders(high) { return None; }
+        #[cfg(feature = "ee2-authored-rect233")]
+        if !g.valid_world0_orders(high, world0_stock) { return None; }
+        #[cfg(feature = "ee2-rect242-hunt")]
+        if !g.valid_wildlife_orders(high, wildlife) { return None; }
         for e in &g.ents[..high] {
             if !e.alive {continue;}
             #[cfg(feature = "ee2-native13")]
             if !g.valid_generated_city_foundation(e) { return None; }
+            #[cfg(feature = "ee2-valley74-city-footprint")]
+            if !g.valid_valley_city_foundation(e) { return None; }
             #[cfg(feature="ee2-native13")]
             let neutral_hill = e.team == crate::koth64::NATURE && e.def == crate::koth64::HILL && koth.is_some();
             #[cfg(not(feature="ee2-native13"))]
             let neutral_hill = false;
             if !valid_definition(e.def) || (e.team as usize>=g.nplayers && !neutral_hill) || e.qn>5 || e.ncargo as usize>CARGO_MAX {return None;}
+            #[cfg(feature = "ee2-rect267-builder-reach")]
+            if !g.valid_rect_build_exit(e) { return None; }
+            #[cfg(feature = "ee2-rect272-builder-arrival")]
+            if !g.valid_rect_city_approach(e) { return None; }
+            #[cfg(feature = "ee2-rect275-idle-brake")]
+            if !g.valid_rect_idle_brake(e) { return None; }
             #[cfg(feature = "ee2-native13")]
             if e.def == crate::granary211::ID && (e.qn != 0 || e.ncargo != 0
                 || ![0, 2, 4, 6].into_iter().any(|turn| e.rot == Game::angle_for_turn(turn)))
@@ -878,6 +1032,8 @@ impl Game {
         for i in 0..high {
             g.ents[i].fslot = u16::MAX; // flow-field cache starts empty
             if g.ents[i].alive && DEFS[g.ents[i].def as usize].building {
+                #[cfg(feature = "ee2-rect280-farm-crop")]
+                if g.rect_crop_nonblocking(&g.ents[i]) { continue; }
                 #[cfg(feature = "ee2-valley74-city-footprint")]
                 if g.valley_house_reserves_placement_only(&g.ents[i]) { continue; }
                 let(tx0,ty0,width,height)=Game::building_bounds(&g.ents[i]);
@@ -889,7 +1045,8 @@ impl Game {
                         if !Game::building_blocks_tile(&g.ents[i], tx, ty) { continue; }
                         #[cfg(feature = "ee2-valley74-city-footprint")]
                         if mask.is_some_and(|footprint| !footprint.blocks(tx, ty)) { continue; }
-                        g.map.blocked[ty as usize * N + tx as usize] = true;
+                        let tile = g.map.tile_index(tx as usize, ty as usize);
+                        g.map.blocked[tile] = true;
                     }
                 }
             }
@@ -1047,6 +1204,12 @@ impl Game {
         g.restore_herc_attack(herc_attack)?;
         #[cfg(feature = "ee2-native13")]
         g.restore_alliance_territories(alliance_territories)?;
+        #[cfg(feature = "ee2-valley198-waypoint-save")]
+        if let Some(resume) = valley.and_then(|locator| locator.route_resume) {
+            crate::native_valley37::restore_saved_routes(&mut g, resume)?;
+        }
+        #[cfg(feature = "ee2-valley204-construction-cancel")]
+        g.restore_construction_payments(construction_payments)?;
         Some(g)
     }
 }

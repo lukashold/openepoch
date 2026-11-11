@@ -122,6 +122,8 @@ mod granary211;
 mod source_clock38;
 #[cfg(feature = "ee2-native13")]
 mod construction_health163;
+#[cfg(feature = "ee2-valley204-construction-cancel")]
+mod construction_cancel204;
 #[cfg(feature = "ee2-native13")]
 mod naval_heave72;
 #[cfg(feature = "ee2-native13")]
@@ -208,6 +210,8 @@ mod ee2_combat;
 #[path="ee2_roster6_combat.rs"]
 mod ee2_combat;
 mod research;
+#[cfg(feature = "ee2-rect288-oil-research")]
+mod oil_research288;
 mod game;
 mod map;
 #[cfg(feature = "ee2-authored-valley37")]
@@ -500,6 +504,10 @@ pub extern "C" fn skirmish_epoch(epoch:u32)->u32 {
 #[no_mangle]
 pub extern "C" fn resource_retirement_version() -> u32 { 1 }
 
+#[cfg(feature = "ee2-rect285-starting-supplies")]
+#[no_mangle]
+pub extern "C" fn native_rect_starting_supplies_version() -> u32 { 1 }
+
 #[no_mangle]
 pub extern "C" fn resource_count()->u32 {economy::RESOURCE_COUNT as u32}
 #[no_mangle]
@@ -527,6 +535,22 @@ pub extern "C" fn render_rotated(alpha:f32,x0:f32,y0:f32,x1:f32,y1:f32,ghost:i32
     #[cfg(feature="ee2-render-meta7")]
     unsafe { if (&*addr_of_mut!(GAME)).is_none() { render_meta7::begin_frame(); render_meta7::end_frame(); return 0; } }
     g().render_with_rotation(alpha,x0,y0,x1,y1,ghost,gx,gy,turn)
+}
+
+#[cfg(feature = "ee2-valley74-city-footprint")]
+#[no_mangle]
+pub extern "C" fn render_valley_farm_cursor(alpha:f32,x0:f32,y0:f32,x1:f32,y1:f32)->u32 {
+    unsafe { (&mut *addr_of_mut!(GAME)).as_mut().map_or(0, |game| game.render_farm_cursor(alpha,x0,y0,x1,y1)) }
+}
+
+#[cfg(feature = "ee2-rect284-extractor-site")]
+#[no_mangle]
+pub extern "C" fn render_rect_extractor(alpha: f32, x0: f32, y0: f32, x1: f32, y1: f32,
+    def: u32, x: f32, y: f32, turn: u32) -> u32
+{
+    let Some(game) = (unsafe { &mut *addr_of_mut!(GAME) }).as_mut() else { return 0; };
+    let site = game.rect_extractor_site(def, x, y, turn);
+    game.render_rect_extractor(alpha, [x0, y0, x1, y1], site)
 }
 
 /// Optional rendering-only metadata ABI. All getters are safe before init.
@@ -711,6 +735,30 @@ pub extern "C" fn terrain_types_ptr() -> *const u8 {
 pub extern "C" fn terrain_types_len() -> u32 {
     g().map.ter.len() as u32
 }
+#[cfg(feature = "ee2-authored-rect233")]
+#[no_mangle]
+pub extern "C" fn active_map_layout(field: u32) -> u32 {
+    let Some(game) = (unsafe { &*std::ptr::addr_of!(GAME) }).as_deref() else { return 0; };
+    let [width, height] = game.map.world_dimensions();
+    let [stride, rows] = game.map.backing_dimensions();
+    match field {
+        0 => width as u32,
+        1 => height as u32,
+        2 => stride as u32,
+        3 => rows as u32,
+        4 => game.map.corner_stride() as u32,
+        5 => rows as u32 + 1,
+        6 => game.map.layout.profile(),
+        _ => 0,
+    }
+}
+#[cfg(feature = "ee2-authored-rect233")]
+#[no_mangle]
+pub extern "C" fn active_map_ground(x: f32, y: f32) -> f32 {
+    let Some(game) = (unsafe { &*std::ptr::addr_of!(GAME) }).as_deref() else { return f32::NAN; };
+    if !x.is_finite() || !y.is_finite() { return f32::NAN; }
+    game.map.height(x, y)
+}
 /// Returns 1 once after the terrain texture changed.
 #[no_mangle]
 pub extern "C" fn map_dirty() -> u32 {
@@ -820,7 +868,7 @@ pub extern "C" fn guided_herc_impact_ptr() -> *const f32 { g().guided_herc_impac
 pub extern "C" fn guided_herc_impact_visible(x: f32, y: f32) -> u32 {
     if !x.is_finite() || !y.is_finite() { return 0; }
     let game = g();
-    (game.real_fog(game.local, crate::map::tile_of(x, y)) == 255) as u32
+    (game.real_fog(game.local, game.map.tile_of(x, y)) == 255) as u32
 }
 
 #[cfg(feature = "ee2-native13")]
@@ -922,11 +970,25 @@ pub extern "C" fn air_audio_shot_duration(index: u32) -> f32 {
 
 #[no_mangle]
 pub extern "C" fn save() -> *const u8 {
+    #[cfg(all(feature = "ee2-valley197-waypoint-motion", not(feature = "ee2-valley198-waypoint-save")))]
+    {
+        g().prune_valley_routes();
+        if !g().valley_routes.active.is_empty() {
+            return std::ptr::null();
+        }
+    }
     g().save();
     g().savebuf.as_ptr()
 }
 #[no_mangle]
 pub extern "C" fn save_len() -> u32 {
+    #[cfg(all(feature = "ee2-valley197-waypoint-motion", not(feature = "ee2-valley198-waypoint-save")))]
+    {
+        g().prune_valley_routes();
+        if !g().valley_routes.active.is_empty() {
+            return 0;
+        }
+    }
     g().savebuf.len() as u32
 }
 /// Reserve `len` bytes for a save file; the page copies the file there, then calls `load_apply`.
@@ -1411,6 +1473,13 @@ pub extern "C" fn configure_generated_city_foundations() -> u32 {
         .map_or(0, |game| u32::from(game.configure_generated_city_foundations()))
 }
 
+#[cfg(feature = "ee2-rect266-city-foundation")]
+#[no_mangle]
+pub extern "C" fn native_rect_city_foundation_active() -> u32 {
+    unsafe { (&*addr_of_mut!(GAME)).as_ref() }
+        .map_or(0, |game| u32::from(game.rect_ai_clock.is_some() && game.generated_city_foundations))
+}
+
 #[cfg(feature = "ee2-native13")]
 #[no_mangle]
 pub extern "C" fn trade_route_configure_peer(enabled: u32) -> u32 {
@@ -1621,7 +1690,7 @@ pub extern "C" fn cmd_air_mission_route(count: u32, target: u32) -> u32 {
     if hosts == 0 { return 0; }
     payload.push(target);
     let points = unsafe { std::slice::from_raw_parts(air_mission_points_ptr(), count as usize * 2) };
-    if !points.iter().all(|v| (0.0..N as f32).contains(v)) { return 0; }
+    if !points.chunks_exact(2).all(|p| game.map.layout.contains_point(p[0], p[1])) { return 0; }
     payload.extend(points.iter().map(|v| v.to_bits()));
     game.submit(C_AIR_MISSION, count as f32, hosts as f32, air31::SET_ROUTE, &payload);
     hosts as u32
@@ -1899,7 +1968,17 @@ fn submit_context_order(x: f32, y: f32, attack_move: u32) -> bool {
             return false;
         }
     }
-    let tile = tile_of(x, y);
+    let tile = g.map.tile_of(x, y);
+    #[cfg(feature = "ee2-authored-rect233")]
+    if let Some(target) = g.pick_world0_fish(g.local, x, y) {
+        let fishers = part(g, &|actor, _| actor.def == fishing81::FISHING_SHIP);
+        if !fishers.is_empty() {
+            g.submit(C_RECT_GATHER, 0.0, 0.0, target as i32, &fishers);
+            let rest = part(g, &|actor, _| actor.def != fishing81::FISHING_SHIP);
+            if !rest.is_empty() { g.submit(C_MOVE, x, y, 0, &rest); }
+            return false;
+        }
+    }
     #[cfg(feature = "ee2-native13")]
     if g.fishing_enabled && g.map.res[tile] == R_FISH && g.real_fog(g.local, tile) > 0 {
         let fishers = part(g, &|actor, _| actor.def == fishing81::FISHING_SHIP);
@@ -1907,6 +1986,14 @@ fn submit_context_order(x: f32, y: f32, attack_move: u32) -> bool {
             g.submit(C_GATHER, x, y, tile as i32, &fishers);
             let rest = part(g, &|actor, _| actor.def != fishing81::FISHING_SHIP);
             if !rest.is_empty() { g.submit(C_MOVE, x, y, 0, &rest); }
+            return false;
+        }
+    }
+    #[cfg(feature = "ee2-authored-rect233")]
+    if !workers.is_empty() {
+        if let Some(target) = g.pick_world0_resource(g.local, x, y) {
+            g.submit(C_RECT_GATHER, 0.0, 0.0, target as i32, &workers);
+            if !others.is_empty() { g.submit(C_MOVE, x, y, 0, &others); }
             return false;
         }
     }
@@ -2075,13 +2162,91 @@ pub extern "C" fn dock_orientation(tx:i32,ty:i32)->u32{g().dock_auto_turn(tx,ty)
 pub extern "C" fn foreign_construction_version() -> u32 { 2 }
 #[no_mangle]
 pub extern "C" fn placement_time_multiplier(def:u32,tx:i32,ty:i32,turn:u32)->f32{
-    if def>=DEFS.len()as u32{return 0.0;}let (width,height)=Game::footprint_axes(def as DefId,turn);if width==0||tx<0||ty<0||tx>N as i32-width||ty>N as i32-height{return 0.0;}let game=g();if def==TC as u32{return 1.0;}let owner=game.towner[game.map.terr[(ty+height/2)as usize*N+(tx+width/2)as usize]as usize];if owner==game.local{1.0}else if owner==255{2.0}else{3.0}
+    if def >= DEFS.len() as u32 { return 0.0; }
+    let game = g();
+    let [map_width, map_height] = game.map.simulation_dimensions().map(|side| side as i32);
+    let (width, height) = Game::footprint_axes(def as DefId, turn);
+    if width == 0 || tx < 0 || ty < 0 || tx > map_width - width || ty > map_height - height { return 0.0; }
+    if def == TC as u32 { return 1.0; }
+    let tile = game.map.tile_index((tx + width / 2) as usize, (ty + height / 2) as usize);
+    let owner = game.territory_owner_at(tile);
+    if owner == game.local { 1.0 } else if owner == 255 { 2.0 } else { 3.0 }
 }
 #[no_mangle]
 pub extern "C" fn cmd_place(def:u32,tx:i32,ty:i32)->u32{cmd_place_rotated(def,tx,ty,0)}
 #[no_mangle]
 pub extern "C" fn cmd_place_rotated(def:u32,tx:i32,ty:i32,turn:u32)->u32{
     if place_error_rotated(def,tx,ty,turn)!=0{return 0;}let game=g();let hs=handles(game,&selected(game));let kind=if turn==0{C_PLACE}else{C_PLACE_ROTATED};game.submit(kind,tx as f32,ty as f32,(def|(turn<<if cfg!(feature="ee2-roster6"){16}else{8}))as i32,&hs);1
+}
+
+#[cfg(feature = "ee2-valley74-city-footprint")]
+#[no_mangle]
+pub extern "C" fn valley_farm_cursor_available() -> u32 {
+    unsafe { u32::from((&*addr_of_mut!(GAME)).as_ref().is_some_and(|game| game.valley_farm_cursor_enabled())) }
+}
+#[cfg(feature = "ee2-valley74-city-footprint")]
+#[no_mangle]
+pub extern "C" fn valley_farm_cursor_reset(yaw: f32) {
+    if valley_farm_cursor_available() != 0 { g().valley_cursor_reset(FARM, yaw); }
+}
+
+#[cfg(feature = "ee2-valley74-city-footprint")]
+#[no_mangle]
+pub extern "C" fn valley_house_cursor_reset() -> u32 {
+    unsafe {
+        let Some(game) = (&mut *addr_of_mut!(GAME)).as_mut() else { return 0; };
+        if !game.valley_house_cursor_enabled() { return 0; }
+        game.valley_cursor_reset(HOUSE, crate::native_valley37::farm_cursor147::INITIAL);
+        1
+    }
+}
+#[cfg(feature = "ee2-valley74-city-footprint")]
+#[no_mangle]
+pub extern "C" fn valley_farm_cursor_pointer(x: f32, y: f32) -> u32 {
+    if valley_farm_cursor_available() == 0 { return 1; }
+    g().valley_farm_cursor_pointer(x, y)
+}
+#[cfg(feature = "ee2-valley74-city-footprint")]
+#[no_mangle]
+pub extern "C" fn valley_farm_cursor_rotate(direction: i32, mode: u32) -> u32 {
+    if valley_farm_cursor_available() == 0 { return 1; }
+    g().valley_farm_cursor_rotate(direction, mode)
+}
+#[cfg(feature = "ee2-valley74-city-footprint")]
+#[no_mangle]
+pub extern "C" fn valley_farm_cursor_force_rotation(step: f32) -> u32 {
+    if valley_farm_cursor_available() == 0 || !(-8.0..=8.0).contains(&step) { return 1; }
+    g().valley_farm_cursor_force_rotation(step)
+}
+#[cfg(feature = "ee2-valley74-city-footprint")]
+#[no_mangle]
+pub extern "C" fn valley_farm_cursor_validation_revision() -> u32 {
+    if valley_farm_cursor_available() == 0 { return 0; }
+    g().valley_farm_cursor_validation_revision()
+}
+#[cfg(feature = "ee2-valley74-city-footprint")]
+#[no_mangle]
+pub extern "C" fn valley_farm_cursor_component(field: u32) -> f32 {
+    if valley_farm_cursor_available() == 0 { return f32::NAN; }
+    g().valley_farm_cursor_component(field)
+}
+#[cfg(feature = "ee2-valley74-city-footprint")]
+#[no_mangle]
+pub extern "C" fn valley_farm_cursor_error() -> u32 {
+    if valley_farm_cursor_available() == 0 { return 1; }
+    g().valley_farm_cursor_error()
+}
+#[cfg(feature = "ee2-valley74-city-footprint")]
+#[no_mangle]
+pub extern "C" fn valley_farm_cursor_place() -> u32 {
+    if valley_farm_cursor_available() == 0 { return 0; }
+    g().valley_farm_cursor_place()
+}
+#[cfg(feature = "ee2-valley74-city-footprint")]
+#[no_mangle]
+pub extern "C" fn valley_farm_cursor_time_multiplier() -> f32 {
+    if valley_farm_cursor_available() == 0 { return 1.0; }
+    g().valley_farm_cursor_time_multiplier()
 }
 
 #[no_mangle]
@@ -3089,7 +3254,12 @@ pub extern "C" fn cmd_territory_gift_batch(target: u32, count: u32) -> u32 {
     1
 }
 #[no_mangle]
-pub extern "C" fn territory_at(x:f32,y:f32)->u32{if !x.is_finite()||!y.is_finite()||x<0.0||y<0.0||x>=N as f32||y>=N as f32{return u32::MAX;}g().map.terr[tile_of(x,y)] as u32}
+pub extern "C" fn territory_at(x: f32, y: f32) -> u32 {
+    let map = &g().map;
+    let [width, height] = map.simulation_dimensions().map(|side| side as f32);
+    if !(0.0..width).contains(&x) || !(0.0..height).contains(&y) { return u32::MAX; }
+    u32::from(map.terr[map.tile_of(x, y)])
+}
 #[no_mangle]
 pub extern "C" fn territory_count()->u32{g().map.tseeds.len() as u32}
 #[no_mangle]

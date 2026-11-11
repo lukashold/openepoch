@@ -7,7 +7,7 @@ use crate::territory_name_catalog21::{NAME_LIMIT, POOLS, VERSION};
 
 pub const MAGIC: u32 = u32::from_le_bytes(*b"TNM1");
 const REGION_START: [usize; 5] = [0, 5, 8, 11, 14];
-const CAPACITY: usize = crate::fullmap_labels21::CAPACITY;
+const CAPACITY: usize = crate::map::LEGACY_REGION_CAPACITY;
 const HEADER: usize = 12 + CAPACITY * 2;
 
 #[derive(Default)]
@@ -52,7 +52,7 @@ impl TerritoryNames {
 
 impl Game {
     pub(crate) fn valid_fullmap_naming_profile(&self) -> bool {
-        self.humans == 1 && !self.net
+        self.humans == 1 && !self.net && self.map.tseeds.len() <= CAPACITY
             && self.civilizations[..self.nplayers].iter().all(|&civ| (civ as usize) < POOLS.len())
     }
 
@@ -65,7 +65,7 @@ impl Game {
         true
     }
 
-    pub(crate) fn name_territory_owner_changes(&mut self, owners: &[u8; CAPACITY]) {
+    pub(crate) fn name_territory_owner_changes(&mut self, owners: &[u8]) {
         let Some(names) = &mut self.territory_names else { return; };
         for (id, &owner) in owners.iter().enumerate().take(self.map.tseeds.len()) {
             if owner != TERR_NONE && owner != self.towner[id] {

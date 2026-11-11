@@ -75,7 +75,11 @@ fn worker_completion_registers_without_waiting_for_another_frame() {
     g.ents[c].built=0.99999;g.sync_city_ground_entry(c);
     let mut worker=g.ents[1];worker.x=102.5;worker.y=100.0;worker.otgt=g.h(c);
     let mut want=(0.0,0.0);let mut moving=false;
-    g.do_build(&mut worker,&DEFS[WORKER as usize],&mut want,&mut moving);
+    g.do_build(
+        &mut worker,&DEFS[WORKER as usize],&mut want,&mut moving,
+        #[cfg(feature = "ee2-rect273-builder-waypoint")]
+        &mut false,
+    );
     assert_eq!(g.ents[c].built,1.0);assert_eq!(g.city_ground_radius(c),9.0);
 }
 

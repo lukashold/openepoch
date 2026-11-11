@@ -34,3 +34,26 @@ pub fn blocked_by_forest(grid: &SourceForestGrid, raster: &Raster) -> bool {
         .iter()
         .any(|&[x, y]| grid.blocks_building_point(x as i32, y as i32))
 }
+
+#[cfg(feature = "ee2-rect268-city-site")]
+impl crate::game::Game {
+    pub(crate) fn rect_city_forest_blocked(&self, site: &crate::game::Ent) -> bool {
+        if !self.uses_generated_city_foundation(site.def) || self.rect_ai_clock.is_none()
+            || !self.supports_rectangular_city_foundations()
+        {
+            return false;
+        }
+        let Some(forest) = &self.rect_forest else { return true; };
+        let [width, height] = self.map.world_dimensions().map(|side| side as u32);
+        // The interactive City placement context supplies its expanded Box
+        // at +94. These are its observed nearest53 half-extent stores.
+        let half = [f32::from_bits(0x4074_611c), f32::from_bits(0x405d_c07e)];
+        let (sin, cos) = (-f64::from(site.rot)).sin_cos();
+        let Some(raster) = building_forest_raster(
+            [site.x, site.y], half, [cos as f32, sin as f32], width, height,
+        ) else { return true; };
+        // 00765150 checks bounds only. 00861F1B reads Forest+3C,
+        // the flag 0x100 plane, even when the other plane is clear.
+        raster.corners.iter().any(|&[x, y]| forest.blocks_city_placement(x.into(), y.into()))
+    }
+}

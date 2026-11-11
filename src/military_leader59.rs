@@ -483,7 +483,7 @@ mod tests {
         assert_eq!(restored.savebuf, game.savebuf);
         assert_eq!(restored.state_hash(), game.state_hash());
         let maximum = game.max_hp(0, 9);
-        for state in [&mut game, &mut restored] { state.update_ent(leader); }
+        for state in [&mut game, &mut restored] { state.update_ent(leader, #[cfg(feature = "ee2-valley206-citizen-clearance")] &mut CitizenSeparationFrame::new()); }
         assert_eq!(game.state_hash(), restored.state_hash());
         assert_eq!(game.ents[leader].hp, 310.0);
         assert_eq!(game.ents[infantry].hp, (10.0 + maximum * 0.5).min(maximum));
@@ -562,7 +562,7 @@ mod tests {
         assert_eq!(game.ents[leader].order, O_LEADER_FIRE_MANEUVER);
         game.save();
         let mut game = Game::load(&game.savebuf).unwrap();
-        game.update_ent(leader);
+        game.update_ent(leader, #[cfg(feature = "ee2-valley206-citizen-clearance")] &mut CitizenSeparationFrame::new());
         assert!(!game.fire_maneuver_ready(leader));
         assert_eq!(game.leader_movement_scale(infantry), 1.0);
         assert!(!game.leader_immobilized(enemy));
@@ -574,7 +574,7 @@ mod tests {
         assert!(game.leader_immobilized(enemy));
         assert!(!game.leader_immobilized(outside));
         let position = (game.ents[enemy].x, game.ents[enemy].y);
-        game.update_ent(enemy);
+        game.update_ent(enemy, #[cfg(feature = "ee2-valley206-citizen-clearance")] &mut CitizenSeparationFrame::new());
         assert_eq!(game.ents[enemy].order, O_IDLE);
         assert_eq!((game.ents[enemy].x, game.ents[enemy].y), position);
         game.order_move(&[enemy], 110.0, 110.0, false);
@@ -585,7 +585,7 @@ mod tests {
         assert!(game.leader_immobilized(enemy));
         game.powers.as_mut().unwrap().recharge_selected(handle);
         game.apply(0, C_LEADER_RALLY, 0.0, 0.0, 1, &[handle]);
-        game.update_ent(leader);
+        game.update_ent(leader, #[cfg(feature = "ee2-valley206-citizen-clearance")] &mut CitizenSeparationFrame::new());
         game.tick_military_leader_auras();
         assert_eq!(game.leader_movement_scale(infantry), 2.0);
         assert_eq!(game.military_leader_powers.as_ref().unwrap().maneuvers.len(), 2);

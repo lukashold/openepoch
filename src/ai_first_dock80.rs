@@ -37,7 +37,7 @@ impl Game {
                 let center_x = x + size / 2;
                 let center_y = y + size / 2;
                 let center = center_y as usize * N + center_x as usize;
-                if self.towner[self.map.terr[center] as usize] != owner
+                if self.territory_owner_at(center) != owner
                     || self.placement_geometry_error(owner, DOCK, x, y, 0) != 0 { continue; }
                 let distance = ((center_x - home_x) as f32).hypot((center_y - home_y) as f32);
                 let mut wet = 0;

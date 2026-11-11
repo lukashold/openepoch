@@ -15,9 +15,10 @@ pub fn approximate_distance(dx:f32,dy:f32)->f64 {
 
 pub fn near_accepted_water(map:&Map,x:f32,y:f32)->bool {
     const RADIUS:f32=4.0;
-    for yy in ((y-RADIUS).floor()as i32).max(0)..=((y+RADIUS).ceil()as i32).min(N as i32-1) {
-        for xx in ((x-RADIUS).floor()as i32).max(0)..=((x+RADIUS).ceil()as i32).min(N as i32-1) {
-            let t=yy as usize*N+xx as usize;
+    let [width, height] = map.simulation_dimensions().map(|side| side as i32);
+    for yy in ((y-RADIUS).floor()as i32).max(0)..=((y+RADIUS).ceil()as i32).min(height-1) {
+        for xx in ((x-RADIUS).floor()as i32).max(0)..=((x+RADIUS).ceil()as i32).min(width-1) {
+            let t=map.tile_index(xx as usize, yy as usize);
             if map.ter[t]==T_DEEP && map.height(xx as f32,yy as f32)<0.0
                 && approximate_distance(xx as f32-x,yy as f32-y)<=RADIUS as f64 {return true;}
         }
