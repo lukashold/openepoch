@@ -1,9 +1,9 @@
 //! Bind a verified local replay to ordinary owned actors and resource tiles.
 use super::{hash::sha256, start_catalog::RECEIPT_SHA, VALLEY_SHA};
 use crate::defs::{DefId, TC, WORKER};
-use crate::game::{Game, Player, NOIDX};
+use crate::game::{BirthIdentity, Game, Player, NOIDX};
 use crate::map::{tile_of, NN, R_NONE, R_URANIUM};
-use crate::native_rng9::{CitizenIdentity, NativeRng};
+use crate::native_rng9::NativeRng;
 
 const MAGIC: u32 = u32::from_le_bytes(*b"VS37");
 const HEADER: usize = 64;
@@ -118,15 +118,15 @@ impl Start {
             } else if row.role == 1 {
                 let team = row.owner as u8 - 1;
                 let definition = row.definition as DefId;
-                let actor = game.spawn_oriented(definition, team, x, y, row.yaw);
+                let identity = if definition == WORKER && row.detail == 1 {
+                    BirthIdentity::Female
+                } else { BirthIdentity::legacy_for_definition(definition) };
+                let actor = game.spawn_oriented_with_identity(definition, team, x, y, row.yaw, identity);
                 if actor == NOIDX { return None; }
                 game.ents[actor].hp *= row.health;
                 let handle = game.h(actor);
                 owned_handles[owned_index] = handle;
                 owned_index += 1;
-                if definition == WORKER {
-                    game.set_citizen_identity(actor, if row.detail == 1 { CitizenIdentity::Female } else { CitizenIdentity::Male });
-                }
                 if definition == TC {
                     let region = game.map.terr[tile] as usize;
                     if region >= game.map.tseeds.len() { return None; }

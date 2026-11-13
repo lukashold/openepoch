@@ -1,7 +1,7 @@
 //! Private fresh Death Valley2 setup over the authenticated source map and population.
 use super::{active_game, mobile_placement239::{self, City, Citizen, Gender, Moving, Placed, Rounding,
     Stationary, StationaryKind, World}, population234::UnitKind, rectangular_world::staged_game};
-use crate::{defs::{DefId, TC, WORKER}, game::{Game, Player, NOIDX, NONE}, native_rng9::{CitizenIdentity, NativeRng}};
+use crate::{defs::{DefId, TC, WORKER}, game::{BirthIdentity, Game, Player, NOIDX, NONE}, native_rng9::NativeRng};
 
 pub(super) const SCOUT: DefId = 57;
 const SOURCE_YAW: f32 = f32::from_bits(0xbf49_0fdb);
@@ -101,12 +101,12 @@ fn prepare_fresh_game(seed: u32, ai: u32) -> Option<Game> {
         game.territory.claims[region] = game.h(city);
         game.map.starts[team] = (x as usize, y as usize);
         let [x, y, _] = start.citizen.placed.xyz;
-        let citizen = game.spawn_oriented(WORKER, team as u8, x, y, start.citizen.placed.yaw);
+        let identity = match start.citizen.gender {
+            Gender::Male => BirthIdentity::Male,
+            Gender::Female => BirthIdentity::Female,
+        };
+        let citizen = game.spawn_oriented_with_identity(WORKER, team as u8, x, y, start.citizen.placed.yaw, identity);
         if citizen == NOIDX { return None; }
-        game.set_citizen_identity(citizen, match start.citizen.gender {
-            Gender::Male => CitizenIdentity::Male,
-            Gender::Female => CitizenIdentity::Female,
-        });
         let [x, y, _] = start.scout.xyz;
         if game.spawn_oriented(SCOUT, team as u8, x, y, start.scout.yaw) == NOIDX { return None; }
     }

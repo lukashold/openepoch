@@ -616,16 +616,14 @@ impl Game {
         }
         let health = (old.hp / self.max_hp(old.team, old.def)).clamp(0.0, 1.0);
         let city = self.city_ground[index];
-        let citizen = if old.def == WORKER { self.source_identity(old_handle) } else { None };
-        let new = self.spawn_oriented(old.def, owner, old.x, old.y, old.rot);
+        let identity = if old.def == WORKER && self.source_identity(old_handle) == Some(1) {
+            BirthIdentity::Female
+        } else { BirthIdentity::legacy_for_definition(old.def) };
+        let new = self.spawn_oriented_with_identity(old.def, owner, old.x, old.y, old.rot, identity);
         let new_handle = self.h(new);
         if old.def == crate::koth64::HILL { self.koth_owner_replaced(old_handle, new_handle, owner); }
         self.ents[new].hp *= health;
         self.ents[new].built = old.built;
-        if let Some(identity) = citizen {
-            use crate::native_rng9::CitizenIdentity::{Female, Male};
-            self.set_citizen_identity(new, if identity == 1 { Female } else { Male });
-        }
         if old.def == TC {
             self.rebind_capitol(old_handle, new_handle);
             if city.handle == old_handle { self.city_ground[new] = crate::city_ground::CityBand { handle: new_handle, ..city }; }

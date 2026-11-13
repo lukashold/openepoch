@@ -5,6 +5,7 @@
 //! hitches no matter how many units are alive.
 
 use crate::defs::*;
+pub use crate::birth406::BirthIdentity;
 use crate::map::*;
 #[cfg(feature = "ee2-valley206-citizen-clearance")]
 use crate::native_valley37::atlas_runtime::ground_motion::CitizenSeparationFrame;
@@ -872,18 +873,30 @@ impl Game {
         if e.alive && e.gen as u32 == h >> 16 { Some(i) } else { None }
     }
 
+    /// Compatibility births are explicit Male for WORKER, NonCitizen otherwise.
+    /// They never choose a production identity or consume a random draw.
     pub fn spawn(&mut self, def:DefId, team: u8, x: f32, y: f32) -> usize {
-        self.spawn_oriented(def,team,x,y,0.0)
+        self.spawn_with_identity(def, team, x, y, BirthIdentity::legacy_for_definition(def))
+    }
+    pub fn spawn_with_identity(&mut self, def:DefId, team:u8, x:f32, y:f32,
+        identity:BirthIdentity)->usize {
+        self.spawn_oriented_with_identity(def, team, x, y, 0.0, identity)
     }
     pub fn spawn_oriented(&mut self,def:DefId,team:u8,x:f32,y:f32,angle:f32)->usize {
-        self.spawn_oriented_with_progress(def, team, x, y, angle, 1.0)
+        self.spawn_oriented_with_identity(def, team, x, y, angle, BirthIdentity::legacy_for_definition(def))
+    }
+    pub fn spawn_oriented_with_identity(&mut self,def:DefId,team:u8,x:f32,y:f32,angle:f32,
+        identity:BirthIdentity)->usize {
+        self.spawn_attached(def, team, x, y, angle, 1.0, identity, None)
     }
     pub(crate) fn spawn_oriented_with_progress(&mut self,def:DefId,team:u8,x:f32,y:f32,angle:f32,built:f32)->usize {
-        self.spawn_attached(def, team, x, y, angle, built, None)
+        self.spawn_attached(def, team, x, y, angle, built, BirthIdentity::legacy_for_definition(def), None)
     }
 
     fn spawn_attached(&mut self, def: DefId, team: u8, x: f32, y: f32, angle: f32, built: f32,
-        _retained_native_id: Option<u32>) -> usize {
+        identity:BirthIdentity, _retained_native_id: Option<u32>) -> usize {
+        // Reject an inconsistent birth before allocator, source IDs or RNG can change.
+        if !identity.matches_definition(def) { return NOIDX; }
         let i = match self.free.pop() {
             Some(i) => i as usize,
             None => return NOIDX,
@@ -904,7 +917,11 @@ impl Game {
         #[cfg(feature="ee2-paidqueue7")] self.clear_queue_payments(i);
         let d = &DEFS[def as usize];
         let gen = self.ents[i].gen;
-        self.ents[i] = Ent { alive: true, def, team, gen, x, y, px: x, py: y, ox: x, oy: y, hp: self.max_hp(team,def), rot:angle,prot:angle,built,..E0 };
+        // The genuine full-handle identity slot exists before the FIRST HP read,
+        // then remains in place for all registration consumers below.
+        #[cfg(feature="ee2-citizen9")] self.source_birth.register(i, self.h(i), identity);
+        let hp = self.initial_birth_hp406(i, team, def, identity);
+        self.ents[i] = Ent { alive: true, def, team, gen, x, y, px: x, py: y, ox: x, oy: y, hp, rot:angle,prot:angle,built,..E0 };
         #[cfg(feature = "ee2-native13")]
         if crate::wonders61::is_wonder(def) { self.wonder_sites.insert(i); }
         #[cfg(feature = "ee2-native13")]
@@ -917,7 +934,6 @@ impl Game {
         #[cfg(feature = "ee2-native13")]
         self.air_register(i);
         #[cfg(feature="ee2-pack8")] self.pack_reset(i);
-        #[cfg(feature="ee2-citizen9")] self.source_birth.register(i,self.h(i),def==WORKER);
         #[cfg(feature="ee2-reference")]
         { self.city_ground[i]=crate::city_ground::EMPTY; self.sync_city_ground_entry(i); }
         #[cfg(feature="ee2-up15")]
@@ -1647,7 +1663,13 @@ impl Game {
             let native_id = self.rect_native_ids.as_ref().and_then(|ids| ids.passenger(native_host, k));
             #[cfg(not(feature = "ee2-rect287-oil-economy"))]
             let native_id = None;
-            let u = self.spawn_attached(e.cargo[k], e.team, x, y, 0.0, 1.0, native_id);
+            #[cfg(feature="ee2-citizen9")]
+            let identity = if e.cargo[k] == WORKER && source_mask >> k & 1 != 0 {
+                BirthIdentity::Female
+            } else { BirthIdentity::legacy_for_definition(e.cargo[k]) };
+            #[cfg(not(feature="ee2-citizen9"))]
+            let identity = BirthIdentity::legacy_for_definition(e.cargo[k]);
+            let u = self.spawn_attached(e.cargo[k], e.team, x, y, 0.0, 1.0, identity, native_id);
             #[cfg(feature = "ee2-rect287-oil-economy")]
             if let Some(ids) = &mut self.rect_native_ids {
                 ids.release(native_host, k, (u == NOIDX).then_some(remaining));
@@ -1659,8 +1681,9 @@ impl Game {
                 self.powers.as_mut().unwrap().finish_unload(host, k, result, cursor);
             }
             if u != NOIDX {
-                self.ents[u].hp = self.max_hp(e.team,e.cargo[k]) * (e.cargo_hp[k] as f32 / 100.0).min(1.0);
-                #[cfg(feature="ee2-citizen9")] if e.cargo[k]==WORKER&&source_mask>>k&1!=0{self.set_citizen_identity(u,crate::native_rng9::CitizenIdentity::Female);}
+                // Scale the initial maximum already resolved with this passenger's
+                // identity. The percentage arithmetic and retained native ID stay unchanged.
+                self.ents[u].hp *= (e.cargo_hp[k] as f32 / 100.0).min(1.0);
             }else {
                 e.cargo[remaining]=e.cargo[k];e.cargo_hp[remaining]=e.cargo_hp[k];
                 #[cfg(feature="ee2-citizen9")] if source_mask>>k&1!=0{remaining_source_mask|=1<<remaining;}
@@ -3148,9 +3171,14 @@ impl Game {
                 }
                 if e.qt >= time && self.production_has_population(team, item as DefId) {
                     let (sx, sy) = self.spawn_point(e, d, ud);
-                    #[cfg(feature="ee2-citizen9")] let source_identity=if item==WORKER as QueueItem{Some(self.source_birth.production_identity())}else{None};
-                    let u = self.spawn(item as DefId, e.team, sx, sy);
-                    #[cfg(feature="ee2-citizen9")] if u!=NOIDX{if let Some(identity)=source_identity{self.set_citizen_identity(u,identity);}}
+                    // Preserve the source draw BEFORE the attempt, including NOIDX.
+                    #[cfg(feature="ee2-citizen9")]
+                    let identity = if item == WORKER as QueueItem {
+                        BirthIdentity::from(self.source_birth.production_identity())
+                    } else { BirthIdentity::NonCitizen };
+                    #[cfg(not(feature="ee2-citizen9"))]
+                    let identity = BirthIdentity::legacy_for_definition(item as DefId);
+                    let u = self.spawn_with_identity(item as DefId, e.team, sx, sy, identity);
                     #[cfg(feature = "ee2-native13")]
                     let stationed = u != NOIDX && self.air_station_produced(u, i);
                     #[cfg(not(feature = "ee2-native13"))]

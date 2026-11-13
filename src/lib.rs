@@ -212,6 +212,7 @@ mod ee2_combat;
 mod research;
 #[cfg(feature = "ee2-rect288-oil-research")]
 mod oil_research288;
+mod birth406;
 mod game;
 mod map;
 #[cfg(feature = "ee2-authored-valley37")]

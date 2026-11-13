@@ -71,9 +71,9 @@ mod tests {
     fn female_identity_is_cargo_state_and_partial_unload_compacts_actual_slots(){
         let mut g=world();let city=g.ents[0];let host=g.spawn(UNIVERSITY,0,city.x+10.0,city.y);
         let male=g.spawn(WORKER,0,city.x+11.0,city.y);let female=g.spawn(WORKER,0,city.x+11.2,city.y);
-        g.set_citizen_identity(female,CitizenIdentity::Female);let old_female=g.h(female);
+        g.set_citizen_identity(female,CitizenIdentity::Female);g.ents[female].hp*=0.5;let old_female=g.h(female);
         g.order_board(&[male,female],host);g.tick();
-        assert_eq!(g.ents[host].ncargo,2);assert_eq!(g.source_birth.slots[host].cargo_females,2);
+        assert_eq!(g.ents[host].ncargo,2);assert_eq!(g.source_birth.slots[host].cargo_females,2);assert_eq!(g.ents[host].cargo_hp[1],50);
         assert_eq!(g.source_identity(old_female),None);assert!(g.validate_source_birth());
         let before_rng=g.source_birth.rng.state();let bytes=saved(&mut g);let mut g=Game::load(&bytes).unwrap();
         let old_free=g.free.clone();let only=*old_free.last().unwrap();g.free=vec![only];
@@ -87,7 +87,8 @@ mod tests {
         g.order_unload(&[host],0.0,0.0);assert_eq!(g.ents[host].ncargo,0);
         assert_eq!(g.source_birth.slots[host].cargo_females,0);
         assert_eq!(g.source_birth.rng.state(),before_rng);
-        assert!(g.ents[..g.high].iter().enumerate().any(|(i,e)|e.alive&&e.def==WORKER&&g.source_identity(g.h(i))==Some(1)));
+        let female=(0..g.high).find(|&i|g.ents[i].alive&&g.ents[i].def==WORKER&&g.source_identity(g.h(i))==Some(1)).unwrap();
+        assert_eq!(g.ents[female].hp.to_bits(),(g.max_hp(0,WORKER)*0.5).to_bits());
         assert!(g.validate_source_birth());
     }
 
@@ -113,8 +114,8 @@ mod tests {
 }
 impl SourceBirth {
     pub fn new(seed:u32)->Self { Self{rng:NativeRng::from_state(seed),origin:0,slots:vec![EMPTY;MAXE]} }
-    pub fn register(&mut self,index:usize,handle:u32,worker:bool) {
-        self.slots[index]=Slot{handle,identity:if worker{0}else{NOT_CITIZEN},cargo_females:0};
+    pub fn register(&mut self,index:usize,handle:u32,identity:BirthIdentity) {
+        self.slots[index]=Slot{handle,identity:identity.source_word(),cargo_females:0};
     }
     pub fn discard(&mut self,index:usize) {self.slots[index]=EMPTY;}
     pub fn production_identity(&mut self)->CitizenIdentity {
@@ -164,6 +165,7 @@ impl Game {
         let i=self.get(handle)?;let s=self.source_birth.slots[i];
         if s.handle!=handle{return None;}Some(s.identity)
     }
+    /// Explicit mutation of an existing actor (including test fixtures), not a birth API.
     pub(crate) fn set_citizen_identity(&mut self,index:usize,identity:CitizenIdentity){
         debug_assert!(self.ents[index].alive&&self.ents[index].def==WORKER);
         let handle=self.h(index);let s=&mut self.source_birth.slots[index];
@@ -193,7 +195,7 @@ impl Game {
             parsed.origin=1;
             // Old own8 could only create the explicit numeric CitizenM type.
             // Reconstruct that known identity without inventing old RNG draws.
-            for i in 0..self.high{if self.ents[i].alive{parsed.register(i,self.h(i),self.ents[i].def==WORKER);}}
+            for i in 0..self.high{if self.ents[i].alive{parsed.register(i,self.h(i),BirthIdentity::legacy_for_definition(self.ents[i].def));}}
             self.source_birth=parsed;return Some(());
         };
         if framed_len(b)?!=b.len(){return None;}

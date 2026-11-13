@@ -68,7 +68,7 @@ import {NATIVE_SEASON_CHOICE,normalizeSeasonChoice,resolveSeasonChoice} from './
 import {createSeasonSession,peerSeasonSettings,savedSeasonSettings} from './season-session.js?v=native108';
 import {checkTimeOfDayMode,createTimeOfDayClock,readTimeOfDayState,resolveTimeOfDay,timeOfDayPeriods} from './original-time-of-day.js?v=time-of-day160';
 import {CLIMATE_NAMES,checkedClimate,loadSkirmishClimates,peerClimates,savedClimate,supportedSkirmishClimates} from './skirmish-climates.js';
-import {UP15_PROFILE_ENABLED,resolveRulesProfile,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=territory-order219';
+import {UP15_PROFILE_ENABLED,resolveRulesProfile,loadRulesWasm,savedRulesProfileMatches} from './rules-profile.js?v=birth406-public';
 import {createEconomyBar,RESOURCE_NAMES} from './economy-bar.js?v=fortress1';
 import { Lockstep, PROTOCOL_VERSION as BASE_PROTOCOL_VERSION, host as rtcHost, join as rtcJoin } from './net.js?v=native55';
 import {SourceRoundPeer, SOURCE_ROUND_VERSION, groupedOwnerLayout} from './source-network-round.js?v=time-of-day160';
@@ -223,14 +223,14 @@ try{
     'native_rect_farm_family','native_rect_farm_seeding_elapsed','native_rect_extractor_error',
     'cmd_rect_extractor','render_rect_extractor','valley_oil_visual_state','valley_oil_visual_started',
     'valley_oil_audio_count','valley_oil_audio_word','native_rect_actor_id'];
-  const rectangularRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-death-valley2.wasm?v=ai-supply291-private'};
+  const rectangularRules={...rulesProfile,requiredExports,wasm:'openepoch-ee2-death-valley2.wasm?v=birth406-public'};
   wasm=await loadRulesWasm(rectangularRules,import.meta.url,{
     fetchFile:async url=>{
       const response=await fetch(url);
       if(response.ok){
         const hash=await crypto.subtle.digest('SHA-256',await response.clone().arrayBuffer());
         const pin=Array.from(new Uint8Array(hash),byte=>byte.toString(16).padStart(2,'0')).join('');
-        if(pin!=='058972496d679f8ec49de40a1c150606045e3ddcef3cca2687109f3c64c30ebe')throw Error('Die Spieldatei für Tal des Todes 2 stimmt nicht mit dem lokalen Paket überein.');
+        if(pin!=='3d0d354fbce929d7ddc4301c5e37ab59372e2ea2a01ce3512957796192d980b5')throw Error('Die Spieldatei für Tal des Todes 2 stimmt nicht mit dem lokalen Paket überein.');
       }
       return response;
     },

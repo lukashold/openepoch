@@ -501,8 +501,7 @@ impl Game {
             self.source_birth.rng.next_word15();
             self.source_birth.rng.next_word15();
             let identity = self.source_birth.production_identity();
-            let index = self.spawn(WORKER, owner, x, y);
-            if index != NOIDX { self.set_citizen_identity(index, identity); }
+            self.spawn_with_identity(WORKER, owner, x, y, BirthIdentity::from(identity));
         }
         if owner == self.local { self.ev(34.0, city.x, city.y); }
     }

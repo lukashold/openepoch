@@ -3,7 +3,7 @@ use super::{archived_population::World0, geometry::Geometry, prepare_map, STAGE,
 use crate::defs::{DefId, TC, WORKER};
 use crate::game::{Game, Player, NOIDX};
 use crate::map::tile_of;
-use crate::native_rng9::CitizenIdentity;
+use crate::game::BirthIdentity;
 
 const SCOUT: DefId = 57;
 const IDS: [u32; 6] = [0x0800002a, 0x0800002b, 0x0800002c, 0x1000002d, 0x1000002e, 0x1000002f];
@@ -95,14 +95,17 @@ impl Owned {
         for row in &mut self.rows {
             let team = (row.id >> 27) as u8 - 1;
             let [x, y, _] = row.xyz;
-            let slot = game.spawn_oriented(row.kind.definition(), team, x, y, row.yaw);
+            let identity = match row.kind {
+                Type::CitizenM => BirthIdentity::Male,
+                Type::CitizenF => BirthIdentity::Female,
+                _ => BirthIdentity::NonCitizen,
+            };
+            let slot = game.spawn_oriented_with_identity(row.kind.definition(), team, x, y, row.yaw, identity);
             if slot == NOIDX { return None; }
             row.handle = game.h(slot);
             match row.kind {
                 Type::CityCenter => game.map.starts[team as usize] = (x as usize, y as usize),
-                Type::CitizenM => game.set_citizen_identity(slot, CitizenIdentity::Male),
-                Type::CitizenF => game.set_citizen_identity(slot, CitizenIdentity::Female),
-                Type::Scout => {},
+                Type::CitizenM | Type::CitizenF | Type::Scout => {},
             }
         }
         game.build_grid();
